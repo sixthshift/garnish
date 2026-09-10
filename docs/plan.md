@@ -61,7 +61,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 - [x] **M1.3 Recipe document schema.** `src/domain/recipe.ts`: zod schema for the full nested document (recipe, components, ingredients, steps, notes, tags) exactly as the API will read and write it. Field names camelCase, following Mealie where the concept exists. Export the inferred type. Check: tests for a minimal valid doc, a full doc, and three invalid ones (no components, negative quantity, empty name).
 - [x] **M1.4 Recipe repository.** `src/db/recipes.ts`: `get(slug)`, `list({q, tag})`, `create(doc)`, `update(id, doc)`, `remove(id)`. Write replaces the whole recipe in one transaction. Slug generated from name, de-duplicated with a suffix. Check: tests for round-trip equality of a full doc, update replacing components, delete cascading, list filter by tag and by name substring.
 - [x] **M1.5 Reference repositories.** `∥` `src/db/foods.ts`, `units.ts`, `aisles.ts`, `tags.ts`: list, create, update, remove, `findOrCreate(name)`. Food and unit names unique case-insensitive. Check: tests including the case-insensitive collision.
-- [ ] **M1.6 Seed units.** `src/db/seed.ts` with metric and common imperial units: g, kg, ml, l, tsp, tbsp, cup, oz, lb, pinch, piece, slice, clove, can, bunch. Abbreviations and plurals. Idempotent. Check: seed twice, count unchanged.
+- [x] **M1.6 Seed units.** `src/db/seed.ts` with metric and common imperial units: g, kg, ml, l, tsp, tbsp, cup, oz, lb, pinch, piece, slice, clove, can, bunch. Abbreviations and plurals. Idempotent. Check: seed twice, count unchanged.
 
 ## M2 Domain
 
@@ -134,3 +134,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M1.3  done  43cf377  zod recipe document mirroring 001_init.sql, Mealie field names, recipeInputSchema for writes; question logged on time field types
 2026-09-10  M1.5  done  abdba2b  foods/units/aisles/tags factories with findOrCreate; names.ts holds cleanName, slugify, uniqueSlug
 2026-09-10  M1.4  done  9761895  recipes(db) with whole-document transactional writes, slug de-dup, refs resolved via M1.5 repos, recipeSummarySchema
+2026-09-10  M1.6  done  7ed32ae  seed.ts with 15 default units, idempotent by NOCASE name; seed script
