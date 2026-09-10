@@ -13,10 +13,33 @@
 //     (never pluralised: "g", "ml", "tbsp"); else the plural when the quantity
 //     is above 1 or is 0 and a plural exists ("2 cups", "½ cup", "cups" for an
 //     unquantified ingredient); else the name.
-import type { Unit } from "./recipe";
+//   - ingredient line: amount, food, note. Mealie's useParsedIngredientText:
+//     the unit is dropped when there is no quantity ("salt, to taste", not
+//     "tsp salt"); the food takes its plural when the quantity is null, 0 or
+//     above 1 and a plural exists, whether or not a unit is present ("2 eggs",
+//     "2 cups eggs"). Divergences, both because this returns plain text where
+//     Mealie returns markup: the note follows a comma (Mealie separates it with
+//     a styled span, and its parser strips that comma on the way in), and a
+//     line whose food is null falls back to `originalText` verbatim when there
+//     is one (Mealie never renders originalText; its disable-amounts path,
+//     which shows the raw line alone, is the closest analogue). The raw line
+//     already carries its own amount and note, so neither is prefixed.
+import type { Food, Unit } from "./recipe";
 
 /** The unit fields display needs. A full `Unit` satisfies it. */
 export type DisplayUnit = Pick<Unit, "name" | "pluralName" | "abbreviation" | "useAbbreviation" | "fraction">;
+
+/** The food fields display needs. A full `Food` satisfies it. */
+export type DisplayFood = Pick<Food, "name" | "pluralName">;
+
+/** The ingredient fields display needs. A full `Ingredient` satisfies it. */
+export type DisplayIngredient = {
+  quantity: number | null;
+  unit: DisplayUnit | null;
+  food: DisplayFood | null;
+  note: string;
+  originalText: string;
+};
 
 /** Vulgar fractions with a single unicode glyph, ascending by value. */
 const VULGAR_FRACTIONS: ReadonlyArray<readonly [value: number, glyph: string]> = [
@@ -58,6 +81,30 @@ export function formatUnit(quantity: number | null, unit: DisplayUnit | null): s
 /** "1½ cups", "250 g", "cups", "3". Quantity and unit joined by a space; empty when both are empty. */
 export function formatAmount(quantity: number | null, unit: DisplayUnit | null): string {
   return [formatQuantity(quantity, unit), formatUnit(quantity, unit)].filter((part) => part !== "").join(" ");
+}
+
+/** Food label: plural when the quantity is null, 0 or above 1 and a plural exists; else the name. Empty for no food. */
+export function formatFood(quantity: number | null, food: DisplayFood | null): string {
+  if (food === null) return "";
+  const plural = quantity === null || quantity === 0 || quantity > 1;
+  if (plural && food.pluralName !== null && food.pluralName.trim() !== "") return food.pluralName;
+  return food.name;
+}
+
+/**
+ * One ingredient line: "1½ cups flour, sifted", "2 eggs", "salt, to taste".
+ * No food but an originalText: the originalText verbatim. No quantity: the
+ * unit is skipped. Nothing to show: "".
+ */
+export function formatIngredient(ingredient: DisplayIngredient): string {
+  const { quantity, unit, food, note, originalText } = ingredient;
+  if (food === null && originalText.trim() !== "") return originalText.trim();
+
+  const hasQuantity = quantity !== null && quantity !== 0;
+  const head = [hasQuantity ? formatAmount(quantity, unit) : "", formatFood(quantity, food)]
+    .filter((part) => part !== "")
+    .join(" ");
+  return [head, note.trim()].filter((part) => part !== "").join(", ");
 }
 
 /** Decimals to 2 places with trailing zeros trimmed: 1.5 -> "1.5", 2 -> "2", 0.125 -> "0.13". */
