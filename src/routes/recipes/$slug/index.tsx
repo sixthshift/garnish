@@ -8,8 +8,8 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
+import { IngredientRow } from "../../../components/IngredientRow";
 import { RecipeHeader } from "../../../components/RecipeHeader";
-import { formatIngredient } from "../../../domain/format";
 import type { Component, Ingredient, Recipe, Step } from "../../../domain/recipe";
 import { getRecipe } from "../../../server/recipes";
 
@@ -37,6 +37,9 @@ export function nextServings(current: number, direction: -1 | 1): number {
 function RecipePage() {
   const recipe = Route.useLoaderData();
   const { servings: requested } = Route.useSearch();
+  // A servings search param means the loader scaled the document away from
+  // the recipe's own servings; the ingredient amounts get a "scaled" class.
+  const scaled = requested !== undefined;
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
@@ -61,7 +64,7 @@ function RecipePage() {
       <ScaleControl servings={recipe.recipeServings} />
 
       {recipe.components.map((component) => (
-        <ComponentSection key={component.id} component={component} />
+        <ComponentSection key={component.id} component={component} recipeId={recipe.id} scaled={scaled} />
       ))}
 
       {recipe.steps.length > 0 && (
@@ -127,7 +130,7 @@ function ScaleControl({ servings }: { servings: number }) {
  * keeps its steps at recipe level, so "No steps" under every ingredient list
  * would be noise); one with both empty says so instead of rendering nothing.
  */
-function ComponentSection({ component }: { component: Component }) {
+function ComponentSection({ component, recipeId, scaled }: { component: Component; recipeId: string; scaled: boolean }) {
   const name = component.name.trim();
   return (
     <section className="flex flex-col gap-3" aria-label={name === "" ? undefined : name}>
@@ -140,26 +143,18 @@ function ComponentSection({ component }: { component: Component }) {
           </Muted>
         }
       >
-        {component.ingredients.length > 0 && <IngredientList ingredients={component.ingredients} />}
+        {component.ingredients.length > 0 && <IngredientList ingredients={component.ingredients} recipeId={recipeId} scaled={scaled} />}
         {component.steps.length > 0 && <StepList steps={component.steps} />}
       </EmptyBoundary>
     </section>
   );
 }
 
-function IngredientList({ ingredients }: { ingredients: Ingredient[] }) {
+function IngredientList({ ingredients, recipeId, scaled }: { ingredients: Ingredient[]; recipeId: string; scaled: boolean }) {
   return (
-    <ul className="flex flex-col gap-1.5" aria-label="Ingredients">
+    <ul className="flex flex-col gap-2" aria-label="Ingredients">
       {ingredients.map((ingredient) => (
-        <li key={ingredient.id} className="flex items-baseline gap-2" data-fixed={ingredient.fixed ? "true" : undefined}>
-          <span>{formatIngredient(ingredient)}</span>
-          {ingredient.fixed && (
-            // Cooklang's `=`: the amount stays put however many you feed.
-            <Muted as="span" className="text-xs" title="Fixed amount, does not scale with servings">
-              fixed
-            </Muted>
-          )}
-        </li>
+        <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} scaled={scaled} />
       ))}
     </ul>
   );

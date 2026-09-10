@@ -207,17 +207,27 @@ describe("/recipes/$slug (view)", () => {
     const filling = html.indexOf(">Filling<");
     expect(pastry).toBeGreaterThan(-1);
     expect(filling).toBeGreaterThan(pastry);
-    expect(html.indexOf("200 g flour")).toBeGreaterThan(pastry);
-    expect(html.indexOf("200 g flour")).toBeLessThan(filling);
-    expect(html.indexOf("Rub the butter into the flour.")).toBeGreaterThan(html.indexOf("200 g flour"));
+    // Quantity/unit and food render separately (food bold), so check each in
+    // place rather than as one joined string.
+    const flourAmount = html.indexOf('ingredient-amount">200 g<');
+    const flourFood = html.indexOf(">flour<");
+    expect(flourAmount).toBeGreaterThan(pastry);
+    expect(flourFood).toBeGreaterThan(flourAmount);
+    expect(flourFood).toBeLessThan(filling);
+    expect(html.indexOf("Rub the butter into the flour.")).toBeGreaterThan(flourFood);
     expect(html.indexOf("Rub the butter into the flour.")).toBeLessThan(filling);
-    expect(html.indexOf("3 lemons")).toBeGreaterThan(filling);
-    expect(html.indexOf("Whisk everything together.")).toBeGreaterThan(html.indexOf("3 lemons"));
-    expect(html).toContain("salt, to taste");
+    const lemonsAmount = html.indexOf('ingredient-amount">3<');
+    expect(lemonsAmount).toBeGreaterThan(filling);
+    expect(html.indexOf(">lemons<")).toBeGreaterThan(lemonsAmount);
+    expect(html.indexOf("Whisk everything together.")).toBeGreaterThan(lemonsAmount);
+    // No amount ("salt to taste"): bold food, note dimmed on its own line, no comma join.
+    expect(html).toContain(">salt<");
+    expect(html).toContain(">to taste</p>"); // dimmed on its own line, not comma-joined into the visible text
 
-    // Fixed ingredient is marked.
-    expect(html).toMatch(/data-fixed="true"[^>]*>(<[^>]*>)*1 vanilla pod/);
+    // Fixed ingredient is marked, and its "fixed" marker is kept.
+    expect(html).toMatch(/data-fixed="true"[\s\S]*?>vanilla pod</);
     expect(html.match(/data-fixed="true"/g)).toHaveLength(1);
+    expect(html).toMatch(/data-fixed="true"[\s\S]*?>fixed</);
 
     // Recipe-level steps after the components, then notes.
     const finish = html.indexOf(">To finish<");
@@ -233,13 +243,19 @@ describe("/recipes/$slug (view)", () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart?servings=8");
     expect(html).toContain("Serves 8");
-    expect(html).toContain("400 g flour");
-    expect(html).toContain("6 lemons");
-    expect(html).toContain("1 vanilla pod");
-    expect(html).not.toContain("2 vanilla pods");
-    expect(html).toContain("salt, to taste");
+    expect(html).toContain('ingredient-amount">400 g<');
+    expect(html).toContain(">flour<");
+    expect(html).toContain('ingredient-amount">6<');
+    expect(html).toContain(">lemons<");
+    // Fixed: stays at 1 even though servings doubled.
+    expect(html).toMatch(/data-fixed="true"[\s\S]*?ingredient-amount">1</);
+    expect(html).not.toMatch(/data-fixed="true"[\s\S]*?ingredient-amount">2</);
+    expect(html).toContain(">salt<");
     expect(html).toMatch(/<dt[^>]*>Makes<\/dt><dd[^>]*>2 tart<\/dd>/);
     expect(html).toContain(">Reset<"); // a requested scale can be cleared
+    // A requested servings differs from the recipe's own: amounts get the scaled class.
+    expect(html).toContain('data-scaled="true"');
+    expect(html).toContain("text-fg-brand");
   });
 
   test("a single unnamed component renders without a heading, and no servings hides the scale control", async () => {
@@ -248,7 +264,8 @@ describe("/recipes/$slug (view)", () => {
       components: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
     });
     const html = await renderRoute("/recipes/toast");
-    expect(html).toContain("1 bread slice");
+    expect(html).toContain('ingredient-amount">1<');
+    expect(html).toContain(">bread slice<");
     expect(html).toContain("Toast it.");
     expect(html).not.toContain("<h2");
     expect(html).toContain("Servings not set");
