@@ -92,3 +92,28 @@ export async function callServerFn<F extends Fetcher>(fn: F, data?: DataOf<F>): 
   if (outcome.error) throw outcome.error;
   return outcome.result as Awaited<ReturnType<F>>;
 }
+
+/**
+ * For `vi.mock` factories in route tests. Under vitest a server function stub
+ * resolves its handler through the Start manifest, which does not exist, so a
+ * route loader cannot call one. This swaps every stub in a `src/server/*`
+ * module for a same-signature wrapper that runs the handler in-process via
+ * `callServerFn`, keeping the stub's own properties so `callServerFn` still
+ * works on the wrapper too. Non-function exports (zod inputs) pass through.
+ *
+ *   vi.mock("../../src/server/recipes", async (importOriginal) => {
+ *     const { runLocally } = await import("../helpers/server");
+ *     return runLocally(await importOriginal());
+ *   });
+ */
+export function runLocally<M extends Record<string, unknown>>(mod: M): M {
+  const out: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(mod)) {
+    const fn = value as Fetcher;
+    out[name] =
+      typeof fn === "function" && fn.serverFnMeta
+        ? Object.assign((opts?: { data?: unknown }) => callServerFn(fn, opts?.data as DataOf<Fetcher>), fn)
+        : value;
+  }
+  return out as M;
+}

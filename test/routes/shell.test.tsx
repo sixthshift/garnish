@@ -1,28 +1,34 @@
 // Render every page route through the real route tree with a memory history.
 // A stub that throws, a missing route, or a bad import shows up here before
-// it does in the browser.
-import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
+// it does in the browser. Loaders run against a temp DATA_DIR; the server
+// functions they call are swapped for in-process wrappers (see helpers/server).
 import { renderToString } from "react-dom/server";
-import { describe, expect, test } from "vitest";
-import { RouteError, RouteNotFound, RoutePending } from "../../src/components/RouteStates";
-import { routeTree } from "../../src/routeTree.gen";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { RouteError, RoutePending } from "../../src/components/RouteStates";
+import { createRecipe } from "../../src/server/recipes";
+import { renderRoute as render } from "../helpers/routes";
+import { callServerFn, useTempDataDir } from "../helpers/server";
 
-async function render(path: string): Promise<string> {
-  const router = createRouter({
-    routeTree,
-    history: createMemoryHistory({ initialEntries: [path] }),
-    defaultPendingComponent: RoutePending,
-    defaultErrorComponent: RouteError,
-    defaultNotFoundComponent: RouteNotFound,
-  });
-  await router.load();
-  return renderToString(<RouterProvider router={router} />);
-}
+// vi.mock is hoisted above imports and needs literal specifiers, so the shared
+// factory is hoisted with it and there is one call per module.
+const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<string, unknown>>) => {
+  const { runLocally } = await import("../helpers/server");
+  return runLocally(await importOriginal());
+});
+vi.mock("../../src/server/recipes", local);
+vi.mock("../../src/server/units", local);
+vi.mock("../../src/server/tags", local);
+vi.mock("../../src/server/aisles", local);
+
+useTempDataDir();
+beforeEach(async () => {
+  await callServerFn(createRecipe, { name: "Lemon tart", components: [{ name: "" }] });
+});
 
 const pages: Array<[string, string]> = [
   ["/", "Recipes"],
   ["/recipes/new", "New recipe"],
-  ["/recipes/lemon-tart", "lemon-tart"],
+  ["/recipes/lemon-tart", "Lemon tart"],
   ["/recipes/lemon-tart/edit", "Edit recipe"],
   ["/settings", "Settings"],
 ];
