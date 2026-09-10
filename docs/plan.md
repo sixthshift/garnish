@@ -147,3 +147,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M4.1  done  761eb6f  AppShell with bottom/side nav, system dark mode via tokens, router default pending/error/not-found, five stub routes, render tests
 2026-09-10  M4.2  done  210171a  loaders on all five routes with validated search, return types pinned by annotation and expectTypeOf, lib/mutate.ts; Layout gained src/lib/
 2026-09-10  M4.3  done  b11f5bf  RecipeCard grid, debounced search bound to q, tag ToggleGroup bound to tag, empty and filter-miss states; SPA mode means curl / shows only the shell, verified via RPC and render tests
+2026-09-10  M4.4  parked  -        run stopped by Jason mid-task; partial work in git stash "M4.4 partial", tree reset to 525925f
