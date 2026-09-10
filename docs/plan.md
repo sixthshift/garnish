@@ -96,7 +96,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 
 ## M6 Cook view
 
-- [ ] **M6.1 Cook mode.** Full-screen route per recipe. One component at a time: its ingredients, then its steps one per card, large type. Prev and next. Scale control always visible. Check: manual on a phone-width viewport.
+- [x] **M6.1 Cook mode.** Full-screen route per recipe. One component at a time: its ingredients, then its steps one per card, large type. Prev and next. Scale control always visible. Check: manual on a phone-width viewport.
 - [ ] **M6.2 Wake lock.** `navigator.wakeLock` requested on enter, released on leave, reacquired on visibility change. Silent if unsupported. Check: manual, plus a unit test of the hook with a mocked API.
 
 ## M7 PWA
@@ -155,3 +155,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M5.4  done  4ce52dd  IngredientsEditor with parseQuantity and row helpers, local Combobox for unit/food autocomplete, refs resolved on save, text-only rows per Mealie disable-amount
 2026-09-10  M5.5  done  c59babc  StepsEditor (component and recipe-level) and NotesEditor with pure helpers; orders round-trip after move
 2026-09-10  M5.6  done  64f8dc7  Delete on edit page via ConfirmDialog (new ui primitive over Modal, shared with ComponentsEditor), deleteRecipe then navigate home
+2026-09-10  M6.1  done  c70f53f  cook route as card deck from buildCookCards, step/servings search params, sticky scale control, arrow keys, AppShell hides nav for fullscreen routes
