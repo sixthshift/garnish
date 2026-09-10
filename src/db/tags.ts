@@ -1,7 +1,7 @@
 // Tag repository. Server-only. Names unique case-insensitively; the slug is
 // derived from the name (Mealie) and de-duplicated with a numeric suffix.
 import type { Database } from "bun:sqlite";
-import { cleanName, slugify, uniqueSlug } from "./names";
+import { cleanName, likePattern, slugify, uniqueSlug } from "./names";
 
 export type Tag = {
   id: string;
@@ -17,6 +17,7 @@ const COLUMNS = "id, name, slug";
 
 export function tags(db: Database) {
   const selectAll = db.query<Row, []>(`SELECT ${COLUMNS} FROM tag ORDER BY name`);
+  const selectLike = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM tag WHERE name LIKE ? ESCAPE '\\' ORDER BY name`);
   const selectById = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM tag WHERE id = ?`);
   const selectByName = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM tag WHERE name = ?`);
   const selectBySlug = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM tag WHERE slug = ?`);
@@ -41,7 +42,8 @@ export function tags(db: Database) {
   }
 
   return {
-    list: (): Tag[] => selectAll.all(),
+    /** All tags by name, or those whose name contains `q` (case-insensitive). */
+    list: (q?: string): Tag[] => (q?.trim() ? selectLike.all(likePattern(q)) : selectAll.all()),
     get,
     getBySlug: (slug: string): Tag | null => selectBySlug.get(slug) ?? null,
     create,

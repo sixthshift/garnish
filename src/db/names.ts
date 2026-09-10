@@ -29,3 +29,11 @@ export function uniqueSlug(base: string, taken: (slug: string) => boolean): stri
     if (!taken(candidate)) return candidate;
   }
 }
+
+/**
+ * SQL LIKE pattern for a case-insensitive substring search on a name:
+ * `%` and `_` in `q` are escaped (pair with `ESCAPE '\'`), then wrapped in `%`.
+ */
+export function likePattern(q: string): string {
+  return `%${q.trim().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}

@@ -1,6 +1,6 @@
 // Unit repository. Server-only. Names unique case-insensitively (NOCASE).
 import type { Database } from "bun:sqlite";
-import { cleanName } from "./names";
+import { cleanName, likePattern } from "./names";
 
 export type Unit = {
   id: string;
@@ -43,6 +43,7 @@ function toUnit(r: Row): Unit {
 
 export function units(db: Database) {
   const selectAll = db.query<Row, []>(`SELECT ${COLUMNS} FROM unit ORDER BY name`);
+  const selectLike = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM unit WHERE name LIKE ? ESCAPE '\\' ORDER BY name`);
   const selectById = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM unit WHERE id = ?`);
   const selectByName = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM unit WHERE name = ?`);
   const insert = db.prepare(`INSERT INTO unit (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
@@ -72,7 +73,8 @@ export function units(db: Database) {
   }
 
   return {
-    list: (): Unit[] => selectAll.all().map(toUnit),
+    /** All units by name, or those whose name contains `q` (case-insensitive). */
+    list: (q?: string): Unit[] => (q?.trim() ? selectLike.all(likePattern(q)) : selectAll.all()).map(toUnit),
     get,
     create,
 

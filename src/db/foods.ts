@@ -2,7 +2,7 @@
 // Names are unique case-insensitively (NOCASE in 001_init.sql); creating a
 // duplicate throws SQLite's UNIQUE error, findOrCreate returns the match.
 import type { Database } from "bun:sqlite";
-import { cleanName } from "./names";
+import { cleanName, likePattern } from "./names";
 
 export type Food = {
   id: string;
@@ -42,6 +42,7 @@ function toFood(r: Row): Food {
 
 export function foods(db: Database) {
   const selectAll = db.query<Row, []>(`SELECT ${COLUMNS} FROM food ORDER BY name`);
+  const selectLike = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM food WHERE name LIKE ? ESCAPE '\\' ORDER BY name`);
   const selectById = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM food WHERE id = ?`);
   const selectByName = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM food WHERE name = ?`);
   const insert = db.prepare(`INSERT INTO food (${COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?)`);
@@ -70,7 +71,8 @@ export function foods(db: Database) {
   }
 
   return {
-    list: (): Food[] => selectAll.all().map(toFood),
+    /** All foods by name, or those whose name contains `q` (case-insensitive). */
+    list: (q?: string): Food[] => (q?.trim() ? selectLike.all(likePattern(q)) : selectAll.all()).map(toFood),
     get,
     create,
 

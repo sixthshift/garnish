@@ -78,3 +78,14 @@ test("remove deletes the food and nulls the ingredient reference", () => {
     original_text: "50 g butter",
   });
 });
+
+test("list with q filters by case-insensitive substring and escapes wildcards", () => {
+  repo.create({ name: "Butter" });
+  repo.create({ name: "peanut butter" });
+  repo.create({ name: "salt" });
+  repo.create({ name: "100% cocoa" });
+  expect(repo.list("BUTT").map((f) => f.name)).toEqual(["Butter", "peanut butter"]);
+  expect(repo.list("%").map((f) => f.name)).toEqual(["100% cocoa"]);
+  expect(repo.list("  ").map((f) => f.name)).toHaveLength(4);
+  expect(repo.list("nothing")).toEqual([]);
+});

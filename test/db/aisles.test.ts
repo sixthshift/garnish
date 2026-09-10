@@ -43,3 +43,12 @@ test("remove leaves foods in the aisle with aisle_id null", () => {
   expect(repo.remove(dairy.id)).toBe(false);
   expect(foods(db).get(butter.id)?.aisleId).toBeNull();
 });
+
+test("list with q filters by case-insensitive substring, keeping position order", () => {
+  repo.create({ name: "Frozen" });
+  repo.create({ name: "Dairy" });
+  repo.create({ name: "Deli & Dairy" });
+  expect(repo.list("dai").map((a) => a.name)).toEqual(["Dairy", "Deli & Dairy"]);
+  expect(repo.list().map((a) => a.name)).toEqual(["Frozen", "Dairy", "Deli & Dairy"]);
+  expect(repo.list("meat")).toEqual([]);
+});

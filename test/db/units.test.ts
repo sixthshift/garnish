@@ -64,3 +64,12 @@ test("remove nulls ingredient, recipe yield and standard-unit references", () =>
   expect(db.query<{ yield_unit_id: string | null }, []>("SELECT yield_unit_id FROM recipe WHERE id = 'r'").get()?.yield_unit_id).toBeNull();
   expect(repo.get(kilogram.id)?.standardUnitId).toBeNull();
 });
+
+test("list with q filters by case-insensitive substring", () => {
+  repo.create({ name: "Cup" });
+  repo.create({ name: "teacup" });
+  repo.create({ name: "gram" });
+  expect(repo.list("CUP").map((u) => u.name)).toEqual(["Cup", "teacup"]);
+  expect(repo.list("").map((u) => u.name)).toHaveLength(3);
+  expect(repo.list("x_y")).toEqual([]);
+});

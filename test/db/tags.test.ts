@@ -46,3 +46,12 @@ test("remove cascades recipe_tag links and leaves recipes alone", () => {
   expect(db.query<{ n: number }, []>("SELECT count(*) AS n FROM recipe_tag").get()?.n).toBe(0);
   expect(db.query<{ n: number }, []>("SELECT count(*) AS n FROM recipe").get()?.n).toBe(1);
 });
+
+test("list with q filters by case-insensitive substring", () => {
+  repo.create({ name: "Dinner" });
+  repo.create({ name: "Weeknight dinner" });
+  repo.create({ name: "Dessert" });
+  expect(repo.list("DINNER").map((t) => t.name)).toEqual(["Dinner", "Weeknight dinner"]);
+  expect(repo.list().map((t) => t.name)).toEqual(["Dessert", "Dinner", "Weeknight dinner"]);
+  expect(repo.list("lunch")).toEqual([]);
+});

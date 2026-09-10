@@ -1,7 +1,7 @@
 // Aisle repository (Mealie's shopping labels). Server-only. Names unique
 // case-insensitively; listed in position order for the shopping list.
 import type { Database } from "bun:sqlite";
-import { cleanName } from "./names";
+import { cleanName, likePattern } from "./names";
 
 export type Aisle = {
   id: string;
@@ -17,6 +17,7 @@ const COLUMNS = "id, name, position";
 
 export function aisles(db: Database) {
   const selectAll = db.query<Row, []>(`SELECT ${COLUMNS} FROM aisle ORDER BY position, name`);
+  const selectLike = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM aisle WHERE name LIKE ? ESCAPE '\\' ORDER BY position, name`);
   const selectById = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM aisle WHERE id = ?`);
   const selectByName = db.query<Row, [string]>(`SELECT ${COLUMNS} FROM aisle WHERE name = ?`);
   const nextPosition = db.query<{ n: number }, []>("SELECT coalesce(max(position) + 1, 0) AS n FROM aisle");
@@ -36,7 +37,8 @@ export function aisles(db: Database) {
   }
 
   return {
-    list: (): Aisle[] => selectAll.all(),
+    /** All aisles in position order, or those whose name contains `q` (case-insensitive). */
+    list: (q?: string): Aisle[] => (q?.trim() ? selectLike.all(likePattern(q)) : selectAll.all()),
     get,
     create,
 

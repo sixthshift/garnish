@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { cleanName, slugify, uniqueSlug } from "../../src/db/names";
+import { cleanName, likePattern, slugify, uniqueSlug } from "../../src/db/names";
 
 test("cleanName trims and rejects blank", () => {
   expect(cleanName("  Butter ")).toBe("Butter");
@@ -18,4 +18,10 @@ test("uniqueSlug suffixes from -2 until free, and names the nameless", () => {
   expect(uniqueSlug("pasta", (s) => taken.has(s))).toBe("pasta-3");
   expect(uniqueSlug("soup", (s) => taken.has(s))).toBe("soup");
   expect(uniqueSlug("", () => false)).toBe("untitled");
+});
+
+test("likePattern wraps in wildcards and escapes LIKE metacharacters", () => {
+  expect(likePattern("salt")).toBe("%salt%");
+  expect(likePattern("  salt ")).toBe("%salt%");
+  expect(likePattern("100%_a\\b")).toBe("%100\\%\\_a\\\\b%");
 });
