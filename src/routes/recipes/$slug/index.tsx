@@ -11,8 +11,9 @@ import { z } from "zod";
 import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientRow } from "../../../components/IngredientRow";
 import { RecipeHeader } from "../../../components/RecipeHeader";
+import { StepList } from "../../../components/StepList";
 import { mergeIngredients } from "../../../domain/merge";
-import type { Component, Ingredient, Recipe, Step } from "../../../domain/recipe";
+import type { Component, Ingredient, Recipe } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { getRecipe } from "../../../server/recipes";
 
@@ -84,7 +85,7 @@ function RecipePage() {
       {recipe.steps.length > 0 && (
         <section className="flex flex-col gap-3" aria-label="Method">
           {recipe.components.length > 1 && <SectionTitle as="h2">To finish</SectionTitle>}
-          <StepList steps={recipe.steps} />
+          <StepList recipeId={recipe.id} steps={recipe.steps} />
         </section>
       )}
 
@@ -180,7 +181,7 @@ function ComponentSection({
         }
       >
         {showIngredients && <IngredientList ingredients={component.ingredients} recipeId={recipeId} scaled={scaled} />}
-        {hasSteps && <StepList steps={component.steps} />}
+        {hasSteps && <StepList recipeId={recipeId} steps={component.steps} />}
       </EmptyBoundary>
     </section>
   );
@@ -193,23 +194,5 @@ function IngredientList({ ingredients, recipeId, scaled }: { ingredients: Ingred
         <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} scaled={scaled} />
       ))}
     </ul>
-  );
-}
-
-function StepList({ steps }: { steps: Step[] }) {
-  return (
-    <ol className="flex flex-col gap-3" aria-label="Steps">
-      {steps.map((step, index) => (
-        <li key={step.id} className="flex gap-3">
-          <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-bg-brand-subtle text-xs font-semibold text-fg-brand" aria-hidden="true">
-            {index + 1}
-          </span>
-          <p className="whitespace-pre-line">
-            <span className="sr-only">{`Step ${index + 1}. `}</span>
-            {step.text}
-          </p>
-        </li>
-      ))}
-    </ol>
   );
 }
