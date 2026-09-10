@@ -1,0 +1,193 @@
+// Free-text input with a suggestion list: type to filter, pick a suggestion,
+// or keep what was typed. The design system's Select only picks from fixed
+// options and its TagInput holds many values, so autocomplete over a single
+// value (a unit, a food) is built here from Input.
+//
+// The parent owns both the text (`value`/`onChange`) and the suggestions
+// (`options`), so it decides whether they come from a local list or a server
+// query. When `onCreate` is given and the text matches no option label, a
+// final "Create “text”" row offers the typed value as a new entry. The list
+// opens while the input has focus and there is something to show; it renders
+// closed on the server. Arrow keys move, Enter picks, Escape closes. Enter is
+// swallowed only while the list is open, so it cannot submit the form mid-pick.
+import { Input } from "@sixthshift/design-system/input";
+import { cn } from "@sixthshift/design-system/utils";
+import { type KeyboardEvent, useId, useState } from "react";
+
+export type ComboboxOption = { value: string; label: string; hint?: string };
+
+/** A row in the open list: an option, or the create affordance for the typed text. */
+export type ComboboxItem = { kind: "option"; option: ComboboxOption } | { kind: "create"; text: string };
+
+export type ComboboxProps = {
+  value: string;
+  onChange: (text: string) => void;
+  options: readonly ComboboxOption[];
+  onSelect: (option: ComboboxOption) => void;
+  /** When given, a "Create “text”" row shows for text that matches no option label. */
+  onCreate?: (text: string) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  id?: string;
+  name?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+  "aria-label"?: string;
+  "aria-invalid"?: boolean;
+};
+
+/** The option whose label equals `text`, ignoring case and surrounding space. Pure. */
+export function exactMatch(options: readonly ComboboxOption[], text: string): ComboboxOption | undefined {
+  const key = text.trim().toLowerCase();
+  if (key === "") return undefined;
+  return options.find((option) => option.label.trim().toLowerCase() === key);
+}
+
+/**
+ * The rows the open list shows: every option, then a create row when creation
+ * is allowed and the trimmed text is non-empty and matches no option. Pure.
+ */
+export function listItems(options: readonly ComboboxOption[], text: string, canCreate: boolean): ComboboxItem[] {
+  const items: ComboboxItem[] = options.map((option) => ({ kind: "option", option }));
+  const trimmed = text.trim();
+  if (canCreate && trimmed !== "" && exactMatch(options, trimmed) === undefined) items.push({ kind: "create", text: trimmed });
+  return items;
+}
+
+/** `active` moved by `delta` within `count` rows, wrapping; -1 (nothing active) steps to the first or last row. Pure. */
+export function stepActive(active: number, delta: 1 | -1, count: number): number {
+  if (count === 0) return -1;
+  if (active < 0) return delta === 1 ? 0 : count - 1;
+  return (active + delta + count) % count;
+}
+
+export function Combobox({
+  value,
+  onChange,
+  options,
+  onSelect,
+  onCreate,
+  onFocus,
+  onBlur,
+  id,
+  name,
+  placeholder,
+  disabled,
+  className,
+  "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
+}: ComboboxProps) {
+  const listId = useId();
+  const [focused, setFocused] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [active, setActive] = useState(-1);
+
+  const items = listItems(options, value, onCreate !== undefined);
+  const open = focused && !dismissed && items.length > 0;
+  const activeItem = open && active >= 0 && active < items.length ? items[active] : undefined;
+
+  const pick = (item: ComboboxItem) => {
+    if (item.kind === "option") onSelect(item.option);
+    else onCreate?.(item.text);
+    setActive(-1);
+    setDismissed(true);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      setDismissed(false);
+      setActive((current) => stepActive(current, event.key === "ArrowDown" ? 1 : -1, items.length));
+      return;
+    }
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      setDismissed(true);
+      setActive(-1);
+      return;
+    }
+    if (event.key === "Enter" && open) {
+      event.preventDefault();
+      // Enter with nothing highlighted takes the exact match, else the first row.
+      const chosen = activeItem ?? (exactMatch(options, value) ? { kind: "option" as const, option: exactMatch(options, value)! } : items[0]);
+      if (chosen) pick(chosen);
+    }
+  };
+
+  return (
+    <div className={cn("relative", className)}>
+      <Input
+        id={id}
+        name={name}
+        type="text"
+        role="combobox"
+        autoComplete="off"
+        aria-label={ariaLabel}
+        aria-invalid={ariaInvalid || undefined}
+        aria-expanded={open}
+        aria-autocomplete="list"
+        aria-controls={open ? listId : undefined}
+        aria-activedescendant={activeItem ? `${listId}-${active}` : undefined}
+        placeholder={placeholder}
+        disabled={disabled}
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+          setDismissed(false);
+          setActive(-1);
+        }}
+        onFocus={() => {
+          setFocused(true);
+          setDismissed(false);
+          onFocus?.();
+        }}
+        onBlur={() => {
+          setFocused(false);
+          setActive(-1);
+          onBlur?.();
+        }}
+        onKeyDown={onKeyDown}
+      />
+      {open && (
+        <ul
+          id={listId}
+          role="listbox"
+          aria-label={ariaLabel ? `${ariaLabel} suggestions` : undefined}
+          className="absolute left-0 top-full z-10 mt-1 max-h-60 w-full min-w-40 overflow-auto rounded-lg border border-border-normal bg-bg-base p-1 shadow-md"
+        >
+          {items.map((item, index) => {
+            const selected = index === active;
+            const key = item.kind === "option" ? item.option.value : "__create__";
+            return (
+              <li
+                key={key}
+                id={`${listId}-${index}`}
+                role="option"
+                aria-selected={selected}
+                className={cn(
+                  "flex cursor-pointer items-baseline justify-between gap-2 rounded-md px-2 py-1.5 text-sm",
+                  selected ? "bg-bg-subtle" : "hover:bg-bg-subtle",
+                  item.kind === "create" && "text-fg-brand",
+                )}
+                // mousedown would blur the input and close the list before click lands.
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActive(index)}
+                onClick={() => pick(item)}
+              >
+                {item.kind === "option" ? (
+                  <>
+                    <span className="truncate">{item.option.label}</span>
+                    {item.option.hint !== undefined && <span className="shrink-0 text-xs text-fg-subtle">{item.option.hint}</span>}
+                  </>
+                ) : (
+                  <span>Create “{item.text}”</span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}

@@ -1,8 +1,8 @@
 // The recipe editor's component list: add, rename, reorder and delete the
-// named sections a recipe is made of. Each row shows its ingredients and
-// steps read-only; editing those rows is M5.4 and M5.5. The parent owns the
-// draft: every change goes through one of the pure helpers below and comes
-// back through `onChange` as a new `RecipeDraft`.
+// named sections a recipe is made of. Each row edits its ingredients through
+// `IngredientsEditor` and shows its steps read-only; editing steps is M5.5.
+// The parent owns the draft: every change goes through one of the pure
+// helpers below and comes back through `onChange` as a new `RecipeDraft`.
 //
 // Positions are never edited here. The document carries no position fields;
 // the repository writes them from array order on save, so moving a row is
@@ -19,8 +19,9 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
 import { formatIngredient } from "../domain/format";
-import { ingredientInputSchema } from "../domain/recipe";
+import { ingredientInputSchema, type Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
+import { IngredientsEditor } from "./IngredientsEditor";
 import type { DraftComponent, DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { moveItem, ReorderList } from "./ui/ReorderList";
 
@@ -93,11 +94,13 @@ export function contentSummary(component: DraftComponent): string {
 export type ComponentsEditorProps = {
   draft: RecipeDraft;
   onChange: (draft: RecipeDraft) => void;
+  /** Units the ingredient rows suggest. */
+  units?: readonly Unit[];
   errors?: FieldErrors;
   disabled?: boolean;
 };
 
-export function ComponentsEditor({ draft, onChange, errors = {}, disabled }: ComponentsEditorProps) {
+export function ComponentsEditor({ draft, onChange, units = [], errors = {}, disabled }: ComponentsEditorProps) {
   // Index of the component whose removal is awaiting confirmation.
   const [confirming, setConfirming] = useState<number | null>(null);
   const { components } = draft;
@@ -147,7 +150,8 @@ export function ComponentsEditor({ draft, onChange, errors = {}, disabled }: Com
                 {errors[`components.${index}.name`]}
               </p>
             )}
-            <ComponentPreview component={component} />
+            <IngredientsEditor draft={draft} ci={index} units={units} onChange={onChange} errors={errors} disabled={disabled} />
+            <StepsPreview component={component} />
           </div>
         )}
       />
@@ -174,47 +178,29 @@ export function ComponentsEditor({ draft, onChange, errors = {}, disabled }: Com
   );
 }
 
-/** Read-only ingredients and steps of one component; the inputs come in M5.4 and M5.5. */
-function ComponentPreview({ component }: { component: DraftComponent }) {
+/** Read-only steps of one component; the inputs come in M5.5. */
+function StepsPreview({ component }: { component: DraftComponent }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div className="flex flex-col gap-1.5">
-        <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
-          Ingredients
+    <div className="flex flex-col gap-1.5">
+      <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
+        Steps
+      </Muted>
+      {component.steps.length === 0 ? (
+        <Muted as="p" className="text-sm">
+          No steps yet
         </Muted>
-        {component.ingredients.length === 0 ? (
-          <Muted as="p" className="text-sm">
-            No ingredients yet
-          </Muted>
-        ) : (
-          <ul className="flex flex-col gap-1 text-sm" aria-label="Ingredients">
-            {component.ingredients.map((ingredient, i) => (
-              <li key={ingredient.id ?? i}>{ingredientLine(ingredient)}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
-          Steps
-        </Muted>
-        {component.steps.length === 0 ? (
-          <Muted as="p" className="text-sm">
-            No steps yet
-          </Muted>
-        ) : (
-          <ol className="flex flex-col gap-1 text-sm" aria-label="Steps">
-            {component.steps.map((step, i) => (
-              <li key={step.id ?? i} className="flex gap-2">
-                <span className="shrink-0 font-medium text-fg-subtle" aria-hidden="true">
-                  {i + 1}.
-                </span>
-                <span className="whitespace-pre-line">{step.text}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+      ) : (
+        <ol className="flex flex-col gap-1 text-sm" aria-label="Steps">
+          {component.steps.map((step, i) => (
+            <li key={step.id ?? i} className="flex gap-2">
+              <span className="shrink-0 font-medium text-fg-subtle" aria-hidden="true">
+                {i + 1}.
+              </span>
+              <span className="whitespace-pre-line">{step.text}</span>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

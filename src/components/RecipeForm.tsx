@@ -3,8 +3,8 @@
 // concrete `RecipeInput`, so what it holds is exactly what `createRecipe` and
 // `updateRecipe` accept; submit zod-parses the draft and shows field errors
 // inline. Components are edited through `ComponentsEditor` (add, rename,
-// reorder, remove); their ingredient and step rows are shown read-only until
-// M5.4 and M5.5. A new recipe carries one blank component so the document
+// reorder, remove) with their ingredient rows; step rows are shown read-only
+// until M5.5. A new recipe carries one blank component so the document
 // validates.
 //
 // The image is not part of the document write. A chosen file is held until the
@@ -314,7 +314,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing }: Recipe
         />
       </div>
 
-      <ComponentsEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
+      <ComponentsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="solid" intent="brand" disabled={saving}>
