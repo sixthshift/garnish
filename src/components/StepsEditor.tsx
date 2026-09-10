@@ -10,6 +10,7 @@
 // repository writes them from array order on save, so moving a row is the
 // whole story.
 import { Button } from "@sixthshift/design-system/button";
+import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { randomUuid } from "../lib/ids";
@@ -104,11 +105,14 @@ export function StepsEditor({ draft, ci, onChange, heading = "Steps", errors = {
           Add step
         </Button>
       </div>
-      {steps.length === 0 ? (
-        <Muted as="p" className="text-sm">
-          No steps yet
-        </Muted>
-      ) : (
+      <EmptyBoundary
+        isEmpty={steps.length === 0}
+        fallback={
+          <Muted as="p" className="text-sm">
+            No steps yet
+          </Muted>
+        }
+      >
         <ReorderList
           items={steps}
           keyOf={(step) => step.id ?? "unsaved"}
@@ -143,7 +147,7 @@ export function StepsEditor({ draft, ci, onChange, heading = "Steps", errors = {
             );
           }}
         />
-      )}
+      </EmptyBoundary>
     </div>
   );
 }

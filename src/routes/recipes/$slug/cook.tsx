@@ -6,6 +6,7 @@
 // only chrome. A screen wake lock is held while the page is mounted.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
+import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -97,13 +98,16 @@ function CookPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4">
-        {card === undefined ? (
-          <Muted as="p" className="text-center text-xl">
-            Nothing to cook yet: this recipe has no ingredients or steps.
-          </Muted>
-        ) : (
-          <CookCardView card={card} />
-        )}
+        <EmptyBoundary
+          isEmpty={card === undefined}
+          fallback={
+            <Muted as="p" className="text-center text-xl">
+              Nothing to cook yet: this recipe has no ingredients or steps.
+            </Muted>
+          }
+        >
+          {card !== undefined && <CookCardView card={card} />}
+        </EmptyBoundary>
       </main>
 
       <footer className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">

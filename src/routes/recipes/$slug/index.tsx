@@ -3,6 +3,7 @@
 // page always shows what `getRecipe` returned.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
+import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
@@ -77,7 +78,14 @@ function RecipePage() {
           </div>
           {recipe.rating !== null && <Rating value={recipe.rating} />}
           {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}
-          {recipe.tags.length > 0 && (
+          <EmptyBoundary
+            isEmpty={recipe.tags.length === 0}
+            fallback={
+              <Muted as="p" className="text-sm" data-empty="tags">
+                No tags
+              </Muted>
+            }
+          >
             <ul className="flex flex-wrap gap-1" aria-label="Tags">
               {recipe.tags.map((tag) => (
                 <li key={tag.id}>
@@ -87,7 +95,7 @@ function RecipePage() {
                 </li>
               ))}
             </ul>
-          )}
+          </EmptyBoundary>
           {(times.length > 0 || yieldText !== "") && (
             <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
               {times.map(([label, value]) => (
@@ -170,15 +178,27 @@ function ScaleControl({ servings }: { servings: number }) {
 
 /**
  * One component: its heading, ingredients, then steps. An unnamed component
- * (the single section of a flat recipe) has no heading, as in Mealie.
+ * (the single section of a flat recipe) has no heading, as in Mealie. A
+ * component with one of the two lists empty hides that list (a flat recipe
+ * keeps its steps at recipe level, so "No steps" under every ingredient list
+ * would be noise); one with both empty says so instead of rendering nothing.
  */
 function ComponentSection({ component }: { component: Component }) {
   const name = component.name.trim();
   return (
     <section className="flex flex-col gap-3" aria-label={name === "" ? undefined : name}>
       {name !== "" && <SectionTitle as="h2">{name}</SectionTitle>}
-      {component.ingredients.length > 0 && <IngredientList ingredients={component.ingredients} />}
-      {component.steps.length > 0 && <StepList steps={component.steps} />}
+      <EmptyBoundary
+        isEmpty={component.ingredients.length === 0 && component.steps.length === 0}
+        fallback={
+          <Muted as="p" className="text-sm" data-empty="component">
+            No ingredients or steps yet
+          </Muted>
+        }
+      >
+        {component.ingredients.length > 0 && <IngredientList ingredients={component.ingredients} />}
+        {component.steps.length > 0 && <StepList steps={component.steps} />}
+      </EmptyBoundary>
     </section>
   );
 }

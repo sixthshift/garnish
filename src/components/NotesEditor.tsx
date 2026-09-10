@@ -7,6 +7,7 @@
 // A note's title is optional, as in Mealie; the view page shows a card with
 // no heading for a blank one.
 import { Button } from "@sixthshift/design-system/button";
+import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
@@ -64,11 +65,14 @@ export function NotesEditor({ draft, onChange, errors = {}, disabled }: NotesEdi
           Add note
         </Button>
       </div>
-      {notes.length === 0 ? (
-        <Muted as="p" className="text-sm">
-          No notes yet
-        </Muted>
-      ) : (
+      <EmptyBoundary
+        isEmpty={notes.length === 0}
+        fallback={
+          <Muted as="p" className="text-sm">
+            No notes yet
+          </Muted>
+        }
+      >
         <ReorderList
           items={notes}
           keyOf={(note) => note.id ?? "unsaved"}
@@ -115,7 +119,7 @@ export function NotesEditor({ draft, onChange, errors = {}, disabled }: NotesEdi
             );
           }}
         />
-      )}
+      </EmptyBoundary>
     </section>
   );
 }

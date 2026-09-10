@@ -22,6 +22,7 @@
 // what it stores.
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
+import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Select } from "@sixthshift/design-system/select";
@@ -241,11 +242,14 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
           Add ingredient
         </Button>
       </div>
-      {ingredients.length === 0 ? (
-        <Muted as="p" className="text-sm">
-          No ingredients yet
-        </Muted>
-      ) : (
+      <EmptyBoundary
+        isEmpty={ingredients.length === 0}
+        fallback={
+          <Muted as="p" className="text-sm">
+            No ingredients yet
+          </Muted>
+        }
+      >
         <ReorderList
           items={ingredients}
           keyOf={(row) => row.id ?? "unsaved"}
@@ -267,7 +271,7 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
             />
           )}
         />
-      )}
+      </EmptyBoundary>
     </div>
   );
 }

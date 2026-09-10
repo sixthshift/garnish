@@ -76,6 +76,6 @@ describe("route states", () => {
     );
     expect(html).toContain("boom");
     expect(html).toContain('role="alert"');
-    expect(html).toContain("Try again");
+    expect(html).toContain("Retry");
   });
 });

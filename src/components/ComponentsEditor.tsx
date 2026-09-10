@@ -13,7 +13,9 @@
 // and there is no undo. A recipe always keeps at least one component (the
 // schema requires it), so the sole component has no remove button.
 import { Button } from "@sixthshift/design-system/button";
+import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";
+import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
 import { formatIngredient } from "../domain/format";
@@ -120,41 +122,51 @@ export function ComponentsEditor({ draft, onChange, units = [], errors = {}, dis
         </Button>
       </div>
 
-      <ReorderList
-        items={components}
-        keyOf={(component) => component.id ?? "unsaved"}
-        itemName="component"
-        onReorder={(next) => onChange({ ...draft, components: next })}
-        onRemove={
-          components.length > 1
-            ? (component, index) => {
-                if (hasContent(component)) setConfirming(index);
-                else remove(index);
-              }
-            : undefined
+      {/* A draft normally keeps at least one component (the schema requires it); the fallback covers a draft that lost it. */}
+      <EmptyBoundary
+        isEmpty={components.length === 0}
+        fallback={
+          <Muted as="p" className="text-sm">
+            No components yet
+          </Muted>
         }
-        renderItem={(component, index) => (
-          <div className="flex flex-col gap-3 rounded-xl border border-border-normal p-3" data-component={index}>
-            <Input
-              name={`components.${index}.name`}
-              value={component.name ?? ""}
-              placeholder="Component name"
-              aria-label={`Component ${index + 1} name`}
-              aria-invalid={errors[`components.${index}.name`] !== undefined || undefined}
-              autoComplete="off"
-              disabled={disabled}
-              onChange={(event) => onChange(renameComponent(draft, index, event.target.value))}
-            />
-            {errors[`components.${index}.name`] !== undefined && (
-              <p className="text-sm text-fg-danger" role="alert">
-                {errors[`components.${index}.name`]}
-              </p>
-            )}
-            <IngredientsEditor draft={draft} ci={index} units={units} onChange={onChange} errors={errors} disabled={disabled} />
-            <StepsEditor draft={draft} ci={index} onChange={onChange} errors={errors} disabled={disabled} />
-          </div>
-        )}
-      />
+      >
+        <ReorderList
+          items={components}
+          keyOf={(component) => component.id ?? "unsaved"}
+          itemName="component"
+          onReorder={(next) => onChange({ ...draft, components: next })}
+          onRemove={
+            components.length > 1
+              ? (component, index) => {
+                  if (hasContent(component)) setConfirming(index);
+                  else remove(index);
+                }
+              : undefined
+          }
+          renderItem={(component, index) => (
+            <div className="flex flex-col gap-3 rounded-xl border border-border-normal p-3" data-component={index}>
+              <Input
+                name={`components.${index}.name`}
+                value={component.name ?? ""}
+                placeholder="Component name"
+                aria-label={`Component ${index + 1} name`}
+                aria-invalid={errors[`components.${index}.name`] !== undefined || undefined}
+                autoComplete="off"
+                disabled={disabled}
+                onChange={(event) => onChange(renameComponent(draft, index, event.target.value))}
+              />
+              {errors[`components.${index}.name`] !== undefined && (
+                <p className="text-sm text-fg-danger" role="alert">
+                  {errors[`components.${index}.name`]}
+                </p>
+              )}
+              <IngredientsEditor draft={draft} ci={index} units={units} onChange={onChange} errors={errors} disabled={disabled} />
+              <StepsEditor draft={draft} ci={index} onChange={onChange} errors={errors} disabled={disabled} />
+            </div>
+          )}
+        />
+      </EmptyBoundary>
 
       {pending !== undefined && confirming !== null && (
         <ConfirmDialog

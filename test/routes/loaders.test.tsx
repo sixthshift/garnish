@@ -195,6 +195,8 @@ describe("/recipes/$slug (view)", () => {
       expect(html).toMatch(new RegExp(`<dt[^>]*>${label}</dt><dd[^>]*>${value}</dd>`));
     }
     expect(html).toContain("Serves 4");
+    expect(html).not.toContain('data-empty="tags"'); // it has a tag
+    expect(html).not.toContain('data-empty="component"'); // both components have content
     expect(html).toContain('aria-label="Scale servings"');
     expect(html).not.toContain(">Reset<"); // nothing requested yet
     expect(html).toContain('href="/recipes/lemon-tart/edit"');
@@ -252,6 +254,24 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain("Servings not set");
     expect(html).not.toContain('aria-label="Scale servings"');
     expect(html).not.toContain(">To finish<"); // no recipe-level steps
+    expect(html).toContain("No tags");
+    // Only the steps list is empty here, so the component says nothing: a flat
+    // recipe keeps its steps at recipe level and "No steps" would be noise.
+    expect(html).not.toContain('data-empty="component"');
+  });
+
+  test("a component with neither ingredients nor steps says so, and an untagged recipe says No tags", async () => {
+    await callServerFn(createRecipe, {
+      name: "Blank",
+      components: [{ name: "Pastry", ingredients: [], steps: [] }],
+    });
+    const html = await renderRoute("/recipes/blank");
+    expect(html).toContain(">Pastry<");
+    expect(html).toContain("No ingredients or steps yet");
+    expect(html).toContain('data-empty="tags"');
+    expect(html).toContain("No tags");
+    expect(html).not.toContain('aria-label="Ingredients"');
+    expect(html).not.toContain('aria-label="Steps"');
   });
 });
 

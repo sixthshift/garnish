@@ -197,6 +197,14 @@ describe("ComponentsEditor", () => {
     expect(html).not.toContain("Remove component");
     expect(html).toContain("No ingredients yet");
     expect(html).toContain("No steps yet");
+    expect(html).not.toContain("No components yet");
+  });
+
+  test("a draft with no components says so instead of rendering an empty list", () => {
+    const html = renderToString(<ComponentsEditor draft={{ ...emptyDraft(), components: [] }} onChange={() => {}} />);
+    expect(html).toContain("No components yet");
+    expect(html).not.toContain('aria-label="Component 1 name"');
+    expect(html).toContain(">Add component<"); // the way out of the empty state
   });
 
   test("disabled disables the inputs and the add button", () => {

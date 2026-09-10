@@ -1,8 +1,10 @@
 import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
+import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { AppShell } from "../components/AppShell";
+import { AppErrorFallback } from "../components/RouteStates";
 import { registerServiceWorker } from "../lib/sw";
 import appCss from "../styles.css?url";
 
@@ -39,8 +41,20 @@ export const Route = createRootRoute({
     scripts: [{ children: themeScript }],
   }),
   shellComponent: RootDocument,
-  component: AppShell,
+  component: RootComponent,
 });
+
+// Last line of defence: a render error that escapes every route boundary
+// (the shell itself, or a route without an errorComponent) shows a message and
+// a Retry instead of a blank page. Route loader errors never get this far;
+// the router's defaultErrorComponent renders those inside the shell.
+function RootComponent() {
+  return (
+    <ErrorBoundary fallback={(props) => <AppErrorFallback {...props} />}>
+      <AppShell />
+    </ErrorBoundary>
+  );
+}
 
 function RootDocument({ children }: { children: ReactNode }) {
   // Client-only, production-only: public/sw.js exists only in a build, and a
