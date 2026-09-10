@@ -55,7 +55,7 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 
 ## M10 Stage 2 foundations
 
-- [ ] **! M10.1 Schema 002.** `002_stage2.sql`: `recipe.favourite INTEGER NOT NULL DEFAULT 0`; `timeline_event` (id, recipe_id CASCADE, occurred_on date text, message, image, created_at). Domain: `favourite` on `recipeSchema`/summary, `timelineEventSchema`. Repository `src/db/timeline.ts` (list by recipe newest first, create sets `recipe.last_made` to the max date, remove recomputes it) and `recipes.setFavourite`. Check: migrate twice on `:memory:`; create two events, `lastMade` equals the later; delete it, `lastMade` falls back.
+- [x] **! M10.1 Schema 002.** `002_stage2.sql`: `recipe.favourite INTEGER NOT NULL DEFAULT 0`; `timeline_event` (id, recipe_id CASCADE, occurred_on date text, message, image, created_at). Domain: `favourite` on `recipeSchema`/summary, `timelineEventSchema`. Repository `src/db/timeline.ts` (list by recipe newest first, create sets `recipe.last_made` to the max date, remove recomputes it) and `recipes.setFavourite`. Check: migrate twice on `:memory:`; create two events, `lastMade` equals the later; delete it, `lastMade` falls back.
 - [ ] **M10.2 Client state stores.** `src/lib/prefs.ts` (localStorage: view mode, sort, structured/summary, theme, screen-awake) and `src/lib/ticks.ts` (sessionStorage: ingredient and step done state keyed by recipe id). Pure controller over a storage-like interface, thin hooks, try/catch around every access. Check: unit tests with an in-memory storage, including a throwing storage.
 - [ ] **M10.3 Toasts and theme toggle.** Design system `toast` mounted once in `__root.tsx`; `notify()` helper in `src/lib/`; RecipeForm save/delete and image upload report through it instead of inline copy. Theme toggle light / dark / system in Settings, persisted via prefs, replacing system-only. Check: render tests; toggle persists across reload in dev.
 
@@ -114,3 +114,5 @@ _(none)_
 ## Log
 
 _(one line per iteration: date, task id, outcome, model)_
+
+2026-09-11  M10.1  done  124bc1b  opus  002_stage2 adds `recipe.favourite` and `timeline_event`; timeline repository derives `last_made` from the greatest event date
