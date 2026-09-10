@@ -102,7 +102,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 ## M7 PWA
 
 - [x] **M7.1 Manifest and icons.** `manifest.webmanifest`, icons, theme colour from tokens, installable. Check: Lighthouse installable, or Chrome install prompt appears.
-- [ ] **M7.2 Service worker.** Prerendered SPA shell and built assets precached. Server function GET responses and images cached on view, served when offline. Writes are not attempted offline; editor shows an offline notice. Check: view a recipe, go offline, reload, it renders.
+- [x] **M7.2 Service worker.** Prerendered SPA shell and built assets precached. Server function GET responses and images cached on view, served when offline. Writes are not attempted offline; editor shows an offline notice. Check: view a recipe, go offline, reload, it renders.
 
 ## M8 Docker
 
@@ -158,3 +158,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M6.1  done  c70f53f  cook route as card deck from buildCookCards, step/servings search params, sticky scale control, arrow keys, AppShell hides nav for fullscreen routes
 2026-09-10  M6.2  done  e791683  pure wake-lock controller plus thin useWakeLock hook wired into cook route; manual phone check still owed
 2026-09-10  M7.1  done  8782e89  manifest.webmanifest, SVG/PNG icons from brand tokens, head metas; installability asserted by test, Lighthouse check owed
+2026-09-10  M7.2  done  d45bbcb  hand-written service worker emitted by a Vite plugin in the client build, shell and assets precached, GET RPCs and images network-first, useOnline notice disables Save; on-device offline check owed
