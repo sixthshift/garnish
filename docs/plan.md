@@ -57,7 +57,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 ## M1 Data layer
 
 - [x] **M1.1 Migration runner.** `src/db/migrate.ts` applies `src/db/migrations/NNN_*.sql` in order, records them in `migration`. Opens with WAL and `foreign_keys=ON`. Check: tests run migrations on `:memory:` twice, second run is a no-op.
-- [ ] **M1.2 Schema.** `001_init.sql` with every table in architecture.md. UUID text ids, `position` integers, `ON DELETE CASCADE` from recipe to component, ingredient, step, note, recipe_tag. `SET NULL` for food and unit references. Check: migration applies; a test inserts a recipe with two components and reads it back.
+- [x] **M1.2 Schema.** `001_init.sql` with every table in architecture.md. UUID text ids, `position` integers, `ON DELETE CASCADE` from recipe to component, ingredient, step, note, recipe_tag. `SET NULL` for food and unit references. Check: migration applies; a test inserts a recipe with two components and reads it back.
 - [ ] **M1.3 Recipe document schema.** `src/domain/recipe.ts`: zod schema for the full nested document (recipe, components, ingredients, steps, notes, tags) exactly as the API will read and write it. Field names camelCase, following Mealie where the concept exists. Export the inferred type. Check: tests for a minimal valid doc, a full doc, and three invalid ones (no components, negative quantity, empty name).
 - [ ] **M1.4 Recipe repository.** `src/db/recipes.ts`: `get(slug)`, `list({q, tag})`, `create(doc)`, `update(id, doc)`, `remove(id)`. Write replaces the whole recipe in one transaction. Slug generated from name, de-duplicated with a suffix. Check: tests for round-trip equality of a full doc, update replacing components, delete cascading, list filter by tag and by name substring.
 - [ ] **M1.5 Reference repositories.** `∥` `src/db/foods.ts`, `units.ts`, `aisles.ts`, `tags.ts`: list, create, update, remove, `findOrCreate(name)`. Food and unit names unique case-insensitive. Check: tests including the case-insensitive collision.
@@ -130,3 +130,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M0.2  done  a99ea6d  styles.css with tailwind, design-system theme and @source; fonts and Button/Heading render in dev and prod
 2026-09-10  M0.3  done  958b3f3  vitest wired, /api/health server route, boot() creates DATA_DIR; nitro plugin skipped under VITEST
 2026-09-10  M1.1  done  42588fb  migrate.ts with WAL+FK open, ordered per-file transactions, CLI; test script now bun --bun vitest run (decisions row 33)
+2026-09-10  M1.2  done  1872aa7  001_init.sql with all eleven tables, cascades, SET NULL refs, NOCASE unique names, position uniqueness
