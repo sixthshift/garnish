@@ -1,0 +1,108 @@
+// Server-only. Applies src/db/migrations/NNN_name.sql in order and records
+// each in the `migration` table. Never import from client code.
+import { Database } from "bun:sqlite";
+import { readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { dataDir, ensureDataDir } from "../server/boot";
+
+// import.meta.url rather than Bun's import.meta.dir: Vite's module runner (vitest) only supplies the former.
+export const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), "migrations");
+export const DB_FILE = "garnish.db";
+
+/** Path of the SQLite file inside the runtime volume. */
+export function databasePath(dir: string = dataDir()): string {
+  return join(dir, DB_FILE);
+}
+
+/** Open (creating if needed) a database with WAL journaling and foreign keys on. */
+export function openDatabase(path: string): Database {
+  const db = new Database(path, { create: true, strict: true });
+  db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA foreign_keys = ON");
+  return db;
+}
+
+export type Migration = { id: number; name: string; file: string };
+
+const FILENAME = /^(\d{3,})_([a-z0-9_]+)\.sql$/;
+
+/** Parse `NNN_snake_name.sql` into its parts, or null when the name doesn't fit. */
+export function parseMigrationFile(file: string): Migration | null {
+  const m = FILENAME.exec(file);
+  if (!m) return null;
+  return { id: Number(m[1]), name: m[2]!, file };
+}
+
+/** All migration files in `dir`, sorted by id. Throws on duplicate ids. */
+export function listMigrations(dir: string = MIGRATIONS_DIR): Migration[] {
+  const found = readdirSync(dir)
+    .map(parseMigrationFile)
+    .filter((m): m is Migration => m !== null)
+    .sort((a, b) => a.id - b.id);
+  for (let i = 1; i < found.length; i++) {
+    if (found[i]!.id === found[i - 1]!.id) {
+      throw new Error(`Duplicate migration id ${found[i]!.id}: ${found[i - 1]!.file}, ${found[i]!.file}`);
+    }
+  }
+  return found;
+}
+
+const CREATE_TABLE = `
+CREATE TABLE IF NOT EXISTS migration (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+)`;
+
+/** Names of migrations already recorded in `db`, by id. */
+export function appliedMigrations(db: Database): Map<number, string> {
+  db.exec(CREATE_TABLE);
+  const rows = db.query<{ id: number; name: string }, []>("SELECT id, name FROM migration ORDER BY id").all();
+  return new Map(rows.map((r) => [r.id, r.name]));
+}
+
+export type MigrateOptions = { migrationsDir?: string };
+
+/**
+ * Apply every pending migration in id order. Each file runs in its own
+ * transaction together with its `migration` row, so a failing file leaves
+ * nothing behind. Returns the migrations applied on this run.
+ */
+export async function migrate(db: Database, opts: MigrateOptions = {}): Promise<Migration[]> {
+  const dir = opts.migrationsDir ?? MIGRATIONS_DIR;
+  const all = listMigrations(dir);
+  const applied = appliedMigrations(db);
+
+  for (const [id, name] of applied) {
+    const onDisk = all.find((m) => m.id === id);
+    if (!onDisk) throw new Error(`Migration ${id} (${name}) is recorded but missing from ${dir}`);
+    if (onDisk.name !== name) {
+      throw new Error(`Migration ${id} is recorded as "${name}" but the file is "${onDisk.name}"`);
+    }
+  }
+
+  const pending = all.filter((m) => !applied.has(m.id));
+  const sources = await Promise.all(pending.map((m) => Bun.file(join(dir, m.file)).text()));
+
+  const insert = db.prepare("INSERT INTO migration (id, name) VALUES (?, ?)");
+  const apply = db.transaction((m: Migration, sql: string) => {
+    db.exec(sql);
+    insert.run(m.id, m.name);
+  });
+
+  pending.forEach((m, i) => apply(m, sources[i]!));
+  return pending;
+}
+
+if (import.meta.main) {
+  const dir = ensureDataDir();
+  const path = databasePath(dir);
+  const db = openDatabase(path);
+  try {
+    const done = await migrate(db);
+    console.log(done.length === 0 ? `${path}: up to date` : `${path}: applied ${done.map((m) => m.file).join(", ")}`);
+  } finally {
+    db.close();
+  }
+}
