@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as ApiImagesFileRouteImport } from './routes/api/images/$file'
+import { Route as ApiRecipesIdImageRouteImport } from './routes/api/recipes/$id/image'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +24,55 @@ const ApiHealthRoute = ApiHealthRouteImport.update({
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiImagesFileRoute = ApiImagesFileRouteImport.update({
+  id: '/api/images/$file',
+  path: '/api/images/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRecipesIdImageRoute = ApiRecipesIdImageRouteImport.update({
+  id: '/api/recipes/$id/image',
+  path: '/api/recipes/$id/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/images/$file': typeof ApiImagesFileRoute
+  '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/images/$file': typeof ApiImagesFileRoute
+  '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/images/$file': typeof ApiImagesFileRoute
+  '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/health'
+  fullPaths:
+    '/' | '/api/health' | '/api/images/$file' | '/api/recipes/$id/image'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/health'
-  id: '__root__' | '/' | '/api/health'
+  to: '/' | '/api/health' | '/api/images/$file' | '/api/recipes/$id/image'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/health'
+    | '/api/images/$file'
+    | '/api/recipes/$id/image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiImagesFileRoute: typeof ApiImagesFileRoute
+  ApiRecipesIdImageRoute: typeof ApiRecipesIdImageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +91,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/images/$file': {
+      id: '/api/images/$file'
+      path: '/api/images/$file'
+      fullPath: '/api/images/$file'
+      preLoaderRoute: typeof ApiImagesFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/recipes/$id/image': {
+      id: '/api/recipes/$id/image'
+      path: '/api/recipes/$id/image'
+      fullPath: '/api/recipes/$id/image'
+      preLoaderRoute: typeof ApiRecipesIdImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiImagesFileRoute: ApiImagesFileRoute,
+  ApiRecipesIdImageRoute: ApiRecipesIdImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

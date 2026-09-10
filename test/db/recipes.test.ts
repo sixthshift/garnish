@@ -330,3 +330,17 @@ test("list orders newest first", () => {
   const b = repo.create(recipeInputSchema.parse(minimal("B")));
   expect(repo.list().map((r) => r.id)).toEqual([b.id, a.id]);
 });
+
+test("setImage changes only the image column and reports whether the id exists", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
+  expect(created.image).toBeNull();
+
+  expect(repo.setImage(created.id, `${created.id}.png`)).toBe(true);
+  const after = repo.getById(created.id)!;
+  expect(after.image).toBe(`${created.id}.png`);
+  expect({ ...after, image: null, updatedAt: created.updatedAt }).toEqual(created);
+
+  expect(repo.setImage(created.id, null)).toBe(true);
+  expect(repo.getById(created.id)!.image).toBeNull();
+  expect(repo.setImage(ids.recipe, "x.png")).toBe(false);
+});

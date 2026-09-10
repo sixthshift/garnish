@@ -109,6 +109,7 @@ export function recipes(db: Database) {
     "UPDATE recipe SET slug = ?, name = ?, description = ?, image = ?, rating = ?, last_made = ?, servings = ?, yield_quantity = ?, yield_unit_id = ?, yield_text = ?, prep_minutes = ?, cook_minutes = ?, source_url = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
   );
   const deleteRecipe = db.prepare("DELETE FROM recipe WHERE id = ?");
+  const updateImage = db.prepare("UPDATE recipe SET image = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?");
   // Steps reference components with SET NULL, so components go after steps.
   const deleteChildren = [
     db.prepare("DELETE FROM recipe_tag WHERE recipe_id = ?"),
@@ -383,6 +384,9 @@ export function recipes(db: Database) {
     update(id: string, doc: ParsedRecipeInput): Recipe | null {
       return updateTx(id, doc) ? getById(id) : null;
     },
+
+    /** Set the image file name alone (null clears it). Nothing else changes. True when `id` exists. */
+    setImage: (id: string, image: string | null): boolean => updateImage.run(image, id).changes > 0,
 
     /** True when a recipe was deleted. Children cascade; references stay. */
     remove: (id: string): boolean => deleteRecipe.run(id).changes > 0,
