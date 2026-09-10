@@ -29,7 +29,7 @@
 
   "forwardPorts": [3000, 5173, 4983],
   "portsAttributes": {
-    "3000": { "label": "Garnish API", "onAutoForward": "notify" },
+    "3000": { "label": "Garnish dev server", "onAutoForward": "notify" },
     "5173": { "label": "Vite Dev Server", "onAutoForward": "notify" },
     "4983": { "label": "Drizzle Studio", "onAutoForward": "silent" }
   },

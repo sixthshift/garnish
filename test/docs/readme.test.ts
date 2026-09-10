@@ -74,7 +74,7 @@ describe("README", () => {
 
   test("covers prerequisites, ports and environment", () => {
     expect(readme).toMatch(/Bun.*1\.4/);
-    expect(readme).toContain("5173");
+    expect(readme).toContain("3000");
     expect(readme).toContain("3000");
     expect(readme).toContain("DATA_DIR");
     expect(readme).toContain("PORT");

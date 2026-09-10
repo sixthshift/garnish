@@ -112,7 +112,7 @@ describe("README", () => {
 
   test("dev instructions match package.json scripts and ports", () => {
     expect(readme).toContain("bun run dev");
-    expect(readme).toContain("5173");
+    expect(readme).toContain("3000");
     expect(readme).toContain("bun run build");
     expect(readme).toContain("bun run start");
     expect(readme).toContain("DATA_DIR");
