@@ -2,6 +2,7 @@
 // in-process through runLocally against a temp DATA_DIR), and the component
 // renders what came back. Type assertions at the bottom pin each loader's
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
+import { isNotFound } from "@tanstack/react-router";
 import { describe, expect, expectTypeOf, test, vi } from "vitest";
 import type { Aisle, Recipe, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
 import { Route as IndexRoute, type RecipeListData, searchParam } from "../../src/routes/index";
@@ -9,7 +10,7 @@ import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
 import { Route as ViewRoute, nextServings } from "../../src/routes/recipes/$slug/index";
 import { Route as NewRoute } from "../../src/routes/recipes/new";
 import { Route as SettingsRoute } from "../../src/routes/settings";
-import { createRecipe, getRecipe, listRecipes } from "../../src/server/recipes";
+import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/server/recipes";
 import { listTags } from "../../src/server/tags";
 import { listUnits } from "../../src/server/units";
 import { renderRoute } from "../helpers/routes";
@@ -329,6 +330,38 @@ describe("/recipes/$slug/edit", () => {
   test("a missing slug renders the not-found view", async () => {
     const html = await renderRoute("/recipes/nothing-here/edit");
     expect(html).toContain("Not found");
+  });
+
+  test("offers Delete below the form, with the confirm unmounted until asked", async () => {
+    await seed("Lemon tart");
+    const html = await renderRoute("/recipes/lemon-tart/edit");
+    expect(html).toContain('aria-label="Delete recipe"');
+    expect(html).toMatch(/<button[^>]*type="button"[^>]*>(<[^>]*>)*Delete recipe</);
+    expect(html.indexOf('aria-label="Delete recipe"')).toBeGreaterThan(html.indexOf(">Save changes<"));
+    expect(html).not.toContain('role="dialog"');
+    expect(html).not.toContain("Delete Lemon tart?");
+  });
+
+  // M5.6 Check: delete one of two recipes and it is gone from the list and by slug.
+  test("a deleted recipe is gone from the list and its slug is not found", async () => {
+    const tart = await seed("Lemon tart");
+    await seed("Pancakes");
+    expect(await renderRoute("/")).toContain("2 recipes");
+
+    const gone = await callServerFn(deleteRecipe, { id: tart.id });
+    expect(gone.slug).toBe("lemon-tart");
+
+    const html = await renderRoute("/");
+    expect(html).toContain("1 recipe<");
+    expect(html).toContain("Pancakes");
+    expect(html).toContain('href="/recipes/pancakes"');
+    expect(html).not.toContain("Lemon tart");
+    expect(html).not.toContain('href="/recipes/lemon-tart"');
+
+    const caught = await callServerFn(getRecipe, { slug: "lemon-tart" }).catch((e: unknown) => e);
+    expect(isNotFound(caught)).toBe(true);
+    expect(await renderRoute("/recipes/lemon-tart")).toContain("Not found");
+    expect(await renderRoute("/recipes/lemon-tart/edit")).toContain("Not found");
   });
 });
 

@@ -14,7 +14,6 @@
 // schema requires it), so the sole component has no remove button.
 import { Button } from "@sixthshift/design-system/button";
 import { Input } from "@sixthshift/design-system/input";
-import { Modal, ModalBody, ModalFooter, ModalHeader } from "@sixthshift/design-system/modal";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
 import { formatIngredient } from "../domain/format";
@@ -23,6 +22,7 @@ import { randomUuid } from "../lib/ids";
 import { IngredientsEditor } from "./IngredientsEditor";
 import type { DraftComponent, DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { StepsEditor } from "./StepsEditor";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { moveItem, ReorderList } from "./ui/ReorderList";
 
 /** A blank component with a fresh id, so it has a stable row key before it is saved. */
@@ -157,22 +157,15 @@ export function ComponentsEditor({ draft, onChange, units = [], errors = {}, dis
       />
 
       {pending !== undefined && confirming !== null && (
-        <Modal size="sm" aria-label="Remove component" onOpenChange={(open) => !open && setConfirming(null)}>
-          <ModalHeader>Remove {componentLabel(pending, confirming)}?</ModalHeader>
-          <ModalBody>
-            <p>
-              It has {contentSummary(pending)}, which go with it. This cannot be undone.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button type="button" variant="ghost" intent="neutral" onClick={() => setConfirming(null)}>
-              Cancel
-            </Button>
-            <Button type="button" variant="solid" intent="danger" onClick={() => remove(confirming)}>
-              Remove
-            </Button>
-          </ModalFooter>
-        </Modal>
+        <ConfirmDialog
+          title={`Remove ${componentLabel(pending, confirming)}?`}
+          confirmLabel="Remove"
+          aria-label="Remove component"
+          onCancel={() => setConfirming(null)}
+          onConfirm={() => remove(confirming)}
+        >
+          It has {contentSummary(pending)}, which go with it. This cannot be undone.
+        </ConfirmDialog>
       )}
     </section>
   );
