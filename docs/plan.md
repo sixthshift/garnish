@@ -39,6 +39,7 @@ src/
   db/           migrations/*.sql, migrate.ts, seed.ts, repositories
   domain/       zod schemas, scaling, formatting. Pure, no IO, importable by client
   components/   React components; ui/ holds local primitives the design system lacks
+  lib/          client-side helpers (mutate + router.invalidate)
   styles.css    Tailwind entry with the design system's three lines
   router.tsx    getRouter()
 vite.config.ts  tanstackStart({ spa }), nitro({ preset: 'bun' }), viteReact(), tailwindcss()
@@ -80,7 +81,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 ## M4 Frontend shell
 
 - [x] **M4.1 App skeleton.** Root layout with a bottom nav on phone and side nav wider, theme following system via design system tokens. File routes stubbed: `/` recipes, `/recipes/$slug`, `/recipes/$slug/edit`, `/recipes/new`, `/settings`. Pending and error components from the design system. Check: each route renders without console errors in `bun run dev`.
-- [ ] **M4.2 Loaders.** Each route's `loader` calls the matching server function; components read via `Route.useLoaderData()`. Mutations call server functions then `router.invalidate()`. Check: type errors if a loader's return shape drifts from the zod type.
+- [x] **M4.2 Loaders.** Each route's `loader` calls the matching server function; components read via `Route.useLoaderData()`. Mutations call server functions then `router.invalidate()`. Check: type errors if a loader's return shape drifts from the zod type.
 - [ ] **M4.3 Recipe list.** Cards with image, name, tags. Search box, tag filter. Empty state. Check: renders seeded recipes from a running server.
 - [ ] **M4.4 Recipe view.** Header with image, times, servings, rating. Components in order, each with its ingredient list then its steps. Notes. Scale control adjusts servings via the `servings` search param, which the loader passes to `getRecipe`. Check: manual with two-component recipe.
 
@@ -144,3 +145,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M3.4  done  6d4ffef  image upload/serve routes, byte-sniffed formats, files at DATA_DIR/images/<id>.<ext>, recipes.setImage
 2026-09-10  M3.5  done  c1e8f5e  backup.ts with bound VACUUM INTO, UTC timestamped names, backup script
 2026-09-10  M4.1  done  761eb6f  AppShell with bottom/side nav, system dark mode via tokens, router default pending/error/not-found, five stub routes, render tests
+2026-09-10  M4.2  done  210171a  loaders on all five routes with validated search, return types pinned by annotation and expectTypeOf, lib/mutate.ts; Layout gained src/lib/
