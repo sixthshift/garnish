@@ -82,7 +82,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 
 - [x] **M4.1 App skeleton.** Root layout with a bottom nav on phone and side nav wider, theme following system via design system tokens. File routes stubbed: `/` recipes, `/recipes/$slug`, `/recipes/$slug/edit`, `/recipes/new`, `/settings`. Pending and error components from the design system. Check: each route renders without console errors in `bun run dev`.
 - [x] **M4.2 Loaders.** Each route's `loader` calls the matching server function; components read via `Route.useLoaderData()`. Mutations call server functions then `router.invalidate()`. Check: type errors if a loader's return shape drifts from the zod type.
-- [ ] **M4.3 Recipe list.** Cards with image, name, tags. Search box, tag filter. Empty state. Check: renders seeded recipes from a running server.
+- [x] **M4.3 Recipe list.** Cards with image, name, tags. Search box, tag filter. Empty state. Check: renders seeded recipes from a running server.
 - [ ] **M4.4 Recipe view.** Header with image, times, servings, rating. Components in order, each with its ingredient list then its steps. Notes. Scale control adjusts servings via the `servings` search param, which the loader passes to `getRecipe`. Check: manual with two-component recipe.
 
 ## M5 Editor
@@ -146,3 +146,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M3.5  done  c1e8f5e  backup.ts with bound VACUUM INTO, UTC timestamped names, backup script
 2026-09-10  M4.1  done  761eb6f  AppShell with bottom/side nav, system dark mode via tokens, router default pending/error/not-found, five stub routes, render tests
 2026-09-10  M4.2  done  210171a  loaders on all five routes with validated search, return types pinned by annotation and expectTypeOf, lib/mutate.ts; Layout gained src/lib/
+2026-09-10  M4.3  done  b11f5bf  RecipeCard grid, debounced search bound to q, tag ToggleGroup bound to tag, empty and filter-miss states; SPA mode means curl / shows only the shell, verified via RPC and render tests
