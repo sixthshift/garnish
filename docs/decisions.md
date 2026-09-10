@@ -35,3 +35,4 @@ One line each. Newest at the bottom. Reverse a decision by adding a new row, not
 | 29 | SPA mode | Full SSR | LAN app, no SEO. Prerendered shell plus cached data is the standard offline PWA shape |
 | 30 | Server functions for app calls, server routes only under `/api/*` | REST for everything | Type safety end to end. `/api/*` kept for health, images, and future external import |
 | 31 | vitest via `bun run test` | `bun test` | One runner shared with the Vite toolchain; the gate is the same command everywhere. Never `bun test` |
+| 32 | Bun ≥ 1.4 for build and runtime; `NODE_ENV=production` set in the build script | Stay on 1.3.9; patch bundler output | 1.3.9's JS engine fails to parse the `else a: if` construct rolldown emits for react-dom/server, so the built server 500s and the SPA shell never prerenders; 1.4.2 parses it. Bun defaults `NODE_ENV` to development, which makes Vite ship the dev JSX runtime in a production build |

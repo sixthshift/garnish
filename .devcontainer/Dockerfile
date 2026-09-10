@@ -37,7 +37,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 # Install Bun (pinned; the install script takes the version as a positional
 # arg — the BUN_VERSION env var is silently ignored)
 ENV BUN_INSTALL="/usr/local"
-RUN curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.9"
+RUN curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.2"
 
 WORKDIR /workspace
 

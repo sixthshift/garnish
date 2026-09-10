@@ -44,3 +44,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # runtime volume (db, images, backups)
 data/
+
+# build output and framework caches
+.output
+.nitro
+.tanstack
+.vite
