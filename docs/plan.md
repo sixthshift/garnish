@@ -7,7 +7,7 @@ Implementation plan for garnish v1, written to be executed one task per loop ite
 What one task looks like, whoever runs it (an ailoop subagent, a /loop firing, or a person):
 
 1. Read this file. Read `CLAUDE.md`. Do not re-read the other docs unless a task points at them.
-2. Pick the first unchecked task whose dependencies are checked. Milestones run in order; tasks within a milestone run in order unless marked `∥`.
+2. Pick the first unchecked task whose dependencies are checked. Milestones run in order; tasks within a milestone run in order unless marked `∥`. A `!` before the task id asks `/ailoop` to dispatch it on a stronger model; the skill's Model section has the rules.
 3. Do that one task. Nothing else. No drive-by refactors, no adjacent tasks.
 4. Verify with the task's own check. Then run the full gate:
    ```

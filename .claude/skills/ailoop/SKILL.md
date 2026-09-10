@@ -27,7 +27,7 @@ When a milestone completes, print one line to the user (`M1 done, 6 tasks, 6 com
 ## Per task
 
 1. **Select.** First unchecked task in scope whose dependencies are checked. Tasks marked `∥` with no shared files may be dispatched together, at most three at once.
-2. **Dispatch** one `general-purpose` subagent with the prompt template below. Fresh agent every time. Never reuse one for a second task.
+2. **Dispatch** one `general-purpose` subagent with the prompt template below, on the model chosen by the rules under Model below. Fresh agent every time. Never reuse one for a second task.
 3. **Verify independently.** When it reports, do not trust the report. Run:
    ```
    git log -1 --format=%H%n%s
@@ -35,12 +35,28 @@ When a milestone completes, print one line to the user (`M1 done, 6 tasks, 6 com
    bun run check && bun run test
    ```
    Pass means: a new commit exists naming the task id, tree is clean, gate is green.
-4. **Record.** Tick the task in `docs/plan.md`. Append to Log: `YYYY-MM-DD  Mx.y  done  <7-char sha>  <one clause>`. Copy any Blocked or Questions lines the agent returned into those sections. Commit: `plan: Mx.y`.
+4. **Record.** Tick the task in `docs/plan.md`. Append to Log: `YYYY-MM-DD  Mx.y  done  <7-char sha>  <model>  <one clause>`. `<model>` is the one that produced the commit, so a retry that escalated shows the higher tier. Copy any Blocked or Questions lines the agent returned into those sections. Commit: `plan: Mx.y`.
 5. **Next.** Return to step 1.
+
+## Model
+
+Pass `model` on every dispatch. The orchestrator stays on the session model; task agents run on the cheapest tier that will pass first time. Decide from the task line alone, before reading any code.
+
+| Tier | Use when |
+|---|---|
+| `sonnet` (default) | The task follows a pattern that already exists in the repo, or the plan names the files and the shape: another repository, another editor row type, seeds, fixtures, formatting, backup, compose, docs sync, sample data. |
+| `opus` | The task line carries `!`, or it is the first task in a milestone, or it creates a new subsystem or plumbing that later tasks will copy (build config, router, server-function scaffold, test harness, service worker, Dockerfile, image routes), or it depends on a framework's internals rather than its documented API. |
+| *(omit `model`, inherits the session model)* | Only as a retry escalation, never on first dispatch. |
+
+Rules of thumb when the line is ambiguous: a task whose Check is "manual" or "renders" and whose files all exist is `sonnet`; a task whose Check mentions the build, `.output`, a new route kind, or a fresh `test/helpers/*` is `opus`. If the previous task on the same files was blocked or retried, dispatch this one a tier up.
+
+**Escalation.** A retry always goes one tier up from the attempt that failed: `sonnet` → `opus` → session model. Two failures at the top tier is the Blocked condition in Failure handling; do not retry a third time at the same tier.
+
+**Plan marker.** The plan author may prefix a task's bold id with `!` (`**! M3.1 Server function scaffold.**`) to force `opus` on first dispatch. Absence of the marker does not force `sonnet`; the table above still applies.
 
 ## Failure handling
 
-- **Gate red or no commit:** dispatch once more, same task, with the agent's report and the failing output appended under "Previous attempt". If it fails again, `git checkout -- . && git clean -fd` to the last good commit, write the task under Blocked with both attempts summarised, and continue with the next task that does not depend on it.
+- **Gate red or no commit:** dispatch once more, same task, one model tier up (see Model), with the agent's report and the failing output appended under "Previous attempt". If it fails again, `git checkout -- . && git clean -fd` to the last good commit, write the task under Blocked with both attempts summarised, and continue with the next task that does not depend on it.
 - **Agent reports blocked:** record it, continue with independent tasks. If none remain in scope, stop and report.
 - **Agent edited docs/plan.md:** revert that file before recording. Only you edit it.
 - **Agent added a dependency without a decisions.md row:** treat as gate red.
