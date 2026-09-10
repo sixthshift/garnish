@@ -42,6 +42,12 @@ describe("app shell", () => {
     for (const label of ["Recipes", "New", "Settings"]) expect(html).toContain(`>${label}</a>`);
   });
 
+  test("cook mode is fullscreen: the outlet renders without either nav", async () => {
+    const html = await render("/recipes/lemon-tart/cook");
+    expect(html).toContain("Lemon tart");
+    expect(html).not.toContain('aria-label="Main"');
+  });
+
   test("unknown path renders the not-found view", async () => {
     const html = await render("/nowhere");
     expect(html).toContain("Not found");

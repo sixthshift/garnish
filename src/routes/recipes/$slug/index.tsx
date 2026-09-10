@@ -38,6 +38,7 @@ export function nextServings(current: number, direction: -1 | 1): number {
 
 function RecipePage() {
   const recipe = Route.useLoaderData();
+  const { servings: requested } = Route.useSearch();
   const total = totalMinutes(recipe.prepTime, recipe.performTime);
   const times: Array<[string, string]> = (
     [
@@ -60,11 +61,19 @@ function RecipePage() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <Heading as="h1">{recipe.name}</Heading>
-            <Button asChild variant="outline" intent="neutral" size="sm">
-              <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }}>
-                Edit
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" intent="neutral" size="sm">
+                <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }}>
+                  Edit
+                </Link>
+              </Button>
+              <Button asChild variant="solid" intent="brand" size="sm">
+                {/* Carries the current scale into cook mode. */}
+                <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                  Cook
+                </Link>
+              </Button>
+            </div>
           </div>
           {recipe.rating !== null && <Rating value={recipe.rating} />}
           {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}

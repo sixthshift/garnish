@@ -1,10 +1,18 @@
 // Root layout: bottom nav on phones, side nav from md up. Colours are design
 // system tokens, so dark mode follows the `data-theme` attribute that
-// `bootstrapTheme` keeps in step with the OS setting.
+// `bootstrapTheme` keeps in step with the OS setting. A fullscreen route
+// (cook mode) gets the outlet alone: no nav, no bottom padding.
 import { bootstrapTheme } from "@sixthshift/design-system/hooks";
 import { cn } from "@sixthshift/design-system/utils";
-import { Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useMatches } from "@tanstack/react-router";
 import { useEffect } from "react";
+
+// Routes opt out of the nav with `staticData: { fullscreen: true }` (cook mode).
+declare module "@tanstack/react-router" {
+  interface StaticDataRouteOption {
+    fullscreen?: boolean;
+  }
+}
 
 export const navItems = [
   { to: "/", label: "Recipes", exact: true },
@@ -37,6 +45,14 @@ function Nav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
 
 export function AppShell() {
   useEffect(() => bootstrapTheme(), []);
+  const fullscreen = useMatches({ select: (matches) => matches.some((match) => match.staticData.fullscreen === true) });
+  if (fullscreen) {
+    return (
+      <div className="min-h-dvh bg-bg-normal text-fg-normal">
+        <Outlet />
+      </div>
+    );
+  }
   return (
     <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal md:flex-row">
       <aside className="hidden w-56 shrink-0 flex-col gap-1 border-r border-border-normal p-4 md:flex">

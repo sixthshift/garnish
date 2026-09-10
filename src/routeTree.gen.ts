@@ -15,6 +15,7 @@ import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as ApiImagesFileRouteImport } from './routes/api/images/$file'
 import { Route as RecipesSlugIndexRouteImport } from './routes/recipes/$slug/index'
+import { Route as RecipesSlugCookRouteImport } from './routes/recipes/$slug/cook'
 import { Route as RecipesSlugEditRouteImport } from './routes/recipes/$slug/edit'
 import { Route as ApiRecipesIdImageRouteImport } from './routes/api/recipes/$id/image'
 
@@ -48,6 +49,11 @@ const RecipesSlugIndexRoute = RecipesSlugIndexRouteImport.update({
   path: '/recipes/$slug/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecipesSlugCookRoute = RecipesSlugCookRouteImport.update({
+  id: '/recipes/$slug/cook',
+  path: '/recipes/$slug/cook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecipesSlugEditRoute = RecipesSlugEditRouteImport.update({
   id: '/recipes/$slug/edit',
   path: '/recipes/$slug/edit',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug/': typeof RecipesSlugIndexRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug': typeof RecipesSlugIndexRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug/': typeof RecipesSlugIndexRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
+    | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug/'
     | '/api/recipes/$id/image'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
+    | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug'
     | '/api/recipes/$id/image'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
+    | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug/'
     | '/api/recipes/$id/image'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   ApiHealthRoute: typeof ApiHealthRoute
   RecipesNewRoute: typeof RecipesNewRoute
   ApiImagesFileRoute: typeof ApiImagesFileRoute
+  RecipesSlugCookRoute: typeof RecipesSlugCookRoute
   RecipesSlugEditRoute: typeof RecipesSlugEditRoute
   RecipesSlugIndexRoute: typeof RecipesSlugIndexRoute
   ApiRecipesIdImageRoute: typeof ApiRecipesIdImageRoute
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecipesSlugIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recipes/$slug/cook': {
+      id: '/recipes/$slug/cook'
+      path: '/recipes/$slug/cook'
+      fullPath: '/recipes/$slug/cook'
+      preLoaderRoute: typeof RecipesSlugCookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recipes/$slug/edit': {
       id: '/recipes/$slug/edit'
       path: '/recipes/$slug/edit'
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthRoute: ApiHealthRoute,
   RecipesNewRoute: RecipesNewRoute,
   ApiImagesFileRoute: ApiImagesFileRoute,
+  RecipesSlugCookRoute: RecipesSlugCookRoute,
   RecipesSlugEditRoute: RecipesSlugEditRoute,
   RecipesSlugIndexRoute: RecipesSlugIndexRoute,
   ApiRecipesIdImageRoute: ApiRecipesIdImageRoute,
