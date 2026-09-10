@@ -1,0 +1,53 @@
+# Scaffolded by the `devcontainer` skill.
+#
+# No db service: garnish stores data in SQLite via bun:sqlite, inside the
+# workspace — there is no database process to run. If the project ever moves to
+# Postgres, re-run the skill rather than hand-adding a service here.
+services:
+  dev:
+    container_name: garnish-dev
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      # Keep node_modules in a container-private volume so the host (macOS)
+      # and this Debian container don't fight over one bind-mounted dir:
+      # native binaries are platform-specific, and `bun install` only
+      # materializes the current platform's. postCreateCommand repopulates it.
+      - garnish-node-modules:/workspace/node_modules
+      - claude-config:/root/.claude
+      - codex-config:/root/.codex
+      # Import the host Codex login without exposing the rest of its local
+      # sessions, settings, or platform-specific state.
+      - ~/.codex/auth.json:/run/host-codex-auth.json:ro
+      # Commit identity + signing config. SSH keys are deliberately NOT
+      # mounted — git auth uses SSH agent forwarding (VS Code forwards
+      # SSH_AUTH_SOCK automatically when ssh-agent runs on the host).
+      - ~/.gitconfig:/root/.gitconfig:ro
+    env_file:
+      # Relative to the compose project dir, which for a single-file setup is
+      # this file's own directory. (Projects using the merge pattern put the
+      # root compose file first, making the project dir the repo root — those
+      # need `.devcontainer/.env` instead.)
+      - .env
+    environment:
+      - NODE_ENV=development
+      - TZ=Australia/Sydney
+    ports:
+      - '3000:3000' # Garnish API
+      - '5173:5173' # Vite dev server
+      - '4983:4983' # Drizzle Studio
+    # The start hook lives here, not in devcontainer.json's `postStartCommand`,
+    # because only the compose command fires on a plain `docker compose up`.
+    # `exec` so the idle process stays PID 1 and stops cleanly.
+    command: bash -c 'bash /workspace/.devcontainer/post-start.sh; exec sleep infinity'
+    working_dir: /workspace
+
+volumes:
+  garnish-node-modules:
+    driver: local
+  claude-config:
+    driver: local
+  codex-config:
+    driver: local
