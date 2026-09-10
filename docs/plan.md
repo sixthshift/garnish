@@ -88,7 +88,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 ## M5 Editor
 
 - [x] **M5.1 Local primitives.** `src/components/ui/`: `NumberStepper`, `ReorderList` (buttons up/down first, drag later), `ImageUpload`. Built from design system pieces. Check: each has a render test.
-- [ ] **M5.2 Recipe form.** Name, description, servings, yield fields, times, rating, tags (design system `tag-input`), image. Check: create and save a recipe with one component.
+- [x] **M5.2 Recipe form.** Name, description, servings, yield fields, times, rating, tags (design system `tag-input`), image. Check: create and save a recipe with one component.
 - [ ] **M5.3 Component editing.** Add, rename, reorder, delete components. Each shows an ingredient list and a step list. Check: two-component recipe saves and reloads in order.
 - [ ] **M5.4 Ingredient rows.** Quantity, unit autocomplete, food autocomplete with find-or-create, note, fixed toggle. Move ingredient between components. Check: null quantity and text-only rows save.
 - [ ] **M5.5 Steps and notes.** Add, edit, reorder steps within a component. Titled notes. Check: saved order matches.
@@ -150,3 +150,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M4.4  parked  -        run stopped by Jason mid-task; partial work in git stash "M4.4 partial", tree reset to 525925f
 2026-09-10  M4.4  done  765e919  recipe page with header, scale control via servings param, components with ingredients then steps, notes, Edit link; local Rating primitive; stash consumed
 2026-09-10  M5.1  done  54aa34b  NumberStepper, ReorderList, ImageUpload from design-system Button/Input/Label with tested pure helpers
+2026-09-10  M5.2  done  ba7f068  RecipeForm with zod field errors, create/update plus image POST, tag-input; Rating editable; lib/ids randomUuid for LAN http
