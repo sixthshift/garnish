@@ -28,6 +28,7 @@ import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchem
 import { randomUuid } from "../lib/ids";
 import { uploadRecipeImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
+import { useOnline } from "../lib/useOnline";
 import { createRecipe, updateRecipe } from "../server/recipes";
 import { ComponentsEditor, newComponent } from "./ComponentsEditor";
 import { NotesEditor } from "./NotesEditor";
@@ -174,11 +175,15 @@ export type RecipeFormProps = {
   tags: Tag[];
   /** The stored recipe being edited. Absent for a new recipe. */
   existing?: { id: string; slug: string };
+  /** Override the detected online state (tests). Writes are refused offline; nothing is queued. */
+  online?: boolean;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing }: RecipeFormProps) {
+export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride }: RecipeFormProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
+  const detectedOnline = useOnline();
+  const online = onlineOverride ?? detectedOnline;
   const tagsId = useId();
   const [draft, setDraft] = useState<RecipeDraft>(initial);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -191,6 +196,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing }: Recipe
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!online) return;
     const result = validateDraft(draft);
     if (!result.ok) {
       setErrors(result.errors);
@@ -216,6 +222,11 @@ export function RecipeForm({ initial, units, tags: knownTags, existing }: Recipe
 
   return (
     <form onSubmit={(event) => void submit(event)} noValidate className="flex flex-col gap-6" aria-label={existing ? "Edit recipe" : "New recipe"}>
+      {!online && (
+        <Message intent="warning" title="You are offline" data-testid="offline-notice">
+          Changes cannot be saved offline. Keep editing; Save comes back with the connection.
+        </Message>
+      )}
       {failure !== null && (
         <Message intent="danger" title="Could not save">
           {failure}
@@ -333,7 +344,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing }: Recipe
       <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="solid" intent="brand" disabled={saving}>
+        <Button type="submit" variant="solid" intent="brand" disabled={saving || !online}>
           {saving ? "Saving…" : existing ? "Save changes" : "Create recipe"}
         </Button>
         <Button asChild variant="ghost" intent="neutral" disabled={saving}>

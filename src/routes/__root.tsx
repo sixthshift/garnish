@@ -1,8 +1,9 @@
 import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { AppShell } from "../components/AppShell";
+import { registerServiceWorker } from "../lib/sw";
 import appCss from "../styles.css?url";
 
 // PWA manifest colours are literal hex because a manifest cannot read CSS.
@@ -42,6 +43,11 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
+  // Client-only, production-only: public/sw.js exists only in a build, and a
+  // worker in dev would serve stale modules over Vite's.
+  useEffect(() => {
+    registerServiceWorker(typeof navigator === "undefined" ? undefined : navigator, import.meta.env.PROD);
+  }, []);
   return (
     <html lang="en-AU">
       <head>
