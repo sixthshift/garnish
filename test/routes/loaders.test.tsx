@@ -267,15 +267,40 @@ describe("nextServings", () => {
 });
 
 describe("/recipes/$slug/edit", () => {
-  test("loads the recipe plus units and tags", async () => {
-    await seed("Lemon tart", { tags: [weeknight] });
+  test("renders the form populated from the loaded recipe, with the unit list in the yield picker", async () => {
     const units = await callServerFn(listUnits, {});
-    const tags = await callServerFn(listTags, {});
+    const gram = units.find((u) => u.abbreviation === "g")!;
+    await callServerFn(createRecipe, {
+      name: "Lemon tart",
+      description: "Sharp and buttery.",
+      rating: 4,
+      recipeServings: 6,
+      recipeYieldQuantity: 1,
+      yieldUnit: gram,
+      recipeYield: "tart",
+      prepTime: 20,
+      performTime: 40,
+      tags: [weeknight],
+      components: [{ name: "", ingredients: [], steps: [] }],
+    });
     const html = await renderRoute("/recipes/lemon-tart/edit");
     expect(html).toContain("Edit recipe");
-    expect(html).toContain("Lemon tart");
-    expect(html).toContain(`${units.length}<!-- --> units, <!-- -->${tags.length}<!-- --> tags`);
-    expect(tags).toHaveLength(1);
+    expect(html).toContain('aria-label="Edit recipe"');
+    expect(html).toMatch(/<input[^>]*name="name"[^>]*value="Lemon tart"/);
+    expect(html).toMatch(/<textarea[^>]*name="description"[^>]*>Sharp and buttery\.<\/textarea>/);
+    expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="6"/);
+    expect(html).toContain('aria-label="Rated 4 out of 5"');
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(4);
+    expect(html).toMatch(/<input[^>]*name="recipeYieldQuantity"[^>]*value="1"/);
+    expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">gram<\/span>/);
+    expect(html).toMatch(/<input[^>]*name="recipeYield"[^>]*value="tart"/);
+    expect(html).toMatch(/<input[^>]*name="prepTime"[^>]*value="20"/);
+    expect(html).toMatch(/<input[^>]*name="performTime"[^>]*value="40"/);
+    expect(html).toContain(">Weeknight</span>");
+    expect(html).toContain('aria-label="Remove Weeknight"');
+    expect(html).toContain('data-placeholder="image"');
+    expect(html).toContain(">Save changes<");
+    expect(html).toContain('href="/recipes/lemon-tart"'); // cancel
   });
 
   test("a missing slug renders the not-found view", async () => {
@@ -285,12 +310,23 @@ describe("/recipes/$slug/edit", () => {
 });
 
 describe("/recipes/new", () => {
-  test("loads units and tags for the editor", async () => {
+  test("renders the blank form with the seeded units available", async () => {
     const units = await callServerFn(listUnits, {});
+    expect(units.length).toBeGreaterThan(0); // seeded reference data
     const html = await renderRoute("/recipes/new");
     expect(html).toContain("New recipe");
-    expect(units.length).toBeGreaterThan(0); // seeded reference data
-    expect(html).toContain(`${units.length}<!-- --> units, <!-- -->0<!-- --> tags`);
+    expect(html).toContain('aria-label="New recipe"');
+    expect(html).toMatch(/<input[^>]*name="name"[^>]*value=""/);
+    expect(html).toMatch(/<textarea[^>]*name="description"[^>]*><\/textarea>/);
+    expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="0"/);
+    expect(html).toContain('aria-label="Rated 0 out of 5"');
+    expect(html).not.toContain('aria-pressed="true"');
+    expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">No unit<\/span>/);
+    expect(html).toMatch(/<input[^>]*name="prepTime"[^>]*value=""/);
+    expect(html).not.toContain('aria-label="Remove '); // no tags yet
+    expect(html).toContain('data-placeholder="image"');
+    expect(html).toContain(">Create recipe<");
+    expect(html).toContain('href="/"'); // cancel
   });
 });
 

@@ -1,8 +1,9 @@
 // Edit a recipe. The editor needs the document plus the unit and tag lists for
-// its pickers; the three reads run in parallel.
+// its pickers; the three reads run in parallel. The form is keyed by recipe id
+// so navigating between two recipes' edit pages resets the draft.
 import { Heading } from "@sixthshift/design-system/heading";
-import { Muted } from "@sixthshift/design-system/muted";
 import { createFileRoute } from "@tanstack/react-router";
+import { draftFromRecipe, RecipeForm } from "../../../components/RecipeForm";
 import type { Recipe, Tag, Unit } from "../../../domain/recipe";
 import { getRecipe } from "../../../server/recipes";
 import { listTags } from "../../../server/tags";
@@ -25,12 +26,9 @@ export const Route = createFileRoute("/recipes/$slug/edit")({
 function EditRecipePage() {
   const { recipe, units, tags } = Route.useLoaderData();
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
       <Heading as="h1">Edit recipe</Heading>
-      <Muted as="p">{recipe.name}</Muted>
-      <Muted as="p">
-        {units.length} units, {tags.length} tags
-      </Muted>
+      <RecipeForm key={recipe.id} initial={draftFromRecipe(recipe)} units={units} tags={tags} existing={{ id: recipe.id, slug: recipe.slug }} />
     </div>
   );
 }

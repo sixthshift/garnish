@@ -1,6 +1,6 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { Rating, filledStars, ratingLabel } from "../../../src/components/ui/Rating";
+import { Rating, filledStars, nextRating, ratingLabel } from "../../../src/components/ui/Rating";
 
 describe("filledStars", () => {
   test.each([
@@ -32,5 +32,31 @@ describe("Rating", () => {
     expect(html).toContain('aria-label="Rated 3.5 out of 5"');
     expect(html.match(/data-filled="true"/g)).toHaveLength(4);
     expect(html.match(/data-filled="false"/g)).toHaveLength(1);
+  });
+});
+
+describe("nextRating", () => {
+  test("pressing a star rates it; pressing the current rating clears it", () => {
+    expect(nextRating(0, 3)).toBe(3);
+    expect(nextRating(3, 5)).toBe(5);
+    expect(nextRating(3, 3)).toBe(0);
+    expect(nextRating(2.6, 3)).toBe(0); // the visually filled star counts as current
+  });
+});
+
+describe("Rating editable", () => {
+  test("with onChange renders five star buttons, the filled ones pressed", () => {
+    const html = renderToString(<Rating value={2} onChange={() => {}} />);
+    expect(html).toContain('role="group"');
+    expect(html).toContain('aria-label="Rated 2 out of 5"');
+    expect(html).not.toContain('role="img"');
+    for (let star = 1; star <= 5; star++) expect(html).toContain(`aria-label="Rate ${star} out of 5"`);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(2);
+    expect(html.match(/aria-pressed="false"/g)).toHaveLength(3);
+  });
+
+  test("disabled disables every star", () => {
+    const html = renderToString(<Rating value={2} onChange={() => {}} disabled />);
+    expect(html.match(/<button[^>]*disabled=""/g)).toHaveLength(5);
   });
 });
