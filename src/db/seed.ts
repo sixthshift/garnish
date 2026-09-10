@@ -1,7 +1,7 @@
 // Server-only. Reference data every fresh database gets: the common metric and
 // imperial units. Idempotent: rows are matched by name case-insensitively and
 // existing ones are left alone, so a user's edits survive a re-seed.
-// `--sample` (demo recipes) is deferred to M9.1.
+// `bun run seed --sample` also inserts the demo recipes from ./sample.ts.
 import type { Database } from "bun:sqlite";
 import { ensureDataDir } from "../server/boot";
 import { databasePath, migrate, openDatabase } from "./migrate";
@@ -32,6 +32,18 @@ export const DEFAULT_UNITS: readonly UnitInput[] = [
 
 export type SeedResult = { units: Unit[] };
 
+export type SeedFlags = { sample: boolean };
+
+/** CLI flags after the script name. Pure. Unknown flags throw so a typo does not silently seed nothing. */
+export function parseSeedFlags(argv: readonly string[]): SeedFlags {
+  const flags: SeedFlags = { sample: false };
+  for (const arg of argv) {
+    if (arg === "--sample") flags.sample = true;
+    else throw new Error(`Unknown argument ${arg}. Usage: bun run seed [--sample]`);
+  }
+  return flags;
+}
+
 /**
  * Insert any default unit not already present (name compared case-insensitively).
  * Runs in one transaction. Returns only the rows created on this run.
@@ -51,6 +63,7 @@ export function seed(db: Database): SeedResult {
 }
 
 if (import.meta.main) {
+  const flags = parseSeedFlags(process.argv.slice(2));
   const dir = ensureDataDir();
   const path = databasePath(dir);
   const db = openDatabase(path);
@@ -60,6 +73,15 @@ if (import.meta.main) {
     console.log(
       added.length === 0 ? `${path}: units already seeded` : `${path}: seeded ${added.length} units (${added.map((u) => u.name).join(", ")})`,
     );
+    if (flags.sample) {
+      const { seedSample } = await import("./sample");
+      const { recipes: created } = seedSample(db);
+      console.log(
+        created.length === 0
+          ? `${path}: sample recipes already present`
+          : `${path}: seeded ${created.length} sample recipes (${created.map((r) => r.name).join(", ")})`,
+      );
+    }
   } finally {
     db.close();
   }
