@@ -74,7 +74,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 - [x] **M3.1 Server function scaffold.** `src/server/db.ts` opens the SQLite file from `DATA_DIR`, runs migrations and seed on first import. Helper that wraps `createServerFn` with a zod input validator and maps thrown `NotFound` to a typed error. Test helper that points `DATA_DIR` at a temp dir and calls server functions directly. Check: a test calls a trivial server function through the helper.
 - [x] **M3.2 Recipe server functions.** `listRecipes({q, tag})`, `getRecipe({slug, servings?})` returning the scaled document when `servings` is given, `createRecipe(doc)`, `updateRecipe({id, doc})`, `deleteRecipe({id})`. Check: tests per function, including validation failure and scaling.
 - [x] **M3.3 Reference server functions.** `∥` foods, units, aisles, tags: list with `q`, create, update, delete, findOrCreate. Check: tests per resource.
-- [ ] **M3.4 Images.** Server route `POST /api/recipes/$id/image` multipart, stored under `data/images/<recipeId>.<ext>`, served by `GET /api/images/$file`. Replaces existing and updates `recipe.image`. Check: upload then GET returns same bytes.
+- [x] **M3.4 Images.** Server route `POST /api/recipes/$id/image` multipart, stored under `data/images/<recipeId>.<ext>`, served by `GET /api/images/$file`. Replaces existing and updates `recipe.image`. Check: upload then GET returns same bytes.
 - [ ] **M3.5 Backup.** `bun run backup` runs `VACUUM INTO data/backups/garnish-<timestamp>.db`. Check: file exists and opens.
 
 ## M4 Frontend shell
@@ -141,3 +141,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M3.1  done  3374ab7  getDb() lazy open/migrate/seed from DATA_DIR, NotFound mapped via notFoundMiddleware, callServerFn test helper, migrations bundled via import.meta.glob (decisions row 34)
 2026-09-10  M3.2  done  41259ac  list/get/create/update/deleteRecipe server functions; getRecipe scales when servings given, unscaled for 0-serving recipes
 2026-09-10  M3.3  done  b97f042  foods/units/aisles/tags server functions with q filter, zod inputs in domain/reference.ts, delete returns removed row
+2026-09-10  M3.4  done  6d4ffef  image upload/serve routes, byte-sniffed formats, files at DATA_DIR/images/<id>.<ext>, recipes.setImage
