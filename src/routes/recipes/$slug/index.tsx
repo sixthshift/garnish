@@ -4,16 +4,13 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
-import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
-import { Rating } from "../../../components/ui/Rating";
-import { formatDuration, formatIngredient, formatYield, totalMinutes } from "../../../domain/format";
+import { RecipeHeader } from "../../../components/RecipeHeader";
+import { formatIngredient } from "../../../domain/format";
 import type { Component, Ingredient, Recipe, Step } from "../../../domain/recipe";
-import { recipeImageUrl } from "../../../lib/images";
 import { getRecipe } from "../../../server/recipes";
 
 export const RecipeViewSearch = z.object({
@@ -40,81 +37,28 @@ export function nextServings(current: number, direction: -1 | 1): number {
 function RecipePage() {
   const recipe = Route.useLoaderData();
   const { servings: requested } = Route.useSearch();
-  const total = totalMinutes(recipe.prepTime, recipe.performTime);
-  const times: Array<[string, string]> = (
-    [
-      ["Prep", formatDuration(recipe.prepTime)],
-      ["Cook", formatDuration(recipe.performTime)],
-      ["Total", formatDuration(total)],
-    ] as Array<[string, string]>
-  ).filter(([, value]) => value !== "");
-  const yieldText = formatYield(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
-  const src = recipeImageUrl(recipe.image);
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
-      <header className="flex flex-col gap-4">
-        {src ? (
-          <img src={src} alt="" className="aspect-video w-full rounded-xl object-cover" />
-        ) : (
-          <ImagePlaceholder />
-        )}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <Heading as="h1">{recipe.name}</Heading>
-            <div className="flex gap-2">
-              <Button asChild variant="outline" intent="neutral" size="sm">
-                <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }}>
-                  Edit
-                </Link>
-              </Button>
-              <Button asChild variant="solid" intent="brand" size="sm">
-                {/* Carries the current scale into cook mode. */}
-                <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-                  Cook
-                </Link>
-              </Button>
-            </div>
-          </div>
-          {recipe.rating !== null && <Rating value={recipe.rating} />}
-          {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}
-          <EmptyBoundary
-            isEmpty={recipe.tags.length === 0}
-            fallback={
-              <Muted as="p" className="text-sm" data-empty="tags">
-                No tags
-              </Muted>
-            }
-          >
-            <ul className="flex flex-wrap gap-1" aria-label="Tags">
-              {recipe.tags.map((tag) => (
-                <li key={tag.id}>
-                  <Link to="/" search={{ tag: tag.slug }} className="rounded-full focus-visible:outline-2 focus-visible:outline-border-brand">
-                    <TagChip tag={tag.name} size="md" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </EmptyBoundary>
-          {(times.length > 0 || yieldText !== "") && (
-            <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              {times.map(([label, value]) => (
-                <div key={label} className="flex gap-1.5">
-                  <dt className="text-fg-subtle">{label}</dt>
-                  <dd className="font-medium text-fg-strong">{value}</dd>
-                </div>
-              ))}
-              {yieldText !== "" && (
-                <div className="flex gap-1.5">
-                  <dt className="text-fg-subtle">Makes</dt>
-                  <dd className="font-medium text-fg-strong">{yieldText}</dd>
-                </div>
-              )}
-            </dl>
-          )}
-        </div>
-        <ScaleControl servings={recipe.recipeServings} />
-      </header>
+      <RecipeHeader
+        recipe={recipe}
+        actions={
+          <>
+            <Button asChild variant="outline" intent="neutral" size="sm">
+              <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }}>
+                Edit
+              </Link>
+            </Button>
+            <Button asChild variant="solid" intent="brand" size="sm">
+              {/* Carries the current scale into cook mode. */}
+              <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                Cook
+              </Link>
+            </Button>
+          </>
+        }
+      />
+      <ScaleControl servings={recipe.recipeServings} />
 
       {recipe.components.map((component) => (
         <ComponentSection key={component.id} component={component} />
@@ -236,21 +180,5 @@ function StepList({ steps }: { steps: Step[] }) {
         </li>
       ))}
     </ol>
-  );
-}
-
-function ImagePlaceholder() {
-  return (
-    <div
-      data-placeholder="image"
-      aria-hidden="true"
-      className="flex aspect-video w-full items-center justify-center rounded-xl bg-bg-subtle text-fg-subtle"
-    >
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="5" width="18" height="14" rx="2" />
-        <circle cx="8.5" cy="10" r="1.5" />
-        <path d="m21 16-4.5-4.5L9 19" />
-      </svg>
-    </div>
   );
 }
