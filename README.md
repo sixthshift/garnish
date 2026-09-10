@@ -4,21 +4,56 @@ A personal recipe manager. Single household, runs on the LAN.
 
 Docs: [intent](docs/intent.md) · [architecture](docs/architecture.md) · [decisions](docs/decisions.md) · [scope](docs/scope.md)
 
+## Prerequisites
+
+- [Bun](https://bun.sh) 1.4 or newer (`bun --version`). Older Bun cannot run the built server.
+- Docker with Compose v2, only for the container route below.
+
+Nothing else: SQLite is built into Bun, and all state is files under one directory.
+
 ## Develop
 
-To install dependencies:
+Install dependencies:
 
 ```bash
 bun install
 ```
 
-To run the dev server (Vite, on http://localhost:5173):
+Run the dev server (Vite, on http://localhost:5173):
 
 ```bash
 bun run dev
 ```
 
-To build and run the production server (on http://localhost:3000):
+The first start creates `./data/`, migrates `garnish.db` and seeds the default units. The database starts empty otherwise; see [Seed](#seed) for demo recipes.
+
+In VS Code, the `dev` task (Terminal → Run Build Task, or `Cmd/Ctrl+Shift+B`) runs the same command in a dedicated panel.
+
+## Test
+
+The gate, run before every commit:
+
+```bash
+bun run check   # tsc --noEmit
+bun run test    # vitest run, under Bun
+```
+
+Both must pass. `bun run test` is the only way to run the tests; `bun test` is a different runner and will not work.
+
+## Seed
+
+The server seeds the default units itself on every start, so this is optional. `bun run seed` migrates and seeds the database in `DATA_DIR` without starting the server; `--sample` also adds three demo recipes, one with three components:
+
+```bash
+bun run seed
+bun run seed --sample
+```
+
+Both are idempotent: existing units and recipes are left alone. `bun run migrate` applies pending migrations only.
+
+## Run
+
+Build, then start the production server (on http://localhost:3000):
 
 ```bash
 bun run build
@@ -27,10 +62,16 @@ bun run start
 
 Environment:
 
-- `DATA_DIR` — where `garnish.db`, `images/` and `backups/` live. Defaults to `./data`.
+- `DATA_DIR` — where `garnish.db`, `images/` and `backups/` live. Defaults to `./data`. Created if missing.
 - `PORT` — the production server's port. Defaults to 3000.
 
-Gate before committing: `bun run check && bun run test`.
+Both apply to every `bun run` command here (`start`, `seed`, `migrate`, `backup`), for example:
+
+```bash
+DATA_DIR=/srv/garnish PORT=8080 bun run start
+```
+
+`GET /api/health` answers `{"ok":true}` while the server is up.
 
 ## Run with Docker
 
@@ -86,3 +127,5 @@ docker compose start garnish
 ```
 
 If the backup is already on the host, skip the `cp` step and mount that file instead of `./restore.db`. Copy `images/` back the same way if it was backed up.
+
+Outside Docker, stop the server, then copy the backup over `$DATA_DIR/garnish.db` and delete `garnish.db-wal` and `garnish.db-shm` next to it before starting again.
