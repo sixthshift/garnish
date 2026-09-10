@@ -303,6 +303,29 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toContain('href="/recipes/lemon-tart"'); // cancel
   });
 
+  test("shows both components of a two-component recipe in order, each with its rows read-only", async () => {
+    await callServerFn(createRecipe, {
+      name: "Lemon tart",
+      components: [
+        { name: "Pastry", ingredients: [{ quantity: 200, note: "flour" }], steps: [{ text: "Rub the butter in." }] },
+        { name: "Filling", ingredients: [{ quantity: 3, note: "lemons" }], steps: [{ text: "Whisk everything together." }] },
+      ],
+    });
+    const html = await renderRoute("/recipes/lemon-tart/edit");
+    expect(html).toContain('aria-label="Components"');
+    expect(html).toMatch(/<input[^>]*name="components\.0\.name"[^>]*value="Pastry"/);
+    expect(html).toMatch(/<input[^>]*name="components\.1\.name"[^>]*value="Filling"/);
+    const pastry = html.indexOf('value="Pastry"');
+    const filling = html.indexOf('value="Filling"');
+    expect(pastry).toBeGreaterThan(-1);
+    expect(filling).toBeGreaterThan(pastry);
+    expect(html.indexOf("Rub the butter in.")).toBeGreaterThan(pastry);
+    expect(html.indexOf("Rub the butter in.")).toBeLessThan(filling);
+    expect(html.indexOf("Whisk everything together.")).toBeGreaterThan(filling);
+    expect(html.match(/aria-label="Remove component \d"/g)).toHaveLength(2);
+    expect(html).toContain(">Add component<");
+  });
+
   test("a missing slug renders the not-found view", async () => {
     const html = await renderRoute("/recipes/nothing-here/edit");
     expect(html).toContain("Not found");

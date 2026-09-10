@@ -56,7 +56,9 @@ describe("emptyDraft", () => {
   test("is blank apart from one unnamed empty component, and fails validation only on the name", () => {
     const draft = emptyDraft();
     expect(draft.name).toBe("");
-    expect(draft.components).toEqual([{ name: "", ingredients: [], steps: [] }]);
+    expect(draft.components).toHaveLength(1);
+    expect(draft.components[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
+    expect(draft.components[0]!.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(draft.tags).toEqual([]);
     expect(draft.rating).toBeNull();
     expect(draft.id).toBeUndefined();
@@ -131,7 +133,7 @@ describe("validateDraft", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.name).toBe("Toast");
-      expect(result.data.components[0]).toEqual({ name: "", ingredients: [], steps: [] });
+      expect(result.data.components[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
     }
   });
 });

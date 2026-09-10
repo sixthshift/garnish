@@ -2,9 +2,10 @@
 // rating, tags and image. It is a controlled form over a `RecipeDraft`, a
 // concrete `RecipeInput`, so what it holds is exactly what `createRecipe` and
 // `updateRecipe` accept; submit zod-parses the draft and shows field errors
-// inline. Components (ingredients and steps) are edited in M5.3: a new recipe
-// carries one blank component so the document validates, and an edit keeps
-// the recipe's components untouched.
+// inline. Components are edited through `ComponentsEditor` (add, rename,
+// reorder, remove); their ingredient and step rows are shown read-only until
+// M5.4 and M5.5. A new recipe carries one blank component so the document
+// validates.
 //
 // The image is not part of the document write. A chosen file is held until the
 // recipe has an id, then posted to /api/recipes/:id/image; both happen inside
@@ -25,9 +26,17 @@ import { randomUuid } from "../lib/ids";
 import { uploadRecipeImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
 import { createRecipe, updateRecipe } from "../server/recipes";
+import { ComponentsEditor, newComponent } from "./ComponentsEditor";
 import { ImageUpload } from "./ui/ImageUpload";
 import { NumberStepper } from "./ui/NumberStepper";
 import { Rating } from "./ui/Rating";
+
+type ComponentInput = RecipeInput["components"][number];
+export type DraftIngredient = NonNullable<ComponentInput["ingredients"]>[number];
+export type DraftStep = NonNullable<ComponentInput["steps"]>[number];
+
+/** A component input with both lists present, so the editor never has to default them. */
+export type DraftComponent = Omit<ComponentInput, "ingredients" | "steps"> & { ingredients: DraftIngredient[]; steps: DraftStep[] };
 
 /** A `RecipeInput` with every field present, so each input has a value to control. */
 export type RecipeDraft = {
@@ -46,7 +55,7 @@ export type RecipeDraft = {
   sourceUrl: string | null;
   notes: NonNullable<RecipeInput["notes"]>;
   tags: Tag[];
-  components: RecipeInput["components"];
+  components: DraftComponent[];
   steps: NonNullable<RecipeInput["steps"]>;
 };
 
@@ -55,7 +64,7 @@ export type FieldErrors = Record<string, string>;
 
 export type ValidationResult = { ok: true; data: ParsedRecipeInput } | { ok: false; errors: FieldErrors };
 
-/** A blank recipe with one unnamed, empty component: the least document that validates. Pure. */
+/** A blank recipe with one unnamed, empty component: the least document that validates. Pure apart from the component's random id. */
 export function emptyDraft(): RecipeDraft {
   return {
     name: "",
@@ -72,7 +81,7 @@ export function emptyDraft(): RecipeDraft {
     sourceUrl: null,
     notes: [],
     tags: [],
-    components: [{ name: "", ingredients: [], steps: [] }],
+    components: [newComponent()],
     steps: [],
   };
 }
@@ -304,6 +313,8 @@ export function RecipeForm({ initial, units, tags: knownTags, existing }: Recipe
           onChange={(names) => patch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
         />
       </div>
+
+      <ComponentsEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="solid" intent="brand" disabled={saving}>
