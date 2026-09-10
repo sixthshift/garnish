@@ -1,7 +1,7 @@
 ---
 name: ailoop
-description: Drive docs/plan.md to completion by dispatching one fresh subagent per task, verifying each result independently, and stopping at milestone boundaries. Event-driven replacement for /loop. Use when asked to run, continue, or resume the implementation plan.
-argument-hint: "[next | M2 | M2.3 | M2..M4 | all]"
+description: Resume docs/plan.md from its first unchecked task and run it to completion, one fresh subagent per task, each result verified independently. Event-driven replacement for /loop. Use when asked to run, continue, or resume the implementation plan.
+argument-hint: "[M2 | M2.3 | M2..M4]  (empty = resume and run to completion)"
 disable-model-invocation: true
 ---
 
@@ -11,17 +11,18 @@ You are the orchestrator. You do not implement tasks. Subagents implement tasks;
 
 ## Scope
 
-`$ARGUMENTS` selects what to run. Empty means `next`.
+`$ARGUMENTS` narrows what to run. Empty is the normal case.
 
 | Argument | Runs |
 |---|---|
-| `next` | the current milestone: the first one with an unchecked task, to its end |
+| *(empty)* | resume at the first unchecked task and run every remaining task to plan completion |
 | `M2` | that milestone only |
 | `M2.3` | that one task |
-| `M2..M4` | those milestones, stopping after each unless the range says otherwise |
-| `all` | every remaining milestone, no stops |
+| `M2..M4` | those milestones |
 
-Always stop at a milestone boundary except under `all`. A stop is a report to the user, not a pause.
+Resuming is automatic: the plan's checkboxes are the state. Nothing else is read to decide where to start. If a previous run left a dirty tree, `git stash -u` it, note that in the Log, and continue.
+
+When a milestone completes, print one line to the user (`M1 done, 6 tasks, 6 commits`) and keep going. Do not stop, do not ask.
 
 ## Per task
 
@@ -43,7 +44,7 @@ Always stop at a milestone boundary except under `all`. A stop is a report to th
 - **Agent reports blocked:** record it, continue with independent tasks. If none remain in scope, stop and report.
 - **Agent edited docs/plan.md:** revert that file before recording. Only you edit it.
 - **Agent added a dependency without a decisions.md row:** treat as gate red.
-- **Three blockers in one run:** stop and report regardless of scope.
+- **Stop early only when:** every remaining task in scope depends on a blocked one, or three tasks are blocked in this run. Anything else keeps going.
 
 ## Subagent prompt template
 
@@ -87,11 +88,11 @@ DECISIONS: <row numbers you added to docs/decisions.md, or none>
 
 ## Final report
 
-When scope is done or you stop early, tell the user in this order, briefly:
+When the plan is complete, or you had to stop early, tell the user in this order, briefly:
 
 - Tasks completed this run, with short shas.
 - Blocked, with one line each.
 - Questions, with the Mealie default that was applied.
-- The next command to run, e.g. `/ailoop next`.
+- If stopped early: what needs unblocking, then `/ailoop` resumes.
 
 Do not list files. Do not restate the plan.
