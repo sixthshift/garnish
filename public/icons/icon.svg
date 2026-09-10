@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- garnish icon. Colours are design-system light tokens: --bg-brand (ocean-600) and --bg-brand-subtle (ocean-100). -->
+  <rect width="512" height="512" rx="102.4" fill="#355a8c"/>
+  <path d="M353.75 173.61 A191.72 191.72 0 0 1 158.25 369.11 A191.72 191.72 0 0 1 353.75 173.61 Z" fill="#dce6f4"/>
+  <line x1="172.91" y1="354.45" x2="329.31" y2="198.05" stroke="#355a8c" stroke-width="9.22" stroke-linecap="butt"/>
+  <line x1="172.91" y1="354.45" x2="111.18" y2="416.18" stroke="#dce6f4" stroke-width="9.22" stroke-linecap="butt"/>
+</svg>
