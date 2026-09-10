@@ -92,7 +92,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 - [x] **M5.3 Component editing.** Add, rename, reorder, delete components. Each shows an ingredient list and a step list. Check: two-component recipe saves and reloads in order.
 - [x] **M5.4 Ingredient rows.** Quantity, unit autocomplete, food autocomplete with find-or-create, note, fixed toggle. Move ingredient between components. Check: null quantity and text-only rows save.
 - [x] **M5.5 Steps and notes.** Add, edit, reorder steps within a component. Titled notes. Check: saved order matches.
-- [ ] **M5.6 Delete recipe.** With confirmation via design system `modal`. Check: gone from list.
+- [x] **M5.6 Delete recipe.** With confirmation via design system `modal`. Check: gone from list.
 
 ## M6 Cook view
 
@@ -154,3 +154,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M5.3  done  2a0065d  ComponentsEditor over ReorderList with add/rename/move/remove helpers, Modal confirm when a component has rows, two-component order round-trips
 2026-09-10  M5.4  done  4ce52dd  IngredientsEditor with parseQuantity and row helpers, local Combobox for unit/food autocomplete, refs resolved on save, text-only rows per Mealie disable-amount
 2026-09-10  M5.5  done  c59babc  StepsEditor (component and recipe-level) and NotesEditor with pure helpers; orders round-trip after move
+2026-09-10  M5.6  done  64f8dc7  Delete on edit page via ConfirmDialog (new ui primitive over Modal, shared with ComponentsEditor), deleteRecipe then navigate home
