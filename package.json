@@ -9,7 +9,8 @@
     "check": "tsc --noEmit",
     "test": "bun --bun vitest run",
     "migrate": "bun run src/db/migrate.ts",
-    "seed": "bun run src/db/seed.ts"
+    "seed": "bun run src/db/seed.ts",
+    "backup": "bun run src/db/backup.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
