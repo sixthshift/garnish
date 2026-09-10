@@ -50,7 +50,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 
 ## M0 Foundations
 
-- [ ] **M0.1 Scaffold TanStack Start.** Add `@tanstack/react-start`, `@tanstack/react-router`, `react@19`, `react-dom@19`, their types, `vite`, `@vitejs/plugin-react`, `nitro`, `@tailwindcss/vite`, `tailwindcss`, `zod`, `@sixthshift/design-system`, `@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono`, `vitest`, `typescript@^5` (pin: 7.x drops `tsserver`, which the editor LSP needs). Create `vite.config.ts` with `tanstackStart({ spa: { enabled: true } })`, `nitro({ preset: 'bun' })`, `viteReact()`, `tailwindcss()`. `src/router.tsx`, `src/routes/__root.tsx`, `src/routes/index.tsx` rendering "garnish". Scripts as listed. Check: `bun run dev` serves `/`; `bun run build` then `bun run start` serves `/` from `.output`; `bun run check` passes.
+- [x] **M0.1 Scaffold TanStack Start.** Add `@tanstack/react-start`, `@tanstack/react-router`, `react@19`, `react-dom@19`, their types, `vite`, `@vitejs/plugin-react`, `nitro`, `@tailwindcss/vite`, `tailwindcss`, `zod`, `@sixthshift/design-system`, `@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono`, `vitest`, `typescript@^5` (pin: 7.x drops `tsserver`, which the editor LSP needs). Create `vite.config.ts` with `tanstackStart({ spa: { enabled: true } })`, `nitro({ preset: 'bun' })`, `viteReact()`, `tailwindcss()`. `src/router.tsx`, `src/routes/__root.tsx`, `src/routes/index.tsx` rendering "garnish". Scripts as listed. Check: `bun run dev` serves `/`; `bun run build` then `bun run start` serves `/` from `.output`; `bun run check` passes.
 - [ ] **M0.2 Design system spike.** `src/styles.css` with `@import "tailwindcss"`, the theme import, and `@source "../node_modules/@sixthshift/design-system"`. Import both fonts in `__root.tsx`. Index route renders a `Button` and a `Heading` from the design system. Check: built CSS contains a design-system token variable and the button renders styled in dev and in the production build.
 - [ ] **M0.3 Gate and health.** vitest configured in `vite.config.ts` (`test.include: ['test/**/*.test.ts']`, node environment), `bun run test` with one trivial test. Server route `src/routes/api/health.ts` returning `{"ok":true}`. `data/` created on boot if missing. Check: gate passes, `curl /api/health` in dev and in the built server.
 
@@ -125,3 +125,5 @@ _(none)_
 ## Log
 
 _(one line per iteration: date, task id, outcome)_
+
+2026-09-10  M0.1  done  b5e977c  scaffolded TanStack Start; Bun 1.3.9→1.4.2 and NODE_ENV=production on build (decisions row 32)
