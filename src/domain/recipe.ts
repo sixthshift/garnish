@@ -124,6 +124,18 @@ export const recipeSchema = z.object({
   updatedAt: timestamp,
 });
 
+/** List shape: what a recipe card needs, without components, steps or notes. */
+export const recipeSummarySchema = z.object({
+  id,
+  slug: nonEmpty,
+  name: nonEmpty,
+  image: z.string().nullable(),
+  rating: z.number().min(0).max(5).nullable(),
+  prepTime: z.number().int().nonnegative().nullable(),
+  performTime: z.number().int().nonnegative().nullable(),
+  tags: z.array(tagSchema),
+});
+
 // --- Write shape ------------------------------------------------------------
 // Same document without slug and timestamps (server-generated) and with child
 // ids optional, so a create can omit them and an update can keep them.
@@ -160,6 +172,7 @@ export type Step = z.infer<typeof stepSchema>;
 export type RecipeNote = z.infer<typeof recipeNoteSchema>;
 export type Component = z.infer<typeof componentSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
+export type RecipeSummary = z.infer<typeof recipeSummarySchema>;
 
 /** What a caller sends to create or replace a recipe. Defaults not yet applied. */
 export type RecipeInput = z.input<typeof recipeInputSchema>;
