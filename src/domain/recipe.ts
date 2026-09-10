@@ -25,6 +25,8 @@ const timestamp = z.iso.datetime();
 const nonEmpty = z.string().trim().min(1);
 const text = z.string().default("");
 const minutes = z.number().int().nonnegative().nullable().default(null);
+/** Calendar date, YYYY-MM-DD. A cook happened on a day, not at an instant. */
+const date = z.iso.date();
 
 // --- Reference tables -------------------------------------------------------
 
@@ -109,6 +111,7 @@ const recipeFields = {
   prepTime: minutes,
   performTime: minutes,
   sourceUrl: z.string().nullable().default(null),
+  favourite: z.boolean().default(false),
   notes: z.array(recipeNoteSchema).default([]),
   tags: z.array(tagSchema).default([]),
 };
@@ -133,7 +136,25 @@ export const recipeSummarySchema = z.object({
   rating: z.number().min(0).max(5).nullable(),
   prepTime: z.number().int().nonnegative().nullable(),
   performTime: z.number().int().nonnegative().nullable(),
+  favourite: z.boolean(),
   tags: z.array(tagSchema),
+});
+
+/** One logged cook: "Made this" on a date, with an optional note and photo. */
+export const timelineEventSchema = z.object({
+  id,
+  recipeId: id,
+  occurredOn: date,
+  message: text,
+  image: z.string().nullable().default(null),
+  createdAt: timestamp,
+});
+
+/** What a caller sends to log a cook; the recipe comes from the route. */
+export const timelineEventInputSchema = z.object({
+  occurredOn: date,
+  message: text,
+  image: z.string().nullable().default(null),
 });
 
 // --- Write shape ------------------------------------------------------------
@@ -173,6 +194,8 @@ export type RecipeNote = z.infer<typeof recipeNoteSchema>;
 export type Component = z.infer<typeof componentSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
 export type RecipeSummary = z.infer<typeof recipeSummarySchema>;
+export type TimelineEvent = z.infer<typeof timelineEventSchema>;
+export type TimelineEventInput = z.infer<typeof timelineEventInputSchema>;
 
 /** What a caller sends to create or replace a recipe. Defaults not yet applied. */
 export type RecipeInput = z.input<typeof recipeInputSchema>;

@@ -4,6 +4,8 @@ import {
   type RecipeInput,
   recipeInputSchema,
   recipeSchema,
+  timelineEventInputSchema,
+  timelineEventSchema,
 } from "../../src/domain/recipe";
 
 const ids = {
@@ -54,6 +56,7 @@ const fullRead: Recipe = {
   image: "recipes/spaghetti-al-burro/original.webp",
   rating: 4.5,
   lastMade: "2026-09-01T09:00:00.000Z",
+  favourite: false,
   recipeServings: 2,
   recipeYieldQuantity: 2,
   yieldUnit: { id: ids.serve, name: "serve", pluralName: "serves", abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null },
@@ -180,5 +183,46 @@ describe("invalid documents", () => {
   test("rating outside 0..5 and non-integer minutes", () => {
     expect(recipeSchema.safeParse({ ...fullRead, rating: 6 }).success).toBe(false);
     expect(recipeSchema.safeParse({ ...fullRead, prepTime: 2.5 }).success).toBe(false);
+  });
+});
+
+describe("timelineEventSchema", () => {
+  const event = {
+    id: ids.recipe,
+    recipeId: ids.sauce,
+    occurredOn: "2026-09-01",
+    message: "Halved it.",
+    image: "ev.webp",
+    createdAt: "2026-09-01T09:00:00.000Z",
+  };
+
+  test("a full event round-trips", () => {
+    expect(timelineEventSchema.parse(event)).toEqual(event);
+  });
+
+  test("message and image default", () => {
+    expect(timelineEventInputSchema.parse({ occurredOn: "2026-09-01" })).toEqual({
+      occurredOn: "2026-09-01",
+      message: "",
+      image: null,
+    });
+  });
+
+  test("occurredOn is a calendar date, not a timestamp", () => {
+    expect(timelineEventSchema.safeParse({ ...event, occurredOn: "2026-09-01T09:00:00.000Z" }).success).toBe(false);
+    expect(timelineEventSchema.safeParse({ ...event, occurredOn: "1 Sep 2026" }).success).toBe(false);
+    expect(timelineEventSchema.safeParse({ ...event, occurredOn: "2026-13-01" }).success).toBe(false);
+  });
+
+  test("recipeId must be a uuid", () => {
+    expect(timelineEventSchema.safeParse({ ...event, recipeId: "nope" }).success).toBe(false);
+  });
+});
+
+describe("favourite", () => {
+  test("defaults to false on the input and is required on the read shape", () => {
+    expect(recipeInputSchema.parse({ name: "Toast", components: [{}] }).favourite).toBe(false);
+    expect(recipeSchema.parse({ ...fullRead, favourite: true }).favourite).toBe(true);
+    expect(recipeSchema.safeParse({ ...fullRead, favourite: "yes" }).success).toBe(false);
   });
 });

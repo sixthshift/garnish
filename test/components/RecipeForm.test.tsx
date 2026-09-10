@@ -30,6 +30,7 @@ const stored: Recipe = {
   image: "11111111-1111-4111-8111-111111111111.jpg",
   rating: 4,
   lastMade: null,
+  favourite: false,
   recipeServings: 4,
   recipeYieldQuantity: 1,
   yieldUnit: gram,

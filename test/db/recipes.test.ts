@@ -306,9 +306,10 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     rating: 4.5,
     prepTime: 5,
     performTime: 15,
+    favourite: false,
     tags: full.tags,
   });
-  expect(bySlug["cheese-toast"]).toEqual({ id: toast.id, slug: "cheese-toast", name: "Cheese Toast", image: null, rating: null, prepTime: 2, performTime: null, tags: toast.tags });
+  expect(bySlug["cheese-toast"]).toEqual({ id: toast.id, slug: "cheese-toast", name: "Cheese Toast", image: null, rating: null, prepTime: 2, performTime: null, favourite: false, tags: toast.tags });
   expect(bySlug["pumpkin-soup"]!.rating).toBe(3);
   expect(bySlug["pumpkin-soup"]!.tags).toEqual([]);
 
@@ -343,4 +344,28 @@ test("setImage changes only the image column and reports whether the id exists",
   expect(repo.setImage(created.id, null)).toBe(true);
   expect(repo.getById(created.id)!.image).toBeNull();
   expect(repo.setImage(ids.recipe, "x.png")).toBe(false);
+});
+
+test("favourite round-trips through create, update and the list summary", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Toast", { favourite: true })));
+  expect(created.favourite).toBe(true);
+  expect(repo.list().find((r) => r.id === created.id)!.favourite).toBe(true);
+
+  const updated = repo.update(created.id, recipeInputSchema.parse(minimal("Toast", { favourite: false })))!;
+  expect(updated.favourite).toBe(false);
+});
+
+test("setFavourite changes only the favourite column and reports whether the id exists", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
+  expect(created.favourite).toBe(false);
+
+  expect(repo.setFavourite(created.id, true)).toBe(true);
+  const after = repo.getById(created.id)!;
+  expect(after.favourite).toBe(true);
+  expect({ ...after, favourite: false }).toEqual(created);
+  expect(repo.list().find((r) => r.id === created.id)!.favourite).toBe(true);
+
+  expect(repo.setFavourite(created.id, false)).toBe(true);
+  expect(repo.getById(created.id)!.favourite).toBe(false);
+  expect(repo.setFavourite(ids.recipe, true)).toBe(false);
 });

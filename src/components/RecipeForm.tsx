@@ -60,6 +60,7 @@ export type RecipeDraft = {
   prepTime: number | null;
   performTime: number | null;
   sourceUrl: string | null;
+  favourite: boolean;
   notes: DraftNote[];
   tags: Tag[];
   components: DraftComponent[];
@@ -86,6 +87,7 @@ export function emptyDraft(): RecipeDraft {
     prepTime: null,
     performTime: null,
     sourceUrl: null,
+    favourite: false,
     notes: [],
     tags: [],
     components: [newComponent()],

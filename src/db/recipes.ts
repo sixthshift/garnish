@@ -49,11 +49,15 @@ type RecipeRow = {
   prep_minutes: number | null;
   cook_minutes: number | null;
   source_url: string | null;
+  favourite: 0 | 1;
   created_at: string;
   updated_at: string;
 };
 
-type SummaryRow = Pick<RecipeRow, "id" | "slug" | "name" | "image" | "rating" | "prep_minutes" | "cook_minutes">;
+type SummaryRow = Pick<
+  RecipeRow,
+  "id" | "slug" | "name" | "image" | "rating" | "prep_minutes" | "cook_minutes" | "favourite"
+>;
 type NoteRow = { id: string; title: string; text: string };
 type ComponentRow = { id: string; name: string };
 type IngredientRow = {
@@ -69,8 +73,8 @@ type IngredientRow = {
 type StepRow = { id: string; component_id: string | null; text: string };
 
 const RECIPE_COLUMNS =
-  "id, slug, name, description, image, rating, last_made, servings, yield_quantity, yield_unit_id, yield_text, prep_minutes, cook_minutes, source_url, created_at, updated_at";
-const SUMMARY_COLUMNS = "id, slug, name, image, rating, prep_minutes, cook_minutes";
+  "id, slug, name, description, image, rating, last_made, servings, yield_quantity, yield_unit_id, yield_text, prep_minutes, cook_minutes, source_url, favourite, created_at, updated_at";
+const SUMMARY_COLUMNS = "id, slug, name, image, rating, prep_minutes, cook_minutes, favourite";
 
 export function recipes(db: Database) {
   const units = unitRepository(db);
@@ -103,12 +107,13 @@ export function recipes(db: Database) {
   const unitIdByName = db.query<{ id: string }, [string]>("SELECT id FROM unit WHERE name = ?");
   const foodIdByName = db.query<{ id: string }, [string]>("SELECT id FROM food WHERE name = ?");
   const insertRecipe = db.prepare(
-    "INSERT INTO recipe (id, slug, name, description, image, rating, last_made, servings, yield_quantity, yield_unit_id, yield_text, prep_minutes, cook_minutes, source_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO recipe (id, slug, name, description, image, rating, last_made, servings, yield_quantity, yield_unit_id, yield_text, prep_minutes, cook_minutes, source_url, favourite) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
   const updateRecipe = db.prepare(
-    "UPDATE recipe SET slug = ?, name = ?, description = ?, image = ?, rating = ?, last_made = ?, servings = ?, yield_quantity = ?, yield_unit_id = ?, yield_text = ?, prep_minutes = ?, cook_minutes = ?, source_url = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+    "UPDATE recipe SET slug = ?, name = ?, description = ?, image = ?, rating = ?, last_made = ?, servings = ?, yield_quantity = ?, yield_unit_id = ?, yield_text = ?, prep_minutes = ?, cook_minutes = ?, source_url = ?, favourite = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
   );
   const deleteRecipe = db.prepare("DELETE FROM recipe WHERE id = ?");
+  const updateFavourite = db.prepare("UPDATE recipe SET favourite = ? WHERE id = ?");
   const updateImage = db.prepare("UPDATE recipe SET image = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?");
   // Steps reference components with SET NULL, so components go after steps.
   const deleteChildren = [
@@ -238,6 +243,7 @@ export function recipes(db: Database) {
       prepTime: row.prep_minutes,
       performTime: row.cook_minutes,
       sourceUrl: row.source_url,
+      favourite: row.favourite === 1,
       notes,
       tags: selectTags.all(row.id),
       components,
@@ -256,6 +262,7 @@ export function recipes(db: Database) {
       rating: row.rating,
       prepTime: row.prep_minutes,
       performTime: row.cook_minutes,
+      favourite: row.favourite === 1,
       tags: selectTags.all(row.id),
     };
   }
@@ -325,6 +332,7 @@ export function recipes(db: Database) {
       doc.prepTime,
       doc.performTime,
       doc.sourceUrl,
+      doc.favourite ? 1 : 0,
     );
     writeChildren(id, doc);
     return id;
@@ -349,6 +357,7 @@ export function recipes(db: Database) {
       doc.prepTime,
       doc.performTime,
       doc.sourceUrl,
+      doc.favourite ? 1 : 0,
       id,
     );
     writeChildren(id, doc);
@@ -384,6 +393,9 @@ export function recipes(db: Database) {
     update(id: string, doc: ParsedRecipeInput): Recipe | null {
       return updateTx(id, doc) ? getById(id) : null;
     },
+
+    /** Set the favourite flag alone. Nothing else changes, `updated_at` included. True when `id` exists. */
+    setFavourite: (id: string, favourite: boolean): boolean => updateFavourite.run(favourite ? 1 : 0, id).changes > 0,
 
     /** Set the image file name alone (null clears it). Nothing else changes. True when `id` exists. */
     setImage: (id: string, image: string | null): boolean => updateImage.run(image, id).changes > 0,

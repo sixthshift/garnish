@@ -1,5 +1,5 @@
-// Runs the real src/db/migrations/001_init.sql against :memory: and exercises
-// the recipe tree: insert, read back in position order, cascade, set-null.
+// Runs the real src/db/migrations/*.sql against :memory: and exercises the
+// recipe tree: insert, read back in position order, cascade, set-null.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { migrate, openDatabase } from "../../src/db/migrate";
@@ -93,7 +93,7 @@ function seedRecipe() {
   ]);
 }
 
-test("001_init creates every table in architecture.md", () => {
+test("the migrations create every table in architecture.md", () => {
   expect(tables()).toEqual([
     "aisle",
     "component",
@@ -105,6 +105,7 @@ test("001_init creates every table in architecture.md", () => {
     "recipe_tag",
     "step",
     "tag",
+    "timeline_event",
     "unit",
   ]);
   expect(db.query<{ ok: string | null }, []>("PRAGMA foreign_key_check").all()).toEqual([]);
@@ -289,4 +290,36 @@ test("defaults: description, note, original_text, aliases and flags", () => {
     standard_quantity: null,
     standard_unit_id: null,
   });
+});
+
+// --- 002_stage2 -------------------------------------------------------------
+
+test("002 adds recipe.favourite defaulting to 0 and constrained to a boolean", () => {
+  db.run("INSERT INTO recipe (id, slug, name) VALUES ('r', 'r', 'R')");
+  expect(db.query<{ favourite: number }, []>("SELECT favourite FROM recipe").get()?.favourite).toBe(0);
+
+  db.run("UPDATE recipe SET favourite = 1 WHERE id = 'r'");
+  expect(db.query<{ favourite: number }, []>("SELECT favourite FROM recipe").get()?.favourite).toBe(1);
+  expect(() => db.run("UPDATE recipe SET favourite = 2 WHERE id = 'r'")).toThrow(/CHECK/);
+});
+
+test("timeline_event requires a recipe and a YYYY-MM-DD date, and defaults message and created_at", () => {
+  seedRecipe();
+
+  db.run("INSERT INTO timeline_event (id, recipe_id, occurred_on) VALUES (?, ?, ?)", ["ev-1", ids.recipe, "2026-09-01"]);
+  const row = db.query<Record<string, unknown>, []>("SELECT * FROM timeline_event").get()!;
+  expect(row).toMatchObject({ id: "ev-1", recipe_id: ids.recipe, occurred_on: "2026-09-01", message: "", image: null });
+  expect(row.created_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+
+  expect(() => db.run("INSERT INTO timeline_event (id, recipe_id, occurred_on) VALUES ('ev-2', 'missing', '2026-09-01')")).toThrow(/FOREIGN KEY/);
+  expect(() => db.run(`INSERT INTO timeline_event (id, recipe_id, occurred_on) VALUES ('ev-3', '${ids.recipe}', '1 Sep 2026')`)).toThrow(/CHECK/);
+  expect(() => db.run(`INSERT INTO timeline_event (id, recipe_id) VALUES ('ev-4', '${ids.recipe}')`)).toThrow(/NOT NULL/);
+});
+
+test("deleting a recipe cascades to its timeline events", () => {
+  seedRecipe();
+  db.run("INSERT INTO timeline_event (id, recipe_id, occurred_on) VALUES (?, ?, ?)", ["ev-1", ids.recipe, "2026-09-01"]);
+
+  db.run("DELETE FROM recipe WHERE id = ?", [ids.recipe]);
+  expect(count("timeline_event")).toBe(0);
 });
