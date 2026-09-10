@@ -67,7 +67,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 
 - [x] **M2.1 Scaling.** `src/domain/scale.ts`: `scaleRecipe(doc, targetServings)` returns a new doc. Linear ingredients multiply, `fixed` untouched, null quantity untouched. Check: tests for factor 2, factor 0.5, fixed, null, and servings of 0 rejected.
 - [x] **M2.2 Quantity formatting.** `src/domain/format.ts`: `formatQuantity(q, unit)` renders ½ ⅓ ¼ ¾ style fractions when `unit.fraction`, else decimals to 2 places, trims trailing zeros, picks plural or abbreviation per unit flags. Check: table-driven tests.
-- [ ] **M2.3 Ingredient line.** `formatIngredient(ing)`: quantity, unit, food, note in en-AU order, falling back to `originalText` when food is null. Check: tests for each fallback path.
+- [x] **M2.3 Ingredient line.** `formatIngredient(ing)`: quantity, unit, food, note in en-AU order, falling back to `originalText` when food is null. Check: tests for each fallback path.
 
 ## M3 Server layer
 
@@ -137,3 +137,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M1.6  done  7ed32ae  seed.ts with 15 default units, idempotent by NOCASE name; seed script
 2026-09-10  M2.1  done  2cd24e8  scaleRecipe pure, scales linear quantities and yield, fixed/null untouched, ScaleError on bad servings
 2026-09-10  M2.2  done  aaca367  formatQuantity/formatUnit/formatAmount with vulgar fractions and Mealie plural rule (plural when >1 or 0)
+2026-09-10  M2.3  done  28cbf60  formatFood and formatIngredient following Mealie useParsedIngredientText; originalText verbatim when food is null
