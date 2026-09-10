@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { AppErrorFallback, describeError, ErrorView, isNetworkError } from "../../src/components/RouteStates";
+import { Toaster } from "../../src/components/Toaster";
 import { Route as RootRoute } from "../../src/routes/__root";
 import { renderRoute } from "../helpers/routes";
 
@@ -129,14 +130,26 @@ describe("ErrorView and AppErrorFallback", () => {
 });
 
 describe("root route", () => {
-  test("wraps the shell in the design system ErrorBoundary with the app fallback", () => {
+  /** The root component is a fragment of the guarded shell and the Toaster; this is its children. */
+  function rootChildren(): ReactElement[] {
     const component = RootRoute.options.component as unknown as (() => ReactElement) | undefined;
     expect(component).toBeDefined();
-    const element = component!();
-    expect(element.type).toBe(ErrorBoundary);
-    const props = element.props as { fallback: (p: { error: Error; reset: () => void }) => ReactElement };
+    const { children } = component!().props as { children: ReactElement[] };
+    return children;
+  }
+
+  test("wraps the shell in the design system ErrorBoundary with the app fallback", () => {
+    const element = rootChildren().find((child) => child.type === ErrorBoundary);
+    expect(element).toBeDefined();
+    const props = element!.props as { fallback: (p: { error: Error; reset: () => void }) => ReactElement };
     const fallback = props.fallback({ error: new Error("render blew up"), reset: () => {} });
     expect(fallback.type).toBe(AppErrorFallback);
     expect(renderToString(fallback)).toContain("render blew up");
+  });
+
+  test("mounts exactly one Toaster, outside the boundary so a shell error keeps the notices", () => {
+    const children = rootChildren();
+    expect(children.filter((child) => child.type === Toaster)).toHaveLength(1);
+    expect(children.findIndex((child) => child.type === Toaster)).toBeGreaterThan(children.findIndex((child) => child.type === ErrorBoundary));
   });
 });

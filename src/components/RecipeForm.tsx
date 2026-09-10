@@ -10,7 +10,13 @@
 //
 // The image is not part of the document write. A chosen file is held until the
 // recipe has an id, then posted to /api/recipes/:id/image; both happen inside
-// one `mutate` so the loaders refresh once, after the image is stored.
+// one `mutate` so the loaders refresh once, after the image is stored. A failed
+// image does not fail the save: the document is stored either way and the
+// notice says so.
+//
+// Outcomes are reported with `notify()` (src/lib/notify.ts), not inline copy —
+// a save navigates away, so a message in this form would never be read. The
+// offline banner stays inline: it is a standing state, not an outcome.
 import { Button } from "@sixthshift/design-system/button";
 import { FormField, type FormFieldFeedback } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
@@ -28,6 +34,7 @@ import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchem
 import { randomUuid } from "../lib/ids";
 import { uploadRecipeImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
+import { messageFrom, type NoticeInput, notify, notifyError } from "../lib/notify";
 import { useOnline } from "../lib/useOnline";
 import { createRecipe, updateRecipe } from "../server/recipes";
 import { ComponentsEditor, newComponent } from "./ComponentsEditor";
@@ -153,6 +160,13 @@ export function tagsFromNames(names: readonly string[], known: readonly Tag[]): 
   return out;
 }
 
+/** What to say once the document is stored: a failed image downgrades the success to a warning that names it. Pure. */
+export function saveNotice(opts: { existing: boolean; imageError: string | null }): NoticeInput {
+  const title = opts.existing ? "Changes saved" : "Recipe created";
+  if (opts.imageError !== null) return { intent: "warning", title, message: `The image did not upload: ${opts.imageError}` };
+  return { intent: "success", title };
+}
+
 /** A number field's text as a non-negative amount; blank or unparseable is 0. Pure. */
 export function parseAmount(text: string): number {
   const value = Number(text);
@@ -191,7 +205,6 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
 
   const patch = (fields: Partial<RecipeDraft>) => setDraft((current) => ({ ...current, ...fields }));
   const unitOptions = units.map((unit) => ({ value: unit.id, label: unit.name }));
@@ -205,19 +218,26 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
       return;
     }
     setErrors({});
-    setFailure(null);
     setSaving(true);
+    const image: { error: string | null } = { error: null };
     try {
       const saved = await mutate(async () => {
         const recipe = existing
           ? await updateRecipe({ data: { id: existing.id, doc: result.data } })
           : await createRecipe({ data: result.data });
-        if (file) await uploadRecipeImage(recipe.id, file);
+        if (file) {
+          try {
+            await uploadRecipeImage(recipe.id, file);
+          } catch (error) {
+            image.error = messageFrom(error);
+          }
+        }
         return recipe;
       });
+      notify(saveNotice({ existing: existing !== undefined, imageError: image.error }));
       await navigate({ to: "/recipes/$slug", params: { slug: saved.slug } });
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error));
+      notifyError(existing ? "Could not save changes" : "Could not create recipe", error);
       setSaving(false);
     }
   };
@@ -229,12 +249,6 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
           Changes cannot be saved offline. Keep editing; Save comes back with the connection.
         </Message>
       )}
-      {failure !== null && (
-        <Message intent="danger" title="Could not save">
-          {failure}
-        </Message>
-      )}
-
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium">Image</span>
         <ImageUpload

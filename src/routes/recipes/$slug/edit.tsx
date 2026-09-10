@@ -4,7 +4,7 @@
 //
 // Delete lives here too, below the form (Mealie keeps it in the recipe's
 // action menu; this is the closest fit). It confirms, deletes, then lands on
-// the list.
+// the list, saying so with a toast.
 import { Button } from "@sixthshift/design-system/button";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
@@ -15,6 +15,7 @@ import { draftFromRecipe, RecipeForm } from "../../../components/RecipeForm";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import type { Recipe, Tag, Unit } from "../../../domain/recipe";
 import { useMutate } from "../../../lib/mutate";
+import { notify, notifyError } from "../../../lib/notify";
 import { deleteRecipe, getRecipe } from "../../../server/recipes";
 import { listTags } from "../../../server/tags";
 import { listUnits } from "../../../server/units";
@@ -47,24 +48,23 @@ function EditRecipePage() {
 /**
  * The Delete button and its confirm. On confirm the recipe is removed through
  * `useMutate` (so the list's loader is stale-marked before we land on it) and
- * the page navigates to `/`. A failed delete keeps the dialog open with the
- * message; nothing has changed.
+ * the page navigates to `/`. Both outcomes are reported by `notify()`; a failed
+ * delete keeps the dialog open and nothing has changed.
  */
 export function DeleteRecipe({ id, name }: { id: string; name: string }) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
 
   const confirm = async () => {
-    setFailure(null);
     setDeleting(true);
     try {
       await mutate(() => deleteRecipe({ data: { id } }));
+      notify({ intent: "success", title: `${name} deleted` });
       await navigate({ to: "/" });
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error));
+      notifyError("Could not delete recipe", error);
       setDeleting(false);
     }
   };
@@ -92,13 +92,7 @@ export function DeleteRecipe({ id, name }: { id: string; name: string }) {
           }}
           onConfirm={() => void confirm()}
         >
-          {failure === null ? (
-            <p>It goes from the list for good. This cannot be undone.</p>
-          ) : (
-            <p className="text-fg-danger" role="alert">
-              {failure}
-            </p>
-          )}
+          <p>It goes from the list for good. This cannot be undone.</p>
         </ConfirmDialog>
       )}
     </section>

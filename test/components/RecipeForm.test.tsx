@@ -3,7 +3,7 @@
 // component. The form's rendering is covered by the route tests in
 // test/routes/loaders.test.tsx, which mount it with a router.
 import { describe, expect, test } from "vitest";
-import { draftFromRecipe, emptyDraft, parseAmount, parseMinutes, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
+import { draftFromRecipe, emptyDraft, parseAmount, parseMinutes, saveNotice, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
 import { type Recipe, recipeInputSchema } from "../../src/domain/recipe";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -200,5 +200,19 @@ describe("Check: the form's default document round-trips", () => {
     const created = await callServerFn(createRecipe, { ...emptyDraft(), name: "Toast", tags: tagsFromNames(["Breakfast"], []) });
     expect(created.tags).toHaveLength(1);
     expect(created.tags[0]).toMatchObject({ name: "Breakfast", slug: "breakfast" });
+  });
+});
+
+describe("saveNotice", () => {
+  test("names what happened, new or existing", () => {
+    expect(saveNotice({ existing: false, imageError: null })).toEqual({ intent: "success", title: "Recipe created" });
+    expect(saveNotice({ existing: true, imageError: null })).toEqual({ intent: "success", title: "Changes saved" });
+  });
+
+  test("a failed image downgrades the notice to a warning that names the reason; the document is still saved", () => {
+    const notice = saveNotice({ existing: true, imageError: "file too large" });
+    expect(notice.intent).toBe("warning");
+    expect(notice.title).toBe("Changes saved");
+    expect(notice.message).toContain("file too large");
   });
 });

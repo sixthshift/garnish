@@ -5,6 +5,7 @@ import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { AppShell } from "../components/AppShell";
 import { AppErrorFallback } from "../components/RouteStates";
+import { Toaster } from "../components/Toaster";
 import { registerServiceWorker } from "../lib/sw";
 import appCss from "../styles.css?url";
 
@@ -50,9 +51,13 @@ export const Route = createRootRoute({
 // the router's defaultErrorComponent renders those inside the shell.
 function RootComponent() {
   return (
-    <ErrorBoundary fallback={(props) => <AppErrorFallback {...props} />}>
-      <AppShell />
-    </ErrorBoundary>
+    <>
+      <ErrorBoundary fallback={(props) => <AppErrorFallback {...props} />}>
+        <AppShell />
+      </ErrorBoundary>
+      {/* Outside the boundary: a render error in the shell should not take the notice with it. */}
+      <Toaster />
+    </>
   );
 }
 
