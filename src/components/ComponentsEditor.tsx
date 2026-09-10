@@ -1,6 +1,6 @@
 // The recipe editor's component list: add, rename, reorder and delete the
 // named sections a recipe is made of. Each row edits its ingredients through
-// `IngredientsEditor` and shows its steps read-only; editing steps is M5.5.
+// `IngredientsEditor` and its steps through `StepsEditor`.
 // The parent owns the draft: every change goes through one of the pure
 // helpers below and comes back through `onChange` as a new `RecipeDraft`.
 //
@@ -15,7 +15,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Input } from "@sixthshift/design-system/input";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@sixthshift/design-system/modal";
-import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
 import { formatIngredient } from "../domain/format";
@@ -23,6 +22,7 @@ import { ingredientInputSchema, type Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
 import { IngredientsEditor } from "./IngredientsEditor";
 import type { DraftComponent, DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
+import { StepsEditor } from "./StepsEditor";
 import { moveItem, ReorderList } from "./ui/ReorderList";
 
 /** A blank component with a fresh id, so it has a stable row key before it is saved. */
@@ -151,7 +151,7 @@ export function ComponentsEditor({ draft, onChange, units = [], errors = {}, dis
               </p>
             )}
             <IngredientsEditor draft={draft} ci={index} units={units} onChange={onChange} errors={errors} disabled={disabled} />
-            <StepsPreview component={component} />
+            <StepsEditor draft={draft} ci={index} onChange={onChange} errors={errors} disabled={disabled} />
           </div>
         )}
       />
@@ -175,32 +175,5 @@ export function ComponentsEditor({ draft, onChange, units = [], errors = {}, dis
         </Modal>
       )}
     </section>
-  );
-}
-
-/** Read-only steps of one component; the inputs come in M5.5. */
-function StepsPreview({ component }: { component: DraftComponent }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
-        Steps
-      </Muted>
-      {component.steps.length === 0 ? (
-        <Muted as="p" className="text-sm">
-          No steps yet
-        </Muted>
-      ) : (
-        <ol className="flex flex-col gap-1 text-sm" aria-label="Steps">
-          {component.steps.map((step, i) => (
-            <li key={step.id ?? i} className="flex gap-2">
-              <span className="shrink-0 font-medium text-fg-subtle" aria-hidden="true">
-                {i + 1}.
-              </span>
-              <span className="whitespace-pre-line">{step.text}</span>
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
   );
 }

@@ -164,7 +164,7 @@ describe("ingredientLine", () => {
 });
 
 describe("ComponentsEditor", () => {
-  test("renders a name input per component in order, with its ingredient rows and numbered steps read-only", () => {
+  test("renders a name input per component in order, with its ingredient and step rows", () => {
     const html = renderToString(<ComponentsEditor draft={tart()} onChange={() => {}} />);
     expect(html).toContain('aria-label="Components"');
     expect(html).toContain(">Add component<");
@@ -176,10 +176,11 @@ describe("ComponentsEditor", () => {
     expect(html).toContain('value="lemons"');
     expect(html).toContain("Whisk.");
     expect(html.indexOf("Rub in.")).toBeLessThan(html.indexOf('value="Filling"'));
-    // Ingredient rows are inputs (M5.4); steps are still read-only.
+    // Ingredient rows are inputs (M5.4); step rows are textareas (M5.5).
     expect(html).toMatch(/<input[^>]*name="components\.0\.ingredients\.0\.quantity"/);
     expect(html).toMatch(/<input[^>]*name="components\.1\.ingredients\.0\.quantity"/);
-    expect(html).not.toMatch(/name="components\.\d+\.steps/);
+    expect(html).toMatch(/<textarea[^>]*name="components\.0\.steps\.0\.text"[^>]*>Rub in\.<\/textarea>/);
+    expect(html).toMatch(/<textarea[^>]*name="components\.1\.steps\.0\.text"[^>]*>Whisk\.<\/textarea>/);
     // Reorder and remove controls per row.
     expect(html.match(/aria-label="Move component \d up"/g)).toHaveLength(2);
     expect(html.match(/aria-label="Move component \d down"/g)).toHaveLength(2);

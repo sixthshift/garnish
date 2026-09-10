@@ -3,9 +3,10 @@
 // concrete `RecipeInput`, so what it holds is exactly what `createRecipe` and
 // `updateRecipe` accept; submit zod-parses the draft and shows field errors
 // inline. Components are edited through `ComponentsEditor` (add, rename,
-// reorder, remove) with their ingredient rows; step rows are shown read-only
-// until M5.5. A new recipe carries one blank component so the document
-// validates.
+// reorder, remove) with their ingredient and step rows; the recipe's own
+// steps (the ones printed after every component) and its notes have editors
+// of their own below the components. A new recipe carries one blank component
+// so the document validates.
 //
 // The image is not part of the document write. A chosen file is held until the
 // recipe has an id, then posted to /api/recipes/:id/image; both happen inside
@@ -15,6 +16,8 @@ import { FormField, type FormFieldFeedback } from "@sixthshift/design-system/for
 import { Input } from "@sixthshift/design-system/input";
 import { Label } from "@sixthshift/design-system/label";
 import { Message } from "@sixthshift/design-system/message";
+import { Muted } from "@sixthshift/design-system/muted";
+import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Select } from "@sixthshift/design-system/select";
 import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
@@ -27,6 +30,8 @@ import { uploadRecipeImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
 import { createRecipe, updateRecipe } from "../server/recipes";
 import { ComponentsEditor, newComponent } from "./ComponentsEditor";
+import { NotesEditor } from "./NotesEditor";
+import { StepsEditor } from "./StepsEditor";
 import { ImageUpload } from "./ui/ImageUpload";
 import { NumberStepper } from "./ui/NumberStepper";
 import { Rating } from "./ui/Rating";
@@ -34,6 +39,7 @@ import { Rating } from "./ui/Rating";
 type ComponentInput = RecipeInput["components"][number];
 export type DraftIngredient = NonNullable<ComponentInput["ingredients"]>[number];
 export type DraftStep = NonNullable<ComponentInput["steps"]>[number];
+export type DraftNote = NonNullable<RecipeInput["notes"]>[number];
 
 /** A component input with both lists present, so the editor never has to default them. */
 export type DraftComponent = Omit<ComponentInput, "ingredients" | "steps"> & { ingredients: DraftIngredient[]; steps: DraftStep[] };
@@ -53,10 +59,10 @@ export type RecipeDraft = {
   prepTime: number | null;
   performTime: number | null;
   sourceUrl: string | null;
-  notes: NonNullable<RecipeInput["notes"]>;
+  notes: DraftNote[];
   tags: Tag[];
   components: DraftComponent[];
-  steps: NonNullable<RecipeInput["steps"]>;
+  steps: DraftStep[];
 };
 
 /** Field path ("name", "components.0.name") to its first error message. */
@@ -315,6 +321,16 @@ export function RecipeForm({ initial, units, tags: knownTags, existing }: Recipe
       </div>
 
       <ComponentsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
+
+      <section className="flex flex-col gap-3" aria-label="Method">
+        <SectionTitle as="h2">{draft.components.length > 1 ? "To finish" : "Method"}</SectionTitle>
+        <Muted as="p" className="text-sm">
+          Steps that come after every component.
+        </Muted>
+        <StepsEditor draft={draft} ci={null} onChange={setDraft} errors={errors} disabled={saving} />
+      </section>
+
+      <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" variant="solid" intent="brand" disabled={saving}>
