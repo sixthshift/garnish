@@ -19,7 +19,7 @@ Install dependencies:
 bun install
 ```
 
-Run the dev server (Vite, on http://localhost:5173):
+Run the dev server (Vite via Nitro, on http://localhost:3000, bound to all interfaces so it is reachable from the host through the dev container's published port):
 
 ```bash
 bun run dev
