@@ -9,8 +9,9 @@ import { Route as IndexRoute, type RecipeListData, searchParam } from "../../src
 import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
 import { Route as ViewRoute, nextServings } from "../../src/routes/recipes/$slug/index";
 import { Route as NewRoute } from "../../src/routes/recipes/new";
-import { Route as SettingsRoute } from "../../src/routes/settings";
+import { type FoodRow, Route as SettingsRoute, type SettingsData } from "../../src/routes/settings";
 import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/server/recipes";
+import { listFoods } from "../../src/server/foods";
 import { listTags } from "../../src/server/tags";
 import { listUnits } from "../../src/server/units";
 import { renderRoute } from "../helpers/routes";
@@ -26,6 +27,7 @@ vi.mock("../../src/server/recipes", local);
 vi.mock("../../src/server/units", local);
 vi.mock("../../src/server/tags", local);
 vi.mock("../../src/server/aisles", local);
+vi.mock("../../src/server/foods", local);
 
 useTempDataDir();
 
@@ -452,11 +454,16 @@ describe("/recipes/new", () => {
 });
 
 describe("/settings", () => {
-  test("loads aisles and units", async () => {
-    const units = await callServerFn(listUnits, {});
+  test("renders a tab per reference kind plus Appearance, with the Foods table open", async () => {
+    const foods = await callServerFn(listFoods, {});
     const html = await renderRoute("/settings");
     expect(html).toContain("Settings");
-    expect(html).toMatch(new RegExp(`\\d+<!-- --> aisles, <!-- -->${units.length}<!-- --> units`));
+    for (const label of ["Foods", "Units", "Aisles", "Tags", "Appearance"]) expect(html).toContain(`>${label}<`);
+    // Foods is the default tab: its table, its search box, its column headers.
+    expect(html).toContain('data-table="food"');
+    expect(html).toContain('aria-label="Search foods"');
+    expect(html).toContain(">Skip shopping<");
+    expect(html).toContain(`${foods.length} food`);
   });
 });
 
@@ -474,7 +481,8 @@ describe("loader data types match the domain schemas", () => {
     expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<Recipe>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();
     expectTypeOf<(typeof NewRoute)["types"]["loaderData"]>().toEqualTypeOf<{ units: Unit[]; tags: Tag[] }>();
-    expectTypeOf<(typeof SettingsRoute)["types"]["loaderData"]>().toEqualTypeOf<{ aisles: Aisle[]; units: Unit[] }>();
+    expectTypeOf<(typeof SettingsRoute)["types"]["loaderData"]>().toEqualTypeOf<SettingsData>();
+    expectTypeOf<SettingsData>().toEqualTypeOf<{ aisles: Aisle[]; units: Unit[]; foods: FoodRow[]; tags: Tag[] }>();
     // Search params are typed from their zod schemas.
     expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ q?: string | undefined; tag?: string | undefined }>();
     expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();

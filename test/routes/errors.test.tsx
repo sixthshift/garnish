@@ -26,6 +26,7 @@ vi.mock("../../src/server/recipes", failing);
 vi.mock("../../src/server/units", failing);
 vi.mock("../../src/server/tags", failing);
 vi.mock("../../src/server/aisles", failing);
+vi.mock("../../src/server/foods", failing);
 
 beforeEach(() => {
   failure.error = new TypeError("fetch failed");

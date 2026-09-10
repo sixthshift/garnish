@@ -367,6 +367,38 @@ export function recipes(db: Database) {
     return true;
   });
 
+  // --- Usage ---------------------------------------------------------------
+  // Which recipes would notice if a reference row went away. Settings shows
+  // these before a delete or a merge. Deleting the row itself is harmless in
+  // SQL — every reference is ON DELETE SET NULL or CASCADE — so the point is
+  // to say what changes, not to block. A recipe is listed once however many
+  // of its rows use the reference, and the order matches the list page's
+  // secondary sort: name, case-insensitively.
+  // Every usage query joins, so the summary columns need the recipe's alias.
+  const R_SUMMARY_COLUMNS = SUMMARY_COLUMNS.split(", ")
+    .map((column) => `r.${column}`)
+    .join(", ");
+  const selectUsingFood = db.query<SummaryRow, [string]>(
+    `SELECT DISTINCT ${R_SUMMARY_COLUMNS} FROM recipe r
+     JOIN component c ON c.recipe_id = r.id
+     JOIN ingredient i ON i.component_id = c.id
+     WHERE i.food_id = ?
+     ORDER BY r.name COLLATE NOCASE`,
+  );
+  // A unit reaches a recipe two ways: an ingredient amount, or the yield.
+  const selectUsingUnit = db.query<SummaryRow, [string]>(
+    `SELECT ${R_SUMMARY_COLUMNS} FROM recipe r
+     WHERE r.yield_unit_id = ?1
+        OR EXISTS (SELECT 1 FROM component c JOIN ingredient i ON i.component_id = c.id WHERE c.recipe_id = r.id AND i.unit_id = ?1)
+     ORDER BY r.name COLLATE NOCASE`,
+  );
+  const selectUsingTag = db.query<SummaryRow, [string]>(
+    `SELECT ${R_SUMMARY_COLUMNS} FROM recipe r
+     JOIN recipe_tag rt ON rt.recipe_id = r.id
+     WHERE rt.tag_id = ?
+     ORDER BY r.name COLLATE NOCASE`,
+  );
+
   return {
     /** Full document by slug, or null. */
     get(slug: string): Recipe | null {
@@ -402,6 +434,15 @@ export function recipes(db: Database) {
 
     /** Set the image file name alone (null clears it). Nothing else changes. True when `id` exists. */
     setImage: (id: string, image: string | null): boolean => updateImage.run(image, id).changes > 0,
+
+    /** Summaries of the recipes with an ingredient of this food, by name. Empty when nothing uses it. */
+    usingFood: (foodId: string): RecipeSummary[] => selectUsingFood.all(foodId).map(summarise),
+
+    /** Summaries of the recipes measuring an ingredient, or their yield, in this unit, by name. */
+    usingUnit: (unitId: string): RecipeSummary[] => selectUsingUnit.all(unitId).map(summarise),
+
+    /** Summaries of the recipes carrying this tag, by name. */
+    usingTag: (tagId: string): RecipeSummary[] => selectUsingTag.all(tagId).map(summarise),
 
     /** True when a recipe was deleted. Children cascade; references stay. */
     remove: (id: string): boolean => deleteRecipe.run(id).changes > 0,
