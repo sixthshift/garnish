@@ -61,7 +61,7 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 
 ## M11 Recipe view
 
-- [ ] **M11.1 Header.** Image beside text from `md`, stacked below. Name, rating, description, tag chips, then a stat strip prep / cook / total with icons and a yield line. Footer: source URL (field exists), created and updated dates. Check: render test at both layouts via class assertions; source URL renders as a link when set.
+- [x] **M11.1 Header.** Image beside text from `md`, stacked below. Name, rating, description, tag chips, then a stat strip prep / cook / total with icons and a yield line. Footer: source URL (field exists), created and updated dates. Check: render test at both layouts via class assertions; source URL renders as a link when set.
 - [ ] **M11.2 Ingredient rows.** Mealie order: quantity, unit, **bold** food, note dimmed on its own line; `fixed` marker kept. Tick box per row, state via `ticks.ts`, strike-through when done. Scaled numbers get a class when `servings` differs from the recipe's. Check: render tests for ticked, scaled and fixed rows.
 - [ ] **M11.3 Structured or Summary.** Per-device toggle (design system `switch`) between per-component ingredient blocks and one merged list, merged by food and unit with quantities summed, `fixed` and null kept as separate lines. Pure `mergeIngredients(recipe)` in `src/domain/`. Check: merge tests; toggle persists.
 - [ ] **M11.4 Steps.** Tap a step to mark done: dims and collapses the text, state via `ticks.ts`. Step text rendered as a safe markdown subset (paragraphs, bold, italics, lists; no raw HTML) with a pure renderer in `src/domain/markdown.ts`. Check: renderer tests including an HTML injection case; done-state render test.
@@ -118,3 +118,4 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-11  M10.1  done  124bc1b  opus  002_stage2 adds `recipe.favourite` and `timeline_event`; timeline repository derives `last_made` from the greatest event date
 2026-09-11  M10.2  done  57e3d7f  sonnet  prefs.ts and ticks.ts as pure controllers over a storage interface with thin hooks
 2026-09-11  M10.3  done  f7ae35a  opus  notify() store plus one Toaster in __root; save/delete/upload toast, Settings gains a light/dark/system theme toggle
+2026-09-11  M11.1  done  b1c939f  opus  RecipeHeader with split layout, stat strip, yield line and a footer carrying source link and dates
