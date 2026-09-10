@@ -1,10 +1,10 @@
 # Plan
 
-Implementation plan for garnish v1, written to be executed one task per loop iteration with no human present. Decisions live in [decisions.md](decisions.md), shape in [architecture.md](architecture.md), boundaries in [scope.md](scope.md). This file is the only one the loop edits.
+Implementation plan for garnish v1, written to be executed one task per loop iteration with no human present. Decisions live in [decisions.md](decisions.md), shape in [architecture.md](architecture.md), boundaries in [scope.md](scope.md). Run it with `/ailoop` (see `.claude/skills/ailoop/SKILL.md`): one fresh subagent per task, the orchestrator verifies and records. This file is edited only by the orchestrator.
 
 ## Loop protocol
 
-Each iteration, in order:
+What one task looks like, whoever runs it (an ailoop subagent, a /loop firing, or a person):
 
 1. Read this file. Read `CLAUDE.md`. Do not re-read the other docs unless a task points at them.
 2. Pick the first unchecked task whose dependencies are checked. Milestones run in order; tasks within a milestone run in order unless marked `∥`.
@@ -16,7 +16,7 @@ Each iteration, in order:
    ```
    Both must pass. A failing gate is not done. Fix it or revert the task.
 5. Commit with a one-line message naming the task id, e.g. `M1.3 recipe document schema`. Attribution trailer per `CLAUDE.md`.
-6. Tick the task here. Append one line to the Log. Commit that too.
+6. Report. Under `/ailoop` the orchestrator ticks the task, appends the Log line and commits; a subagent never edits this file. Under `/loop`, do it yourself.
 7. Stop. One task per iteration.
 
 Rules:
