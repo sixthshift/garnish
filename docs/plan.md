@@ -113,7 +113,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 
 - [x] **M9.1 Sample data.** `bun run seed --sample` adds three recipes, one with three components. Check: list shows them.
 - [x] **M9.2 Error and empty states.** Design system `error-boundary`, `with-empty` on every list. Check: kill the server, UI shows a message not a blank.
-- [ ] **M9.3 Docs sync.** `architecture.md` matches what was built. Any drift gets a decisions.md row. README covers dev, test, run, backup. Check: a fresh reader can run it from README alone.
+- [x] **M9.3 Docs sync.** `architecture.md` matches what was built. Any drift gets a decisions.md row. README covers dev, test, run, backup. Check: a fresh reader can run it from README alone.
 
 ## Blocked
 
@@ -163,3 +163,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M8.2  done  e6554a0  docker-compose.yml with named volume, README Develop/Docker/Backup/Restore sections, drift-tested via Bun.YAML; docker compose up owed
 2026-09-10  M9.1  done  e1bf44d  sample.ts with three en-AU recipes (one three-component), idempotent by slug, seed --sample flag
 2026-09-10  M9.2  done  72d1f55  design-system ErrorBoundary around AppShell, fetch TypeErrors shown as cannot-reach-server with Retry, EmptyBoundary on every list; dead-server browser check owed
+2026-09-10  M9.3  done  9e2d11a  architecture.md and README synced to the built tree, fresh-clone run-through passed, decisions rows 35-39; plan complete
