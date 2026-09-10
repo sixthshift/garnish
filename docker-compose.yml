@@ -1,0 +1,17 @@
+# garnish — one service, one named volume. README.md "Run with Docker" covers
+# start, update, backup and restore. No `version` key: Compose v2 ignores it.
+# test/docker/compose.test.ts asserts the service name, port, volume and DATA_DIR.
+services:
+  garnish:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # garnish.db, images/ and backups/ all live in the volume.
+      - garnish-data:/data
+    environment:
+      DATA_DIR: /data
+    restart: unless-stopped
+
+volumes:
+  garnish-data:
