@@ -3,7 +3,7 @@
 // through the URL so the loader is still the one read path (as on the view
 // page) and a refresh lands on the same card. The shell hides its nav here
 // (`staticData.fullscreen`), leaving the header and footer of this page as the
-// only chrome.
+// only chrome. A screen wake lock is held while the page is mounted.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
@@ -15,6 +15,7 @@ import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { buildCookCards, clampStep, type CookCard } from "../../../domain/cook";
 import { formatIngredient } from "../../../domain/format";
 import type { Recipe } from "../../../domain/recipe";
+import { useWakeLock } from "../../../lib/useWakeLock";
 import { getRecipe } from "../../../server/recipes";
 
 export const CookSearch = z.object({
@@ -52,6 +53,7 @@ function CookPage() {
   const recipe = Route.useLoaderData();
   const { step, servings: requested } = Route.useSearch();
   const navigate = Route.useNavigate();
+  const screenOn = useWakeLock();
 
   const cards = buildCookCards(recipe);
   const index = clampStep(step ?? 0, cards.length);
@@ -83,6 +85,11 @@ function CookPage() {
             </Link>
           </Button>
           <span className="truncate font-semibold text-fg-strong">{recipe.name}</span>
+          {screenOn && (
+            <Muted as="span" className="shrink-0 text-xs" title="The screen stays on while you cook" data-wake-lock>
+              Screen on
+            </Muted>
+          )}
         </div>
         {recipe.recipeServings > 0 && (
           <NumberStepper label="Serves" value={Number(recipe.recipeServings.toFixed(2))} min={1} onChange={scaleTo} className="flex-row items-center gap-2" />
