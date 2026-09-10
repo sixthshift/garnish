@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { type DisplayUnit, formatAmount, formatQuantity, formatUnit } from "../../src/domain/format";
+import { type DisplayUnit, formatAmount, formatDuration, formatQuantity, formatUnit, formatYield, totalMinutes } from "../../src/domain/format";
 
 // Realistic rows, mirroring src/db/seed.ts DEFAULT_UNITS.
 const unit = (overrides: Partial<DisplayUnit>): DisplayUnit => ({
@@ -167,5 +167,48 @@ describe("formatAmount", () => {
     [0, null, ""],
   ])("%s x %o -> %s", (quantity, u, expected) => {
     expect(formatAmount(quantity, u)).toBe(expected);
+  });
+});
+
+describe("formatDuration", () => {
+  test.each([
+    [null, ""],
+    [0, ""],
+    [0.2, ""], // rounds to nothing
+    [Number.NaN, ""],
+    [5, "5 min"],
+    [45, "45 min"],
+    [60, "1 hr"],
+    [90, "1 hr 30 min"],
+    [120, "2 hr"],
+    [135, "2 hr 15 min"],
+    [1500, "25 hr"], // a long ferment stays in hours; no day unit
+  ])("%s -> %s", (minutes, expected) => {
+    expect(formatDuration(minutes)).toBe(expected);
+  });
+});
+
+describe("totalMinutes", () => {
+  test("adds prep and cook, treating a missing side as 0, and is null when both are missing", () => {
+    expect(totalMinutes(15, 30)).toBe(45);
+    expect(totalMinutes(15, null)).toBe(15);
+    expect(totalMinutes(null, 30)).toBe(30);
+    expect(totalMinutes(0, 0)).toBe(0);
+    expect(totalMinutes(null, null)).toBeNull();
+  });
+});
+
+describe("formatYield", () => {
+  const loaf = unit({ name: "loaf", pluralName: "loaves", abbreviation: "" });
+  test.each([
+    [12, null, "muffins", "12 muffins"],
+    [4, null, "", "4"],
+    [0, null, "a big pot", "a big pot"],
+    [2, loaf, "", "2 loaves"],
+    [1, loaf, "sourdough", "1 loaf sourdough"],
+    [1.5, gram, "  ", "1.5 g"],
+    [0, null, "", ""],
+  ])("%s %o %s -> %s", (quantity, u, text, expected) => {
+    expect(formatYield(quantity, u, text)).toBe(expected);
   });
 });

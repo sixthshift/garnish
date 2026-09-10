@@ -140,3 +140,34 @@ function formatFraction(quantity: number): string {
   if (whole === 0 && glyph === "") return formatDecimal(quantity);
   return `${whole === 0 ? "" : whole}${glyph}`;
 }
+
+// --- Recipe header display ---------------------------------------------------
+
+/**
+ * Minutes as a readable duration: 45 -> "45 min", 90 -> "1 hr 30 min",
+ * 120 -> "2 hr". Empty for null, 0 or a non-finite value (nothing recorded).
+ */
+export function formatDuration(minutes: number | null): string {
+  if (minutes === null || !Number.isFinite(minutes) || minutes <= 0) return "";
+  const whole = Math.round(minutes);
+  if (whole === 0) return "";
+  const hours = Math.floor(whole / 60);
+  const rest = whole % 60;
+  if (hours === 0) return `${rest} min`;
+  return rest === 0 ? `${hours} hr` : `${hours} hr ${rest} min`;
+}
+
+/** Prep plus cook time when either is recorded; null when neither is. */
+export function totalMinutes(prepTime: number | null, performTime: number | null): number | null {
+  if (prepTime === null && performTime === null) return null;
+  return (prepTime ?? 0) + (performTime ?? 0);
+}
+
+/**
+ * Yield line, Mealie's order: the scaled quantity (with its unit when there is
+ * one) then the free text. "12 muffins", "4 flatbreads", "1 loaf" or just the
+ * text when the quantity is 0. Empty when nothing is recorded.
+ */
+export function formatYield(quantity: number, unit: DisplayUnit | null, text: string): string {
+  return [formatAmount(quantity, unit), text.trim()].filter((part) => part !== "").join(" ");
+}

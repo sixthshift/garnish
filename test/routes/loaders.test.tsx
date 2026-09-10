@@ -6,7 +6,7 @@ import { describe, expect, expectTypeOf, test, vi } from "vitest";
 import type { Aisle, Recipe, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
 import { Route as IndexRoute, type RecipeListData, searchParam } from "../../src/routes/index";
 import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
-import { Route as ViewRoute } from "../../src/routes/recipes/$slug/index";
+import { Route as ViewRoute, nextServings } from "../../src/routes/recipes/$slug/index";
 import { Route as NewRoute } from "../../src/routes/recipes/new";
 import { Route as SettingsRoute } from "../../src/routes/settings";
 import { createRecipe, getRecipe, listRecipes } from "../../src/server/recipes";
@@ -140,6 +140,129 @@ describe("/recipes/$slug (view)", () => {
   test("a missing slug renders the not-found view", async () => {
     const html = await renderRoute("/recipes/nothing-here");
     expect(html).toContain("Not found");
+  });
+
+  // A two-component recipe with foods and units, so ingredient lines render
+  // through formatIngredient and quantities scale. Reference rows are resolved
+  // by name, so the ids here only need to be well-formed.
+  const food = (name: string, pluralName: string | null = null) => ({ id: crypto.randomUUID(), name, pluralName });
+  async function seedTart() {
+    const units = await callServerFn(listUnits, {});
+    const gram = units.find((u) => u.abbreviation === "g")!;
+    return callServerFn(createRecipe, {
+      name: "Lemon tart",
+      description: "Sharp and buttery.",
+      rating: 4,
+      recipeServings: 4,
+      recipeYieldQuantity: 1,
+      recipeYield: "tart",
+      prepTime: 20,
+      performTime: 40,
+      tags: [weeknight],
+      components: [
+        {
+          name: "Pastry",
+          ingredients: [{ quantity: 200, unit: gram, food: food("flour") }],
+          steps: [{ text: "Rub the butter into the flour." }],
+        },
+        {
+          name: "Filling",
+          ingredients: [
+            { quantity: 3, food: food("lemon", "lemons") },
+            { quantity: 1, food: food("vanilla pod", "vanilla pods"), fixed: true },
+            { quantity: null, food: food("salt"), note: "to taste" },
+          ],
+          steps: [{ text: "Whisk everything together." }],
+        },
+      ],
+      steps: [{ text: "Bake for 30 minutes." }],
+      notes: [{ title: "Storage", text: "Keeps two days in the fridge." }],
+    });
+  }
+
+  test("two-component recipe: header, components in order, recipe-level steps, notes, edit link", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart");
+
+    // Header.
+    expect(html).toContain("Lemon tart");
+    expect(html).toContain("Sharp and buttery.");
+    expect(html).toContain('aria-label="Rated 4 out of 5"');
+    expect(html).toContain(">Weeknight</span>");
+    expect(html).toContain('href="/?tag=weeknight"');
+    for (const [label, value] of [["Prep", "20 min"], ["Cook", "40 min"], ["Total", "1 hr"], ["Makes", "1 tart"]]) {
+      expect(html).toMatch(new RegExp(`<dt[^>]*>${label}</dt><dd[^>]*>${value}</dd>`));
+    }
+    expect(html).toContain("Serves 4");
+    expect(html).toContain('aria-label="Scale servings"');
+    expect(html).not.toContain(">Reset<"); // nothing requested yet
+    expect(html).toContain('href="/recipes/lemon-tart/edit"');
+    expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
+
+    // Components in order, each with its ingredients then its steps.
+    const pastry = html.indexOf(">Pastry<");
+    const filling = html.indexOf(">Filling<");
+    expect(pastry).toBeGreaterThan(-1);
+    expect(filling).toBeGreaterThan(pastry);
+    expect(html.indexOf("200 g flour")).toBeGreaterThan(pastry);
+    expect(html.indexOf("200 g flour")).toBeLessThan(filling);
+    expect(html.indexOf("Rub the butter into the flour.")).toBeGreaterThan(html.indexOf("200 g flour"));
+    expect(html.indexOf("Rub the butter into the flour.")).toBeLessThan(filling);
+    expect(html.indexOf("3 lemons")).toBeGreaterThan(filling);
+    expect(html.indexOf("Whisk everything together.")).toBeGreaterThan(html.indexOf("3 lemons"));
+    expect(html).toContain("salt, to taste");
+
+    // Fixed ingredient is marked.
+    expect(html).toMatch(/data-fixed="true"[^>]*>(<[^>]*>)*1 vanilla pod/);
+    expect(html.match(/data-fixed="true"/g)).toHaveLength(1);
+
+    // Recipe-level steps after the components, then notes.
+    const finish = html.indexOf(">To finish<");
+    expect(finish).toBeGreaterThan(html.indexOf("Whisk everything together."));
+    expect(html.indexOf("Bake for 30 minutes.")).toBeGreaterThan(finish);
+    const notes = html.indexOf(">Notes<");
+    expect(notes).toBeGreaterThan(html.indexOf("Bake for 30 minutes."));
+    expect(html.indexOf(">Storage<")).toBeGreaterThan(notes);
+    expect(html).toContain("Keeps two days in the fridge.");
+  });
+
+  test("doubling servings doubles quantities and the yield; a fixed ingredient keeps its amount", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart?servings=8");
+    expect(html).toContain("Serves 8");
+    expect(html).toContain("400 g flour");
+    expect(html).toContain("6 lemons");
+    expect(html).toContain("1 vanilla pod");
+    expect(html).not.toContain("2 vanilla pods");
+    expect(html).toContain("salt, to taste");
+    expect(html).toMatch(/<dt[^>]*>Makes<\/dt><dd[^>]*>2 tart<\/dd>/);
+    expect(html).toContain(">Reset<"); // a requested scale can be cleared
+  });
+
+  test("a single unnamed component renders without a heading, and no servings hides the scale control", async () => {
+    await callServerFn(createRecipe, {
+      name: "Toast",
+      components: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
+    });
+    const html = await renderRoute("/recipes/toast");
+    expect(html).toContain("1 bread slice");
+    expect(html).toContain("Toast it.");
+    expect(html).not.toContain("<h2");
+    expect(html).toContain("Servings not set");
+    expect(html).not.toContain('aria-label="Scale servings"');
+    expect(html).not.toContain(">To finish<"); // no recipe-level steps
+  });
+});
+
+describe("nextServings", () => {
+  test("steps by one, snapping a fraction to the whole number on the side it is heading, never below 1", () => {
+    expect(nextServings(4, 1)).toBe(5);
+    expect(nextServings(4, -1)).toBe(3);
+    expect(nextServings(2.5, 1)).toBe(3);
+    expect(nextServings(2.5, -1)).toBe(2);
+    expect(nextServings(1, -1)).toBe(1);
+    expect(nextServings(0.5, -1)).toBe(1);
+    expect(nextServings(0.5, 1)).toBe(1);
   });
 });
 
