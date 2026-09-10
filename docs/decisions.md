@@ -34,3 +34,4 @@ One line each. Newest at the bottom. Reverse a decision by adding a new row, not
 | 28 | TanStack Start is the framework | Bun HTML imports + hand-rolled `Bun.serve` routes | Jason's call. File routing, typed server functions, SSR/SPA toggle. Supersedes 5's "no Vite": Vite runs via `bun --bun`, Nitro Bun preset in prod. RC status accepted |
 | 29 | SPA mode | Full SSR | LAN app, no SEO. Prerendered shell plus cached data is the standard offline PWA shape |
 | 30 | Server functions for app calls, server routes only under `/api/*` | REST for everything | Type safety end to end. `/api/*` kept for health, images, and future external import |
+| 31 | vitest via `bun run test` | `bun test` | One runner shared with the Vite toolchain; the gate is the same command everywhere. Never `bun test` |

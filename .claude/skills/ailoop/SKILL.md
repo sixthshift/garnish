@@ -32,7 +32,7 @@ When a milestone completes, print one line to the user (`M1 done, 6 tasks, 6 com
    ```
    git log -1 --format=%H%n%s
    git status --short
-   bun run check && bun test
+   bun run check && bun run test
    ```
    Pass means: a new commit exists naming the task id, tree is clean, gate is green.
 4. **Record.** Tick the task in `docs/plan.md`. Append to Log: `YYYY-MM-DD  Mx.y  done  <7-char sha>  <one clause>`. Copy any Blocked or Questions lines the agent returned into those sections. Commit: `plan: Mx.y`.
@@ -67,7 +67,7 @@ Rules that override anything else:
 - Tests for every pure function and every server function or route you create, in this task.
 
 When implemented, run the task's own Check, then the gate:
-  bun run check && bun test
+  bun run check && bun run test
 Both must pass. If they cannot after a genuine attempt, do not commit; report BLOCKED.
 
 If green, commit everything with message "{id} {short task name}" and the trailer:

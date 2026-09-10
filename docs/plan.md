@@ -12,7 +12,7 @@ What one task looks like, whoever runs it (an ailoop subagent, a /loop firing, o
 4. Verify with the task's own check. Then run the full gate:
    ```
    bun run check     # tsc --noEmit
-   bun test
+   bun run test      # vitest run
    ```
    Both must pass. A failing gate is not done. Fix it or revert the task.
 5. Commit with a one-line message naming the task id, e.g. `M1.3 recipe document schema`. Attribution trailer per `CLAUDE.md`.
@@ -46,13 +46,13 @@ test/           mirrors src/
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vite build`), `start` (`bun run .output/server/index.mjs`), `check` (`tsc --noEmit`), `test`, `migrate`, `seed`, `backup`.
+Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vite build`), `start` (`bun run .output/server/index.mjs`), `check` (`tsc --noEmit`), `test` (`vitest run`), `migrate`, `seed`, `backup`.
 
 ## M0 Foundations
 
-- [ ] **M0.1 Scaffold TanStack Start.** Add `@tanstack/react-start`, `@tanstack/react-router`, `react@19`, `react-dom@19`, their types, `vite`, `@vitejs/plugin-react`, `nitro`, `@tailwindcss/vite`, `tailwindcss`, `zod`, `@sixthshift/design-system`, `@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono`. Create `vite.config.ts` with `tanstackStart({ spa: { enabled: true } })`, `nitro({ preset: 'bun' })`, `viteReact()`, `tailwindcss()`. `src/router.tsx`, `src/routes/__root.tsx`, `src/routes/index.tsx` rendering "garnish". Scripts as listed. Check: `bun run dev` serves `/`; `bun run build` then `bun run start` serves `/` from `.output`; `bun run check` passes.
+- [ ] **M0.1 Scaffold TanStack Start.** Add `@tanstack/react-start`, `@tanstack/react-router`, `react@19`, `react-dom@19`, their types, `vite`, `@vitejs/plugin-react`, `nitro`, `@tailwindcss/vite`, `tailwindcss`, `zod`, `@sixthshift/design-system`, `@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono`, `vitest`. Create `vite.config.ts` with `tanstackStart({ spa: { enabled: true } })`, `nitro({ preset: 'bun' })`, `viteReact()`, `tailwindcss()`. `src/router.tsx`, `src/routes/__root.tsx`, `src/routes/index.tsx` rendering "garnish". Scripts as listed. Check: `bun run dev` serves `/`; `bun run build` then `bun run start` serves `/` from `.output`; `bun run check` passes.
 - [ ] **M0.2 Design system spike.** `src/styles.css` with `@import "tailwindcss"`, the theme import, and `@source "../node_modules/@sixthshift/design-system"`. Import both fonts in `__root.tsx`. Index route renders a `Button` and a `Heading` from the design system. Check: built CSS contains a design-system token variable and the button renders styled in dev and in the production build.
-- [ ] **M0.3 Gate and health.** `bun test` with one trivial test. Server route `src/routes/api/health.ts` returning `{"ok":true}`. `data/` created on boot if missing. Check: gate passes, `curl /api/health` in dev and in the built server.
+- [ ] **M0.3 Gate and health.** vitest configured in `vite.config.ts` (`test.include: ['test/**/*.test.ts']`, node environment), `bun run test` with one trivial test. Server route `src/routes/api/health.ts` returning `{"ok":true}`. `data/` created on boot if missing. Check: gate passes, `curl /api/health` in dev and in the built server.
 
 ## M1 Data layer
 

@@ -25,6 +25,7 @@ Keep the argument in `docs/`; keep operating constraints here.
 - **Frontend:** React 19 + Tailwind 4 via `@tailwindcss/vite`. Phone-first PWA.
 - **UI kit:** `@sixthshift/design-system` (Jason's personal system). Subpath imports only, e.g. `@sixthshift/design-system/button`. Check its exports before writing any UI element. Missing primitives are built locally from its pieces.
 - **Locale:** metric, en-AU spelling. UUID ids, zod validation, images on disk.
+- **Tests:** vitest via `bun run test`. Not `bun test`.
 - **Deploy:** one Docker container, SQLite file on a volume.
 - **Cooklang:** borrow sections, `=` fixed quantities, servings scaling, aisle config. Do not adopt the file format.
 
@@ -36,7 +37,7 @@ Copy decisions from the incumbents by default; diverge only where this file says
 Default to using Bun instead of Node.js.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
+- Tests use vitest, run as `bun run test`. Never `bun test`. This overrides the generic Bun guidance.
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
 - Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
@@ -55,10 +56,10 @@ Default to using Bun instead of Node.js.
 
 ## Testing
 
-Use `bun test` to run tests.
+vitest, always through the script: `bun run test`. Never call `bun test` directly; the two runners have different semantics and the gate must be one command everywhere.
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+```ts
+import { test, expect } from "vitest";
 
 test("hello world", () => {
   expect(1).toBe(1);

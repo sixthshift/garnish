@@ -25,7 +25,7 @@ browser (PWA) ──server fns / HTTP──▶ TanStack Start (Nitro, Bun) ─�
 | Storage | SQLite (`bun:sqlite`) |
 | Validation | zod, one schema per document, shared by API and editor |
 | IDs | UUID, plus slug on recipe (Mealie) |
-| Tests | `bun test` |
+| Tests | vitest, run as `bun run test` |
 | Deploy | Docker, single container, one volume |
 
 ## Data model
