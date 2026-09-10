@@ -1,12 +1,10 @@
 {
   "name": "garnish",
   "module": "index.ts",
-  "type": "module",
-  "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5"
-  }
+  },
+  "private": true,
+  "type": "module"
 }
