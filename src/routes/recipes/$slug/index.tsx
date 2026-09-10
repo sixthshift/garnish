@@ -8,9 +8,12 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { z } from "zod";
+import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientRow } from "../../../components/IngredientRow";
 import { RecipeHeader } from "../../../components/RecipeHeader";
+import { mergeIngredients } from "../../../domain/merge";
 import type { Component, Ingredient, Recipe, Step } from "../../../domain/recipe";
+import { useIngredientMode } from "../../../lib/prefs";
 import { getRecipe } from "../../../server/recipes";
 
 export const RecipeViewSearch = z.object({
@@ -40,6 +43,9 @@ function RecipePage() {
   // A servings search param means the loader scaled the document away from
   // the recipe's own servings; the ingredient amounts get a "scaled" class.
   const scaled = requested !== undefined;
+  const [ingredientMode] = useIngredientMode();
+  const summary = ingredientMode === "summary";
+  const hasIngredients = recipe.components.some((component) => component.ingredients.length > 0);
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
@@ -63,8 +69,16 @@ function RecipePage() {
       />
       <ScaleControl servings={recipe.recipeServings} />
 
+      {hasIngredients && (
+        <div className="flex justify-end">
+          <IngredientModeToggle />
+        </div>
+      )}
+
+      {summary && hasIngredients && <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />}
+
       {recipe.components.map((component) => (
-        <ComponentSection key={component.id} component={component} recipeId={recipe.id} scaled={scaled} />
+        <ComponentSection key={component.id} component={component} recipeId={recipe.id} scaled={scaled} hideIngredients={summary} />
       ))}
 
       {recipe.steps.length > 0 && (
@@ -129,22 +143,44 @@ function ScaleControl({ servings }: { servings: number }) {
  * component with one of the two lists empty hides that list (a flat recipe
  * keeps its steps at recipe level, so "No steps" under every ingredient list
  * would be noise); one with both empty says so instead of rendering nothing.
+ *
+ * `hideIngredients` is set in Summary mode: this component's own ingredients
+ * are already shown in the one merged list above (`mergeIngredients`), so
+ * they are skipped here. A component whose only content is ingredients then
+ * has nothing left to show and renders nothing at all — not the "empty"
+ * fallback, which stays for a component that is genuinely blank.
  */
-function ComponentSection({ component, recipeId, scaled }: { component: Component; recipeId: string; scaled: boolean }) {
+function ComponentSection({
+  component,
+  recipeId,
+  scaled,
+  hideIngredients = false,
+}: {
+  component: Component;
+  recipeId: string;
+  scaled: boolean;
+  hideIngredients?: boolean;
+}) {
   const name = component.name.trim();
+  const hasIngredients = component.ingredients.length > 0;
+  const hasSteps = component.steps.length > 0;
+  if (hideIngredients && hasIngredients && !hasSteps) return null;
+
+  const showIngredients = !hideIngredients && hasIngredients;
+
   return (
     <section className="flex flex-col gap-3" aria-label={name === "" ? undefined : name}>
       {name !== "" && <SectionTitle as="h2">{name}</SectionTitle>}
       <EmptyBoundary
-        isEmpty={component.ingredients.length === 0 && component.steps.length === 0}
+        isEmpty={!showIngredients && !hasSteps}
         fallback={
           <Muted as="p" className="text-sm" data-empty="component">
             No ingredients or steps yet
           </Muted>
         }
       >
-        {component.ingredients.length > 0 && <IngredientList ingredients={component.ingredients} recipeId={recipeId} scaled={scaled} />}
-        {component.steps.length > 0 && <StepList steps={component.steps} />}
+        {showIngredients && <IngredientList ingredients={component.ingredients} recipeId={recipeId} scaled={scaled} />}
+        {hasSteps && <StepList steps={component.steps} />}
       </EmptyBoundary>
     </section>
   );
