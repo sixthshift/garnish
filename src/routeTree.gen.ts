@@ -10,8 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
+import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as ApiImagesFileRouteImport } from './routes/api/images/$file'
+import { Route as RecipesSlugIndexRouteImport } from './routes/recipes/$slug/index'
+import { Route as RecipesSlugEditRouteImport } from './routes/recipes/$slug/edit'
 import { Route as ApiRecipesIdImageRouteImport } from './routes/api/recipes/$id/image'
 
 const IndexRoute = IndexRouteImport.update({
@@ -19,14 +23,34 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecipesNewRoute = RecipesNewRouteImport.update({
+  id: '/recipes/new',
+  path: '/recipes/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiImagesFileRoute = ApiImagesFileRouteImport.update({
   id: '/api/images/$file',
   path: '/api/images/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecipesSlugIndexRoute = RecipesSlugIndexRouteImport.update({
+  id: '/recipes/$slug/',
+  path: '/recipes/$slug/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecipesSlugEditRoute = RecipesSlugEditRouteImport.update({
+  id: '/recipes/$slug/edit',
+  path: '/recipes/$slug/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRecipesIdImageRoute = ApiRecipesIdImageRouteImport.update({
@@ -37,41 +61,76 @@ const ApiRecipesIdImageRoute = ApiRecipesIdImageRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/api/health': typeof ApiHealthRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/recipes/$slug/edit': typeof RecipesSlugEditRoute
+  '/recipes/$slug/': typeof RecipesSlugIndexRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/api/health': typeof ApiHealthRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/recipes/$slug/edit': typeof RecipesSlugEditRoute
+  '/recipes/$slug': typeof RecipesSlugIndexRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/api/health': typeof ApiHealthRoute
+  '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/recipes/$slug/edit': typeof RecipesSlugEditRoute
+  '/recipes/$slug/': typeof RecipesSlugIndexRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/api/health' | '/api/images/$file' | '/api/recipes/$id/image'
+    | '/'
+    | '/settings'
+    | '/api/health'
+    | '/recipes/new'
+    | '/api/images/$file'
+    | '/recipes/$slug/edit'
+    | '/recipes/$slug/'
+    | '/api/recipes/$id/image'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/health' | '/api/images/$file' | '/api/recipes/$id/image'
+  to:
+    | '/'
+    | '/settings'
+    | '/api/health'
+    | '/recipes/new'
+    | '/api/images/$file'
+    | '/recipes/$slug/edit'
+    | '/recipes/$slug'
+    | '/api/recipes/$id/image'
   id:
     | '__root__'
     | '/'
+    | '/settings'
     | '/api/health'
+    | '/recipes/new'
     | '/api/images/$file'
+    | '/recipes/$slug/edit'
+    | '/recipes/$slug/'
     | '/api/recipes/$id/image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRoute: typeof SettingsRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  RecipesNewRoute: typeof RecipesNewRoute
   ApiImagesFileRoute: typeof ApiImagesFileRoute
+  RecipesSlugEditRoute: typeof RecipesSlugEditRoute
+  RecipesSlugIndexRoute: typeof RecipesSlugIndexRoute
   ApiRecipesIdImageRoute: typeof ApiRecipesIdImageRoute
 }
 
@@ -84,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
@@ -91,11 +157,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recipes/new': {
+      id: '/recipes/new'
+      path: '/recipes/new'
+      fullPath: '/recipes/new'
+      preLoaderRoute: typeof RecipesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/images/$file': {
       id: '/api/images/$file'
       path: '/api/images/$file'
       fullPath: '/api/images/$file'
       preLoaderRoute: typeof ApiImagesFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recipes/$slug/': {
+      id: '/recipes/$slug/'
+      path: '/recipes/$slug'
+      fullPath: '/recipes/$slug/'
+      preLoaderRoute: typeof RecipesSlugIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recipes/$slug/edit': {
+      id: '/recipes/$slug/edit'
+      path: '/recipes/$slug/edit'
+      fullPath: '/recipes/$slug/edit'
+      preLoaderRoute: typeof RecipesSlugEditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/recipes/$id/image': {
@@ -110,8 +197,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRoute: SettingsRoute,
   ApiHealthRoute: ApiHealthRoute,
+  RecipesNewRoute: RecipesNewRoute,
   ApiImagesFileRoute: ApiImagesFileRoute,
+  RecipesSlugEditRoute: RecipesSlugEditRoute,
+  RecipesSlugIndexRoute: RecipesSlugIndexRoute,
   ApiRecipesIdImageRoute: ApiRecipesIdImageRoute,
 }
 export const routeTree = rootRouteImport
