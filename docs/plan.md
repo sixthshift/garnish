@@ -24,7 +24,8 @@ Rules:
 - **Blocked?** Write the blocker under Blocked with the task id and what you tried. Move to the next task that does not depend on it. Never guess past a blocker on a decision; guess freely on implementation detail, and when unsure copy Mealie.
 - **Question for Jason?** Write it under Questions. Pick the Mealie answer and continue. Do not stop.
 - **Found a design gap?** Add a row to `decisions.md`. Do not edit existing rows. Note it in the Log.
-- **UI element needed?** Check the design system's exports first (`node_modules/@sixthshift/design-system/package.json`). Build locally only if absent, under `src/client/ui/`.
+- **Framework questions?** TanStack Start docs at https://tanstack.com/start/latest. Server functions for app calls, server routes only under `src/routes/api/`. SPA mode stays on.
+- **UI element needed?** Check the design system's exports first (`node_modules/@sixthshift/design-system/package.json`). Build locally only if absent, under `src/components/ui/`.
 - **Task too big for one iteration?** Split it in place into `Mx.y.a`, `Mx.y.b`. Do the first part.
 - **Tests:** every pure function and every API route gets tests in the same task that creates it. No task is done with a TODO test.
 - **No new dependencies** beyond the list in M0 without a decisions.md row saying why.
@@ -33,22 +34,25 @@ Rules:
 
 ```
 src/
-  server/       Bun.serve entry, routes, middleware
-  db/           schema.sql migrations, migrate.ts, seed.ts, repositories
-  domain/       zod schemas, scaling, formatting. Pure, no IO
-  client/       React app: routes, views, ui/ (local primitives)
-  index.html    Bun HTML import entry
+  routes/       TanStack Start file routes: pages, and server routes under routes/api/
+  server/       server functions (createServerFn), grouped by resource; db access only here
+  db/           migrations/*.sql, migrate.ts, seed.ts, repositories
+  domain/       zod schemas, scaling, formatting. Pure, no IO, importable by client
+  components/   React components; ui/ holds local primitives the design system lacks
+  styles.css    Tailwind entry with the design system's three lines
+  router.tsx    getRouter()
+vite.config.ts  tanstackStart({ spa }), nitro({ preset: 'bun' }), viteReact(), tailwindcss()
 test/           mirrors src/
-data/           runtime volume: garnish.db, images/  (gitignored)
+data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev`, `start`, `check`, `test`, `migrate`, `seed`, `backup`.
+Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vite build`), `start` (`bun run .output/server/index.mjs`), `check` (`tsc --noEmit`), `test`, `migrate`, `seed`, `backup`.
 
 ## M0 Foundations
 
-- [ ] **M0.1 Dependencies.** Install: `react`, `react-dom`, `@types/react`, `@types/react-dom`, `tailwindcss`, `bun-plugin-tailwind`, `@sixthshift/design-system`, `@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono`, `zod`. Add `bunfig.toml` with the Tailwind plugin. Add the scripts above. Check: `bun install` clean, `bun run check` passes on an empty `src/`.
-- [ ] **M0.2 Design system spike.** `src/index.html` loads `src/client/main.tsx`, which renders one `Button` from `@sixthshift/design-system/button` and one `Heading`. CSS entry has the three lines from the design system README (`@import "tailwindcss"`, theme import, `@source`). Check: `bun run dev`, fetch `/`, and the served CSS contains a design-system token class. If Tailwind 4 will not compile through the Bun plugin, fall back to `tailwindcss` CLI as a `prebuild` step and record it in decisions.md.
-- [ ] **M0.3 Layout and gate.** Create the directories above, a `src/server/index.ts` that serves the HTML and `/api/health`, and one trivial test. Check: gate passes, `curl /api/health` returns `{"ok":true}`.
+- [ ] **M0.1 Scaffold TanStack Start.** Add `@tanstack/react-start`, `@tanstack/react-router`, `react@19`, `react-dom@19`, their types, `vite`, `@vitejs/plugin-react`, `nitro`, `@tailwindcss/vite`, `tailwindcss`, `zod`, `@sixthshift/design-system`, `@fontsource-variable/inter`, `@fontsource-variable/jetbrains-mono`. Create `vite.config.ts` with `tanstackStart({ spa: { enabled: true } })`, `nitro({ preset: 'bun' })`, `viteReact()`, `tailwindcss()`. `src/router.tsx`, `src/routes/__root.tsx`, `src/routes/index.tsx` rendering "garnish". Scripts as listed. Check: `bun run dev` serves `/`; `bun run build` then `bun run start` serves `/` from `.output`; `bun run check` passes.
+- [ ] **M0.2 Design system spike.** `src/styles.css` with `@import "tailwindcss"`, the theme import, and `@source "../node_modules/@sixthshift/design-system"`. Import both fonts in `__root.tsx`. Index route renders a `Button` and a `Heading` from the design system. Check: built CSS contains a design-system token variable and the button renders styled in dev and in the production build.
+- [ ] **M0.3 Gate and health.** `bun test` with one trivial test. Server route `src/routes/api/health.ts` returning `{"ok":true}`. `data/` created on boot if missing. Check: gate passes, `curl /api/health` in dev and in the built server.
 
 ## M1 Data layer
 
@@ -65,24 +69,24 @@ Scripts in `package.json`: `dev`, `start`, `check`, `test`, `migrate`, `seed`, `
 - [ ] **M2.2 Quantity formatting.** `src/domain/format.ts`: `formatQuantity(q, unit)` renders ½ ⅓ ¼ ¾ style fractions when `unit.fraction`, else decimals to 2 places, trims trailing zeros, picks plural or abbreviation per unit flags. Check: table-driven tests.
 - [ ] **M2.3 Ingredient line.** `formatIngredient(ing)`: quantity, unit, food, note in en-AU order, falling back to `originalText` when food is null. Check: tests for each fallback path.
 
-## M3 API
+## M3 Server layer
 
-- [ ] **M3.1 Server scaffold.** `Bun.serve` with `routes`, JSON helpers, zod-validated bodies returning 400 with issues, 404 shape, error handler. Test helper that boots a server on port 0 against `:memory:` and returns a `fetch`. Check: health test through the helper.
-- [ ] **M3.2 Recipe routes.** `GET /api/recipes?q=&tag=`, `GET /api/recipes/:slug`, `POST /api/recipes`, `PUT /api/recipes/:id`, `DELETE /api/recipes/:id`. `GET /api/recipes/:slug?servings=6` returns the scaled document. Check: tests per route, including validation failure and scaling.
-- [ ] **M3.3 Reference routes.** `∥` `/api/foods`, `/api/units`, `/api/aisles`, `/api/tags`: list with `?q=`, create, update, delete. Check: tests per resource.
-- [ ] **M3.4 Images.** `POST /api/recipes/:id/image` multipart, stored under `data/images/<recipeId>.<ext>`, served at `/images/...`. Replaces existing. Recipe `image` field updated. Check: upload then GET returns same bytes.
+- [ ] **M3.1 Server function scaffold.** `src/server/db.ts` opens the SQLite file from `DATA_DIR`, runs migrations and seed on first import. Helper that wraps `createServerFn` with a zod input validator and maps thrown `NotFound` to a typed error. Test helper that points `DATA_DIR` at a temp dir and calls server functions directly. Check: a test calls a trivial server function through the helper.
+- [ ] **M3.2 Recipe server functions.** `listRecipes({q, tag})`, `getRecipe({slug, servings?})` returning the scaled document when `servings` is given, `createRecipe(doc)`, `updateRecipe({id, doc})`, `deleteRecipe({id})`. Check: tests per function, including validation failure and scaling.
+- [ ] **M3.3 Reference server functions.** `∥` foods, units, aisles, tags: list with `q`, create, update, delete, findOrCreate. Check: tests per resource.
+- [ ] **M3.4 Images.** Server route `POST /api/recipes/$id/image` multipart, stored under `data/images/<recipeId>.<ext>`, served by `GET /api/images/$file`. Replaces existing and updates `recipe.image`. Check: upload then GET returns same bytes.
 - [ ] **M3.5 Backup.** `bun run backup` runs `VACUUM INTO data/backups/garnish-<timestamp>.db`. Check: file exists and opens.
 
 ## M4 Frontend shell
 
-- [ ] **M4.1 App skeleton.** Router (hash or history, keep it small), layout with a bottom nav on phone and side nav wider, theme following system via design system tokens, fonts imported. Pages stubbed: Recipes, Recipe, Edit, Settings. Check: each route renders without console errors in `bun run dev`.
-- [ ] **M4.2 API client.** `src/client/api.ts`: typed fetch wrappers using the zod types. Check: unit tests with a mocked fetch.
+- [ ] **M4.1 App skeleton.** Root layout with a bottom nav on phone and side nav wider, theme following system via design system tokens. File routes stubbed: `/` recipes, `/recipes/$slug`, `/recipes/$slug/edit`, `/recipes/new`, `/settings`. Pending and error components from the design system. Check: each route renders without console errors in `bun run dev`.
+- [ ] **M4.2 Loaders.** Each route's `loader` calls the matching server function; components read via `Route.useLoaderData()`. Mutations call server functions then `router.invalidate()`. Check: type errors if a loader's return shape drifts from the zod type.
 - [ ] **M4.3 Recipe list.** Cards with image, name, tags. Search box, tag filter. Empty state. Check: renders seeded recipes from a running server.
-- [ ] **M4.4 Recipe view.** Header with image, times, servings, rating. Components in order, each with its ingredient list then its steps. Notes. Scale control adjusts servings and re-renders via the `?servings=` endpoint. Check: manual with two-component recipe.
+- [ ] **M4.4 Recipe view.** Header with image, times, servings, rating. Components in order, each with its ingredient list then its steps. Notes. Scale control adjusts servings via the `servings` search param, which the loader passes to `getRecipe`. Check: manual with two-component recipe.
 
 ## M5 Editor
 
-- [ ] **M5.1 Local primitives.** `src/client/ui/`: `NumberStepper`, `ReorderList` (buttons up/down first, drag later), `ImageUpload`. Built from design system pieces. Check: each has a render test.
+- [ ] **M5.1 Local primitives.** `src/components/ui/`: `NumberStepper`, `ReorderList` (buttons up/down first, drag later), `ImageUpload`. Built from design system pieces. Check: each has a render test.
 - [ ] **M5.2 Recipe form.** Name, description, servings, yield fields, times, rating, tags (design system `tag-input`), image. Check: create and save a recipe with one component.
 - [ ] **M5.3 Component editing.** Add, rename, reorder, delete components. Each shows an ingredient list and a step list. Check: two-component recipe saves and reloads in order.
 - [ ] **M5.4 Ingredient rows.** Quantity, unit autocomplete, food autocomplete with find-or-create, note, fixed toggle. Move ingredient between components. Check: null quantity and text-only rows save.
@@ -97,11 +101,11 @@ Scripts in `package.json`: `dev`, `start`, `check`, `test`, `migrate`, `seed`, `
 ## M7 PWA
 
 - [ ] **M7.1 Manifest and icons.** `manifest.webmanifest`, icons, theme colour from tokens, installable. Check: Lighthouse installable, or Chrome install prompt appears.
-- [ ] **M7.2 Service worker.** App shell precached. Recipe documents and images cached on view, served from cache when offline. Writes are not attempted offline; editor shows an offline notice. Check: view a recipe, go offline, reload, it renders.
+- [ ] **M7.2 Service worker.** Prerendered SPA shell and built assets precached. Server function GET responses and images cached on view, served when offline. Writes are not attempted offline; editor shows an offline notice. Check: view a recipe, go offline, reload, it renders.
 
 ## M8 Docker
 
-- [ ] **M8.1 Dockerfile.** `oven/bun` base, multi-stage, production build, runs migrations on start, `data/` as the volume, port 3000. Check: `docker build` then `docker run` with a volume, create a recipe, restart, it persists.
+- [ ] **M8.1 Dockerfile.** `oven/bun` base, multi-stage: `bun install`, `bun run build`, then copy `.output` into a slim stage. Migrations run on boot. `DATA_DIR=/data` as the volume, port 3000. Check: `docker build` then `docker run` with a volume, create a recipe, restart, it persists.
 - [ ] **M8.2 Compose example.** `docker-compose.yml` with the volume and port. README section: run, backup, restore. Check: `docker compose up` works from a clean clone.
 
 ## M9 Finish

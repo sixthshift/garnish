@@ -4,13 +4,13 @@ How garnish is built. Decisions and their alternatives are in [decisions.md](dec
 
 ## Shape
 
-- One Bun process. `Bun.serve()` serves the API and the frontend.
+- One Bun process. TanStack Start on Nitro's Bun preset serves the app, server functions and `/api/*` routes.
 - One SQLite file. `bun:sqlite`, WAL mode, foreign keys on.
 - One Docker container. The SQLite file lives on a mounted volume.
 - LAN only. No auth, no users, no accounts.
 
 ```
-browser (PWA) ──HTTP/JSON──▶ Bun.serve ──▶ bun:sqlite ──▶ garnish.db (volume)
+browser (PWA) ──server fns / HTTP──▶ TanStack Start (Nitro, Bun) ──▶ bun:sqlite ──▶ garnish.db (volume)
 ```
 
 ## Stack
@@ -18,8 +18,9 @@ browser (PWA) ──HTTP/JSON──▶ Bun.serve ──▶ bun:sqlite ──▶ 
 | Layer | Choice |
 |---|---|
 | Runtime | Bun |
-| Server | `Bun.serve()` routes |
-| Frontend | React + Tailwind 4 via Bun HTML imports |
+| Framework | TanStack Start, SPA mode, file routes in `src/routes/` |
+| Build | Vite via `bun --bun vite`; Nitro Bun preset for production |
+| Frontend | React 19 + Tailwind 4 via `@tailwindcss/vite` |
 | UI kit | `@sixthshift/design-system`, subpath imports. Gaps (stepper, reorder list, image upload) built locally from its primitives |
 | Storage | SQLite (`bun:sqlite`) |
 | Validation | zod, one schema per document, shared by API and editor |
@@ -75,13 +76,15 @@ recipe_tag    recipe_id, tag_id
 
 ## API
 
-- JSON over HTTP under `/api/`. Resource names and field names follow Mealie where the concept exists.
-- Recipe read returns the full nested document: recipe, components, ingredients, steps, tags.
+- **Server functions** (`createServerFn`) for everything the app itself calls: recipe CRUD, list, scale, reference lists. Input validated with the shared zod schemas. Reads use `method: 'GET'` so they are cacheable.
+- **Server routes** under `/api/*` only for callers outside the app: `/api/health`, `/api/images/*`, and later import hooks. Field names follow Mealie where the concept exists.
+- Recipe read returns the full nested document: recipe, components, ingredients, steps, notes, tags.
 - Recipe write accepts the same document. One transaction, whole recipe replaced.
+- Route loaders call server functions; TanStack Query is not added unless a task proves it necessary.
 
 ## Frontend
 
-- Responsive PWA, phone first. Installable, offline read of cached recipes, wake lock in cook view.
+- Responsive PWA, phone first. SPA shell prerendered by Start; service worker caches the shell, recipe reads and images. Installable, offline read, wake lock in cook view.
 - Cook view: one component at a time, large type, scale control always visible.
 - Editor: components are the primary unit. Each has an ingredient list and a step list. Add, rename, reorder, move ingredients between them.
 - Theme follows the system via the design system's `data-theme`. Fonts: Inter and JetBrains Mono, self-hosted via fontsource.

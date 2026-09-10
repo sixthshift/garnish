@@ -20,7 +20,9 @@ Keep the argument in `docs/`; keep operating constraints here.
 - **Recipe internals:** a recipe is an ordered list of named components; each owns its ingredients and may hold several steps. Sub-recipes hang off `food.recipe_id`; the column exists, the behaviour is deferred.
 - **Auth:** none. No users table, no sessions.
 - **AI:** none in v1. Design the recipe document so a future `claude -p` import returns exactly what the editor saves.
-- **Frontend:** React + Tailwind 4 via Bun HTML imports. Phone-first PWA.
+- **Framework:** TanStack Start (React 19, file routes under `src/routes/`). Vite is its build tool, run via `bun --bun vite`. This overrides the generic Bun guidance below about HTML imports and avoiding Vite. Server functions for the app's own data calls; server routes only for `/api/*` endpoints that outside callers need (health, images, future import).
+- **Rendering:** SPA mode (`spa.enabled`). No SEO need; the PWA shell caches cleanly.
+- **Frontend:** React 19 + Tailwind 4 via `@tailwindcss/vite`. Phone-first PWA.
 - **UI kit:** `@sixthshift/design-system` (Jason's personal system). Subpath imports only, e.g. `@sixthshift/design-system/button`. Check its exports before writing any UI element. Missing primitives are built locally from its pieces.
 - **Locale:** metric, en-AU spelling. UUID ids, zod validation, images on disk.
 - **Deploy:** one Docker container, SQLite file on a volume.
@@ -43,7 +45,7 @@ Default to using Bun instead of Node.js.
 
 ## APIs
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
+- HTTP is handled by TanStack Start's server (Nitro, Bun preset). Don't add `express` or a second server.
 - `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
 - `Bun.redis` for Redis. Don't use `ioredis`.
 - `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
@@ -65,74 +67,12 @@ test("hello world", () => {
 
 ## Frontend
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+This project uses TanStack Start, not Bun HTML imports. Vite is run through Bun:
 
-Server:
-
-```ts#index.ts
-import index from "./index.html"
-
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
+```json
+{ "dev": "bun --bun vite dev", "build": "bun --bun vite build", "start": "bun run .output/server/index.mjs" }
 ```
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
+`vite.config.ts` plugins: `tanstackStart({ spa: { enabled: true } })`, `nitro({ preset: "bun" })`, `viteReact()`, `tailwindcss()`. Routes and server routes live in `src/routes/`. Server functions via `createServerFn`, validated with zod. `bun:sqlite` is still the store and is imported only from server code.
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
