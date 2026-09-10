@@ -9,6 +9,7 @@ import {
   appliedMigrations,
   databasePath,
   listMigrations,
+  listMigrationsFrom,
   migrate,
   openDatabase,
   parseMigrationFile,
@@ -150,4 +151,21 @@ test("the default migrations directory resolves and applies cleanly twice", asyn
   const second = await migrate(db);
   expect(second).toEqual([]);
   expect(appliedMigrations(db).size).toBe(first.length);
+});
+
+test("listMigrationsFrom works on names alone, ignoring non-migrations", () => {
+  const found = listMigrationsFrom(["002_tag.sql", "notes.txt", "001_recipe.sql", "README.md"]);
+  expect(found.map((m) => m.file)).toEqual(["001_recipe.sql", "002_tag.sql"]);
+  expect(() => listMigrationsFrom(["001_a.sql", "001_b.sql"])).toThrow(/Duplicate migration id 1/);
+});
+
+test("migrate accepts bundled sources instead of a directory", async () => {
+  const db = openDatabase(":memory:");
+  const first = await migrate(db, { sources: TWO });
+  expect(first.map((m) => m.file)).toEqual(["001_recipe.sql", "002_tag.sql"]);
+  expect(tables(db)).toEqual(["migration", "recipe", "recipe_tag", "tag"]);
+  expect(await migrate(db, { sources: TWO })).toEqual([]);
+
+  const { "002_tag.sql": _dropped, ...onlyOne } = TWO;
+  await expect(migrate(db, { sources: onlyOne })).rejects.toThrow(/missing from the bundled migrations/);
 });

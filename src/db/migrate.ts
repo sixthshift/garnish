@@ -34,9 +34,9 @@ export function parseMigrationFile(file: string): Migration | null {
   return { id: Number(m[1]), name: m[2]!, file };
 }
 
-/** All migration files in `dir`, sorted by id. Throws on duplicate ids. */
-export function listMigrations(dir: string = MIGRATIONS_DIR): Migration[] {
-  const found = readdirSync(dir)
+/** The migrations among `files`, sorted by id; other names are ignored. Throws on duplicate ids. */
+export function listMigrationsFrom(files: Iterable<string>): Migration[] {
+  const found = Array.from(files)
     .map(parseMigrationFile)
     .filter((m): m is Migration => m !== null)
     .sort((a, b) => a.id - b.id);
@@ -46,6 +46,11 @@ export function listMigrations(dir: string = MIGRATIONS_DIR): Migration[] {
     }
   }
   return found;
+}
+
+/** All migration files in `dir`, sorted by id. Throws on duplicate ids. */
+export function listMigrations(dir: string = MIGRATIONS_DIR): Migration[] {
+  return listMigrationsFrom(readdirSync(dir));
 }
 
 const CREATE_TABLE = `
@@ -62,7 +67,15 @@ export function appliedMigrations(db: Database): Map<number, string> {
   return new Map(rows.map((r) => [r.id, r.name]));
 }
 
-export type MigrateOptions = { migrationsDir?: string };
+/** Migration SQL keyed by file name (`NNN_name.sql`), for callers that bundle the files. */
+export type MigrationSources = Record<string, string>;
+
+export type MigrateOptions = {
+  /** Directory to read `*.sql` from. Default: the source tree's `migrations/`. Ignored when `sources` is given. */
+  migrationsDir?: string;
+  /** Already-loaded SQL by file name; the bundled server passes this because it has no directory to read. */
+  sources?: MigrationSources;
+};
 
 /**
  * Apply every pending migration in id order. Each file runs in its own
@@ -71,19 +84,23 @@ export type MigrateOptions = { migrationsDir?: string };
  */
 export async function migrate(db: Database, opts: MigrateOptions = {}): Promise<Migration[]> {
   const dir = opts.migrationsDir ?? MIGRATIONS_DIR;
-  const all = listMigrations(dir);
+  const where = opts.sources ? "the bundled migrations" : dir;
+  const all = opts.sources ? listMigrationsFrom(Object.keys(opts.sources)) : listMigrations(dir);
   const applied = appliedMigrations(db);
 
   for (const [id, name] of applied) {
     const onDisk = all.find((m) => m.id === id);
-    if (!onDisk) throw new Error(`Migration ${id} (${name}) is recorded but missing from ${dir}`);
+    if (!onDisk) throw new Error(`Migration ${id} (${name}) is recorded but missing from ${where}`);
     if (onDisk.name !== name) {
       throw new Error(`Migration ${id} is recorded as "${name}" but the file is "${onDisk.name}"`);
     }
   }
 
   const pending = all.filter((m) => !applied.has(m.id));
-  const sources = await Promise.all(pending.map((m) => Bun.file(join(dir, m.file)).text()));
+  const { sources: bundled } = opts;
+  const sources = bundled
+    ? pending.map((m) => bundled[m.file]!)
+    : await Promise.all(pending.map((m) => Bun.file(join(dir, m.file)).text()));
 
   const insert = db.prepare("INSERT INTO migration (id, name) VALUES (?, ?)");
   const apply = db.transaction((m: Migration, sql: string) => {
