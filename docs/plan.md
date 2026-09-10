@@ -62,8 +62,8 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 ## M11 Recipe view
 
 - [x] **M11.1 Header.** Image beside text from `md`, stacked below. Name, rating, description, tag chips, then a stat strip prep / cook / total with icons and a yield line. Footer: source URL (field exists), created and updated dates. Check: render test at both layouts via class assertions; source URL renders as a link when set.
-- [ ] **M11.2 Ingredient rows.** Mealie order: quantity, unit, **bold** food, note dimmed on its own line; `fixed` marker kept. Tick box per row, state via `ticks.ts`, strike-through when done. Scaled numbers get a class when `servings` differs from the recipe's. Check: render tests for ticked, scaled and fixed rows.
-- [ ] **M11.3 Structured or Summary.** Per-device toggle (design system `switch`) between per-component ingredient blocks and one merged list, merged by food and unit with quantities summed, `fixed` and null kept as separate lines. Pure `mergeIngredients(recipe)` in `src/domain/`. Check: merge tests; toggle persists.
+- [x] **M11.2 Ingredient rows.** Mealie order: quantity, unit, **bold** food, note dimmed on its own line; `fixed` marker kept. Tick box per row, state via `ticks.ts`, strike-through when done. Scaled numbers get a class when `servings` differs from the recipe's. Check: render tests for ticked, scaled and fixed rows.
+- [x] **M11.3 Structured or Summary.** Per-device toggle (design system `switch`) between per-component ingredient blocks and one merged list, merged by food and unit with quantities summed, `fixed` and null kept as separate lines. Pure `mergeIngredients(recipe)` in `src/domain/`. Check: merge tests; toggle persists.
 - [ ] **M11.4 Steps.** Tap a step to mark done: dims and collapses the text, state via `ticks.ts`. Step text rendered as a safe markdown subset (paragraphs, bold, italics, lists; no raw HTML) with a pure renderer in `src/domain/markdown.ts`. Check: renderer tests including an HTML injection case; done-state render test.
 - [ ] **M11.5 Scale control.** Chip "Serves N" with − / + and a `popover` holding a number input, Reset. "Scale to…" on an ingredient row's menu sets servings so that ingredient reaches a typed amount. Yield text scales. Check: pure `servingsForTarget()` tests; render test.
 - [ ] **M11.6 Action menu.** Local `Menu` primitive in `ui/`. Items: Edit, Cook, Duplicate, Copy link, Copy ingredients, Print, Delete (moves from the edit page, keeps `ConfirmDialog`). `duplicateRecipe({id})` server function copies the document with " (copy)" and a fresh slug. Print: `@media print` stylesheet hiding chrome, image left, two-column ingredients, notes. Check: duplicate test round-trips; copy text test; print CSS contains the rules.
@@ -71,7 +71,7 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 
 ## M12 Recipe list
 
-- [ ] **M12.1 Cards.** `∥` Rating stars, total-time chip, favourite heart toggling `setFavourite` optimistically, tags capped at 3 with `+N`. List summary gains `favourite`, `lastMade`, `totalTime`. Check: render test; toggle round-trips through the server function.
+- [x] **M12.1 Cards.** `∥` Rating stars, total-time chip, favourite heart toggling `setFavourite` optimistically, tags capped at 3 with `+N`. List summary gains `favourite`, `lastMade`, `totalTime`. Check: render test; toggle round-trips through the server function.
 - [ ] **M12.2 View modes and scroll.** `∥` Grid and list modes (Mealie's `RecipeCardMobile` shape for list), persisted via prefs; scroll position restored on back navigation. Check: render tests for both modes; prefs test.
 - [ ] **M12.3 Filters.** `listRecipes` gains `tags[]` with `match: any|all`, `foods[]`, `favourite`. Filter bar: tag chips with an any/all switch, food picker (reuse `Combobox`), favourites toggle. All in search params. Check: repository tests for each filter and the all-match case; render test.
 - [ ] **M12.4 Sort.** `listRecipes` gains `sort: name|created|updated|lastMade|rating|random` and `dir`. Sort menu in the toolbar, dice button opens one random recipe. Random uses a seed in search params so paging is stable. Check: repository tests per key; render test.
@@ -119,3 +119,6 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-11  M10.2  done  57e3d7f  sonnet  prefs.ts and ticks.ts as pure controllers over a storage interface with thin hooks
 2026-09-11  M10.3  done  f7ae35a  opus  notify() store plus one Toaster in __root; save/delete/upload toast, Settings gains a light/dark/system theme toggle
 2026-09-11  M11.1  done  b1c939f  opus  RecipeHeader with split layout, stat strip, yield line and a footer carrying source link and dates
+2026-09-11  M11.2  done  58d4000  sonnet  IngredientRow with tick box, dimmed note, fixed marker and a scaled class on the amount
+2026-09-11  M11.3  done  200d399  sonnet  pure mergeIngredients plus a per-device Structured/Summary switch on the view route
+2026-09-11  M12.1  done  0d2aa30  sonnet  cards gain stars, total-time chip, optimistic favourite heart and capped tags; summary carries totalTime and lastMade
