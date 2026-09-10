@@ -3,7 +3,7 @@
 // renders what came back. Type assertions at the bottom pin each loader's
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
 import { isNotFound } from "@tanstack/react-router";
-import { describe, expect, expectTypeOf, test, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import type { Aisle, Recipe, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
 import { Route as IndexRoute, type RecipeListData, searchParam } from "../../src/routes/index";
 import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
@@ -96,6 +96,34 @@ describe("/ (list)", () => {
     expect(html).toContain('role="search"');
     expect(html).toContain('value="flat"');
     expect(html).toMatch(/role="radio"[^>]*aria-checked="true"[^>]*>(<[^>]*>)*Weeknight/);
+  });
+
+  describe("view mode (M12.2)", () => {
+    afterEach(() => {
+      delete (globalThis as { window?: unknown }).window;
+    });
+
+    test("defaults to a grid: cards in grid mode, grid selected in the toggle", async () => {
+      await seed("Flatbread");
+      const html = await renderRoute("/");
+      expect(html).toContain('data-card-mode="grid"');
+      expect(html).not.toContain('data-card-mode="list"');
+      expect(html).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
+    });
+
+    test("a stored list preference renders every card in list mode", async () => {
+      await seed("Flatbread");
+      await seed("Pancakes");
+      const storage = new Map<string, string>();
+      storage.set("garnish.viewMode", JSON.stringify("list"));
+      (globalThis as { window?: unknown }).window = {
+        localStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => void storage.set(key, value) },
+      };
+      const html = await renderRoute("/");
+      expect(html.match(/data-card-mode="list"/g)).toHaveLength(2);
+      expect(html).not.toContain('data-card-mode="grid"');
+      expect(html).toMatch(/aria-label="List view"[^>]*aria-checked="true"/);
+    });
   });
 });
 

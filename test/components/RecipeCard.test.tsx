@@ -29,8 +29,8 @@ const base: RecipeSummary = {
 };
 
 /** Render inside a throwaway router, so the card's `Link` resolves. */
-async function render(recipe: RecipeSummary): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <RecipeCard recipe={recipe} /> });
+async function render(recipe: RecipeSummary, mode?: "grid" | "list"): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeCard recipe={recipe} mode={mode} /> });
   const slugRoute = createRoute({ getParentRoute: () => rootRoute, path: "/recipes/$slug", component: () => null });
   const router = createRouter({
     routeTree: rootRoute.addChildren([slugRoute]),
@@ -132,5 +132,43 @@ describe("RecipeCard render", () => {
   test("a placeholder image renders when the recipe has none", async () => {
     const html = await render(base);
     expect(html).toContain('data-placeholder="image"');
+  });
+});
+
+describe("RecipeCard view modes", () => {
+  test("defaults to grid mode when mode is not given", async () => {
+    const html = await render(base);
+    expect(html).toContain('data-card-mode="grid"');
+  });
+
+  test("grid mode renders the vertical shape: image above the text", async () => {
+    const html = await render({ ...base, rating: 4, totalTime: 60, tags: [tag(1)] }, "grid");
+    expect(html).toContain('data-card-mode="grid"');
+    expect(html).toContain('data-placeholder="image"');
+    expect(html).toMatch(/data-placeholder="image"[^]*Lemon tart/);
+    expect(html).toMatch(/Rated 4 out of 5/);
+    expect(html).toContain("1 hr");
+    expect(html).toContain("Tag 1");
+  });
+
+  test("list mode renders Mealie's RecipeCardMobile shape: a small image beside the text", async () => {
+    const html = await render({ ...base, rating: 4, totalTime: 60, tags: [tag(1)] }, "list");
+    expect(html).toContain('data-card-mode="list"');
+    expect(html).toContain('data-placeholder="image"');
+    expect(html).toMatch(/data-placeholder="image"[^]*Lemon tart/);
+    expect(html).toMatch(/Rated 4 out of 5/);
+    expect(html).toContain("1 hr");
+    expect(html).toContain("Tag 1");
+    // The image is a fixed small square, not the grid's full-width 4:3 box.
+    expect(html).toMatch(/data-placeholder="image"[^>]*class="[^"]*aspect-square/);
+  });
+
+  test("list mode still exposes the favourite button and tags-beyond-cap overflow", async () => {
+    const tags = [tag(1), tag(2), tag(3), tag(4)];
+    const html = await render({ ...base, favourite: true, tags }, "list");
+    expect(html).toMatch(/aria-label="Remove from favourites"/);
+    expect(html).toContain("Tag 3");
+    expect(html).not.toContain("Tag 4");
+    expect(html).toContain("+1");
   });
 });

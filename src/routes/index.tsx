@@ -11,7 +11,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { RecipeCard } from "../components/RecipeCard";
+import { ViewModeToggle } from "../components/ViewModeToggle";
 import type { RecipeSummary, Tag } from "../domain/recipe";
+import { useViewMode } from "../lib/prefs";
 import { listRecipes } from "../server/recipes";
 import { listTags } from "../server/tags";
 
@@ -46,6 +48,7 @@ function RecipesPage() {
   const { q = "", tag = "" } = Route.useSearch();
   const navigate = Route.useNavigate();
   const filtered = Boolean(q || tag);
+  const [viewMode] = useViewMode();
 
   // Local text so typing is instant; the URL follows after a pause or on Enter.
   const [query, setQuery] = useState(q);
@@ -83,11 +86,18 @@ function RecipesPage() {
         />
       )}
       <EmptyBoundary isEmpty={recipes.length === 0} fallback={<EmptyState filtered={filtered} />}>
-        <Muted as="p">{recipes.length === 1 ? "1 recipe" : `${recipes.length} recipes`}</Muted>
-        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="flex items-center justify-between gap-2">
+          <Muted as="p">{recipes.length === 1 ? "1 recipe" : `${recipes.length} recipes`}</Muted>
+          <ViewModeToggle />
+        </div>
+        <ul
+          className={
+            viewMode === "list" ? "flex flex-col gap-3" : "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+          }
+        >
           {recipes.map((recipe) => (
             <li key={recipe.id}>
-              <RecipeCard recipe={recipe} />
+              <RecipeCard recipe={recipe} mode={viewMode} />
             </li>
           ))}
         </ul>
