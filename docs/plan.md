@@ -107,7 +107,7 @@ Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vit
 ## M8 Docker
 
 - [x] **M8.1 Dockerfile.** `oven/bun` base, multi-stage: `bun install`, `bun run build`, then copy `.output` into a slim stage. Migrations run on boot. `DATA_DIR=/data` as the volume, port 3000. Check: `docker build` then `docker run` with a volume, create a recipe, restart, it persists.
-- [ ] **M8.2 Compose example.** `docker-compose.yml` with the volume and port. README section: run, backup, restore. Check: `docker compose up` works from a clean clone.
+- [x] **M8.2 Compose example.** `docker-compose.yml` with the volume and port. README section: run, backup, restore. Check: `docker compose up` works from a clean clone.
 
 ## M9 Finish
 
@@ -160,3 +160,4 @@ _(one line per iteration: date, task id, outcome)_
 2026-09-10  M7.1  done  8782e89  manifest.webmanifest, SVG/PNG icons from brand tokens, head metas; installability asserted by test, Lighthouse check owed
 2026-09-10  M7.2  done  d45bbcb  hand-written service worker emitted by a Vite plugin in the client build, shell and assets precached, GET RPCs and images network-first, useOnline notice disables Save; on-device offline check owed
 2026-09-10  M8.1  done  cf54084  two-stage Dockerfile on oven/bun 1.4.2 and slim, DATA_DIR=/data volume, boot migrates; persistence verified locally, docker build/run owed
+2026-09-10  M8.2  done  e6554a0  docker-compose.yml with named volume, README Develop/Docker/Backup/Restore sections, drift-tested via Bun.YAML; docker compose up owed
