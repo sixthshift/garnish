@@ -306,10 +306,24 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     rating: 4.5,
     prepTime: 5,
     performTime: 15,
+    totalTime: 20,
+    lastMade: "2026-09-01T08:00:00.000Z",
     favourite: false,
     tags: full.tags,
   });
-  expect(bySlug["cheese-toast"]).toEqual({ id: toast.id, slug: "cheese-toast", name: "Cheese Toast", image: null, rating: null, prepTime: 2, performTime: null, favourite: false, tags: toast.tags });
+  expect(bySlug["cheese-toast"]).toEqual({
+    id: toast.id,
+    slug: "cheese-toast",
+    name: "Cheese Toast",
+    image: null,
+    rating: null,
+    prepTime: 2,
+    performTime: null,
+    totalTime: 2,
+    lastMade: null,
+    favourite: false,
+    tags: toast.tags,
+  });
   expect(bySlug["pumpkin-soup"]!.rating).toBe(3);
   expect(bySlug["pumpkin-soup"]!.tags).toEqual([]);
 

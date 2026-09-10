@@ -136,6 +136,9 @@ export const recipeSummarySchema = z.object({
   rating: z.number().min(0).max(5).nullable(),
   prepTime: z.number().int().nonnegative().nullable(),
   performTime: z.number().int().nonnegative().nullable(),
+  /** prepTime + performTime; null when neither is recorded. See domain/format.ts's totalMinutes. */
+  totalTime: z.number().int().nonnegative().nullable(),
+  lastMade: timestamp.nullable(),
   favourite: z.boolean(),
   tags: z.array(tagSchema),
 });

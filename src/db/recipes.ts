@@ -21,6 +21,7 @@ import type {
   Tag,
   Unit,
 } from "../domain/recipe";
+import { totalMinutes } from "../domain/format";
 import { aisles as aisleRepository } from "./aisles";
 import { foods as foodRepository } from "./foods";
 import { slugify, uniqueSlug } from "./names";
@@ -56,7 +57,7 @@ type RecipeRow = {
 
 type SummaryRow = Pick<
   RecipeRow,
-  "id" | "slug" | "name" | "image" | "rating" | "prep_minutes" | "cook_minutes" | "favourite"
+  "id" | "slug" | "name" | "image" | "rating" | "prep_minutes" | "cook_minutes" | "last_made" | "favourite"
 >;
 type NoteRow = { id: string; title: string; text: string };
 type ComponentRow = { id: string; name: string };
@@ -74,7 +75,7 @@ type StepRow = { id: string; component_id: string | null; text: string };
 
 const RECIPE_COLUMNS =
   "id, slug, name, description, image, rating, last_made, servings, yield_quantity, yield_unit_id, yield_text, prep_minutes, cook_minutes, source_url, favourite, created_at, updated_at";
-const SUMMARY_COLUMNS = "id, slug, name, image, rating, prep_minutes, cook_minutes, favourite";
+const SUMMARY_COLUMNS = "id, slug, name, image, rating, prep_minutes, cook_minutes, last_made, favourite";
 
 export function recipes(db: Database) {
   const units = unitRepository(db);
@@ -262,6 +263,8 @@ export function recipes(db: Database) {
       rating: row.rating,
       prepTime: row.prep_minutes,
       performTime: row.cook_minutes,
+      totalTime: totalMinutes(row.prep_minutes, row.cook_minutes),
+      lastMade: row.last_made,
       favourite: row.favourite === 1,
       tags: selectTags.all(row.id),
     };

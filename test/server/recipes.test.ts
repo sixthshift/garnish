@@ -4,7 +4,7 @@ import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { recipeSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
 import type { NotFoundData } from "../../src/server/fn";
-import { createRecipe, deleteRecipe, getRecipe, listRecipes, updateRecipe } from "../../src/server/recipes";
+import { createRecipe, deleteRecipe, getRecipe, listRecipes, setFavourite, updateRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -129,6 +129,20 @@ test("updateRecipe replaces the document, keeps the id, and maps an unknown id t
   expect(data.entity).toBe("recipe");
   expect(data.id).toBe(ids.missing);
   await expect(callServerFn(updateRecipe, { id: "not-a-uuid", doc: doc() })).rejects.toThrow(/uuid/i);
+});
+
+test("setFavourite flips the flag and round-trips through listRecipes; an unknown id maps to notFound", async () => {
+  const created = await callServerFn(createRecipe, doc());
+  expect((await callServerFn(listRecipes, {}))[0]!.favourite).toBe(false);
+
+  await expect(callServerFn(setFavourite, { id: created.id, favourite: true })).resolves.toEqual({ id: created.id, favourite: true });
+  expect((await callServerFn(listRecipes, {}))[0]!.favourite).toBe(true);
+
+  await expect(callServerFn(setFavourite, { id: created.id, favourite: false })).resolves.toEqual({ id: created.id, favourite: false });
+  expect((await callServerFn(listRecipes, {}))[0]!.favourite).toBe(false);
+
+  const data = await notFoundData(callServerFn(setFavourite, { id: ids.missing, favourite: true }));
+  expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
 });
 
 test("deleteRecipe removes the recipe, returns it, and maps an unknown id to notFound", async () => {

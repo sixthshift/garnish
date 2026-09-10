@@ -1,0 +1,136 @@
+// RecipeCard: the pure helpers (tag capping, the optimistic favourite toggle)
+// and the rendered markup — stars, the total-time chip, capped tags and the
+// favourite button's pressed state. `toggleFavourite` is also exercised
+// against the real `setFavourite` server function, so the toggle is proven to
+// round-trip through it, not just through a mock.
+import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { renderToString } from "react-dom/server";
+import { describe, expect, test, vi } from "vitest";
+import { capTags, RecipeCard, toggleFavourite } from "../../src/components/RecipeCard";
+import { recipeInputSchema } from "../../src/domain/recipe";
+import type { RecipeSummary, Tag } from "../../src/domain/recipe";
+import { createRecipe, getRecipe, setFavourite } from "../../src/server/recipes";
+import { callServerFn, useTempDataDir } from "../helpers/server";
+
+const tag = (n: number): Tag => ({ id: `dddddddd-dddd-4ddd-8ddd-dddddddddd0${n}`, name: `Tag ${n}`, slug: `tag-${n}` });
+
+const base: RecipeSummary = {
+  id: "11111111-1111-4111-8111-111111111111",
+  slug: "lemon-tart",
+  name: "Lemon tart",
+  image: null,
+  rating: null,
+  prepTime: null,
+  performTime: null,
+  totalTime: null,
+  lastMade: null,
+  favourite: false,
+  tags: [],
+};
+
+/** Render inside a throwaway router, so the card's `Link` resolves. */
+async function render(recipe: RecipeSummary): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeCard recipe={recipe} /> });
+  const slugRoute = createRoute({ getParentRoute: () => rootRoute, path: "/recipes/$slug", component: () => null });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([slugRoute]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+  await router.load();
+  return renderToString(<RouterProvider router={router} />);
+}
+
+describe("capTags", () => {
+  test("shows every tag up to the cap and hides nothing", () => {
+    expect(capTags([tag(1), tag(2)], 3)).toEqual({ shown: [tag(1), tag(2)], more: 0 });
+  });
+
+  test("caps at the given max and counts the rest", () => {
+    const tags = [tag(1), tag(2), tag(3), tag(4), tag(5)];
+    expect(capTags(tags, 3)).toEqual({ shown: [tag(1), tag(2), tag(3)], more: 2 });
+  });
+
+  test("defaults to a cap of 3", () => {
+    const tags = [tag(1), tag(2), tag(3), tag(4)];
+    expect(capTags(tags).more).toBe(1);
+  });
+});
+
+describe("toggleFavourite", () => {
+  test("flips the flag and reports no error once the write resolves", async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    const result = await toggleFavourite("r1", false, write);
+    expect(result).toEqual({ favourite: true });
+    expect(write).toHaveBeenCalledWith("r1", true);
+  });
+
+  test("reverts to the current value and surfaces the error when the write rejects", async () => {
+    const error = new Error("offline");
+    const write = vi.fn().mockRejectedValue(error);
+    const result = await toggleFavourite("r1", true, write);
+    expect(result).toEqual({ favourite: true, error });
+  });
+});
+
+describe("toggleFavourite against the real server function", () => {
+  useTempDataDir();
+
+  test("round-trips through setFavourite: the stored flag flips both ways", async () => {
+    const created = await callServerFn(
+      createRecipe,
+      recipeInputSchema.parse({ name: "Toast", components: [{ name: "", ingredients: [], steps: [] }] }),
+    );
+
+    const write = (id: string, favourite: boolean) => callServerFn(setFavourite, { id, favourite });
+
+    const on = await toggleFavourite(created.id, false, write);
+    expect(on).toEqual({ favourite: true });
+    expect((await callServerFn(getRecipe, { slug: created.slug })).favourite).toBe(true);
+
+    const off = await toggleFavourite(created.id, true, write);
+    expect(off).toEqual({ favourite: false });
+    expect((await callServerFn(getRecipe, { slug: created.slug })).favourite).toBe(false);
+  });
+});
+
+describe("RecipeCard render", () => {
+  test("a bare recipe shows only its name: no stars, no time chip, no tags", async () => {
+    const html = await render(base);
+    expect(html).toContain("Lemon tart");
+    expect(html).not.toMatch(/Rated [\d.]+ out of 5/);
+    expect(html).not.toContain('aria-label="Tags"');
+  });
+
+  test("rating renders as stars and total time as a chip", async () => {
+    const html = await render({ ...base, rating: 4, prepTime: 20, performTime: 40, totalTime: 60 });
+    expect(html).toMatch(/Rated 4 out of 5/);
+    expect(html).toContain("1 hr");
+  });
+
+  test("tags beyond the cap fold into a +N badge", async () => {
+    const tags = [tag(1), tag(2), tag(3), tag(4)];
+    const html = await render({ ...base, tags });
+    expect(html).toContain("Tag 1");
+    expect(html).toContain("Tag 2");
+    expect(html).toContain("Tag 3");
+    expect(html).not.toContain("Tag 4");
+    expect(html).toContain("+1");
+  });
+
+  test("the favourite button reflects favourite: true", async () => {
+    const html = await render({ ...base, favourite: true });
+    expect(html).toMatch(/aria-label="Remove from favourites"/);
+    expect(html).toMatch(/aria-pressed="true"/);
+  });
+
+  test("the favourite button reflects favourite: false", async () => {
+    const html = await render({ ...base, favourite: false });
+    expect(html).toMatch(/aria-label="Add to favourites"/);
+    expect(html).toMatch(/aria-pressed="false"/);
+  });
+
+  test("a placeholder image renders when the recipe has none", async () => {
+    const html = await render(base);
+    expect(html).toContain('data-placeholder="image"');
+  });
+});

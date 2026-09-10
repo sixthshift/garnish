@@ -34,6 +34,8 @@ export const UpdateRecipeInput = z.object({
 
 export const DeleteRecipeInput = z.object({ id: recipeId });
 
+export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
+
 /** Card summaries, newest first, optionally filtered by name substring and tag slug. */
 export const listRecipes = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
@@ -65,6 +67,15 @@ export const updateRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(UpdateRecipeInput)
   .handler(async ({ data }) => required(recipes(await getDb()).update(data.id, data.doc), "recipe", data.id));
+
+/** Flip the favourite flag alone. Returns the flag as stored. Not-found for an unknown id. */
+export const setFavourite = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(SetFavouriteInput)
+  .handler(async ({ data }) => {
+    if (!recipes(await getDb()).setFavourite(data.id, data.favourite)) throw new NotFound("recipe", data.id);
+    return { id: data.id, favourite: data.favourite };
+  });
 
 /** Delete the recipe `id`. Returns the document as it was, the way Mealie does. */
 export const deleteRecipe = createServerFn({ method: "POST" })
