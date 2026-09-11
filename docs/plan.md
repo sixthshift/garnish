@@ -83,12 +83,12 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 - [x] **! M13.2 Phone ingredient rows.** Below `md` each row is one line (formatted ingredient text, or `originalText`) with a chevron; tap opens a `sheet` holding the existing fields plus a read-only `originalText` line. From `md` the inline row stays. Check: render tests at both widths via class assertions; sheet saves back into the draft.
 - [x] **M13.3 Drag reorder.** `ReorderList` gains pointer-event drag (handle, 250 ms touch delay, no dependency) within a list and between components via a shared group id; up/down buttons and "Move to" kept. Check: pure `dropIndex()` tests; render test shows handles.
 - [x] **M13.4 Bulk add and step tools.** "Bulk add" on ingredients and steps: `sheet` with a textarea, one item per line, buttons trim whitespace, strip leading numbers, split on blank lines; ingredients become text-only rows. Steps gain insert above / below, split by paragraph, merge with next. Check: pure helpers tested for every button; render test.
-- [ ] **M13.5 Image from URL and JSON view.** Image field accepts a pasted URL fetched server-side (`fetchImage` server function, same sniffing as upload). "JSON" toggle swaps the form for a textarea of the document; Apply parses with `recipeInputSchema` and shows errors. Check: server function test with a local fixture URL; JSON round-trip test.
+- [x] **M13.5 Image from URL and JSON view.** Image field accepts a pasted URL fetched server-side (`fetchImage` server function, same sniffing as upload). "JSON" toggle swaps the form for a textarea of the document; Apply parses with `recipeInputSchema` and shows errors. Check: server function test with a local fixture URL; JSON round-trip test.
 - [ ] **M13.6 Phone confirmations.** `ConfirmDialog` renders as a `sheet` below `md`, centred above. `originalText` shown in grey above a parsed row on wide. Check: render tests at both widths.
 
 ## M14 Cook mode
 
-- [ ] **M14.1 Navigation.** Component pills across the top jump to that component's first card; vertical swipe between cards with a scroll-versus-swipe threshold; ARIA live region announces "Step 2 of 5" or "Ingredients for Dough". Check: pure `swipeIntent()` tests; render test shows pills and the live region.
+- [x] **M14.1 Navigation.** Component pills across the top jump to that component's first card; vertical swipe between cards with a scroll-versus-swipe threshold; ARIA live region announces "Step 2 of 5" or "Ingredients for Dough". Check: pure `swipeIntent()` tests; render test shows pills and the live region.
 - [ ] **M14.2 Ticks and finish.** Ingredient card items tick on tap sharing `ticks.ts` with the view page. Final card: "Finished" with a "Made this" shortcut opening the M11.7 sheet and an Exit link. Check: render tests; tick state shared in a test that renders both routes.
 
 ## M15 Reference data
@@ -96,7 +96,7 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 - [x] **! M15.1 Data table.** Local `DataTable` primitive: search, sortable columns, row select, edit `sheet` from a field spec, delete `ConfirmDialog` listing affected recipes (new `recipes.usingFood(id)`, `usingUnit(id)`, `usingTag(id)` repository queries). Settings becomes `tabs`: Foods, Units, Aisles, Tags, Appearance. Check: render tests; affected-recipe queries tested.
 - [x] **M15.2 Foods.** `∥` Columns name, plural, aisle, skip shopping, aliases count. Editor edits all food fields; aisle is a select with create. Merge: pick a target, source deleted, ingredient rows repointed (`foods.merge(sourceId, targetId)` in one transaction). Check: merge test repoints and deletes; render test.
 - [x] **M15.3 Units.** `∥` Columns name, plural, abbreviation, use abbreviation, fraction. Editor and merge as foods. Check: merge test; a merged unit renders through `formatAmount` correctly.
-- [ ] **M15.4 Aisles and tags.** Aisles: drag ordering (M13.3 `ReorderList`), rename, delete with foods reassigned to none. Tags: A–Z grouped list, rename, merge, delete, click opens the list filtered. Check: repository tests for aisle reorder and tag merge; render tests.
+- [x] **M15.4 Aisles and tags.** Aisles: drag ordering (M13.3 `ReorderList`), rename, delete with foods reassigned to none. Tags: A–Z grouped list, rename, merge, delete, click opens the list filtered. Check: repository tests for aisle reorder and tag merge; render tests.
 
 ## M16 Finish
 
@@ -137,3 +137,6 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-11  M12.5  done  9f1974b  sonnet  "/" opens a Modal-based search dialog over listRecipes with arrow-key selection; decisions row 44
 2026-09-11  M13.4  done  7e821d0  sonnet  shared BulkAddSheet over pure bulkText helpers, plus insert above/below, split by paragraph and merge with next on steps
 2026-09-11  M15.3  done  d4e67b2  sonnet  Units tab wired to edit, usage-confirmed delete and a transactional units.merge repointing ingredient and yield references
+2026-09-11  M13.5  done  608113a  opus  fetchImage pulls a pasted URL server-side through the upload route's sniffing; Edit as JSON applies through recipeInputSchema
+2026-09-11  M14.1  done  73cbcb1  opus  cook pills jump to each component, pure swipeIntent separates scroll from swipe, sr-only live region announces the card
+2026-09-11  M15.4  done  cbdb2b1  sonnet  Aisles reorder through ReorderList with rename and delete; Tags grouped A-Z with rename, transactional merge and click-through
