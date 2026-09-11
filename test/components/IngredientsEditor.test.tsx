@@ -7,6 +7,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { addComponent, renameComponent } from "../../src/components/ComponentsEditor";
 import {
+  addBulkIngredients,
   addIngredient,
   EMPTY_INGREDIENT_SUMMARY,
   filterUnits,
@@ -249,7 +250,42 @@ describe("moveIngredientTo", () => {
   });
 });
 
+describe("addBulkIngredients", () => {
+  test("appends one text-only row per line, in order, to the named component only", () => {
+    const draft = tart();
+    const next = addBulkIngredients(draft, 1, ["3 lemons, zested", "a pinch of salt"]);
+    expect(next.components[1]!.ingredients).toHaveLength(3);
+    expect(next.components[1]!.ingredients[1]).toMatchObject({ originalText: "3 lemons, zested", food: null, quantity: null });
+    expect(next.components[1]!.ingredients[2]).toMatchObject({ originalText: "a pinch of salt", food: null, quantity: null });
+    expect(next.components[1]!.ingredients.slice(1).every(isTextOnly)).toBe(true);
+    expect(next.components[1]!.ingredients[1]!.id).toMatch(UUID);
+    expect(next.components[0]).toBe(draft.components[0]);
+    // Original untouched.
+    expect(draft.components[1]!.ingredients).toHaveLength(1);
+  });
+
+  test("no lines, or an out-of-range component, returns an unchanged copy", () => {
+    const draft = tart();
+    for (const next of [addBulkIngredients(draft, 0, []), addBulkIngredients(draft, 5, ["x"])]) {
+      expect(next.components).toEqual(draft.components);
+      expect(next.components).not.toBe(draft.components);
+    }
+  });
+
+  test("the result still validates", () => {
+    const draft = addBulkIngredients({ ...emptyDraft(), name: "Toast" }, 0, ["2 eggs", "a pinch of salt"]);
+    expect(validateDraft(draft).ok).toBe(true);
+  });
+});
+
 describe("IngredientsEditor", () => {
+  test("has a Bulk add button beside Add ingredient, and the sheet is closed by default", () => {
+    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+    expect(html).toContain(">Bulk add<");
+    expect(html).toContain(">Add ingredient<");
+    expect(html).not.toContain('role="dialog"');
+  });
+
   test("each row has a drag handle and the list joins the shared drag group", () => {
     const draft = tart();
     const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);

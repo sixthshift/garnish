@@ -7,7 +7,22 @@ import { describe, expect, test } from "vitest";
 import { renameComponent } from "../../src/components/ComponentsEditor";
 import { addNote, moveNote, updateNote } from "../../src/components/NotesEditor";
 import { emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
-import { addStep, moveStep, newStep, removeStep, StepsEditor, stepsOf, stepsPath, updateStep, withSteps } from "../../src/components/StepsEditor";
+import {
+  addBulkSteps,
+  addStep,
+  insertStepAbove,
+  insertStepBelow,
+  mergeStepWithNext,
+  moveStep,
+  newStep,
+  removeStep,
+  splitStepByParagraph,
+  StepsEditor,
+  stepsOf,
+  stepsPath,
+  updateStep,
+  withSteps,
+} from "../../src/components/StepsEditor";
 import { createRecipe, getRecipe, updateRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -29,6 +44,13 @@ function focaccia(): RecipeDraft {
 }
 
 const texts = (draft: RecipeDraft, ci: number | null) => stepsOf(draft, ci)!.map((step) => step.text);
+
+/** The opening tag of the control carrying `label`. */
+function tagWithLabel(html: string, label: string): string {
+  const match = html.match(new RegExp(`<(?:button|input)[^>]*aria-label="${label}"[^>]*>`));
+  if (!match) throw new Error(`no control labelled ${label}`);
+  return match[0];
+}
 
 describe("newStep, stepsOf, withSteps, stepsPath", () => {
   test("a new step is blank with a fresh uuid", () => {
@@ -144,7 +166,122 @@ describe("moveStep", () => {
   });
 });
 
+describe("addBulkSteps", () => {
+  test("appends one step per line, in order, to the named list only", () => {
+    const draft = focaccia();
+    const next = addBulkSteps(draft, 0, ["Shape.", "Prove."]);
+    expect(texts(next, 0)).toEqual(["Mix.", "Rest.", "Fold.", "Shape.", "Prove."]);
+    expect(next.components[0]!.steps[4]!.id).toMatch(UUID);
+    expect(texts(next, null)).toEqual(["Dimple.", "Bake."]);
+    expect(texts(addBulkSteps(draft, null, ["Cool."]), null)).toEqual(["Dimple.", "Bake.", "Cool."]);
+    expect(texts(draft, 0)).toHaveLength(3);
+  });
+
+  test("no lines, or an out-of-range component, returns an unchanged copy", () => {
+    const draft = focaccia();
+    for (const next of [addBulkSteps(draft, 0, []), addBulkSteps(draft, 3, ["x"])]) {
+      expect(next).toEqual(draft);
+      expect(next).not.toBe(draft);
+    }
+  });
+});
+
+describe("insertStepAbove and insertStepBelow", () => {
+  test("insert a blank step before, or after, the named index, keeping the rest in order", () => {
+    const draft = focaccia();
+    expect(texts(insertStepAbove(draft, 0, 1), 0)).toEqual(["Mix.", "", "Rest.", "Fold."]);
+    expect(texts(insertStepBelow(draft, 0, 1), 0)).toEqual(["Mix.", "Rest.", "", "Fold."]);
+    expect(texts(insertStepAbove(draft, null, 0), null)).toEqual(["", "Dimple.", "Bake."]);
+    expect(texts(insertStepBelow(draft, null, 1), null)).toEqual(["Dimple.", "Bake.", ""]);
+    expect(texts(draft, 0)).toEqual(["Mix.", "Rest.", "Fold."]);
+  });
+
+  test("the new step has a fresh id", () => {
+    const next = insertStepAbove(focaccia(), 0, 0);
+    expect(next.components[0]!.steps[0]!.id).toMatch(UUID);
+  });
+
+  test("an out-of-range index returns an unchanged copy", () => {
+    const draft = focaccia();
+    for (const next of [insertStepAbove(draft, 0, 3), insertStepAbove(draft, 0, -1), insertStepBelow(draft, 0, 3), insertStepBelow(draft, 5, 0)]) {
+      expect(next).toEqual(draft);
+      expect(next).not.toBe(draft);
+    }
+  });
+});
+
+describe("splitStepByParagraph", () => {
+  test("replaces a multi-paragraph step with one step per paragraph, at the same position", () => {
+    const draft = updateStep(focaccia(), 0, 1, "Cover the bowl.\n\nLeave it somewhere warm\nfor an hour.");
+    const next = splitStepByParagraph(draft, 0, 1);
+    expect(texts(next, 0)).toEqual(["Mix.", "Cover the bowl.", "Leave it somewhere warm for an hour.", "Fold."]);
+    expect(next.components[0]!.steps[1]!.id).toMatch(UUID);
+    expect(next.components[0]!.steps[2]!.id).toMatch(UUID);
+  });
+
+  test("a step with one paragraph, or none, is unaffected", () => {
+    const draft = focaccia();
+    expect(splitStepByParagraph(draft, 0, 0)).toEqual(draft);
+    const blank = updateStep(draft, 0, 0, "   ");
+    expect(splitStepByParagraph(blank, 0, 0)).toEqual(blank);
+  });
+
+  test("an out-of-range index returns an unchanged copy", () => {
+    const draft = focaccia();
+    expect(splitStepByParagraph(draft, 0, 9)).toEqual(draft);
+    expect(splitStepByParagraph(draft, 9, 0)).toEqual(draft);
+  });
+});
+
+describe("mergeStepWithNext", () => {
+  test("joins a step's text with the next step's, kept at the first step's id, and drops the next", () => {
+    const draft = focaccia();
+    const id = draft.components[0]!.steps[0]!.id;
+    const next = mergeStepWithNext(draft, 0, 0);
+    expect(texts(next, 0)).toEqual(["Mix.\n\nRest.", "Fold."]);
+    expect(next.components[0]!.steps[0]!.id).toBe(id);
+    expect(texts(draft, 0)).toEqual(["Mix.", "Rest.", "Fold."]);
+  });
+
+  test("the last step has nothing to merge with and is unaffected", () => {
+    const draft = focaccia();
+    expect(mergeStepWithNext(draft, 0, 2)).toEqual(draft);
+    expect(mergeStepWithNext(draft, null, 1)).toEqual(draft);
+  });
+
+  test("an out-of-range index returns an unchanged copy", () => {
+    const draft = focaccia();
+    expect(mergeStepWithNext(draft, 0, 9)).toEqual(draft);
+    expect(mergeStepWithNext(draft, 9, 0)).toEqual(draft);
+  });
+});
+
 describe("StepsEditor", () => {
+  test("has a Bulk add button beside Add step, and the sheet is closed by default", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} ci={0} onChange={() => {}} />);
+    expect(html).toContain(">Bulk add<");
+    expect(html).toContain(">Add step<");
+    expect(html).not.toContain('role="dialog"');
+  });
+
+  test("each step has insert above/below, split by paragraph and merge with next tools", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} ci={0} onChange={() => {}} />);
+    expect(html.match(/aria-label="Insert step above step \d"/g)).toHaveLength(3);
+    expect(html.match(/aria-label="Insert step below step \d"/g)).toHaveLength(3);
+    expect(html.match(/aria-label="Split step \d by paragraph"/g)).toHaveLength(3);
+    expect(html.match(/aria-label="Merge step \d with next"/g)).toHaveLength(3);
+    // A single-paragraph step's split tool is disabled; the last step's merge tool is disabled.
+    expect(tagWithLabel(html, "Split step 1 by paragraph")).toContain('disabled=""');
+    expect(tagWithLabel(html, "Merge step 3 with next")).toContain('disabled=""');
+    expect(tagWithLabel(html, "Merge step 1 with next")).not.toContain('disabled=""');
+  });
+
+  test("a step with more than one paragraph gets an enabled split tool", () => {
+    const draft = updateStep(focaccia(), 0, 0, "Mix flour and water.\n\nKnead for ten minutes.");
+    const html = renderToString(<StepsEditor draft={draft} ci={0} onChange={() => {}} />);
+    expect(tagWithLabel(html, "Split step 1 by paragraph")).not.toContain('disabled=""');
+  });
+
   test("renders a numbered textarea per step, in order, with reorder and remove controls", () => {
     const html = renderToString(<StepsEditor draft={focaccia()} ci={0} onChange={() => {}} />);
     expect(html).toContain(">Steps<");

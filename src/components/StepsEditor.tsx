@@ -13,8 +13,11 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
+import { useState } from "react";
+import { paragraphs } from "../domain/bulkText";
 import { randomUuid } from "../lib/ids";
 import type { DraftStep, FieldErrors, RecipeDraft } from "./RecipeForm";
+import { BulkAddSheet } from "./ui/BulkAddSheet";
 import { moveItem, ReorderList } from "./ui/ReorderList";
 
 // --- Pure helpers -----------------------------------------------------------
@@ -72,6 +75,56 @@ export function moveStep(draft: RecipeDraft, ci: number | null, from: number, to
   return withSteps(draft, ci, moveItem(steps, from, to));
 }
 
+/** The draft with one step appended per line in `lines`, in order, to the array `ci` names. What the bulk-add sheet's "Add" commits. No lines returns a copy unchanged. Pure apart from the new steps' ids. */
+export function addBulkSteps(draft: RecipeDraft, ci: number | null, lines: readonly string[]): RecipeDraft {
+  const steps = stepsOf(draft, ci);
+  if (!steps || lines.length === 0) return withSteps(draft, ci, steps?.slice() ?? []);
+  return withSteps(draft, ci, [...steps, ...lines.map((text) => newStep(text))]);
+}
+
+/** The draft with a blank step inserted before step `si` of the array `ci` names. An out-of-range `si` returns a copy unchanged. Pure apart from the new step's id. */
+export function insertStepAbove(draft: RecipeDraft, ci: number | null, si: number): RecipeDraft {
+  const steps = stepsOf(draft, ci);
+  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, ci, steps?.slice() ?? []);
+  return withSteps(draft, ci, [...steps.slice(0, si), newStep(), ...steps.slice(si)]);
+}
+
+/** The draft with a blank step inserted after step `si` of the array `ci` names. An out-of-range `si` returns a copy unchanged. Pure apart from the new step's id. */
+export function insertStepBelow(draft: RecipeDraft, ci: number | null, si: number): RecipeDraft {
+  const steps = stepsOf(draft, ci);
+  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, ci, steps?.slice() ?? []);
+  return withSteps(draft, ci, [...steps.slice(0, si + 1), newStep(), ...steps.slice(si + 1)]);
+}
+
+/**
+ * The draft with step `si` of the array `ci` names replaced by one step per
+ * paragraph in its own text (blank-line separated). A step whose text is one
+ * paragraph, or none, comes back unchanged — the same rule the button uses to
+ * disable itself. An out-of-range `si` returns a copy unchanged. Pure apart
+ * from the new steps' ids.
+ */
+export function splitStepByParagraph(draft: RecipeDraft, ci: number | null, si: number): RecipeDraft {
+  const steps = stepsOf(draft, ci);
+  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, ci, steps?.slice() ?? []);
+  const parts = paragraphs(steps[si]!.text ?? "");
+  if (parts.length < 2) return withSteps(draft, ci, steps.slice());
+  return withSteps(draft, ci, [...steps.slice(0, si), ...parts.map((text) => newStep(text)), ...steps.slice(si + 1)]);
+}
+
+/**
+ * The draft with step `si` of the array `ci` names merged with the step after
+ * it: their text joined by a blank line, kept at `si`'s id; the next step is
+ * dropped. The last step has nothing to merge with and comes back unchanged,
+ * the same rule the button uses to disable itself. An out-of-range `si`
+ * returns a copy unchanged. Pure.
+ */
+export function mergeStepWithNext(draft: RecipeDraft, ci: number | null, si: number): RecipeDraft {
+  const steps = stepsOf(draft, ci);
+  if (!steps || si < 0 || si + 1 >= steps.length) return withSteps(draft, ci, steps?.slice() ?? []);
+  const merged: DraftStep = { ...steps[si]!, text: [steps[si]!.text ?? "", steps[si + 1]!.text ?? ""].filter((text) => text.trim() !== "").join("\n\n") };
+  return withSteps(draft, ci, [...steps.slice(0, si), merged, ...steps.slice(si + 2)]);
+}
+
 /** The field-name prefix for step rows: "components.0.steps" or "steps". Pure. */
 export function stepsPath(ci: number | null): string {
   return ci === null ? "steps" : `components.${ci}.steps`;
@@ -91,9 +144,11 @@ export type StepsEditorProps = {
 };
 
 export function StepsEditor({ draft, ci, onChange, heading = "Steps", errors = {}, disabled }: StepsEditorProps) {
+  const [bulkOpen, setBulkOpen] = useState(false);
   const steps = stepsOf(draft, ci);
   if (!steps) return null;
   const path = stepsPath(ci);
+  const last = steps.length - 1;
 
   return (
     <div className="flex flex-col gap-2" data-steps={ci ?? "recipe"}>
@@ -101,10 +156,22 @@ export function StepsEditor({ draft, ci, onChange, heading = "Steps", errors = {
         <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
           {heading}
         </Muted>
-        <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addStep(draft, ci))}>
-          Add step
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
+            Bulk add
+          </Button>
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addStep(draft, ci))}>
+            Add step
+          </Button>
+        </div>
       </div>
+      <BulkAddSheet
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        itemName="step"
+        disabled={disabled}
+        onAdd={(lines) => onChange(addBulkSteps(draft, ci, lines))}
+      />
       <EmptyBoundary
         isEmpty={steps.length === 0}
         fallback={
@@ -142,6 +209,52 @@ export function StepsEditor({ draft, ci, onChange, heading = "Steps", errors = {
                       {error}
                     </p>
                   )}
+                  <div className="flex flex-wrap gap-1" role="group" aria-label={`Step ${si + 1} tools`}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      intent="neutral"
+                      size="sm"
+                      aria-label={`Insert step above step ${si + 1}`}
+                      disabled={disabled}
+                      onClick={() => onChange(insertStepAbove(draft, ci, si))}
+                    >
+                      Insert above
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      intent="neutral"
+                      size="sm"
+                      aria-label={`Insert step below step ${si + 1}`}
+                      disabled={disabled}
+                      onClick={() => onChange(insertStepBelow(draft, ci, si))}
+                    >
+                      Insert below
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      intent="neutral"
+                      size="sm"
+                      aria-label={`Split step ${si + 1} by paragraph`}
+                      disabled={disabled || paragraphs(step.text ?? "").length < 2}
+                      onClick={() => onChange(splitStepByParagraph(draft, ci, si))}
+                    >
+                      Split by paragraph
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      intent="neutral"
+                      size="sm"
+                      aria-label={`Merge step ${si + 1} with next`}
+                      disabled={disabled || si === last}
+                      onClick={() => onChange(mergeStepWithNext(draft, ci, si))}
+                    >
+                      Merge with next
+                    </Button>
+                  </div>
                 </div>
               </div>
             );

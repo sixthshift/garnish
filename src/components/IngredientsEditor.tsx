@@ -48,6 +48,7 @@ import { randomUuid } from "../lib/ids";
 import { listFoods } from "../server/foods";
 import { componentLabel } from "./ComponentsEditor";
 import type { DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
+import { BulkAddSheet } from "./ui/BulkAddSheet";
 import { Combobox, type ComboboxOption } from "./ui/Combobox";
 import { ReorderList } from "./ui/ReorderList";
 
@@ -190,6 +191,19 @@ export function addIngredient(draft: RecipeDraft, ci: number): RecipeDraft {
   return withIngredients(draft, ci, [...draft.components[ci]!.ingredients, newIngredient()]);
 }
 
+/**
+ * The draft with one text-only row appended per line in `lines`, in order, to
+ * component `ci`. What the bulk-add sheet's "Add" commits: each line becomes
+ * `originalText` on an otherwise blank row, so it reads as unparsed until
+ * someone edits it. No lines, or an out-of-range `ci`, returns a copy
+ * unchanged. Pure apart from the rows' ids.
+ */
+export function addBulkIngredients(draft: RecipeDraft, ci: number, lines: readonly string[]): RecipeDraft {
+  if (!inRange(draft, ci) || lines.length === 0) return { ...draft, components: draft.components.slice() };
+  const rows = lines.map((line) => ({ ...newIngredient(), originalText: line }));
+  return withIngredients(draft, ci, [...draft.components[ci]!.ingredients, ...rows]);
+}
+
 /** The draft with `patch` merged into row `ii` of component `ci`. Out-of-range indices return a copy unchanged. Pure. */
 export function updateIngredient(draft: RecipeDraft, ci: number, ii: number, patch: Partial<DraftIngredient>): RecipeDraft {
   if (!inRange(draft, ci, ii)) return { ...draft, components: draft.components.slice() };
@@ -257,6 +271,7 @@ export type IngredientsEditorProps = {
 };
 
 export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
+  const [bulkOpen, setBulkOpen] = useState(false);
   const component = draft.components[ci];
   if (!component) return null;
   const { ingredients } = component;
@@ -267,10 +282,22 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
         <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
           Ingredients
         </Muted>
-        <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addIngredient(draft, ci))}>
-          Add ingredient
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
+            Bulk add
+          </Button>
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addIngredient(draft, ci))}>
+            Add ingredient
+          </Button>
+        </div>
       </div>
+      <BulkAddSheet
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        itemName="ingredient"
+        disabled={disabled}
+        onAdd={(lines) => onChange(addBulkIngredients(draft, ci, lines))}
+      />
       <EmptyBoundary
         isEmpty={ingredients.length === 0}
         fallback={
