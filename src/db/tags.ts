@@ -25,6 +25,12 @@ export function tags(db: Database) {
   const insert = db.prepare(`INSERT INTO tag (${COLUMNS}) VALUES (?, ?, ?)`);
   const save = db.prepare("UPDATE tag SET name = ?, slug = ? WHERE id = ?");
   const del = db.prepare("DELETE FROM tag WHERE id = ?");
+  // `recipe_tag`'s primary key is (recipe_id, tag_id), so a recipe carrying
+  // both the source and the target already would collide on a plain
+  // repoint; OR IGNORE skips just that row and keeps the target's link.
+  const repointRecipeTags = db.prepare(
+    "INSERT OR IGNORE INTO recipe_tag (recipe_id, tag_id) SELECT recipe_id, ? FROM recipe_tag WHERE tag_id = ?",
+  );
 
   function get(id: string): Tag | null {
     return selectById.get(id) ?? null;
@@ -64,6 +70,24 @@ export function tags(db: Database) {
     findOrCreate(name: string): Tag {
       const clean = cleanName(name);
       return selectByName.get(clean) ?? create({ name: clean });
+    },
+
+    /**
+     * Merge `sourceId` into `targetId`: every recipe carrying the source tag
+     * gains the target tag, then the source is deleted — cascading away its
+     * now-redundant `recipe_tag` rows — in one transaction. Null when either
+     * id is unknown. Merging a tag into itself is a no-op that returns it.
+     */
+    merge(sourceId: string, targetId: string): Tag | null {
+      if (sourceId === targetId) return get(targetId);
+      const target = get(targetId);
+      if (!target || !get(sourceId)) return null;
+      const mergeTx = db.transaction(() => {
+        repointRecipeTags.run(targetId, sourceId);
+        del.run(sourceId);
+      });
+      mergeTx();
+      return get(targetId);
     },
   };
 }

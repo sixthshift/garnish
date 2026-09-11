@@ -24,6 +24,7 @@ export function aisles(db: Database) {
   const insert = db.prepare(`INSERT INTO aisle (${COLUMNS}) VALUES (?, ?, ?)`);
   const save = db.prepare("UPDATE aisle SET name = ?, position = ? WHERE id = ?");
   const del = db.prepare("DELETE FROM aisle WHERE id = ?");
+  const setPosition = db.prepare("UPDATE aisle SET position = ? WHERE id = ?");
 
   function get(id: string): Aisle | null {
     return selectById.get(id) ?? null;
@@ -58,6 +59,20 @@ export function aisles(db: Database) {
     findOrCreate(name: string): Aisle {
       const clean = cleanName(name);
       return selectByName.get(clean) ?? create({ name: clean });
+    },
+
+    /**
+     * Set every aisle's position to its index in `ids`, in one transaction —
+     * the drag-reorder list always sends the full order. An id that is not a
+     * real aisle is a no-op UPDATE for that one. Returns the list afterwards,
+     * in the new position order.
+     */
+    reorder(ids: readonly string[]): Aisle[] {
+      const reorderTx = db.transaction(() => {
+        ids.forEach((id, index) => setPosition.run(index, id));
+      });
+      reorderTx();
+      return selectAll.all();
     },
   };
 }

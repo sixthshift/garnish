@@ -1,6 +1,6 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { createAisle, deleteAisle, findOrCreateAisle, listAisles, updateAisle } from "../../src/server/aisles";
+import { createAisle, deleteAisle, findOrCreateAisle, listAisles, reorderAisles, updateAisle } from "../../src/server/aisles";
 import type { NotFoundData } from "../../src/server/fn";
 import { createFood, listFoods } from "../../src/server/foods";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -52,4 +52,14 @@ test("validation rejects a blank name and a fractional position", async () => {
   await expect(callServerFn(createAisle, { name: " " })).rejects.toThrow(/too_small|at least 1/);
   await expect(callServerFn(createAisle, { name: "x", position: 1.5 })).rejects.toThrow(/expected int|integer/);
   await expect(callServerFn(updateAisle, { name: "x" } as never)).rejects.toThrow(/expected string/);
+});
+
+test("reorderAisles sets positions from the given order and returns the list in the new order", async () => {
+  const frozen = await callServerFn(createAisle, { name: "Frozen" });
+  const dairy = await callServerFn(createAisle, { name: "Dairy" });
+  const produce = await callServerFn(createAisle, { name: "Produce" });
+
+  const reordered = await callServerFn(reorderAisles, { ids: [produce.id, frozen.id, dairy.id] });
+  expect(reordered.map((a) => a.name)).toEqual(["Produce", "Frozen", "Dairy"]);
+  expect((await callServerFn(listAisles, {})).map((a) => a.name)).toEqual(["Produce", "Frozen", "Dairy"]);
 });

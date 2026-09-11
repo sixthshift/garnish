@@ -56,7 +56,15 @@ export const AisleUpdate = AisleFields.extend({ name: Name }).partial().extend({
 export type AisleCreate = z.infer<typeof AisleCreate>;
 export type AisleUpdate = z.infer<typeof AisleUpdate>;
 
+/** The full ordered id list after a drag; positions are set from the array index. */
+export const AisleReorder = z.object({ ids: z.array(Id) });
+export type AisleReorder = z.infer<typeof AisleReorder>;
+
 export const TagCreate = NameInput;
 export const TagUpdate = z.object({ id: Id, name: Name.optional() });
 export type TagCreate = z.infer<typeof TagCreate>;
 export type TagUpdate = z.infer<typeof TagUpdate>;
+
+/** Merge `sourceId` into `targetId`: the source is deleted, its recipes repointed to the target tag. */
+export const TagMerge = z.object({ sourceId: Id, targetId: Id });
+export type TagMerge = z.infer<typeof TagMerge>;

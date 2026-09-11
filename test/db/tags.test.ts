@@ -55,3 +55,38 @@ test("list with q filters by case-insensitive substring", () => {
   expect(repo.list().map((t) => t.name)).toEqual(["Dessert", "Dinner", "Weeknight dinner"]);
   expect(repo.list("lunch")).toEqual([]);
 });
+
+test("merge repoints every recipe carrying the source tag to the target and deletes the source", () => {
+  const weeknight = repo.create({ name: "Weeknight" });
+  const quick = repo.create({ name: "Quick" });
+  db.run("INSERT INTO recipe (id, slug, name) VALUES ('r1', 'r1', 'R1')");
+  db.run("INSERT INTO recipe (id, slug, name) VALUES ('r2', 'r2', 'R2')");
+  // r1 carries only the source; r2 carries both, so the repoint must not collide on the primary key.
+  db.run("INSERT INTO recipe_tag (recipe_id, tag_id) VALUES ('r1', ?)", [quick.id]);
+  db.run("INSERT INTO recipe_tag (recipe_id, tag_id) VALUES ('r2', ?)", [quick.id]);
+  db.run("INSERT INTO recipe_tag (recipe_id, tag_id) VALUES ('r2', ?)", [weeknight.id]);
+
+  const merged = repo.merge(quick.id, weeknight.id);
+  expect(merged).toEqual(weeknight);
+  expect(repo.get(quick.id)).toBeNull();
+  expect(repo.list().map((t) => t.name)).toEqual(["Weeknight"]);
+
+  const links = db.query<{ recipe_id: string; tag_id: string }, []>("SELECT recipe_id, tag_id FROM recipe_tag ORDER BY recipe_id").all();
+  expect(links).toEqual([
+    { recipe_id: "r1", tag_id: weeknight.id },
+    { recipe_id: "r2", tag_id: weeknight.id },
+  ]);
+});
+
+test("merge is transactional and unknown ids return null without changing anything", () => {
+  const weeknight = repo.create({ name: "Weeknight" });
+  expect(repo.merge("missing", weeknight.id)).toBeNull();
+  expect(repo.merge(weeknight.id, "missing")).toBeNull();
+  expect(repo.list()).toEqual([weeknight]);
+});
+
+test("merging a tag into itself is a no-op that returns it unchanged", () => {
+  const weeknight = repo.create({ name: "Weeknight" });
+  expect(repo.merge(weeknight.id, weeknight.id)).toEqual(weeknight);
+  expect(repo.list()).toEqual([weeknight]);
+});

@@ -8,21 +8,26 @@ import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Tabs, type TabItem } from "@sixthshift/design-system/tabs";
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { TagChip } from "@sixthshift/design-system/tag-chip";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { FoodEditSheet, type FoodPatch } from "../components/FoodEditSheet";
 import { FoodMergeDialog } from "../components/FoodMergeDialog";
+import { TagMergeDialog } from "../components/TagMergeDialog";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { UnitEditSheet, type UnitPatch } from "../components/UnitEditSheet";
 import { UnitMergeDialog } from "../components/UnitMergeDialog";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { DataTable, type DataTableColumn } from "../components/ui/DataTable";
+import { EditSheet, type SavedValues } from "../components/ui/EditSheet";
+import { ReorderList } from "../components/ui/ReorderList";
 import { UsageConfirmDialog } from "../components/ui/UsageConfirmDialog";
 import type { Aisle, RecipeSummary, Tag, Unit } from "../domain/recipe";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
-import { findOrCreateAisle, listAisles } from "../server/aisles";
+import { deleteAisle, findOrCreateAisle, listAisles, reorderAisles, updateAisle } from "../server/aisles";
 import { deleteFood, listFoods, mergeFood, updateFood, usingFood } from "../server/foods";
-import { listTags } from "../server/tags";
+import { deleteTag, listTags, mergeTag, updateTag, usingTag } from "../server/tags";
 import { deleteUnit, listUnits, mergeUnit, updateUnit, usingUnit } from "../server/units";
 
 /** The repository's food row: a flat `aisleId`, not the recipe document's nested aisle. */
@@ -84,15 +89,27 @@ export const unitColumns: DataTableColumn<Unit>[] = [
   { key: "fraction", header: "Fractions", value: (unit) => unit.fraction },
 ];
 
-export const aisleColumns: DataTableColumn<Aisle>[] = [
-  { key: "name", header: "Name", value: (aisle) => aisle.name },
-  { key: "position", header: "Order", value: (aisle) => aisle.position },
-];
+/** One letter's tags for the Tags tab's A–Z grouped list. */
+export type TagGroup = { letter: string; tags: Tag[] };
 
-export const tagColumns: DataTableColumn<Tag>[] = [
-  { key: "name", header: "Name", value: (tag) => tag.name },
-  { key: "slug", header: "Slug", value: (tag) => tag.slug },
-];
+/**
+ * Tags grouped by the first letter of their name (upper-cased), each group's
+ * tags sorted by name; a name starting with anything but A–Z falls in "#".
+ * Groups come back A–Z with "#" last, as Mealie's tag page does. Pure.
+ */
+export function groupTagsAZ(tags: readonly Tag[]): TagGroup[] {
+  const groups = new Map<string, Tag[]>();
+  for (const tag of tags) {
+    const first = tag.name.trim().charAt(0).toUpperCase();
+    const letter = first >= "A" && first <= "Z" ? first : "#";
+    const bucket = groups.get(letter);
+    if (bucket) bucket.push(tag);
+    else groups.set(letter, [tag]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a === "#" ? 1 : b === "#" ? -1 : a.localeCompare(b)))
+    .map(([letter, group]) => ({ letter, tags: group.slice().sort((a, b) => a.name.localeCompare(b.name, "en-AU", { sensitivity: "base" })) }));
+}
 
 /** A Merge trigger per row, appended to a reference table's columns. Shared by Foods and Units. */
 function mergeColumn<T>(onMerge: (item: T) => void): DataTableColumn<T> {
@@ -316,19 +333,245 @@ function UnitsTab({ units }: { units: readonly Unit[] }) {
   );
 }
 
+/** Field spec shared by the Aisles and Tags tabs' rename sheet: name only. */
+const NAME_FIELDS = [{ name: "name", label: "Name", kind: "text", required: true }] as const;
+
+export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
+  const mutate = useMutate();
+  const [order, setOrder] = useState<Aisle[]>(() => aisles.slice());
+  useEffect(() => setOrder(aisles.slice()), [aisles]);
+  const [editing, setEditing] = useState<Aisle | null>(null);
+  const [deleting, setDeleting] = useState<Aisle | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const persistOrder = async (next: Aisle[]) => {
+    const previous = order;
+    setOrder(next);
+    try {
+      await mutate(() => reorderAisles({ data: { ids: next.map((aisle) => aisle.id) } }));
+    } catch (error) {
+      setOrder(previous);
+      notifyError("Could not reorder aisles", error);
+    }
+  };
+
+  const saveEdit = async (values: SavedValues) => {
+    if (!editing) return;
+    setBusy(true);
+    try {
+      const name = values.name as string;
+      await mutate(() => updateAisle({ data: { id: editing.id, name } }));
+      notify({ intent: "success", title: `${name} saved` });
+      setEditing(null);
+    } catch (error) {
+      notifyError("Could not save aisle", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setBusy(true);
+    try {
+      await mutate(() => deleteAisle({ data: { id: deleting.id } }));
+      notify({ intent: "success", title: `${deleting.name} deleted` });
+      setDeleting(null);
+    } catch (error) {
+      notifyError("Could not delete", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-4" data-aisle-list>
+      {order.length === 0 ? (
+        <Muted as="p">No aisles yet.</Muted>
+      ) : (
+        <ReorderList
+          items={order}
+          keyOf={(aisle) => aisle.id}
+          itemName="aisle"
+          onReorder={(next) => void persistOrder(next)}
+          renderItem={(aisle) => (
+            <div className="flex items-center justify-between gap-2 rounded-md border border-border-normal px-3 py-2">
+              <span>{aisle.name}</span>
+              <div className="flex shrink-0 gap-1">
+                <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setEditing(aisle)}>
+                  Rename
+                </Button>
+                <Button type="button" variant="ghost" intent="danger" size="sm" onClick={() => setDeleting(aisle)}>
+                  Delete
+                </Button>
+              </div>
+            </div>
+          )}
+        />
+      )}
+      {editing && (
+        <EditSheet
+          open
+          title={`Rename ${editing.name}`}
+          fields={NAME_FIELDS}
+          item={editing}
+          busy={busy}
+          onCancel={() => !busy && setEditing(null)}
+          onSave={(values) => void saveEdit(values)}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          title={`Delete ${deleting.name}?`}
+          aria-label={`Delete ${deleting.name}`}
+          confirmLabel="Delete"
+          busy={busy}
+          busyLabel="Deleting…"
+          onCancel={() => !busy && setDeleting(null)}
+          onConfirm={() => void confirmDelete()}
+        >
+          Foods in this aisle keep their place on the shopping list with no aisle.
+        </ConfirmDialog>
+      )}
+    </div>
+  );
+}
+
+/** Effect line for the Tags delete confirm: tags only ever link a recipe, nothing else references them. */
+const TAG_DELETE_EFFECT = "they will lose this tag.";
+
+export function TagsTab({ tags }: { tags: readonly Tag[] }) {
+  const mutate = useMutate();
+  const [editing, setEditing] = useState<Tag | null>(null);
+  const [deleting, setDeleting] = useState<Tag | null>(null);
+  const [deleteUsage, setDeleteUsage] = useState<RecipeSummary[]>([]);
+  const [merging, setMerging] = useState<Tag | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const groups = groupTagsAZ(tags);
+
+  const askDelete = async (tag: Tag) => {
+    setDeleteUsage(await usingTag({ data: { id: tag.id } }));
+    setDeleting(tag);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setBusy(true);
+    try {
+      await mutate(() => deleteTag({ data: { id: deleting.id } }));
+      notify({ intent: "success", title: `${deleting.name} deleted` });
+      setDeleting(null);
+    } catch (error) {
+      notifyError("Could not delete", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveEdit = async (values: SavedValues) => {
+    if (!editing) return;
+    setBusy(true);
+    try {
+      const name = values.name as string;
+      await mutate(() => updateTag({ data: { id: editing.id, name } }));
+      notify({ intent: "success", title: `${name} saved` });
+      setEditing(null);
+    } catch (error) {
+      notifyError("Could not save tag", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmMerge = async (targetId: string) => {
+    if (!merging) return;
+    setBusy(true);
+    try {
+      await mutate(() => mergeTag({ data: { sourceId: merging.id, targetId } }));
+      notify({ intent: "success", title: `${merging.name} merged` });
+      setMerging(null);
+    } catch (error) {
+      notifyError("Could not merge tag", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6" data-tag-list>
+      {tags.length === 0 ? (
+        <Muted as="p">No tags yet.</Muted>
+      ) : (
+        groups.map((group) => (
+          <section key={group.letter} aria-label={`Tags starting with ${group.letter}`}>
+            <SectionTitle as="h2">{group.letter}</SectionTitle>
+            <ul className="flex flex-col gap-1 pt-2">
+              {group.tags.map((tag) => (
+                <li key={tag.id} className="flex items-center justify-between gap-2 py-1">
+                  <Link to="/" search={{ tag: tag.slug }} className="rounded-full focus-visible:outline-2 focus-visible:outline-border-brand">
+                    <TagChip tag={tag.name} size="md" />
+                  </Link>
+                  <div className="flex shrink-0 gap-1">
+                    <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setEditing(tag)}>
+                      Rename
+                    </Button>
+                    <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setMerging(tag)}>
+                      Merge
+                    </Button>
+                    <Button type="button" variant="ghost" intent="danger" size="sm" onClick={() => void askDelete(tag)}>
+                      Delete
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      )}
+      {editing && (
+        <EditSheet
+          open
+          title={`Rename ${editing.name}`}
+          fields={NAME_FIELDS}
+          item={editing}
+          busy={busy}
+          onCancel={() => !busy && setEditing(null)}
+          onSave={(values) => void saveEdit(values)}
+        />
+      )}
+      {deleting && (
+        <UsageConfirmDialog
+          name={deleting.name}
+          itemName="tag"
+          effect={TAG_DELETE_EFFECT}
+          recipes={deleteUsage}
+          busy={busy}
+          onCancel={() => !busy && setDeleting(null)}
+          onConfirm={() => void confirmDelete()}
+        />
+      )}
+      {merging && (
+        <TagMergeDialog
+          source={merging}
+          targets={tags.filter((tag) => tag.id !== merging.id)}
+          busy={busy}
+          onCancel={() => !busy && setMerging(null)}
+          onConfirm={(targetId) => void confirmMerge(targetId)}
+        />
+      )}
+    </div>
+  );
+}
+
 function SettingsPage() {
   const { aisles, units, foods, tags } = Route.useLoaderData();
 
   const items: TabItem[] = [
     { value: "foods", label: "Foods", badge: foods.length, content: <FoodsTab foods={foods} aisles={aisles} /> },
     { value: "units", label: "Units", badge: units.length, content: <UnitsTab units={units} /> },
-    {
-      value: "aisles",
-      label: "Aisles",
-      badge: aisles.length,
-      content: <DataTable items={aisles} columns={aisleColumns} keyOf={(aisle) => aisle.id} itemName="aisle" />,
-    },
-    { value: "tags", label: "Tags", badge: tags.length, content: <DataTable items={tags} columns={tagColumns} keyOf={(tag) => tag.id} itemName="tag" /> },
+    { value: "aisles", label: "Aisles", badge: aisles.length, content: <AislesTab aisles={aisles} /> },
+    { value: "tags", label: "Tags", badge: tags.length, content: <TagsTab tags={tags} /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
   ];
 

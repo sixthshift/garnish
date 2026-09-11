@@ -1,10 +1,19 @@
-// The Foods tab's pure helpers: aggregating usage across a multi-row delete,
-// and the label shown for one row or several. The route's end-to-end
-// rendering (tabs, the Foods table, its dialogs staying closed) lives in
-// test/routes/loaders.test.tsx alongside the other routes.
+// The Foods and Units tabs' pure helpers: aggregating usage across a
+// multi-row delete, and the label shown for one row or several. The route's
+// end-to-end rendering of the default Foods tab (tabs, the table, its
+// dialogs staying closed) lives in test/routes/loaders.test.tsx alongside the
+// other routes.
+//
+// Aisles and Tags are not the default tab, so their tabs are rendered
+// directly here instead: AislesTab's drag list and rename/delete triggers,
+// and TagsTab's A–Z grouping (pure `groupTagsAZ`) and its tag-chip links,
+// rename/merge/delete triggers, and closed-by-default dialogs.
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { dedupeSummaries, foodsLabel, unitsLabel, type FoodRow } from "../../src/routes/settings";
-import type { RecipeSummary, Unit } from "../../src/domain/recipe";
+import type { Aisle, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
+import { AislesTab, dedupeSummaries, foodsLabel, groupTagsAZ, TagsTab, unitsLabel, type FoodRow } from "../../src/routes/settings";
 
 function summary(id: string, name: string): RecipeSummary {
   return {
@@ -28,6 +37,23 @@ function food(id: string, name: string): FoodRow {
 
 function unit(id: string, name: string): Unit {
   return { id, name, pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null };
+}
+
+function aisle(id: string, name: string, position: number): Aisle {
+  return { id, name, position };
+}
+
+function tag(id: string, name: string): Tag {
+  return { id, name, slug: name.toLowerCase() };
+}
+
+/** Render a component inside a throwaway router, so a `Link` it renders resolves. */
+async function renderWithRouter(component: () => ReactNode): Promise<string> {
+  const rootRoute = createRootRoute({ component });
+  const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => null });
+  const router = createRouter({ routeTree: rootRoute.addChildren([indexRoute]), history: createMemoryHistory({ initialEntries: ["/"] }) });
+  await router.load();
+  return renderToString(<RouterProvider router={router} />);
 }
 
 describe("dedupeSummaries", () => {
@@ -54,5 +80,72 @@ describe("unitsLabel", () => {
   test("names the single row, or counts several", () => {
     expect(unitsLabel([unit("u1", "gram")])).toBe("gram");
     expect(unitsLabel([unit("u1", "gram"), unit("u2", "cup")])).toBe("2 units");
+  });
+});
+
+describe("groupTagsAZ", () => {
+  test("groups by first letter, upper-cased, each group sorted by name", () => {
+    const weeknight = tag("t1", "Weeknight");
+    const almonds = tag("t2", "almonds"); // lower-case name still groups under A
+    const baking = tag("t3", "Baking");
+    const groups = groupTagsAZ([weeknight, almonds, baking]);
+    expect(groups).toEqual([
+      { letter: "A", tags: [almonds] },
+      { letter: "B", tags: [baking] },
+      { letter: "W", tags: [weeknight] },
+    ]);
+  });
+
+  test("a name starting with anything but A–Z falls into a trailing # group", () => {
+    const weeknight = tag("t1", "Weeknight");
+    const thirty = tag("t2", "30 minute");
+    expect(groupTagsAZ([thirty, weeknight])).toEqual([
+      { letter: "W", tags: [weeknight] },
+      { letter: "#", tags: [thirty] },
+    ]);
+  });
+
+  test("empty input gives no groups", () => {
+    expect(groupTagsAZ([])).toEqual([]);
+  });
+});
+
+describe("AislesTab render", () => {
+  test("lists aisles in order with a drag handle and rename/delete triggers, no dialog open", () => {
+    const html = renderToString(
+      <AislesTab aisles={[aisle("a1", "Frozen", 0), aisle("a2", "Dairy", 1)]} />,
+    );
+    expect(html).toContain("Frozen");
+    expect(html).toContain("Dairy");
+    expect(html).toContain('aria-label="Drag aisle 1"');
+    expect(html).toContain('aria-label="Drag aisle 2"');
+    expect(html.match(/>Rename</g)?.length).toBe(2);
+    expect(html.match(/>Delete</g)?.length).toBe(2);
+    expect(html).not.toContain("will be deleted");
+    expect(html).not.toContain('aria-label="Delete Frozen"');
+  });
+
+  test("no aisles says so instead of an empty list", () => {
+    expect(renderToString(<AislesTab aisles={[]} />)).toContain("No aisles yet.");
+  });
+});
+
+describe("TagsTab render", () => {
+  test("groups tags A–Z, each name links to the filtered recipe list, with rename/merge/delete triggers", async () => {
+    const html = await renderWithRouter(() => <TagsTab tags={[tag("t1", "Weeknight"), tag("t2", "Baking")]} />);
+    expect(html).toContain('aria-label="Tags starting with B"');
+    expect(html).toContain('aria-label="Tags starting with W"');
+    expect(html).toContain('href="/?tag=baking"');
+    expect(html).toContain('href="/?tag=weeknight"');
+    expect(html.match(/>Rename</g)?.length).toBe(2);
+    expect(html.match(/>Merge</g)?.length).toBe(2);
+    expect(html.match(/>Delete</g)?.length).toBe(2);
+    // No dialog is open by default.
+    expect(html).not.toContain("will be deleted");
+    expect(html).not.toContain("Merge into");
+  });
+
+  test("no tags says so instead of an empty list", async () => {
+    expect(await renderWithRouter(() => <TagsTab tags={[]} />)).toContain("No tags yet.");
   });
 });

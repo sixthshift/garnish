@@ -1,8 +1,9 @@
 // Tag server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
 import { required } from "../db/errors";
+import { recipes } from "../db/recipes";
 import { tags } from "../db/tags";
-import { IdInput, ListQuery, NameInput, TagCreate, TagUpdate } from "../domain/reference";
+import { IdInput, ListQuery, NameInput, TagCreate, TagMerge, TagUpdate } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";
 
@@ -37,3 +38,24 @@ export const findOrCreateTag = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(NameInput)
   .handler(async ({ data }) => tags(await getDb()).findOrCreate(data.name));
+
+/** The recipes carrying this tag, for the delete/merge confirm dialogs. */
+export const usingTag = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .validator(IdInput)
+  .handler(async ({ data }) => recipes(await getDb()).usingTag(data.id));
+
+/**
+ * Merge `sourceId` into `targetId`: every recipe carrying the source tag
+ * gains the target tag, then the source is deleted, in one transaction.
+ * Not-found when either id is unknown.
+ */
+export const mergeTag = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(TagMerge)
+  .handler(async ({ data: { sourceId, targetId } }) => {
+    const repo = tags(await getDb());
+    required(repo.get(sourceId), "tag", sourceId);
+    required(repo.get(targetId), "tag", targetId);
+    return required(repo.merge(sourceId, targetId), "tag", targetId);
+  });

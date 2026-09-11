@@ -2,7 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { aisles } from "../db/aisles";
 import { required } from "../db/errors";
-import { AisleCreate, AisleUpdate, IdInput, ListQuery, NameInput } from "../domain/reference";
+import { AisleCreate, AisleReorder, AisleUpdate, IdInput, ListQuery, NameInput } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";
 
@@ -37,3 +37,9 @@ export const findOrCreateAisle = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(NameInput)
   .handler(async ({ data }) => aisles(await getDb()).findOrCreate(data.name));
+
+/** Set every aisle's position from its index in `ids` (the drag list's full order); returns the list in the new order. */
+export const reorderAisles = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(AisleReorder)
+  .handler(async ({ data }) => aisles(await getDb()).reorder(data.ids));

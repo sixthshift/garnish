@@ -1,7 +1,9 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
+import { recipeInputSchema } from "../../src/domain/recipe";
+import { createRecipe } from "../../src/server/recipes";
 import type { NotFoundData } from "../../src/server/fn";
-import { createTag, deleteTag, findOrCreateTag, listTags, updateTag } from "../../src/server/tags";
+import { createTag, deleteTag, findOrCreateTag, listTags, mergeTag, updateTag, usingTag } from "../../src/server/tags";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -50,4 +52,38 @@ test("validation rejects a blank name and a missing id", async () => {
   await expect(callServerFn(createTag, { name: "" })).rejects.toThrow(/too_small|at least 1/);
   await expect(callServerFn(updateTag, { name: "x" } as never)).rejects.toThrow(/expected string/);
   await expect(callServerFn(deleteTag, { id: 3 } as never)).rejects.toThrow(/expected string/);
+});
+
+test("usingTag lists the recipes carrying that tag", async () => {
+  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
+  await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", components: [{ name: "", ingredients: [], steps: [] }], tags: [weeknight] }));
+  expect((await callServerFn(usingTag, { id: weeknight.id })).map((r) => r.name)).toEqual(["Toast"]);
+
+  const baking = await callServerFn(createTag, { name: "Baking" });
+  expect(await callServerFn(usingTag, { id: baking.id })).toEqual([]);
+});
+
+test("mergeTag repoints recipes to the target tag, deletes the source, and drops it from the list", async () => {
+  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
+  const quick = await callServerFn(createTag, { name: "Quick" });
+  await callServerFn(
+    createRecipe,
+    recipeInputSchema.parse({ name: "Shortbread", components: [{ name: "", ingredients: [], steps: [] }], tags: [quick] }),
+  );
+
+  const merged = await callServerFn(mergeTag, { sourceId: quick.id, targetId: weeknight.id });
+  expect(merged).toEqual(weeknight);
+  expect((await callServerFn(listTags, { q: "quick" })).map((t) => t.name)).toEqual([]);
+  expect((await callServerFn(usingTag, { id: weeknight.id })).map((r) => r.name)).toEqual(["Shortbread"]);
+});
+
+test("mergeTag is not-found when either id is unknown", async () => {
+  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
+  const missingSource = await callServerFn(mergeTag, { sourceId: MISSING, targetId: weeknight.id }).catch((e: unknown) => e);
+  expect(isNotFound(missingSource)).toBe(true);
+  expect((missingSource as { data: NotFoundData }).data).toMatchObject({ entity: "tag", id: MISSING });
+
+  const missingTarget = await callServerFn(mergeTag, { sourceId: weeknight.id, targetId: MISSING }).catch((e: unknown) => e);
+  expect(isNotFound(missingTarget)).toBe(true);
+  expect((missingTarget as { data: NotFoundData }).data).toMatchObject({ entity: "tag", id: MISSING });
 });

@@ -52,3 +52,22 @@ test("list with q filters by case-insensitive substring, keeping position order"
   expect(repo.list().map((a) => a.name)).toEqual(["Frozen", "Dairy", "Deli & Dairy"]);
   expect(repo.list("meat")).toEqual([]);
 });
+
+test("reorder sets positions from the given order, in one go, and returns the new list order", () => {
+  const frozen = repo.create({ name: "Frozen" });
+  const dairy = repo.create({ name: "Dairy" });
+  const produce = repo.create({ name: "Produce" });
+  expect(repo.list().map((a) => a.name)).toEqual(["Frozen", "Dairy", "Produce"]);
+
+  const reordered = repo.reorder([produce.id, frozen.id, dairy.id]);
+  expect(reordered.map((a) => a.name)).toEqual(["Produce", "Frozen", "Dairy"]);
+  expect(repo.get(produce.id)?.position).toBe(0);
+  expect(repo.get(frozen.id)?.position).toBe(1);
+  expect(repo.get(dairy.id)?.position).toBe(2);
+});
+
+test("reorder ignores an id that is not a real aisle", () => {
+  const frozen = repo.create({ name: "Frozen" });
+  const dairy = repo.create({ name: "Dairy" });
+  expect(repo.reorder([dairy.id, "missing", frozen.id]).map((a) => a.name)).toEqual(["Dairy", "Frozen"]);
+});
