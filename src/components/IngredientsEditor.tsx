@@ -28,10 +28,11 @@
 // or the raw line for a text-only row — with a chevron; tapping it opens a
 // `sheet` holding the same fields plus the row's `originalText`, read only, so
 // a parsed line can be checked against what it came from. From `md` up the
-// fields sit inline and the sheet is never opened. Both render
-// `IngredientFields` against the same row and the same `onPatch`, so a sheet
-// edit lands in the draft exactly as an inline one does; the sheet's Done only
-// closes it.
+// fields sit inline and the sheet is never opened; a parsed row's
+// `originalText`, when it has one, prints in grey above those inline fields
+// instead (M13.6), the same check without a tap. Both render `IngredientFields`
+// against the same row and the same `onPatch`, so a sheet edit lands in the
+// draft exactly as an inline one does; the sheet's Done only closes it.
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
@@ -398,6 +399,8 @@ export type IngredientFieldsProps = {
   controls?: ReactNode;
   /** Adds the read-only `originalText` line under the fields; the phone sheet sets it. */
   showOriginalText?: boolean;
+  /** Adds the grey `originalText` line above a parsed row's fields; the inline (`md` and up) row sets it (M13.6). */
+  originalTextAbove?: boolean;
   onPatch: (patch: Partial<DraftIngredient>) => void;
   onQuantityText: (text: string | null) => void;
   onUnitText: (text: string) => void;
@@ -408,7 +411,7 @@ export type IngredientFieldsProps = {
 };
 
 export function IngredientFields(props: IngredientFieldsProps) {
-  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText } = props;
+  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText, originalTextAbove } = props;
   const quantityError = errors[`${path}.quantity`];
 
   const originalText = (ingredient.originalText ?? "").trim();
@@ -420,6 +423,12 @@ export function IngredientFields(props: IngredientFieldsProps) {
         </Muted>
         <p className="text-sm text-fg-subtle">{originalText === "" ? "—" : originalText}</p>
       </div>
+    ) : null;
+  const originalTextLine =
+    originalTextAbove === true && !textOnly && originalText !== "" ? (
+      <p className="text-sm text-fg-subtle" data-original-text-above="">
+        {originalText}
+      </p>
     ) : null;
 
   if (textOnly) {
@@ -441,6 +450,7 @@ export function IngredientFields(props: IngredientFieldsProps) {
 
   return (
     <div className="flex flex-col gap-2">
+      {originalTextLine}
       <div className="flex flex-wrap gap-2">
         <Input
           name={`${path}.quantity`}
@@ -698,7 +708,7 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
         <Chevron />
       </button>
       <div className="hidden md:flex md:flex-col md:gap-2" data-inline-fields="">
-        <IngredientFields {...fieldProps} />
+        <IngredientFields {...fieldProps} originalTextAbove />
       </div>
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} size="sm" closable aria-label={label}>
         <Sheet.Header>

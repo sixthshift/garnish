@@ -514,6 +514,28 @@ describe("IngredientsEditor at both widths", () => {
     expect(summary).toContain("md:hidden");
     expect(html).toContain(">a pinch of salt<");
   });
+
+  test("a parsed row's original text prints in grey above the inline fields, not the phone summary (M13.6)", () => {
+    const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
+    const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);
+
+    expect(html.match(/data-original-text-above=""/g)).toHaveLength(1);
+    expect(html).toMatch(/data-original-text-above=""[^>]*>200g plain flour</);
+
+    // The phone summary shows the formatted line, not the raw original text.
+    const summary = html.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? "";
+    expect(summary).toContain(">200 g flour<");
+    expect(summary).not.toContain("200g plain flour");
+  });
+
+  test("no grey line when there is no original text, or when the row is text only", () => {
+    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+    expect(html).not.toContain("data-original-text-above");
+
+    const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
+    const withText = renderToString(<IngredientsEditor draft={text} ci={0} units={units} onChange={() => {}} />);
+    expect(withText).not.toContain("data-original-text-above");
+  });
 });
 
 describe("the phone sheet's fields", () => {
@@ -560,5 +582,30 @@ describe("the phone sheet's fields", () => {
     elementWithLabel(tree, "Ingredient 2 food").props.onCreate("butter");
     expect(next!.components[0]!.ingredients[1]!.food).toMatchObject({ name: "butter" });
     expect(validateDraft(next!).ok).toBe(true);
+  });
+});
+
+describe("the inline fields on wide (M13.6)", () => {
+  test("a parsed row with original text shows it in grey above the fields, unlabelled", () => {
+    const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} originalTextAbove />);
+    expect(html).toMatch(/^<div[^>]*><p[^>]*data-original-text-above=""[^>]*>200g plain flour<\/p>/);
+    expect(html).not.toContain("Original text");
+  });
+
+  test("no line when there is no original text, or the row is text only", () => {
+    const plain = renderToString(<IngredientFields {...fieldProps(tart(), 0, () => {})} originalTextAbove />);
+    expect(plain).not.toContain("data-original-text-above");
+
+    const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
+    const html = renderToString(<IngredientFields {...fieldProps(text, 0, () => {})} originalTextAbove />);
+    expect(html).not.toContain("data-original-text-above");
+  });
+
+  test("without the prop, a parsed row's original text stays out of the inline fields", () => {
+    const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} />);
+    expect(html).not.toContain("data-original-text-above");
+    expect(html).not.toContain("200g plain flour");
   });
 });

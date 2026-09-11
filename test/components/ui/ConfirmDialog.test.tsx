@@ -1,8 +1,10 @@
 // The confirm's content renders to a string; the Modal around it is mount-driven
 // and paints only on the client, so the wrapper is checked to render empty
 // without throwing.
+import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
+import { Modal } from "@sixthshift/design-system/modal";
 import { ConfirmDialog, ConfirmDialogContent } from "../../../src/components/ui/ConfirmDialog";
 
 describe("ConfirmDialogContent", () => {
@@ -41,5 +43,35 @@ describe("ConfirmDialog", () => {
       </ConfirmDialog>,
     );
     expect(html).toBe("");
+  });
+});
+
+// Phone confirmations (M13.6): "sheet below md, centred above" — same call as
+// decision 44/45. Modal itself never paints server-side (see above), so its
+// classnames are not something a static render can assert on; what's
+// checkable without a client renderer is the element ConfirmDialog builds —
+// it must be a bare `Modal` with `size="sm"` and no `align` override, since
+// those are exactly the two props that decide Modal's per-width shape:
+// `size` sets the desktop width (mobile is always full width regardless);
+// leaving `align` at its default keeps the desktop dialog vertically centred
+// rather than pinned to the top. Same element at both widths — Modal's own
+// media queries are what differ, not this component.
+describe("ConfirmDialog at both widths", () => {
+  function element(): ReactElement<{ size?: string; align?: string }> {
+    return ConfirmDialog({ title: "Delete Lemon tart?", confirmLabel: "Delete", onCancel: () => {}, onConfirm: () => {}, children: "This cannot be undone." }) as ReactElement<{
+      size?: string;
+      align?: string;
+    }>;
+  }
+
+  test("phone: sized for Modal's full-width mobile sheet, not a second dialog", () => {
+    const el = element();
+    expect(el.type).toBe(Modal);
+    expect(el.props.size).toBe("sm");
+  });
+
+  test("wide: no `align` override, so Modal keeps it centred rather than top-aligned", () => {
+    const el = element();
+    expect(el.props.align).toBeUndefined();
   });
 });
