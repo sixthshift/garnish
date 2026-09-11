@@ -6,6 +6,7 @@ import { bootstrapTheme } from "@sixthshift/design-system/hooks";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link, Outlet, useMatches } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Logo } from "./Logo";
 
 // Routes opt out of the nav with `staticData: { fullscreen: true }` (cook mode).
 declare module "@tanstack/react-router" {
@@ -56,8 +57,8 @@ export function AppShell() {
   return (
     <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal md:flex-row">
       <aside className="hidden w-56 shrink-0 flex-col gap-1 border-r border-border-normal p-4 md:flex">
-        <Link to="/" className="mb-4 px-3 text-lg font-semibold text-fg-strong">
-          garnish
+        <Link to="/" className="mb-4 px-3 text-fg-brand">
+          <Logo size={22} />
         </Link>
         <Nav className="flex flex-col gap-1" />
       </aside>

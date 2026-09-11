@@ -13,7 +13,8 @@
     "seed": "bun run src/db/seed/cli.ts",
     "dev:seed": "bun run src/db/dev/cli.ts",
     "db:generate": "drizzle-kit generate",
-    "backup": "bun run src/db/backup/cli.ts"
+    "backup": "bun run src/db/backup/cli.ts",
+    "icons": "bun run scripts/icons.tsx"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
@@ -28,6 +29,7 @@
     "zod": "^4.6.1"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/start-storage-context": "1.167.31",
     "@types/bun": "latest",
