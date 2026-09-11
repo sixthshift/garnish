@@ -5,10 +5,12 @@ import {
   clampStep,
   componentPills,
   finishLabel,
+  isFinishedIndex,
   SWIPE_MAX_MS,
   SWIPE_MIN_PX,
   SWIPE_RATIO,
   swipeIntent,
+  totalWithFinish,
 } from "../../src/domain/cook";
 import type { Component, Ingredient, Step } from "../../src/domain/recipe";
 
@@ -79,6 +81,23 @@ describe("clampStep", () => {
     [3, 0, 0],
   ])("clampStep(%s, %s) -> %s", (step, count, expected) => {
     expect(clampStep(step, count)).toBe(expected);
+  });
+});
+
+describe("totalWithFinish", () => {
+  test("one more than the card count for a non-empty deck; 0 for an empty one", () => {
+    expect(totalWithFinish(5)).toBe(6);
+    expect(totalWithFinish(1)).toBe(2);
+    expect(totalWithFinish(0)).toBe(0);
+  });
+});
+
+describe("isFinishedIndex", () => {
+  test("true only just past the last card of a non-empty deck", () => {
+    expect(isFinishedIndex(5, 5)).toBe(true);
+    expect(isFinishedIndex(4, 5)).toBe(false);
+    expect(isFinishedIndex(6, 5)).toBe(false);
+    expect(isFinishedIndex(0, 0)).toBe(false);
   });
 });
 

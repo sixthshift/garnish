@@ -2,11 +2,12 @@
 // scaled by `servings`, with Prev/Next disabled at the ends and no app nav.
 // Stands in for the plan's phone-width manual check (no browser here): the
 // layout is a single column with no fixed widths, asserted below by class.
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Recipe } from "../../src/domain/recipe";
 import { Route as CookRoute, positionLabel, stepForKey } from "../../src/routes/recipes/$slug/cook";
 import { createRecipe } from "../../src/server/recipes";
 import { listUnits } from "../../src/server/units";
+import { setIngredientTicked, type StorageLike } from "../../src/lib/ticks";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -57,6 +58,16 @@ function isDisabled(html: string, label: string): boolean {
   return / disabled=""/.test(match[0]);
 }
 
+/** An in-memory sessionStorage, so useIngredientTick reads what a test seeds. */
+function fakeStorage(): StorageLike {
+  const map = new Map<string, string>();
+  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
+}
+
+afterEach(() => {
+  delete (globalThis as { window?: unknown }).window;
+});
+
 describe("/recipes/$slug/cook", () => {
   test("step 0 is the first component's ingredient card, Prev disabled, no app nav", async () => {
     await seedTart();
@@ -106,14 +117,29 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain('href="/recipes/lemon-tart?servings=8"');
   });
 
-  test("the last card is the recipe-level step with Next disabled; an overshoot clamps to it", async () => {
+  test("the last card is the recipe-level step, with Next now enabled onto Finished", async () => {
     await seedTart();
-    for (const step of [4, 99]) {
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
+    expect(html).toContain("Bake for 30 minutes.");
+    expect(html).toContain("5 of 5 · To finish");
+    expect(isDisabled(html, "Next")).toBe(false);
+    expect(isDisabled(html, "Prev")).toBe(false);
+  });
+
+  test("Finished follows the last card: a heading, a Made this shortcut and an Exit link, with Next disabled and an overshoot clamping to it", async () => {
+    await seedTart();
+    for (const step of [5, 99]) {
       const html = await renderRoute(`/recipes/lemon-tart/cook?step=${step}`);
-      expect(html).toContain("Bake for 30 minutes.");
-      expect(html).toContain("5 of 5 · To finish");
+      expect(html).toContain('data-card="finished"');
+      expect(html).toContain(">Finished<");
+      expect(html).toContain('data-testid="made-this"');
+      expect(html).toContain(">Made this<");
+      expect(html).toContain('href="/recipes/lemon-tart"');
+      expect(html).toContain(">Exit<");
+      expect(html).not.toContain("Bake for 30 minutes.");
       expect(isDisabled(html, "Next")).toBe(true);
       expect(isDisabled(html, "Prev")).toBe(false);
+      expect(html).toMatch(/aria-live="polite"[^>]*data-announce[^>]*>Finished</);
     }
   });
 
@@ -189,6 +215,21 @@ describe("/recipes/$slug/cook", () => {
     const wide = (html.match(/\bw-\d+\b/g) ?? []).filter((c) => Number(c.slice(2)) > 20);
     expect(wide).toEqual([]);
     expect(html).not.toMatch(/\b(?:min-)?w-\[/);
+  });
+
+  test("an ingredient ticked in cook mode reads back ticked on the view page: ticks.ts is shared, keyed by recipe and ingredient id", async () => {
+    const tart = await seedTart();
+    const flour = tart.components[0]!.ingredients[0]!;
+
+    const storage = fakeStorage();
+    setIngredientTicked(storage, tart.id, flour.id, true);
+    (globalThis as { window?: unknown }).window = { sessionStorage: storage };
+
+    const cook = await renderRoute("/recipes/lemon-tart/cook");
+    expect(cook).toMatch(/data-testid="cook-ingredient" data-ticked="true"/);
+
+    const view = await renderRoute("/recipes/lemon-tart");
+    expect(view).toMatch(/data-testid="ingredient-row" data-ticked="true"/);
   });
 
   test("the view page links to cook mode, carrying the requested scale", async () => {

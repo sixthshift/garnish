@@ -49,6 +49,22 @@ export function clampStep(step: number, count: number): number {
 }
 
 /**
+ * How many positions the deck spans once the synthetic Finished screen at the
+ * end is counted: one more than the card count, or 0 for an empty deck (there
+ * is nothing to finish). Feed this to `clampStep` instead of `cards.length` so
+ * a route can land on Finished, including by overshooting past the last card.
+ * Pure.
+ */
+export function totalWithFinish(cardCount: number): number {
+  return cardCount > 0 ? cardCount + 1 : 0;
+}
+
+/** Whether `index` sits on the synthetic Finished screen just past the last card of a non-empty deck. Pure. */
+export function isFinishedIndex(index: number, cardCount: number): boolean {
+  return cardCount > 0 && index === cardCount;
+}
+
+/**
  * A card's spoken label for the live region: "Step 2 of 5", or "Ingredients for
  * Dough" ("Ingredients" where the component has no name). Pure.
  */

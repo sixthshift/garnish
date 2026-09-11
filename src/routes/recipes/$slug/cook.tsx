@@ -11,16 +11,29 @@
 // than a feel). A live region speaks the card as it changes.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
+import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
+import { cn } from "@sixthshift/design-system/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { z } from "zod";
+import { MadeThisButton } from "../../../components/Timeline";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
-import { buildCookCards, cardAnnouncement, clampStep, componentPills, swipeIntent, type CookCard } from "../../../domain/cook";
+import {
+  buildCookCards,
+  cardAnnouncement,
+  clampStep,
+  componentPills,
+  isFinishedIndex,
+  swipeIntent,
+  totalWithFinish,
+  type CookCard,
+} from "../../../domain/cook";
 import { formatIngredient } from "../../../domain/format";
-import type { Recipe } from "../../../domain/recipe";
+import type { Ingredient, Recipe } from "../../../domain/recipe";
+import { useIngredientTick } from "../../../lib/ticks";
 import { useWakeLock } from "../../../lib/useWakeLock";
 import { getRecipe } from "../../../server/recipes";
 
@@ -62,8 +75,10 @@ function CookPage() {
   const screenOn = useWakeLock();
 
   const cards = buildCookCards(recipe);
-  const index = clampStep(step ?? 0, cards.length);
-  const card: CookCard | undefined = cards[index];
+  const total = totalWithFinish(cards.length);
+  const index = clampStep(step ?? 0, total);
+  const finished = isFinishedIndex(index, cards.length);
+  const card: CookCard | undefined = finished ? undefined : cards[index];
   const pills = componentPills(cards);
 
   const goTo = (next: number) => void navigate({ search: (prev) => ({ ...prev, step: next }) });
@@ -73,7 +88,7 @@ function CookPage() {
     const onKey = (event: KeyboardEvent) => {
       // Typing in the servings field must not flip cards.
       if (event.target instanceof HTMLElement && event.target.closest("input, textarea, select")) return;
-      const next = stepForKey(event.key, index, cards.length);
+      const next = stepForKey(event.key, index, total);
       if (next === null) return;
       event.preventDefault();
       goTo(next);
@@ -101,7 +116,7 @@ function CookPage() {
     const intent = swipeIntent({ dx: event.clientX - start.x, dy: event.clientY - start.y, ms: Date.now() - start.at });
     if (intent === null) return;
     const next = intent === "next" ? index + 1 : index - 1;
-    if (next < 0 || next >= cards.length) return;
+    if (next < 0 || next >= total) return;
     goTo(next);
   };
 
@@ -149,32 +164,36 @@ function CookPage() {
 
       {/* Politely spoken on every card change; the visible position line below is silent so it is not said twice. */}
       <p className="sr-only" aria-live="polite" data-announce>
-        {card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
+        {finished ? "Finished" : card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
       </p>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => (swipe.current = null)}>
-        <EmptyBoundary
-          isEmpty={card === undefined}
-          fallback={
-            <Muted as="p" className="text-center text-xl">
-              Nothing to cook yet: this recipe has no ingredients or steps.
-            </Muted>
-          }
-        >
-          {card !== undefined && <CookCardView card={card} />}
-        </EmptyBoundary>
+        {finished ? (
+          <FinishedCard recipe={recipe} servings={requested} />
+        ) : (
+          <EmptyBoundary
+            isEmpty={card === undefined}
+            fallback={
+              <Muted as="p" className="text-center text-xl">
+                Nothing to cook yet: this recipe has no ingredients or steps.
+              </Muted>
+            }
+          >
+            {card !== undefined && <CookCardView card={card} recipeId={recipe.id} />}
+          </EmptyBoundary>
+        )}
       </main>
 
       <footer className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <ProgressBar completed={index + 1} total={cards.length} showFraction={false} label="Cook progress" />
+        <ProgressBar completed={index + 1} total={total} showFraction={false} label="Cook progress" />
         <div className="flex items-center justify-between gap-3">
           <Button variant="outline" intent="neutral" size="lg" disabled={index <= 0} onClick={() => goTo(index - 1)}>
             Prev
           </Button>
           <span className="min-w-0 flex-1 truncate text-center text-sm text-fg-subtle" data-position>
-            {cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.component ?? "")}
+            {finished ? "Finished" : cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.component ?? "")}
           </span>
-          <Button variant="solid" intent="brand" size="lg" disabled={index >= cards.length - 1} onClick={() => goTo(index + 1)}>
+          <Button variant="solid" intent="brand" size="lg" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
             Next
           </Button>
         </div>
@@ -183,8 +202,50 @@ function CookPage() {
   );
 }
 
+/** The deck's last "card": logged the cook is done, with a shortcut to log it (M11.7's sheet, reused as-is) and a way out. */
+function FinishedCard({ recipe, servings }: { recipe: Pick<Recipe, "id" | "name" | "slug">; servings: number | undefined }) {
+  return (
+    <Card title={<span className="text-xl">Finished</span>} data-card="finished">
+      <div className="flex flex-col items-center gap-4 py-6 text-center">
+        <p className="text-2xl font-semibold text-fg-strong">Nice work, that's everything.</p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <MadeThisButton recipe={recipe} />
+          <Button asChild variant="outline" intent="neutral" size="sm">
+            <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings }}>
+              Exit
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/** One ingredient card row: ticks off for this session, shared with the recipe view page (src/lib/ticks.ts). */
+function CookIngredientItem({ recipeId, ingredient }: { recipeId: string; ingredient: Ingredient }) {
+  const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
+  return (
+    <li
+      className="flex flex-wrap items-baseline gap-x-3"
+      data-testid="cook-ingredient"
+      data-ticked={done ? "true" : undefined}
+      data-fixed={ingredient.fixed ? "true" : undefined}
+    >
+      <Checkbox checked={done} onCheckedChange={toggle} className="mt-1.5 self-start" aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`} />
+      <button type="button" onClick={toggle} className={cn("flex flex-1 flex-wrap items-baseline gap-x-3 text-left", done && "text-fg-subtle")}>
+        <span className={cn(done && "line-through")}>{formatIngredient(ingredient)}</span>
+      </button>
+      {ingredient.fixed && (
+        <Muted as="span" className="text-sm" title="Fixed amount, does not scale with servings">
+          fixed
+        </Muted>
+      )}
+    </li>
+  );
+}
+
 /** One card in large type: the component's ingredient list, or a single step. */
-function CookCardView({ card }: { card: CookCard }) {
+function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) {
   const heading = card.component === "" ? undefined : card.component;
   if (card.kind === "ingredients") {
     return (
@@ -192,14 +253,7 @@ function CookCardView({ card }: { card: CookCard }) {
         <p className="mb-3 text-sm font-medium uppercase tracking-wide text-fg-subtle">Ingredients</p>
         <ul className="flex flex-col gap-3 text-2xl leading-snug" aria-label="Ingredients">
           {card.ingredients.map((ingredient) => (
-            <li key={ingredient.id} className="flex flex-wrap items-baseline gap-x-3" data-fixed={ingredient.fixed ? "true" : undefined}>
-              <span>{formatIngredient(ingredient)}</span>
-              {ingredient.fixed && (
-                <Muted as="span" className="text-sm" title="Fixed amount, does not scale with servings">
-                  fixed
-                </Muted>
-              )}
-            </li>
+            <CookIngredientItem key={ingredient.id} recipeId={recipeId} ingredient={ingredient} />
           ))}
         </ul>
       </Card>
