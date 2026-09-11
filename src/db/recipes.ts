@@ -22,6 +22,7 @@ import type {
   Unit,
 } from "../domain/recipe";
 import { totalMinutes } from "../domain/format";
+import { resolveSort, seededOrder, type SortDir, type SortKey } from "../domain/sort";
 import { aisles as aisleRepository } from "./aisles";
 import { foods as foodRepository } from "./foods";
 import { slugify, uniqueSlug } from "./names";
@@ -41,6 +42,12 @@ export type ListFilter = {
   foods?: string[];
   /** Only favourited recipes when true; unset or false is unfiltered. */
   favourite?: boolean;
+  /** Sort key (M12.4). Unset keeps the original newest-first order. */
+  sort?: SortKey;
+  /** Sort direction. Unset defaults per key, see `resolveSort`. Ignored for `sort: "random"`. */
+  dir?: SortDir;
+  /** Shuffle seed for `sort: "random"`: the same seed reproduces the same order. Unset shuffles with an empty seed, which is still stable across calls. */
+  seed?: string;
 };
 
 type RecipeRow = {
@@ -80,6 +87,30 @@ type IngredientRow = {
   fixed: 0 | 1;
 };
 type StepRow = { id: string; component_id: string | null; text: string };
+
+/**
+ * SQL `ORDER BY` clause for every key but "random" (handled separately in JS,
+ * see `seededOrder`). `lastMade` and `rating` put nulls last regardless of
+ * `dir` — an unrated or never-made recipe reads as "not applicable", not as
+ * the lowest value. A name tie-break, then `r.id`, keeps the order fully
+ * determinate. Pure string-building; `dir` is one of a fixed enum, never
+ * caller-supplied SQL text.
+ */
+function orderClause(sort: Exclude<SortKey, "random">, dir: SortDir): string {
+  const d = dir === "asc" ? "ASC" : "DESC";
+  switch (sort) {
+    case "name":
+      return `r.name COLLATE NOCASE ${d}, r.id`;
+    case "updated":
+      return `r.updated_at ${d}, r.name COLLATE NOCASE, r.id`;
+    case "lastMade":
+      return `(r.last_made IS NULL), r.last_made ${d}, r.name COLLATE NOCASE, r.id`;
+    case "rating":
+      return `(r.rating IS NULL), r.rating ${d}, r.name COLLATE NOCASE, r.id`;
+    case "created":
+      return `r.created_at ${d}, r.name COLLATE NOCASE, r.id`;
+  }
+}
 
 const RECIPE_COLUMNS =
   "id, slug, name, description, image, rating, last_made, servings, yield_quantity, yield_unit_id, yield_text, prep_minutes, cook_minutes, source_url, favourite, created_at, updated_at";
@@ -412,10 +443,12 @@ export function recipes(db: Database) {
     getById,
 
     /**
-     * Card summaries, newest first. `q` is a name substring; `tag` and `tags`
-     * (tag slugs) are combined and de-duplicated, then matched by `match`
-     * (any, the default, or all); `foods` (food ids) matches any ingredient
-     * using one of them; `favourite` true restricts to favourites.
+     * Card summaries, newest first by default (M12.4: `sort`/`dir` change
+     * that, see `resolveSort`; `sort: "random"` shuffles by `seed` instead,
+     * see `seededOrder`). `q` is a name substring; `tag` and `tags` (tag
+     * slugs) are combined and de-duplicated, then matched by `match` (any,
+     * the default, or all); `foods` (food ids) matches any ingredient using
+     * one of them; `favourite` true restricts to favourites.
      */
     list(filter: ListFilter = {}): RecipeSummary[] {
       const q = filter.q?.trim() || null;
@@ -455,7 +488,14 @@ export function recipes(db: Database) {
       if (filter.favourite) clauses.push("r.favourite = 1");
 
       const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
-      const sql = `SELECT ${SUMMARY_COLUMNS} FROM recipe r ${where} ORDER BY r.created_at DESC, r.name COLLATE NOCASE`;
+      const { key: sort, dir } = resolveSort(filter.sort, filter.dir);
+
+      if (sort === "random") {
+        const rows = db.query<SummaryRow, string[]>(`SELECT ${SUMMARY_COLUMNS} FROM recipe r ${where}`).all(...params);
+        return seededOrder(rows, filter.seed ?? "").map(summarise);
+      }
+
+      const sql = `SELECT ${SUMMARY_COLUMNS} FROM recipe r ${where} ORDER BY ${orderClause(sort, dir)}`;
       return db.query<SummaryRow, string[]>(sql).all(...params).map(summarise);
     },
 

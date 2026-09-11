@@ -26,6 +26,12 @@ export const ListRecipesInput = z.object({
   foods: z.array(z.uuid()).optional(),
   /** Only favourited recipes when true. */
   favourite: z.boolean().optional(),
+  /** Sort key (M12.4). Unset keeps the original newest-first order. */
+  sort: z.enum(["name", "created", "updated", "lastMade", "rating", "random"]).optional(),
+  /** Sort direction. Unset defaults per key; ignored for `sort: "random"`. */
+  dir: z.enum(["asc", "desc"]).optional(),
+  /** Shuffle seed for `sort: "random"`, so paging stays stable across requests using the same seed. */
+  seed: z.string().optional(),
 });
 
 export const GetRecipeInput = z.object({
@@ -47,7 +53,7 @@ export const DuplicateRecipeInput = z.object({ id: recipeId });
 
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
 
-/** Card summaries, newest first, optionally filtered by name substring and tag slug. */
+/** Card summaries, newest first by default, optionally filtered by name substring and tag slug, and sorted or shuffled per `sort`/`dir`/`seed` (M12.4). */
 export const listRecipes = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListRecipesInput)

@@ -383,6 +383,60 @@ test("list orders newest first", () => {
   expect(repo.list().map((r) => r.id)).toEqual([b.id, a.id]);
 });
 
+test("list sorts by name, created and updated in both directions (M12.4)", () => {
+  const b = repo.create(recipeInputSchema.parse(minimal("Banana cake")));
+  const a = repo.create(recipeInputSchema.parse(minimal("Apple pie")));
+  const c = repo.create(recipeInputSchema.parse(minimal("Carrot soup")));
+
+  expect(repo.list({ sort: "name", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "banana-cake", "carrot-soup"]);
+  expect(repo.list({ sort: "name", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "banana-cake", "apple-pie"]);
+  // Omitted dir defaults per key: name reads ascending.
+  expect(repo.list({ sort: "name" }).map((r) => r.slug)).toEqual(["apple-pie", "banana-cake", "carrot-soup"]);
+
+  db.run("UPDATE recipe SET created_at = '2020-06-01T00:00:00.000Z' WHERE id = ?", [b.id]);
+  db.run("UPDATE recipe SET created_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", [a.id]);
+  db.run("UPDATE recipe SET created_at = '2020-03-01T00:00:00.000Z' WHERE id = ?", [c.id]);
+  expect(repo.list({ sort: "created", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
+  expect(repo.list({ sort: "created", dir: "desc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  // Omitted sort/dir keeps the original newest-created-first order.
+  expect(repo.list().map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  // Omitted dir defaults per key: created reads newest first.
+  expect(repo.list({ sort: "created" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+
+  db.run("UPDATE recipe SET updated_at = '2021-06-01T00:00:00.000Z' WHERE id = ?", [b.id]);
+  db.run("UPDATE recipe SET updated_at = '2021-01-01T00:00:00.000Z' WHERE id = ?", [a.id]);
+  db.run("UPDATE recipe SET updated_at = '2021-03-01T00:00:00.000Z' WHERE id = ?", [c.id]);
+  expect(repo.list({ sort: "updated", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
+  expect(repo.list({ sort: "updated", dir: "desc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+});
+
+test("list sorts by lastMade and rating, nulls last regardless of direction (M12.4)", () => {
+  repo.create(recipeInputSchema.parse(minimal("Banana cake", { rating: 3 }))); // no lastMade
+  repo.create(recipeInputSchema.parse(minimal("Apple pie", { lastMade: "2026-01-01T00:00:00.000Z" }))); // no rating
+  repo.create(recipeInputSchema.parse(minimal("Carrot soup", { rating: 5, lastMade: "2026-06-01T00:00:00.000Z" })));
+
+  expect(repo.list({ sort: "lastMade", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
+  expect(repo.list({ sort: "lastMade", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "apple-pie", "banana-cake"]);
+
+  expect(repo.list({ sort: "rating", dir: "asc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  expect(repo.list({ sort: "rating", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "banana-cake", "apple-pie"]);
+});
+
+test("list sort random is stable for a given seed, reshuffles for a different one, and keeps the same rows (M12.4)", () => {
+  const created = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"].map((name) => repo.create(recipeInputSchema.parse(minimal(name))));
+
+  const first = repo.list({ sort: "random", seed: "seed-a" }).map((r) => r.id);
+  const again = repo.list({ sort: "random", seed: "seed-a" }).map((r) => r.id);
+  expect(again).toEqual(first);
+  expect(first.slice().sort()).toEqual(created.map((r) => r.id).sort());
+
+  const other = repo.list({ sort: "random", seed: "seed-b" }).map((r) => r.id);
+  expect(other).not.toEqual(first);
+
+  // A filter still applies before the shuffle.
+  expect(repo.list({ sort: "random", seed: "seed-a", q: "alp" }).map((r) => r.slug)).toEqual(["alpha"]);
+});
+
 test("setImage changes only the image column and reports whether the id exists", () => {
   const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
   expect(created.image).toBeNull();

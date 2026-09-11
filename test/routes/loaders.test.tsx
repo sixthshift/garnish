@@ -170,6 +170,37 @@ describe("/ (list)", () => {
       expect(html).toMatch(/aria-label="List view"[^>]*aria-checked="true"/);
     });
   });
+
+  describe("sort and dice (M12.4)", () => {
+    test("defaults to the newest-created sort, and the dice button renders", async () => {
+      await seed("Flatbread");
+      const html = await renderRoute("/");
+      expect(html).toContain("Sort: Newest created");
+      expect(html).toContain('aria-label="Open a random recipe"');
+    });
+
+    test("sort and dir search params change the sort menu's trigger and the recipe order", async () => {
+      await seed("Banana cake");
+      await seed("Apple pie");
+
+      let html = await renderRoute("/?sort=name&dir=asc");
+      expect(html).toContain("Sort: Name (A–Z)");
+      expect(html.indexOf("Apple pie")).toBeLessThan(html.indexOf("Banana cake"));
+
+      html = await renderRoute("/?sort=name&dir=desc");
+      expect(html).toContain("Sort: Name (Z–A)");
+      expect(html.indexOf("Banana cake")).toBeLessThan(html.indexOf("Apple pie"));
+    });
+
+    test("sort=random with a seed renders every recipe once", async () => {
+      await seed("Banana cake");
+      await seed("Apple pie");
+      const html = await renderRoute("/?sort=random&seed=abc");
+      expect(html).toContain("Sort: Random");
+      expect(html).toContain("Banana cake");
+      expect(html).toContain("Apple pie");
+    });
+  });
 });
 
 describe("searchParam", () => {
@@ -547,6 +578,9 @@ describe("loader data types match the domain schemas", () => {
       match?: "any" | "all" | undefined;
       foods?: string[] | undefined;
       favourite?: boolean | undefined;
+      sort?: "name" | "created" | "updated" | "lastMade" | "rating" | "random" | undefined;
+      dir?: "asc" | "desc" | undefined;
+      seed?: string | undefined;
     }>();
     expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
   });

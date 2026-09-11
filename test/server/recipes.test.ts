@@ -95,6 +95,18 @@ test("listRecipes filters by tags[] with match, foods[] and favourite", async ()
   await expect(callServerFn(listRecipes, { foods: ["not-a-uuid"] })).rejects.toThrow(/uuid/i);
 });
 
+test("listRecipes sorts and shuffles per sort/dir/seed (M12.4)", async () => {
+  await callServerFn(createRecipe, doc({ name: "Flatbread" }));
+  await callServerFn(createRecipe, doc({ name: "Pancakes", tags: [] }));
+
+  expect((await callServerFn(listRecipes, { sort: "name", dir: "asc" })).map((r) => r.name)).toEqual(["Flatbread", "Pancakes"]);
+  expect((await callServerFn(listRecipes, { sort: "name", dir: "desc" })).map((r) => r.name)).toEqual(["Pancakes", "Flatbread"]);
+
+  const seeded = await callServerFn(listRecipes, { sort: "random", seed: "a" });
+  expect(seeded.map((r) => r.name).sort()).toEqual(["Flatbread", "Pancakes"]);
+  await expect(callServerFn(listRecipes, { sort: "random", seed: "a" })).resolves.toEqual(seeded);
+});
+
 test("getRecipe returns the stored document by slug and maps a miss to notFound", async () => {
   const created = await callServerFn(createRecipe, doc());
   await expect(callServerFn(getRecipe, { slug: "flatbread" })).resolves.toEqual(created);
