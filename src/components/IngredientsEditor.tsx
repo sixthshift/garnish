@@ -20,14 +20,25 @@
 // food and some originalText is text only) and a toggle switches it; the
 // switch to text only clears amount and food, so what the row shows is exactly
 // what it stores.
+//
+// Two widths (M13.2). Below `md` a row is one line — the formatted ingredient,
+// or the raw line for a text-only row — with a chevron; tapping it opens a
+// `sheet` holding the same fields plus the row's `originalText`, read only, so
+// a parsed line can be checked against what it came from. From `md` up the
+// fields sit inline and the sheet is never opened. Both render
+// `IngredientFields` against the same row and the same `onPatch`, so a sheet
+// edit lands in the draft exactly as an inline one does; the sheet's Done only
+// closes it.
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Select } from "@sixthshift/design-system/select";
+import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { formatIngredient } from "../domain/format";
 import type { Food as FoodRow } from "../db/foods";
 import type { Food, Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
@@ -276,6 +287,205 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
   );
 }
 
+// --- Phone rows -------------------------------------------------------------
+
+/** The summary line a phone row shows: the formatted ingredient, or the raw line for a text-only row. Blank for an empty row. Pure. */
+export function ingredientSummary(ingredient: DraftIngredient): string {
+  const unit = ingredient.unit ?? null;
+  const food = ingredient.food ?? null;
+  return formatIngredient({
+    quantity: ingredient.quantity ?? null,
+    unit:
+      unit === null
+        ? null
+        : {
+            name: unit.name,
+            pluralName: unit.pluralName ?? null,
+            abbreviation: unit.abbreviation ?? "",
+            useAbbreviation: unit.useAbbreviation ?? false,
+            fraction: unit.fraction ?? true,
+          },
+    food: food === null ? null : { name: food.name, pluralName: food.pluralName ?? null },
+    note: ingredient.note ?? "",
+    originalText: ingredient.originalText ?? "",
+  });
+}
+
+/** What a row with nothing in it yet shows on its summary line. */
+export const EMPTY_INGREDIENT_SUMMARY = "New ingredient";
+
+function Chevron() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <title>Open</title>
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+/**
+ * The fields of one ingredient row. Rendered inline from `md` up and inside
+ * the phone sheet below it, so both widths edit the same row through the same
+ * `onPatch`. No state of its own: the row owns the mid-edit text and the food
+ * suggestions, which keeps this a plain function a test can call directly.
+ */
+export type IngredientFieldsProps = {
+  ingredient: DraftIngredient;
+  /** Field name prefix, e.g. "components.0.ingredients.1". */
+  path: string;
+  /** Label prefix for every control, e.g. "Ingredient 2". */
+  label: string;
+  units: readonly Unit[];
+  errors: FieldErrors;
+  disabled?: boolean;
+  /** True for a text-only row: one free line instead of the amount fields. */
+  textOnly: boolean;
+  /** The quantity text while it is being typed; null falls back to the committed value. */
+  quantityDraft: string | null;
+  unitText: string;
+  foodText: string;
+  /** Food suggestions the row has fetched. */
+  foodRows: readonly FoodRow[];
+  /** The mode toggle and "move to" select, built by the row. */
+  controls?: ReactNode;
+  /** Adds the read-only `originalText` line under the fields; the phone sheet sets it. */
+  showOriginalText?: boolean;
+  onPatch: (patch: Partial<DraftIngredient>) => void;
+  onQuantityText: (text: string | null) => void;
+  onUnitText: (text: string) => void;
+  onUnitBlur: () => void;
+  onFoodText: (text: string) => void;
+  onFoodFocus: () => void;
+  onFoodBlur: () => void;
+};
+
+export function IngredientFields(props: IngredientFieldsProps) {
+  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText } = props;
+  const quantityError = errors[`${path}.quantity`];
+
+  const originalText = (ingredient.originalText ?? "").trim();
+  const originalLine =
+    showOriginalText === true && !textOnly ? (
+      <div className="flex flex-col gap-0.5" data-original-text="">
+        <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
+          Original text
+        </Muted>
+        <p className="text-sm text-fg-subtle">{originalText === "" ? "—" : originalText}</p>
+      </div>
+    ) : null;
+
+  if (textOnly) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Input
+          name={`${path}.originalText`}
+          aria-label={`${label} text`}
+          placeholder="e.g. a pinch of salt"
+          autoComplete="off"
+          value={ingredient.originalText ?? ""}
+          disabled={disabled}
+          onChange={(event) => props.onPatch({ originalText: event.target.value })}
+        />
+        {controls !== undefined && <div className="flex flex-wrap items-center gap-2">{controls}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        <Input
+          name={`${path}.quantity`}
+          aria-label={`${label} quantity`}
+          aria-invalid={quantityError !== undefined || undefined}
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder="Qty"
+          className="w-20"
+          value={quantityDraft ?? quantityText(ingredient.quantity)}
+          disabled={disabled}
+          onChange={(event) => {
+            props.onQuantityText(event.target.value);
+            props.onPatch({ quantity: parseQuantity(event.target.value) });
+          }}
+          onBlur={() => props.onQuantityText(null)}
+        />
+        <Combobox
+          name={`${path}.unit`}
+          aria-label={`${label} unit`}
+          placeholder="Unit"
+          className="w-28 grow"
+          value={unitText}
+          options={filterUnits(units, unitText).map((unit) => ({ value: unit.id, label: unit.name, hint: unit.abbreviation || undefined }))}
+          disabled={disabled}
+          onChange={props.onUnitText}
+          onSelect={(option) => {
+            const unit = units.find((u) => u.id === option.value);
+            if (!unit) return;
+            props.onUnitText(unit.name);
+            props.onPatch({ unit });
+          }}
+          onCreate={(text) => {
+            props.onUnitText(text);
+            props.onPatch({ unit: unitReference(text) });
+          }}
+          onBlur={props.onUnitBlur}
+        />
+        <Combobox
+          name={`${path}.food`}
+          aria-label={`${label} food`}
+          placeholder="Food"
+          className="min-w-40 grow-[2]"
+          value={foodText}
+          options={foodRows.map((row) => ({ value: row.id, label: row.name }))}
+          disabled={disabled}
+          onChange={props.onFoodText}
+          onFocus={props.onFoodFocus}
+          onSelect={(option) => {
+            const row = foodRows.find((r) => r.id === option.value);
+            if (!row) return;
+            props.onFoodText(row.name);
+            props.onPatch({ food: foodReference(row) });
+          }}
+          onCreate={(text) => {
+            props.onFoodText(text);
+            props.onPatch({ food: foodReference({ name: text }) });
+          }}
+          onBlur={props.onFoodBlur}
+        />
+      </div>
+      {quantityError !== undefined && (
+        <p className="text-sm text-fg-danger" role="alert">
+          {quantityError}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          name={`${path}.note`}
+          aria-label={`${label} note`}
+          placeholder="Note, e.g. sifted"
+          autoComplete="off"
+          className="min-w-40 grow"
+          value={ingredient.note ?? ""}
+          disabled={disabled}
+          onChange={(event) => props.onPatch({ note: event.target.value })}
+        />
+        <Checkbox
+          name={`${path}.fixed`}
+          label="Fixed"
+          aria-label={`${label} fixed`}
+          checked={ingredient.fixed ?? false}
+          disabled={disabled}
+          onCheckedChange={(fixed) => props.onPatch({ fixed })}
+        />
+        {controls}
+      </div>
+      {originalLine}
+    </div>
+  );
+}
+
 type IngredientRowProps = {
   ingredient: DraftIngredient;
   ci: number;
@@ -299,6 +509,7 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
   const [foodText, setFoodText] = useState(ingredient.food?.name ?? "");
   const [foodFocused, setFoodFocused] = useState(false);
   const [foodRows, setFoodRows] = useState<FoodRow[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Query foods while the input has focus, a beat after the last keystroke.
   useEffect(() => {
@@ -322,8 +533,6 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
       clearTimeout(timer);
     };
   }, [foodText, foodFocused]);
-
-  const quantityError = errors[`${path}.quantity`];
 
   const commitUnit = () => {
     const text = unitText.trim();
@@ -392,120 +601,70 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
       />
     ) : null;
 
-  if (textOnly) {
-    return (
-      <div className="flex flex-col gap-2" data-ingredient={ii} data-mode="text">
-        <Input
-          name={`${path}.originalText`}
-          aria-label={`${label} text`}
-          placeholder="e.g. a pinch of salt"
-          autoComplete="off"
-          value={ingredient.originalText ?? ""}
-          disabled={disabled}
-          onChange={(event) => onPatch({ originalText: event.target.value })}
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          {modeToggle}
-          {moveTo}
-        </div>
-      </div>
-    );
-  }
+  const controls = (
+    <>
+      {modeToggle}
+      {moveTo}
+    </>
+  );
+
+  const fieldProps: Omit<IngredientFieldsProps, "showOriginalText"> = {
+    ingredient,
+    path,
+    label,
+    units,
+    errors,
+    disabled,
+    textOnly,
+    quantityDraft,
+    unitText,
+    foodText,
+    foodRows,
+    controls,
+    onPatch,
+    onQuantityText: setQuantityDraft,
+    onUnitText: setUnitText,
+    onUnitBlur: commitUnit,
+    onFoodText: setFoodText,
+    onFoodFocus: () => setFoodFocused(true),
+    onFoodBlur: () => {
+      setFoodFocused(false);
+      commitFood();
+    },
+  };
+
+  const summary = ingredientSummary(ingredient);
 
   return (
-    <div className="flex flex-col gap-2" data-ingredient={ii} data-mode="structured">
-      <div className="flex flex-wrap gap-2">
-        <Input
-          name={`${path}.quantity`}
-          aria-label={`${label} quantity`}
-          aria-invalid={quantityError !== undefined || undefined}
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="Qty"
-          className="w-20"
-          value={quantityDraft ?? quantityText(ingredient.quantity)}
-          disabled={disabled}
-          onChange={(event) => {
-            setQuantityDraft(event.target.value);
-            onPatch({ quantity: parseQuantity(event.target.value) });
-          }}
-          onBlur={() => setQuantityDraft(null)}
-        />
-        <Combobox
-          name={`${path}.unit`}
-          aria-label={`${label} unit`}
-          placeholder="Unit"
-          className="w-28 grow"
-          value={unitText}
-          options={filterUnits(units, unitText).map((unit) => ({ value: unit.id, label: unit.name, hint: unit.abbreviation || undefined }))}
-          disabled={disabled}
-          onChange={setUnitText}
-          onSelect={(option) => {
-            const unit = units.find((u) => u.id === option.value);
-            if (!unit) return;
-            setUnitText(unit.name);
-            onPatch({ unit });
-          }}
-          onCreate={(text) => {
-            setUnitText(text);
-            onPatch({ unit: unitReference(text) });
-          }}
-          onBlur={commitUnit}
-        />
-        <Combobox
-          name={`${path}.food`}
-          aria-label={`${label} food`}
-          placeholder="Food"
-          className="min-w-40 grow-[2]"
-          value={foodText}
-          options={foodRows.map((row) => ({ value: row.id, label: row.name }))}
-          disabled={disabled}
-          onChange={setFoodText}
-          onFocus={() => setFoodFocused(true)}
-          onSelect={(option) => {
-            const row = foodRows.find((r) => r.id === option.value);
-            if (!row) return;
-            setFoodText(row.name);
-            onPatch({ food: foodReference(row) });
-          }}
-          onCreate={(text) => {
-            setFoodText(text);
-            onPatch({ food: foodReference({ name: text }) });
-          }}
-          onBlur={() => {
-            setFoodFocused(false);
-            commitFood();
-          }}
-        />
+    <div className="flex flex-col gap-2" data-ingredient={ii} data-mode={textOnly ? "text" : "structured"}>
+      {/* Phone: one line per row, tapped to open the sheet. From md the fields sit inline. */}
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-2 py-1 text-left text-sm md:hidden"
+        aria-label={`Edit ${label.toLowerCase()}`}
+        aria-expanded={sheetOpen}
+        disabled={disabled}
+        onClick={() => setSheetOpen(true)}
+      >
+        <span className="truncate">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span>
+        <Chevron />
+      </button>
+      <div className="hidden md:flex md:flex-col md:gap-2" data-inline-fields="">
+        <IngredientFields {...fieldProps} />
       </div>
-      {quantityError !== undefined && (
-        <p className="text-sm text-fg-danger" role="alert">
-          {quantityError}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          name={`${path}.note`}
-          aria-label={`${label} note`}
-          placeholder="Note, e.g. sifted"
-          autoComplete="off"
-          className="min-w-40 grow"
-          value={ingredient.note ?? ""}
-          disabled={disabled}
-          onChange={(event) => onPatch({ note: event.target.value })}
-        />
-        <Checkbox
-          name={`${path}.fixed`}
-          label="Fixed"
-          aria-label={`${label} fixed`}
-          checked={ingredient.fixed ?? false}
-          disabled={disabled}
-          onCheckedChange={(fixed) => onPatch({ fixed })}
-        />
-        {modeToggle}
-        {moveTo}
-      </div>
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen} size="sm" closable aria-label={label}>
+        <Sheet.Header>
+          <h2 className="text-base font-medium">{label}</h2>
+        </Sheet.Header>
+        <Sheet.Body>
+          <IngredientFields {...fieldProps} showOriginalText />
+        </Sheet.Body>
+        <Sheet.Footer>
+          <Button type="button" variant="solid" intent="brand" onClick={() => setSheetOpen(false)}>
+            Done
+          </Button>
+        </Sheet.Footer>
+      </Sheet>
     </div>
   );
 }

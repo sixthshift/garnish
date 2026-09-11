@@ -2,13 +2,18 @@
 // a component holding a normal row, a row with no quantity and a new food, and
 // a text-only row saves through createRecipe and reads back intact, with the
 // new food created by name.
+import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { addComponent, renameComponent } from "../../src/components/ComponentsEditor";
 import {
   addIngredient,
+  EMPTY_INGREDIENT_SUMMARY,
   filterUnits,
   foodReference,
+  IngredientFields,
+  type IngredientFieldsProps,
+  ingredientSummary,
   IngredientsEditor,
   isTextOnly,
   matchUnit,
@@ -21,7 +26,7 @@ import {
   unitReference,
   updateIngredient,
 } from "../../src/components/IngredientsEditor";
-import { type DraftComponent, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
+import { type DraftComponent, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
 import { listFoods } from "../../src/server/foods";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -328,5 +333,153 @@ describe("Check: null quantity and text-only rows save", () => {
     expect(fetched.components[0]!.ingredients).toEqual([]);
     expect(fetched.components[1]!.ingredients).toHaveLength(1);
     expect(fetched.components[1]!.ingredients[0]!.food).toMatchObject({ name: "onion" });
+  });
+});
+
+
+// --- M13.2 phone rows -------------------------------------------------------
+
+/** The first element in `node` carrying `aria-label`, without rendering it. `IngredientFields` has no hooks, so its tree can be walked directly. */
+function elementWithLabel(node: ReactNode, label: string): ReactElement<Record<string, any>> {
+  const found = search(node);
+  if (!found) throw new Error(`no element labelled ${label}`);
+  return found;
+
+  function search(current: ReactNode): ReactElement<Record<string, any>> | null {
+    if (Array.isArray(current)) {
+      for (const child of current) {
+        const hit = search(child as ReactNode);
+        if (hit) return hit;
+      }
+      return null;
+    }
+    if (!isValidElement(current)) return null;
+    const props = current.props as Record<string, unknown>;
+    if (props["aria-label"] === label) return current as ReactElement<Record<string, any>>;
+    return search(props.children as ReactNode);
+  }
+}
+
+/** The props `IngredientRow` hands `IngredientFields`, for row `ii` of component 0. */
+function fieldProps(draft: RecipeDraft, ii: number, onPatch: (patch: Partial<DraftIngredient>) => void): IngredientFieldsProps {
+  const ingredient = draft.components[0]!.ingredients[ii]!;
+  return {
+    ingredient,
+    path: `components.0.ingredients.${ii}`,
+    label: `Ingredient ${ii + 1}`,
+    units,
+    errors: {},
+    textOnly: isTextOnly(ingredient),
+    quantityDraft: null,
+    unitText: ingredient.unit?.name ?? "",
+    foodText: ingredient.food?.name ?? "",
+    foodRows: [],
+    onPatch,
+    onQuantityText: () => {},
+    onUnitText: () => {},
+    onUnitBlur: () => {},
+    onFoodText: () => {},
+    onFoodFocus: () => {},
+    onFoodBlur: () => {},
+  };
+}
+
+describe("ingredientSummary", () => {
+  test("is the formatted line for a structured row", () => {
+    const draft = tart();
+    expect(ingredientSummary(draft.components[0]!.ingredients[0]!)).toBe("200 g flour");
+    expect(ingredientSummary(draft.components[0]!.ingredients[1]!)).toBe("1 cup, cold");
+    expect(ingredientSummary(draft.components[1]!.ingredients[0]!)).toBe("3 lemon");
+  });
+
+  test("is the raw line for a text-only row, and blank for an empty one", () => {
+    expect(ingredientSummary({ originalText: "a pinch of salt" })).toBe("a pinch of salt");
+    expect(ingredientSummary(newIngredient())).toBe("");
+  });
+
+  test("survives a reference with only a name on it", () => {
+    const row = { quantity: 2, unit: unitReference("slice"), food: foodReference({ name: "bread" }) };
+    expect(ingredientSummary(row)).toBe("2 slice bread");
+  });
+});
+
+describe("IngredientsEditor at both widths", () => {
+  test("phone gets a one-line summary with a chevron; the inline fields are md-only", () => {
+    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+
+    // Phone: one tappable line per row, hidden from md up.
+    const summary = html.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>/)?.[0] ?? "";
+    expect(summary).toContain("md:hidden");
+    expect(summary).toContain('aria-expanded="false"');
+    expect(html).toContain(">200 g flour<");
+    expect(html).toContain(">1 cup, cold<");
+    expect(html.match(/aria-label="Edit ingredient \d"/g)).toHaveLength(2);
+    expect(html).toContain("m9 18 6-6-6-6");
+
+    // From md: the inline fields, hidden below it. The sheet is closed, so it is not in the markup.
+    const inline = html.match(/<div[^>]*data-inline-fields=""[^>]*>/g) ?? [];
+    expect(inline).toHaveLength(2);
+    expect(inline[0]).toContain("hidden md:flex");
+    expect(html.match(/aria-label="Ingredient \d quantity"/g)).toHaveLength(2);
+    expect(html).not.toContain('role="dialog"');
+    expect(html).not.toContain("Original text");
+  });
+
+  test("an empty row's summary reads as new, and a text-only row shows its raw line", () => {
+    const blank = renderToString(<IngredientsEditor draft={addIngredient(emptyDraft(), 0)} ci={0} units={units} onChange={() => {}} />);
+    expect(blank).toContain(`>${EMPTY_INGREDIENT_SUMMARY}<`);
+
+    const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
+    const html = renderToString(<IngredientsEditor draft={text} ci={0} units={units} onChange={() => {}} />);
+    const summary = html.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>/)?.[0] ?? "";
+    expect(summary).toContain("md:hidden");
+    expect(html).toContain(">a pinch of salt<");
+  });
+});
+
+describe("the phone sheet's fields", () => {
+  test("hold the same controls plus a read-only original text line", () => {
+    const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} showOriginalText />);
+    expect(tagWithLabel(html, "Ingredient 1 quantity")).toContain('value="200"');
+    expect(tagWithLabel(html, "Ingredient 1 unit")).toContain('value="gram"');
+    expect(tagWithLabel(html, "Ingredient 1 food")).toContain('value="flour"');
+    expect(html).toContain("Original text");
+    expect(html).toContain("200g plain flour");
+    // Read only: the raw line is not an input.
+    expect(html).not.toContain('name="components.0.ingredients.0.originalText"');
+  });
+
+  test("a row with no original text says so, and a text-only row edits the line instead", () => {
+    const plain = renderToString(<IngredientFields {...fieldProps(tart(), 0, () => {})} showOriginalText />);
+    expect(plain).toContain("—");
+
+    const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
+    const html = renderToString(<IngredientFields {...fieldProps(text, 0, () => {})} showOriginalText />);
+    expect(tagWithLabel(html, "Ingredient 1 text")).toContain('value="a pinch of salt"');
+    expect(html).not.toContain("Original text");
+  });
+
+  test("editing in the sheet saves back into the draft", () => {
+    const draft = tart();
+    let next: RecipeDraft | null = null;
+    const tree = IngredientFields({ ...fieldProps(draft, 1, (patch) => { next = updateIngredient(draft, 0, 1, patch); }), showOriginalText: true });
+
+    elementWithLabel(tree, "Ingredient 2 quantity").props.onChange({ target: { value: "1 1/2" } });
+    expect(next!.components[0]!.ingredients[1]!.quantity).toBe(1.5);
+    expect(draft.components[0]!.ingredients[1]!.quantity).toBe(1);
+
+    elementWithLabel(tree, "Ingredient 2 note").props.onChange({ target: { value: "chilled" } });
+    expect(next!.components[0]!.ingredients[1]!.note).toBe("chilled");
+
+    elementWithLabel(tree, "Ingredient 2 fixed").props.onCheckedChange(true);
+    expect(next!.components[0]!.ingredients[1]!.fixed).toBe(true);
+
+    elementWithLabel(tree, "Ingredient 2 unit").props.onCreate("handful");
+    expect(next!.components[0]!.ingredients[1]!.unit).toMatchObject({ name: "handful" });
+
+    elementWithLabel(tree, "Ingredient 2 food").props.onCreate("butter");
+    expect(next!.components[0]!.ingredients[1]!.food).toMatchObject({ name: "butter" });
+    expect(validateDraft(next!).ok).toBe(true);
   });
 });
