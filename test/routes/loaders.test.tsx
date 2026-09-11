@@ -253,7 +253,7 @@ describe("/recipes/$slug (view)", () => {
     });
   }
 
-  test("two-component recipe: header, components in order, recipe-level steps, notes, edit link", async () => {
+  test("two-component recipe: header, components in order, recipe-level steps, notes, action menu", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
 
@@ -271,7 +271,8 @@ describe("/recipes/$slug (view)", () => {
     expect(html).not.toContain('data-empty="component"'); // both components have content
     expect(html).toContain('aria-label="Scale servings"');
     expect(html).not.toContain(">Reset<"); // nothing requested yet
-    expect(html).toContain('href="/recipes/lemon-tart/edit"');
+    // Edit moved into the action menu (M11.6); the trigger is what the closed page shows.
+    expect(html).toContain('aria-label="Recipe actions"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
 
     // Components in order, each with its ingredients then its steps.
@@ -441,13 +442,12 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toContain("Not found");
   });
 
-  test("offers Delete below the form, with the confirm unmounted until asked", async () => {
+  // M11.6 moved Delete out of the editor and into the view page's action menu.
+  test("does not host Delete: it lives in the recipe view's action menu", async () => {
     await seed("Lemon tart");
     const html = await renderRoute("/recipes/lemon-tart/edit");
-    expect(html).toContain('aria-label="Delete recipe"');
-    expect(html).toMatch(/<button[^>]*type="button"[^>]*>(<[^>]*>)*Delete recipe</);
-    expect(html.indexOf('aria-label="Delete recipe"')).toBeGreaterThan(html.indexOf(">Save changes<"));
-    expect(html).not.toContain('role="dialog"');
+    expect(html).not.toContain('aria-label="Delete recipe"');
+    expect(html).not.toContain("Delete recipe");
     expect(html).not.toContain("Delete Lemon tart?");
   });
 

@@ -142,7 +142,12 @@ export function RecipeHeader({ recipe, actions }: RecipeHeaderProps) {
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <Heading as="h1">{recipe.name}</Heading>
-            {actions !== undefined && <div className="flex gap-2">{actions}</div>}
+            {actions !== undefined && (
+              /* Controls, not content: the print stylesheet drops them. */
+              <div className="flex gap-2" data-print="hide">
+                {actions}
+              </div>
+            )}
           </div>
           {recipe.rating !== null && <Rating value={recipe.rating} />}
           {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}

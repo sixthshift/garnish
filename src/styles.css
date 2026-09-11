@@ -1,3 +1,67 @@
 @import "tailwindcss";
 @import "@sixthshift/design-system/theme.css";
 @source "../node_modules/@sixthshift/design-system";
+
+/* Printing a recipe (M11.6). The "Print" item in the recipe action menu calls
+   window.print(); these rules turn the page into a recipe card: app chrome and
+   every control gone, the image beside the text however narrow the paper is,
+   ingredients in two columns beside each other, and the notes kept.
+   Selectors match what the view route already renders (data-testid, aria-label)
+   plus data-print="hide" for anything that exists only to be tapped. */
+@media print {
+  @page {
+    margin: 15mm;
+  }
+
+  /* Chrome and controls: nav, the action menu, the view toggles, the tick
+     boxes and the per-ingredient scale trigger. */
+  nav,
+  aside,
+  [data-print="hide"],
+  [data-testid="menu"],
+  [data-testid="ingredient-mode-toggle"],
+  [data-testid="scale-to-trigger"],
+  [data-testid="step-toggle"] > span:first-child,
+  [aria-label="Scale servings"],
+  [aria-label^="Tick off"] {
+    display: none !important;
+  }
+
+  body,
+  main {
+    background: #fff !important;
+    color: #000 !important;
+    padding: 0 !important;
+  }
+
+  /* Image left, text beside it, at any paper width. */
+  [data-layout="split"] {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1rem;
+  }
+
+  [data-layout="split"] > :first-child {
+    width: 33% !important;
+  }
+
+  /* Ingredients read across two columns; a line never splits over the break. */
+  ul[aria-label="Ingredients"] {
+    column-count: 2;
+    column-gap: 1.5rem;
+  }
+
+  ul[aria-label="Ingredients"] li {
+    break-inside: avoid;
+  }
+
+  /* Notes print with the recipe, whole. */
+  [aria-label="Notes"] {
+    display: block !important;
+    break-inside: avoid;
+  }
+
+  [aria-label="Steps"] li {
+    break-inside: avoid;
+  }
+}

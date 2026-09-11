@@ -5,6 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { NotFound, required } from "../db/errors";
 import { recipes } from "../db/recipes";
+import { duplicateInput } from "../domain/duplicate";
 import { recipeInputSchema } from "../domain/recipe";
 import { scaleRecipe } from "../domain/scale";
 import { getDb } from "./db";
@@ -41,6 +42,8 @@ export const UpdateRecipeInput = z.object({
 });
 
 export const DeleteRecipeInput = z.object({ id: recipeId });
+
+export const DuplicateRecipeInput = z.object({ id: recipeId });
 
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
 
@@ -83,6 +86,20 @@ export const setFavourite = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!recipes(await getDb()).setFavourite(data.id, data.favourite)) throw new NotFound("recipe", data.id);
     return { id: data.id, favourite: data.favourite };
+  });
+
+/**
+ * Copy the recipe `id` into a new one: the same document under a new name
+ * ("... (copy)") with a fresh slug and fresh child ids, no last-made date and
+ * not favourited (see src/domain/duplicate.ts). Returns the stored copy.
+ */
+export const duplicateRecipe = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(DuplicateRecipeInput)
+  .handler(async ({ data }) => {
+    const repo = recipes(await getDb());
+    const source = required(repo.getById(data.id), "recipe", data.id);
+    return repo.create(recipeInputSchema.parse(duplicateInput(source)));
   });
 
 /** Delete the recipe `id`. Returns the document as it was, the way Mealie does. */

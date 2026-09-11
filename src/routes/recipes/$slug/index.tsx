@@ -11,6 +11,7 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { z } from "zod";
+import { RecipeActions } from "../../../components/RecipeActions";
 import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientRow } from "../../../components/IngredientRow";
 import { RecipeHeader } from "../../../components/RecipeHeader";
@@ -61,17 +62,13 @@ function RecipePage() {
         recipe={recipe}
         actions={
           <>
-            <Button asChild variant="outline" intent="neutral" size="sm">
-              <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }}>
-                Edit
-              </Link>
-            </Button>
             <Button asChild variant="solid" intent="brand" size="sm">
-              {/* Carries the current scale into cook mode. */}
+              {/* The primary action stays a button; everything else is in the menu. Carries the current scale into cook mode. */}
               <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
                 Cook
               </Link>
             </Button>
+            <RecipeActions recipe={recipe} servings={requested} />
           </>
         }
       />
