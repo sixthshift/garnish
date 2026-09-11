@@ -18,6 +18,14 @@
 // a save navigates away, so a message in this form would never be read. The
 // offline banner stays inline: it is a standing state, not an outcome.
 //
+// The image field also takes a pasted URL: `fetchImage` (src/server/imageFetch.ts)
+// GETs it on the server — the browser cannot, for CORS — and the bytes come
+// back as a File that joins the same upload path as a picked one.
+//
+// "Edit as JSON" swaps the fields for the document itself. Apply parses the
+// text with `recipeInputSchema`, the same schema Save uses, and reports the
+// failing paths; nothing reaches the draft until it parses.
+//
 // Save and Cancel live in a `SaveBar`: sticky at the foot of the screen on
 // phone, inline from `md`. The draft is compared with the one the form opened
 // on (`isDirty`, plus a picked image file, which never enters the draft), and
@@ -39,10 +47,11 @@ import { type FormEvent, useId, useState } from "react";
 import { slugify } from "../db/names";
 import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchema, type Tag, type Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
-import { uploadRecipeImage } from "../lib/images";
+import { fetchedImageFile, uploadRecipeImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
 import { messageFrom, type NoticeInput, notify, notifyError } from "../lib/notify";
 import { useOnline } from "../lib/useOnline";
+import { fetchImage } from "../server/imageFetch";
 import { createRecipe, updateRecipe } from "../server/recipes";
 import { ComponentsEditor, newComponent } from "./ComponentsEditor";
 import { NotesEditor } from "./NotesEditor";
@@ -174,6 +183,46 @@ export function validateDraft(draft: RecipeDraft): ValidationResult {
   return { ok: false, errors };
 }
 
+/** The draft as the document text the JSON view shows: the write shape, indented, key order as written. Pure. */
+export function draftToJson(draft: RecipeDraft): string {
+  return `${JSON.stringify(draft, null, 2)}\n`;
+}
+
+/** A parsed document as a draft: every list present, every child given an id so the editor can key on it. Pure apart from the ids it fills in. */
+export function draftFromInput(input: ParsedRecipeInput): RecipeDraft {
+  return {
+    ...input,
+    notes: input.notes.map((note) => ({ ...note, id: note.id ?? randomUuid() })),
+    tags: input.tags.map((tag) => ({ ...tag })),
+    components: input.components.map((component) => ({
+      ...component,
+      id: component.id ?? randomUuid(),
+      ingredients: component.ingredients.map((ingredient) => ({ ...ingredient, id: ingredient.id ?? randomUuid() })),
+      steps: component.steps.map((step) => ({ ...step, id: step.id ?? randomUuid() })),
+    })),
+    steps: input.steps.map((step) => ({ ...step, id: step.id ?? randomUuid() })),
+  };
+}
+
+export type JsonResult = { ok: true; draft: RecipeDraft } | { ok: false; error: string };
+
+/** Text from the JSON view back to a draft: a syntax error or the failing field paths come back as one message. Pure apart from any ids it fills in. */
+export function draftFromJson(text: string): JsonResult {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    return { ok: false, error: `That is not valid JSON: ${error instanceof Error ? error.message : String(error)}` };
+  }
+  const result = recipeInputSchema.safeParse(value);
+  if (!result.success) {
+    const lines = result.error.issues.slice(0, 5).map((issue) => `${issue.path.map(String).join(".") || "(root)"}: ${issue.message}`);
+    const extra = result.error.issues.length - lines.length;
+    return { ok: false, error: extra > 0 ? `${lines.join("; ")} (and ${extra} more)` : lines.join("; ") };
+  }
+  return { ok: true, draft: draftFromInput(result.data) };
+}
+
 /**
  * Tag references for the names in the tag input: an existing tag by name
  * (case-insensitive, from `known`), else a new reference the server will
@@ -238,11 +287,27 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [json, setJson] = useState<string | null>(null);
+  const [jsonError, setJsonError] = useState<string | null>(null);
 
   const dirty = (isDirty(initial, draft) || file !== null) && !saving;
   const blocker = useBlocker({ shouldBlockFn: () => true, enableBeforeUnload: () => dirty, disabled: !dirty, withResolver: true });
 
   const patch = (fields: Partial<RecipeDraft>) => setDraft((current) => ({ ...current, ...fields }));
+
+  const fetchFromUrl = async (url: string): Promise<File> => fetchedImageFile(await fetchImage({ data: { url } }));
+
+  const applyJson = () => {
+    const result = draftFromJson(json ?? "");
+    if (!result.ok) {
+      setJsonError(result.error);
+      return;
+    }
+    setDraft(result.draft);
+    setErrors({});
+    setJsonError(null);
+    setJson(null);
+  };
   const unitOptions = units.map((unit) => ({ value: unit.id, label: unit.name }));
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -285,11 +350,53 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
           Changes cannot be saved offline. Keep editing; Save comes back with the connection.
         </Message>
       )}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          intent="neutral"
+          size="sm"
+          disabled={saving}
+          data-testid="json-toggle"
+          onClick={() => {
+            if (json !== null) {
+              setJson(null);
+              setJsonError(null);
+              return;
+            }
+            setJson(draftToJson(draft));
+            setJsonError(null);
+          }}
+        >
+          {json !== null ? "Back to form" : "Edit as JSON"}
+        </Button>
+      </div>
+
+      {json !== null ? (
+        <div className="flex flex-col gap-3" data-testid="json-view">
+          <Muted as="p" className="text-sm">
+            The recipe document. Apply parses it and puts it back in the form; Save then stores it.
+          </Muted>
+          <Textarea aria-label="Recipe JSON" rows={24} spellCheck={false} className="font-mono text-xs" value={json} disabled={saving} onChange={(event) => setJson(event.target.value)} />
+          {jsonError !== null && (
+            <Message intent="danger" title="That document did not parse" data-testid="json-error">
+              {jsonError}
+            </Message>
+          )}
+          <div className="flex gap-2">
+            <Button type="button" intent="primary" size="sm" disabled={saving} onClick={applyJson}>
+              Apply
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium">Image</span>
         <ImageUpload
           image={draft.image}
           disabled={saving}
+          onUrl={fetchFromUrl}
           onSelect={(chosen) => setFile(chosen)}
           onRemove={() => {
             setFile(null);
@@ -394,6 +501,8 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
       </section>
 
       <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
+        </>
+      )}
 
       <SaveBar
         label={existing ? "Save changes" : "Create recipe"}

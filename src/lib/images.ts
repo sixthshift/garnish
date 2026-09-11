@@ -57,3 +57,19 @@ export async function uploadTimelineImage(eventId: string, file: File, fetcher: 
   if (typeof payload.image !== "string") throw new Error("photo upload returned no file name");
   return payload.image;
 }
+
+/** What `fetchImage` (src/server/imageFetch.ts) answers with, as the client needs it. */
+export type FetchedImageData = { base64: string; contentType: string; name: string };
+
+/** Decode base64 to bytes. Pure; throws on characters that are not base64. */
+export function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+/** Rebuild a fetched image as a File, so a pasted URL joins the same upload path as a picked file. */
+export function fetchedImageFile(data: FetchedImageData): File {
+  return new File([base64ToBytes(data.base64) as BlobPart], data.name, { type: data.contentType });
+}

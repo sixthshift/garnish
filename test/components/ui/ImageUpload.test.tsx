@@ -33,6 +33,25 @@ describe("ImageUpload", () => {
     expect(html).not.toContain("Remove image");
   });
 
+  test("shows the URL field only when onUrl is given (M13.5)", () => {
+    const without = renderToString(<ImageUpload image={null} onSelect={() => {}} />);
+    expect(without).not.toContain('data-testid="image-url"');
+    expect(without).not.toContain("Or paste an image URL");
+
+    const withUrl = renderToString(<ImageUpload image={null} onSelect={() => {}} onUrl={async () => new File([], "a.png")} />);
+    expect(withUrl).toContain('data-testid="image-url"');
+    expect(withUrl).toContain("Or paste an image URL");
+    expect(withUrl).toContain("Fetch");
+    expect(withUrl).toMatch(/<input[^>]*type="url"/);
+  });
+
+  test("the Fetch button starts disabled, with no error showing", () => {
+    const html = renderToString(<ImageUpload image={null} onSelect={() => {}} onUrl={async () => new File([], "a.png")} />);
+    expect(html).toMatch(/Fetch<\/[a-z]+>/);
+    expect(html).toContain("disabled");
+    expect(html).not.toContain('data-testid="image-url-error"');
+  });
+
   test("no remove button when onRemove is not given", () => {
     const html = renderToString(<ImageUpload image="abc.jpg" onSelect={() => {}} />);
     expect(html).not.toContain("Remove image");

@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
   type Fetcher,
+  base64ToBytes,
+  fetchedImageFile,
   IMAGE_FIELD,
   recipeImageUploadUrl,
   recipeImageUrl,
@@ -106,5 +108,23 @@ describe("uploadTimelineImage", () => {
   test("rejects when the response carries no file name", async () => {
     const fetcher: Fetcher = async () => Response.json({});
     await expect(uploadTimelineImage("abc", file, fetcher)).rejects.toThrow("no file name");
+  });
+});
+
+describe("base64ToBytes and fetchedImageFile", () => {
+  const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const base64 = Buffer.from(png).toString("base64");
+
+  test("decodes base64 to the original bytes", () => {
+    expect(base64ToBytes(base64)).toEqual(png);
+    expect(base64ToBytes("")).toEqual(new Uint8Array());
+  });
+
+  test("rebuilds a fetched image as a File the upload can post", async () => {
+    const file = fetchedImageFile({ base64, contentType: "image/png", name: "tart.png" });
+    expect(file.name).toBe("tart.png");
+    expect(file.type).toBe("image/png");
+    expect(file.size).toBe(png.length);
+    expect(new Uint8Array(await file.arrayBuffer())).toEqual(png);
   });
 });
