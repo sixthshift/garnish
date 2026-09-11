@@ -4,12 +4,12 @@
 // hands them back base64-encoded; the client rebuilds a File from them and the
 // existing POST /api/recipes/:id/image path stores it.
 //
-// The checks are the upload route's, imported from ./images rather than
+// The checks are the upload route's, imported from ../domain/image rather than
 // restated: same size cap, same magic-byte sniffing, so a URL can no more put
 // an SVG or a PDF on disk than a file picker can.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { IMAGE_TYPES, MAX_IMAGE_BYTES, sniffImage, type ImageExtension } from "./images";
+import { IMAGE_TYPES, MAX_IMAGE_BYTES, sniffImage, type ImageExtension } from "../domain/image";
 
 /** What the server sends back for a fetched URL: enough to rebuild the file client-side. */
 export type FetchedImage = {

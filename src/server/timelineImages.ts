@@ -8,7 +8,8 @@ import { join } from "node:path";
 import { timeline } from "../db/models/timeline/repo";
 import { dataDir } from "./boot";
 import { getDb } from "./db";
-import { IMAGE_FIELD, MAX_IMAGE_BYTES, imageContentType, imageFileName, imagesDir, sniffImage, type ImageExtension } from "./images";
+import { IMAGE_FIELD, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage, type ImageExtension } from "../domain/image";
+import { imagesDir } from "./images";
 
 const EVENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

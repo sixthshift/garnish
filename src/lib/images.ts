@@ -1,15 +1,16 @@
 // Client-side image helpers. The recipe row stores only the file name (see
-// src/server/images.ts, imageFileName); GET /api/images/:file serves it and
+// imageFileName in src/domain/image.ts); GET /api/images/:file serves it and
 // POST /api/recipes/:id/image replaces it.
+import { IMAGE_FIELD } from "../domain/image";
+
+/** Multipart field the upload routes read. Re-exported so callers of this module need only one import. */
+export { IMAGE_FIELD } from "../domain/image";
 
 /** The URL that serves a recipe's stored image, or null when it has none. Pure. */
 export function recipeImageUrl(image: string | null | undefined): string | null {
   if (!image) return null;
   return `/api/images/${encodeURIComponent(image)}`;
 }
-
-/** Multipart field the upload route reads. Mirrors IMAGE_FIELD in src/server/images.ts (server-only, so not imported). */
-export const IMAGE_FIELD = "image";
 
 /** The upload endpoint for a recipe. Pure. */
 export function recipeImageUploadUrl(recipeId: string): string {

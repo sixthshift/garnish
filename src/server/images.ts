@@ -1,66 +1,24 @@
 // Server-only. Recipe images on disk: one file per recipe under
 // `<DATA_DIR>/images/<recipeId>.<ext>`, the file name mastered in `recipe.image`.
-// The two /api routes call the handlers here; the small helpers are pure.
+// The two /api routes call the handlers here.
+//
+// The pure rules — formats, size cap, sniffing, file naming — live in
+// src/domain/image.ts and are re-exported below, so importing them cannot pull
+// this module's database and `node:fs` imports into the client bundle.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { recipes } from "../db/models/recipe/repo";
+import { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../domain/image";
 import { dataDir } from "./boot";
 import { getDb } from "./db";
 
-/** Accepted formats, by the extension the file is stored under. */
-export const IMAGE_TYPES = {
-  png: "image/png",
-  jpg: "image/jpeg",
-  webp: "image/webp",
-  gif: "image/gif",
-} as const;
-
-export type ImageExtension = keyof typeof IMAGE_TYPES;
-
-/** Multipart field the upload arrives in. Mealie's is `image` too. */
-export const IMAGE_FIELD = "image";
-
-/** Largest upload accepted, in bytes. */
-export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+export { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../domain/image";
 
 const RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const IMAGE_FILE = /^([0-9a-f-]{36})\.(png|jpg|webp|gif)$/i;
 
 /** `<root>/images`; root defaults to the resolved DATA_DIR. */
 export function imagesDir(root: string = dataDir()): string {
   return join(root, "images");
-}
-
-function startsWith(bytes: Uint8Array, prefix: number[], at = 0): boolean {
-  if (bytes.length < at + prefix.length) return false;
-  return prefix.every((b, i) => bytes[at + i] === b);
-}
-
-const ascii = (s: string): number[] => [...s].map((c) => c.charCodeAt(0));
-
-/** Format from the magic bytes, or null for anything that is not png/jpeg/webp/gif. Pure. */
-export function sniffImage(bytes: Uint8Array): ImageExtension | null {
-  if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "png";
-  if (startsWith(bytes, [0xff, 0xd8, 0xff])) return "jpg";
-  if (startsWith(bytes, ascii("GIF87a")) || startsWith(bytes, ascii("GIF89a"))) return "gif";
-  if (startsWith(bytes, ascii("RIFF")) && startsWith(bytes, ascii("WEBP"), 8)) return "webp";
-  return null;
-}
-
-/** The stored file name for a recipe's image. Pure. */
-export function imageFileName(recipeId: string, ext: ImageExtension): string {
-  return `${recipeId}.${ext}`;
-}
-
-/**
- * Content type for a file name this server hands out, or null when the name
- * is not `<uuid>.<ext>`. Anything with a separator, `..` or an unknown
- * extension is null, so a null here is the path-traversal guard. Pure.
- */
-export function imageContentType(file: string): string | null {
-  const match = IMAGE_FILE.exec(file);
-  if (!match) return null;
-  return IMAGE_TYPES[match[2]!.toLowerCase() as ImageExtension];
 }
 
 /**
