@@ -53,3 +53,6 @@ data/
 .nitro
 .tanstack
 .vite
+
+# sibling design-system checkout (linked for local development, its own repo)
+design-system/
