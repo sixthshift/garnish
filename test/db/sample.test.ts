@@ -6,6 +6,7 @@ import { migrate, openDatabase } from "../../src/db/migrate";
 import { recipes } from "../../src/db/recipes";
 import { SAMPLE_RECIPES, seedSample } from "../../src/db/sample";
 import { DEFAULT_UNITS, parseSeedFlags, seed } from "../../src/db/seed";
+import { timeline } from "../../src/db/timeline";
 import { recipeInputSchema, recipeSchema } from "../../src/domain/recipe";
 import { listRecipes } from "../../src/server/recipes";
 import { getDb } from "../../src/server/db";
@@ -98,8 +99,29 @@ test("references resolve to the seeded units and shared foods and tags", () => {
   expect(db.query<{ n: number }, []>("SELECT count(*) AS n FROM recipe_tag rt JOIN tag t ON t.id = rt.tag_id WHERE t.slug = 'baking'").get()!.n).toBe(2);
 });
 
-test("seeding twice leaves three recipes and no duplicate children", () => {
+test("one recipe is favourited, one carries a source URL, and one has two timeline events", () => {
   seedSample(db);
+  const repo = recipes(db);
+
+  const biscuits = repo.get("anzac-biscuits")!;
+  expect(biscuits.favourite).toBe(true);
+  expect(repo.get("lemon-tart")!.favourite).toBe(false);
+  expect(repo.get("roast-pumpkin-soup-with-garlic-croutons")!.favourite).toBe(false);
+
+  const soup = repo.get("roast-pumpkin-soup-with-garlic-croutons")!;
+  expect(soup.sourceUrl).toBe("https://www.homegrown-kitchen.example/recipes/roast-pumpkin-soup-with-garlic-croutons");
+  expect(biscuits.sourceUrl).toBeNull();
+
+  const tart = repo.get("lemon-tart")!;
+  const events = timeline(db).list(tart.id);
+  expect(events).toHaveLength(2);
+  expect(events.map((e) => e.occurredOn)).toEqual(["2026-09-06", "2026-08-16"]);
+  expect(tart.lastMade).toBe("2026-09-06T00:00:00.000Z");
+});
+
+test("seeding twice leaves three recipes, two timeline events and no duplicate children", () => {
+  seedSample(db);
+  expect(count("timeline_event")).toBe(2);
   const before = {
     recipe: count("recipe"),
     component: count("component"),
@@ -107,6 +129,7 @@ test("seeding twice leaves three recipes and no duplicate children", () => {
     step: count("step"),
     food: count("food"),
     tag: count("tag"),
+    timeline_event: count("timeline_event"),
   };
   const second = seedSample(db);
   expect(second.recipes).toEqual([]);
@@ -118,6 +141,7 @@ test("seeding twice leaves three recipes and no duplicate children", () => {
     step: count("step"),
     food: count("food"),
     tag: count("tag"),
+    timeline_event: count("timeline_event"),
   }).toEqual(before);
 });
 
@@ -128,6 +152,7 @@ test("skips only the recipes whose slug exists and does not touch the user's cop
   expect(created.map((r) => r.slug).sort()).toEqual(["anzac-biscuits", "roast-pumpkin-soup-with-garlic-croutons"]);
   expect(count("recipe")).toBe(3);
   expect(repo.get("lemon-tart")).toEqual(mine);
+  expect(timeline(db).list(mine.id)).toEqual([]);
 });
 
 test("works without the units seed, creating the units it names", async () => {
