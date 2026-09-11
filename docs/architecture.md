@@ -21,6 +21,7 @@ src/
   server/       server functions (createServerFn) grouped by resource, image upload/serve/fetch handlers, db handle, boot, errors.ts (NotFound, mapped to TanStack's notFound())
   db/connection/ open.ts (DB_FILE, databasePath, openDatabase — WAL and foreign keys), client.ts (the Drizzle handle)
   db/seed/      seed.ts inserts; units.ts, recipes.ts and timeline.ts are the data it inserts; cli.ts is `bun run seed [--sample]`
+  db/dev/       dev-only, never shipped: generate.ts builds a fifty-recipe dataset from vocabulary.ts with the seeded PRNG in random.ts and placeholder images from png.ts; apply.ts writes it; wipe.ts empties DATA_DIR first; cli.ts is `bun run dev:seed`
   db/backup/    backup.ts is the VACUUM INTO copy, cli.ts is `bun run backup`
   db/models/    one folder per domain, each with schema.ts (its Drizzle tables) and repo.ts (its repository); columns.ts holds the shared column defaults and the conventions they all follow
   db/models/recipe/    schema.ts: recipe, component, ingredient, step, recipe_note, recipe_tag — one aggregate, written as one document. repo.ts: the recipe repository
@@ -45,7 +46,7 @@ test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev`, `build`, `start`, `check`, `test`, `migrate`, `seed`, `db:generate`, `backup`. README.md says how to use them.
+Scripts in `package.json`: `dev`, `dev:keep`, `build`, `start`, `check`, `test`, `migrate`, `seed`, `dev:seed`, `db:generate`, `backup`. README.md says how to use them.
 
 ## Stack
 
@@ -175,6 +176,10 @@ Design only. Not built in v1; see "Later" in [scope.md](scope.md). The schema ho
 - One process-wide handle (`getDb()`), opened lazily, migrated and seeded once, retried on failure.
 - Backup is a copy of the database file, taken via `VACUUM INTO` so it is consistent: `bun run backup` writes `DATA_DIR/backups/garnish-YYYYMMDD-HHmmss.db` (UTC). Restore is a file copy with the WAL sidecars removed; README.md has the steps.
 - No file export in v1. The database is the only store.
+- Dev data is a separate thing from the seed and never ships: `.dockerignore` excludes `src/db/dev` from the build context, which is also why the reset is wired into `bun run dev` rather than the server entry — `src/server.ts` cannot import a directory the image build does not carry.
+- `bun run dev:seed [--count N] [--seed TEXT]` is a clean slate in three steps: wipe `DATA_DIR`'s database, its WAL sidecars and `images/` (`wipe.ts`; backups are left alone); migrate and run the same `seed()` the server runs on every start, dev or not, so dev looks at the reference data a real install has rather than a parallel set; then apply the generated dataset. Deleting the file rather than the rows is deliberate — it takes the schema with it, so a migration edited in place is re-applied instead of skipped for having a `migration` row already. It refuses to run under `NODE_ENV=production`.
+- `bun run dev` runs `dev:seed` and then starts Vite (~1.5 s, once per invocation: a `vite.config.ts` edit restarts Vite in-process and does not re-run the script). `bun run dev:keep` starts Vite without touching the database.
+- The generated dataset is deterministic from its seed, so the same run always lands in the same state. `apply.ts` owns its rows by id rather than by name, so it can be used on its own against a database it does not own without taking hand-written recipes with it; under `dev:seed` there is nothing left to collide with. The mix is chosen for coverage: a flat recipe and multi-component ones, unrated, never-made, image-less, long-named, one-ingredient and fourteen-ingredient cases, tags spread unevenly, and created/updated stamps fanned across two years so every sort key has something to order. Placeholder images are generated PNGs (`png.ts`), because the cards and cook mode read wrong with every image missing.
 - Seed: fifteen metric and common imperial units, matched by name case-insensitively so re-seeding never overwrites edits. Runs at boot and via `bun run seed`. `bun run seed --sample` adds three demo recipes (one with three components), idempotent by slug: one is favourited, one carries a source URL and one has two timeline events, so every stage 2 screen has data. Foods and aisles start empty. `src/db/seed/` keeps the data (`units.ts`, `recipes.ts`, `timeline.ts`) apart from the inserting (`seed.ts`) and the CLI (`cli.ts`).
 - Locale: metric, en-AU spelling. Imperial units available, never default.
 

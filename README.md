@@ -25,7 +25,13 @@ Run the dev server (Vite via Nitro, on http://localhost:3000, bound to all inter
 bun run dev
 ```
 
-The first start creates `./data/`, migrates `garnish.db` and seeds the default units. The database starts empty otherwise; see [Seed](#seed) for demo recipes.
+`bun run dev` runs `bun run dev:seed` before it starts Vite: it wipes `DATA_DIR`'s database and images, migrates, seeds the default units the server always seeds, then adds fifty generated recipes — the same fifty every time. Dev data is disposable by design, so every start is from a known state. Backups are not touched. To start without touching the database:
+
+```bash
+bun run dev:keep
+```
+
+The first start creates `./data/`, migrates `garnish.db` and seeds the default units. `bun run dev:keep` on a fresh clone leaves the recipe list empty; see [Seed](#seed) for the three demo recipes that ship.
 
 In VS Code, the `dev` task (Terminal → Run Build Task, or `Cmd/Ctrl+Shift+B`) runs the same command in a dedicated panel.
 

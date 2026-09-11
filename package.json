@@ -3,13 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --bun vite dev --host",
+    "dev": "bun run dev:seed && bun --bun vite dev --host",
+    "dev:keep": "bun --bun vite dev --host",
     "build": "NODE_ENV=production bun --bun vite build",
     "start": "bun run .output/server/index.mjs",
     "check": "tsc --noEmit",
     "test": "bun --bun vitest run",
     "migrate": "bun run src/db/migrations/migrate.ts",
     "seed": "bun run src/db/seed/cli.ts",
+    "dev:seed": "bun run src/db/dev/cli.ts",
     "db:generate": "drizzle-kit generate",
     "backup": "bun run src/db/backup/cli.ts"
   },

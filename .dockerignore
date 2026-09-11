@@ -6,6 +6,9 @@ data
 test
 docs
 
+# dev-only data generator; never part of a running container
+src/db/dev
+
 # framework caches and local tooling
 .nitro
 .tanstack
