@@ -1,8 +1,10 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
+import { recipeInputSchema } from "../../src/domain/recipe";
 import { DEFAULT_UNITS } from "../../src/db/seed";
 import type { NotFoundData } from "../../src/server/fn";
-import { createUnit, deleteUnit, findOrCreateUnit, listUnits, updateUnit } from "../../src/server/units";
+import { createRecipe } from "../../src/server/recipes";
+import { createUnit, deleteUnit, findOrCreateUnit, listUnits, mergeUnit, updateUnit, usingUnit } from "../../src/server/units";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -53,4 +55,48 @@ test("validation rejects a blank name, a negative quantity and wrong types", asy
   await expect(callServerFn(createUnit, { name: "" })).rejects.toThrow(/too_small|at least 1/);
   await expect(callServerFn(createUnit, { name: "x", standardQuantity: -1 })).rejects.toThrow(/too_small|>=0/);
   await expect(callServerFn(createUnit, { name: "x", fraction: "yes" } as never)).rejects.toThrow(/expected boolean/);
+});
+
+test("usingUnit lists the recipes with an ingredient or a yield of that unit", async () => {
+  const [gram] = await callServerFn(listUnits, { q: "gram" });
+  await callServerFn(
+    createRecipe,
+    recipeInputSchema.parse({ name: "Bread", components: [{ name: "", ingredients: [{ unit: gram, quantity: 500 }], steps: [] }] }),
+  );
+  expect((await callServerFn(usingUnit, { id: gram!.id })).map((r) => r.name)).toEqual(["Bread"]);
+
+  const [cup] = await callServerFn(listUnits, { q: "cup" });
+  await callServerFn(
+    createRecipe,
+    recipeInputSchema.parse({ name: "Muffins", yieldUnit: cup, recipeYieldQuantity: 12, components: [{ name: "", ingredients: [], steps: [] }] }),
+  );
+  expect((await callServerFn(usingUnit, { id: cup!.id })).map((r) => r.name)).toEqual(["Muffins"]);
+
+  const knob = await callServerFn(createUnit, { name: "knob" });
+  expect(await callServerFn(usingUnit, { id: knob.id })).toEqual([]);
+});
+
+test("mergeUnit repoints ingredients and recipe yields to the target, deletes the source, and drops it from the list", async () => {
+  const [gram] = await callServerFn(listUnits, { q: "gram" });
+  const stone = await callServerFn(createUnit, { name: "stone", abbreviation: "st", useAbbreviation: true, fraction: false });
+  await callServerFn(
+    createRecipe,
+    recipeInputSchema.parse({ name: "Sourdough", components: [{ name: "", ingredients: [{ unit: stone, quantity: 1 }], steps: [] }] }),
+  );
+
+  const merged = await callServerFn(mergeUnit, { sourceId: stone.id, targetId: gram!.id });
+  expect(merged).toEqual(gram);
+  expect((await callServerFn(listUnits, { q: "stone" })).map((u) => u.name)).toEqual([]);
+  expect((await callServerFn(usingUnit, { id: gram!.id })).map((r) => r.name)).toEqual(["Sourdough"]);
+});
+
+test("mergeUnit is not-found when either id is unknown", async () => {
+  const [gram] = await callServerFn(listUnits, { q: "gram" });
+  const missingSource = await callServerFn(mergeUnit, { sourceId: MISSING, targetId: gram!.id }).catch((e: unknown) => e);
+  expect(isNotFound(missingSource)).toBe(true);
+  expect((missingSource as { data: NotFoundData }).data).toMatchObject({ entity: "unit", id: MISSING });
+
+  const missingTarget = await callServerFn(mergeUnit, { sourceId: gram!.id, targetId: MISSING }).catch((e: unknown) => e);
+  expect(isNotFound(missingTarget)).toBe(true);
+  expect((missingTarget as { data: NotFoundData }).data).toMatchObject({ entity: "unit", id: MISSING });
 });

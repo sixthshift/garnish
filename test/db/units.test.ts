@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
+import { formatAmount } from "../../src/domain/format";
 import { migrate, openDatabase } from "../../src/db/migrate";
 import { units, type UnitRepository } from "../../src/db/units";
 
@@ -72,4 +73,48 @@ test("list with q filters by case-insensitive substring", () => {
   expect(repo.list("CUP").map((u) => u.name)).toEqual(["Cup", "teacup"]);
   expect(repo.list("").map((u) => u.name)).toHaveLength(3);
   expect(repo.list("x_y")).toEqual([]);
+});
+
+test("merge repoints ingredient rows and recipe yield to the target and deletes the source", () => {
+  const gram = repo.create({ name: "gram", abbreviation: "g", useAbbreviation: true, fraction: false });
+  const kg = repo.create({ name: "kilogram", pluralName: "kilograms", abbreviation: "kg", useAbbreviation: true, fraction: false });
+  db.run("INSERT INTO recipe (id, slug, name, yield_quantity, yield_unit_id) VALUES ('r', 'r', 'R', 2, ?)", [kg.id]);
+  db.run("INSERT INTO component (id, recipe_id, position) VALUES ('c', 'r', 0)");
+  db.run("INSERT INTO ingredient (id, component_id, position, quantity, unit_id, original_text) VALUES ('i1', 'c', 0, 500, ?, '500 kg flour')", [kg.id]);
+  db.run("INSERT INTO ingredient (id, component_id, position, quantity, unit_id, original_text) VALUES ('i2', 'c', 1, 10, ?, '10 g salt')", [gram.id]);
+
+  const merged = repo.merge(kg.id, gram.id);
+  expect(merged).toEqual(gram);
+  expect(repo.get(kg.id)).toBeNull();
+  expect(repo.list().map((u) => u.name)).toEqual(["gram"]);
+
+  const unitIds = db.query<{ id: string; unit_id: string | null }, []>("SELECT id, unit_id FROM ingredient ORDER BY id").all();
+  expect(unitIds).toEqual([
+    { id: "i1", unit_id: gram.id },
+    { id: "i2", unit_id: gram.id },
+  ]);
+  expect(db.query<{ yield_unit_id: string | null }, []>("SELECT yield_unit_id FROM recipe WHERE id = 'r'").get()?.yield_unit_id).toBe(gram.id);
+});
+
+test("merge is transactional and unknown ids return null without changing anything", () => {
+  const gram = repo.create({ name: "gram" });
+  expect(repo.merge("missing", gram.id)).toBeNull();
+  expect(repo.merge(gram.id, "missing")).toBeNull();
+  expect(repo.list()).toEqual([gram]);
+});
+
+test("merging a unit into itself is a no-op that returns it unchanged", () => {
+  const gram = repo.create({ name: "gram" });
+  expect(repo.merge(gram.id, gram.id)).toEqual(gram);
+  expect(repo.list()).toEqual([gram]);
+});
+
+test("a merged unit renders through formatAmount correctly", () => {
+  const gram = repo.create({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false });
+  const kg = repo.create({ name: "kilogram", abbreviation: "kg", useAbbreviation: true, fraction: false });
+
+  const merged = repo.merge(kg.id, gram.id)!;
+  expect(formatAmount(500, merged)).toBe("500 g");
+  // The abbreviation is shown regardless of quantity; only the number vanishes.
+  expect(formatAmount(null, merged)).toBe("g");
 });

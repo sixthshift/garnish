@@ -51,6 +51,8 @@ export function units(db: Database) {
     "UPDATE unit SET name = ?, plural_name = ?, abbreviation = ?, use_abbreviation = ?, fraction = ?, standard_quantity = ?, standard_unit_id = ? WHERE id = ?",
   );
   const del = db.prepare("DELETE FROM unit WHERE id = ?");
+  const repointIngredients = db.prepare("UPDATE ingredient SET unit_id = ? WHERE unit_id = ?");
+  const repointYield = db.prepare("UPDATE recipe SET yield_unit_id = ? WHERE yield_unit_id = ?");
 
   function get(id: string): Unit | null {
     const row = selectById.get(id);
@@ -104,6 +106,27 @@ export function units(db: Database) {
       const clean = cleanName(name);
       const row = selectByName.get(clean);
       return row ? toUnit(row) : create({ name: clean });
+    },
+
+    /**
+     * Repoint every ingredient and recipe yield using `sourceId` to
+     * `targetId`, then delete the source, in one transaction. Returns the
+     * target, or null when either id is unknown. Merging a unit into itself
+     * is a no-op that returns it. A unit that used the source as its
+     * `standardUnitId` conversion base is left to the schema's ON DELETE SET
+     * NULL, same as a plain delete.
+     */
+    merge(sourceId: string, targetId: string): Unit | null {
+      if (sourceId === targetId) return get(targetId);
+      const target = get(targetId);
+      if (!target || !get(sourceId)) return null;
+      const mergeTx = db.transaction(() => {
+        repointIngredients.run(targetId, sourceId);
+        repointYield.run(targetId, sourceId);
+        del.run(sourceId);
+      });
+      mergeTx();
+      return get(targetId);
     },
   };
 }

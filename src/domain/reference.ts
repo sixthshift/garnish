@@ -46,6 +46,10 @@ export const UnitUpdate = UnitFields.extend({ name: Name }).partial().extend({ i
 export type UnitCreate = z.infer<typeof UnitCreate>;
 export type UnitUpdate = z.infer<typeof UnitUpdate>;
 
+/** Merge `sourceId` into `targetId`: the source is deleted, its ingredients and recipe yields repointed. */
+export const UnitMerge = z.object({ sourceId: Id, targetId: Id });
+export type UnitMerge = z.infer<typeof UnitMerge>;
+
 const AisleFields = z.object({ position: z.number().int() });
 export const AisleCreate = AisleFields.partial().extend({ name: Name });
 export const AisleUpdate = AisleFields.extend({ name: Name }).partial().extend({ id: Id });

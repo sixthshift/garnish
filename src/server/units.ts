@@ -1,8 +1,9 @@
 // Unit server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
 import { required } from "../db/errors";
+import { recipes } from "../db/recipes";
 import { units } from "../db/units";
-import { IdInput, ListQuery, NameInput, UnitCreate, UnitUpdate } from "../domain/reference";
+import { IdInput, ListQuery, NameInput, UnitCreate, UnitMerge, UnitUpdate } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";
 
@@ -37,3 +38,24 @@ export const findOrCreateUnit = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(NameInput)
   .handler(async ({ data }) => units(await getDb()).findOrCreate(data.name));
+
+/** The recipes with an ingredient or a yield unit of this unit, for the delete/merge confirm dialogs. */
+export const usingUnit = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .validator(IdInput)
+  .handler(async ({ data }) => recipes(await getDb()).usingUnit(data.id));
+
+/**
+ * Merge `sourceId` into `targetId`: every ingredient and recipe yield using
+ * the source is repointed to the target, then the source is deleted, in one
+ * transaction. Not-found when either id is unknown.
+ */
+export const mergeUnit = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(UnitMerge)
+  .handler(async ({ data: { sourceId, targetId } }) => {
+    const repo = units(await getDb());
+    required(repo.get(sourceId), "unit", sourceId);
+    required(repo.get(targetId), "unit", targetId);
+    return required(repo.merge(sourceId, targetId), "unit", targetId);
+  });
