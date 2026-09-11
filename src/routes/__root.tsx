@@ -1,5 +1,3 @@
-import "@fontsource-variable/inter";
-import "@fontsource-variable/jetbrains-mono";
 import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
@@ -11,14 +9,14 @@ import { registerServiceWorker } from "../lib/sw";
 import appCss from "../styles.css?url";
 
 // PWA manifest colours are literal hex because a manifest cannot read CSS.
-// They mirror the design system's tokens (node_modules/@sixthshift/design-system/src/theme/tokens.css):
-//   light --bg-brand  = ocean-600 #355a8c   light --bg-normal = white   #ffffff
-//   dark  --bg-brand  = ocean-500 #4573ae   dark  --bg-normal = slate-900 #0f172a
+// They mirror the Garnish theme's tokens (src/styles/theme.css):
+//   light --bg-brand  = emerald-600 #2c666c   light --bg-normal = earth-50  #fefcfb
+//   dark  --bg-brand  = emerald-400 #4ba5a9   dark  --bg-normal = earth-950 #211916
 // public/manifest.webmanifest carries the light pair. The theme-color metas
 // carry both and live in RootDocument, not head(): HeadContent keeps one meta
 // per name, which would drop one of the two media-scoped entries.
-const themeColorLight = "#355a8c";
-const themeColorDark = "#4573ae";
+const themeColorLight = "#2c666c";
+const themeColorDark = "#4ba5a9";
 
 // Paint the theme attribute before first render so the shell does not flash
 // light in a dark OS. Mirrors bootstrapTheme's storage key and resolution.

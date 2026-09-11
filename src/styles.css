@@ -2,6 +2,10 @@
 @import "@sixthshift/design-system/theme.css";
 @source "../node_modules/@sixthshift/design-system";
 
+/* Garnish's own theme: re-points the design system's semantic tokens. Must come
+   after the theme import, and stays unlayered so it outranks the library. */
+@import "./styles/theme.css";
+
 /* Printing a recipe (M11.6). The "Print" item in the recipe action menu calls
    window.print(); these rules turn the page into a recipe card: app chrome and
    every control gone, the image beside the text however narrow the paper is,

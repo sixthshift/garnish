@@ -24,7 +24,8 @@ src/
   components/   React components; ui/ holds local primitives the design system lacks
   lib/          client-side helpers: mutate, ids, image URLs, clipboard, service worker registration, hooks, and the client stores (prefs, ticks, notices)
   sw/           service worker source (worker.ts, entry.ts) and the Vite plugin that emits it
-  styles.css    Tailwind entry with the design system's theme and @source
+  styles/       theme.css: the Garnish theme, re-pointing the design system's semantic tokens
+  styles.css    Tailwind entry: the design system's theme, @source, the Garnish theme, print rules
   router.tsx    getRouter()
   server.ts     custom server entry: boot, then the default Start handler
 vite.config.ts  tanstackStart({ spa }), nitro({ preset: 'bun' }), viteReact(), tailwindcss(), serviceWorkerPlugin()
