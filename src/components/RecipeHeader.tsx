@@ -20,6 +20,8 @@ export type RecipeHeaderProps = {
   recipe: Recipe;
   /** Buttons for this recipe (Edit, Cook); rendered opposite the name. */
   actions?: ReactNode;
+  /** "Made this" button, rendered beside the last made date in the footer. */
+  madeAction?: ReactNode;
 };
 
 /**
@@ -124,13 +126,14 @@ function ImagePlaceholder() {
   );
 }
 
-export function RecipeHeader({ recipe, actions }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, actions, madeAction }: RecipeHeaderProps) {
   const src = recipeImageUrl(recipe.image);
   const stats = timeStats(recipe);
   const yieldText = formatYield(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
   const source = sourceLabel(recipe.sourceUrl);
   const created = formatDateStamp(recipe.createdAt);
   const updated = formatDateStamp(recipe.updatedAt);
+  const lastMade = formatDateStamp(recipe.lastMade);
 
   return (
     <header className="flex flex-col gap-4" data-testid="recipe-header">
@@ -196,6 +199,17 @@ export function RecipeHeader({ recipe, actions }: RecipeHeaderProps) {
           )}
         </div>
       )}
+
+      {/* Last made sits with its own button: the log is written from here. */}
+      <div className="flex flex-wrap items-center gap-3 text-sm" data-testid="last-made">
+        <span className="text-fg-subtle">
+          {lastMade === "" ? "Never made" : "Last made "}
+          {lastMade !== "" && <span className="font-medium text-fg-strong">{lastMade}</span>}
+        </span>
+        {madeAction !== undefined && (
+          <div data-print="hide">{madeAction}</div>
+        )}
+      </div>
 
       {(source !== "" || created !== "" || updated !== "") && (
         <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border-subtle pt-3 text-xs text-fg-subtle" data-testid="recipe-meta">

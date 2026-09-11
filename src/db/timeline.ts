@@ -49,6 +49,7 @@ export function timeline(db: Database) {
     "INSERT INTO timeline_event (id, recipe_id, occurred_on, message, image) VALUES (?, ?, ?, ?, ?)",
   );
   const del = db.prepare("DELETE FROM timeline_event WHERE id = ?");
+  const updateImage = db.prepare("UPDATE timeline_event SET image = ? WHERE id = ?");
   const setLastMade = db.prepare("UPDATE recipe SET last_made = ? WHERE id = ?");
 
   function get(id: string): TimelineEvent | null {
@@ -85,6 +86,13 @@ export function timeline(db: Database) {
     /** Log a cook and pull recipe.last_made up to the recipe's latest date. */
     create(recipeId: string, input: TimelineEventInput): TimelineEvent {
       return get(createTx(recipeId, input))!;
+    },
+
+    /** Point an event at a stored photo file name (or clear it). True when the event exists. */
+    setImage(id: string, image: string | null): boolean {
+      if (!selectById.get(id)) return false;
+      updateImage.run(image, id);
+      return true;
     },
 
     /** Delete an event and recompute recipe.last_made. True when a row went. */

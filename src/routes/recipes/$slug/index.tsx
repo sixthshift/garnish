@@ -17,18 +17,26 @@ import { IngredientRow } from "../../../components/IngredientRow";
 import { RecipeHeader } from "../../../components/RecipeHeader";
 import { StepList } from "../../../components/StepList";
 import { mergeIngredients } from "../../../domain/merge";
-import type { Component, Ingredient, Recipe } from "../../../domain/recipe";
+import { MadeThisButton, TimelineList } from "../../../components/Timeline";
+import type { Component, Ingredient, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { getRecipe } from "../../../server/recipes";
+import { listTimeline } from "../../../server/timeline";
 
 export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),
 });
 
+/** What the page reads: the (possibly scaled) document and its logged cooks. */
+export type RecipeViewData = { recipe: Recipe; timeline: TimelineEvent[] };
+
 export const Route = createFileRoute("/recipes/$slug/")({
   validateSearch: RecipeViewSearch,
   loaderDeps: ({ search: { servings } }) => ({ servings }),
-  loader: async ({ params, deps }): Promise<Recipe> => getRecipe({ data: { slug: params.slug, servings: deps.servings } }),
+  loader: async ({ params, deps }): Promise<RecipeViewData> => {
+    const recipe = await getRecipe({ data: { slug: params.slug, servings: deps.servings } });
+    return { recipe, timeline: await listTimeline({ data: { recipeId: recipe.id } }) };
+  },
   component: RecipePage,
 });
 
@@ -43,7 +51,7 @@ export function nextServings(current: number, direction: -1 | 1): number {
 }
 
 function RecipePage() {
-  const recipe = Route.useLoaderData();
+  const { recipe, timeline } = Route.useLoaderData();
   const navigate = Route.useNavigate();
   const { servings: requested } = Route.useSearch();
   // A servings search param means the loader scaled the document away from
@@ -60,6 +68,7 @@ function RecipePage() {
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
       <RecipeHeader
         recipe={recipe}
+        madeAction={<MadeThisButton recipe={recipe} />}
         actions={
           <>
             <Button asChild variant="solid" intent="brand" size="sm">
@@ -119,6 +128,8 @@ function RecipePage() {
           ))}
         </section>
       )}
+
+      <TimelineList events={timeline} />
     </article>
   );
 }

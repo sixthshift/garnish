@@ -2,6 +2,7 @@
 // (stacked below md, image beside the text from md) asserted through the
 // classes on the split container, and the source URL as a link when set.
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { RecipeHeader, formatDateStamp, isLinkable, sourceLabel, timeStats } from "../../src/components/RecipeHeader";
@@ -43,8 +44,8 @@ const base: Recipe = {
 };
 
 /** Render the header inside a throwaway router, so its tag `Link`s resolve. */
-async function render(recipe: Recipe): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} /> });
+async function render(recipe: Recipe, madeAction?: ReactNode): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} madeAction={madeAction} /> });
   const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => null });
   const router = createRouter({
     routeTree: rootRoute.addChildren([indexRoute]),
@@ -162,5 +163,21 @@ describe("RecipeHeader", () => {
     const html = await render(base);
     expect(html).not.toContain('data-testid="source-url"');
     expect(html).toContain('data-testid="recipe-meta"');
+  });
+});
+
+describe("last made", () => {
+  test("a recipe never cooked says so", async () => {
+    const html = await render(base);
+    expect(html).toContain('data-testid="last-made"');
+    expect(html).toContain("Never made");
+  });
+
+  test("a cooked recipe shows the date, and the caller's button sits beside it", async () => {
+    const html = await render({ ...base, lastMade: "2026-09-11T00:00:00.000Z" }, <button type="button">Made this</button>);
+    expect(html).toContain("Last made");
+    expect(html).toMatch(/11 Sept? 2026/);
+    expect(html).not.toContain("Never made");
+    expect(html).toContain(">Made this<");
   });
 });

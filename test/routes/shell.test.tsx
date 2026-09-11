@@ -16,6 +16,7 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   return runLocally(await importOriginal());
 });
 vi.mock("../../src/server/recipes", local);
+vi.mock("../../src/server/timeline", local);
 vi.mock("../../src/server/units", local);
 vi.mock("../../src/server/tags", local);
 vi.mock("../../src/server/aisles", local);

@@ -32,3 +32,28 @@ export async function uploadRecipeImage(recipeId: string, file: File, fetcher: F
   if (typeof payload.image !== "string") throw new Error("image upload returned no file name");
   return payload.image;
 }
+
+/** The URL that serves a timeline photo, or null when the event has none. Pure. */
+export function timelineImageUrl(image: string | null | undefined): string | null {
+  if (!image) return null;
+  return `/api/images/timeline/${encodeURIComponent(image)}`;
+}
+
+/** The photo upload endpoint for a logged cook. Pure. */
+export function timelineImageUploadUrl(eventId: string): string {
+  return `/api/timeline/${encodeURIComponent(eventId)}/image`;
+}
+
+/**
+ * POST `file` as a logged cook's photo. Resolves with the stored file name;
+ * rejects with the server's `error` text on a non-2xx.
+ */
+export async function uploadTimelineImage(eventId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
+  const body = new FormData();
+  body.append(IMAGE_FIELD, file);
+  const response = await fetcher(timelineImageUploadUrl(eventId), { method: "POST", body });
+  const payload = (await response.json().catch(() => ({}))) as { image?: string; error?: string };
+  if (!response.ok) throw new Error(payload.error ?? `photo upload failed (${response.status})`);
+  if (typeof payload.image !== "string") throw new Error("photo upload returned no file name");
+  return payload.image;
+}

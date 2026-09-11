@@ -4,10 +4,10 @@
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
-import type { Aisle, Recipe, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
+import type { Aisle, Recipe, RecipeSummary, Tag, TimelineEvent, Unit } from "../../src/domain/recipe";
 import { Route as IndexRoute, type RecipeListData, searchParam } from "../../src/routes/index";
 import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
-import { Route as ViewRoute, nextServings } from "../../src/routes/recipes/$slug/index";
+import { Route as ViewRoute, type RecipeViewData, nextServings } from "../../src/routes/recipes/$slug/index";
 import { Route as NewRoute } from "../../src/routes/recipes/new";
 import { type FoodRow, Route as SettingsRoute, type SettingsData } from "../../src/routes/settings";
 import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/server/recipes";
@@ -24,6 +24,7 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   return runLocally(await importOriginal());
 });
 vi.mock("../../src/server/recipes", local);
+vi.mock("../../src/server/timeline", local);
 vi.mock("../../src/server/units", local);
 vi.mock("../../src/server/tags", local);
 vi.mock("../../src/server/aisles", local);
@@ -532,7 +533,8 @@ describe("loader data types match the domain schemas", () => {
     // route's phantom type bag; `useLoaderData()` returns `types.loaderData`).
     expectTypeOf<(typeof IndexRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeListData>();
     expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: Tag[]; foods: FoodRow[] }>();
-    expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<Recipe>();
+    expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeViewData>();
+    expectTypeOf<RecipeViewData>().toEqualTypeOf<{ recipe: Recipe; timeline: TimelineEvent[] }>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();
     expectTypeOf<(typeof NewRoute)["types"]["loaderData"]>().toEqualTypeOf<{ units: Unit[]; tags: Tag[] }>();
     expectTypeOf<(typeof SettingsRoute)["types"]["loaderData"]>().toEqualTypeOf<SettingsData>();

@@ -126,3 +126,17 @@ test("recompute repairs a last made that was set by hand", () => {
   repo.recompute(recipeId);
   expect(lastMade()).toBe("2026-09-01T00:00:00.000Z");
 });
+
+test("setImage points an event at a stored photo, and clears it again", () => {
+  const event = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
+
+  expect(repo.setImage(event.id, `${event.id}.png`)).toBe(true);
+  expect(repo.get(event.id)?.image).toBe(`${event.id}.png`);
+
+  expect(repo.setImage(event.id, null)).toBe(true);
+  expect(repo.get(event.id)?.image).toBeNull();
+});
+
+test("setImage on an unknown event changes nothing", () => {
+  expect(repo.setImage("99999999-9999-4999-8999-999999999999", "x.png")).toBe(false);
+});

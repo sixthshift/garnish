@@ -17,7 +17,9 @@ import { Route as ApiImagesFileRouteImport } from './routes/api/images/$file'
 import { Route as RecipesSlugIndexRouteImport } from './routes/recipes/$slug/index'
 import { Route as RecipesSlugCookRouteImport } from './routes/recipes/$slug/cook'
 import { Route as RecipesSlugEditRouteImport } from './routes/recipes/$slug/edit'
+import { Route as ApiImagesTimelineFileRouteImport } from './routes/api/images/timeline/$file'
 import { Route as ApiRecipesIdImageRouteImport } from './routes/api/recipes/$id/image'
+import { Route as ApiTimelineIdImageRouteImport } from './routes/api/timeline/$id/image'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,9 +61,19 @@ const RecipesSlugEditRoute = RecipesSlugEditRouteImport.update({
   path: '/recipes/$slug/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiImagesTimelineFileRoute = ApiImagesTimelineFileRouteImport.update({
+  id: '/api/images/timeline/$file',
+  path: '/api/images/timeline/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRecipesIdImageRoute = ApiRecipesIdImageRouteImport.update({
   id: '/api/recipes/$id/image',
   path: '/api/recipes/$id/image',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTimelineIdImageRoute = ApiTimelineIdImageRouteImport.update({
+  id: '/api/timeline/$id/image',
+  path: '/api/timeline/$id/image',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -74,7 +86,9 @@ export interface FileRoutesByFullPath {
   '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug/': typeof RecipesSlugIndexRoute
+  '/api/images/timeline/$file': typeof ApiImagesTimelineFileRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
+  '/api/timeline/$id/image': typeof ApiTimelineIdImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +99,9 @@ export interface FileRoutesByTo {
   '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug': typeof RecipesSlugIndexRoute
+  '/api/images/timeline/$file': typeof ApiImagesTimelineFileRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
+  '/api/timeline/$id/image': typeof ApiTimelineIdImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +113,9 @@ export interface FileRoutesById {
   '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug/': typeof RecipesSlugIndexRoute
+  '/api/images/timeline/$file': typeof ApiImagesTimelineFileRoute
   '/api/recipes/$id/image': typeof ApiRecipesIdImageRoute
+  '/api/timeline/$id/image': typeof ApiTimelineIdImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +128,9 @@ export interface FileRouteTypes {
     | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug/'
+    | '/api/images/timeline/$file'
     | '/api/recipes/$id/image'
+    | '/api/timeline/$id/image'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,7 +141,9 @@ export interface FileRouteTypes {
     | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug'
+    | '/api/images/timeline/$file'
     | '/api/recipes/$id/image'
+    | '/api/timeline/$id/image'
   id:
     | '__root__'
     | '/'
@@ -132,7 +154,9 @@ export interface FileRouteTypes {
     | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug/'
+    | '/api/images/timeline/$file'
     | '/api/recipes/$id/image'
+    | '/api/timeline/$id/image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,7 +168,9 @@ export interface RootRouteChildren {
   RecipesSlugCookRoute: typeof RecipesSlugCookRoute
   RecipesSlugEditRoute: typeof RecipesSlugEditRoute
   RecipesSlugIndexRoute: typeof RecipesSlugIndexRoute
+  ApiImagesTimelineFileRoute: typeof ApiImagesTimelineFileRoute
   ApiRecipesIdImageRoute: typeof ApiRecipesIdImageRoute
+  ApiTimelineIdImageRoute: typeof ApiTimelineIdImageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,11 +231,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecipesSlugEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/images/timeline/$file': {
+      id: '/api/images/timeline/$file'
+      path: '/api/images/timeline/$file'
+      fullPath: '/api/images/timeline/$file'
+      preLoaderRoute: typeof ApiImagesTimelineFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/recipes/$id/image': {
       id: '/api/recipes/$id/image'
       path: '/api/recipes/$id/image'
       fullPath: '/api/recipes/$id/image'
       preLoaderRoute: typeof ApiRecipesIdImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/timeline/$id/image': {
+      id: '/api/timeline/$id/image'
+      path: '/api/timeline/$id/image'
+      fullPath: '/api/timeline/$id/image'
+      preLoaderRoute: typeof ApiTimelineIdImageRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -224,7 +264,9 @@ const rootRouteChildren: RootRouteChildren = {
   RecipesSlugCookRoute: RecipesSlugCookRoute,
   RecipesSlugEditRoute: RecipesSlugEditRoute,
   RecipesSlugIndexRoute: RecipesSlugIndexRoute,
+  ApiImagesTimelineFileRoute: ApiImagesTimelineFileRoute,
   ApiRecipesIdImageRoute: ApiRecipesIdImageRoute,
+  ApiTimelineIdImageRoute: ApiTimelineIdImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
