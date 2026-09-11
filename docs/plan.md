@@ -75,14 +75,14 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 - [x] **M12.2 View modes and scroll.** `∥` Grid and list modes (Mealie's `RecipeCardMobile` shape for list), persisted via prefs; scroll position restored on back navigation. Check: render tests for both modes; prefs test.
 - [x] **M12.3 Filters.** `listRecipes` gains `tags[]` with `match: any|all`, `foods[]`, `favourite`. Filter bar: tag chips with an any/all switch, food picker (reuse `Combobox`), favourites toggle. All in search params. Check: repository tests for each filter and the all-match case; render test.
 - [x] **M12.4 Sort.** `listRecipes` gains `sort: name|created|updated|lastMade|rating|random` and `dir`. Sort menu in the toolbar, dice button opens one random recipe. Random uses a seed in search params so paging is stable. Check: repository tests per key; render test.
-- [ ] **M12.5 Global search.** `/` outside an input opens a dialog (`sheet` on phone, centred on wide) with `search-input`, results as list cards, arrow keys move selection, Enter opens. Closes on navigation. Check: pure key-handler tests; render test.
+- [x] **M12.5 Global search.** `/` outside an input opens a dialog (`sheet` on phone, centred on wide) with `search-input`, results as list cards, arrow keys move selection, Enter opens. Closes on navigation. Check: pure key-handler tests; render test.
 
 ## M13 Editor
 
 - [x] **M13.1 Save bar and discard guard.** Sticky bottom bar with Save and Cancel on phone, inline on wide. Dirty tracking against the initial draft; `useBlocker` shows a `ConfirmDialog` on route leave and a `beforeunload` prompt. Check: pure `isDirty()` tests; render test of the bar.
 - [x] **! M13.2 Phone ingredient rows.** Below `md` each row is one line (formatted ingredient text, or `originalText`) with a chevron; tap opens a `sheet` holding the existing fields plus a read-only `originalText` line. From `md` the inline row stays. Check: render tests at both widths via class assertions; sheet saves back into the draft.
 - [x] **M13.3 Drag reorder.** `ReorderList` gains pointer-event drag (handle, 250 ms touch delay, no dependency) within a list and between components via a shared group id; up/down buttons and "Move to" kept. Check: pure `dropIndex()` tests; render test shows handles.
-- [ ] **M13.4 Bulk add and step tools.** "Bulk add" on ingredients and steps: `sheet` with a textarea, one item per line, buttons trim whitespace, strip leading numbers, split on blank lines; ingredients become text-only rows. Steps gain insert above / below, split by paragraph, merge with next. Check: pure helpers tested for every button; render test.
+- [x] **M13.4 Bulk add and step tools.** "Bulk add" on ingredients and steps: `sheet` with a textarea, one item per line, buttons trim whitespace, strip leading numbers, split on blank lines; ingredients become text-only rows. Steps gain insert above / below, split by paragraph, merge with next. Check: pure helpers tested for every button; render test.
 - [ ] **M13.5 Image from URL and JSON view.** Image field accepts a pasted URL fetched server-side (`fetchImage` server function, same sniffing as upload). "JSON" toggle swaps the form for a textarea of the document; Apply parses with `recipeInputSchema` and shows errors. Check: server function test with a local fixture URL; JSON round-trip test.
 - [ ] **M13.6 Phone confirmations.** `ConfirmDialog` renders as a `sheet` below `md`, centred above. `originalText` shown in grey above a parsed row on wide. Check: render tests at both widths.
 
@@ -95,7 +95,7 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 
 - [x] **! M15.1 Data table.** Local `DataTable` primitive: search, sortable columns, row select, edit `sheet` from a field spec, delete `ConfirmDialog` listing affected recipes (new `recipes.usingFood(id)`, `usingUnit(id)`, `usingTag(id)` repository queries). Settings becomes `tabs`: Foods, Units, Aisles, Tags, Appearance. Check: render tests; affected-recipe queries tested.
 - [x] **M15.2 Foods.** `∥` Columns name, plural, aisle, skip shopping, aliases count. Editor edits all food fields; aisle is a select with create. Merge: pick a target, source deleted, ingredient rows repointed (`foods.merge(sourceId, targetId)` in one transaction). Check: merge test repoints and deletes; render test.
-- [ ] **M15.3 Units.** `∥` Columns name, plural, abbreviation, use abbreviation, fraction. Editor and merge as foods. Check: merge test; a merged unit renders through `formatAmount` correctly.
+- [x] **M15.3 Units.** `∥` Columns name, plural, abbreviation, use abbreviation, fraction. Editor and merge as foods. Check: merge test; a merged unit renders through `formatAmount` correctly.
 - [ ] **M15.4 Aisles and tags.** Aisles: drag ordering (M13.3 `ReorderList`), rename, delete with foods reassigned to none. Tags: A–Z grouped list, rename, merge, delete, click opens the list filtered. Check: repository tests for aisle reorder and tag merge; render tests.
 
 ## M16 Finish
@@ -134,3 +134,6 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-11  M11.7  done  efc94d7  opus  Made this sheet with date, comment and photo; timeline under Notes with delete and its own image routes
 2026-09-11  M12.4  done  bec9068  sonnet  listRecipes sorts by name/created/updated/lastMade/rating nulls-last plus a seeded random; SortMenu and dice button in the toolbar
 2026-09-11  M13.3  done  b2eab72  opus  ReorderList gains a pointer-event drag handle with a 250 ms touch delay and cross-list drops via a group registry
+2026-09-11  M12.5  done  9f1974b  sonnet  "/" opens a Modal-based search dialog over listRecipes with arrow-key selection; decisions row 44
+2026-09-11  M13.4  done  7e821d0  sonnet  shared BulkAddSheet over pure bulkText helpers, plus insert above/below, split by paragraph and merge with next on steps
+2026-09-11  M15.3  done  d4e67b2  sonnet  Units tab wired to edit, usage-confirmed delete and a transactional units.merge repointing ingredient and yield references
