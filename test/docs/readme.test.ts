@@ -53,6 +53,37 @@ export function sourceDirectories(src: string): string[] {
   return found.sort();
 }
 
+/**
+ * Server route URL paths under `src/routes/api/`, with `$param` segments in
+ * the `:param` form the docs use. Not pure: reads the tree.
+ */
+export function serverRoutePaths(routes: string): string[] {
+  const found: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(path);
+        continue;
+      }
+      const rel = relative(routes, path).split("\\").join("/").replace(/\.ts$/, "");
+      found.push(`/${rel.split("/").map((segment) => segment.replace(/^\$/, ":")).join("/")}`);
+    }
+  };
+  walk(join(routes, "api"));
+  return found.sort();
+}
+
+/** Table names created by the migrations, in file order. Not pure: reads the SQL. */
+export function migrationTables(migrations: string): string[] {
+  const names: string[] = [];
+  for (const file of readdirSync(migrations).sort()) {
+    const sql = readFileSync(join(migrations, file), "utf8");
+    for (const match of sql.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(\w+)/gi)) names.push(match[1]!);
+  }
+  return names;
+}
+
 describe("bunRunScripts", () => {
   test("collects distinct script names and ignores file paths", () => {
     expect(bunRunScripts("run `bun run dev` then `bun run dev` and `bun run seed --sample`; `bun run src/db/seed.ts`")).toEqual([
@@ -81,6 +112,12 @@ describe("README", () => {
     expect(readme).toMatch(/VS Code/);
   });
 
+  test("covers the stage 2 screens a reader has to find", () => {
+    for (const tab of ["Foods", "Units", "Aisles", "Tags", "Appearance"]) expect(readme, `settings tab ${tab}`).toContain(tab);
+    expect(readme).toContain("Made this");
+    expect(readme).toContain("images/timeline");
+  });
+
   test("every bun run script it names exists in package.json", () => {
     const named = bunRunScripts(readme);
     expect(named.length).toBeGreaterThan(0);
@@ -97,5 +134,15 @@ describe("architecture.md", () => {
 
   test("names every package.json script", () => {
     for (const name of Object.keys(pkg.scripts)) expect(architecture).toContain(`\`${name}\``);
+  });
+
+  test("names every migration file and the tables they create", () => {
+    const migrations = join(root, "src", "db", "migrations");
+    for (const file of readdirSync(migrations)) expect(architecture, `migration ${file}`).toContain(file);
+    for (const table of migrationTables(migrations)) expect(architecture, `table ${table}`).toContain(table);
+  });
+
+  test("documents every server route under /api/", () => {
+    for (const path of serverRoutePaths(join(root, "src", "routes"))) expect(architecture, `route ${path}`).toContain(path);
   });
 });

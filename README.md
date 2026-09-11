@@ -51,6 +51,18 @@ bun run seed --sample
 
 Both are idempotent: existing units and recipes are left alone. `bun run migrate` applies pending migrations only.
 
+The sample recipes also carry a favourite, a source URL and two logged cooks, so the list filters, the recipe footer and the timeline all have something to show.
+
+## Use
+
+- **Recipes** (`/`) — search, filter by tags (any or all), foods and favourites, sort, or press the dice for a random recipe. Grid or list view is remembered per device; `/` anywhere outside a text field opens the search dialog.
+- **A recipe** — tick ingredients and steps off as you go, switch between the per-component and merged ingredient lists, scale by servings, and use the ⋯ menu for Edit, Cook, Duplicate, Copy link, Copy ingredients, Print and Delete.
+- **Made this** — the button beside "last made" logs a cook: date, comment and an optional photo. Logged cooks appear as a timeline under the notes, and the newest one sets the recipe's last-made date. Cook mode's final card offers the same button.
+- **Cook** — one card at a time, full screen, with component pills, swipe or arrow keys, and the screen kept awake.
+- **Settings** (`/settings`) — tabs for Foods, Units, Aisles, Tags and Appearance. The first four are editable tables with search, merge and a delete that lists the recipes it affects; Appearance holds the light / dark / system theme toggle.
+
+Photos live on disk under `DATA_DIR/images/` (logged-cook photos under `images/timeline/`), not in the database — see [Backup](#backup).
+
 ## Run
 
 Build, then start the production server (on http://localhost:3000):
