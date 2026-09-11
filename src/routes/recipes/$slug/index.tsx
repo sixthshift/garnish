@@ -4,9 +4,12 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
+import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
+import { Popover } from "@sixthshift/design-system/popover";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { type FormEvent, useState } from "react";
 import { z } from "zod";
 import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientRow } from "../../../components/IngredientRow";
@@ -40,6 +43,7 @@ export function nextServings(current: number, direction: -1 | 1): number {
 
 function RecipePage() {
   const recipe = Route.useLoaderData();
+  const navigate = Route.useNavigate();
   const { servings: requested } = Route.useSearch();
   // A servings search param means the loader scaled the document away from
   // the recipe's own servings; the ingredient amounts get a "scaled" class.
@@ -47,6 +51,9 @@ function RecipePage() {
   const [ingredientMode] = useIngredientMode();
   const summary = ingredientMode === "summary";
   const hasIngredients = recipe.components.some((component) => component.ingredients.length > 0);
+  // Shared by the scale chip and each ingredient row's "Scale to...": both
+  // just need a new servings value turned into a navigation.
+  const goToServings = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
@@ -76,10 +83,26 @@ function RecipePage() {
         </div>
       )}
 
-      {summary && hasIngredients && <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />}
+      {summary && hasIngredients && (
+        <IngredientList
+          ingredients={mergeIngredients(recipe)}
+          recipeId={recipe.id}
+          scaled={scaled}
+          currentServings={recipe.recipeServings}
+          onScaleTo={goToServings}
+        />
+      )}
 
       {recipe.components.map((component) => (
-        <ComponentSection key={component.id} component={component} recipeId={recipe.id} scaled={scaled} hideIngredients={summary} />
+        <ComponentSection
+          key={component.id}
+          component={component}
+          recipeId={recipe.id}
+          scaled={scaled}
+          hideIngredients={summary}
+          currentServings={recipe.recipeServings}
+          onScaleTo={goToServings}
+        />
       ))}
 
       {recipe.steps.length > 0 && (
@@ -104,17 +127,32 @@ function RecipePage() {
 }
 
 /**
- * Current servings with minus and plus. Each press navigates with a new
- * `servings` search param, so the loader refetches the scaled document. Hidden
- * when the recipe has no servings recorded: there is nothing to scale by.
+ * Current servings as a chip, with minus and plus either side. Each press
+ * navigates with a new `servings` search param, so the loader refetches the
+ * scaled document. Hidden when the recipe has no servings recorded: there is
+ * nothing to scale by.
+ *
+ * Tapping the chip opens a `popover` with a number input for typing an exact
+ * servings count directly, rather than stepping one at a time. Reset (outside
+ * the popover, so it stays visible without opening it) clears a requested
+ * scale back to the recipe's own servings.
  */
 function ScaleControl({ servings }: { servings: number }) {
   const navigate = Route.useNavigate();
   const { servings: requested } = Route.useSearch();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(() => String(Number(servings.toFixed(2))));
   if (servings <= 0) return <Muted as="p">Servings not set</Muted>;
 
   const go = (value: number | undefined) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
   const label = `Serves ${Number(servings.toFixed(2))}`;
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = Number(draft);
+    if (Number.isFinite(value) && value > 0) go(value);
+    setOpen(false);
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Scale servings">
@@ -122,9 +160,45 @@ function ScaleControl({ servings }: { servings: number }) {
         <Button variant="outline" intent="neutral" size="sm" iconOnly aria-label="Fewer servings" disabled={servings <= 1} onClick={() => go(nextServings(servings, -1))}>
           −
         </Button>
-        <span className="min-w-20 text-center font-medium text-fg-strong" aria-live="polite">
-          {label}
-        </span>
+        <Popover
+          open={open}
+          onOpenChange={(next) => {
+            if (next) setDraft(String(Number(servings.toFixed(2))));
+            setOpen(next);
+          }}
+        >
+          <Popover.Trigger asChild>
+            <button
+              type="button"
+              data-testid="servings-chip"
+              aria-live="polite"
+              className="min-w-20 rounded-full border border-border-subtle bg-bg-subtle px-3 py-1 text-center font-medium text-fg-strong"
+            >
+              {label}
+            </button>
+          </Popover.Trigger>
+          <Popover.Body className="flex flex-col gap-2 p-3" aria-label="Set servings">
+            <form className="flex items-center gap-2" onSubmit={submit}>
+              <label htmlFor="servings-target" className="text-sm text-fg-subtle">
+                Servings
+              </label>
+              <Input
+                id="servings-target"
+                type="number"
+                inputMode="decimal"
+                min={1}
+                step="any"
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                aria-label="Servings"
+                className="w-20"
+              />
+              <Button type="submit" variant="solid" intent="brand" size="sm">
+                Set
+              </Button>
+            </form>
+          </Popover.Body>
+        </Popover>
         <Button variant="outline" intent="neutral" size="sm" iconOnly aria-label="More servings" onClick={() => go(nextServings(servings, 1))}>
           +
         </Button>
@@ -156,11 +230,15 @@ function ComponentSection({
   recipeId,
   scaled,
   hideIngredients = false,
+  currentServings,
+  onScaleTo,
 }: {
   component: Component;
   recipeId: string;
   scaled: boolean;
   hideIngredients?: boolean;
+  currentServings: number;
+  onScaleTo: (servings: number) => void;
 }) {
   const name = component.name.trim();
   const hasIngredients = component.ingredients.length > 0;
@@ -180,18 +258,39 @@ function ComponentSection({
           </Muted>
         }
       >
-        {showIngredients && <IngredientList ingredients={component.ingredients} recipeId={recipeId} scaled={scaled} />}
+        {showIngredients && (
+          <IngredientList ingredients={component.ingredients} recipeId={recipeId} scaled={scaled} currentServings={currentServings} onScaleTo={onScaleTo} />
+        )}
         {hasSteps && <StepList recipeId={recipeId} steps={component.steps} />}
       </EmptyBoundary>
     </section>
   );
 }
 
-function IngredientList({ ingredients, recipeId, scaled }: { ingredients: Ingredient[]; recipeId: string; scaled: boolean }) {
+function IngredientList({
+  ingredients,
+  recipeId,
+  scaled,
+  currentServings,
+  onScaleTo,
+}: {
+  ingredients: Ingredient[];
+  recipeId: string;
+  scaled: boolean;
+  currentServings: number;
+  onScaleTo: (servings: number) => void;
+}) {
   return (
     <ul className="flex flex-col gap-2" aria-label="Ingredients">
       {ingredients.map((ingredient) => (
-        <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} scaled={scaled} />
+        <IngredientRow
+          key={ingredient.id}
+          recipeId={recipeId}
+          ingredient={ingredient}
+          scaled={scaled}
+          currentServings={currentServings}
+          onScaleTo={onScaleTo}
+        />
       ))}
     </ul>
   );

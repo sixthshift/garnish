@@ -56,3 +56,36 @@ function scaleIngredient(ingredient: Ingredient, factor: number): Ingredient {
   if (ingredient.fixed || ingredient.quantity === null) return { ...ingredient };
   return { ...ingredient, quantity: ingredient.quantity * factor };
 }
+
+/**
+ * The servings that would make one ingredient's currently-displayed quantity
+ * read as `targetAmount`, given the servings the page is currently showing
+ * (`currentServings` — the recipe's own servings, or the requested scale when
+ * one is in effect). Proportional, like `scaleRecipe`: `currentServings *
+ * (targetAmount / ingredient.quantity)`.
+ *
+ * Throws for a `fixed` ingredient (Cooklang `=`, never scales, so it cannot
+ * be a scaling target) or one with no positive quantity to derive a factor
+ * from, and for a non-positive or non-finite `targetAmount` or
+ * `currentServings`. Pure.
+ */
+export function servingsForTarget(
+  ingredient: Pick<Ingredient, "quantity" | "fixed">,
+  targetAmount: number,
+  currentServings: number,
+): number {
+  if (typeof targetAmount !== "number" || !Number.isFinite(targetAmount) || targetAmount <= 0) {
+    throw new ScaleError(`targetAmount must be a finite number greater than 0, got ${String(targetAmount)}`);
+  }
+  if (typeof currentServings !== "number" || !Number.isFinite(currentServings) || currentServings <= 0) {
+    throw new ScaleError(`currentServings must be a finite number greater than 0, got ${String(currentServings)}`);
+  }
+  if (ingredient.fixed) {
+    throw new ScaleError("a fixed ingredient does not scale with servings and cannot be a scaling target");
+  }
+  if (ingredient.quantity === null || !Number.isFinite(ingredient.quantity) || ingredient.quantity <= 0) {
+    throw new ScaleError(`ingredient has no quantity to scale from (${String(ingredient.quantity)})`);
+  }
+
+  return currentServings * (targetAmount / ingredient.quantity);
+}
