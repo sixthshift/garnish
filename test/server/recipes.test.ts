@@ -80,6 +80,21 @@ test("listRecipes returns summaries newest first and filters by name and tag", a
   expect(await callServerFn(listRecipes, { q: "pan", tag: "weeknight" })).toEqual([]);
 });
 
+test("listRecipes filters by tags[] with match, foods[] and favourite", async () => {
+  const flat = await callServerFn(createRecipe, doc({ name: "Flatbread", favourite: true }));
+  // A distinct food (doc()'s default ingredients would otherwise resolve to the same "flour" row by name).
+  await callServerFn(
+    createRecipe,
+    doc({ name: "Pancakes", tags: [], components: [{ name: "", ingredients: [{ quantity: 2, food: food(ids.missing, "maple syrup") }], steps: [{ text: "Stack." }] }] }),
+  );
+
+  expect((await callServerFn(listRecipes, { tags: ["weeknight"] })).map((r) => r.slug)).toEqual(["flatbread"]);
+  expect((await callServerFn(listRecipes, { tags: ["weeknight"], match: "all" })).map((r) => r.slug)).toEqual(["flatbread"]);
+  expect((await callServerFn(listRecipes, { foods: [flat.components[0]!.ingredients[0]!.food!.id] })).map((r) => r.slug)).toEqual(["flatbread"]);
+  expect((await callServerFn(listRecipes, { favourite: true })).map((r) => r.slug)).toEqual(["flatbread"]);
+  await expect(callServerFn(listRecipes, { foods: ["not-a-uuid"] })).rejects.toThrow(/uuid/i);
+});
+
 test("getRecipe returns the stored document by slug and maps a miss to notFound", async () => {
   const created = await callServerFn(createRecipe, doc());
   await expect(callServerFn(getRecipe, { slug: "flatbread" })).resolves.toEqual(created);

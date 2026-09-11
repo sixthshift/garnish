@@ -15,8 +15,16 @@ const recipeId = z.uuid();
 export const ListRecipesInput = z.object({
   /** Case-insensitive substring of the recipe name. */
   q: z.string().optional(),
-  /** Tag slug; only recipes carrying that tag. */
+  /** Tag slug; only recipes carrying that tag. Folded into `tags` (M12.3). */
   tag: z.string().optional(),
+  /** Tag slugs; combined with `tag`, de-duplicated. */
+  tags: z.array(z.string()).optional(),
+  /** How `tags` combine: any of them (default) or all of them. */
+  match: z.enum(["any", "all"]).optional(),
+  /** Food ids; only recipes with an ingredient using one of these foods. */
+  foods: z.array(z.uuid()).optional(),
+  /** Only favourited recipes when true. */
+  favourite: z.boolean().optional(),
 });
 
 export const GetRecipeInput = z.object({

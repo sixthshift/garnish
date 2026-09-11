@@ -31,8 +31,16 @@ import { units as unitRepository } from "./units";
 export type ListFilter = {
   /** Case-insensitive substring of the recipe name. */
   q?: string;
-  /** Tag slug; only recipes carrying that tag. */
+  /** Tag slug; only recipes carrying that tag. Folded into `tags` (M12.3). */
   tag?: string;
+  /** Tag slugs; combined with `tag` (if given), de-duplicated. */
+  tags?: string[];
+  /** How `tags` combine: any of them (default) or all of them. */
+  match?: "any" | "all";
+  /** Food ids; only recipes with an ingredient using one of these foods. */
+  foods?: string[];
+  /** Only favourited recipes when true; unset or false is unfiltered. */
+  favourite?: boolean;
 };
 
 type RecipeRow = {
@@ -95,12 +103,6 @@ export function recipes(db: Database) {
     "SELECT i.id, i.component_id, i.quantity, i.unit_id, i.food_id, i.note, i.original_text, i.fixed FROM ingredient i JOIN component c ON c.id = i.component_id WHERE c.recipe_id = ? ORDER BY c.position, i.position",
   );
   const selectSteps = db.query<StepRow, [string]>("SELECT id, component_id, text FROM step WHERE recipe_id = ? ORDER BY position");
-  const selectSummaries = db.query<SummaryRow, [string | null, string | null]>(
-    `SELECT ${SUMMARY_COLUMNS} FROM recipe r
-     WHERE (?1 IS NULL OR instr(lower(r.name), lower(?1)) > 0)
-       AND (?2 IS NULL OR EXISTS (SELECT 1 FROM recipe_tag rt JOIN tag t ON t.id = rt.tag_id WHERE rt.recipe_id = r.id AND t.slug = ?2))
-     ORDER BY r.created_at DESC, r.name COLLATE NOCASE`,
-  );
 
   // --- Writes --------------------------------------------------------------
   const slugTaken = db.query<{ id: string }, [string, string]>("SELECT id FROM recipe WHERE slug = ? AND id <> ?");
@@ -409,11 +411,52 @@ export function recipes(db: Database) {
     /** Full document by id, or null. */
     getById,
 
-    /** Card summaries, newest first, filtered by name substring and/or tag slug. */
+    /**
+     * Card summaries, newest first. `q` is a name substring; `tag` and `tags`
+     * (tag slugs) are combined and de-duplicated, then matched by `match`
+     * (any, the default, or all); `foods` (food ids) matches any ingredient
+     * using one of them; `favourite` true restricts to favourites.
+     */
     list(filter: ListFilter = {}): RecipeSummary[] {
       const q = filter.q?.trim() || null;
-      const tag = filter.tag?.trim() || null;
-      return selectSummaries.all(q, tag).map(summarise);
+      const tags = [...new Set([filter.tag, ...(filter.tags ?? [])].map((t) => t?.trim()).filter((t): t is string => Boolean(t)))];
+      const foods = [...new Set((filter.foods ?? []).map((f) => f.trim()).filter(Boolean))];
+      const match = filter.match ?? "any";
+
+      const clauses: string[] = [];
+      const params: string[] = [];
+
+      if (q) {
+        clauses.push("instr(lower(r.name), lower(?)) > 0");
+        params.push(q);
+      }
+
+      if (tags.length > 0) {
+        if (match === "all") {
+          for (const slug of tags) {
+            clauses.push("EXISTS (SELECT 1 FROM recipe_tag rt JOIN tag t ON t.id = rt.tag_id WHERE rt.recipe_id = r.id AND t.slug = ?)");
+            params.push(slug);
+          }
+        } else {
+          clauses.push(
+            `EXISTS (SELECT 1 FROM recipe_tag rt JOIN tag t ON t.id = rt.tag_id WHERE rt.recipe_id = r.id AND t.slug IN (${tags.map(() => "?").join(", ")}))`,
+          );
+          params.push(...tags);
+        }
+      }
+
+      if (foods.length > 0) {
+        clauses.push(
+          `EXISTS (SELECT 1 FROM component c JOIN ingredient i ON i.component_id = c.id WHERE c.recipe_id = r.id AND i.food_id IN (${foods.map(() => "?").join(", ")}))`,
+        );
+        params.push(...foods);
+      }
+
+      if (filter.favourite) clauses.push("r.favourite = 1");
+
+      const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
+      const sql = `SELECT ${SUMMARY_COLUMNS} FROM recipe r ${where} ORDER BY r.created_at DESC, r.name COLLATE NOCASE`;
+      return db.query<SummaryRow, string[]>(sql).all(...params).map(summarise);
     },
 
     /** Insert a recipe and its children in one transaction; the slug comes from the name. */

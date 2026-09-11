@@ -339,6 +339,43 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
   expect(soup.tags).toEqual([]);
 });
 
+test("list filters by tags[] with any (default) and all match", () => {
+  repo.create(recipeInputSchema.parse(fullDoc)); // tags: Pasta, Weeknight
+  repo.create(recipeInputSchema.parse(minimal("Cheese Toast", { tags: [weeknight] })));
+  repo.create(recipeInputSchema.parse(minimal("Pumpkin soup")));
+
+  // any: either tag.
+  expect(repo.list({ tags: ["pasta", "weeknight"] }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast"]);
+  expect(repo.list({ tags: ["pasta", "weeknight"], match: "any" }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast"]);
+  // all: only the recipe carrying every tag.
+  expect(repo.list({ tags: ["pasta", "weeknight"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.list({ tags: ["missing"] })).toEqual([]);
+  // The legacy singular `tag` folds into the set alongside `tags`.
+  expect(repo.list({ tag: "weeknight", tags: ["pasta"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.list({ tag: "weeknight", tags: ["weeknight"] }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast"]); // de-duplicated, not doubled
+});
+
+test("list filters by foods[]", () => {
+  const full = repo.create(recipeInputSchema.parse(fullDoc)); // Pasta: spaghetti, salt; Sauce: butter
+  repo.create(recipeInputSchema.parse(minimal("Cheese Toast")));
+  const spaghettiId = full.components[0]!.ingredients[0]!.food!.id;
+  const butterId = full.components[1]!.ingredients[0]!.food!.id;
+
+  expect(repo.list({ foods: [spaghettiId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.list({ foods: [butterId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.list({ foods: [spaghettiId, crypto.randomUUID()] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.list({ foods: [crypto.randomUUID()] })).toEqual([]);
+});
+
+test("list filters by favourite", () => {
+  repo.create(recipeInputSchema.parse(minimal("Fav", { favourite: true })));
+  repo.create(recipeInputSchema.parse(minimal("Not fav")));
+
+  expect(repo.list({ favourite: true }).map((r) => r.slug)).toEqual(["fav"]);
+  expect(repo.list({ favourite: false }).map((r) => r.slug).sort()).toEqual(["fav", "not-fav"]);
+  expect(repo.list().map((r) => r.slug).sort()).toEqual(["fav", "not-fav"]);
+});
+
 test("list orders newest first", () => {
   const a = repo.create(recipeInputSchema.parse(minimal("A")));
   db.run("UPDATE recipe SET created_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", [a.id]);

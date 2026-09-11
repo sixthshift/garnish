@@ -33,13 +33,17 @@ useTempDataDir();
 
 const weeknight = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" };
 
-function seed(name: string, opts: { servings?: number; tags?: Array<typeof weeknight>; image?: string } = {}) {
+function seed(
+  name: string,
+  opts: { servings?: number; tags?: Array<typeof weeknight>; image?: string; favourite?: boolean; food?: { id: string; name: string } } = {},
+) {
   return callServerFn(createRecipe, {
     name,
     image: opts.image ?? null,
     recipeServings: opts.servings ?? 2,
     tags: opts.tags ?? [],
-    components: [{ name: "", ingredients: [{ quantity: 200, note: "flour" }], steps: [{ text: "Mix." }] }],
+    favourite: opts.favourite ?? false,
+    components: [{ name: "", ingredients: [opts.food ? { quantity: 200, food: opts.food } : { quantity: 200, note: "flour" }], steps: [{ text: "Mix." }] }],
   });
 }
 
@@ -49,7 +53,8 @@ describe("/ (list)", () => {
     expect(html).toContain("No recipes yet.");
     expect(html).toContain('href="/recipes/new"');
     expect(html).not.toContain("No recipes match");
-    expect(html).not.toContain('role="radiogroup"'); // no tags, no filter
+    expect(html).not.toContain('aria-label="Filter by tag"'); // no tags, no filter
+    expect(html).toContain("Favourites only"); // the rest of the filter bar still renders
   });
 
   test("renders a card per recipe: name, link, tags, image or placeholder", async () => {
@@ -66,12 +71,12 @@ describe("/ (list)", () => {
     expect(html).toContain('src="/api/images/flatbread.jpg"');
     expect(html).toContain('src="/api/images/lemon%20tart.webp"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
-    // Tag chips on the card, and the tag filter offers every tag plus All.
+    // Tag chips on the card, and the tag filter offers every tag, none selected.
     expect(html).toContain(" tag-chip ");
     expect(html).toContain(">Weeknight</span>");
-    expect(html).toContain('role="radiogroup"');
-    expect(html).toContain(">All<");
-    expect(html).toMatch(/role="radio"[^>]*aria-checked="true"[^>]*>(<[^>]*>)*All/);
+    expect(html).toContain('aria-label="Filter by tag"');
+    expect(html).not.toContain(">All<");
+    expect(html).toMatch(/data-state="off"[^>]*>Weeknight/);
   });
 
   test("q and tag search params filter the list", async () => {
@@ -97,7 +102,44 @@ describe("/ (list)", () => {
     const html = await renderRoute("/?q=flat&tag=weeknight");
     expect(html).toContain('role="search"');
     expect(html).toContain('value="flat"');
-    expect(html).toMatch(/role="radio"[^>]*aria-checked="true"[^>]*>(<[^>]*>)*Weeknight/);
+    // The legacy singular `tag` param still selects its chip (M12.3 folds it into `tags`).
+    expect(html).toMatch(/data-state="on"[^>]*>Weeknight/);
+  });
+
+  test("tags[], match, foods[] and favourite search params filter the list and render as selected", async () => {
+    const pasta = { id: "d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2", name: "Pasta", slug: "pasta" };
+    const flat = await seed("Flatbread", { tags: [weeknight, pasta], favourite: true, food: { id: crypto.randomUUID(), name: "flour" } });
+    await seed("Pancakes", { tags: [pasta] });
+    await seed("Toast", { tags: [weeknight] });
+    const flourId = flat.components[0]!.ingredients[0]!.food!.id;
+
+    // any (the default): either tag matches.
+    let html = await renderRoute(`/?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}`);
+    expect(html).toContain("Flatbread");
+    expect(html).toContain("Pancakes");
+    expect(html).toContain("Toast");
+    expect(html).toMatch(/data-state="on"[^>]*>Weeknight/);
+    expect(html).toMatch(/data-state="on"[^>]*>Pasta/);
+
+    // all: only the recipe carrying both.
+    html = await renderRoute(`/?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}&match=all`);
+    expect(html).toContain("Flatbread");
+    expect(html).not.toContain("Pancakes");
+    expect(html).not.toContain("Toast");
+    expect(html).toContain("Match all");
+    expect(html).toContain('data-state="checked"');
+
+    // foods[]: only the recipe with that ingredient's food.
+    html = await renderRoute(`/?foods=${encodeURIComponent(JSON.stringify([flourId]))}`);
+    expect(html).toContain("Flatbread");
+    expect(html).not.toContain("Pancakes");
+    expect(html).toContain('aria-label="Remove flour"'); // selected food renders as a removable chip
+
+    // favourite.
+    html = await renderRoute("/?favourite=true");
+    expect(html).toContain("Flatbread");
+    expect(html).not.toContain("Pancakes");
+    expect(html).not.toContain("Toast");
   });
 
   describe("view mode (M12.2)", () => {
@@ -477,14 +519,21 @@ describe("loader data types match the domain schemas", () => {
     // ...and each route hands its component the same shape (`types` is the
     // route's phantom type bag; `useLoaderData()` returns `types.loaderData`).
     expectTypeOf<(typeof IndexRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeListData>();
-    expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: Tag[] }>();
+    expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: Tag[]; foods: FoodRow[] }>();
     expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<Recipe>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();
     expectTypeOf<(typeof NewRoute)["types"]["loaderData"]>().toEqualTypeOf<{ units: Unit[]; tags: Tag[] }>();
     expectTypeOf<(typeof SettingsRoute)["types"]["loaderData"]>().toEqualTypeOf<SettingsData>();
     expectTypeOf<SettingsData>().toEqualTypeOf<{ aisles: Aisle[]; units: Unit[]; foods: FoodRow[]; tags: Tag[] }>();
     // Search params are typed from their zod schemas.
-    expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ q?: string | undefined; tag?: string | undefined }>();
+    expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{
+      q?: string | undefined;
+      tag?: string | undefined;
+      tags?: string[] | undefined;
+      match?: "any" | "all" | undefined;
+      foods?: string[] | undefined;
+      favourite?: boolean | undefined;
+    }>();
     expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
   });
 });
