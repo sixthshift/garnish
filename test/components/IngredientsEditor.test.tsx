@@ -18,6 +18,8 @@ import {
   isTextOnly,
   matchUnit,
   moveIngredient,
+  moveIngredientTo,
+  INGREDIENT_DRAG_GROUP,
   newIngredient,
   parseQuantity,
   quantityText,
@@ -216,7 +218,48 @@ describe("moveIngredient", () => {
   });
 });
 
+describe("moveIngredientTo", () => {
+  test("a drag drops the row at the index it was released over", () => {
+    const draft = tart();
+    const moved = draft.components[0]!.ingredients[0]!;
+    const next = moveIngredientTo(draft, 0, 0, 1, 0);
+    expect(next.components[1]!.ingredients[0]).toBe(moved);
+    expect(next.components[1]!.ingredients).toHaveLength(2);
+    expect(next.components[0]!.ingredients.map((r) => r.note)).toEqual(["cold"]);
+  });
+
+  test("an index past the end appends, and a negative one lands first", () => {
+    const draft = tart();
+    const moved = draft.components[0]!.ingredients[1]!;
+    expect(moveIngredientTo(draft, 0, 1, 1, 99).components[1]!.ingredients[1]).toBe(moved);
+    expect(moveIngredientTo(draft, 0, 1, 1, -3).components[1]!.ingredients[0]).toBe(moved);
+  });
+
+  test("with no index it appends, which is what the move-to select does", () => {
+    const draft = tart();
+    expect(moveIngredientTo(draft, 0, 0, 1)).toEqual(moveIngredient(draft, 0, 0, 1));
+  });
+
+  test("same component or out-of-range indices return an unchanged copy", () => {
+    const draft = tart();
+    for (const next of [moveIngredientTo(draft, 0, 0, 0, 0), moveIngredientTo(draft, 0, 9, 1, 0), moveIngredientTo(draft, 0, 0, 7, 0)]) {
+      expect(next.components).toEqual(draft.components);
+      expect(next.components).not.toBe(draft.components);
+    }
+  });
+});
+
 describe("IngredientsEditor", () => {
+  test("each row has a drag handle and the list joins the shared drag group", () => {
+    const draft = tart();
+    const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);
+    expect(html).toContain(`data-reorder-group="${INGREDIENT_DRAG_GROUP}"`);
+    expect(html.match(/aria-label="Drag ingredient \d"/g)).toHaveLength(2);
+    // The move-to select survives alongside the handle.
+    expect(html).toContain("Move to…");
+  });
+
+
   test("renders the row inputs for a component: quantity, unit, food, note, fixed, text toggle, move-to", () => {
     const draft = tart();
     const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);

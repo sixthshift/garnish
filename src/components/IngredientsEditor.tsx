@@ -1,7 +1,10 @@
 // The ingredient rows of one component: quantity, unit, food, note and the
 // fixed flag, in a ReorderList, plus a "move to" that sends a row to the end
-// of another component. The parent owns the draft; every change goes through
-// a pure helper and comes back through `onChange` as a new `RecipeDraft`.
+// of another component and a drag handle that does the same by hand: every
+// component's list shares one drag group, so a row dropped on another
+// component's list lands where it was released (M13.3). The parent owns the
+// draft; every change goes through a pure helper and comes back through
+// `onChange` as a new `RecipeDraft`.
 //
 // References are resolved on save, not while typing. Picking a suggestion puts
 // the existing unit or food object on the row; typing a name nobody has yet
@@ -205,20 +208,32 @@ export function removeIngredient(draft: RecipeDraft, ci: number, ii: number): Re
 }
 
 /**
- * The draft with row `ii` of component `fromCi` appended to component `toCi`.
- * The same component, or an out-of-range index, returns a copy unchanged. Pure.
+ * The draft with row `ii` of component `fromCi` inserted into component `toCi`
+ * at `toIndex`, which is clamped to that component's length — so the default,
+ * `Infinity`, appends. The same component, or an out-of-range index, returns a
+ * copy unchanged. Pure.
  */
-export function moveIngredient(draft: RecipeDraft, fromCi: number, ii: number, toCi: number): RecipeDraft {
+export function moveIngredientTo(draft: RecipeDraft, fromCi: number, ii: number, toCi: number, toIndex = Number.POSITIVE_INFINITY): RecipeDraft {
   if (fromCi === toCi || !inRange(draft, fromCi, ii) || !inRange(draft, toCi)) return { ...draft, components: draft.components.slice() };
   const row = draft.components[fromCi]!.ingredients[ii]!;
+  const target = draft.components[toCi]!.ingredients;
+  const at = Math.max(0, Math.min(Number.isFinite(toIndex) ? toIndex : target.length, target.length));
   return {
     ...draft,
     components: draft.components.map((component, i) => {
       if (i === fromCi) return { ...component, ingredients: component.ingredients.filter((_, j) => j !== ii) };
-      if (i === toCi) return { ...component, ingredients: [...component.ingredients, row] };
+      if (i === toCi) return { ...component, ingredients: [...target.slice(0, at), row, ...target.slice(at)] };
       return component;
     }),
   };
+}
+
+/**
+ * The draft with row `ii` of component `fromCi` appended to component `toCi`.
+ * What the "Move to" select does. Pure.
+ */
+export function moveIngredient(draft: RecipeDraft, fromCi: number, ii: number, toCi: number): RecipeDraft {
+  return moveIngredientTo(draft, fromCi, ii, toCi);
 }
 
 /** The row patch that switches modes: to text only clears amount and food; back to structured clears the raw line. Pure. */
@@ -227,6 +242,9 @@ export function textOnlyPatch(textOnly: boolean): Partial<DraftIngredient> {
 }
 
 // --- Component --------------------------------------------------------------
+
+/** Every component's ingredient list shares this drag group, so a row can be dragged from one to another. */
+export const INGREDIENT_DRAG_GROUP = "recipe-ingredients";
 
 export type IngredientsEditorProps = {
   draft: RecipeDraft;
@@ -265,6 +283,9 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
           items={ingredients}
           keyOf={(row) => row.id ?? "unsaved"}
           itemName="ingredient"
+          group={INGREDIENT_DRAG_GROUP}
+          listKey={String(ci)}
+          onMoveOut={(_, ii, toCi, toIndex) => onChange(moveIngredientTo(draft, ci, ii, Number(toCi), toIndex))}
           onReorder={(next) => onChange(withIngredients(draft, ci, next))}
           onRemove={(_, ii) => onChange(removeIngredient(draft, ci, ii))}
           renderItem={(row, ii) => (
