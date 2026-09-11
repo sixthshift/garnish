@@ -4,16 +4,21 @@
 // page) and a refresh lands on the same card. The shell hides its nav here
 // (`staticData.fullscreen`), leaving the header and footer of this page as the
 // only chrome. A screen wake lock is held while the page is mounted.
+//
+// Three ways through the deck: the Prev/Next buttons and arrow keys, a pill per
+// component that jumps to its first card, and a vertical swipe (pure
+// `swipeIntent`, so the scroll-versus-swipe line is a tested function rather
+// than a feel). A live region speaks the card as it changes.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { z } from "zod";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
-import { buildCookCards, clampStep, type CookCard } from "../../../domain/cook";
+import { buildCookCards, cardAnnouncement, clampStep, componentPills, swipeIntent, type CookCard } from "../../../domain/cook";
 import { formatIngredient } from "../../../domain/format";
 import type { Recipe } from "../../../domain/recipe";
 import { useWakeLock } from "../../../lib/useWakeLock";
@@ -59,6 +64,7 @@ function CookPage() {
   const cards = buildCookCards(recipe);
   const index = clampStep(step ?? 0, cards.length);
   const card: CookCard | undefined = cards[index];
+  const pills = componentPills(cards);
 
   const goTo = (next: number) => void navigate({ search: (prev) => ({ ...prev, step: next }) });
   const scaleTo = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
@@ -75,6 +81,29 @@ function CookPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
+
+  // Vertical swipe between cards. Nothing is captured and nothing is
+  // prevented: the gesture is judged only when the pointer lifts, by
+  // `swipeIntent`, so a drag that was really a scroll scrolls and then reads as
+  // null. Touch and pen only — a mouse has the arrow keys and the buttons, and
+  // hijacking its drags would fight text selection.
+  const swipe = useRef<{ pointerId: number; x: number; y: number; at: number } | null>(null);
+
+  const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse") return;
+    swipe.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, at: Date.now() };
+  };
+
+  const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    const start = swipe.current;
+    swipe.current = null;
+    if (start === null || start.pointerId !== event.pointerId) return;
+    const intent = swipeIntent({ dx: event.clientX - start.x, dy: event.clientY - start.y, ms: Date.now() - start.at });
+    if (intent === null) return;
+    const next = intent === "next" ? index + 1 : index - 1;
+    if (next < 0 || next >= cards.length) return;
+    goTo(next);
+  };
 
   return (
     <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal">
@@ -95,9 +124,35 @@ function CookPage() {
         {recipe.recipeServings > 0 && (
           <NumberStepper label="Serves" value={Number(recipe.recipeServings.toFixed(2))} min={1} onChange={scaleTo} className="flex-row items-center gap-2" />
         )}
+        {pills.length > 1 && (
+          <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1" aria-label="Components">
+            {pills.map((pill) => {
+              const current = card !== undefined && card.component === pill.name;
+              return (
+                <Button
+                  key={pill.name}
+                  variant={current ? "solid" : "outline"}
+                  intent={current ? "brand" : "neutral"}
+                  size="sm"
+                  className="shrink-0 rounded-full"
+                  aria-current={current ? "true" : undefined}
+                  data-pill={pill.name}
+                  onClick={() => goTo(pill.index)}
+                >
+                  {pill.label}
+                </Button>
+              );
+            })}
+          </nav>
+        )}
       </header>
 
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4">
+      {/* Politely spoken on every card change; the visible position line below is silent so it is not said twice. */}
+      <p className="sr-only" aria-live="polite" data-announce>
+        {card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
+      </p>
+
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => (swipe.current = null)}>
         <EmptyBoundary
           isEmpty={card === undefined}
           fallback={
@@ -116,7 +171,7 @@ function CookPage() {
           <Button variant="outline" intent="neutral" size="lg" disabled={index <= 0} onClick={() => goTo(index - 1)}>
             Prev
           </Button>
-          <span className="min-w-0 flex-1 truncate text-center text-sm text-fg-subtle" aria-live="polite" data-position>
+          <span className="min-w-0 flex-1 truncate text-center text-sm text-fg-subtle" data-position>
             {cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.component ?? "")}
           </span>
           <Button variant="solid" intent="brand" size="lg" disabled={index >= cards.length - 1} onClick={() => goTo(index + 1)}>

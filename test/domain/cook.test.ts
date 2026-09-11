@@ -1,5 +1,15 @@
 import { describe, expect, test } from "vitest";
-import { buildCookCards, clampStep, finishLabel } from "../../src/domain/cook";
+import {
+  buildCookCards,
+  cardAnnouncement,
+  clampStep,
+  componentPills,
+  finishLabel,
+  SWIPE_MAX_MS,
+  SWIPE_MIN_PX,
+  SWIPE_RATIO,
+  swipeIntent,
+} from "../../src/domain/cook";
 import type { Component, Ingredient, Step } from "../../src/domain/recipe";
 
 const uuid = () => crypto.randomUUID();
@@ -69,5 +79,78 @@ describe("clampStep", () => {
     [3, 0, 0],
   ])("clampStep(%s, %s) -> %s", (step, count, expected) => {
     expect(clampStep(step, count)).toBe(expected);
+  });
+});
+
+describe("cardAnnouncement", () => {
+  test("a step is counted within its list; an ingredient card names its component", () => {
+    const cards = buildCookCards({
+      components: [component("Dough", [ingredient("flour")], [step("Knead."), step("Rest.")])],
+      steps: [],
+    });
+    expect(cardAnnouncement(cards[0]!)).toBe("Ingredients for Dough");
+    expect(cardAnnouncement(cards[1]!)).toBe("Step 1 of 2");
+    expect(cardAnnouncement(cards[2]!)).toBe("Step 2 of 2");
+  });
+
+  test("an unnamed component's ingredient card is just 'Ingredients'", () => {
+    const cards = buildCookCards({ components: [component("", [ingredient("bread")], [])], steps: [] });
+    expect(cardAnnouncement(cards[0]!)).toBe("Ingredients");
+  });
+});
+
+describe("componentPills", () => {
+  test("one pill per component in deck order, each at that component's first card", () => {
+    const cards = buildCookCards({
+      components: [component("Pastry", [ingredient("flour")], [step("Rub.")]), component("Filling", [], [step("Whisk."), step("Chill.")])],
+      steps: [step("Bake.")],
+    });
+    expect(componentPills(cards)).toEqual([
+      { name: "Pastry", label: "Pastry", index: 0 },
+      { name: "Filling", label: "Filling", index: 2 },
+      { name: "To finish", label: "To finish", index: 4 },
+    ]);
+  });
+
+  test("the unnamed section reads 'Recipe', and a flat recipe is a single pill", () => {
+    const cards = buildCookCards({ components: [component("", [ingredient("bread")], [step("Toast.")])], steps: [step("Butter.")] });
+    expect(componentPills(cards)).toEqual([{ name: "", label: "Recipe", index: 0 }]);
+  });
+
+  test("an empty deck has no pills", () => {
+    expect(componentPills([])).toEqual([]);
+  });
+});
+
+describe("swipeIntent", () => {
+  test("a flick up brings the next card on, a flick down the previous", () => {
+    expect(swipeIntent({ dx: 0, dy: -120, ms: 200 })).toBe("next");
+    expect(swipeIntent({ dx: 0, dy: 120, ms: 200 })).toBe("prev");
+    // Exactly at the distance threshold still counts.
+    expect(swipeIntent({ dx: 0, dy: -SWIPE_MIN_PX, ms: 100 })).toBe("next");
+  });
+
+  test("a short drag is a scroll or a tap, not a swipe", () => {
+    expect(swipeIntent({ dx: 0, dy: -(SWIPE_MIN_PX - 1), ms: 100 })).toBeNull();
+    expect(swipeIntent({ dx: 0, dy: 0, ms: 40 })).toBeNull();
+  });
+
+  test("a sideways drag is not vertical enough", () => {
+    expect(swipeIntent({ dx: 200, dy: -80, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: -200, dy: 80, ms: 200 })).toBeNull();
+    // Vertical travel must beat horizontal by the ratio, not merely equal it.
+    expect(swipeIntent({ dx: 80, dy: -80, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: 80, dy: -(80 * SWIPE_RATIO), ms: 200 })).toBe("next");
+  });
+
+  test("a slow drag is a scroll however far it went", () => {
+    expect(swipeIntent({ dx: 0, dy: -300, ms: SWIPE_MAX_MS + 1 })).toBeNull();
+    expect(swipeIntent({ dx: 0, dy: -300, ms: SWIPE_MAX_MS })).toBe("next");
+  });
+
+  test("nonsense numbers are ignored rather than moving the deck", () => {
+    expect(swipeIntent({ dx: Number.NaN, dy: -120, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: 0, dy: Number.NEGATIVE_INFINITY, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: 0, dy: -120, ms: -5 })).toBeNull();
   });
 });

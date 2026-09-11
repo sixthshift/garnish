@@ -145,6 +145,36 @@ describe("/recipes/$slug/cook", () => {
     expect(isDisabled(html, "Next")).toBe(true);
   });
 
+  test("component pills jump to each component's first card and mark the current one", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=2");
+    expect(html).toContain('aria-label="Components"');
+    for (const name of ["Pastry", "Filling", "To finish"]) expect(html).toContain(`data-pill="${name}"`);
+    // The Filling card is showing, so only Filling's pill is current.
+    expect(html).toMatch(/data-pill="Filling"[^>]*aria-current="true"|aria-current="true"[^>]*data-pill="Filling"/);
+    expect(html).not.toMatch(/data-pill="Pastry"[^>]*aria-current/);
+  });
+
+  test("a single-component recipe has no pill bar", async () => {
+    await callServerFn(createRecipe, {
+      name: "Toast",
+      components: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
+    });
+    const html = await renderRoute("/recipes/toast/cook");
+    expect(html).not.toContain('aria-label="Components"');
+    expect(html).not.toContain("data-pill=");
+  });
+
+  test("a live region announces the card, and the visible position line stays silent", async () => {
+    await seedTart();
+    const ingredients = await renderRoute("/recipes/lemon-tart/cook?step=2");
+    expect(ingredients).toMatch(/aria-live="polite"[^>]*data-announce[^>]*>Ingredients for Filling</);
+    const stepCard = await renderRoute("/recipes/lemon-tart/cook?step=1");
+    expect(stepCard).toMatch(/data-announce[^>]*>Step 1 of 1</);
+    // Only one live region on the page: the footer position line is not one.
+    expect([...stepCard.matchAll(/aria-live=/g)]).toHaveLength(1);
+  });
+
   test("a missing slug renders the not-found view", async () => {
     expect(await renderRoute("/recipes/nothing-here/cook")).toContain("Not found");
   });

@@ -47,3 +47,62 @@ export function clampStep(step: number, count: number): number {
   if (count <= 0) return 0;
   return Math.min(Math.max(0, Math.trunc(step)), count - 1);
 }
+
+/**
+ * A card's spoken label for the live region: "Step 2 of 5", or "Ingredients for
+ * Dough" ("Ingredients" where the component has no name). Pure.
+ */
+export function cardAnnouncement(card: CookCard): string {
+  if (card.kind === "step") return `Step ${card.number} of ${card.total}`;
+  return card.component === "" ? "Ingredients" : `Ingredients for ${card.component}`;
+}
+
+/** One component pill: the deck index its first card sits at. */
+export type CookPill = {
+  /** The component name as the cards carry it; "" for the unnamed section. */
+  name: string;
+  /** What the pill reads; the unnamed section is "Recipe". */
+  label: string;
+  index: number;
+};
+
+/**
+ * A pill per component in deck order, each pointing at that component's first
+ * card. Components are contiguous in the deck, but the first index is taken by
+ * name so a repeated name still lands on its opening card. Pure.
+ */
+export function componentPills(cards: CookCard[]): CookPill[] {
+  const pills: CookPill[] = [];
+  cards.forEach((card, index) => {
+    if (pills.some((pill) => pill.name === card.component)) return;
+    pills.push({ name: card.component, label: card.component === "" ? "Recipe" : card.component, index });
+  });
+  return pills;
+}
+
+/** Pixels a pointer must travel vertically before a drag counts as a swipe rather than a scroll. */
+export const SWIPE_MIN_PX = 56;
+
+/** How much longer the vertical travel must be than the horizontal for the gesture to be vertical at all. */
+export const SWIPE_RATIO = 1.4;
+
+/** A gesture slower than this is a scroll or a rest, not a flick. */
+export const SWIPE_MAX_MS = 800;
+
+/** One finished pointer gesture: total travel and how long it took. */
+export type Swipe = { dx: number; dy: number; ms: number };
+
+/**
+ * Which way a finished gesture moves the deck: swiping up brings the next card
+ * on, swiping down the previous one, as a page of cards would. Null for
+ * anything that reads as a scroll, a tap, or a sideways drag — the thresholds
+ * above are the scroll-versus-swipe line. Pure, so the route only wires
+ * pointers to it.
+ */
+export function swipeIntent({ dx, dy, ms }: Swipe): "next" | "prev" | null {
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || !Number.isFinite(ms)) return null;
+  if (ms > SWIPE_MAX_MS || ms < 0) return null;
+  if (Math.abs(dy) < SWIPE_MIN_PX) return null;
+  if (Math.abs(dy) < Math.abs(dx) * SWIPE_RATIO) return null;
+  return dy < 0 ? "next" : "prev";
+}
