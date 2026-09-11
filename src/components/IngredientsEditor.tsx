@@ -10,11 +10,18 @@
 // the existing unit or food object on the row; typing a name nobody has yet
 // puts a reference with a fresh client id and just the name (defaults for the
 // rest), and the recipe repository's find-or-create matches it by name or
-// inserts it when the recipe is written. So `findOrCreateFood` is never called
-// from here: the food is created on save, once, alongside the recipe, and a
-// row that is deleted before saving leaves nothing behind. Suggestions come
-// from `listFoods({ q })`, debounced, while the food input has focus; units
-// are filtered from the list the page already loaded.
+// inserts it when the recipe is written. So typing into a row never calls
+// `findOrCreateFood`: the food is created on save, once, alongside the recipe,
+// and a row that is deleted before saving leaves nothing behind. Suggestions
+// come from `listFoods({ q })`, debounced, while the food input has focus;
+// units are filtered from the list the page already loaded.
+//
+// Bulk add is the one path that does create vocabulary up front (M17.5). A
+// paste is parsed by `parseIngredient` and reviewed line by line in the sheet;
+// Confirm calls `findOrCreateFood`/`findOrCreateUnit` for the names the
+// reviewer approved and nothing else, then appends the rows. A line whose food
+// was declined lands as a text-only row holding the pasted text, exactly as
+// every bulk-added line used to.
 //
 // A row is either structured (quantity, unit, food, note, fixed) or text only
 // (one free line in `originalText`, the shape a not-yet-parsed line has and
@@ -42,12 +49,15 @@ import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { type ReactNode, useEffect, useState } from "react";
+import { type CommitRef, pendingCreations, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
 import { formatIngredient } from "../domain/format";
 import type { Food as FoodRow } from "../db/models/food/repo";
 import type { Food, Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
-import { listFoods } from "../server/foods";
+import { findOrCreateFood, listFoods } from "../server/foods";
+import { findOrCreateUnit } from "../server/units";
 import { componentLabel } from "./ComponentsEditor";
+import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
 import type { DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { BulkAddSheet } from "./ui/BulkAddSheet";
 import { Combobox, type ComboboxOption } from "./ui/Combobox";
@@ -193,15 +203,56 @@ export function addIngredient(draft: RecipeDraft, ci: number): RecipeDraft {
 }
 
 /**
- * The draft with one text-only row appended per line in `lines`, in order, to
- * component `ci`. What the bulk-add sheet's "Add" commits: each line becomes
- * `originalText` on an otherwise blank row, so it reads as unparsed until
- * someone edits it. No lines, or an out-of-range `ci`, returns a copy
- * unchanged. Pure apart from the rows' ids.
+ * One reviewed line as a draft row (M17.5). `createdFoods`/`createdUnits` are
+ * the rows Confirm found or created, keyed by the lowercased name that was
+ * approved.
+ *
+ * A commit with no food — declined, or never proposed — is a text-only row:
+ * the raw line and nothing else, which is what declining "create" has to
+ * leave behind. A food that was approved but is missing from the map (the
+ * creation failed) lands the same way rather than inventing a reference,
+ * because a row is never worth more than the vocabulary behind it.
+ * `originalText` is the pasted line either way. Pure apart from the row's id.
  */
-export function addBulkIngredients(draft: RecipeDraft, ci: number, lines: readonly string[]): RecipeDraft {
-  if (!inRange(draft, ci) || lines.length === 0) return { ...draft, components: draft.components.slice() };
-  const rows = lines.map((line) => ({ ...newIngredient(), originalText: line }));
+export function reviewedIngredient(
+  commit: RowCommit<Unit, FoodRow>,
+  createdFoods: ReadonlyMap<string, FoodRow>,
+  createdUnits: ReadonlyMap<string, Unit>,
+): DraftIngredient {
+  const base = { ...newIngredient(), originalText: commit.originalText };
+  const food = resolveFood(commit.food, createdFoods);
+  if (commit.textOnly || food === null) return base;
+  return { ...base, quantity: commit.quantity, fixed: commit.fixed, note: commit.note, unit: resolveUnit(commit.unit, createdUnits), food };
+}
+
+function resolveFood(ref: CommitRef<FoodRow>, created: ReadonlyMap<string, FoodRow>): Food | null {
+  if (ref === null) return null;
+  if (ref.kind === "existing") return foodReference(ref.row);
+  const row = created.get(ref.name.toLowerCase());
+  return row === undefined ? null : foodReference(row);
+}
+
+function resolveUnit(ref: CommitRef<Unit>, created: ReadonlyMap<string, Unit>): Unit | null {
+  if (ref === null) return null;
+  if (ref.kind === "existing") return ref.row;
+  return created.get(ref.name.toLowerCase()) ?? null;
+}
+
+/**
+ * The draft with one row appended per reviewed line, in order, to component
+ * `ci`. What the bulk-add sheet's Add commits once the review step has run.
+ * No rows, or an out-of-range `ci`, returns a copy unchanged. Pure apart from
+ * the rows' ids.
+ */
+export function addReviewedIngredients(
+  draft: RecipeDraft,
+  ci: number,
+  commits: readonly RowCommit<Unit, FoodRow>[],
+  createdFoods: ReadonlyMap<string, FoodRow>,
+  createdUnits: ReadonlyMap<string, Unit>,
+): RecipeDraft {
+  if (!inRange(draft, ci) || commits.length === 0) return { ...draft, components: draft.components.slice() };
+  const rows = commits.map((commit) => reviewedIngredient(commit, createdFoods, createdUnits));
   return withIngredients(draft, ci, [...draft.components[ci]!.ingredients, ...rows]);
 }
 
@@ -273,7 +324,38 @@ export type IngredientsEditorProps = {
 
 export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
+  // The whole food vocabulary, loaded once the bulk sheet opens: parsing a
+  // pasted block needs every food, not the query-by-query slice a row's
+  // combobox asks for.
+  const [vocabularyFoods, setVocabularyFoods] = useState<FoodRow[]>([]);
+
+  useEffect(() => {
+    if (!bulkOpen) return;
+    let stale = false;
+    listFoods({ data: {} })
+      .then((rows) => {
+        if (!stale) setVocabularyFoods(rows);
+      })
+      .catch(() => {
+        if (!stale) setVocabularyFoods([]);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [bulkOpen]);
+
   const component = draft.components[ci];
+
+  /** Create only what the reviewer approved, then append the rows. */
+  const confirmBulk = async (rows: IngredientReview[]) => {
+    const pending = pendingCreations(rows);
+    const createdFoods = new Map<string, FoodRow>();
+    for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
+    const createdUnits = new Map<string, Unit>();
+    for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
+    onChange(addReviewedIngredients(draft, ci, rows.map(rowCommit), createdFoods, createdUnits));
+  };
+
   if (!component) return null;
   const { ingredients } = component;
 
@@ -292,12 +374,26 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
           </Button>
         </div>
       </div>
-      <BulkAddSheet
+      <BulkAddSheet<IngredientReview>
         open={bulkOpen}
         onOpenChange={setBulkOpen}
         itemName="ingredient"
         disabled={disabled}
-        onAdd={(lines) => onChange(addBulkIngredients(draft, ci, lines))}
+        review={{
+          rows: (lines) => reviewRows(lines, { units, foods: vocabularyFoods }),
+          keyOf: (row) => row.key,
+          confirm: confirmBulk,
+          renderRow: (row, index, onRowChange) => (
+            <IngredientReviewRow
+              row={row}
+              label={`Line ${index + 1}`}
+              unitMatches={(text) => filterUnits(units, text)}
+              searchFoods={(q) => listFoods({ data: { q } })}
+              disabled={disabled}
+              onChange={onRowChange}
+            />
+          ),
+        }}
       />
       <EmptyBoundary
         isEmpty={ingredients.length === 0}

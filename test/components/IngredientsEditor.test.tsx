@@ -7,8 +7,8 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { addComponent, renameComponent } from "../../src/components/ComponentsEditor";
 import {
-  addBulkIngredients,
   addIngredient,
+  addReviewedIngredients,
   EMPTY_INGREDIENT_SUMMARY,
   filterUnits,
   foodReference,
@@ -25,11 +25,13 @@ import {
   parseQuantity,
   quantityText,
   removeIngredient,
+  reviewedIngredient,
   textOnlyPatch,
   unitReference,
   updateIngredient,
 } from "../../src/components/IngredientsEditor";
 import { type DraftComponent, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
+import { type ReviewRow, rowCommit, reviewRows } from "../../src/domain/bulkIngredients";
 import { listFoods } from "../../src/server/foods";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -250,30 +252,82 @@ describe("moveIngredientTo", () => {
   });
 });
 
-describe("addBulkIngredients", () => {
-  test("appends one text-only row per line, in order, to the named component only", () => {
+// The bulk-add path after the review step (M17.5): a reviewed line only
+// commits a structured row when its food resolved, and a declined one falls
+// back to the text-only row bulk add used to produce for every line.
+const flourRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
+
+function reviewOf(line: string): ReviewRow<typeof gram, typeof flourRow> {
+  return reviewRows([line], { units, foods: [flourRow] })[0]!;
+}
+
+describe("reviewedIngredient", () => {
+  test("a matched line commits quantity, unit, food and the raw line", () => {
+    const row = reviewOf("200 g flour, sifted");
+    const ingredient = reviewedIngredient(rowCommit(row), new Map(), new Map());
+    expect(ingredient).toMatchObject({ quantity: 200, note: "sifted", originalText: "200 g flour, sifted" });
+    expect(ingredient.unit?.name).toBe("gram");
+    expect(ingredient.food?.name).toBe("flour");
+    expect(ingredient.id).toMatch(UUID);
+  });
+
+  test("an approved food is taken from the created map, keyed by the approved name", () => {
+    const almond = { ...flourRow, id: "22222222-2222-4222-8222-222222222222", name: "Almond Meal" };
+    const row = reviewOf("100 g almond meal");
+    const approved = { ...row, food: { kind: "create" as const, name: row.foodText } };
+    const ingredient = reviewedIngredient(rowCommit(approved), new Map([["almond meal", almond]]), new Map());
+    expect(ingredient.food?.id).toBe(almond.id);
+    expect(isTextOnly(ingredient)).toBe(false);
+  });
+
+  test("declining the food leaves a text-only row holding the pasted line", () => {
+    const row = reviewOf("100 g almond meal");
+    expect(row.food.kind).toBe("none");
+    const ingredient = reviewedIngredient(rowCommit(row), new Map(), new Map());
+    expect(ingredient).toMatchObject({ quantity: null, unit: null, food: null, note: "", fixed: false, originalText: "100 g almond meal" });
+    expect(isTextOnly(ingredient)).toBe(true);
+  });
+
+  test("an approved food whose creation is missing falls back to text only rather than inventing a reference", () => {
+    const row = reviewOf("100 g almond meal");
+    const approved = { ...row, food: { kind: "create" as const, name: row.foodText } };
+    expect(isTextOnly(reviewedIngredient(rowCommit(approved), new Map(), new Map()))).toBe(true);
+  });
+
+  test("a declined unit leaves a structured row with no unit", () => {
+    const row = reviewOf("2 sprigs flour");
+    expect(row.unitText).toBe("sprigs");
+    const ingredient = reviewedIngredient(rowCommit(row), new Map(), new Map());
+    expect(ingredient).toMatchObject({ quantity: 2, unit: null });
+    expect(ingredient.food?.name).toBe("flour");
+  });
+});
+
+describe("addReviewedIngredients", () => {
+  test("appends one row per reviewed line, in order, to the named component only", () => {
     const draft = tart();
-    const next = addBulkIngredients(draft, 1, ["3 lemons, zested", "a pinch of salt"]);
+    const rows = reviewRows(["200 g flour", "a pinch of pixie dust"], { units, foods: [flourRow] });
+    const next = addReviewedIngredients(draft, 1, rows.map(rowCommit), new Map(), new Map());
     expect(next.components[1]!.ingredients).toHaveLength(3);
-    expect(next.components[1]!.ingredients[1]).toMatchObject({ originalText: "3 lemons, zested", food: null, quantity: null });
-    expect(next.components[1]!.ingredients[2]).toMatchObject({ originalText: "a pinch of salt", food: null, quantity: null });
-    expect(next.components[1]!.ingredients.slice(1).every(isTextOnly)).toBe(true);
-    expect(next.components[1]!.ingredients[1]!.id).toMatch(UUID);
+    expect(next.components[1]!.ingredients[1]).toMatchObject({ quantity: 200, originalText: "200 g flour" });
+    expect(next.components[1]!.ingredients[2]).toMatchObject({ originalText: "a pinch of pixie dust", food: null, quantity: null });
+    expect(isTextOnly(next.components[1]!.ingredients[2]!)).toBe(true);
     expect(next.components[0]).toBe(draft.components[0]);
-    // Original untouched.
     expect(draft.components[1]!.ingredients).toHaveLength(1);
   });
 
-  test("no lines, or an out-of-range component, returns an unchanged copy", () => {
+  test("no rows, or an out-of-range component, returns an unchanged copy", () => {
     const draft = tart();
-    for (const next of [addBulkIngredients(draft, 0, []), addBulkIngredients(draft, 5, ["x"])]) {
+    const rows = reviewRows(["x"], { units, foods: [flourRow] }).map(rowCommit);
+    for (const next of [addReviewedIngredients(draft, 0, [], new Map(), new Map()), addReviewedIngredients(draft, 5, rows, new Map(), new Map())]) {
       expect(next.components).toEqual(draft.components);
       expect(next.components).not.toBe(draft.components);
     }
   });
 
   test("the result still validates", () => {
-    const draft = addBulkIngredients({ ...emptyDraft(), name: "Toast" }, 0, ["2 eggs", "a pinch of salt"]);
+    const rows = reviewRows(["200 g flour", "salt to taste"], { units, foods: [flourRow] }).map(rowCommit);
+    const draft = addReviewedIngredients({ ...emptyDraft(), name: "Toast" }, 0, rows, new Map(), new Map());
     expect(validateDraft(draft).ok).toBe(true);
   });
 });

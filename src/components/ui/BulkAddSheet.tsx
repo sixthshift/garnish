@@ -3,18 +3,28 @@
 // before "Add" commits it: trim each line, strip a leading list number
 // ("1.", "2)"), or turn blank-line-separated paragraphs into one line each.
 // "Add" splits the cleaned text on newlines, drops blank lines, and hands the
-// caller one string per remaining line — the ingredients editor turns each
-// into a text-only row, the steps editor into a step of its own.
+// caller one string per remaining line — the steps editor turns each into a
+// step of its own. The ingredients editor reviews them first; see `review`
+// below.
 //
 // `BulkAddFields` (the textarea and the three buttons) is a plain function of
 // `text` and `onTextChange`, no state of its own, so a test can call it
 // directly and drive its buttons without a DOM — the same shape as
 // `IngredientFields`. `BulkAddSheet` only adds the sheet chrome and the
 // open/text state around it.
+//
+// A caller that cannot commit a paste unreviewed passes `review` instead of
+// `onAdd` (M17.5, the ingredients side). The sheet then gains a second stage:
+// "Review" turns the cleaned lines into rows the caller supplies and renders
+// them with the caller's `renderRow`, and the footer's Add commits those rows
+// through `confirm`. The sheet knows nothing about ingredients — it holds the
+// row list, "Back" to the textarea, and the busy/error state around a confirm
+// that may hit the server. With no `review` (the steps side) nothing changes:
+// Add still hands the caller one string per line.
 import { Button } from "@sixthshift/design-system/button";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { bulkLines, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../domain/bulkText";
 
 export type BulkAddFieldsProps = {
@@ -52,29 +62,78 @@ export function BulkAddFields({ itemName, text, disabled, onTextChange }: BulkAd
   );
 }
 
-export type BulkAddSheetProps = {
+/** The review stage a caller supplies to stop a paste committing unreviewed. `R` is whatever row type that caller reviews. */
+export type BulkReview<R> = {
+  /** The cleaned lines as rows to review. Pure in the caller: parsing only, nothing created. */
+  rows: (lines: string[]) => R[];
+  /** A stable React key for one row. */
+  keyOf: (row: R, index: number) => string;
+  /** One row's review controls. `onChange` replaces that row in the list. */
+  renderRow: (row: R, index: number, onChange: (next: R) => void) => ReactNode;
+  /** Commit the reviewed rows, creating only what the reviewer approved. */
+  confirm: (rows: R[]) => void | Promise<void>;
+};
+
+export type BulkAddSheetProps<R> = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Noun for labels and copy: "ingredient" or "step". */
   itemName: string;
-  /** Called once, with one string per non-blank line, when "Add" is pressed. Not called when the sheet is cancelled or the text is blank. */
-  onAdd: (lines: string[]) => void;
   disabled?: boolean;
-};
+} & (
+  | {
+      /** Called once, with one string per non-blank line, when "Add" is pressed. Not called when the sheet is cancelled or the text is blank. */
+      onAdd: (lines: string[]) => void;
+      review?: undefined;
+    }
+  | { onAdd?: undefined; review: BulkReview<R> }
+);
 
-export function BulkAddSheet({ open, onOpenChange, itemName, onAdd, disabled }: BulkAddSheetProps) {
+export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, disabled }: BulkAddSheetProps<R>) {
   const [text, setText] = useState("");
+  // Null until "Review" has been pressed: the sheet is still on the textarea.
+  const [rows, setRows] = useState<R[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const close = () => {
     setText("");
+    setRows(null);
+    setBusy(false);
+    setError(null);
     onOpenChange(false);
   };
 
-  const add = () => {
-    const lines = bulkLines(text);
-    if (lines.length > 0) onAdd(lines);
-    close();
+  const back = () => {
+    setRows(null);
+    setError(null);
   };
+
+  const add = async () => {
+    const lines = bulkLines(text);
+    if (review === undefined) {
+      if (lines.length > 0) onAdd?.(lines);
+      close();
+      return;
+    }
+    if (rows === null) {
+      if (lines.length > 0) setRows(review.rows(lines));
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await review.confirm(rows);
+      close();
+    } catch (cause) {
+      setBusy(false);
+      setError(cause instanceof Error ? cause.message : `Could not add the ${itemName}s`);
+    }
+  };
+
+  const reviewing = review !== undefined && rows !== null;
+  const primaryLabel = review !== undefined && rows === null ? "Review" : "Add";
+  const primaryDisabled = disabled === true || busy || (reviewing ? rows.length === 0 : bulkLines(text).length === 0);
 
   return (
     <Sheet
@@ -88,16 +147,58 @@ export function BulkAddSheet({ open, onOpenChange, itemName, onAdd, disabled }: 
         <h2 className="text-base font-medium">{`Bulk add ${itemName}s`}</h2>
       </Sheet.Header>
       <Sheet.Body>
-        <BulkAddFields itemName={itemName} text={text} disabled={disabled} onTextChange={setText} />
+        {reviewing ? (
+          <BulkReviewList
+            itemName={itemName}
+            rows={rows}
+            review={review}
+            onRowsChange={setRows}
+          />
+        ) : (
+          <BulkAddFields itemName={itemName} text={text} disabled={disabled} onTextChange={setText} />
+        )}
+        {error !== null && (
+          <p className="mt-3 text-sm text-fg-danger" role="alert">
+            {error}
+          </p>
+        )}
       </Sheet.Body>
       <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={disabled} onClick={close}>
-          Cancel
+        <Button type="button" variant="ghost" intent="neutral" disabled={disabled || busy} onClick={reviewing ? back : close}>
+          {reviewing ? "Back" : "Cancel"}
         </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={disabled || bulkLines(text).length === 0} onClick={add}>
-          Add
+        <Button type="button" variant="solid" intent="brand" disabled={primaryDisabled} onClick={() => void add()}>
+          {primaryLabel}
         </Button>
       </Sheet.Footer>
     </Sheet>
+  );
+}
+
+export type BulkReviewListProps<R> = {
+  /** Noun for labels and copy: "ingredient" or "step". */
+  itemName: string;
+  rows: readonly R[];
+  review: BulkReview<R>;
+  onRowsChange: (rows: R[]) => void;
+};
+
+/**
+ * The review stage's list: one block per pasted line, rendered by the
+ * caller's `renderRow`, with `onChange` writing that row back in place. No
+ * state of its own, so a test can render it directly.
+ */
+export function BulkReviewList<R>({ itemName, rows, review, onRowsChange }: BulkReviewListProps<R>) {
+  return (
+    <div className="flex flex-col gap-3" data-bulk-review="">
+      <p className="text-sm text-fg-subtle">{`${rows.length} ${itemName}${rows.length === 1 ? "" : "s"} to review. Nothing is created until you press Add.`}</p>
+      <ul className="flex flex-col gap-3">
+        {rows.map((row, index) => (
+          <li key={review.keyOf(row, index)} className="rounded-lg border border-border-normal p-3">
+            {review.renderRow(row, index, (next) => onRowsChange(rows.map((current, i) => (i === index ? next : current))))}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

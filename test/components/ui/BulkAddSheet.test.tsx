@@ -6,7 +6,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { BulkAddFields, BulkAddSheet } from "../../../src/components/ui/BulkAddSheet";
+import { BulkAddFields, BulkAddSheet, BulkReviewList } from "../../../src/components/ui/BulkAddSheet";
 import { splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/bulkText";
 
 /** The first element in `node` whose `children` prop is exactly `text`, without rendering it. */
@@ -82,5 +82,46 @@ describe("BulkAddSheet", () => {
   test("closed, or open before its mount effect has run, renders nothing", () => {
     expect(renderToString(<BulkAddSheet open={false} onOpenChange={() => {}} itemName="ingredient" onAdd={() => {}} />)).toBe("");
     expect(renderToString(<BulkAddSheet open onOpenChange={() => {}} itemName="ingredient" onAdd={() => {}} />)).toBe("");
+  });
+});
+
+describe("BulkReviewList", () => {
+  const review = {
+    rows: (lines: string[]) => lines,
+    keyOf: (row: string) => row,
+    renderRow: (row: string) => <span>{row}</span>,
+    confirm: () => {},
+  };
+
+  test("renders one block per row, through the caller's renderRow, and says nothing is created yet", () => {
+    const html = renderToString(<BulkReviewList itemName="ingredient" rows={["Salt", "Pepper"]} review={review} onRowsChange={() => {}} />);
+    expect(html).toContain("2 ingredients to review");
+    expect(html).toContain("Nothing is created until you press Add.");
+    expect(html).toContain("<span>Salt</span>");
+    expect(html).toContain("<span>Pepper</span>");
+  });
+
+  test("one row is singular", () => {
+    expect(renderToString(<BulkReviewList itemName="ingredient" rows={["Salt"]} review={review} onRowsChange={() => {}} />)).toContain("1 ingredient to review");
+  });
+
+  test("a row's onChange replaces that row and leaves the others alone", () => {
+    let next: string[] | null = null;
+    const tree = BulkReviewList({
+      itemName: "ingredient",
+      rows: ["Salt", "Pepper"],
+      review: { ...review, renderRow: (row: string, index: number, onChange: (n: string) => void) => <button type="button" onClick={() => onChange(`${row}!`)}>{`row ${index}`}</button> },
+      onRowsChange: (rows) => { next = rows; },
+    });
+    elementWithChildren(tree, "row 1").props.onClick();
+    expect(next).toEqual(["Salt", "Pepper!"]);
+  });
+});
+
+describe("BulkAddSheet with a review stage", () => {
+  test("closed, or open before its mount effect has run, renders nothing", () => {
+    const review = { rows: (lines: string[]) => lines, keyOf: (row: string) => row, renderRow: (row: string) => <span>{row}</span>, confirm: () => {} };
+    expect(renderToString(<BulkAddSheet<string> open={false} onOpenChange={() => {}} itemName="ingredient" review={review} />)).toBe("");
+    expect(renderToString(<BulkAddSheet<string> open onOpenChange={() => {}} itemName="ingredient" review={review} />)).toBe("");
   });
 });
