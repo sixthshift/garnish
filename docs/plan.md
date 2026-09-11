@@ -1,6 +1,6 @@
 # Plan
 
-Implementation plan for garnish, stage 2 (UI), written to be executed one task per loop iteration with no human present. Decisions live in [decisions.md](decisions.md), shape in [architecture.md](architecture.md), boundaries in [scope.md](scope.md). Run it with `/ailoop` (see `.claude/skills/ailoop/SKILL.md`): one fresh subagent per task, the orchestrator verifies and records. This file is edited only by the orchestrator. Completed stages live in `docs/plans/`; stage 1 is [v1-foundations.md](plans/v1-foundations.md).
+Implementation plan for garnish, stage 3 (ingredient parsing), written to be executed one task per loop iteration with no human present. Decisions live in [decisions.md](decisions.md), shape in [architecture.md](architecture.md), boundaries in [scope.md](scope.md). Run it with `/ailoop` (see `.claude/skills/ailoop/SKILL.md`): one fresh subagent per task, the orchestrator verifies and records. This file is edited only by the orchestrator. Completed stages live in `docs/plans/`; stage 1 is [v1-foundations.md](plans/v1-foundations.md), stage 2 [v2-ui.md](plans/v2-ui.md).
 
 ## Loop protocol
 
@@ -49,59 +49,22 @@ data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 
 Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vite build`), `start` (`bun run .output/server/index.mjs`), `check` (`tsc --noEmit`), `test` (`vitest run`), `migrate`, `seed`, `backup`.
 
-## Stage 2: UI
+## Stage 3: Ingredient parsing
 
-Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names another source. Decisions 40–43 settle the editor route, the cook log, organisers and favourites. Design system has `sheet`, `toast`, `popover`, `tabs`, `search-input`, `switch`, `badge`, `tooltip`; menus and data tables are local primitives. Task ids continue from stage 1.
+The core gap stage 2 left: nothing turns a typed or pasted line into `quantity` / `unit_id` / `food_id`. Bulk add (M13.4) commits text-only rows and they stay that way, so they never scale, never merge in Summary mode, never match the food filter and never count in `usingFood()`. Decision 47 settles the approach: a pure rules-based matcher over the vocabulary already in the `unit` and `food` tables, no AI, with a review step before any row is created. No schema change — `ingredient` has carried the columns since 001.
 
-## M10 Stage 2 foundations
+`src/domain/format.ts`'s `formatIngredient` is the exact inverse of this work; M17.4 gates on the round trip.
 
-- [x] **! M10.1 Schema 002.** `002_stage2.sql`: `recipe.favourite INTEGER NOT NULL DEFAULT 0`; `timeline_event` (id, recipe_id CASCADE, occurred_on date text, message, image, created_at). Domain: `favourite` on `recipeSchema`/summary, `timelineEventSchema`. Repository `src/db/timeline.ts` (list by recipe newest first, create sets `recipe.last_made` to the max date, remove recomputes it) and `recipes.setFavourite`. Check: migrate twice on `:memory:`; create two events, `lastMade` equals the later; delete it, `lastMade` falls back.
-- [x] **M10.2 Client state stores.** `src/lib/prefs.ts` (localStorage: view mode, sort, structured/summary, theme, screen-awake) and `src/lib/ticks.ts` (sessionStorage: ingredient and step done state keyed by recipe id). Pure controller over a storage-like interface, thin hooks, try/catch around every access. Check: unit tests with an in-memory storage, including a throwing storage.
-- [x] **M10.3 Toasts and theme toggle.** Design system `toast` mounted once in `__root.tsx`; `notify()` helper in `src/lib/`; RecipeForm save/delete and image upload report through it instead of inline copy. Theme toggle light / dark / system in Settings, persisted via prefs, replacing system-only. Check: render tests; toggle persists across reload in dev.
+## M17 The parser
 
-## M11 Recipe view
+- [ ] **M17.1 Quantities.** `src/domain/parseQuantity.ts`: `parseQuantity(text)` returns `{ quantity, fixed, rest }`. Handles integers, decimals, `1 1/2`, `3/4`, the vulgar glyphs `format.ts` emits (`½`, `1½`), `a`/`an` as 1, a leading `=` as `fixed` (Cooklang), and a range (`1-2`, `1 to 2`) taking the low value as Mealie does. No leading number: `quantity` null and `rest` is the line unchanged. Check: a table test per form, including `=`, both range spellings and every glyph in `VULGAR_FRACTIONS`.
+- [ ] **M17.2 Units.** `src/domain/parseUnit.ts`: `parseUnit(rest, units)` matches the leading token(s) against each unit's `name`, `pluralName` and `abbreviation`, case-insensitively, longest match wins. A static alias map covers what the seed does not carry (`T`/`tbs`/`tblsp` → tablespoon, `t` → teaspoon, `grams`/`gr` → gram, `mls` → millilitre). No match: null unit, the token stays in `rest` for the food. Check: match by each of the three fields, the alias map, longest-match ("fluid ounce" over "ounce") and a no-match line.
+- [ ] **M17.3 Foods and notes.** `src/domain/parseFood.ts`: splits the remainder on the first comma — head is the food candidate, tail the note — and lifts any parenthetical (`(about 400 g)`) into the note too. Matches the head against `name`, `pluralName` and every entry in `aliases`, case-insensitive, longest match wins. Unmatched leading words stay part of `foodText` rather than being dropped, so "plain flour" proposes "plain flour", not "flour". Check: match by plural and by alias, longest-match over two candidate foods, comma note, parenthetical note, and the unmatched-adjective case.
+- [ ] **! M17.4 `parseIngredient`.** `src/domain/parseIngredient.ts` composes M17.1–M17.3: `parseIngredient(line, { units, foods })` returns `{ quantity, fixed, unit, unitText, food, foodText, note, originalText }`. Pure, no ids invented and no rows created — a miss returns the text it could not resolve, and resolution is the caller's job. Check: end-to-end cases ("2 cups plain flour, sifted", "=1 tsp salt", "salt, to taste", "½ bunch coriander, chopped"), plus the round-trip property test — for every ingredient in the seed corpus, `parseIngredient(formatIngredient(row))` recovers that row's quantity, unit and food.
+- [ ] **! M17.5 Bulk add review.** `BulkAddSheet` on ingredients stops committing text-only rows: it parses each line through M17.4 and shows the result for review — matched food and unit as chips, unmatched ones flagged with "create" or "pick existing" (reuse `Combobox`). Confirm commits the rows and creates only the approved foods and units, through the existing `findOrCreateFood` / `findOrCreateUnit` server functions. `originalText` keeps the raw line either way. Check: render test over a mixed paste (one fully matched line, one unknown food, one text-only line); a test that declining "create" leaves the row text-only and adds no food.
+- [ ] **M17.6 Parse a single row.** A text-only ingredient row gains a "Parse" action — in the row menu inline, as a button in the phone `sheet` (M13.2) — running the same function over `originalText` and filling the fields in the draft, with the same confirm-before-create rule for an unknown food. Applies to rows already saved, so an old recipe can be fixed as you open it. Check: render tests at both widths; the action fills the draft and leaves `originalText` intact.
 
-- [x] **M11.1 Header.** Image beside text from `md`, stacked below. Name, rating, description, tag chips, then a stat strip prep / cook / total with icons and a yield line. Footer: source URL (field exists), created and updated dates. Check: render test at both layouts via class assertions; source URL renders as a link when set.
-- [x] **M11.2 Ingredient rows.** Mealie order: quantity, unit, **bold** food, note dimmed on its own line; `fixed` marker kept. Tick box per row, state via `ticks.ts`, strike-through when done. Scaled numbers get a class when `servings` differs from the recipe's. Check: render tests for ticked, scaled and fixed rows.
-- [x] **M11.3 Structured or Summary.** Per-device toggle (design system `switch`) between per-component ingredient blocks and one merged list, merged by food and unit with quantities summed, `fixed` and null kept as separate lines. Pure `mergeIngredients(recipe)` in `src/domain/`. Check: merge tests; toggle persists.
-- [x] **M11.4 Steps.** Tap a step to mark done: dims and collapses the text, state via `ticks.ts`. Step text rendered as a safe markdown subset (paragraphs, bold, italics, lists; no raw HTML) with a pure renderer in `src/domain/markdown.ts`. Check: renderer tests including an HTML injection case; done-state render test.
-- [x] **M11.5 Scale control.** Chip "Serves N" with − / + and a `popover` holding a number input, Reset. "Scale to…" on an ingredient row's menu sets servings so that ingredient reaches a typed amount. Yield text scales. Check: pure `servingsForTarget()` tests; render test.
-- [x] **M11.6 Action menu.** Local `Menu` primitive in `ui/`. Items: Edit, Cook, Duplicate, Copy link, Copy ingredients, Print, Delete (moves from the edit page, keeps `ConfirmDialog`). `duplicateRecipe({id})` server function copies the document with " (copy)" and a fresh slug. Print: `@media print` stylesheet hiding chrome, image left, two-column ingredients, notes. Check: duplicate test round-trips; copy text test; print CSS contains the rules.
-- [x] **M11.7 Made this.** Button beside last-made in the header opens a `sheet`: date (default today), comment, optional photo (reuse `ImageUpload`, stored under `data/images/timeline/<eventId>.<ext>` via a new server route). Timeline list under Notes, newest first, with delete. Server functions `listTimeline`, `createTimelineEvent`, `deleteTimelineEvent`. Check: tests per function; render test shows the event and updated last made.
-
-## M12 Recipe list
-
-- [x] **M12.1 Cards.** `∥` Rating stars, total-time chip, favourite heart toggling `setFavourite` optimistically, tags capped at 3 with `+N`. List summary gains `favourite`, `lastMade`, `totalTime`. Check: render test; toggle round-trips through the server function.
-- [x] **M12.2 View modes and scroll.** `∥` Grid and list modes (Mealie's `RecipeCardMobile` shape for list), persisted via prefs; scroll position restored on back navigation. Check: render tests for both modes; prefs test.
-- [x] **M12.3 Filters.** `listRecipes` gains `tags[]` with `match: any|all`, `foods[]`, `favourite`. Filter bar: tag chips with an any/all switch, food picker (reuse `Combobox`), favourites toggle. All in search params. Check: repository tests for each filter and the all-match case; render test.
-- [x] **M12.4 Sort.** `listRecipes` gains `sort: name|created|updated|lastMade|rating|random` and `dir`. Sort menu in the toolbar, dice button opens one random recipe. Random uses a seed in search params so paging is stable. Check: repository tests per key; render test.
-- [x] **M12.5 Global search.** `/` outside an input opens a dialog (`sheet` on phone, centred on wide) with `search-input`, results as list cards, arrow keys move selection, Enter opens. Closes on navigation. Check: pure key-handler tests; render test.
-
-## M13 Editor
-
-- [x] **M13.1 Save bar and discard guard.** Sticky bottom bar with Save and Cancel on phone, inline on wide. Dirty tracking against the initial draft; `useBlocker` shows a `ConfirmDialog` on route leave and a `beforeunload` prompt. Check: pure `isDirty()` tests; render test of the bar.
-- [x] **! M13.2 Phone ingredient rows.** Below `md` each row is one line (formatted ingredient text, or `originalText`) with a chevron; tap opens a `sheet` holding the existing fields plus a read-only `originalText` line. From `md` the inline row stays. Check: render tests at both widths via class assertions; sheet saves back into the draft.
-- [x] **M13.3 Drag reorder.** `ReorderList` gains pointer-event drag (handle, 250 ms touch delay, no dependency) within a list and between components via a shared group id; up/down buttons and "Move to" kept. Check: pure `dropIndex()` tests; render test shows handles.
-- [x] **M13.4 Bulk add and step tools.** "Bulk add" on ingredients and steps: `sheet` with a textarea, one item per line, buttons trim whitespace, strip leading numbers, split on blank lines; ingredients become text-only rows. Steps gain insert above / below, split by paragraph, merge with next. Check: pure helpers tested for every button; render test.
-- [x] **M13.5 Image from URL and JSON view.** Image field accepts a pasted URL fetched server-side (`fetchImage` server function, same sniffing as upload). "JSON" toggle swaps the form for a textarea of the document; Apply parses with `recipeInputSchema` and shows errors. Check: server function test with a local fixture URL; JSON round-trip test.
-- [x] **M13.6 Phone confirmations.** `ConfirmDialog` renders as a `sheet` below `md`, centred above. `originalText` shown in grey above a parsed row on wide. Check: render tests at both widths.
-
-## M14 Cook mode
-
-- [x] **M14.1 Navigation.** Component pills across the top jump to that component's first card; vertical swipe between cards with a scroll-versus-swipe threshold; ARIA live region announces "Step 2 of 5" or "Ingredients for Dough". Check: pure `swipeIntent()` tests; render test shows pills and the live region.
-- [x] **M14.2 Ticks and finish.** Ingredient card items tick on tap sharing `ticks.ts` with the view page. Final card: "Finished" with a "Made this" shortcut opening the M11.7 sheet and an Exit link. Check: render tests; tick state shared in a test that renders both routes.
-
-## M15 Reference data
-
-- [x] **! M15.1 Data table.** Local `DataTable` primitive: search, sortable columns, row select, edit `sheet` from a field spec, delete `ConfirmDialog` listing affected recipes (new `recipes.usingFood(id)`, `usingUnit(id)`, `usingTag(id)` repository queries). Settings becomes `tabs`: Foods, Units, Aisles, Tags, Appearance. Check: render tests; affected-recipe queries tested.
-- [x] **M15.2 Foods.** `∥` Columns name, plural, aisle, skip shopping, aliases count. Editor edits all food fields; aisle is a select with create. Merge: pick a target, source deleted, ingredient rows repointed (`foods.merge(sourceId, targetId)` in one transaction). Check: merge test repoints and deletes; render test.
-- [x] **M15.3 Units.** `∥` Columns name, plural, abbreviation, use abbreviation, fraction. Editor and merge as foods. Check: merge test; a merged unit renders through `formatAmount` correctly.
-- [x] **M15.4 Aisles and tags.** Aisles: drag ordering (M13.3 `ReorderList`), rename, delete with foods reassigned to none. Tags: A–Z grouped list, rename, merge, delete, click opens the list filtered. Check: repository tests for aisle reorder and tag merge; render tests.
-
-## M16 Finish
-
-- [x] **M16.1 Sample data.** `seed --sample` adds a favourite, two timeline events and a source URL so every new screen has data. Check: seed twice, counts unchanged.
-- [x] **M16.2 Docs sync.** `architecture.md` frontend, data model and API sections match stage 2; `ui-gap.md` rows marked done or deferred; README mentions the settings tabs and Made this. Check: docs tests updated and green; fresh-clone run-through as in M9.3.
+Deferred here on purpose, not to be re-raised without a decisions row: fuzzy (edit-distance) food matching, and learning from a correction. Both are where Mealie's parser gets complicated and neither earns its place until the plain matcher has been lived with. Backfilling the text-only rows already in the database is left to M17.6, one row at a time.
 
 ## Blocked
 
@@ -109,38 +72,8 @@ _(none)_
 
 ## Questions
 
-- **M16.2** The editor has no input for `sourceUrl`: the view footer renders it and edits preserve it, but it can only be set through the JSON editor. Recorded as deferred in `ui-gap.md`; stage 2 shipped without it.
+_(none)_
 
 ## Log
 
 _(one line per iteration: date, task id, outcome, model)_
-
-2026-09-11  M10.1  done  124bc1b  opus  002_stage2 adds `recipe.favourite` and `timeline_event`; timeline repository derives `last_made` from the greatest event date
-2026-09-11  M10.2  done  57e3d7f  sonnet  prefs.ts and ticks.ts as pure controllers over a storage interface with thin hooks
-2026-09-11  M10.3  done  f7ae35a  opus  notify() store plus one Toaster in __root; save/delete/upload toast, Settings gains a light/dark/system theme toggle
-2026-09-11  M11.1  done  b1c939f  opus  RecipeHeader with split layout, stat strip, yield line and a footer carrying source link and dates
-2026-09-11  M11.2  done  58d4000  sonnet  IngredientRow with tick box, dimmed note, fixed marker and a scaled class on the amount
-2026-09-11  M11.3  done  200d399  sonnet  pure mergeIngredients plus a per-device Structured/Summary switch on the view route
-2026-09-11  M12.1  done  0d2aa30  sonnet  cards gain stars, total-time chip, optimistic favourite heart and capped tags; summary carries totalTime and lastMade
-2026-09-11  M11.4  done  e062a19  opus  hand-written safe markdown subset rendered through React; steps dim and collapse when ticked
-2026-09-11  M12.2  done  00a1003  sonnet  grid and list card modes via the view-mode pref; scroll restoration already app-wide in router.tsx
-2026-09-11  M15.1  done  8f6b5ed  opus  local DataTable, field-spec EditSheet and usage-listing delete confirm; Settings becomes tabs; recipes gains usingFood/usingUnit/usingTag
-2026-09-11  M11.5  done  70d4b14  sonnet  Serves N chip with a popover and pure servingsForTarget backing Scale to on ingredient rows
-2026-09-11  M12.3  done  a196949  sonnet  listRecipes gains tags/match/foods/favourite; FilterBar wired into search params, legacy singular tag folded in
-2026-09-11  M13.1  done  74d5084  opus  SaveBar sticky on phone and inline from md; draft diffed against the opening one, useBlocker plus beforeunload guard
-2026-09-11  M11.6  done  2e681c8  opus  local Menu primitive behind a ⋯ trigger, duplicateRecipe server function, Delete moved off the edit page, print rules in styles.css
-2026-09-11  M13.2  done  fe4a920  opus  editor ingredient rows collapse to a summary line with a chevron below md, tapping opens a sheet over shared IngredientFields
-2026-09-11  M15.2  done  fdd274a  sonnet  Foods tab wired to edit, usage-confirmed delete and a transactional foods.merge that repoints ingredients
-2026-09-11  M11.7  done  efc94d7  opus  Made this sheet with date, comment and photo; timeline under Notes with delete and its own image routes
-2026-09-11  M12.4  done  bec9068  sonnet  listRecipes sorts by name/created/updated/lastMade/rating nulls-last plus a seeded random; SortMenu and dice button in the toolbar
-2026-09-11  M13.3  done  b2eab72  opus  ReorderList gains a pointer-event drag handle with a 250 ms touch delay and cross-list drops via a group registry
-2026-09-11  M12.5  done  9f1974b  sonnet  "/" opens a Modal-based search dialog over listRecipes with arrow-key selection; decisions row 44
-2026-09-11  M13.4  done  7e821d0  sonnet  shared BulkAddSheet over pure bulkText helpers, plus insert above/below, split by paragraph and merge with next on steps
-2026-09-11  M15.3  done  d4e67b2  sonnet  Units tab wired to edit, usage-confirmed delete and a transactional units.merge repointing ingredient and yield references
-2026-09-11  M13.5  done  608113a  opus  fetchImage pulls a pasted URL server-side through the upload route's sniffing; Edit as JSON applies through recipeInputSchema
-2026-09-11  M14.1  done  73cbcb1  opus  cook pills jump to each component, pure swipeIntent separates scroll from swipe, sr-only live region announces the card
-2026-09-11  M15.4  done  cbdb2b1  sonnet  Aisles reorder through ReorderList with rename and delete; Tags grouped A-Z with rename, transactional merge and click-through
-2026-09-11  M13.6  done  ce668d2  sonnet  ConfirmDialog stays on Modal per decisions row 45; parsed rows show the grey original text above from md up
-2026-09-11  M14.2  done  7a3911d  sonnet  cook ingredient cards tick through the shared store; a Finished card carries Made this and Exit
-2026-09-11  M16.1  done  f65b6a3  sonnet  sample data gains a favourite, a source URL and two timeline events, idempotent across re-seeds
-2026-09-11  M16.2  done  28258ce  opus  architecture, ui-gap and README brought up to stage 2; ui-gap gains a Status column

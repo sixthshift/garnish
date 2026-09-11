@@ -4,7 +4,7 @@ Input for the stage 2 plan, now its record. Mealie is the default to copy (decis
 
 Legend, Action column: **have** = garnish had it · **copy** = adopt with no model change · **model** = needs a new field or table (decisions.md row) · **skip** = out of scope per scope.md, listed so it is not re-raised.
 
-Legend, Status column: **done** names the task that shipped it (see [plan.md](plan.md), stage 1 in [plans/v1-foundations.md](plans/v1-foundations.md)) · **deferred** = still wanted, not built, with why · **skipped** = decided against, do not re-raise.
+Legend, Status column: **done** names the task that shipped it (stage 2 in [plans/v2-ui.md](plans/v2-ui.md), stage 1 in [plans/v1-foundations.md](plans/v1-foundations.md); the live plan is [plan.md](plan.md)) · **deferred** = still wanted, not built, with why · **skipped** = decided against, do not re-raise.
 
 ## Already ahead
 
