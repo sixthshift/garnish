@@ -2,15 +2,18 @@
 // and visible through the listRecipes server function.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { migrate, openDatabase } from "../../src/db/migrate";
-import { recipes } from "../../src/db/recipes";
-import { SAMPLE_RECIPES, seedSample } from "../../src/db/sample";
-import { DEFAULT_UNITS, parseSeedFlags, seed } from "../../src/db/seed";
-import { timeline } from "../../src/db/timeline";
-import { recipeInputSchema, recipeSchema } from "../../src/domain/recipe";
-import { listRecipes } from "../../src/server/recipes";
-import { getDb } from "../../src/server/db";
-import { callServerFn, useTempDataDir } from "../helpers/server";
+import { openDatabase } from "../../../src/db/connection/open";
+import { migrate } from "../../../src/db/migrations/migrate";
+import { recipes } from "../../../src/db/models/recipe/repo";
+import { SAMPLE_RECIPES } from "../../../src/db/seed/recipes";
+import { seed, seedSample } from "../../../src/db/seed/seed";
+import { parseSeedFlags } from "../../../src/db/seed/cli";
+import { DEFAULT_UNITS } from "../../../src/db/seed/units";
+import { timeline } from "../../../src/db/models/timeline/repo";
+import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipe";
+import { listRecipes } from "../../../src/server/recipes";
+import { getDb } from "../../../src/server/db";
+import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
 

@@ -7,7 +7,7 @@ import { Switch } from "@sixthshift/design-system/switch";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
-import type { Food } from "../db/foods";
+import type { Food } from "../db/models/food/repo";
 import type { Tag } from "../domain/recipe";
 import { addUnique, type TagMatch, withoutId } from "../domain/recipeFilters";
 import { Combobox, type ComboboxOption } from "./ui/Combobox";

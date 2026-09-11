@@ -1,8 +1,10 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { migrate, openDatabase } from "../../src/db/migrate";
-import { DEFAULT_UNITS, seed } from "../../src/db/seed";
-import { units } from "../../src/db/units";
+import { openDatabase } from "../../../src/db/connection/open";
+import { migrate } from "../../../src/db/migrations/migrate";
+import { seed } from "../../../src/db/seed/seed";
+import { DEFAULT_UNITS } from "../../../src/db/seed/units";
+import { units } from "../../../src/db/models/unit/repo";
 
 let db: Database;
 beforeEach(async () => {

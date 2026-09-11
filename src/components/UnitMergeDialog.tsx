@@ -8,7 +8,7 @@
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import type { Unit } from "../db/units";
+import type { Unit } from "../db/models/unit/repo";
 import { ConfirmDialogContent } from "./ui/ConfirmDialog";
 
 export type UnitMergeDialogProps = {

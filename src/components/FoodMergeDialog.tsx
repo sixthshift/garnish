@@ -8,7 +8,7 @@
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import type { Food } from "../db/foods";
+import type { Food } from "../db/models/food/repo";
 import { ConfirmDialogContent } from "./ui/ConfirmDialog";
 
 export type FoodMergeDialogProps = {

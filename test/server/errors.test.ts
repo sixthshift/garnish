@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { NotFound, isNotFoundError, required } from "../../src/db/errors";
+import { NotFound, isNotFoundError, required } from "../../src/server/errors";
 
 test("NotFound carries entity and id and names itself", () => {
   const e = new NotFound("recipe", "abc");

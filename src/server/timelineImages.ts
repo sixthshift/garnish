@@ -5,7 +5,7 @@
 // timeline photo can never be served as, or overwrite, a recipe image.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { timeline } from "../db/timeline";
+import { timeline } from "../db/models/timeline/repo";
 import { dataDir } from "./boot";
 import { getDb } from "./db";
 import { IMAGE_FIELD, MAX_IMAGE_BYTES, imageContentType, imageFileName, imagesDir, sniffImage, type ImageExtension } from "./images";

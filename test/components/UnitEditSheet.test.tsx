@@ -2,7 +2,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { UnitEditSheetContent } from "../../src/components/UnitEditSheet";
-import type { Unit } from "../../src/db/units";
+import type { Unit } from "../../src/db/models/unit/repo";
 
 const gram: Unit = {
   id: "u1",

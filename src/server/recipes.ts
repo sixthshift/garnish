@@ -3,8 +3,8 @@
 // database through getDb(), and hands back the document from src/domain/recipe.ts.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { NotFound, required } from "../db/errors";
-import { recipes } from "../db/recipes";
+import { NotFound, required } from "./errors";
+import { recipes } from "../db/models/recipe/repo";
 import { duplicateInput } from "../domain/duplicate";
 import { recipeInputSchema } from "../domain/recipe";
 import { scaleRecipe } from "../domain/scale";

@@ -15,7 +15,7 @@
 // `isNotFound(error)` and route loaders render through `notFoundComponent`.
 import { notFound } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
-import { isNotFoundError } from "../db/errors";
+import { isNotFoundError } from "./errors";
 
 /** Data carried on the not-found error a server function throws for a missing row. */
 export type NotFoundData = { entity: string; id: string; message: string };

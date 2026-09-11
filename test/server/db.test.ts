@@ -1,9 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { DB_FILE, MIGRATIONS_DIR, listMigrations } from "../../src/db/migrate";
-import { DEFAULT_UNITS } from "../../src/db/seed";
-import { units } from "../../src/db/units";
+import { DB_FILE } from "../../src/db/connection/open";
+import { MIGRATIONS_DIR, listMigrations } from "../../src/db/migrations/migrate";
+import { DEFAULT_UNITS } from "../../src/db/seed/units";
+import { units } from "../../src/db/models/unit/repo";
 import { bundledMigrations, closeDb, getDb } from "../../src/server/db";
 import { useTempDataDir } from "../helpers/server";
 

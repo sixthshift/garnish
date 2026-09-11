@@ -15,6 +15,7 @@ Keep the argument in `docs/`; keep operating constraints here.
 ## Constraints
 
 - **Store:** SQLite via `bun:sqlite` is the only store. No file export in v1. Recipes are mastered in the DB.
+- **Queries:** Drizzle ORM over that same `bun:sqlite` handle (decisions.md row 46). `src/db/models/` is one folder per domain: `schema.ts` declares that domain's tables, `repo.ts` is its repository. No barrel — repositories import the tables they touch directly. Repositories use the query builder, not SQL strings. `migrations/*.sql` applied by `src/db/migrations/migrate.ts` still build the database — drizzle-kit only *generates* SQL to review (`bun run db:generate`), it never applies it.
 - **Schema:** Mealie's shapes outside recipe internals, minus users and groups. `https://demo.mealie.io/openapi.json` is the reference.
 - **Tie-breaker:** when unsure about any product or schema question, do what Mealie does.
 - **Recipe internals:** a recipe is an ordered list of named components; each owns its ingredients and may hold several steps. Sub-recipes hang off `food.recipe_id`; the column exists, the behaviour is deferred.
@@ -47,7 +48,7 @@ Default to using Bun instead of Node.js.
 ## APIs
 
 - HTTP is handled by TanStack Start's server (Nitro, Bun preset). Don't add `express` or a second server.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
+- `bun:sqlite` for SQLite, with Drizzle (`drizzle-orm/bun-sqlite`) as the query builder over it. Don't use `better-sqlite3`.
 - `Bun.redis` for Redis. Don't use `ioredis`.
 - `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
 - `WebSocket` is built-in. Don't use `ws`.

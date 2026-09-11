@@ -1,26 +1,21 @@
-// Server-only. Demo recipes for `bun run seed --sample`: three en-AU metric
-// recipes written as RecipeInput documents and saved through the recipe
-// repository, so they take exactly the path the editor does. Idempotent by
-// slug: a recipe whose slug already exists is skipped, so a re-run adds nothing.
-// One recipe carries a favourite flag, one a source URL, and one two
-// timeline ("made this") events, so every stage 2 screen has something to
+// The demo recipe documents for `bun run seed --sample`, and the small builders
+// that keep them readable. Data only — `seed.ts` inserts them through the recipe
+// repository, so they take exactly the path the editor does.
+//
+// Three en-AU metric recipes: one flat (a single unnamed component), one with
+// named components, one carrying a source URL. One is favourited and one has
+// timeline events (see ./timeline.ts), so every stage 2 screen has something to
 // show without a person seeding it by hand.
-import type { Database } from "bun:sqlite";
+import type { z } from "zod";
 import {
-  type ingredientInputSchema,
-  recipeInputSchema,
   type Food,
-  type Recipe,
+  type ingredientInputSchema,
   type RecipeInput,
   type Tag,
-  type TimelineEventInput,
   type Unit,
-} from "../domain/recipe";
-import type { z } from "zod";
-import { slugify } from "./names";
-import { recipes } from "./recipes";
-import { DEFAULT_UNITS } from "./seed";
-import { timeline } from "./timeline";
+} from "../../domain/recipe";
+import { slugify } from "../../domain/names";
+import { DEFAULT_UNITS } from "./units";
 
 // Reference rows are resolved by name (case-insensitive) when this id is not
 // found, and a name nobody has yet is inserted, so the documents carry no real
@@ -215,49 +210,3 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
     ],
   },
 ];
-
-/**
- * "Made this" entries for the timeline demo, keyed by recipe name. Applied
- * only to a recipe this run creates for the first time (see seedSample), so
- * a re-seed never adds a duplicate and a same-named recipe of the user's own
- * is never touched.
- */
-const SAMPLE_TIMELINE: Readonly<Record<string, readonly TimelineEventInput[]>> = {
-  "Lemon Tart": [
-    { occurredOn: "2026-08-16", message: "Made for Dad's birthday. Chilled overnight and it sliced cleanly.", image: null },
-    { occurredOn: "2026-09-06", message: "Quick weeknight version with bottled lemon juice, still good.", image: null },
-  ],
-};
-
-export type SampleResult = { recipes: Recipe[] };
-
-/**
- * Insert every sample recipe whose slug is not already taken, through the
- * recipe repository, in one transaction. Returns only the recipes created on
- * this run. Units, foods and tags the samples name are matched to existing
- * rows case-insensitively and created when missing, so this works with or
- * without the units seed (the CLI runs that first).
- *
- * A newly created recipe named in SAMPLE_TIMELINE also gets its "made this"
- * events, which pulls its `lastMade` up to the latest one.
- */
-export function seedSample(db: Database): SampleResult {
-  const repo = recipes(db);
-  const events = timeline(db);
-  const run = db.transaction((): Recipe[] => {
-    const created: Recipe[] = [];
-    for (const doc of SAMPLE_RECIPES) {
-      if (repo.get(slugify(doc.name)) !== null) continue;
-      const recipe = repo.create(recipeInputSchema.parse(doc));
-      const inputs = SAMPLE_TIMELINE[doc.name];
-      if (!inputs) {
-        created.push(recipe);
-        continue;
-      }
-      for (const input of inputs) events.create(recipe.id, input);
-      created.push(repo.get(recipe.slug)!);
-    }
-    return created;
-  });
-  return { recipes: run() };
-}

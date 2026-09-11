@@ -1,8 +1,8 @@
 // Food server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
-import { required } from "../db/errors";
-import { foods } from "../db/foods";
-import { recipes } from "../db/recipes";
+import { required } from "./errors";
+import { foods } from "../db/models/food/repo";
+import { recipes } from "../db/models/recipe/repo";
 import { FoodCreate, FoodMerge, FoodUpdate, IdInput, ListQuery, NameInput } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";

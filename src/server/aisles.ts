@@ -1,7 +1,7 @@
 // Aisle server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
-import { aisles } from "../db/aisles";
-import { required } from "../db/errors";
+import { aisles } from "../db/models/aisle/repo";
+import { required } from "./errors";
 import { AisleCreate, AisleReorder, AisleUpdate, IdInput, ListQuery, NameInput } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";

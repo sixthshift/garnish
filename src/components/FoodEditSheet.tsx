@@ -16,7 +16,7 @@ import { Input } from "@sixthshift/design-system/input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
-import type { Food } from "../db/foods";
+import type { Food } from "../db/models/food/repo";
 import type { Aisle } from "../domain/recipe";
 import { Combobox } from "./ui/Combobox";
 

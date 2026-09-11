@@ -18,9 +18,20 @@ browser (PWA) ──server fns / HTTP──▶ TanStack Start (Nitro, Bun) ─�
 ```
 src/
   routes/       TanStack Start file routes: pages, and server routes under routes/api/
-  server/       server functions (createServerFn) grouped by resource, image upload/serve/fetch handlers, db handle, boot
-  db/           migrations/*.sql, migrate.ts, seed.ts, sample.ts, backup.ts, repositories (incl. timeline.ts), errors
-  domain/       zod schemas, scaling, formatting, cook-mode cards, ingredient merge, markdown, sort and filter helpers, bulk-add text cleanup. Pure, no IO, importable by client
+  server/       server functions (createServerFn) grouped by resource, image upload/serve/fetch handlers, db handle, boot, errors.ts (NotFound, mapped to TanStack's notFound())
+  db/connection/ open.ts (DB_FILE, databasePath, openDatabase — WAL and foreign keys), client.ts (the Drizzle handle)
+  db/seed/      seed.ts inserts; units.ts, recipes.ts and timeline.ts are the data it inserts; cli.ts is `bun run seed [--sample]`
+  db/backup/    backup.ts is the VACUUM INTO copy, cli.ts is `bun run backup`
+  db/models/    one folder per domain, each with schema.ts (its Drizzle tables) and repo.ts (its repository); columns.ts holds the shared column defaults and the conventions they all follow
+  db/models/recipe/    schema.ts: recipe, component, ingredient, step, recipe_note, recipe_tag — one aggregate, written as one document. repo.ts: the recipe repository
+  db/models/food/      schema.ts, repo.ts
+  db/models/unit/      schema.ts, repo.ts
+  db/models/aisle/     schema.ts, repo.ts
+  db/models/tag/       schema.ts, repo.ts
+  db/models/timeline/  schema.ts, repo.ts — the "made this" log
+  db/models/migration/ schema.ts only: the applied-migrations table, written by migrate.ts rather than a repository
+  db/migrations/ 001_init.sql, 002_stage2.sql — what actually builds the database — and migrate.ts, the runner that applies them
+  domain/       zod schemas, scaling, formatting, cook-mode cards, ingredient merge, markdown, sort and filter helpers, bulk-add text cleanup, name and slug helpers (names.ts). Pure, no IO, importable by client
   components/   React components; ui/ holds local primitives the design system lacks
   lib/          client-side helpers: mutate, ids, image URLs, clipboard, service worker registration, hooks, and the client stores (prefs, ticks, notices)
   sw/           service worker source (worker.ts, entry.ts) and the Vite plugin that emits it
@@ -34,7 +45,7 @@ test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev`, `build`, `start`, `check`, `test`, `migrate`, `seed`, `backup`. README.md says how to use them.
+Scripts in `package.json`: `dev`, `build`, `start`, `check`, `test`, `migrate`, `seed`, `db:generate`, `backup`. README.md says how to use them.
 
 ## Stack
 
@@ -46,6 +57,7 @@ Scripts in `package.json`: `dev`, `build`, `start`, `check`, `test`, `migrate`, 
 | Frontend | React 19 + Tailwind 4 via `@tailwindcss/vite` |
 | UI kit | `@sixthshift/design-system`, subpath imports (`sheet`, `toast`, `popover`, `tabs`, `search-input`, `switch`, `badge`, `tooltip`, `modal`). Gaps built locally from its primitives under `src/components/ui/`: `Rating`, `NumberStepper`, `ReorderList`, `ImageUpload`, `Combobox`, `ConfirmDialog`, `UsageConfirmDialog`, `Menu`, `DataTable`, `EditSheet`, `BulkAddSheet`, `SaveBar` |
 | Storage | SQLite (`bun:sqlite`) |
+| Queries | Drizzle ORM over that same `bun:sqlite` handle; tables in `src/db/models/<domain>/schema.ts` (decisions.md row 46) |
 | Validation | zod, one schema per document, shared by API and editor |
 | IDs | UUID, plus slug on recipe (Mealie) |
 | Tests | vitest, run as `bun run test` (`bun --bun vitest run`, so `bun:sqlite` resolves). The nitro plugin is left out of the config under vitest |
@@ -157,11 +169,13 @@ Design only. Not built in v1; see "Later" in [scope.md](scope.md). The schema ho
 ## Persistence rules
 
 - `DATA_DIR` (default `./data`) holds `garnish.db`, `images/` (with `images/timeline/`) and `backups/`. It is created on boot if missing.
-- Migrations are numbered SQL files in `src/db/migrations/` applied in order, each in its own transaction with its `migration` row. They run at boot and via `bun run migrate`. The built server has no source tree, so `src/server/db.ts` inlines them with `import.meta.glob` (decisions.md row 38); the CLI reads the directory.
+- Migrations are numbered SQL files in `src/db/migrations/`, applied in order by `migrate.ts` beside them, each in its own transaction with its `migration` row. They run at boot and via `bun run migrate`. The built server has no source tree, so `src/server/db.ts` inlines them with `import.meta.glob` (decisions.md row 38); the CLI reads the directory. Opening a database is separate (`src/db/connection/open.ts`), so backing up or seeding does not pull the runner in.
+- Each domain folder under `src/db/models/` has a `schema.ts` declaring its tables in TypeScript, and the repositories import the tables they touch directly — there is no barrel, because Drizzle's `schema` option only powers the relational query API (`with:`), which nothing uses. `drizzle.config.ts` and the drift test find the tables with a glob. It is a mirror, not a second migration source: the SQL files still build the database, and `test/db/drift.test.ts` migrates a real one and fails if the two disagree on tables, columns, types, nullability or primary keys. A new migration is written by hand or generated with `bun run db:generate` (drizzle-kit writes to `.drizzle/`, which is gitignored), reviewed, then copied into `migrations/NNN_name.sql` — generated SQL is never applied as-is, because Drizzle cannot express the `COLLATE NOCASE` the name columns rely on.
+- Repositories query through Drizzle rather than hand-written SQL, so row types come from the schema instead of being restated per file. The store, the handle and its lifecycle are unchanged: Drizzle wraps the connection `openDatabase` returns.
 - One process-wide handle (`getDb()`), opened lazily, migrated and seeded once, retried on failure.
 - Backup is a copy of the database file, taken via `VACUUM INTO` so it is consistent: `bun run backup` writes `DATA_DIR/backups/garnish-YYYYMMDD-HHmmss.db` (UTC). Restore is a file copy with the WAL sidecars removed; README.md has the steps.
 - No file export in v1. The database is the only store.
-- Seed: fifteen metric and common imperial units, matched by name case-insensitively so re-seeding never overwrites edits. Runs at boot and via `bun run seed`. `bun run seed --sample` adds three demo recipes (one with three components), idempotent by slug: one is favourited, one carries a source URL and one has two timeline events, so every stage 2 screen has data. Foods and aisles start empty.
+- Seed: fifteen metric and common imperial units, matched by name case-insensitively so re-seeding never overwrites edits. Runs at boot and via `bun run seed`. `bun run seed --sample` adds three demo recipes (one with three components), idempotent by slug: one is favourited, one carries a source URL and one has two timeline events, so every stage 2 screen has data. Foods and aisles start empty. `src/db/seed/` keeps the data (`units.ts`, `recipes.ts`, `timeline.ts`) apart from the inserting (`seed.ts`) and the CLI (`cli.ts`).
 - Locale: metric, en-AU spelling. Imperial units available, never default.
 
 ## Deploy

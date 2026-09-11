@@ -1,8 +1,9 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { aisles, type AisleRepository } from "../../src/db/aisles";
-import { foods } from "../../src/db/foods";
-import { migrate, openDatabase } from "../../src/db/migrate";
+import { aisles, type AisleRepository } from "../../src/db/models/aisle/repo";
+import { foods } from "../../src/db/models/food/repo";
+import { openDatabase } from "../../src/db/connection/open";
+import { migrate } from "../../src/db/migrations/migrate";
 
 let db: Database;
 let repo: AisleRepository;

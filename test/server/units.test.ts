@@ -1,7 +1,7 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { recipeInputSchema } from "../../src/domain/recipe";
-import { DEFAULT_UNITS } from "../../src/db/seed";
+import { DEFAULT_UNITS } from "../../src/db/seed/units";
 import type { NotFoundData } from "../../src/server/fn";
 import { createRecipe } from "../../src/server/recipes";
 import { createUnit, deleteUnit, findOrCreateUnit, listUnits, mergeUnit, updateUnit, usingUnit } from "../../src/server/units";

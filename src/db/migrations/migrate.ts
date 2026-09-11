@@ -1,27 +1,15 @@
-// Server-only. Applies src/db/migrations/NNN_name.sql in order and records
-// each in the `migration` table. Never import from client code.
-import { Database } from "bun:sqlite";
+// Server-only. Applies the NNN_name.sql files beside this one in order and
+// records each in the `migration` table. Never import from client code.
+import type { Database } from "bun:sqlite";
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dataDir, ensureDataDir } from "../server/boot";
+import { ensureDataDir } from "../../server/boot";
+import { databasePath, openDatabase } from "../connection/open";
 
+// This file's own directory: the runner lives beside the SQL it runs.
 // import.meta.url rather than Bun's import.meta.dir: Vite's module runner (vitest) only supplies the former.
-export const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), "migrations");
-export const DB_FILE = "garnish.db";
-
-/** Path of the SQLite file inside the runtime volume. */
-export function databasePath(dir: string = dataDir()): string {
-  return join(dir, DB_FILE);
-}
-
-/** Open (creating if needed) a database with WAL journaling and foreign keys on. */
-export function openDatabase(path: string): Database {
-  const db = new Database(path, { create: true, strict: true });
-  db.exec("PRAGMA journal_mode = WAL");
-  db.exec("PRAGMA foreign_keys = ON");
-  return db;
-}
+export const MIGRATIONS_DIR = dirname(fileURLToPath(import.meta.url));
 
 export type Migration = { id: number; name: string; file: string };
 

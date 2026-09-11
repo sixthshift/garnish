@@ -2,8 +2,9 @@
 // first use, migrated and seeded once, then cached. Never import from client code.
 import type { Database } from "bun:sqlite";
 import { basename } from "node:path";
-import { databasePath, migrate, openDatabase, type MigrationSources } from "../db/migrate";
-import { seed } from "../db/seed";
+import { databasePath, openDatabase } from "../db/connection/open";
+import { migrate, type MigrationSources } from "../db/migrations/migrate";
+import { seed } from "../db/seed/seed";
 import { dataDir, ensureDataDir } from "./boot";
 
 // Vite inlines the SQL at build time (dev, vitest and the Nitro bundle all go

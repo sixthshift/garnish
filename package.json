@@ -8,9 +8,10 @@
     "start": "bun run .output/server/index.mjs",
     "check": "tsc --noEmit",
     "test": "bun --bun vitest run",
-    "migrate": "bun run src/db/migrate.ts",
-    "seed": "bun run src/db/seed.ts",
-    "backup": "bun run src/db/backup.ts"
+    "migrate": "bun run src/db/migrations/migrate.ts",
+    "seed": "bun run src/db/seed/cli.ts",
+    "db:generate": "drizzle-kit generate",
+    "backup": "bun run src/db/backup/cli.ts"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
@@ -19,6 +20,7 @@
     "@sixthshift/design-system": "^0.4.0",
     "@tanstack/react-router": "^1.170.34",
     "@tanstack/react-start": "^1.168.51",
+    "drizzle-orm": "^0.45.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.1"
@@ -30,6 +32,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "drizzle-kit": "^0.31.10",
     "nitro": "^3.0.260903-beta",
     "tailwindcss": "^4.3.3",
     "typescript": "^5",

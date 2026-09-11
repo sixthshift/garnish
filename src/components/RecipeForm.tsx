@@ -44,7 +44,7 @@ import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useId, useState } from "react";
-import { slugify } from "../db/names";
+import { slugify } from "../domain/names";
 import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchema, type Tag, type Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
 import { fetchedImageFile, uploadRecipeImage } from "../lib/images";

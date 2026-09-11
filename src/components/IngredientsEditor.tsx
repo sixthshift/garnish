@@ -43,7 +43,7 @@ import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatIngredient } from "../domain/format";
-import type { Food as FoodRow } from "../db/foods";
+import type { Food as FoodRow } from "../db/models/food/repo";
 import type { Food, Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
 import { listFoods } from "../server/foods";

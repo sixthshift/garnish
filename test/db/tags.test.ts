@@ -1,7 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { migrate, openDatabase } from "../../src/db/migrate";
-import { tags, type TagRepository } from "../../src/db/tags";
+import { openDatabase } from "../../src/db/connection/open";
+import { migrate } from "../../src/db/migrations/migrate";
+import { tags, type TagRepository } from "../../src/db/models/tag/repo";
 
 let db: Database;
 let repo: TagRepository;

@@ -3,9 +3,10 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, expect, test } from "vitest";
-import { BACKUPS_SUBDIR, backup, backupFileName, backupsDir } from "../../src/db/backup";
-import { migrate, openDatabase } from "../../src/db/migrate";
-import { units } from "../../src/db/units";
+import { BACKUPS_SUBDIR, backup, backupFileName, backupsDir } from "../../../src/db/backup/backup";
+import { openDatabase } from "../../../src/db/connection/open";
+import { migrate } from "../../../src/db/migrations/migrate";
+import { units } from "../../../src/db/models/unit/repo";
 
 const scratch: string[] = [];
 afterEach(() => {

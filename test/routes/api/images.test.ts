@@ -3,7 +3,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { recipes } from "../../../src/db/recipes";
+import { recipes } from "../../../src/db/models/recipe/repo";
 import { recipeInputSchema } from "../../../src/domain/recipe";
 import { getDb } from "../../../src/server/db";
 import { handleGetImage, handleUploadImage } from "../../../src/server/images";

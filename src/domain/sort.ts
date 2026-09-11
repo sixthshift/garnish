@@ -1,5 +1,5 @@
 // Pure helpers for the recipe list's sort menu and dice button (M12.4). No
-// IO; shared by the repository (src/db/recipes.ts), the server function
+// IO; shared by the repository (src/db/models/recipe/repo.ts), the server function
 // (src/server/recipes.ts) and the list route's SortMenu.
 
 export type SortKey = "name" | "created" | "updated" | "lastMade" | "rating" | "random";

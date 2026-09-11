@@ -3,17 +3,8 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
-import {
-  DB_FILE,
-  MIGRATIONS_DIR,
-  appliedMigrations,
-  databasePath,
-  listMigrations,
-  listMigrationsFrom,
-  migrate,
-  openDatabase,
-  parseMigrationFile,
-} from "../../src/db/migrate";
+import { DB_FILE, databasePath, openDatabase } from "../../../src/db/connection/open";
+import { MIGRATIONS_DIR, appliedMigrations, listMigrations, listMigrationsFrom, migrate, parseMigrationFile } from "../../../src/db/migrations/migrate";
 
 const scratch: string[] = [];
 afterEach(() => {

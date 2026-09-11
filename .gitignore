@@ -45,6 +45,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # runtime volume (db, images, backups)
 data/
 
+# drizzle-kit scratch output (generated SQL is copied into src/db/migrations)
+.drizzle
+
 # build output and framework caches
 .output
 .nitro

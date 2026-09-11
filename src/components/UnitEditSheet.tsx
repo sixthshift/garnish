@@ -11,7 +11,7 @@ import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useState } from "react";
-import type { Unit } from "../db/units";
+import type { Unit } from "../db/models/unit/repo";
 
 /** What a save hands back: the repository's flat patch shape. */
 export type UnitPatch = {

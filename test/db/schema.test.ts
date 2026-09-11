@@ -2,7 +2,8 @@
 // recipe tree: insert, read back in position order, cascade, set-null.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { migrate, openDatabase } from "../../src/db/migrate";
+import { openDatabase } from "../../src/db/connection/open";
+import { migrate } from "../../src/db/migrations/migrate";
 
 let db: Database;
 beforeEach(async () => {

@@ -1,8 +1,9 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { aisles } from "../../src/db/aisles";
-import { foods, type FoodRepository } from "../../src/db/foods";
-import { migrate, openDatabase } from "../../src/db/migrate";
+import { aisles } from "../../src/db/models/aisle/repo";
+import { foods, type FoodRepository } from "../../src/db/models/food/repo";
+import { openDatabase } from "../../src/db/connection/open";
+import { migrate } from "../../src/db/migrations/migrate";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 

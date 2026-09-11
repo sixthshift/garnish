@@ -1,8 +1,8 @@
 // Unit server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
-import { required } from "../db/errors";
-import { recipes } from "../db/recipes";
-import { units } from "../db/units";
+import { required } from "./errors";
+import { recipes } from "../db/models/recipe/repo";
+import { units } from "../db/models/unit/repo";
 import { IdInput, ListQuery, NameInput, UnitCreate, UnitMerge, UnitUpdate } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";

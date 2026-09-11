@@ -3,7 +3,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { FoodMergeDialogContent, mergeTargets } from "../../src/components/FoodMergeDialog";
-import type { Food } from "../../src/db/foods";
+import type { Food } from "../../src/db/models/food/repo";
 
 function food(id: string, name: string): Food {
   return { id, name, pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };

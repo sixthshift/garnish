@@ -3,7 +3,7 @@
 // The two /api routes call the handlers here; the small helpers are pure.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { recipes } from "../db/recipes";
+import { recipes } from "../db/models/recipe/repo";
 import { dataDir } from "./boot";
 import { getDb } from "./db";
 

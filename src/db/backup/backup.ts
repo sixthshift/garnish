@@ -4,8 +4,7 @@
 import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { dataDir, ensureDataDir } from "../server/boot";
-import { databasePath, openDatabase } from "./migrate";
+import { dataDir } from "../../server/boot";
 
 export const BACKUPS_SUBDIR = "backups";
 
@@ -34,15 +33,4 @@ export function backup(db: Database, dir: string, now: Date = new Date()): strin
   const path = join(dir, backupFileName(now));
   db.prepare("VACUUM INTO ?").run(path);
   return path;
-}
-
-if (import.meta.main) {
-  const dir = ensureDataDir();
-  const db = openDatabase(databasePath(dir));
-  try {
-    const path = backup(db, backupsDir(dir));
-    console.log(`${databasePath(dir)}: backed up to ${path}`);
-  } finally {
-    db.close();
-  }
 }

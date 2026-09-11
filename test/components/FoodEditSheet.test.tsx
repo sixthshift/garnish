@@ -3,7 +3,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { aliasesText, FoodEditSheetContent, parseAliases } from "../../src/components/FoodEditSheet";
-import type { Food } from "../../src/db/foods";
+import type { Food } from "../../src/db/models/food/repo";
 import type { Aisle } from "../../src/domain/recipe";
 
 const dairy: Aisle = { id: "a1", name: "Dairy", position: 0 };

@@ -2,8 +2,9 @@
 // delete. Against :memory: with the real migration.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { migrate, openDatabase } from "../../src/db/migrate";
-import { recipes, type RecipeRepository } from "../../src/db/recipes";
+import { openDatabase } from "../../src/db/connection/open";
+import { migrate } from "../../src/db/migrations/migrate";
+import { recipes, type RecipeRepository } from "../../src/db/models/recipe/repo";
 import { recipeInputSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
 
 let db: Database;

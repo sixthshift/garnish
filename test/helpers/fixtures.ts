@@ -1,8 +1,8 @@
 // Test-only server functions exercising the scaffold. Not part of the app.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { NotFound } from "../../src/db/errors";
-import { units } from "../../src/db/units";
+import { NotFound } from "../../src/server/errors";
+import { units } from "../../src/db/models/unit/repo";
 import { getDb } from "../../src/server/db";
 import { notFoundMiddleware } from "../../src/server/fn";
 
