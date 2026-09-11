@@ -4,6 +4,7 @@ import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { AppShell } from "../components/AppShell";
+import { GlobalSearch } from "../components/GlobalSearch";
 import { AppErrorFallback } from "../components/RouteStates";
 import { Toaster } from "../components/Toaster";
 import { registerServiceWorker } from "../lib/sw";
@@ -57,6 +58,7 @@ function RootComponent() {
       </ErrorBoundary>
       {/* Outside the boundary: a render error in the shell should not take the notice with it. */}
       <Toaster />
+      <GlobalSearch />
     </>
   );
 }
