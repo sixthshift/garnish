@@ -29,6 +29,10 @@ export const FoodUpdate = FoodFields.extend({ name: Name }).partial().extend({ i
 export type FoodCreate = z.infer<typeof FoodCreate>;
 export type FoodUpdate = z.infer<typeof FoodUpdate>;
 
+/** Merge `sourceId` into `targetId`: the source is deleted, its ingredients repointed. */
+export const FoodMerge = z.object({ sourceId: Id, targetId: Id });
+export type FoodMerge = z.infer<typeof FoodMerge>;
+
 const UnitFields = z.object({
   pluralName: z.string().nullable(),
   abbreviation: z.string(),

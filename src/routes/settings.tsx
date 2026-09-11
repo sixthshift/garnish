@@ -3,16 +3,23 @@
 // tab over the same local DataTable primitive: search, sortable columns, and
 // (from M15.2 on) an editor sheet and a delete that lists the recipes it
 // touches. Appearance needs no loader and no table.
+import { Button } from "@sixthshift/design-system/button";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Tabs, type TabItem } from "@sixthshift/design-system/tabs";
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { FoodEditSheet, type FoodPatch } from "../components/FoodEditSheet";
+import { FoodMergeDialog } from "../components/FoodMergeDialog";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { DataTable, type DataTableColumn } from "../components/ui/DataTable";
-import type { Aisle, Tag, Unit } from "../domain/recipe";
-import { listAisles } from "../server/aisles";
-import { listFoods } from "../server/foods";
+import { UsageConfirmDialog } from "../components/ui/UsageConfirmDialog";
+import type { Aisle, RecipeSummary, Tag, Unit } from "../domain/recipe";
+import { useMutate } from "../lib/mutate";
+import { notify, notifyError } from "../lib/notify";
+import { findOrCreateAisle, listAisles } from "../server/aisles";
+import { deleteFood, listFoods, mergeFood, updateFood, usingFood } from "../server/foods";
 import { listTags } from "../server/tags";
 import { listUnits } from "../server/units";
 
@@ -50,6 +57,18 @@ export function foodColumns(aisles: readonly Aisle[]): DataTableColumn<FoodRow>[
   ];
 }
 
+/** Every recipe from any of the lists, once, in first-seen order. Pure. */
+export function dedupeSummaries(lists: readonly RecipeSummary[][]): RecipeSummary[] {
+  const seen = new Map<string, RecipeSummary>();
+  for (const list of lists) for (const recipe of list) if (!seen.has(recipe.id)) seen.set(recipe.id, recipe);
+  return [...seen.values()];
+}
+
+/** The name shown for a delete or merge confirm: the row's name, or a count for several. Pure. */
+export function foodsLabel(foods: readonly FoodRow[]): string {
+  return foods.length === 1 ? foods[0]!.name : `${foods.length} foods`;
+}
+
 export const unitColumns: DataTableColumn<Unit>[] = [
   { key: "name", header: "Name", value: (unit) => unit.name },
   { key: "pluralName", header: "Plural", value: (unit) => unit.pluralName },
@@ -68,11 +87,135 @@ export const tagColumns: DataTableColumn<Tag>[] = [
   { key: "slug", header: "Slug", value: (tag) => tag.slug },
 ];
 
+/** A Merge trigger per row, appended to `foodColumns` only for the live Foods table. */
+function mergeColumn(onMerge: (food: FoodRow) => void): DataTableColumn<FoodRow> {
+  return {
+    key: "mergeAction",
+    header: <span className="sr-only">Merge</span>,
+    value: () => null,
+    sortable: false,
+    searchable: false,
+    render: (food) => (
+      <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => onMerge(food)}>
+        Merge
+      </Button>
+    ),
+  };
+}
+
+/** Effect line for the Foods delete confirm, Mealie's own wording for the food side of the FK. */
+const FOOD_DELETE_EFFECT = "they will keep the ingredient without a food.";
+
+function FoodsTab({ foods, aisles }: { foods: readonly FoodRow[]; aisles: readonly Aisle[] }) {
+  const mutate = useMutate();
+  const [editing, setEditing] = useState<FoodRow | null>(null);
+  const [deleting, setDeleting] = useState<FoodRow[] | null>(null);
+  const [deleteUsage, setDeleteUsage] = useState<RecipeSummary[]>([]);
+  const [merging, setMerging] = useState<FoodRow | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const columns = [...foodColumns(aisles), mergeColumn((food) => setMerging(food))];
+
+  const askDelete = async (items: FoodRow[]) => {
+    if (items.length === 0) return;
+    const lists = await Promise.all(items.map((food) => usingFood({ data: { id: food.id } })));
+    setDeleteUsage(dedupeSummaries(lists));
+    setDeleting(items);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setBusy(true);
+    try {
+      await mutate(() => Promise.all(deleting.map((food) => deleteFood({ data: { id: food.id } }))));
+      notify({ intent: "success", title: `${foodsLabel(deleting)} deleted` });
+      setDeleting(null);
+    } catch (error) {
+      notifyError("Could not delete", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const saveEdit = async (patch: FoodPatch) => {
+    setBusy(true);
+    try {
+      await mutate(() => updateFood({ data: patch }));
+      notify({ intent: "success", title: `${patch.name} saved` });
+      setEditing(null);
+    } catch (error) {
+      notifyError("Could not save food", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createAisle = (name: string) => mutate(() => findOrCreateAisle({ data: { name } }));
+
+  const confirmMerge = async (targetId: string) => {
+    if (!merging) return;
+    setBusy(true);
+    try {
+      await mutate(() => mergeFood({ data: { sourceId: merging.id, targetId } }));
+      notify({ intent: "success", title: `${merging.name} merged` });
+      setMerging(null);
+    } catch (error) {
+      notifyError("Could not merge food", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <DataTable
+        items={foods}
+        columns={columns}
+        keyOf={(food) => food.id}
+        itemName="food"
+        onEdit={(food) => setEditing(food)}
+        onDelete={(selected) => void askDelete(selected)}
+      />
+      {editing && (
+        <FoodEditSheet
+          open
+          food={editing}
+          aisles={aisles}
+          busy={busy}
+          onCancel={() => !busy && setEditing(null)}
+          onSave={(patch) => void saveEdit(patch)}
+          onCreateAisle={createAisle}
+        />
+      )}
+      {deleting && (
+        <UsageConfirmDialog
+          name={foodsLabel(deleting)}
+          itemName="food"
+          effect={FOOD_DELETE_EFFECT}
+          recipes={deleteUsage}
+          busy={busy}
+          onCancel={() => !busy && setDeleting(null)}
+          onConfirm={() => void confirmDelete()}
+        />
+      )}
+      {merging && (
+        <FoodMergeDialog
+          source={merging}
+          targets={foods.filter((food) => food.id !== merging.id)}
+          busy={busy}
+          onCancel={() => !busy && setMerging(null)}
+          onConfirm={(targetId) => void confirmMerge(targetId)}
+        />
+      )}
+    </>
+  );
+}
+
 function SettingsPage() {
   const { aisles, units, foods, tags } = Route.useLoaderData();
 
   const items: TabItem[] = [
-    { value: "foods", label: "Foods", badge: foods.length, content: <DataTable items={foods} columns={foodColumns(aisles)} keyOf={(food) => food.id} itemName="food" /> },
+    { value: "foods", label: "Foods", badge: foods.length, content: <FoodsTab foods={foods} aisles={aisles} /> },
     { value: "units", label: "Units", badge: units.length, content: <DataTable items={units} columns={unitColumns} keyOf={(unit) => unit.id} itemName="unit" /> },
     {
       value: "aisles",

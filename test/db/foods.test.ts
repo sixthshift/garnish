@@ -79,6 +79,43 @@ test("remove deletes the food and nulls the ingredient reference", () => {
   });
 });
 
+test("merge repoints ingredient rows to the target and deletes the source", () => {
+  const butter = repo.create({ name: "butter" });
+  const unsalted = repo.create({ name: "unsalted butter" });
+  db.run("INSERT INTO recipe (id, slug, name) VALUES ('r', 'r', 'R')");
+  db.run("INSERT INTO component (id, recipe_id, position) VALUES ('c', 'r', 0)");
+  db.run("INSERT INTO ingredient (id, component_id, position, quantity, food_id, original_text) VALUES ('i1', 'c', 0, 50, ?, '50 g unsalted butter')", [
+    unsalted.id,
+  ]);
+  db.run("INSERT INTO ingredient (id, component_id, position, quantity, food_id, original_text) VALUES ('i2', 'c', 1, 10, ?, '10 g butter')", [butter.id]);
+
+  const merged = repo.merge(unsalted.id, butter.id);
+  expect(merged).toEqual(butter);
+  expect(repo.get(unsalted.id)).toBeNull();
+  expect(repo.list().map((f) => f.name)).toEqual(["butter"]);
+
+  const foodIds = db
+    .query<{ id: string; food_id: string | null }, []>("SELECT id, food_id FROM ingredient ORDER BY id")
+    .all();
+  expect(foodIds).toEqual([
+    { id: "i1", food_id: butter.id },
+    { id: "i2", food_id: butter.id },
+  ]);
+});
+
+test("merge is transactional and unknown ids return null without changing anything", () => {
+  const butter = repo.create({ name: "butter" });
+  expect(repo.merge("missing", butter.id)).toBeNull();
+  expect(repo.merge(butter.id, "missing")).toBeNull();
+  expect(repo.list()).toEqual([butter]);
+});
+
+test("merging a food into itself is a no-op that returns it unchanged", () => {
+  const butter = repo.create({ name: "butter" });
+  expect(repo.merge(butter.id, butter.id)).toEqual(butter);
+  expect(repo.list()).toEqual([butter]);
+});
+
 test("list with q filters by case-insensitive substring and escapes wildcards", () => {
   repo.create({ name: "Butter" });
   repo.create({ name: "peanut butter" });

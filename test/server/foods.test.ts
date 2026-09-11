@@ -1,8 +1,10 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
+import { recipeInputSchema } from "../../src/domain/recipe";
 import type { NotFoundData } from "../../src/server/fn";
 import { createAisle } from "../../src/server/aisles";
-import { createFood, deleteFood, findOrCreateFood, listFoods, updateFood } from "../../src/server/foods";
+import { createFood, deleteFood, findOrCreateFood, listFoods, mergeFood, updateFood, usingFood } from "../../src/server/foods";
+import { createRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -54,4 +56,38 @@ test("validation rejects a blank name and wrong types before the handler", async
   await expect(callServerFn(createFood, { name: "   " })).rejects.toThrow(/too_small|at least 1/);
   await expect(callServerFn(createFood, { name: "x", aliases: "pb" } as never)).rejects.toThrow(/expected array/);
   await expect(callServerFn(findOrCreateFood, {} as never)).rejects.toThrow(/expected string/);
+});
+
+test("usingFood lists the recipes with an ingredient of that food", async () => {
+  const butter = await callServerFn(createFood, { name: "butter" });
+  await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", components: [{ name: "", ingredients: [{ food: butter }], steps: [] }] }));
+  expect((await callServerFn(usingFood, { id: butter.id })).map((r) => r.name)).toEqual(["Toast"]);
+
+  const salt = await callServerFn(createFood, { name: "salt" });
+  expect(await callServerFn(usingFood, { id: salt.id })).toEqual([]);
+});
+
+test("mergeFood repoints ingredients to the target, deletes the source, and drops it from the list", async () => {
+  const butter = await callServerFn(createFood, { name: "butter" });
+  const unsalted = await callServerFn(createFood, { name: "unsalted butter" });
+  await callServerFn(
+    createRecipe,
+    recipeInputSchema.parse({ name: "Shortbread", components: [{ name: "", ingredients: [{ food: unsalted }], steps: [] }] }),
+  );
+
+  const merged = await callServerFn(mergeFood, { sourceId: unsalted.id, targetId: butter.id });
+  expect(merged).toEqual(butter);
+  expect((await callServerFn(listFoods, {})).map((f) => f.name)).toEqual(["butter"]);
+  expect((await callServerFn(usingFood, { id: butter.id })).map((r) => r.name)).toEqual(["Shortbread"]);
+});
+
+test("mergeFood is not-found when either id is unknown", async () => {
+  const butter = await callServerFn(createFood, { name: "butter" });
+  const missingSource = await callServerFn(mergeFood, { sourceId: MISSING, targetId: butter.id }).catch((e: unknown) => e);
+  expect(isNotFound(missingSource)).toBe(true);
+  expect((missingSource as { data: NotFoundData }).data).toMatchObject({ entity: "food", id: MISSING });
+
+  const missingTarget = await callServerFn(mergeFood, { sourceId: butter.id, targetId: MISSING }).catch((e: unknown) => e);
+  expect(isNotFound(missingTarget)).toBe(true);
+  expect((missingTarget as { data: NotFoundData }).data).toMatchObject({ entity: "food", id: MISSING });
 });

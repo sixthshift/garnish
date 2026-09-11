@@ -11,7 +11,7 @@ import { Route as ViewRoute, nextServings } from "../../src/routes/recipes/$slug
 import { Route as NewRoute } from "../../src/routes/recipes/new";
 import { type FoodRow, Route as SettingsRoute, type SettingsData } from "../../src/routes/settings";
 import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/server/recipes";
-import { listFoods } from "../../src/server/foods";
+import { createFood, listFoods } from "../../src/server/foods";
 import { listTags } from "../../src/server/tags";
 import { listUnits } from "../../src/server/units";
 import { renderRoute } from "../helpers/routes";
@@ -506,6 +506,18 @@ describe("/settings", () => {
     expect(html).toContain('aria-label="Search foods"');
     expect(html).toContain(">Skip shopping<");
     expect(html).toContain(`${foods.length} food`);
+  });
+
+  test("each food row has an Edit and a Merge trigger, and no dialog is open by default", async () => {
+    await callServerFn(createFood, { name: "Butter" });
+    await callServerFn(createFood, { name: "Salt" });
+    const html = await renderRoute("/settings");
+    expect(html.match(/>Edit</g)?.length).toBe(2);
+    expect(html.match(/>Merge<\/button>/g)?.length).toBe(2);
+    // The edit sheet, delete confirm and merge dialog all start closed.
+    expect(html).not.toContain("Merge into");
+    expect(html).not.toContain('aria-label="Edit Butter"');
+    expect(html).not.toContain("will be deleted");
   });
 });
 

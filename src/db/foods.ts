@@ -50,6 +50,7 @@ export function foods(db: Database) {
     "UPDATE food SET name = ?, plural_name = ?, aliases = ?, aisle_id = ?, recipe_id = ?, skip_shopping = ? WHERE id = ?",
   );
   const del = db.prepare("DELETE FROM food WHERE id = ?");
+  const repointIngredients = db.prepare("UPDATE ingredient SET food_id = ? WHERE food_id = ?");
 
   function get(id: string): Food | null {
     const row = selectById.get(id);
@@ -101,6 +102,23 @@ export function foods(db: Database) {
       const clean = cleanName(name);
       const row = selectByName.get(clean);
       return row ? toFood(row) : create({ name: clean });
+    },
+
+    /**
+     * Repoint every ingredient using `sourceId` to `targetId`, then delete the
+     * source, in one transaction. Returns the target, or null when either id
+     * is unknown. Merging a food into itself is a no-op that returns it.
+     */
+    merge(sourceId: string, targetId: string): Food | null {
+      if (sourceId === targetId) return get(targetId);
+      const target = get(targetId);
+      if (!target || !get(sourceId)) return null;
+      const mergeTx = db.transaction(() => {
+        repointIngredients.run(targetId, sourceId);
+        del.run(sourceId);
+      });
+      mergeTx();
+      return get(targetId);
     },
   };
 }
