@@ -84,12 +84,12 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 - [x] **M13.3 Drag reorder.** `ReorderList` gains pointer-event drag (handle, 250 ms touch delay, no dependency) within a list and between components via a shared group id; up/down buttons and "Move to" kept. Check: pure `dropIndex()` tests; render test shows handles.
 - [x] **M13.4 Bulk add and step tools.** "Bulk add" on ingredients and steps: `sheet` with a textarea, one item per line, buttons trim whitespace, strip leading numbers, split on blank lines; ingredients become text-only rows. Steps gain insert above / below, split by paragraph, merge with next. Check: pure helpers tested for every button; render test.
 - [x] **M13.5 Image from URL and JSON view.** Image field accepts a pasted URL fetched server-side (`fetchImage` server function, same sniffing as upload). "JSON" toggle swaps the form for a textarea of the document; Apply parses with `recipeInputSchema` and shows errors. Check: server function test with a local fixture URL; JSON round-trip test.
-- [ ] **M13.6 Phone confirmations.** `ConfirmDialog` renders as a `sheet` below `md`, centred above. `originalText` shown in grey above a parsed row on wide. Check: render tests at both widths.
+- [x] **M13.6 Phone confirmations.** `ConfirmDialog` renders as a `sheet` below `md`, centred above. `originalText` shown in grey above a parsed row on wide. Check: render tests at both widths.
 
 ## M14 Cook mode
 
 - [x] **M14.1 Navigation.** Component pills across the top jump to that component's first card; vertical swipe between cards with a scroll-versus-swipe threshold; ARIA live region announces "Step 2 of 5" or "Ingredients for Dough". Check: pure `swipeIntent()` tests; render test shows pills and the live region.
-- [ ] **M14.2 Ticks and finish.** Ingredient card items tick on tap sharing `ticks.ts` with the view page. Final card: "Finished" with a "Made this" shortcut opening the M11.7 sheet and an Exit link. Check: render tests; tick state shared in a test that renders both routes.
+- [x] **M14.2 Ticks and finish.** Ingredient card items tick on tap sharing `ticks.ts` with the view page. Final card: "Finished" with a "Made this" shortcut opening the M11.7 sheet and an Exit link. Check: render tests; tick state shared in a test that renders both routes.
 
 ## M15 Reference data
 
@@ -100,7 +100,7 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 
 ## M16 Finish
 
-- [ ] **M16.1 Sample data.** `seed --sample` adds a favourite, two timeline events and a source URL so every new screen has data. Check: seed twice, counts unchanged.
+- [x] **M16.1 Sample data.** `seed --sample` adds a favourite, two timeline events and a source URL so every new screen has data. Check: seed twice, counts unchanged.
 - [ ] **M16.2 Docs sync.** `architecture.md` frontend, data model and API sections match stage 2; `ui-gap.md` rows marked done or deferred; README mentions the settings tabs and Made this. Check: docs tests updated and green; fresh-clone run-through as in M9.3.
 
 ## Blocked
@@ -140,3 +140,6 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-11  M13.5  done  608113a  opus  fetchImage pulls a pasted URL server-side through the upload route's sniffing; Edit as JSON applies through recipeInputSchema
 2026-09-11  M14.1  done  73cbcb1  opus  cook pills jump to each component, pure swipeIntent separates scroll from swipe, sr-only live region announces the card
 2026-09-11  M15.4  done  cbdb2b1  sonnet  Aisles reorder through ReorderList with rename and delete; Tags grouped A-Z with rename, transactional merge and click-through
+2026-09-11  M13.6  done  ce668d2  sonnet  ConfirmDialog stays on Modal per decisions row 45; parsed rows show the grey original text above from md up
+2026-09-11  M14.2  done  7a3911d  sonnet  cook ingredient cards tick through the shared store; a Finished card carries Made this and Exit
+2026-09-11  M16.1  done  f65b6a3  sonnet  sample data gains a favourite, a source URL and two timeline events, idempotent across re-seeds
