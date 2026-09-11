@@ -49,9 +49,10 @@ import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { type ReactNode, useEffect, useState } from "react";
-import { type CommitRef, pendingCreations, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
+import { type CommitRef, pendingCreations, reviewRow, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
 import { formatIngredient } from "../domain/format";
 import type { Food as FoodRow } from "../db/models/food/repo";
+import { parseIngredient } from "../domain/parseIngredient";
 import type { Food, Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
 import { findOrCreateFood, listFoods } from "../server/foods";
@@ -61,6 +62,7 @@ import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRo
 import type { DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { BulkAddSheet } from "./ui/BulkAddSheet";
 import { Combobox, type ComboboxOption } from "./ui/Combobox";
+import { Menu } from "./ui/Menu";
 import { ReorderList } from "./ui/ReorderList";
 
 /** How long the food input waits after the last keystroke before querying. */
@@ -236,6 +238,36 @@ function resolveUnit(ref: CommitRef<Unit>, created: ReadonlyMap<string, Unit>): 
   if (ref === null) return null;
   if (ref.kind === "existing") return ref.row;
   return created.get(ref.name.toLowerCase()) ?? null;
+}
+
+/**
+ * A saved row's `originalText`, parsed fresh against the current vocabulary
+ * and turned into a review row (M17.6) — the same shape bulk add reviews a
+ * pasted line with, so an unknown food or unit still asks before anything is
+ * created. `key` only needs to be stable for the life of the review; the row
+ * keeps its own id regardless. Pure.
+ */
+export function parseRowFor(originalText: string, vocabulary: { units: readonly Unit[]; foods: readonly FoodRow[] }, key: string): IngredientReview {
+  return reviewRow(parseIngredient(originalText, vocabulary), key);
+}
+
+/**
+ * What a parsed row's review applies to the row it came from: quantity,
+ * unit, food and note from the commit — never `originalText`, so the raw
+ * line the row started with survives untouched whatever the parse decided.
+ * A row whose food is still undecided (declined, or never proposed) or whose
+ * approved creation is missing from the map has nothing to apply: null,
+ * meaning the row is left exactly as it was, text-only and all. Pure.
+ */
+export function parsedRowPatch(
+  row: IngredientReview,
+  createdFoods: ReadonlyMap<string, FoodRow>,
+  createdUnits: ReadonlyMap<string, Unit>,
+): Partial<DraftIngredient> | null {
+  const commit = rowCommit(row);
+  const food = resolveFood(commit.food, createdFoods);
+  if (commit.textOnly || food === null) return null;
+  return { quantity: commit.quantity, fixed: commit.fixed, note: commit.note, unit: resolveUnit(commit.unit, createdUnits), food };
 }
 
 /**
@@ -497,6 +529,21 @@ export type IngredientFieldsProps = {
   showOriginalText?: boolean;
   /** Adds the grey `originalText` line above a parsed row's fields; the inline (`md` and up) row sets it (M13.6). */
   originalTextAbove?: boolean;
+  /**
+   * The "Parse" action for a text-only row (M17.6), present only when the
+   * row has something to parse. `review` is the row mid-decision — chips to
+   * confirm or decline, same as bulk add — or null before Parse is pressed
+   * and after it is applied or cancelled.
+   */
+  parse?: {
+    review: IngredientReview | null;
+    busy: boolean;
+    error: string | null;
+    onStart: () => void;
+    onChange: (row: IngredientReview) => void;
+    onCancel: () => void;
+    onConfirm: () => void;
+  };
   onPatch: (patch: Partial<DraftIngredient>) => void;
   onQuantityText: (text: string | null) => void;
   onUnitText: (text: string) => void;
@@ -506,8 +553,70 @@ export type IngredientFieldsProps = {
   onFoodBlur: () => void;
 };
 
+/**
+ * The "Parse" action itself (M17.6): a trigger — a menu item inline, a plain
+ * button in the phone sheet, the two placements the task asks for — that
+ * becomes the same review chips bulk add shows once pressed, with Cancel
+ * (nothing changes) and Apply (commits the decision) alongside. No state of
+ * its own; `parse` carries it all, so this stays a plain function like
+ * `IngredientFields` itself.
+ */
+function parseAction(
+  parse: NonNullable<IngredientFieldsProps["parse"]>,
+  label: string,
+  units: readonly Unit[],
+  disabled: boolean | undefined,
+  variant: "menu" | "button",
+): ReactNode {
+  const busy = parse.busy || disabled === true;
+
+  if (parse.review !== null) {
+    return (
+      <div className="flex flex-col gap-2 rounded-lg border border-border-normal p-3" data-parse-review="">
+        <IngredientReviewRow
+          row={parse.review}
+          label={`${label} parse`}
+          unitMatches={(text) => filterUnits(units, text)}
+          searchFoods={(q) => listFoods({ data: { q } })}
+          disabled={busy}
+          onChange={parse.onChange}
+        />
+        {parse.error !== null && (
+          <p className="text-sm text-fg-danger" role="alert">
+            {parse.error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" intent="neutral" size="sm" aria-label={`${label} parse cancel`} disabled={busy} onClick={parse.onCancel}>
+            Cancel
+          </Button>
+          <Button type="button" variant="solid" intent="brand" size="sm" aria-label={`${label} parse apply`} disabled={busy} onClick={parse.onConfirm}>
+            Apply parse
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "button") {
+    return (
+      <Button type="button" variant="outline" intent="neutral" size="sm" aria-label={`${label} parse`} disabled={busy} onClick={parse.onStart}>
+        Parse
+      </Button>
+    );
+  }
+
+  return (
+    <Menu label={`${label} actions`} iconOnly>
+      <Menu.Item onSelect={parse.onStart} disabled={busy}>
+        Parse
+      </Menu.Item>
+    </Menu>
+  );
+}
+
 export function IngredientFields(props: IngredientFieldsProps) {
-  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText, originalTextAbove } = props;
+  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText, originalTextAbove, parse } = props;
   const quantityError = errors[`${path}.quantity`];
 
   const originalText = (ingredient.originalText ?? "").trim();
@@ -540,6 +649,7 @@ export function IngredientFields(props: IngredientFieldsProps) {
           onChange={(event) => props.onPatch({ originalText: event.target.value })}
         />
         {controls !== undefined && <div className="flex flex-wrap items-center gap-2">{controls}</div>}
+        {parse !== undefined && parseAction(parse, label, units, disabled, showOriginalText === true ? "button" : "menu")}
       </div>
     );
   }
@@ -664,6 +774,11 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
   const [foodFocused, setFoodFocused] = useState(false);
   const [foodRows, setFoodRows] = useState<FoodRow[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // The parse action (M17.6): null until Parse is pressed, or once its
+  // decision is applied or cancelled.
+  const [parseReview, setParseReview] = useState<IngredientReview | null>(null);
+  const [parseBusy, setParseBusy] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   // Query foods while the input has focus, a beat after the last keystroke.
   useEffect(() => {
@@ -743,6 +858,55 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
     </Toggle>
   );
 
+  // Only a text-only row with a raw line has anything for Parse to read.
+  const canParse = textOnly && (ingredient.originalText ?? "").trim() !== "";
+
+  /** Parse the row's `originalText` against the current vocabulary and open the review. */
+  const startParse = async () => {
+    setParseError(null);
+    setParseBusy(true);
+    try {
+      const foods = await listFoods({ data: {} });
+      setParseReview(parseRowFor(ingredient.originalText ?? "", { units, foods }, ingredient.id ?? "parse"));
+    } catch (cause) {
+      setParseError(cause instanceof Error ? cause.message : "Could not parse this ingredient");
+    } finally {
+      setParseBusy(false);
+    }
+  };
+
+  /** Dismiss the review: the row is left exactly as it was. */
+  const cancelParse = () => {
+    setParseReview(null);
+    setParseError(null);
+  };
+
+  /** Create only what the review approved, then apply the patch — or, declined, apply nothing. */
+  const confirmParse = async () => {
+    if (parseReview === null) return;
+    setParseBusy(true);
+    setParseError(null);
+    try {
+      const pending = pendingCreations([parseReview]);
+      const createdFoods = new Map<string, FoodRow>();
+      for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
+      const createdUnits = new Map<string, Unit>();
+      for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
+      const patch = parsedRowPatch(parseReview, createdFoods, createdUnits);
+      if (patch !== null) {
+        onPatch(patch);
+        setTextOnly(false);
+        setUnitText(patch.unit?.name ?? "");
+        setFoodText(patch.food?.name ?? "");
+      }
+      setParseReview(null);
+    } catch (cause) {
+      setParseError(cause instanceof Error ? cause.message : "Could not apply the parse");
+    } finally {
+      setParseBusy(false);
+    }
+  };
+
   const moveTo =
     components.length > 0 ? (
       <Select
@@ -775,6 +939,17 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
     foodText,
     foodRows,
     controls,
+    parse: canParse
+      ? {
+          review: parseReview,
+          busy: parseBusy,
+          error: parseError,
+          onStart: () => void startParse(),
+          onChange: setParseReview,
+          onCancel: cancelParse,
+          onConfirm: () => void confirmParse(),
+        }
+      : undefined,
     onPatch,
     onQuantityText: setQuantityDraft,
     onUnitText: setUnitText,

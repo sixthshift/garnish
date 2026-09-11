@@ -22,7 +22,9 @@ import {
   moveIngredientTo,
   INGREDIENT_DRAG_GROUP,
   newIngredient,
+  parsedRowPatch,
   parseQuantity,
+  parseRowFor,
   quantityText,
   removeIngredient,
   reviewedIngredient,
@@ -31,8 +33,8 @@ import {
   updateIngredient,
 } from "../../src/components/IngredientsEditor";
 import { type DraftComponent, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
-import { type ReviewRow, rowCommit, reviewRows } from "../../src/domain/bulkIngredients";
-import { listFoods } from "../../src/server/foods";
+import { pendingCreations, type ReviewRow, rowCommit, reviewRows } from "../../src/domain/bulkIngredients";
+import { findOrCreateFood, listFoods } from "../../src/server/foods";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -661,5 +663,177 @@ describe("the inline fields on wide (M13.6)", () => {
     const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} />);
     expect(html).not.toContain("data-original-text-above");
     expect(html).not.toContain("200g plain flour");
+  });
+});
+
+// --- M17.6 Parse a single row ------------------------------------------------
+//
+// A text-only row's `originalText` gets the same treatment a pasted line
+// does (M17.5): parsed, reviewed, and only ever applied once approved. Two
+// pure functions carry the logic — `parseRowFor` (parse + wrap as a review
+// row) and `parsedRowPatch` (the review's decision as a patch onto the row it
+// came from) — so "fills the draft, leaves originalText intact" is checked
+// without a DOM. The two placements (row menu inline, plain button in the
+// phone sheet) are checked as markup, the same way `SortMenu`/`Menu` are
+// (no jsdom in this project's vitest config).
+
+/** A text-only row holding `text` as the sole ingredient of a fresh draft's first component. */
+function textOnlyDraft(text: string): RecipeDraft {
+  return updateIngredient(addIngredient({ ...emptyDraft(), name: "Toast" }, 0), 0, 0, { originalText: text });
+}
+
+describe("parseRowFor", () => {
+  test("parses a line the same way bulk add's reviewRows does, for one row", () => {
+    const row = parseRowFor("200 g flour, sifted", { units, foods: [flourRow] }, "row-1");
+    expect(row).toEqual({ ...reviewOf("200 g flour, sifted"), key: "row-1" });
+  });
+
+  test("an unmatched food proposes a name to create, declined by default", () => {
+    const row = parseRowFor("100 g almond meal", { units, foods: [flourRow] }, "row-2");
+    expect(row.food).toEqual({ kind: "none" });
+    expect(row.foodText).toBe("almond meal");
+  });
+});
+
+describe("parsedRowPatch", () => {
+  test("a matched row patches quantity, unit, food and note; originalText is never in it", () => {
+    const row = reviewOf("200 g flour, sifted");
+    const patch = parsedRowPatch(row, new Map(), new Map());
+    expect(patch).toEqual({ quantity: 200, fixed: false, note: "sifted", unit: gram, food: foodReference(flourRow) });
+    expect(patch).not.toHaveProperty("originalText");
+  });
+
+  test("a declined food leaves nothing to apply", () => {
+    const row = reviewOf("100 g almond meal");
+    expect(row.food).toEqual({ kind: "none" });
+    expect(parsedRowPatch(row, new Map(), new Map())).toBeNull();
+  });
+
+  test("an approved creation is taken from the created map, keyed by the approved name", () => {
+    const almond = { ...flourRow, id: "22222222-2222-4222-8222-222222222222", name: "Almond Meal" };
+    const row = reviewOf("100 g almond meal");
+    const approved = { ...row, food: { kind: "create" as const, name: row.foodText } };
+    const patch = parsedRowPatch(approved, new Map([["almond meal", almond]]), new Map());
+    expect(patch?.food?.id).toBe(almond.id);
+  });
+
+  test("an approved creation missing from the map leaves nothing to apply, rather than inventing a reference", () => {
+    const row = reviewOf("100 g almond meal");
+    const approved = { ...row, food: { kind: "create" as const, name: row.foodText } };
+    expect(parsedRowPatch(approved, new Map(), new Map())).toBeNull();
+  });
+
+  test("a declined unit still patches a structured row, just with no unit", () => {
+    const row = reviewOf("2 sprigs flour");
+    expect(row.unitText).toBe("sprigs");
+    const patch = parsedRowPatch(row, new Map(), new Map());
+    expect(patch).toMatchObject({ quantity: 2, unit: null });
+    expect(patch?.food?.name).toBe("flour");
+  });
+});
+
+describe("Check: parsing a saved row (M17.6)", () => {
+  test("a matched parse fills the draft row and leaves originalText intact", () => {
+    const draft = textOnlyDraft("200 g flour, sifted");
+    const before = draft.components[0]!.ingredients[0]!;
+    const parsed = parseRowFor(before.originalText ?? "", { units, foods: [flourRow] }, before.id ?? "row");
+    expect(parsed.food).toEqual({ kind: "existing", row: flourRow });
+
+    const patch = parsedRowPatch(parsed, new Map(), new Map());
+    expect(patch).not.toBeNull();
+    expect(patch).not.toHaveProperty("originalText");
+
+    const after = updateIngredient(draft, 0, 0, patch!).components[0]!.ingredients[0]!;
+    expect(after.originalText).toBe("200 g flour, sifted");
+    expect(after.quantity).toBe(200);
+    expect(after.note).toBe("sifted");
+    expect(after.unit?.name).toBe("gram");
+    expect(after.food?.name).toBe("flour");
+    expect(isTextOnly(after)).toBe(false);
+  });
+
+  test("declining an unknown food leaves the row exactly as it was", () => {
+    const draft = textOnlyDraft("100 g almond meal");
+    const before = draft.components[0]!.ingredients[0]!;
+    const parsed = parseRowFor(before.originalText ?? "", { units, foods: [flourRow] }, before.id ?? "row");
+    expect(parsed.food).toEqual({ kind: "none" });
+    expect(parsedRowPatch(parsed, new Map(), new Map())).toBeNull();
+    // Nothing to apply: the row is untouched, still text only.
+    expect(draft.components[0]!.ingredients[0]).toEqual(before);
+    expect(isTextOnly(before)).toBe(true);
+  });
+
+  test("an approved creation is made only from the confirmed name, and originalText survives it", async () => {
+    const draft = textOnlyDraft("100 g almond meal");
+    const before = draft.components[0]!.ingredients[0]!;
+    const parsed = parseRowFor(before.originalText ?? "", { units, foods: [] }, before.id ?? "row");
+    const approved = { ...parsed, food: { kind: "create" as const, name: parsed.foodText } };
+    const pending = pendingCreations([approved]);
+    expect(pending).toEqual({ foods: ["almond meal"], units: [] });
+
+    const created = await callServerFn(findOrCreateFood, { name: pending.foods[0]! });
+    const patch = parsedRowPatch(approved, new Map([[pending.foods[0]!.toLowerCase(), created]]), new Map());
+    const after = updateIngredient(draft, 0, 0, patch!).components[0]!.ingredients[0]!;
+    expect(after.originalText).toBe("100 g almond meal");
+    expect(after.food?.name).toBe("almond meal");
+    expect(isTextOnly(after)).toBe(false);
+  });
+});
+
+describe("the Parse action's two placements (M17.6)", () => {
+  const noopParse = { review: null, busy: false, error: null, onStart: () => {}, onChange: () => {}, onCancel: () => {}, onConfirm: () => {} };
+
+  test("a text-only row's inline fields (md+) offer Parse inside a row menu", () => {
+    const html = renderToString(<IngredientsEditor draft={textOnlyDraft("3 lemons")} ci={0} units={units} onChange={() => {}} />);
+    expect(html).toContain('aria-label="Ingredient 1 actions"');
+    expect(html).toContain('aria-haspopup="menu"');
+  });
+
+  test("a structured row gets no row menu at all", () => {
+    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+    expect(html).not.toContain('aria-label="Ingredient 1 actions"');
+    expect(html).not.toContain(">Parse<");
+  });
+
+  test("inline (originalTextAbove) renders the trigger as a menu item, not a button", () => {
+    const draft = textOnlyDraft("3 lemons");
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} parse={noopParse} originalTextAbove />);
+    expect(html).toContain('aria-label="Ingredient 1 actions"');
+    expect(html).not.toContain('aria-label="Ingredient 1 parse"');
+  });
+
+  test("the phone sheet (showOriginalText) renders the trigger as a plain button", () => {
+    const draft = textOnlyDraft("3 lemons");
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} parse={noopParse} showOriginalText />);
+    expect(html).toContain('aria-label="Ingredient 1 parse"');
+    expect(html).toContain(">Parse<");
+    expect(html).not.toContain('aria-label="Ingredient 1 actions"');
+  });
+
+  test("a structured row never shows Parse, even if the caller supplies it", () => {
+    const html = renderToString(<IngredientFields {...fieldProps(tart(), 0, () => {})} parse={noopParse} showOriginalText />);
+    expect(html).not.toContain("Parse");
+  });
+
+  test("pressing Parse in the sheet calls onStart", () => {
+    const draft = textOnlyDraft("3 lemons");
+    let started = false;
+    const parse = { ...noopParse, onStart: () => { started = true; } };
+    const tree = IngredientFields({ ...fieldProps(draft, 0, () => {}), parse, showOriginalText: true });
+    elementWithLabel(tree, "Ingredient 1 parse").props.onClick();
+    expect(started).toBe(true);
+  });
+
+  test("once a review is open, Apply and Cancel are plain buttons in both widths", () => {
+    const draft = textOnlyDraft("3 lemons");
+    const row = parseRowFor("3 lemons", { units, foods: [flourRow] }, "row");
+    let confirmed = false;
+    let cancelled = false;
+    const parse = { review: row, busy: false, error: null, onStart: () => {}, onChange: () => {}, onCancel: () => { cancelled = true; }, onConfirm: () => { confirmed = true; } };
+    const tree = IngredientFields({ ...fieldProps(draft, 0, () => {}), parse, originalTextAbove: true });
+    elementWithLabel(tree, "Ingredient 1 parse apply").props.onClick();
+    expect(confirmed).toBe(true);
+    elementWithLabel(tree, "Ingredient 1 parse cancel").props.onClick();
+    expect(cancelled).toBe(true);
   });
 });
