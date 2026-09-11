@@ -3,7 +3,7 @@
 // component. The form's rendering is covered by the route tests in
 // test/routes/loaders.test.tsx, which mount it with a router.
 import { describe, expect, test } from "vitest";
-import { draftFromRecipe, emptyDraft, parseAmount, parseMinutes, saveNotice, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
+import { draftFromRecipe, emptyDraft, isDirty, parseAmount, parseMinutes, saveNotice, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
 import { type Recipe, recipeInputSchema } from "../../src/domain/recipe";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -214,5 +214,47 @@ describe("saveNotice", () => {
     expect(notice.intent).toBe("warning");
     expect(notice.title).toBe("Changes saved");
     expect(notice.message).toContain("file too large");
+  });
+});
+
+describe("isDirty", () => {
+  test("a draft compared with itself, or with a deep copy, is clean", () => {
+    const draft = draftFromRecipe(stored);
+    expect(isDirty(draft, draft)).toBe(false);
+    expect(isDirty(draft, draftFromRecipe(stored))).toBe(false);
+    // Two blank drafts differ: each carries a component with a fresh id.
+    expect(isDirty(emptyDraft(), emptyDraft())).toBe(true);
+  });
+
+  test("a changed field at any depth is dirty", () => {
+    const initial = draftFromRecipe(stored);
+    expect(isDirty(initial, { ...initial, name: "Lime tart" })).toBe(true);
+    expect(isDirty(initial, { ...initial, prepTime: null })).toBe(true);
+    expect(isDirty(initial, { ...initial, tags: [] })).toBe(true);
+    const components = initial.components.map((component) => ({ ...component, steps: [{ ...component.steps[0]!, text: "Rub in well." }] }));
+    expect(isDirty(initial, { ...initial, components })).toBe(true);
+  });
+
+  test("typing a field back to what it was is clean again", () => {
+    const initial = draftFromRecipe(stored);
+    const typed = { ...initial, name: "Lime tart" };
+    expect(isDirty(initial, typed)).toBe(true);
+    expect(isDirty(initial, { ...typed, name: "Lemon tart" })).toBe(false);
+  });
+
+  test("reordering a list is dirty; rewriting an object with its keys in another order is not", () => {
+    const initial = draftFromRecipe(stored);
+    const twoNotes = [...initial.notes, { id: "77777777-7777-4777-8777-777777777777", title: "Serve", text: "Cold." }];
+    const reordered = { ...initial, notes: [...twoNotes].reverse() };
+    expect(isDirty({ ...initial, notes: twoNotes }, reordered)).toBe(true);
+    const note = initial.notes[0]!;
+    expect(isDirty(initial, { ...initial, notes: [{ text: note.text, title: note.title, id: note.id }] })).toBe(false);
+  });
+
+  test("null, undefined and a missing id are told apart", () => {
+    const initial = draftFromRecipe(stored);
+    expect(isDirty(initial, { ...initial, rating: null })).toBe(true);
+    expect(isDirty({ ...initial, id: undefined }, initial)).toBe(true);
+    expect(isDirty({ ...emptyDraft(), components: [] }, { ...emptyDraft(), components: [] })).toBe(false);
   });
 });

@@ -17,6 +17,13 @@
 // Outcomes are reported with `notify()` (src/lib/notify.ts), not inline copy —
 // a save navigates away, so a message in this form would never be read. The
 // offline banner stays inline: it is a standing state, not an outcome.
+//
+// Save and Cancel live in a `SaveBar`: sticky at the foot of the screen on
+// phone, inline from `md`. The draft is compared with the one the form opened
+// on (`isDirty`, plus a picked image file, which never enters the draft), and
+// while it differs `useBlocker` stands in the way: leaving the route asks for
+// a confirm, and closing the tab gets the browser's own prompt. A save in
+// flight lifts the block, so the navigation it ends with goes through.
 import { Button } from "@sixthshift/design-system/button";
 import { FormField, type FormFieldFeedback } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
@@ -27,7 +34,7 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Select } from "@sixthshift/design-system/select";
 import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useId, useState } from "react";
 import { slugify } from "../db/names";
 import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchema, type Tag, type Unit } from "../domain/recipe";
@@ -40,9 +47,11 @@ import { createRecipe, updateRecipe } from "../server/recipes";
 import { ComponentsEditor, newComponent } from "./ComponentsEditor";
 import { NotesEditor } from "./NotesEditor";
 import { StepsEditor } from "./StepsEditor";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { ImageUpload } from "./ui/ImageUpload";
 import { NumberStepper } from "./ui/NumberStepper";
 import { Rating } from "./ui/Rating";
+import { SaveBar } from "./ui/SaveBar";
 
 type ComponentInput = RecipeInput["components"][number];
 export type DraftIngredient = NonNullable<ComponentInput["ingredients"]>[number];
@@ -116,6 +125,30 @@ export function draftFromRecipe(recipe: Recipe): RecipeDraft {
     })),
     steps: rest.steps.map((step) => ({ ...step })),
   };
+}
+
+/** Structural equality over the JSON-shaped values a draft is made of. Key order is not a difference; array order is. */
+function same(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((item, index) => same(item, b[index]));
+  }
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  const left = a as Record<string, unknown>;
+  const right = b as Record<string, unknown>;
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  for (const key of keys) if (!same(left[key], right[key])) return false;
+  return true;
+}
+
+/**
+ * Has the draft moved away from the one the form opened on? Compared by value,
+ * so retyping a field back to what it was is not dirty, and reordering a list
+ * is. A picked image file lives outside the draft; the form ors it in. Pure.
+ */
+export function isDirty(initial: RecipeDraft, draft: RecipeDraft): boolean {
+  return !same(initial, draft);
 }
 
 /** A friendlier line for the errors a person can actually cause here. */
@@ -205,6 +238,9 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const dirty = (isDirty(initial, draft) || file !== null) && !saving;
+  const blocker = useBlocker({ shouldBlockFn: () => true, enableBeforeUnload: () => dirty, disabled: !dirty, withResolver: true });
 
   const patch = (fields: Partial<RecipeDraft>) => setDraft((current) => ({ ...current, ...fields }));
   const unitOptions = units.map((unit) => ({ value: unit.id, label: unit.name }));
@@ -359,20 +395,36 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
 
       <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="solid" intent="brand" disabled={saving || !online}>
-          {saving ? "Saving…" : existing ? "Save changes" : "Create recipe"}
-        </Button>
-        <Button asChild variant="ghost" intent="neutral" disabled={saving}>
-          {existing ? (
-            <Link to="/recipes/$slug" params={{ slug: existing.slug }}>
-              Cancel
-            </Link>
-          ) : (
-            <Link to="/">Cancel</Link>
-          )}
-        </Button>
-      </div>
+      <SaveBar
+        label={existing ? "Save changes" : "Create recipe"}
+        busyLabel="Saving…"
+        busy={saving}
+        disabled={!online}
+        note={dirty ? "Unsaved changes" : undefined}
+        cancel={
+          <Button asChild variant="ghost" intent="neutral" disabled={saving}>
+            {existing ? (
+              <Link to="/recipes/$slug" params={{ slug: existing.slug }}>
+                Cancel
+              </Link>
+            ) : (
+              <Link to="/">Cancel</Link>
+            )}
+          </Button>
+        }
+      />
+
+      {blocker.status === "blocked" && (
+        <ConfirmDialog
+          title="Discard changes?"
+          confirmLabel="Discard"
+          aria-label="Discard changes"
+          onCancel={blocker.reset}
+          onConfirm={blocker.proceed}
+        >
+          <p>This recipe has changes that have not been saved. Leaving now loses them.</p>
+        </ConfirmDialog>
+      )}
     </form>
   );
 }
