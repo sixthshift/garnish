@@ -101,7 +101,7 @@ Built from [ui-gap.md](ui-gap.md). Copy Mealie unless the row there names anothe
 ## M16 Finish
 
 - [x] **M16.1 Sample data.** `seed --sample` adds a favourite, two timeline events and a source URL so every new screen has data. Check: seed twice, counts unchanged.
-- [ ] **M16.2 Docs sync.** `architecture.md` frontend, data model and API sections match stage 2; `ui-gap.md` rows marked done or deferred; README mentions the settings tabs and Made this. Check: docs tests updated and green; fresh-clone run-through as in M9.3.
+- [x] **M16.2 Docs sync.** `architecture.md` frontend, data model and API sections match stage 2; `ui-gap.md` rows marked done or deferred; README mentions the settings tabs and Made this. Check: docs tests updated and green; fresh-clone run-through as in M9.3.
 
 ## Blocked
 
@@ -109,7 +109,7 @@ _(none)_
 
 ## Questions
 
-_(none)_
+- **M16.2** The editor has no input for `sourceUrl`: the view footer renders it and edits preserve it, but it can only be set through the JSON editor. Recorded as deferred in `ui-gap.md`; stage 2 shipped without it.
 
 ## Log
 
@@ -143,3 +143,4 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-11  M13.6  done  ce668d2  sonnet  ConfirmDialog stays on Modal per decisions row 45; parsed rows show the grey original text above from md up
 2026-09-11  M14.2  done  7a3911d  sonnet  cook ingredient cards tick through the shared store; a Finished card carries Made this and Exit
 2026-09-11  M16.1  done  f65b6a3  sonnet  sample data gains a favourite, a source URL and two timeline events, idempotent across re-seeds
+2026-09-11  M16.2  done  28258ce  opus  architecture, ui-gap and README brought up to stage 2; ui-gap gains a Status column
