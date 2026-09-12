@@ -312,8 +312,12 @@ export type RecipeFormProps = {
   initial: RecipeDraft;
   units: Unit[];
   tags: Tag[];
-  /** The stored recipe being edited. Absent for a new recipe. */
-  existing?: { id: string; slug: string };
+  /**
+   * The stored recipe being edited. Absent for a new recipe. `servings`, when
+   * the edit link carried one, is only used to send Cancel back to the same
+   * scale on the view page.
+   */
+  existing?: { id: string; slug: string; servings?: number };
   /** Override the detected online state (tests). Writes are refused offline; nothing is queued. */
   online?: boolean;
   /**
@@ -349,7 +353,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
   const cancelLink = (
     <Button asChild variant="ghost" intent="neutral" size="sm" disabled={saving}>
       {existing ? (
-        <Link to="/recipes/$slug" params={{ slug: existing.slug }}>
+        <Link to="/recipes/$slug" params={{ slug: existing.slug }} search={{ servings: existing.servings }}>
           Cancel
         </Link>
       ) : (

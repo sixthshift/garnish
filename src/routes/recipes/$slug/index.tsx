@@ -54,6 +54,15 @@ export const Route = createFileRoute("/recipes/$slug/")({
   component: RecipePage,
 });
 
+/** A pencil, drawn the way RecipeHeader.tsx draws its own icons. */
+function EditIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19 3 20l1-4Z" />
+    </svg>
+  );
+}
+
 /**
  * The servings the scale control moves to: whole steps of one, never below 1.
  * A fractional current value (2.5) first snaps to the whole number on the side
@@ -102,13 +111,20 @@ function RecipePage() {
         onRate={(rating) => void rate(rating)}
         actions={
           <>
+            {/* Edit and Cook are both in the open (M25.5) rather than behind
+                the menu; each carries the currently requested scale so it
+                round-trips through the edit page and into cook mode. */}
+            <Button asChild variant="outline" intent="neutral" size="sm" iconOnly aria-label="Edit">
+              <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                <EditIcon />
+              </Link>
+            </Button>
             <Button asChild variant="solid" intent="brand" size="sm">
-              {/* The primary action stays a button; everything else is in the menu. Carries the current scale into cook mode. */}
               <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
                 Cook
               </Link>
             </Button>
-            <RecipeActions recipe={recipe} servings={requested} />
+            <RecipeActions recipe={recipe} />
           </>
         }
       />

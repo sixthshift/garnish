@@ -303,7 +303,8 @@ describe("/recipes/$slug (view)", () => {
     expect(html).not.toContain('data-empty="part"'); // every part has content
     expect(html).toContain('aria-label="Scale servings"');
     expect(html).not.toContain(">Reset<"); // nothing requested yet
-    // Edit moved into the action menu (M11.6); the trigger is what the closed page shows.
+    // Edit and Cook are their own buttons beside the menu (M25.5); the trigger is what the closed menu shows.
+    expect(html).toContain('aria-label="Edit"');
     expect(html).toContain('aria-label="Recipe actions"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
 
@@ -523,6 +524,14 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toContain("Not found");
   });
 
+  // M25.5: the view page's Edit button carries the requested servings so the
+  // editor's Cancel link can hand the same scale back.
+  test("a servings search param round-trips through Cancel", async () => {
+    await callServerFn(createRecipe, { name: "Lemon tart", recipeServings: 4, parts: [{ name: "", ingredients: [], steps: [] }] });
+    const html = await renderRoute("/recipes/lemon-tart/edit?servings=8");
+    expect(html).toContain('href="/recipes/lemon-tart?servings=8"'); // cancel
+  });
+
   // M11.6 moved Delete out of the editor and into the view page's action menu.
   test("does not host Delete: it lives in the recipe view's action menu", async () => {
     await seed("Lemon tart");
@@ -651,5 +660,6 @@ describe("loader data types match the domain schemas", () => {
       seed?: string | undefined;
     }>();
     expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
+    expectTypeOf<(typeof EditRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
   });
 });

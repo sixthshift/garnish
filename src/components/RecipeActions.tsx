@@ -1,13 +1,14 @@
 // The recipe page's action menu: everything you can do to the recipe you are
-// looking at, in one place, the way Mealie's recipe menu works.
+// looking at except Edit and Cook, which sit beside it as their own buttons
+// in the header (M25.5) rather than living in here.
 //
-// Edit and Cook are links; Duplicate writes through `useMutate` and lands on
-// the copy; the two Copy items go through `src/lib/clipboard.ts`; Print asks
-// the browser to print the page (the print rules live in src/styles.css);
-// Delete confirms first, and is the one destructive item, kept at the bottom
-// behind a separator. Delete moved here from the edit page (M11.6), which is
-// where Mealie has it, and keeps the same `ConfirmDialog`.
-import { Link, useNavigate } from "@tanstack/react-router";
+// Duplicate writes through `useMutate` and lands on the copy; the two Copy
+// items go through `src/lib/clipboard.ts`; Print asks the browser to print
+// the page (the print rules live in src/styles.css); Delete confirms first,
+// and is the one destructive item, kept at the bottom behind a separator.
+// Delete moved here from the edit page (M11.6), which is where Mealie has it,
+// and keeps the same `ConfirmDialog`.
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ingredientsText, recipeUrl } from "../domain/copy";
 import type { Recipe } from "../domain/recipe";
@@ -20,11 +21,9 @@ import { Menu } from "./ui/Menu";
 
 export type RecipeActionsProps = {
   recipe: Recipe;
-  /** The servings the page is showing, carried into cook mode. */
-  servings?: number;
 };
 
-export function RecipeActions({ recipe, servings }: RecipeActionsProps) {
+export function RecipeActions({ recipe }: RecipeActionsProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const [confirming, setConfirming] = useState(false);
@@ -69,16 +68,6 @@ export function RecipeActions({ recipe, servings }: RecipeActionsProps) {
   return (
     <>
       <Menu label="Recipe actions" iconOnly>
-        <Menu.Item asChild>
-          <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }}>
-            Edit
-          </Link>
-        </Menu.Item>
-        <Menu.Item asChild>
-          <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings }}>
-            Cook
-          </Link>
-        </Menu.Item>
         <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
         <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
         <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
