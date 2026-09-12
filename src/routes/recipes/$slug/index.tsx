@@ -117,6 +117,7 @@ function RecipePage() {
       <article className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
         <RecipeHeader
           recipe={recipe}
+          madeCount={timeline.length}
           onRate={(rating) => void rate(rating)}
           actions={
             <>

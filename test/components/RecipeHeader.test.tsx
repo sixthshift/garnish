@@ -45,8 +45,8 @@ const base: Recipe = {
 };
 
 /** Render the header inside a throwaway router, so its tag `Link`s resolve. */
-async function render(recipe: Recipe, actions?: ReactNode, onRate?: (rating: number) => void): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} actions={actions} onRate={onRate} /> });
+async function render(recipe: Recipe, actions?: ReactNode, onRate?: (rating: number) => void, madeCount?: number): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} actions={actions} onRate={onRate} madeCount={madeCount} /> });
   const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => null });
   const router = createRouter({
     routeTree: rootRoute.addChildren([indexRoute]),
@@ -226,19 +226,34 @@ describe("the header's stars (M25.3)", () => {
 });
 
 describe("last made", () => {
-  test("a recipe never cooked says so, in the strip", async () => {
-    const html = await render(base);
+  test("zero events: a recipe never cooked says so, in the strip", async () => {
+    const html = await render(base, undefined, undefined, 0);
     expect(html).toContain('data-testid="last-made"');
     expect(html).toContain("Never made");
     expect(html.indexOf('data-testid="stat-strip"')).toBeLessThan(html.indexOf('data-testid="last-made"'));
   });
 
-  test("a cooked recipe shows the date as text; the header renders no button for it", async () => {
-    const html = await render({ ...base, lastMade: "2026-09-11T00:00:00.000Z" });
+  test("no madeCount given reads the same as zero", async () => {
+    const html = await render(base);
+    expect(html).toContain("Never made");
+  });
+
+  test("one event: the date and a singular count; the header renders no button for it", async () => {
+    const html = await render({ ...base, lastMade: "2026-09-11T00:00:00.000Z" }, undefined, undefined, 1);
     expect(html).toContain("Last made");
     expect(html).toMatch(/11 Sept? 2026/);
+    expect(html).toContain("1 time");
+    expect(html).not.toContain("1 times");
     expect(html).not.toContain("Never made");
     expect(html).not.toContain('data-testid="made-this"');
+  });
+
+  test("four events: the date and a plural count", async () => {
+    const html = await render({ ...base, lastMade: "2026-09-03T00:00:00.000Z" }, undefined, undefined, 4);
+    expect(html).toContain("Last made");
+    expect(html).toMatch(/3 Sept? 2026/);
+    expect(html).toContain("4 times");
+    expect(html).not.toContain("Never made");
   });
 });
 

@@ -30,6 +30,12 @@ export type RecipeHeaderProps = {
    * shows nothing.
    */
   onRate?: (rating: number) => void;
+  /**
+   * How many timeline events this recipe has logged. Omitted or 0 reads
+   * "Never made"; otherwise the last made line adds the count ("1 time",
+   * "4 times") after the date.
+   */
+  madeCount?: number;
 };
 
 /**
@@ -134,11 +140,12 @@ function ImagePlaceholder() {
   );
 }
 
-export function RecipeHeader({ recipe, actions, onRate }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeaderProps) {
   const src = recipeImageUrl(recipe.image);
   const stats = timeStats(recipe);
   const yieldText = formatYield(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
   const lastMade = formatDateStamp(recipe.lastMade);
+  const count = madeCount ?? 0;
 
   return (
     <header className="flex flex-col gap-4" data-testid="recipe-header">
@@ -186,8 +193,15 @@ export function RecipeHeader({ recipe, actions, onRate }: RecipeHeaderProps) {
               </dl>
             )}
             <p className="text-sm text-fg-subtle" data-testid="last-made">
-              {lastMade === "" ? "Never made" : "Last made "}
-              {lastMade !== "" && <span className="font-medium text-fg-strong">{lastMade}</span>}
+              {count > 0 && lastMade !== "" ? (
+                <>
+                  {"Last made "}
+                  <span className="font-medium text-fg-strong">{lastMade}</span>
+                  {` · ${count} ${count === 1 ? "time" : "times"}`}
+                </>
+              ) : (
+                "Never made"
+              )}
             </p>
           </div>
 
