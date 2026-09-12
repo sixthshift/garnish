@@ -71,7 +71,7 @@ function RecipePage() {
   const goToServings = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
 
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 lg:max-w-5xl">
+    <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6 lg:max-w-5xl">
       <RecipeHeader
         recipe={recipe}
         actions={

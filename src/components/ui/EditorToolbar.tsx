@@ -11,6 +11,10 @@
 // of the content column is free. On a phone it is a plain header and `SaveBar`
 // keeps the footer, because a sticky strip at the top of a phone screen is
 // competing with the browser's own and the save wants to be under a thumb.
+//
+// It bleeds to the edges with `-mx-4 px-4` below `md` and `-mx-6 px-6` from
+// `md`, matching the editor pages' own `p-4 md:p-6`, so the strip's
+// background spans the full width at either size.
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import type { ReactNode } from "react";
@@ -43,7 +47,7 @@ export function EditorToolbar({ title, placeholder = "Untitled", label, busyLabe
     <div
       data-testid="editor-toolbar"
       className={cn(
-        "-mx-6 flex flex-wrap items-center gap-3 border-b border-border-normal bg-bg-normal px-6 py-3 md:sticky md:top-0 md:z-20",
+        "-mx-4 flex flex-wrap items-center gap-3 border-b border-border-normal bg-bg-normal px-4 py-3 md:sticky md:top-0 md:z-20 md:-mx-6 md:px-6",
         className,
       )}
     >
