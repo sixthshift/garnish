@@ -267,6 +267,37 @@ describe("StepsEditor", () => {
     expect(html).not.toContain('role="dialog"');
   });
 
+  test("every step opens editing, with Preview only in its menu (M22.1)", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
+    // Three textareas, no preview panes, and the toggle is behind the menu.
+    expect(html.match(/<textarea/g)).toHaveLength(3);
+    expect(html).not.toContain("data-step-preview");
+    expect(html).not.toContain(">Preview<");
+    expect(html).not.toContain('data-testid="markdown"');
+  });
+
+  test("a previewed step renders markdown while the rest stay editable (M22.1)", () => {
+    const draft = updateStep(focaccia(), 0, 1, "Rest, then **fold**.");
+    const id = draft.parts[0]!.steps[1]!.id!;
+    const html = renderToString(<StepsEditor draft={draft} pi={0} onChange={() => {}} previewSteps={[id]} />);
+    expect(html).toContain('data-step-preview="1"');
+    expect(html).toContain('data-testid="markdown"');
+    expect(html).toContain("<strong");
+    expect(html).toContain("fold");
+    // Only that one: the other two are still textareas.
+    expect(html.match(/<textarea/g)).toHaveLength(2);
+    expect(html).not.toContain('name="parts.0.steps.1.text"');
+    expect(html).toContain('name="parts.0.steps.0.text"');
+    expect(html).toContain('name="parts.0.steps.2.text"');
+  });
+
+  test("a blank step previews as nothing rather than an empty box", () => {
+    const draft = withSteps(emptyDraft(), 0, [newStep("  ")]);
+    const html = renderToString(<StepsEditor draft={draft} pi={0} onChange={() => {}} previewSteps={[draft.parts[0]!.steps[0]!.id!]} />);
+    expect(html).toContain("Nothing to preview");
+    expect(html).not.toContain('data-testid="markdown"');
+  });
+
   test("each step has one actions menu, not a row of buttons (M21.2)", () => {
     const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
     expect(html.match(/aria-label="Step \d actions"/g)).toHaveLength(3);

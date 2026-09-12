@@ -13,12 +13,20 @@
 // forty controls for a ten-step method, and on a phone they wrapped to three
 // lines under each one; Mealie's step menu carries seven entries and Tandoor
 // puts split-all and merge-all above the list, which is what this is.
+//
+// A step is markdown on the view page and in cook mode, and the editor gave no
+// way to see that, so a stray underscore or a mis-typed list was only ever
+// found after saving. The row menu's Preview swaps the textarea for
+// `Markdown`, per row and per step id, so previewing one step leaves the rest
+// editing and inserting a step above does not move the preview onto another
+// one (decisions.md row 56).
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
 import { paragraphs } from "../domain/bulkText";
+import { Markdown } from "./Markdown";
 import { randomUuid } from "../lib/ids";
 import { focusNamed, rowEnter, rowFieldName } from "../lib/rowKeys";
 import type { DraftStep, FieldErrors, RecipeDraft } from "./RecipeForm";
@@ -186,10 +194,15 @@ export type StepsEditorProps = {
   heading?: string;
   errors?: FieldErrors;
   disabled?: boolean;
+  /** Step ids to open in preview rather than editing (M22.1). The row menu moves them after that; tests use it to render the state a click would reach. */
+  previewSteps?: readonly string[];
 };
 
-export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {}, disabled }: StepsEditorProps) {
+export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {}, disabled, previewSteps }: StepsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
+  // Step ids being previewed rather than edited (M22.1). Keyed by id, not
+  // index, so inserting a step above does not move the preview to another one.
+  const [previewing, setPreviewing] = useState<ReadonlySet<string>>(() => new Set(previewSteps ?? []));
   const steps = stepsOf(draft, pi);
   if (!steps) return null;
   const path = stepsPath(pi);
@@ -201,6 +214,15 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
    * step it appends and focuses; from any earlier one it moves to the next
    * (decisions.md row 55).
    */
+  const togglePreview = (id: string) => {
+    setPreviewing((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const enterOnStep = (si: number) => {
     const action = rowEnter(si, steps.length);
     if (action === "ignore") return;
@@ -262,12 +284,24 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
           onReorder={(next) => onChange(withSteps(draft, pi, next))}
           renderItem={(step, si) => {
             const error = errors[`${path}.${si}.text`];
+            const preview = previewing.has(step.id ?? "");
             return (
               <div className="flex gap-2" data-step={si}>
                 <span className="mt-2 w-5 shrink-0 text-right text-sm font-medium text-fg-subtle" aria-hidden="true">
                   {si + 1}.
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  {preview ? (
+                    <div className="min-h-16 rounded-md border border-border-normal bg-bg-subtle px-3 py-2 text-sm" data-step-preview={si}>
+                      {(step.text ?? "").trim() === "" ? (
+                        <Muted as="span" className="text-sm">
+                          Nothing to preview
+                        </Muted>
+                      ) : (
+                        <Markdown source={step.text ?? ""} />
+                      )}
+                    </div>
+                  ) : (
                   <Textarea
                     name={`${path}.${si}.text`}
                     aria-label={`Step ${si + 1}`}
@@ -283,6 +317,7 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                     }}
                     onChange={(event) => onChange(updateStep(draft, pi, si, event.target.value))}
                   />
+                  )}
                   {error !== undefined && (
                     <p className="text-sm text-fg-danger" role="alert">
                       {error}
@@ -290,6 +325,7 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                   )}
                 </div>
                 <Menu label={`Step ${si + 1} actions`} iconOnly>
+                  <Menu.Item onSelect={() => togglePreview(step.id ?? "")}>{preview ? "Edit" : "Preview"}</Menu.Item>
                   <Menu.Item onSelect={() => onChange(insertStepAbove(draft, pi, si))}>Insert above</Menu.Item>
                   <Menu.Item onSelect={() => onChange(insertStepBelow(draft, pi, si))}>Insert below</Menu.Item>
                   <Menu.Item disabled={paragraphs(step.text ?? "").length < 2} onSelect={() => onChange(splitStepByParagraph(draft, pi, si))}>
