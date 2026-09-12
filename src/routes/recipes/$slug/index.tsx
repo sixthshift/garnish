@@ -191,15 +191,17 @@ function RecipePage() {
             {recipe.parts.map((part) => (
               <PartSteps key={part.id} part={part} recipeId={recipe.id} />
             ))}
+
+            {/* M30.2: under the last step card, not above the History
+                disclosure — the button belongs to the method, not the log. */}
+            <div className="flex justify-end" data-testid="made-this-row" data-print="hide">
+              <MadeThisButton recipe={recipe} />
+            </div>
           </div>
         </div>
 
         {/* Any timers started from a step, fixed above the phone tab bar. */}
         <TimerStrip recipeId={recipe.id} fixed />
-
-        {/* M30.2 will move this beside the last step; for now it keeps the
-            spot TimelineList's own heading used to hold (M25.6). */}
-        <MadeThisButton recipe={recipe} />
 
         <TimelineList events={timeline} />
 
