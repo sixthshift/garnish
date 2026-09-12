@@ -4,7 +4,7 @@
 
 - Recipe library: list, search by name and tag, view.
 - Recipe editor: parts, ingredients, steps, tags, servings, times, image.
-- Paste a whole recipe in, split and parsed by rules and reviewed before it is saved. No network, no AI (decisions row 52).
+- Import from a URL: schema.org `ld+json` where the page has it, an OpenGraph stub where it does not, reviewed before it is saved. No per-site scrapers, no AI (decisions rows 57, 58).
 - Scaling with fixed-quantity support.
 - Cook view: per-part, wake lock, scale control.
 - PWA: installable, offline read of cached recipes.
@@ -16,7 +16,7 @@
 
 - Shopping list. Merge rule decided: by food and unit, expandable, grouped by aisle.
 - Unit conversions per food, so 1 cup flour and 300 g flour merge.
-- Import via `claude -p`: URL and pasted text, reviewed before save. Replaces the rules-based split, not the review step.
+- Import via `claude -p`: pasted prose and pages with no structured data, reviewed before save. Adds a rung under the JSON-LD import; it does not replace it, and the review step is shared either way.
 - Meal planning, feeding the shopping list.
 - File export, format undecided. Cooklang is the obvious candidate.
 - In-editor AI help: unit conversion, rewording, substitutions.
