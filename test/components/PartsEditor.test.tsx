@@ -202,7 +202,7 @@ describe("PartsEditor", () => {
     expect(html).not.toContain("Move part");
     // The lists themselves are all there, and so is the way out.
     expect(html).toContain("One ingredient per line"); // the empty list's textarea (M27.2)
-    expect(html).toContain("No steps yet");
+    expect(html).toContain("The method, a blank line between steps"); // the empty step list's textarea (M27.3)
     expect(html).not.toContain("No parts yet");
     expect(html).toContain(">Add part<");
   });

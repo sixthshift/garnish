@@ -20,6 +20,16 @@
 // `Markdown`, per row and per step id, so previewing one step leaves the rest
 // editing and inserting a step above does not move the preview onto another
 // one (decisions.md row 56).
+//
+// Entry is text first (M27.3, decisions.md row 63). An empty list renders
+// `BulkInlineAdd` — a textarea, the placeholder inviting the whole method with
+// a blank line between steps — instead of "No steps yet", and its Add splits
+// on paragraphs (`paragraphs`, not `bulkLines`), so a step's own wrapped lines
+// stay one step and a blank line is what starts the next one, the way a
+// pasted method actually reads. No review stage: `addBulkSteps` appends every
+// paragraph as its own step straight away, same as the header's "Bulk add"
+// always has. Once the part has rows the textarea goes and "Bulk add" is the
+// way to add more.
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
@@ -30,7 +40,7 @@ import { Markdown } from "./Markdown";
 import { randomUuid } from "../lib/ids";
 import { focusNamed, rowEnter, rowFieldName } from "../lib/rowKeys";
 import type { DraftStep, FieldErrors, RecipeDraft } from "./RecipeForm";
-import { BulkAddSheet } from "./ui/BulkAddSheet";
+import { BulkAddSheet, BulkInlineAdd } from "./ui/BulkAddSheet";
 import { Menu } from "./ui/Menu";
 import { moveItem, ReorderList } from "./ui/ReorderList";
 
@@ -272,9 +282,13 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
       <EmptyBoundary
         isEmpty={steps.length === 0}
         fallback={
-          <Muted as="p" className="text-sm">
-            No steps yet
-          </Muted>
+          <BulkInlineAdd
+            itemName="step"
+            disabled={disabled}
+            placeholder="The method, a blank line between steps"
+            splitLines={paragraphs}
+            onAdd={(lines) => onChange(addBulkSteps(draft, pi, lines))}
+          />
         }
       >
         <ReorderList

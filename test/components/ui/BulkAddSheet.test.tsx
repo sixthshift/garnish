@@ -7,7 +7,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { BulkAddFields, BulkAddSheet, BulkInlinePanel, BulkReviewList } from "../../../src/components/ui/BulkAddSheet";
-import { splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/bulkText";
+import { paragraphs, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/bulkText";
 
 /** The first element in `node` whose `children` prop is exactly `text`, without rendering it. */
 function elementWithChildren(node: ReactNode, text: string): ReactElement<Record<string, any>> {
@@ -177,5 +177,46 @@ describe("BulkInlinePanel", () => {
     elementWithChildren(reviewing, "Back").props.onClick();
     expect(advanced).toBe(2);
     expect(backed).toBe(1);
+  });
+});
+
+// The plain (no-review) case, M27.3: the steps side, where "Add" commits the
+// split lines straight away rather than opening a review stage.
+describe("BulkInlinePanel with no review", () => {
+  const plainProps = { itemName: "step", text: "", rows: null, onTextChange: () => {}, onRowsChange: () => {}, onAdvance: () => {}, onBack: () => {} };
+
+  test("with no review it is always the textarea, whatever rows holds", () => {
+    const html = renderToString(<BulkInlinePanel {...plainProps} text="Mix." rows={null} />);
+    expect(html).toContain('aria-label="New steps"');
+    expect(html).toContain("One step per line");
+    expect(html).toContain(">Add<");
+    expect(html).not.toContain(">Confirm<");
+    expect(html).not.toContain("to review");
+  });
+
+  test("a caller placeholder overrides the default", () => {
+    const html = renderToString(<BulkInlinePanel {...plainProps} placeholder="The method, a blank line between steps" />);
+    expect(html).toContain("The method, a blank line between steps");
+    expect(html).not.toContain("One step per line");
+  });
+
+  test("Add is disabled or enabled by the caller's splitLines, not always bulkLines", () => {
+    // One line by `bulkLines`, but two paragraphs, so the default (bulkLines) and a paragraph split disagree.
+    const text = "Mix the dry ingredients\nand the wet.\n\nBake it.";
+    const withDefault = renderToString(<BulkInlinePanel {...plainProps} text={text} />);
+    expect(withDefault).not.toMatch(/<button[^>]*disabled=""[^>]*>Add</); // three bulkLines lines, none blank
+
+    const empty = renderToString(<BulkInlinePanel {...plainProps} text={"   \n\n  "} splitLines={paragraphs} />);
+    expect(empty).toMatch(/<button[^>]*disabled=""[^>]*>Add</); // no paragraphs in blank text
+
+    const withParagraphs = renderToString(<BulkInlinePanel {...plainProps} text={text} splitLines={paragraphs} />);
+    expect(withParagraphs).not.toMatch(/<button[^>]*disabled=""[^>]*>Add</);
+  });
+
+  test("Add calls onAdvance, same as the reviewed case", () => {
+    let advanced = 0;
+    const tree = BulkInlinePanel({ ...plainProps, text: "Mix.", onAdvance: () => { advanced += 1; } });
+    elementWithChildren(tree, "Add").props.onClick();
+    expect(advanced).toBe(1);
   });
 });

@@ -26,6 +26,7 @@ import {
   updateStep,
   withSteps,
 } from "../../src/components/StepsEditor";
+import { paragraphs } from "../../src/domain/bulkText";
 import { createRecipe, getRecipe, updateRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -352,11 +353,7 @@ describe("StepsEditor", () => {
     expect(html).not.toContain("Mix.");
   });
 
-  test("an empty list says so; disabled disables the textareas and the add button; errors show inline", () => {
-    const empty = renderToString(<StepsEditor draft={emptyDraft()} pi={0} onChange={() => {}} />);
-    expect(empty).toContain("No steps yet");
-    expect(empty).not.toContain("<textarea");
-
+  test("disabled disables the textareas and the add button; errors show inline", () => {
     const disabled = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} disabled />);
     expect(disabled).toMatch(/<textarea[^>]*disabled=""[^>]*name="parts\.0\.steps\.0\.text"|<textarea[^>]*name="parts\.0\.steps\.0\.text"[^>]*disabled=""/);
     expect(disabled).toMatch(/<button[^>]*disabled=""[^>]*>Add step</);
@@ -369,6 +366,41 @@ describe("StepsEditor", () => {
 
   test("an out-of-range component renders nothing", () => {
     expect(renderToString(<StepsEditor draft={focaccia()} pi={4} onChange={() => {}} />)).toBe("");
+  });
+});
+
+// M27.3: entry is text first, same as the ingredients side (M27.2). An empty
+// list is a textarea inviting the whole method, and its Add lands one step
+// per paragraph, not per line.
+describe("Text-first steps (M27.3)", () => {
+  test("empty: the list renders a textarea, the method placeholder, and no step row", () => {
+    const html = renderToString(<StepsEditor draft={emptyDraft()} pi={0} onChange={() => {}} />);
+    expect(html).not.toContain("No steps yet");
+    expect(html).toContain('aria-label="New steps"');
+    expect(html).toContain("The method, a blank line between steps");
+    expect(html).toContain(">Add<");
+    expect(html).not.toContain('aria-label="Step 1"');
+    expect(html).not.toContain('name="parts.0.steps.0.text"');
+    // Bulk add and Add step stay in the header, same as a populated list.
+    expect(html).toContain(">Bulk add<");
+    expect(html).toContain(">Add step<");
+  });
+
+  test("populated: the textarea is gone and the step rows are back", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
+    expect(html).not.toContain("The method, a blank line between steps");
+    expect(html).not.toContain('aria-label="New steps"');
+    expect(html).toContain('aria-label="Step 1"');
+  });
+
+  test("a paste of three paragraphs through the inline Add lands three steps", () => {
+    // The exact wiring the empty state's `BulkInlineAdd` runs: `paragraphs`
+    // splits the pasted text, `addBulkSteps` appends one step per line.
+    const pasted = "Mix the dry ingredients.\n\nFold in the wet ingredients\nuntil just combined.\n\nBake for 40 minutes.";
+    const lines = paragraphs(pasted);
+    expect(lines).toHaveLength(3);
+    const next = addBulkSteps(emptyDraft(), 0, lines);
+    expect(texts(next, 0)).toEqual(["Mix the dry ingredients.", "Fold in the wet ingredients until just combined.", "Bake for 40 minutes."]);
   });
 });
 

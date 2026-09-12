@@ -25,7 +25,12 @@
 // Both stages are also available without the sheet: `useBulkStage` holds the
 // state and `BulkInlinePanel`/`BulkInlineAdd` render the same textarea and the
 // same review rows in place, which is what an empty ingredient list shows
-// instead of "nothing yet" (M27.2, decisions.md row 63).
+// instead of "nothing yet" (M27.2, decisions.md row 63). The plain (no
+// `review`) case works the same way inline as it does in the sheet — "Add"
+// hands the caller its split lines straight away — which is what an empty
+// step list shows (M27.3): `splitLines` defaults to `bulkLines` but the steps
+// side passes `paragraphs`, so a blank line separates one step from the next
+// the way a pasted method reads, not a newline.
 import { Button } from "@sixthshift/design-system/button";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
@@ -108,9 +113,16 @@ export type BulkStageOptions<R> = {
   review?: BulkReview<R>;
   onAdd?: (lines: string[]) => void;
   onDone?: () => void;
+  /**
+   * How the raw text becomes the lines handed to `onAdd`/`review.rows`.
+   * Default: one per newline-separated line (`bulkLines`). The steps' inline
+   * entry (M27.3) uses `paragraphs` instead, so a blank line separates one
+   * step from the next rather than a newline, matching how a method reads.
+   */
+  splitLines?: (text: string) => string[];
 };
 
-export function useBulkStage<R>({ itemName, review, onAdd, onDone }: BulkStageOptions<R>) {
+export function useBulkStage<R>({ itemName, review, onAdd, onDone, splitLines = bulkLines }: BulkStageOptions<R>) {
   const [text, setText] = useState("");
   // Null until the first stage has been committed: still on the textarea.
   const [rows, setRows] = useState<R[] | null>(null);
@@ -131,7 +143,7 @@ export function useBulkStage<R>({ itemName, review, onAdd, onDone }: BulkStageOp
 
   /** The primary action: parse the lines into rows, or commit the rows already reviewed. */
   const advance = async () => {
-    const lines = bulkLines(text);
+    const lines = splitLines(text);
     if (review === undefined) {
       if (lines.length > 0) onAdd?.(lines);
       reset();
@@ -164,7 +176,7 @@ export function useBulkStage<R>({ itemName, review, onAdd, onDone }: BulkStageOp
     error,
     reviewing,
     /** True when the primary action has something to do: lines to parse, or rows to commit. */
-    canAdvance: reviewing ? rows.length > 0 : bulkLines(text).length > 0,
+    canAdvance: reviewing ? rows.length > 0 : splitLines(text).length > 0,
     reset,
     back,
     advance,
@@ -261,13 +273,18 @@ export function BulkReviewList<R>({ itemName, rows, review, commitLabel = "Add",
 export type BulkInlinePanelProps<R> = {
   /** Noun for labels and copy: "ingredient" or "step". */
   itemName: string;
-  review: BulkReview<R>;
+  /** Absent for the plain (no-review) case: the steps side (M27.3), where "Add" commits the split lines straight away. */
+  review?: BulkReview<R>;
   text: string;
   /** Null before "Add": the panel is still on the textarea. */
   rows: R[] | null;
   busy?: boolean;
   error?: string | null;
   disabled?: boolean;
+  /** The textarea's placeholder. Default: "One {itemName} per line". */
+  placeholder?: string;
+  /** How `text` becomes the lines "Add" has to commit, for the disabled check. Default: `bulkLines` (one per line). */
+  splitLines?: (text: string) => string[];
   onTextChange: (text: string) => void;
   onRowsChange: (rows: R[]) => void;
   /** The primary action: "Add" on the textarea, "Confirm" on the review. */
@@ -282,23 +299,27 @@ export type BulkInlinePanelProps<R> = {
  * recipe arrives; the structured row is the correction view (decisions.md row
  * 63). No state of its own — `BulkInlineAdd` holds it — so a test can render
  * either stage directly, the same split `BulkAddFields` uses.
+ *
+ * With no `review` (the steps side, M27.3) `rows` never leaves null, so only
+ * the textarea stage ever renders — the plain variant `BulkAddSheet` already
+ * supports without a sheet around it.
  */
-export function BulkInlinePanel<R>({ itemName, review, text, rows, busy, error, disabled, onTextChange, onRowsChange, onAdvance, onBack }: BulkInlinePanelProps<R>) {
+export function BulkInlinePanel<R>({ itemName, review, text, rows, busy, error, disabled, placeholder, splitLines = bulkLines, onTextChange, onRowsChange, onAdvance, onBack }: BulkInlinePanelProps<R>) {
   const off = disabled === true || busy === true;
   return (
     <div className="flex flex-col gap-3" data-bulk-inline="">
-      {rows === null ? (
+      {review === undefined || rows === null ? (
         <>
           <Textarea
             aria-label={`New ${itemName}s`}
             rows={6}
-            placeholder={`One ${itemName} per line`}
+            placeholder={placeholder ?? `One ${itemName} per line`}
             value={text}
             disabled={off}
             onChange={(event) => onTextChange(event.target.value)}
           />
           <div className="flex justify-end">
-            <Button type="button" variant="solid" intent="brand" size="sm" disabled={off || bulkLines(text).length === 0} onClick={onAdvance}>
+            <Button type="button" variant="solid" intent="brand" size="sm" disabled={off || splitLines(text).length === 0} onClick={onAdvance}>
               Add
             </Button>
           </div>
@@ -328,13 +349,23 @@ export function BulkInlinePanel<R>({ itemName, review, text, rows, busy, error, 
 export type BulkInlineAddProps<R> = {
   /** Noun for labels and copy: "ingredient" or "step". */
   itemName: string;
-  review: BulkReview<R>;
   disabled?: boolean;
-};
+  /** The textarea's placeholder. Default: "One {itemName} per line". */
+  placeholder?: string;
+  /** How pasted text becomes lines. Default: `bulkLines` (one per line). */
+  splitLines?: (text: string) => string[];
+} & (
+  | {
+      /** Called once, with one string per split line, when "Add" is pressed. No review stage: the steps side (M27.3). */
+      onAdd: (lines: string[]) => void;
+      review?: undefined;
+    }
+  | { onAdd?: undefined; review: BulkReview<R> }
+);
 
 /** `BulkInlinePanel` with the shared stage state around it. What an empty list renders instead of "nothing yet". */
-export function BulkInlineAdd<R>({ itemName, review, disabled }: BulkInlineAddProps<R>) {
-  const stage = useBulkStage<R>({ itemName, review });
+export function BulkInlineAdd<R>({ itemName, review, onAdd, disabled, placeholder, splitLines }: BulkInlineAddProps<R>) {
+  const stage = useBulkStage<R>({ itemName, review, onAdd, splitLines });
   return (
     <BulkInlinePanel
       itemName={itemName}
@@ -344,6 +375,8 @@ export function BulkInlineAdd<R>({ itemName, review, disabled }: BulkInlineAddPr
       busy={stage.busy}
       error={stage.error}
       disabled={disabled}
+      placeholder={placeholder}
+      splitLines={splitLines}
       onTextChange={stage.setText}
       onRowsChange={stage.setRows}
       onAdvance={() => void stage.advance()}
