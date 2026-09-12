@@ -24,6 +24,7 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Sheet } from "@sixthshift/design-system/sheet";
+import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { formatIngredient } from "../domain/format";
 import type { Ingredient, Recipe } from "../domain/recipe";
@@ -167,7 +168,7 @@ export function AddToShoppingSheet({ open, ...props }: AddToShoppingSheetProps) 
   );
 }
 
-/** The list page. A route from M31.4 on; a plain path until then. */
+/** The list page (M31.4). */
 export const SHOPPING_PATH = "/shopping";
 
 export type AddToShoppingButtonProps = {
@@ -182,6 +183,7 @@ export type AddToShoppingButtonProps = {
  * and offers a way to it.
  */
 export function AddToShoppingButton({ recipe, size = "sm" }: AddToShoppingButtonProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -193,9 +195,9 @@ export function AddToShoppingButton({ recipe, size = "sm" }: AddToShoppingButton
       notify({
         intent: "success",
         title: addedMessage(added),
-        // `/shopping` is M31.4; until that route exists the router's `to` will
-        // not type it, so the toast's button goes there the plain way.
-        action: { label: "View list", onSelect: () => window.location.assign(SHOPPING_PATH) },
+        // The Toaster is not the router's business, so the caller navigates:
+        // this button is always rendered inside a route (M31.4).
+        action: { label: "View list", onSelect: () => void router.navigate({ to: SHOPPING_PATH }) },
       });
     } catch (error) {
       notifyError("Couldn't add to the shopping list", error);

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ShoppingRouteImport } from './routes/shopping'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as ApiImagesFileRouteImport } from './routes/api/images/$file'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShoppingRoute = ShoppingRouteImport.update({
+  id: '/shopping',
+  path: '/shopping',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -80,6 +86,7 @@ const ApiTimelineIdImageRoute = ApiTimelineIdImageRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/shopping': typeof ShoppingRoute
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/shopping': typeof ShoppingRoute
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/shopping': typeof ShoppingRoute
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/settings'
+    | '/shopping'
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/settings'
+    | '/shopping'
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/settings'
+    | '/shopping'
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
@@ -162,6 +174,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRoute
+  ShoppingRoute: typeof ShoppingRoute
   ApiHealthRoute: typeof ApiHealthRoute
   RecipesNewRoute: typeof RecipesNewRoute
   ApiImagesFileRoute: typeof ApiImagesFileRoute
@@ -187,6 +200,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shopping': {
+      id: '/shopping'
+      path: '/shopping'
+      fullPath: '/shopping'
+      preLoaderRoute: typeof ShoppingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -258,6 +278,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRoute,
+  ShoppingRoute: ShoppingRoute,
   ApiHealthRoute: ApiHealthRoute,
   RecipesNewRoute: RecipesNewRoute,
   ApiImagesFileRoute: ApiImagesFileRoute,

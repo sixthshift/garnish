@@ -7,7 +7,12 @@ import { scaleRecipe } from "../../src/domain/scale";
 import {
   type ShoppingAddition,
   type ShoppingItem,
+  TICKED_GROUP,
+  UNASSIGNED_GROUP,
+  groupByAisle,
   mergeIntoList,
+  shoppingItemLabel,
+  sourceLabel,
   shoppingItemInputSchema,
   shoppingItemPatchSchema,
   shoppingItemSchema,
@@ -283,5 +288,87 @@ describe("mergeIntoList", () => {
     expect(plan.additions.find((a) => a.foodId === butter.id)).toMatchObject({ quantity: 40 });
     expect(plan.additions.find((a) => a.foodId === bayLeaf.id)).toMatchObject({ quantity: 1 });
     expect(plan.additions.some((a) => a.foodId === garlic.id)).toBe(false);
+  });
+});
+
+// --- Reading the list (M31.4) ------------------------------------------------
+
+const produce = { id: "11111111-aaaa-4aaa-8aaa-111111111111", name: "Produce", position: 2 };
+const dairy = { id: "22222222-aaaa-4aaa-8aaa-222222222222", name: "Dairy", position: 0 };
+const bakery = { id: "33333333-aaaa-4aaa-8aaa-333333333333", name: "Bakery", position: 0 };
+
+const withAisle = (food: typeof flour, aisle: typeof produce) => ({ ...food, aisle });
+
+describe("groupByAisle", () => {
+  test("groups by aisle in position order, unassigned last", () => {
+    const items = [
+      existingItem({ quantity: 500, unit: gram, food: withAisle(flour, produce) }),
+      existingItem({ text: "Batteries" }),
+      existingItem({ quantity: 250, unit: gram, food: withAisle(butter, dairy) }),
+      existingItem({ quantity: 2, food: flour }), // a food with no aisle falls in with the text
+    ];
+    const groups = groupByAisle(items);
+    expect(groups.map((group) => group.name)).toEqual(["Dairy", "Produce", UNASSIGNED_GROUP]);
+    expect(groups[2]!.items.map((item) => item.id)).toEqual([items[1]!.id, items[3]!.id]);
+    expect(groups[0]!.aisle).toEqual(dairy);
+    expect(groups[2]!.aisle).toBeNull();
+  });
+
+  test("two aisles at the same position read alphabetically", () => {
+    const groups = groupByAisle([
+      existingItem({ food: withAisle(flour, dairy) }),
+      existingItem({ food: withAisle(butter, bakery) }),
+    ]);
+    expect(groups.map((group) => group.name)).toEqual(["Bakery", "Dairy"]);
+  });
+
+  test("lines keep the order they arrived in within a group", () => {
+    const first = existingItem({ food: withAisle(flour, produce) });
+    const second = existingItem({ food: withAisle(butter, produce) });
+    expect(groupByAisle([first, second])[0]!.items.map((item) => item.id)).toEqual([first.id, second.id]);
+  });
+
+  test("every ticked line sinks into one group at the foot, whatever its aisle", () => {
+    const groups = groupByAisle([
+      existingItem({ food: withAisle(flour, produce), ticked: true }),
+      existingItem({ text: "Batteries" }),
+      existingItem({ food: withAisle(butter, dairy), ticked: true }),
+    ]);
+    expect(groups.map((group) => group.name)).toEqual([UNASSIGNED_GROUP, TICKED_GROUP]);
+    const last = groups[1]!;
+    expect(last.ticked).toBe(true);
+    expect(last.items).toHaveLength(2);
+  });
+
+  test("an empty list has no groups, and an empty group is never returned", () => {
+    expect(groupByAisle([])).toEqual([]);
+    expect(groupByAisle([existingItem({ food: withAisle(flour, produce) })]).map((group) => group.name)).toEqual(["Produce"]);
+  });
+});
+
+describe("shoppingItemLabel", () => {
+  test("a food line reads as amount then food, pluralised", () => {
+    expect(shoppingItemLabel(existingItem({ quantity: 500, unit: gram, food: flour }))).toBe("500 g flour");
+    expect(shoppingItemLabel(existingItem({ quantity: 2, food: bayLeaf }))).toBe("2 bay leaves");
+  });
+
+  test("no quantity drops the amount, and a free-text line is its own text", () => {
+    expect(shoppingItemLabel(existingItem({ quantity: null, unit: gram, food: flour }))).toBe("flour");
+    expect(shoppingItemLabel(existingItem({ text: "  Batteries  " }))).toBe("Batteries");
+  });
+});
+
+describe("sourceLabel", () => {
+  test("recipe, part and servings", () => {
+    expect(sourceLabel({ recipeName: "Lemon tart", partName: "Pastry", servings: 4 })).toBe("Lemon tart, Pastry, serves 4");
+  });
+
+  test("the unnamed part and missing servings are dropped", () => {
+    expect(sourceLabel({ recipeName: "Lemon tart", partName: "", servings: null })).toBe("Lemon tart");
+    expect(sourceLabel({ recipeName: "Lemon tart", partName: "", servings: 0 })).toBe("Lemon tart");
+  });
+
+  test("a source with no recipe is a line someone typed", () => {
+    expect(sourceLabel({ recipeName: "", partName: "", servings: null })).toBe("Added by hand");
   });
 });

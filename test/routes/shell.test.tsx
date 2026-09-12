@@ -20,6 +20,7 @@ vi.mock("../../src/server/timeline", local);
 vi.mock("../../src/server/units", local);
 vi.mock("../../src/server/tags", local);
 vi.mock("../../src/server/aisles", local);
+vi.mock("../../src/server/shopping", local);
 
 useTempDataDir();
 beforeEach(async () => {
@@ -31,6 +32,7 @@ const pages: Array<[string, string]> = [
   ["/recipes/new", "New recipe"],
   ["/recipes/lemon-tart", "Lemon tart"],
   ["/recipes/lemon-tart/edit", "Edit recipe"],
+  ["/shopping", "Shopping"],
   ["/settings", "Settings"],
 ];
 
@@ -40,7 +42,7 @@ describe("app shell", () => {
     expect(html).toContain(text);
     // Both navs are in the DOM; CSS decides which shows.
     expect(html.match(/aria-label="Main"/g)).toHaveLength(2);
-    for (const label of ["Recipes", "Settings"]) expect(html).toContain(`>${label}</a>`);
+    for (const label of ["Recipes", "Shopping", "Settings"]) expect(html).toContain(`>${label}</a>`);
     // New is an action on the recipes page, not a nav destination.
     expect(html).not.toContain(`>New</a>`);
   });
