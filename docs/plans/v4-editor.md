@@ -1,0 +1,138 @@
+# Plan: stage 4, the editor and the source (complete)
+
+Stage 4 of the garnish plan, written to be executed one task per loop iteration with no human present, and complete as of 2026-09-12. Decisions live in [decisions.md](../decisions.md), shape in [architecture.md](../architecture.md), boundaries in [scope.md](../scope.md). Stage 1 is [v1-foundations.md](v1-foundations.md), stage 2 [v2-ui.md](v2-ui.md), stage 3 [v3-parsing.md](v3-parsing.md); the live plan is [plan.md](../plan.md). Kept for the record: the task list as written, and the Log of what each iteration actually did.
+
+## Loop protocol
+
+What one task looks like, whoever runs it (an ailoop subagent, a /loop firing, or a person):
+
+1. Read this file. Read `CLAUDE.md`. Do not re-read the other docs unless a task points at them.
+2. Pick the first unchecked task whose dependencies are checked. Milestones run in order; tasks within a milestone run in order unless marked `∥`. A `!` before the task id asks `/ailoop` to dispatch it on a stronger model; the skill's Model section has the rules.
+3. Do that one task. Nothing else. No drive-by refactors, no adjacent tasks.
+4. Verify with the task's own check. Then run the full gate:
+   ```
+   bun run check     # tsc --noEmit
+   bun run test      # vitest run
+   ```
+   Both must pass. A failing gate is not done. Fix it or revert the task.
+5. Commit with a one-line message naming the task id, e.g. `M1.3 recipe document schema`. Attribution trailer per `CLAUDE.md`.
+6. Report. Under `/ailoop` the orchestrator ticks the task, appends the Log line and commits; a subagent never edits this file. Under `/loop`, do it yourself.
+7. Stop. One task per iteration.
+
+Rules:
+
+- **Blocked?** Write the blocker under Blocked with the task id and what you tried. Move to the next task that does not depend on it. Never guess past a blocker on a decision; guess freely on implementation detail, and when unsure copy Mealie.
+- **Question for Jason?** Write it under Questions. Pick the Mealie answer and continue. Do not stop.
+- **Found a design gap?** Add a row to `decisions.md`. Do not edit existing rows. Note it in the Log.
+- **Framework questions?** TanStack Start docs at https://tanstack.com/start/latest. Server functions for app calls, server routes only under `src/routes/api/`. SPA mode stays on.
+- **UI element needed?** Check the design system's exports first (`node_modules/@sixthshift/design-system/package.json`). Build locally only if absent, under `src/components/ui/`.
+- **Task too big for one iteration?** Split it in place into `Mx.y.a`, `Mx.y.b`. Do the first part.
+- **Tests:** every pure function and every API route gets tests in the same task that creates it. No task is done with a TODO test.
+- **No new dependencies** beyond the list in M0 without a decisions.md row saying why.
+
+## Layout
+
+```
+src/
+  routes/       TanStack Start file routes: pages, and server routes under routes/api/
+  server/       server functions (createServerFn), grouped by resource; db access only here
+  db/           migrations/*.sql, migrate.ts, seed.ts, repositories
+  domain/       zod schemas, scaling, formatting. Pure, no IO, importable by client
+  components/   React components; ui/ holds local primitives the design system lacks
+  lib/          client-side helpers (mutate + router.invalidate)
+  styles.css    Tailwind entry with the design system's three lines
+  router.tsx    getRouter()
+vite.config.ts  tanstackStart({ spa }), nitro({ preset: 'bun' }), viteReact(), tailwindcss()
+test/           mirrors src/
+data/           runtime volume: garnish.db, images/, backups/  (gitignored)
+```
+
+Scripts in `package.json`: `dev` (`bun --bun vite dev`), `build` (`bun --bun vite build`), `start` (`bun run .output/server/index.mjs`), `check` (`tsc --noEmit`), `test` (`vitest run`), `migrate`, `seed`, `backup`.
+
+
+## Stage 4: The editor
+
+Stage 2 shipped an editor that works and stage 3 taught it to parse. What neither did is ask what typing a recipe in actually feels like. `RecipeForm` is a metadata-first column — image, yield quantity, yield unit, "makes", prep minutes, cook minutes, rating — and you are six controls deep before the first ingredient. Mealie and Tandoor both put the recipe first and the paperwork behind it: Mealie by editing the view page in place, Tandoor by tabbing the meta away from the steps. Neither opens on a blank form if it can help it.
+
+Three things this stage fixes, in order:
+
+- **The way in.** The only path to a new recipe is an empty form. `parseIngredient` (M17.4), `paragraphs` (M13.4) and the review sheet (M17.5) are all built; nothing composes them over a whole pasted recipe. Decision 52.
+- **The order.** The editor's shape should be the view page's shape, so nothing jumps when you switch and you can see what you are making. Decision 40 keeps the separate route; decision 50 makes the route mirror the page. Rating and last made leave the form entirely (decision 51).
+- **The rows.** One unnamed part is the common case and it still renders a name field, a card and a reorder handle (decision 53). Every step carries four always-on buttons where both incumbents use one `⋮` (decision 54). Adding a row always costs a mouse trip (decision 55).
+
+Not in this stage, and not to be re-raised without a decisions row: step-to-ingredient references (Mealie's ingredient linker), per-step times (Tandoor's `Step.time`), URL scraping, and anything AI — `claude -p` import stays Later in scope.md and will land on M19's review step when it comes.
+
+## M19 The way in
+
+- [x] **M19.1 Split a pasted recipe.** `src/domain/splitRecipe.ts`: `splitRecipe(text)` returns `{ title: string | null, ingredients: string[], steps: string[] }` — the opening line is the title when it reads like one, which is where M19.2's name comes from. Blank lines and a heading line (`Ingredients`, `Method`, `Steps`, `Instructions`, `You will need`, case-insensitive, optional trailing colon) divide the paste; with no heading, a leading run of short lines that `parseQuantity` finds an amount in is the ingredient block and the rest is steps. Numbered step prefixes (`1.`, `1)`, `Step 1:`) and list bullets (`-`, `*`, `•`) are stripped. Pure. Check: a table test over a headed paste, an unheaded one, a bulleted one, a numbered one, one that is ingredients only, and one that is prose only (everything lands in steps).
+- [x] **! M19.2 The import screen.** `/recipes/new` opens on `RecipeImport`: a `Textarea`, "Paste a recipe", with **Continue** and a "Start blank" link. Continue runs M19.1, then `parseIngredient` per ingredient line, and shows the M17.5 review — `IngredientReviewRow` for the ingredients, a plain numbered list for the steps — with **Create** and **Back**. Create builds a `RecipeDraft` (name from the first line if it is not an ingredient, rows into the unnamed part) and hands it to `RecipeForm`; nothing is written until Save, except the foods and units the reviewer approved, through the existing `findOrCreateFood`/`findOrCreateUnit`. Check: render tests for the three states (paste, review, form); a test that Start blank reaches the form with `emptyDraft()`; a test that a declined food lands a text-only row.
+- [x] **M19.3 Paste into an open recipe.** The same sheet from an existing recipe's editor: the part header's "Bulk add" grows a sibling that takes a whole block and appends to both lists at once. `RecipeImport`'s review component is reused; only the commit differs (append to part `pi` rather than build a draft). Check: render test over a mixed block; the rows land in the right part.
+
+## M20 The order
+
+- [x] **M20.1 Details disclosure.** `RecipeForm` splits in two: the always-visible head (image, name, description, servings) and a `Details` disclosure holding yield, prep and cook times, tags and source URL. Closed on a new recipe, open when any field inside it is set. Built from the design system's pieces under `src/components/ui/` if it has no disclosure. decisions.md row 50. Check: render tests for both initial states; a test that a field inside a closed disclosure still validates and still saves.
+- [x] **M20.2 Rating and last made leave the form.** `RecipeDraft` keeps the fields (the document carries them) but `RecipeForm` stops rendering the `Rating` control and any last-made input; both are already set from the view page and the timeline (decision 41). decisions.md row 51. Check: the form renders no rating control; an edited recipe round-trips its existing rating through Save untouched.
+- [x] **M20.3 Editor order mirrors the view.** The form's sections run in the view page's order — head, parts (ingredients then steps), notes, details — and the parts section drops the "Parts" heading, as `/recipes/$slug` does. decisions.md row 50. Check: a test asserting the section order of both routes matches.
+
+## M21 The rows
+
+- [x] **M21.1 The unnamed part loses its chrome.** When a recipe has exactly one part and it is unnamed, `PartsEditor` renders its two lists directly under "Ingredients" and "Steps" — no name input, no card border, no reorder handle, no "Parts" heading. "Add part" reveals the chrome on every part, including that one, and names it nothing. decisions.md row 53. Check: render tests at one unnamed part, one named part and two parts; adding a part to a bare recipe keeps the first part's rows.
+- [x] **M21.2 Step actions into a menu.** `StepsEditor`'s four inline buttons become one `Menu` (`src/components/ui/Menu.tsx`) per row: insert above, insert below, split by paragraph, merge with next, delete. Split-all and merge-all join "Bulk add" and "Add step" in the section header, operating over every step in the part. decisions.md row 54. Check: render test that a step row has one menu trigger and no inline action buttons; split-all over a part with two multi-paragraph steps.
+- [x] **M21.3 Parse all.** When no ingredient in a part resolves to a food, the ingredient list heads with a `Message` offering **Parse all**, which runs M17.6's parse over every text-only row in the part and reviews them in one sheet. The banner disappears once any row has a food. decisions.md row 54. Check: the banner shows on an all-text part and not on a mixed one; confirming applies every approved row and leaves declined rows text-only.
+- [x] **M21.4 Keyboard append.** Enter in an ingredient row's last field, or in a step's textarea with the cursor at the end and the modifier held, appends a row to that list and focuses its first field — `event.preventDefault()` so the form is not submitted. Only from the last row; from any other row Enter moves to the next. decisions.md row 55. Check: fireEvent tests for append-and-focus on the last row and move-to-next on an earlier one; a test that the form does not submit.
+- [x] **M21.5 Create from the combobox.** Typing an unknown food or unit and pressing Enter accepts the typed name as a new reference, as Mealie's "press enter to create" does, rather than needing the value picked from the list. The reference is still resolved on save by the repository's find-or-create; nothing is written while typing. Check: typing a name nobody has and pressing Enter puts a reference with that name on the row and calls no server function.
+
+## M22 Polish
+
+- [x] **M22.1 Step markdown preview.** Each step row's menu gains a preview toggle, rendering `Markdown.tsx` over the step's text in place of the textarea. decisions.md row 56. Check: render test toggling one row into preview and back, leaving the other rows editing.
+- [x] **M22.2 Sticky editor toolbar.** The editor gains a header that stays put while the form scrolls: the recipe's name, the dirty note, "Edit as JSON" and the Save/Cancel pair `SaveBar` holds today. `SaveBar` keeps its phone-footer role or is folded into the toolbar, whichever reads better at both widths. Check: render tests at both widths; the blocker and dirty state still behave.
+
+## M23 The source
+
+Stage 4 asked "how is this text reaching the form?" and answered it with a paste box. The first question about a new recipe is older and simpler: **where is it from?** A web page, or your own head. That is the chooser `/recipes/new` opens on, and it is also the thing that fills `sourceUrl`, which until now you typed in by hand from the Details section.
+
+The paste box goes (decisions.md row 57). Prose extraction is a real problem and rules cannot do it: neither incumbent tries — Mealie's rung is an LLM, Tandoor's is an error — so it waits for `claude -p`, where scope.md already has it.
+
+What replaces it is the non-rotting half of what the incumbents do (row 58). Both run `recipe_scrapers`, which tries ~500 per-site classes and then falls back to "wild mode": schema.org `ld+json` and microdata. The per-site half is exactly what intent.md means by "scrapers rot per site". The wild-mode half is one standard that nearly every recipe site emits, and under it Mealie has one more non-AI rung — an OpenGraph stub that gets you a named, illustrated, linked shell rather than an error. That is the whole design: **JSON-LD, then an OG stub**.
+
+- [x] **M23.1 Remove the paste path.** Delete `src/domain/splitRecipe.ts`, `src/components/RecipeImport.tsx`, `src/components/PastePartSheet.tsx` and their tests, and the part header's Paste button. `/recipes/new` goes back to rendering the form directly; `?blank` is dropped, since the chooser M23.6 brings replaces it. `scope.md`'s v1 paste line goes; the review step stays, because bulk add, row parse and Parse all all still use it. decisions.md row 57. Check: the full suite, and a grep for `splitRecipe` finding nothing.
+- [x] **M23.2 Read a page's `ld+json`.** `src/domain/jsonLd.ts`: `jsonLdNodes(html)` returns every object in every `<script type="application/ld+json">` block, flattening `@graph` and top-level arrays; `findRecipeNode(nodes)` returns the first whose `@type` is or includes `Recipe`. Malformed JSON in one block does not lose the others. Pure. Check: a single node, an array, an `@graph`, a `Recipe` beside an `Organization`, a block of broken JSON beside a good one, and a page with none.
+- [x] **! M23.3 Schema.org Recipe to a draft.** `src/domain/schemaRecipe.ts`: `scrapedFromSchema(node)` returns a normalised `ScrapedRecipe` — name, description, image, servings, yield, prep and cook minutes from ISO-8601 durations, tags from `keywords`, ingredient lines from `recipeIngredient`, and parts from `recipeInstructions`. Instructions come in four shapes and all four are handled: a single string (split on newlines), an array of strings, an array of `HowToStep`, and an array of `HowToSection` holding `HowToStep`s — the last becoming named parts, decisions.md row 59. Ingredients land on the unnamed part. Pure. Check: a table test per instruction shape, `PT1H30M` and `PT20M` durations, `keywords` as both a string and an array, `image` as a string, an array and an `ImageObject`, and a node with nothing but a name.
+- [x] **M23.4 The OpenGraph stub.** `src/domain/openGraph.ts`: `openGraphStub(html)` returns `{ name, description, image }` from `og:title`, `og:description` and `og:image`, or null without them. Pure. Check: a page with all three, one with a title only, one with none, and that `twitter:` tags are not mistaken for them.
+- [x] **! M23.5 Fetch and extract.** `src/server/recipeImport.ts`: `importFromUrl({ url })` GETs the page server-side — the browser cannot, for CORS — with a browser `User-Agent` and `Accept`, the size cap and timeout `imageFetch` already uses, and http(s) only. Then M23.2 and M23.3; failing that, M23.4 as a stub; failing that, an error naming which. Returns the `ScrapedRecipe` and which rung produced it, so the review can say. `Fetcher` is injectable, as in `imageFetch`. Check: a JSON-LD page, an OG-only page, a page with neither, a non-200, a non-http URL, an oversized body, and that the fetcher is called with a browser User-Agent.
+- [x] **! M23.6 The source chooser.** `/recipes/new` opens on "Where is this recipe from?" — **A web page** and **My own**, each addressable as `?source=url` / `?source=manual`. `url` takes a URL, fetches through M23.5, and shows the result for review: the fields as chips, the ingredient lines through `parseIngredient` and the M17.5 review rows, the steps as a numbered list per part, and a clear line when all that came back was a stub. Create builds the draft, fills `sourceUrl`, and creates only the approved foods and units. `manual` is the blank editor. Check: render tests for the chooser and each stage; a test that a stub says so and still reaches the editor; a test that `sourceUrl` is filled.
+- [x] **M23.7 Warn on a duplicate source.** Before the review commits, `listRecipes` is asked for a recipe with the same `sourceUrl`; one match shows a "you already have this" line linking to it, and Create stays available. Tandoor does this in `RecipeUrlImportView` and it costs one query. Check: a server test for the lookup; a render test for the warning.
+
+Not in this stage, and not to be re-raised without a decisions row: per-site scrapers (intent.md), browser impersonation beyond a plain `User-Agent` (Mealie uses curl_cffi to get past bot walls; worth revisiting only when a site actually blocks us), Tandoor's bookmarklet, YouTube and video transcription, and importing from another instance's share link.
+
+## Blocked
+
+_(none)_
+
+## Questions
+
+_(none)_
+
+## Log
+
+_(one line per iteration: date, task id, outcome, model)_
+
+2026-09-12  M19.1  done  —  opus  splitRecipe takes a title off the front, then splits on headings where the paste has them and on line shape where it does not; bullets and numbered step markers are stripped from both lists
+2026-09-12  M19.2  done  —  opus  /recipes/new opens on a paste box; Continue splits, parses and reviews, Create writes only the approved vocabulary and hands RecipeForm a draft, and Start blank navigates to ?blank so the empty editor keeps a URL
+2026-09-12  M19.3  done  —  opus  a Paste button in each part's ingredient header opens the same two stages in a sheet; PastePartSheetContent is the testable body, and Add appends the rows and the steps to that part after what was there
+2026-09-12  M20.1-3  done  —  opus  one pass over RecipeForm's body: a <details> Disclosure holds yield, times, tags and a new source field and opens itself when any is set; the Rating control is gone (row 51); the sections now run image, name, servings, parts, notes, details, matching the view page
+2026-09-12  M21.1  done  —  opus  isBare drops the name field, card, heading and reorder handles for a one-part unnamed recipe; Add part is the way out and gives every part its chrome back
+2026-09-12  M21.2  done  —  opus  one ⋮ per step carries insert above/below, split, merge with next and delete; splitAllSteps and mergeAllSteps join Bulk add and Add step in the section header, each disabled when it would do nothing
+2026-09-12  M21.3  done  —  opus  a part with no resolved food heads its ingredient list with a Parse all banner; the sheet reads every text-only row through parseIngredient, keyed by row position, and Apply patches only what was approved
+2026-09-12  M21.4  done  —  opus  rowEnter decides append-or-next and focusNamed does the focusing; Enter on an ingredient row's last field and ⌘/Ctrl+Enter in a step's textarea both preventDefault so the form is never submitted
+2026-09-12  M21.5  done  —  opus  enterChoice is the Combobox's Enter rule: open, plain autocomplete; closed, the exact option or the typed name as a new reference, so Enter never reaches the form. Nothing is written while typing — the repository still find-or-creates on save
+2026-09-12  M22.1  done  —  opus  the step menu's Preview swaps that row's textarea for Markdown, tracked by step id so inserting above does not move it; previewSteps renders the state a click reaches, for the static tests
+2026-09-12  M22.2  done  —  opus  EditorToolbar heads the form with the recipe's name, the dirty note, Edit as JSON and the save, sticky from md up; SaveBar keeps the phone footer and hides from md, so each width has exactly one save
+2026-09-12  M23.1  done  —  opus  splitRecipe, RecipeImport, PastePartSheet and the part header's Paste button deleted; /recipes/new goes back to the blank editor until M23.6, and scope.md swaps the paste line for the URL import. The M17.5 review survives — bulk add, row parse and Parse all all still use it
+2026-09-12  M23.2  done  —  opus  jsonLdNodes reads every ld+json block, flattening top-level arrays and @graph; a broken block costs only itself, @type is matched as a set, and CDATA/comment wrappers are stripped a layer at a time
+2026-09-12  M23.3  done  —  opus  scrapedFromSchema funnels every shape schema.org permits into one ScrapedRecipe; HowToSection becomes a named part (row 59), loose steps land in the unnamed body, and a wrong-typed field reads as absent rather than throwing
+2026-09-12  M23.4  done  —  opus  openGraphStub reads og: from property or name but never twitter:, first repeat wins, and no title means null rather than an untitled shell; unlike Mealie the lists come back empty rather than holding a placeholder row
+2026-09-12  M23.5  done  —  opus  importRecipeFromUrl fetches server-side with a browser User-Agent, a 15s timeout and a 5MB cap, then extractRecipe tries schema.org and falls back to an OpenGraph stub; a Recipe node with no ingredients and no steps counts as a miss, so an SEO shell does not import as a success
+2026-09-12  M23.6  done  —  opus  /recipes/new asks where the recipe is from; ?source carries the answer, the URL stage fetches through M23.5 and reviews the ingredient lines through M17.5's rows, and Create fills sourceUrl and hands RecipeForm the draft plus the scraped image URL, which it fetches into the same upload path a picked file uses
+2026-09-12  M23.7  done  —  opus  recipes().bySourceUrl behind a recipeBySource server function; the review warns when the same address is already here and still offers Create, and a failed lookup reports no duplicate rather than blocking the import. Matched exactly — a tracking parameter makes it a different address
+2026-09-12  M23.3  fix   —  opus  checked against live pages: BBC Good Food writes recipeYield "Makes 20" (number not leading) and emits only totalTime. parseYield now strips a leading makes/serves/about, and totalTime is read as the cook time when the page states neither. Serious Eats returns 403 to a plain User-Agent, as expected — the bot-wall work stays deferred
