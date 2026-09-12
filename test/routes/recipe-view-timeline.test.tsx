@@ -1,7 +1,7 @@
 // M11.7 on the recipe view route, rendered through the real route tree: last
 // made as text in the header's strip (M24.3 moved the "Made this" button out
-// of the header; M25.6 gives it a home), the timeline under Notes, and the
-// last made date the logged cook moved.
+// of the header; M25.6 gives it a home in the timeline's own heading), the
+// timeline under Notes, and the last made date the logged cook moved.
 import { expect, test, vi } from "vitest";
 import { createRecipe } from "../../src/server/recipes";
 import { createTimelineEvent, deleteTimelineEvent } from "../../src/server/timeline";
@@ -28,12 +28,15 @@ async function seedTart() {
 const log = (recipeId: string, occurredOn: string, message: string) =>
   callServerFn(createTimelineEvent, { recipeId, event: { occurredOn, message, image: null } });
 
-test("a recipe never cooked says so; the header renders no button (M24.3, M25.6)", async () => {
+test("a recipe never cooked says so; the header renders no button, but the timeline heading offers one (M24.3, M25.6)", async () => {
   await seedTart();
   const html = await renderRoute("/recipes/lemon-tart");
   expect(html).toContain("Never made");
-  expect(html).not.toContain('data-testid="made-this"');
-  expect(html).not.toContain(">Made this<");
+  // Header carries no button of its own (M24.3); the timeline heading does (M25.6).
+  const header = html.slice(0, html.indexOf('data-testid="timeline"'));
+  expect(header).not.toContain('data-testid="made-this"');
+  expect(html).toContain('data-testid="made-this"');
+  expect(html).toContain("Not made yet");
   expect(html).not.toContain('data-testid="timeline-event"');
 });
 

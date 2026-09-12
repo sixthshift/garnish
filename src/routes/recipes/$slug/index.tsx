@@ -32,6 +32,7 @@ import { scalableIngredients, scaledForServings, servingsForTarget } from "../..
 import { TimelineList } from "../../../components/Timeline";
 import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
+import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
 import { useScrolledOff } from "../../../lib/useScrolledOff";
 import { useMutate } from "../../../lib/mutate";
 import { notifyError } from "../../../lib/notify";
@@ -93,6 +94,9 @@ function RecipePage() {
   const mutate = useMutate();
   const listsScrolledOff = useScrolledOff(asideRef);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // The ingredients heading's "Clear" link (M25.6): only worth showing once
+  // there is something ticked to clear.
+  const anyTicked = useAnyTicked(recipe.id);
 
   // The header's stars write straight through (M25.3): 0 clears the rating,
   // and the loader re-reads it, so there is nothing optimistic to unwind.
@@ -160,7 +164,14 @@ function RecipePage() {
               grid is gone; the scale control lives here instead. */}
           <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
             <SectionTitle as="h2">Ingredients</SectionTitle>
-            <ScaleControl servings={recipe.recipeServings} ingredients={scalableIngredients(recipe)} />
+            <div className="flex flex-wrap items-center gap-3">
+              <ScaleControl servings={recipe.recipeServings} ingredients={scalableIngredients(recipe)} />
+              {anyTicked && (
+                <Button variant="link" intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Structured vs. one merged list only means something once there is
@@ -209,7 +220,7 @@ function RecipePage() {
         </>
       )}
 
-      <TimelineList events={timeline} />
+      <TimelineList events={timeline} recipe={recipe} />
 
       <RecipeMetaFooter recipe={recipe} />
     </article>

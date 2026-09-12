@@ -6,6 +6,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRecipe } from "../../src/server/recipes";
 import { createTimelineEvent } from "../../src/server/timeline";
+import { clearTicksNow, getTicks, setIngredientTicked, type StorageLike } from "../../src/lib/ticks";
 import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -27,6 +28,12 @@ function storeMode(mode: "structured" | "summary") {
   (globalThis as { window?: unknown }).window = {
     localStorage: { getItem: (key: string) => map.get(key) ?? null, setItem: (key: string, value: string) => void map.set(key, value) },
   };
+}
+
+/** An in-memory sessionStorage, so ticks.ts reads and writes what a test seeds. */
+function fakeStorage(): StorageLike {
+  const map = new Map<string, string>();
+  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
 }
 
 const food = (name: string) => ({ id: crypto.randomUUID(), name, pluralName: null });
@@ -151,6 +158,35 @@ describe("servings in the ingredients heading (M24.2)", () => {
     // in the aside once there is more than one part to merge.
     expect(elementHtml(html, "ingredients-column")).toContain('data-testid="ingredient-mode-toggle"');
     expect(elementHtml(html, "ingredients-column")).toContain(">One list<");
+  });
+});
+
+describe("the ingredients heading's Clear link (M25.6)", () => {
+  test("is absent with nothing ticked", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart");
+    expect(elementHtml(html, "ingredients-heading")).not.toContain(">Clear<");
+  });
+
+  test("shows once something is ticked, and clears every tick — ingredients and steps — when pressed", async () => {
+    const tart = await seedTart();
+    const flour = tart.parts[0]!.ingredients[0]!;
+
+    const storage = fakeStorage();
+    setIngredientTicked(storage, tart.id, flour.id, true);
+    (globalThis as { window?: unknown }).window = { sessionStorage: storage };
+
+    const ticked = await renderRoute("/recipes/lemon-tart");
+    const heading = elementHtml(ticked, "ingredients-heading");
+    expect(heading).toContain(">Clear<");
+    expect(heading).toContain('data-print="hide"');
+
+    // The link's onClick is exactly this call (src/lib/ticks.ts, src/routes/recipes/$slug/index.tsx).
+    clearTicksNow(tart.id);
+    expect(getTicks(storage, tart.id)).toEqual({ ingredients: [], steps: [] });
+
+    const cleared = await renderRoute("/recipes/lemon-tart");
+    expect(elementHtml(cleared, "ingredients-heading")).not.toContain(">Clear<");
   });
 });
 

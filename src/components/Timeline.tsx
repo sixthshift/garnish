@@ -7,6 +7,7 @@
 // the recipe's refreshed `lastMade`. A photo is a second step: the event has
 // to exist before the file can be stored under its id.
 import { Button } from "@sixthshift/design-system/button";
+import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import type { Recipe, TimelineEvent, TimelineEventInput } from "../domain/recipe
 import { timelineImageUrl, uploadTimelineImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
+import { clearTicksNow } from "../lib/ticks";
 import { setRating } from "../server/recipes";
 import { createTimelineEvent, deleteTimelineEvent } from "../server/timeline";
 import { formatDateStamp } from "./RecipeHeader";
@@ -44,6 +46,18 @@ export async function saveCook({ recipeId, event, photo, rating }: CookSave, wri
   return created;
 }
 
+/**
+ * `saveCook`, then clear the recipe's ticks (M25.6): a logged cook is a fresh
+ * start next time, so the ingredient and step ticks from this session are
+ * wiped once the event is safely saved — not before, so a failed save leaves
+ * them for another attempt.
+ */
+export async function saveCookAndClearTicks(save: CookSave, writes: CookWrites): Promise<TimelineEvent> {
+  const created = await saveCook(save, writes);
+  clearTicksNow(save.recipeId);
+  return created;
+}
+
 /** Opens the sheet, logs the cook, uploads the photo and writes the rating, if either was given. */
 export function MadeThisButton({ recipe }: MadeThisButtonProps) {
   const mutate = useMutate();
@@ -54,7 +68,7 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
     setSaving(true);
     try {
       const event = await mutate(() =>
-        saveCook(
+        saveCookAndClearTicks(
           { recipeId: recipe.id, event: input, photo, rating },
           {
             createEvent: (recipeId, created) => createTimelineEvent({ data: { recipeId, event: created } }),
@@ -95,21 +109,31 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
   );
 }
 
-export type TimelineListProps = { events: readonly TimelineEvent[] };
+export type TimelineListProps = { events: readonly TimelineEvent[]; recipe: MadeThisButtonProps["recipe"] };
 
-/** The logged cooks, newest first. Renders nothing when there are none. */
-export function TimelineList({ events }: TimelineListProps) {
-  if (events.length === 0) return null;
+/**
+ * The logged cooks, newest first, under a heading that carries the button to
+ * log a new one (M25.6: M24.3 dropped it from the header, and this is its
+ * only home on the view page now — the finish card in cook mode keeps its own
+ * copy). The heading renders even with nothing logged yet, "Not made yet"
+ * standing in for the list.
+ */
+export function TimelineList({ events, recipe }: TimelineListProps) {
   return (
     <section className="flex flex-col gap-3" aria-label="Timeline" data-testid="timeline">
-      <SectionTitle as="h2">Made this</SectionTitle>
-      <ul className="flex flex-col gap-3">
-        {events.map((event) => (
-          <li key={event.id}>
-            <TimelineRow event={event} />
-          </li>
-        ))}
-      </ul>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SectionTitle as="h2">Made this</SectionTitle>
+        <MadeThisButton recipe={recipe} />
+      </div>
+      <EmptyBoundary isEmpty={events.length === 0} fallback={<Muted as="p">Not made yet</Muted>}>
+        <ul className="flex flex-col gap-3">
+          {events.map((event) => (
+            <li key={event.id}>
+              <TimelineRow event={event} />
+            </li>
+          ))}
+        </ul>
+      </EmptyBoundary>
     </section>
   );
 }

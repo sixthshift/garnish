@@ -112,9 +112,15 @@ export function toggleStepTicked(storage: StorageLike, recipeId: string, stepId:
   return setStepTicked(storage, recipeId, stepId, !isStepTicked(storage, recipeId, stepId));
 }
 
-/** Clear all ticks for `recipeId`, e.g. on finishing a cook. */
+/** Clear all ticks for `recipeId`, e.g. on finishing a cook. Notifies subscribers, same as any other write. */
 export function clearTicks(storage: StorageLike, recipeId: string): void {
   putTicks(storage, recipeId, EMPTY);
+}
+
+/** Whether anything — any ingredient or step — is ticked for `recipeId`. */
+export function anyTicked(storage: StorageLike, recipeId: string): boolean {
+  const ticks = getTicks(storage, recipeId);
+  return ticks.ingredients.length > 0 || ticks.steps.length > 0;
 }
 
 /** `window.sessionStorage`, or undefined on the server and where it is unavailable. */
@@ -144,6 +150,18 @@ export function stepTickSnapshot(recipeId: string, stepId: string): boolean {
 export function toggleStepTickNow(recipeId: string, stepId: string): void {
   const storage = browserStorage();
   if (storage) toggleStepTicked(storage, recipeId, stepId);
+}
+
+/** Clear all ticks for `recipeId` in the browser's own storage, notifying every reader. No-op on the server. */
+export function clearTicksNow(recipeId: string): void {
+  const storage = browserStorage();
+  if (storage) clearTicks(storage, recipeId);
+}
+
+/** Whether anything is ticked for `recipeId` in the browser's own storage. False on the server. */
+export function anyTickedSnapshot(recipeId: string): boolean {
+  const storage = browserStorage();
+  return storage ? anyTicked(storage, recipeId) : false;
 }
 
 /**
@@ -176,4 +194,16 @@ export function useStepTick(recipeId: string, stepId: string): [boolean, () => v
     else setDone((was) => !was);
   }, [recipeId, stepId]);
   return [done, toggle];
+}
+
+/**
+ * Whether `recipeId` has anything ticked, following the same subscription as
+ * the per-row hooks: a tick or a clear from anywhere re-reads it. Backs the
+ * ingredients heading's "Clear" link (M25.6), which only shows once there is
+ * something to clear.
+ */
+export function useAnyTicked(recipeId: string): boolean {
+  const [any, setAny] = useState(() => anyTickedSnapshot(recipeId));
+  useEffect(() => subscribeTicks(() => setAny(anyTickedSnapshot(recipeId))), [recipeId]);
+  return any;
 }

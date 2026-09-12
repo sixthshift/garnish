@@ -4,6 +4,7 @@
 // behaviour.
 import { describe, expect, test } from "vitest";
 import {
+  anyTicked,
   clearTicks,
   getTicks,
   isIngredientTicked,
@@ -144,6 +145,37 @@ describe("clearTicks", () => {
 
   test("a throwing storage never throws", () => {
     expect(() => clearTicks(throwingStorage(), RECIPE)).not.toThrow();
+  });
+});
+
+describe("anyTicked", () => {
+  test("false for a recipe with nothing ticked", () => {
+    expect(anyTicked(memoryStorage(), RECIPE)).toBe(false);
+  });
+
+  test("true once an ingredient or a step is ticked", () => {
+    const storage = memoryStorage();
+    setIngredientTicked(storage, RECIPE, ING_A, true);
+    expect(anyTicked(storage, RECIPE)).toBe(true);
+
+    const other = memoryStorage();
+    setStepTicked(other, RECIPE, STEP_A, true);
+    expect(anyTicked(other, RECIPE)).toBe(true);
+  });
+
+  test("false again once clearTicks runs, and does not read other recipes", () => {
+    const storage = memoryStorage();
+    setIngredientTicked(storage, RECIPE, ING_A, true);
+    setIngredientTicked(storage, OTHER_RECIPE, ING_B, true);
+
+    clearTicks(storage, RECIPE);
+
+    expect(anyTicked(storage, RECIPE)).toBe(false);
+    expect(anyTicked(storage, OTHER_RECIPE)).toBe(true);
+  });
+
+  test("a throwing storage reads as nothing ticked", () => {
+    expect(anyTicked(throwingStorage(), RECIPE)).toBe(false);
   });
 });
 
