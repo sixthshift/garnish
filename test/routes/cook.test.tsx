@@ -20,6 +20,10 @@ vi.mock("../../src/server/timeline", local);
 vi.mock("../../src/server/units", local);
 vi.mock("../../src/server/tags", local);
 vi.mock("../../src/server/aisles", local);
+// The wake lock only ever turns on from an effect that never fires in a
+// renderToString test, so the header's indicator is forced on here to render
+// and assert it (M26.4).
+vi.mock("../../src/lib/useWakeLock", () => ({ useWakeLock: () => true }));
 
 useTempDataDir();
 
@@ -76,7 +80,9 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain(">Pastry<");
     expect(html).toContain("200 g flour");
     expect(html).not.toContain("3 lemons");
-    expect(html).not.toContain("Rub the butter into the flour.");
+    // The next step's text doesn't leak into the ingredient list; it appears
+    // once, as the "Next: …" preview at the card's foot (M26.4).
+    expect(html.match(/Rub the butter into the flour\./g)).toHaveLength(1);
     expect(html).toContain("1 of 5 · Pastry");
     expect(isDisabled(html, "Prev")).toBe(true);
     expect(isDisabled(html, "Next")).toBe(false);
@@ -89,6 +95,15 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain('aria-label="Serves"');
     expect(html).toMatch(/aria-label="Serves".*?<input[^>]*value="4"/);
     expect(html).toContain('role="progressbar"');
+  });
+
+  // M26.4: "Screen on" becomes an icon in a tooltip, keeping the wake-lock hook.
+  test("the header's wake-lock indicator is an icon in a tooltip, not the words 'Screen on'", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart/cook");
+    expect(html).not.toContain("Screen on");
+    expect(html).toMatch(/data-wake-lock[^>]*aria-label="The screen stays on while you cook"/);
+    expect(html).toMatch(/aria-label="The screen stays on while you cook"[^>]*>\s*<svg/);
   });
 
   test("a step card shows the step alone in large type with its number within the component", async () => {
@@ -129,6 +144,27 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain("5 of 5");
     expect(isDisabled(html, "Next")).toBe(false);
     expect(isDisabled(html, "Prev")).toBe(false);
+  });
+
+  // M26.4: every card ends with a tappable one-line preview of the next one.
+  test("a middle card (a step) previews the ingredients card that follows it", async () => {
+    await seedTart();
+    // Step 1 (deck index 1) is Pastry's only step; its next card is Filling's ingredients.
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=1");
+    expect(html).toMatch(/data-testid="next-preview"[^>]*>Next: <!-- -->Ingredients for Filling</);
+  });
+
+  test("an ingredients card previews the step that follows it", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart/cook");
+    expect(html).toContain('data-card="ingredients"');
+    expect(html).toMatch(/data-testid="next-preview"[^>]*>Next: <!-- -->Rub the butter into the flour\.</);
+  });
+
+  test("the last card previews Finished", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
+    expect(html).toMatch(/data-testid="next-preview"[^>]*>Next: <!-- -->Finished</);
   });
 
   test("Finished follows the last card: a heading, a Made this shortcut and an Exit link, with Next disabled and an overshoot clamping to it", async () => {

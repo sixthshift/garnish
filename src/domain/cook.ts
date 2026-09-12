@@ -80,6 +80,42 @@ export function cardAnnouncement(card: CookCard): string {
   return card.part === "" ? "Ingredients" : `Ingredients for ${card.part}`;
 }
 
+/** How long a step's preview line can run before it is cut with an ellipsis. */
+export const PREVIEW_MAX_CHARS = 80;
+
+/** The first non-empty line of `text`, its list/emphasis markers dropped rather than fully parsed. Pure. */
+function previewLine(text: string): string {
+  const line = text
+    .split("\n")
+    .map((candidate) => candidate.trim())
+    .find((candidate) => candidate !== "");
+  if (line === undefined) return "";
+  return line
+    .replace(/^\s{0,3}(?:[-*+]|\d{1,9}[.)])\s+/, "")
+    .replace(/\*\*|__|\*|_/g, "")
+    .trim();
+}
+
+/** `text`, cut with an ellipsis once it runs past `PREVIEW_MAX_CHARS`. Pure. */
+function truncatePreview(text: string): string {
+  if (text.length <= PREVIEW_MAX_CHARS) return text;
+  return `${text.slice(0, PREVIEW_MAX_CHARS - 1).trimEnd()}…`;
+}
+
+/**
+ * The one-line preview of the card after `cards[index]`, for a "Next: …"
+ * footer: a following step's first line (truncated), a following ingredients
+ * card's own heading ("Ingredients" / "Ingredients for <part>"), or
+ * "Finished" once `index` is the deck's last card — which also covers an
+ * empty deck, since there is no card at `index + 1` either way. Pure.
+ */
+export function nextPreview(cards: CookCard[], index: number): string {
+  const next = cards[index + 1];
+  if (next === undefined) return "Finished";
+  if (next.kind === "ingredients") return next.part === "" ? "Ingredients" : `Ingredients for ${next.part}`;
+  return truncatePreview(previewLine(next.step.text));
+}
+
 /** One part pill: the deck index its first card sits at. */
 export type CookPill = {
   /** The part name as the cards carry it; "" for the unnamed part. */

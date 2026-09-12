@@ -18,6 +18,7 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
+import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { cn } from "@sixthshift/design-system/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
@@ -28,6 +29,7 @@ import {
   buildCookCards,
   cardAnnouncement,
   clampStep,
+  nextPreview,
   partPills,
   isFinishedIndex,
   swipeIntent,
@@ -74,6 +76,27 @@ export function stepForKey(key: string, index: number, count: number): number | 
 export function positionLabel(index: number, count: number, part: string): string {
   const position = `${index + 1} of ${count}`;
   return part === "" ? position : `${position} · ${part}`;
+}
+
+/** Eye: the screen is being watched, so it is being kept on. Same drawing style as RecipeHeader's stat icons. */
+function WakeLockIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
 }
 
 function CookPage() {
@@ -142,9 +165,18 @@ function CookPage() {
           </Button>
           <span className="truncate font-semibold text-fg-strong">{recipe.name}</span>
           {screenOn && (
-            <Muted as="span" className="shrink-0 text-xs" title="The screen stays on while you cook" data-wake-lock>
-              Screen on
-            </Muted>
+            <Tooltip>
+              <Tooltip.Trigger asChild>
+                <span
+                  className="shrink-0 text-fg-subtle"
+                  data-wake-lock
+                  aria-label="The screen stays on while you cook"
+                >
+                  <WakeLockIcon />
+                </span>
+              </Tooltip.Trigger>
+              <Tooltip.Body>The screen stays on while you cook</Tooltip.Body>
+            </Tooltip>
           )}
         </div>
         {recipe.recipeServings > 0 && (
@@ -190,7 +222,9 @@ function CookPage() {
               </Muted>
             }
           >
-            {card !== undefined && <CookCardView card={card} recipeId={recipe.id} />}
+            {card !== undefined && (
+              <CookCardView card={card} recipeId={recipe.id} preview={nextPreview(cards, index)} onNext={() => goTo(index + 1)} />
+            )}
           </EmptyBoundary>
         )}
       </main>
@@ -258,8 +292,28 @@ function CookIngredientItem({ recipeId, ingredient }: { recipeId: string; ingred
   );
 }
 
+/** The foot of every card: a dimmed, tappable preview of the card that follows. */
+function NextPreview({ preview, onNext }: { preview: string; onNext: () => void }) {
+  return (
+    <button type="button" data-testid="next-preview" onClick={onNext} className="mt-4 block text-left text-sm text-fg-subtle hover:text-fg-normal">
+      Next: {preview}
+    </button>
+  );
+}
+
 /** One card in large type: the part's ingredient list, or a single step. */
-function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) {
+function CookCardView({
+  card,
+  recipeId,
+  preview,
+  onNext,
+}: {
+  card: CookCard;
+  recipeId: string;
+  /** The next card's preview line, or "Finished" past the last one (`nextPreview`). */
+  preview: string;
+  onNext: () => void;
+}) {
   const heading = card.part === "" ? undefined : card.part;
   const { start, find } = useTimers(recipeId);
   const stepId = card.kind === "step" ? card.step.id : "";
@@ -279,6 +333,7 @@ function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) 
             <CookIngredientItem key={ingredient.id} recipeId={recipeId} ingredient={ingredient} />
           ))}
         </ul>
+        <NextPreview preview={preview} onNext={onNext} />
       </Card>
     );
   }
@@ -291,6 +346,7 @@ function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) 
       {/* The ingredients this step names, tickable, on the same session ticks
           as the ingredient card's rows (M26.1). */}
       <StepIngredientChips recipeId={recipeId} text={card.step.text} ingredients={card.ingredients} className="mt-4 text-lg" />
+      <NextPreview preview={preview} onNext={onNext} />
     </Card>
   );
 }

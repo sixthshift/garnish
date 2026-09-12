@@ -4,7 +4,9 @@ import {
   cardAnnouncement,
   clampStep,
   isFinishedIndex,
+  nextPreview,
   partPills,
+  PREVIEW_MAX_CHARS,
   SWIPE_MAX_MS,
   SWIPE_MIN_PX,
   SWIPE_RATIO,
@@ -166,5 +168,46 @@ describe("swipeIntent", () => {
     expect(swipeIntent({ dx: Number.NaN, dy: -120, ms: 200 })).toBeNull();
     expect(swipeIntent({ dx: 0, dy: Number.NEGATIVE_INFINITY, ms: 200 })).toBeNull();
     expect(swipeIntent({ dx: 0, dy: -120, ms: -5 })).toBeNull();
+  });
+});
+
+describe("nextPreview", () => {
+  test("a middle step previews the next step's first line", () => {
+    const cards = buildCookCards({ parts: [part("Pastry", [], [step("Rub the butter in."), step("Add the water.")])] });
+    expect(nextPreview(cards, 0)).toBe("Add the water.");
+  });
+
+  test("a step right before an ingredients card previews that card's heading", () => {
+    const cards = buildCookCards({
+      parts: [part("Pastry", [], [step("Rub the butter in.")]), part("Filling", [ingredient("lemon")], [step("Whisk.")])],
+    });
+    expect(nextPreview(cards, 0)).toBe("Ingredients for Filling");
+    // An ingredients card previews its own next card too (usually step 1).
+    expect(nextPreview(cards, 1)).toBe("Whisk.");
+  });
+
+  test("an unnamed part's ingredients card previews plain 'Ingredients'", () => {
+    const cards = buildCookCards({ parts: [part("Pastry", [], [step("Rub.")]), part("", [ingredient("bread")], [step("Toast.")])] });
+    expect(nextPreview(cards, 0)).toBe("Ingredients");
+  });
+
+  test("the deck's last card previews 'Finished', same as an empty deck", () => {
+    const cards = buildCookCards({ parts: [part("Pastry", [], [step("Rub."), step("Chill.")])] });
+    expect(nextPreview(cards, cards.length - 1)).toBe("Finished");
+    expect(nextPreview([], 0)).toBe("Finished");
+  });
+
+  test("list markers, emphasis and a leading blank line are stripped from the previewed line", () => {
+    const cards = buildCookCards({ parts: [part("Pastry", [], [step("Rest."), step("\n  1. **Chill** the dough.")])] });
+    expect(nextPreview(cards, 0)).toBe("Chill the dough.");
+  });
+
+  test("a long next line is cut with an ellipsis around 80 characters", () => {
+    const long = "Whisk the eggs and sugar together until pale and thick, about five to seven minutes on high speed.";
+    const cards = buildCookCards({ parts: [part("Filling", [], [step("Rest."), step(long)])] });
+    const preview = nextPreview(cards, 0);
+    expect(preview.length).toBeLessThanOrEqual(PREVIEW_MAX_CHARS);
+    expect(preview.endsWith("…")).toBe(true);
+    expect(long.startsWith(preview.slice(0, -1))).toBe(true);
   });
 });
