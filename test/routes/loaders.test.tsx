@@ -506,10 +506,19 @@ describe("/recipes/$slug/edit", () => {
 });
 
 describe("/recipes/new", () => {
+  test("opens on the paste box, not the form (M19.2)", async () => {
+    const html = await renderRoute("/recipes/new");
+    expect(html).toContain('data-import-stage="paste"');
+    expect(html).toContain('aria-label="Pasted recipe"');
+    expect(html).toContain("Continue");
+    expect(html).toContain("Start blank");
+    expect(html).not.toContain('aria-label="New recipe"'); // the form is not mounted yet
+  });
+
   test("renders the blank form with the seeded units available", async () => {
     const units = await callServerFn(listUnits, {});
     expect(units.length).toBeGreaterThan(0); // seeded reference data
-    const html = await renderRoute("/recipes/new");
+    const html = await renderRoute("/recipes/new?blank=true");
     expect(html).toContain("New recipe");
     expect(html).toContain('aria-label="New recipe"');
     expect(html).toMatch(/<input[^>]*name="name"[^>]*value=""/);
