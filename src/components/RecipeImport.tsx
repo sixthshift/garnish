@@ -90,17 +90,21 @@ export function importSummary(ingredients: number, steps: number): string {
 export type RecipeImportPasteProps = {
   text: string;
   disabled?: boolean;
+  /** The secondary button's label; null leaves it out, for a caller whose chrome already offers the way out (M19.3). */
+  blankLabel?: string | null;
+  /** Copy above the box. Default: what `/recipes/new` says. */
+  hint?: string;
   onTextChange: (text: string) => void;
   onContinue: () => void;
   onBlank: () => void;
 };
 
 /** The first stage: one box, and the two ways out of it. */
-export function RecipeImportPaste({ text, disabled, onTextChange, onContinue, onBlank }: RecipeImportPasteProps) {
+export function RecipeImportPaste({ text, disabled, blankLabel = "Start blank", hint, onTextChange, onContinue, onBlank }: RecipeImportPasteProps) {
   return (
     <div className="flex flex-col gap-4" data-import-stage="paste">
       <Muted as="p" className="text-sm">
-        Paste a recipe — the whole thing, headings and all. Ingredients and steps are worked out from the text and shown to you before anything is saved.
+        {hint ?? "Paste a recipe — the whole thing, headings and all. Ingredients and steps are worked out from the text and shown to you before anything is saved."}
       </Muted>
       <Textarea
         aria-label="Pasted recipe"
@@ -115,16 +119,19 @@ export function RecipeImportPaste({ text, disabled, onTextChange, onContinue, on
         <Button type="button" variant="solid" intent="brand" disabled={disabled || text.trim() === ""} onClick={onContinue}>
           Continue
         </Button>
-        <Button type="button" variant="ghost" intent="neutral" disabled={disabled} onClick={onBlank}>
-          Start blank
-        </Button>
+        {blankLabel !== null && (
+          <Button type="button" variant="ghost" intent="neutral" disabled={disabled} onClick={onBlank}>
+            {blankLabel}
+          </Button>
+        )}
       </div>
     </div>
   );
 }
 
 export type RecipeImportReviewProps = {
-  title: string;
+  /** The name field's value, or undefined where the recipe already has a name (M19.3). */
+  title?: string;
   rows: readonly IngredientReview[];
   steps: readonly string[];
   /** The units the page loaded, for the "pick an existing unit" picker. */
@@ -133,7 +140,9 @@ export type RecipeImportReviewProps = {
   searchFoods: (q: string) => Promise<FoodRow[]>;
   busy?: boolean;
   error?: string | null;
-  onTitleChange: (title: string) => void;
+  /** The primary button's label. Default "Create". */
+  createLabel?: string;
+  onTitleChange?: (title: string) => void;
   onRowsChange: (rows: IngredientReview[]) => void;
   onBack: () => void;
   onCreate: () => void;
@@ -147,16 +156,18 @@ export type RecipeImportReviewProps = {
  * here would only be the same one twice.
  */
 export function RecipeImportReview(props: RecipeImportReviewProps) {
-  const { title, rows, steps, units, searchFoods, busy, error, onTitleChange, onRowsChange, onBack, onCreate } = props;
+  const { title, rows, steps, units, searchFoods, busy, error, createLabel = "Create", onTitleChange, onRowsChange, onBack, onCreate } = props;
   return (
     <div className="flex flex-col gap-6" data-import-stage="review">
       <Muted as="p" className="text-sm">
         {`Read as ${importSummary(rows.length, steps.length)}. Nothing is saved yet, and no food or unit is created unless you ask for it below.`}
       </Muted>
 
-      <FormField label="Name">
-        <Input name="name" value={title} autoComplete="off" disabled={busy} onChange={(event) => onTitleChange(event.target.value)} />
-      </FormField>
+      {title !== undefined && (
+        <FormField label="Name">
+          <Input name="name" value={title} autoComplete="off" disabled={busy} onChange={(event) => onTitleChange?.(event.target.value)} />
+        </FormField>
+      )}
 
       <section className="flex flex-col gap-3" aria-label="Ingredients to review">
         <SectionTitle as="h2">Ingredients</SectionTitle>
@@ -207,7 +218,7 @@ export function RecipeImportReview(props: RecipeImportReviewProps) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={onCreate}>
-          {busy ? "Working…" : "Create"}
+          {busy ? "Working…" : createLabel}
         </Button>
         <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
           Back

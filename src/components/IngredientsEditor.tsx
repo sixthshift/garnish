@@ -57,6 +57,7 @@ import type { Food, Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
 import { findOrCreateFood, listFoods } from "../server/foods";
 import { findOrCreateUnit } from "../server/units";
+import { PastePartSheet } from "./PastePartSheet";
 import { partLabel } from "./PartsEditor";
 import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
 import type { DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
@@ -356,6 +357,7 @@ export type IngredientsEditorProps = {
 
 export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [pasteOpen, setPasteOpen] = useState(false);
   // The whole food vocabulary, loaded once the bulk sheet opens: parsing a
   // pasted block needs every food, not the query-by-query slice a row's
   // combobox asks for.
@@ -398,6 +400,9 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
           Ingredients
         </Muted>
         <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setPasteOpen(true)}>
+            Paste
+          </Button>
           <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
             Bulk add
           </Button>
@@ -406,6 +411,7 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
           </Button>
         </div>
       </div>
+      <PastePartSheet open={pasteOpen} onOpenChange={setPasteOpen} draft={draft} pi={pi} units={units} disabled={disabled} onChange={onChange} />
       <BulkAddSheet<IngredientReview>
         open={bulkOpen}
         onOpenChange={setBulkOpen}
