@@ -109,8 +109,8 @@ describe("TimerStrip", () => {
     const html = renderToString(<TimerStrip recipeId={RECIPE} fixed />);
     expect(html).toContain("19:00");
     expect(html).toContain("Simmer for 20 minutes");
-    // Above M24.6's fixed "Ingredients" button (bottom-20) on a phone.
-    expect(html).toContain("bottom-32");
+    // Fixed above the phone tab bar.
+    expect(html).toContain("bottom-20");
     expect(html).toContain("md:bottom-4");
   });
 
@@ -118,7 +118,7 @@ describe("TimerStrip", () => {
     const storage = fakeStorage();
     withStorage(storage);
     startTimer(storage, RECIPE, { id: `${STEP}#0#20 minutes`, label: "Simmer", seconds: 1200 }, T0);
-    expect(renderToString(<TimerStrip recipeId={RECIPE} />)).not.toContain("bottom-32");
+    expect(renderToString(<TimerStrip recipeId={RECIPE} />)).not.toContain("bottom-20");
   });
 
   test("a timer that reaches zero notifies with the step's text, buzzes, and then reads Done", () => {

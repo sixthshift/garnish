@@ -1,10 +1,7 @@
 // The recipe's running timers, one row each: what it was started for, the time
 // left, a pause and a dismiss. It shows in two places, both above whatever
 // already owns the bottom of the screen — inside cook mode's footer, over the
-// progress bar, and fixed above the phone tab bar on the recipe page. Below
-// `md` the view page already has M24.6's fixed "Ingredients" button at
-// `bottom-20`, so the strip sits a row higher (`bottom-32`) and the two stack
-// rather than overlap.
+// progress bar, and fixed above the phone tab bar on the recipe page.
 //
 // The store is src/lib/timers.ts; the rows here are presentational, so they
 // render on their own in a test.
@@ -90,7 +87,7 @@ export function TimerStrip({ recipeId, fixed, className }: TimerStripProps) {
       onPause={pause}
       onResume={resume}
       onDismiss={dismiss}
-      className={cn(fixed && "fixed inset-x-0 bottom-32 z-30 px-4 md:bottom-4", className)}
+      className={cn(fixed && "fixed inset-x-0 bottom-20 z-30 px-4 md:bottom-4", className)}
     />
   );
 }

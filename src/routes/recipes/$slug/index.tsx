@@ -18,12 +18,11 @@ import { Popover } from "@sixthshift/design-system/popover";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Select } from "@sixthshift/design-system/select";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { z } from "zod";
 import { RecipeActions } from "../../../components/RecipeActions";
 import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientList, PartIngredients } from "../../../components/IngredientList";
-import { IngredientsSheet } from "../../../components/IngredientsSheet";
 import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader";
 import { QuickEditProvider } from "../../../components/QuickEdit";
 import { StepList } from "../../../components/StepList";
@@ -35,7 +34,6 @@ import { MadeThisButton, TimelineList } from "../../../components/Timeline";
 import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
-import { useScrolledOff } from "../../../lib/useScrolledOff";
 import { useMutate } from "../../../lib/mutate";
 import { notifyError } from "../../../lib/notify";
 import { getRecipe, setRating } from "../../../server/recipes";
@@ -90,12 +88,7 @@ function RecipePage() {
   const [ingredientMode] = useIngredientMode();
   const summary = ingredientMode === "summary";
   const hasIngredients = recipe.parts.some((part) => part.ingredients.length > 0);
-  // Below `md` the lists scroll away above the method; once they have, a fixed
-  // button over the tab bar opens them again in a sheet (M24.6).
-  const asideRef = useRef<HTMLElement>(null);
   const mutate = useMutate();
-  const listsScrolledOff = useScrolledOff(asideRef);
-  const [sheetOpen, setSheetOpen] = useState(false);
   // The ingredients heading's "Clear" link (M25.6): only worth showing once
   // there is something ticked to clear.
   const anyTicked = useAnyTicked(recipe.id);
@@ -159,7 +152,6 @@ function RecipePage() {
             the viewport. Below `md` the two stack, ingredients first. */}
         <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:items-start md:gap-8" data-testid="recipe-columns">
           <aside
-            ref={asideRef}
             data-testid="ingredients-column"
             data-print="keep"
             className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
@@ -204,31 +196,7 @@ function RecipePage() {
           </div>
         </div>
 
-        {/* Phone only, and only once the lists are off screen: everything above
-            `md` has them beside the method already. Fixed above the tab bar,
-            which sits at the bottom of every non-fullscreen page. It renders
-            here rather than last so the meta footer stays the page's final
-            element (M24.3); being fixed, its place in the flow does not show. */}
-        {hasIngredients && listsScrolledOff && (
-          <>
-            <Button
-              variant="solid"
-              intent="brand"
-              size="sm"
-              data-print="hide"
-              data-testid="ingredients-sheet-button"
-              className="fixed bottom-20 right-4 z-30 shadow-lg md:hidden"
-              onClick={() => setSheetOpen(true)}
-            >
-              Ingredients
-            </Button>
-            <IngredientsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} recipe={recipe} summary={summary} scaled={scaled} />
-          </>
-        )}
-
-        {/* Any timers started from a step, fixed above the phone tab bar. Below
-            `md` the "Ingredients" button above sits at `bottom-20`, so the strip
-            takes the row above it (`bottom-32`) and the two stack. */}
+        {/* Any timers started from a step, fixed above the phone tab bar. */}
         <TimerStrip recipeId={recipe.id} fixed />
 
         {/* M30.2 will move this beside the last step; for now it keeps the
