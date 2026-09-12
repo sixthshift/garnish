@@ -1,6 +1,6 @@
 # UI gap: garnish vs the incumbents
 
-Input for the stage 2 plan, now its record. Mealie is the default to copy (decision 17); Tandoor and Cooklang where they are better at the thing garnish borrowed from them. Compiled 2026-09-10 from Mealie `mealie-next` frontend source, Tandoor `vue3/` source, CookCLI templates and the Cooklang app docs, against garnish at `e91bc59`. Status filled in at the end of stage 2; the Action column is left as written so the two can be compared.
+Input for the stage 2 plan, now its record; stage 4 (the editor) added rows of its own and updated the Status column where it closed one. Mealie is the default to copy (decision 17); Tandoor and Cooklang where they are better at the thing garnish borrowed from them. Compiled 2026-09-10 from Mealie `mealie-next` frontend source, Tandoor `vue3/` source, CookCLI templates and the Cooklang app docs, against garnish at `e91bc59`. Status filled in at the end of stage 2; the Action column is left as written so the two can be compared.
 
 Legend, Action column: **have** = garnish had it · **copy** = adopt with no model change · **model** = needs a new field or table (decisions.md row) · **skip** = out of scope per scope.md, listed so it is not re-raised.
 
@@ -24,7 +24,7 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 | Search box, debounced, query mirrored in URL | Mealie, Tandoor, Cooklang | have | **have** | done (stage 1) |
 | Infinite scroll, scroll position restored on back | Mealie | full list, no restore | **copy** restore; paging unnecessary at household size | done M12.2 (restore); paging skipped, not needed at this size |
 | `/` opens a global search dialog with arrow-key results | Mealie | none | **copy** | done M12.5 |
-| Create menu: URL import, manual | Mealie | New nav item | import is Later; keep one entry point | deferred: import is Later |
+| Create menu: URL import, manual | Mealie | New nav item | import is Later; keep one entry point | done M19.2 for the paste half: `/recipes/new` opens on a paste box with "Start blank" beside it (decision 52). URL scraping and `claude -p` stay Later |
 
 ## Recipe view `/recipes/$slug`
 
@@ -68,18 +68,26 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 
 | Incumbent behaviour | Source | garnish | Action | Status |
 |---|---|---|---|---|
-| Edit in place on the view page (`?edit=true`), sticky Save, floating save when scrolled, discard-changes guard | Mealie | separate route, no guard | see Questions; the discard guard is **copy** either way | deferred: decision 40 keeps the route; the guard shipped in M13.1 |
+| Edit in place on the view page (`?edit=true`), sticky Save, floating save when scrolled, discard-changes guard | Mealie | separate route, no guard | see Questions; the discard guard is **copy** either way | deferred: decision 40 keeps the route; the guard shipped in M13.1, and M20 made the route mirror the view page's order so nothing jumps between them (decision 50) |
 | Ingredient rows drag to reorder and drag between parts | Mealie, Tandoor | up/down buttons, "Move to" select | **copy** drag with the buttons kept as fallback | done M13.3 |
 | Phone: ingredient row is a one-line summary, tap opens a bottom sheet with the fields | Tandoor | full row of inputs on every width | **copy**; this is the single biggest phone-editor fix | done M13.2 |
 | `originalText` shown in grey above a parsed row | Tandoor | hidden unless text-only mode | **copy** | done M13.6 |
 | Bulk add: paste a block, one ingredient or step per line, cleanup buttons | Mealie, Tandoor | none | **copy** as text-only rows; parsing is Later (`claude -p`) | done M13.4 |
 | Insert above / below, split step per paragraph, merge with next | Mealie, Tandoor | add at end only | **copy** insert; split and merge for steps | done M13.4 |
-| Per-step image, markdown body with preview | Mealie | plain textarea | **copy** markdown render only; step images are **model** | done M11.4 (markdown render); step images deferred |
+| Per-step image, markdown body with preview | Mealie | plain textarea | **copy** markdown render only; step images are **model** | done M11.4 (view render), M22.1 (editor preview toggle, decision 56); step images deferred |
 | Image from URL as well as upload | Mealie | upload only | **copy** | done M13.5 |
 | Tag input creates on Enter, `+` opens a create dialog | Mealie | have | **have** | done (stage 1) |
 | Part optional fields revealed from a menu: name, time | Tandoor | name always shown | **copy** the pattern if per-part time is wanted; time is **model** | deferred: per-part time is a model change |
 | JSON editor of the whole document | Mealie | none | **copy**, cheap, and it is the `claude -p` import preview later | done M13.5 |
 | Duplicate recipe | Mealie | none | **copy** | done M11.6 |
+| Sections are emergent: an ingredient or step gets a title from its own menu, nothing scaffolded up front | Mealie | a "Part name" input, card and reorder handle on every recipe | **copy** the intent, not the mechanism — Mealie's `title` string fits a flat array, not a parts table | done M21.1: a one-part unnamed recipe prints bare and "Add part" promotes (decision 53) |
+| Row actions in one `⋮`; split-all / merge-all once above the list | Mealie, Tandoor | four buttons under every step textarea | **copy** | done M21.2 (decision 54) |
+| Standing "these are not parsed" alert with one Parse button | Mealie | per-row Parse in the row menu (M17.6) | **copy**, scoped to a part | done M21.3 |
+| Press Enter to create the typed unit or food | Mealie | had it while the suggestion list was open; Enter with it closed reached the form | **copy** | done M21.5 |
+| Tab out of the last ingredient appends a row and focuses it | Tandoor | "Add ingredient" only | **copy** the idea on Enter, not Tab — Tab is the browser's focus order | done M21.4 (decision 55) |
+| Paste a whole recipe and have it split into ingredients and steps | Tandoor's importer | bulk add, one list at a time | **copy**, rules-based | done M19.2, M19.3 (decision 52) |
+| Toolbar above the form carrying the title and the save | Mealie, Tandoor | save at the foot only | **copy** | done M22.2 |
+| Meta behind tabs so the steps come first | Tandoor | one metadata-first column | **copy** the intent as a folded `Details` disclosure, not tabs | done M20.1 (decision 50) |
 | Confirmations as bottom sheets on phone | Mealie | centred modal | **copy** if the design system's Modal supports it | done M13.6 (decision 45: Modal is already a sheet on phone) |
 
 ## Reference data: foods, units, aisles, tags `/settings`
