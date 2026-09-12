@@ -188,7 +188,7 @@ export function Combobox({
           id={listId}
           role="listbox"
           aria-label={ariaLabel ? `${ariaLabel} suggestions` : undefined}
-          className="absolute left-0 top-full z-10 mt-1 max-h-60 w-full min-w-40 overflow-auto rounded-lg border border-border-normal bg-bg-base p-1 shadow-md"
+          className="absolute left-0 top-full z-10 mt-1 max-h-60 w-full min-w-40 overflow-auto rounded-lg border border-border-normal bg-bg-normal p-1 shadow-md"
         >
           {items.map((item, index) => {
             const selected = index === active;

@@ -27,7 +27,7 @@ export function TimerStripRows({ timers, onPause, onResume, onDismiss, className
         return (
           <li
             key={timer.id}
-            className="flex items-center gap-3 rounded-lg border border-border-normal bg-bg-raised px-3 py-2 shadow-sm"
+            className="flex items-center gap-3 rounded-lg border border-border-normal bg-bg-normal px-3 py-2 shadow-sm"
             data-testid="timer-row"
             data-timer-id={timer.id}
             data-done={timer.done ? "true" : undefined}
