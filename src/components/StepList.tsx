@@ -12,6 +12,7 @@ import type { Ingredient, Step } from "../domain/recipe";
 import { useStepTick } from "../lib/ticks";
 import { useTimers } from "../lib/timers";
 import { Markdown } from "./Markdown";
+import { useQuickEditStep } from "./QuickEdit";
 import { StepIngredientChips } from "./StepIngredientChips";
 import { decorateDurations } from "./TimerChip";
 
@@ -27,10 +28,14 @@ export type StepRowProps = {
    * beside the method, so repeating it under every step is noise.
    */
   ingredients?: Ingredient[];
+  /** The owning part's id. Quick edit (M27.5) needs it to find the stored step; without it the row renders no pencil. */
+  partId?: string;
 };
 
-export function StepRow({ recipeId, step, position, ingredients = [] }: StepRowProps) {
+export function StepRow({ recipeId, step, position, ingredients = [], partId }: StepRowProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
+  // The pencil and its sheet, or nothing outside the recipe page (M27.5).
+  const quickEdit = useQuickEditStep(partId, step.id);
   // A decorator per step: it binds this step's id (so each chip's timer has a
   // stable identity) and its text (so the notification at zero says what the
   // timer was for). `find` is read at render, so a running chip repaints with
@@ -44,7 +49,7 @@ export function StepRow({ recipeId, step, position, ingredients = [] }: StepRowP
   );
 
   return (
-    <li className="flex gap-3" data-testid="step-row" data-ticked={done ? "true" : undefined}>
+    <li className="group flex gap-3" data-testid="step-row" data-ticked={done ? "true" : undefined} {...quickEdit.press}>
       <span
         className={cn(
           "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
@@ -68,6 +73,7 @@ export function StepRow({ recipeId, step, position, ingredients = [] }: StepRowP
         {/* A done step collapses to one line; its chips go with it. */}
         {!done && <StepIngredientChips recipeId={recipeId} text={step.text} ingredients={ingredients} className="md:hidden" />}
       </div>
+      {quickEdit.node}
     </li>
   );
 }
@@ -76,16 +82,19 @@ export function StepList({
   recipeId,
   steps,
   ingredients = [],
+  partId,
 }: {
   recipeId: string;
   steps: Step[];
   /** The owning part's ingredients, matched against each step's text (M26.1). */
   ingredients?: Ingredient[];
+  /** The owning part's id, passed to each row for quick edit (M27.5). */
+  partId?: string;
 }) {
   return (
     <ol className="flex flex-col gap-3" aria-label="Steps">
       {steps.map((step, index) => (
-        <StepRow key={step.id} recipeId={recipeId} step={step} position={index + 1} ingredients={ingredients} />
+        <StepRow key={step.id} recipeId={recipeId} step={step} position={index + 1} ingredients={ingredients} partId={partId} />
       ))}
     </ol>
   );

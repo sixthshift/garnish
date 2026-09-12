@@ -12,19 +12,21 @@ export type IngredientListProps = {
   recipeId: string;
   /** True when the page is showing servings other than the recipe's own. */
   scaled?: boolean;
+  /** The owning part's id, passed to each row for quick edit (M27.5). Absent for the merged summary list. */
+  partId?: string;
 };
 
-export function IngredientList({ ingredients, recipeId, scaled = false }: IngredientListProps) {
+export function IngredientList({ ingredients, recipeId, scaled = false, partId }: IngredientListProps) {
   return (
     <ul className="flex flex-col gap-2" aria-label="Ingredients">
       {ingredients.map((ingredient) => (
-        <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} scaled={scaled} />
+        <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} scaled={scaled} partId={partId} />
       ))}
     </ul>
   );
 }
 
-export type PartIngredientsProps = Omit<IngredientListProps, "ingredients"> & { part: Part };
+export type PartIngredientsProps = Omit<IngredientListProps, "ingredients" | "partId"> & { part: Part };
 
 /**
  * One part's ingredients, under the part's name. The unnamed part — a flat
@@ -39,7 +41,7 @@ export function PartIngredients({ part, ...rest }: PartIngredientsProps) {
   return (
     <section className="flex flex-col gap-3" aria-label={name === "" ? undefined : `${name} ingredients`}>
       {name !== "" && <SectionTitle as="h2">{name}</SectionTitle>}
-      <IngredientList ingredients={part.ingredients} {...rest} />
+      <IngredientList ingredients={part.ingredients} partId={part.id} {...rest} />
     </section>
   );
 }

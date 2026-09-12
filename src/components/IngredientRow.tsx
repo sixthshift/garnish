@@ -17,6 +17,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { formatAmount, formatFood, formatIngredient } from "../domain/format";
 import type { Ingredient } from "../domain/recipe";
 import { useIngredientTick } from "../lib/ticks";
+import { useQuickEditIngredient } from "./QuickEdit";
 
 export type IngredientRowProps = {
   /** The owning recipe's id: ticks.ts keys session state by it. */
@@ -24,6 +25,12 @@ export type IngredientRowProps = {
   ingredient: Ingredient;
   /** True when the page is showing servings other than the recipe's own. */
   scaled?: boolean;
+  /**
+   * The owning part's id, where the row belongs to exactly one part. Quick
+   * edit (M27.5) needs it to find the stored row; a merged summary row can be
+   * two parts added together, so it has none and gets no pencil.
+   */
+  partId?: string;
 };
 
 /** The line's visible parts: the amount, the food (bold unless `raw`), and whether `food` is really the untouched original text. Pure. */
@@ -44,18 +51,21 @@ export function ingredientLineParts(ingredient: Pick<Ingredient, "quantity" | "u
   return { amount: hasQuantity ? formatAmount(quantity, unit) : "", food: formatFood(quantity, food), raw: false };
 }
 
-export function IngredientRow({ recipeId, ingredient, scaled = false }: IngredientRowProps) {
+export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: IngredientRowProps) {
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
+  // The pencil and its sheet, or nothing outside the recipe page (M27.5).
+  const quickEdit = useQuickEditIngredient(partId, ingredient.id);
   const { amount, food, raw } = ingredientLineParts(ingredient);
   const note = ingredient.note.trim();
 
   return (
     <li
-      className="flex items-start gap-2.5"
+      className="group flex items-start gap-2.5"
       data-testid="ingredient-row"
       data-ticked={done ? "true" : undefined}
       data-fixed={ingredient.fixed ? "true" : undefined}
       data-scaled={scaled ? "true" : undefined}
+      {...quickEdit.press}
     >
       <Checkbox checked={done} onCheckedChange={toggle} className="mt-0.5" aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`} />
       <button type="button" onClick={toggle} className={cn("flex flex-1 flex-col gap-0.5 text-left", done && "text-fg-subtle")}>
@@ -74,6 +84,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false }: Ingredie
         </span>
         {note !== "" && <Muted as="p" className={cn("text-sm", done && "line-through")}>{note}</Muted>}
       </button>
+      {quickEdit.node}
     </li>
   );
 }

@@ -25,6 +25,7 @@ import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientList, PartIngredients } from "../../../components/IngredientList";
 import { IngredientsSheet } from "../../../components/IngredientsSheet";
 import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader";
+import { QuickEditProvider } from "../../../components/QuickEdit";
 import { StepList } from "../../../components/StepList";
 import { TimerStrip } from "../../../components/TimerStrip";
 import { formatIngredient } from "../../../domain/format";
@@ -109,127 +110,131 @@ function RecipePage() {
     }
   };
 
+  // Quick edit (M27.5) hangs off the stored document, not `recipe`: a row's
+  // sheet writes back what was stored, whatever scale the page is showing.
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6 lg:max-w-5xl">
-      <RecipeHeader
-        recipe={recipe}
-        onRate={(rating) => void rate(rating)}
-        actions={
-          <>
-            {/* Edit and Cook are both in the open (M25.5) rather than behind
-                the menu; each carries the currently requested scale so it
-                round-trips through the edit page and into cook mode. */}
-            <Button asChild variant="outline" intent="neutral" size="sm" iconOnly aria-label="Edit">
-              <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-                <EditIcon />
-              </Link>
-            </Button>
-            <Button asChild variant="solid" intent="brand" size="sm">
-              <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-                Cook
-              </Link>
-            </Button>
-            <RecipeActions recipe={recipe} />
-          </>
-        }
-      />
+    <QuickEditProvider recipe={stored}>
+      <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6 lg:max-w-5xl">
+        <RecipeHeader
+          recipe={recipe}
+          onRate={(rating) => void rate(rating)}
+          actions={
+            <>
+              {/* Edit and Cook are both in the open (M25.5) rather than behind
+                  the menu; each carries the currently requested scale so it
+                  round-trips through the edit page and into cook mode. */}
+              <Button asChild variant="outline" intent="neutral" size="sm" iconOnly aria-label="Edit">
+                <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                  <EditIcon />
+                </Link>
+              </Button>
+              <Button asChild variant="solid" intent="brand" size="sm">
+                <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                  Cook
+                </Link>
+              </Button>
+              <RecipeActions recipe={recipe} />
+            </>
+          }
+        />
 
-      {/* Notes before the ingredients (M24.4): they are the household's
-          amendments, read before you start, so they sit directly under the
-          header rather than after the steps. */}
-      {recipe.notes.length > 0 && (
-        <section className="flex flex-col gap-3" aria-label="Notes">
-          <SectionTitle as="h2">Notes</SectionTitle>
-          {recipe.notes.map((note) => (
-            <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
-              <p className="whitespace-pre-line">{note.text}</p>
-            </Card>
-          ))}
-        </section>
-      )}
+        {/* Notes before the ingredients (M24.4): they are the household's
+            amendments, read before you start, so they sit directly under the
+            header rather than after the steps. */}
+        {recipe.notes.length > 0 && (
+          <section className="flex flex-col gap-3" aria-label="Notes">
+            <SectionTitle as="h2">Notes</SectionTitle>
+            {recipe.notes.map((note) => (
+              <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
+                <p className="whitespace-pre-line">{note.text}</p>
+              </Card>
+            ))}
+          </section>
+        )}
 
-      {/* Two columns from `md` (M24.1): the ingredients stick beside the
-          method rather than scrolling away above it. A third for the list, two
-          thirds for the steps; the aside scrolls itself when it is taller than
-          the viewport. Below `md` the two stack, ingredients first. */}
-      <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:items-start md:gap-8" data-testid="recipe-columns">
-        <aside
-          ref={asideRef}
-          data-testid="ingredients-column"
-          data-print="keep"
-          className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
-        >
-          {/* M24.2: the aside's own heading, as Mealie's ingredient list
-              header has both the title and the servings stepper together.
-              The loose row that used to sit between the page header and the
-              grid is gone; the scale control lives here instead. */}
-          <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
-            <SectionTitle as="h2">Ingredients</SectionTitle>
-            <div className="flex flex-wrap items-center gap-3">
-              <ScaleControl servings={recipe.recipeServings} ingredients={scalableIngredients(recipe)} />
-              {anyTicked && (
-                <Button variant="link" intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
-                  Clear
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Structured vs. one merged list only means something once there is
-              more than one part to merge; a flat recipe has nothing to
-              toggle. */}
-          {recipe.parts.length > 1 && (
-            <div className="flex justify-end">
-              <IngredientModeToggle />
-            </div>
-          )}
-
-          {summary && hasIngredients && (
-            <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />
-          )}
-
-          {!summary &&
-            recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
-        </aside>
-
-        <div className="flex flex-col gap-6 md:col-span-2" data-testid="method-column">
-          {recipe.parts.map((part) => (
-            <PartSteps key={part.id} part={part} recipeId={recipe.id} />
-          ))}
-        </div>
-      </div>
-
-      {/* Phone only, and only once the lists are off screen: everything above
-          `md` has them beside the method already. Fixed above the tab bar,
-          which sits at the bottom of every non-fullscreen page. It renders
-          here rather than last so the meta footer stays the page's final
-          element (M24.3); being fixed, its place in the flow does not show. */}
-      {hasIngredients && listsScrolledOff && (
-        <>
-          <Button
-            variant="solid"
-            intent="brand"
-            size="sm"
-            data-print="hide"
-            data-testid="ingredients-sheet-button"
-            className="fixed bottom-20 right-4 z-30 shadow-lg md:hidden"
-            onClick={() => setSheetOpen(true)}
+        {/* Two columns from `md` (M24.1): the ingredients stick beside the
+            method rather than scrolling away above it. A third for the list, two
+            thirds for the steps; the aside scrolls itself when it is taller than
+            the viewport. Below `md` the two stack, ingredients first. */}
+        <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:items-start md:gap-8" data-testid="recipe-columns">
+          <aside
+            ref={asideRef}
+            data-testid="ingredients-column"
+            data-print="keep"
+            className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
           >
-            Ingredients
-          </Button>
-          <IngredientsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} recipe={recipe} summary={summary} scaled={scaled} />
-        </>
-      )}
+            {/* M24.2: the aside's own heading, as Mealie's ingredient list
+                header has both the title and the servings stepper together.
+                The loose row that used to sit between the page header and the
+                grid is gone; the scale control lives here instead. */}
+            <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
+              <SectionTitle as="h2">Ingredients</SectionTitle>
+              <div className="flex flex-wrap items-center gap-3">
+                <ScaleControl servings={recipe.recipeServings} ingredients={scalableIngredients(recipe)} />
+                {anyTicked && (
+                  <Button variant="link" intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
 
-      {/* Any timers started from a step, fixed above the phone tab bar. Below
-          `md` the "Ingredients" button above sits at `bottom-20`, so the strip
-          takes the row above it (`bottom-32`) and the two stack. */}
-      <TimerStrip recipeId={recipe.id} fixed />
+            {/* Structured vs. one merged list only means something once there is
+                more than one part to merge; a flat recipe has nothing to
+                toggle. */}
+            {recipe.parts.length > 1 && (
+              <div className="flex justify-end">
+                <IngredientModeToggle />
+              </div>
+            )}
 
-      <TimelineList events={timeline} recipe={recipe} />
+            {summary && hasIngredients && (
+              <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />
+            )}
 
-      <RecipeMetaFooter recipe={recipe} />
-    </article>
+            {!summary &&
+              recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
+          </aside>
+
+          <div className="flex flex-col gap-6 md:col-span-2" data-testid="method-column">
+            {recipe.parts.map((part) => (
+              <PartSteps key={part.id} part={part} recipeId={recipe.id} />
+            ))}
+          </div>
+        </div>
+
+        {/* Phone only, and only once the lists are off screen: everything above
+            `md` has them beside the method already. Fixed above the tab bar,
+            which sits at the bottom of every non-fullscreen page. It renders
+            here rather than last so the meta footer stays the page's final
+            element (M24.3); being fixed, its place in the flow does not show. */}
+        {hasIngredients && listsScrolledOff && (
+          <>
+            <Button
+              variant="solid"
+              intent="brand"
+              size="sm"
+              data-print="hide"
+              data-testid="ingredients-sheet-button"
+              className="fixed bottom-20 right-4 z-30 shadow-lg md:hidden"
+              onClick={() => setSheetOpen(true)}
+            >
+              Ingredients
+            </Button>
+            <IngredientsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} recipe={recipe} summary={summary} scaled={scaled} />
+          </>
+        )}
+
+        {/* Any timers started from a step, fixed above the phone tab bar. Below
+            `md` the "Ingredients" button above sits at `bottom-20`, so the strip
+            takes the row above it (`bottom-32`) and the two stack. */}
+        <TimerStrip recipeId={recipe.id} fixed />
+
+        <TimelineList events={timeline} recipe={recipe} />
+
+        <RecipeMetaFooter recipe={recipe} />
+      </article>
+    </QuickEditProvider>
   );
 }
 
@@ -394,7 +399,7 @@ function PartSteps({ part, recipeId }: { part: Part; recipeId: string }) {
           </Muted>
         }
       >
-        <StepList recipeId={recipeId} steps={part.steps} ingredients={part.ingredients} />
+        <StepList recipeId={recipeId} steps={part.steps} ingredients={part.ingredients} partId={part.id} />
       </EmptyBoundary>
     </section>
   );
