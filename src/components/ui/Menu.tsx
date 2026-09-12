@@ -148,13 +148,15 @@ export type MenuItemProps = {
   disabled?: boolean;
   /** Render the single child element as the item instead of a button (a router Link). */
   asChild?: boolean;
+  /** Forwarded to the rendered button, so a caller can give an item a stable test hook. */
+  "data-testid"?: string;
 };
 
 const ITEM_CLASS = "flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-bg-normal-hovered disabled:opacity-50";
 const INTENT_CLASS = { neutral: "text-fg-normal", danger: "text-fg-danger" } as const;
 
 /** One line in the menu. Choosing it runs `onSelect` and closes the menu. */
-export function MenuItem({ children, onSelect, intent = "neutral", disabled = false, asChild = false }: MenuItemProps) {
+export function MenuItem({ children, onSelect, intent = "neutral", disabled = false, asChild = false, "data-testid": dataTestId }: MenuItemProps) {
   const { close } = useContext(menuContext);
   const className = cn(ITEM_CLASS, INTENT_CLASS[intent]);
   const choose = () => {
@@ -177,7 +179,7 @@ export function MenuItem({ children, onSelect, intent = "neutral", disabled = fa
   }
 
   return (
-    <button type="button" role="menuitem" disabled={disabled} className={className} onClick={choose}>
+    <button type="button" role="menuitem" disabled={disabled} className={className} onClick={choose} data-testid={dataTestId}>
       {children}
     </button>
   );

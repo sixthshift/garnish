@@ -34,7 +34,7 @@ export type EditorToolbarProps = {
   disabled?: boolean;
   /** A standing line under the title, e.g. "Unsaved changes". */
   note?: ReactNode;
-  /** Extra controls between the title and the buttons — the JSON toggle. */
+  /** Extra controls between the title and the buttons — the JSON toggle's menu. */
   actions?: ReactNode;
   /** The Cancel control, rendered beside the submit. */
   cancel: ReactNode;

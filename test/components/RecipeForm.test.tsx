@@ -440,3 +440,32 @@ describe("the resume notice", () => {
     expect(await renderForm({ initial, storage })).not.toContain("draft-notice");
   });
 });
+
+// M27.6: "Edit as JSON" moved off the toolbar and into a one-item Menu at its
+// end. The menu is closed by default like every other Menu in the app
+// (RecipeActions, SortMenu), so there is no jsdom here to click it open —
+// `jsonMenuOpen` is the same test-only seam SortMenu's `open` is, forwarded
+// straight to the underlying `Menu`.
+describe("the JSON toggle menu", () => {
+  const renderForm = async (props: Partial<RecipeFormProps>): Promise<string> => {
+    const rootRoute = createRootRoute({ component: () => <RecipeForm initial={emptyDraft()} units={[]} tags={[]} {...props} /> });
+    const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ["/"] }) });
+    await router.load();
+    return renderToString(<RouterProvider router={router} />);
+  };
+
+  test("closed by default: the trigger sits where the button was, no menuitem in the tree", async () => {
+    const html = await renderForm({});
+    expect(html).toContain('data-testid="menu-trigger"');
+    expect(html).not.toContain('role="menuitem"');
+    expect(html).not.toContain('data-testid="json-toggle"');
+  });
+
+  test("open, the one item reads Edit as JSON while the form is showing", async () => {
+    const html = await renderForm({ jsonMenuOpen: true });
+    expect(html).toContain('role="menuitem"');
+    expect(html).toContain('data-testid="json-toggle"');
+    expect(html).toContain("Edit as JSON");
+    expect(html).not.toContain("Back to form");
+  });
+});

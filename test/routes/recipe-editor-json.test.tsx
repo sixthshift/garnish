@@ -1,6 +1,6 @@
 // The editor's M13.5 controls as the route renders them: the image URL field
-// beside the picker, and the JSON toggle with the form (not the textarea)
-// showing until it is pressed.
+// beside the picker, and the JSON toggle's menu (M27.6) closed, with the form
+// (not the textarea) showing until it is opened and chosen.
 import { expect, test, vi } from "vitest";
 import { renderRoute } from "../helpers/routes";
 import { useTempDataDir } from "../helpers/server";
@@ -29,8 +29,11 @@ test("the image field takes a pasted URL", async () => {
 
 test("the JSON view is offered but closed, so the form is what renders", async () => {
   const html = await renderRoute("/recipes/new?source=manual");
-  expect(html).toContain('data-testid="json-toggle"');
-  expect(html).toContain("Edit as JSON");
+  // The toggle lives in a Menu (M27.6), closed by default like every other
+  // menu in the app; the item itself (and its text) is not in the markup
+  // until it is opened. See test/components/RecipeForm.test.tsx for that.
+  expect(html).toContain('data-testid="menu-trigger"');
+  expect(html).not.toContain('data-testid="json-toggle"');
   expect(html).not.toContain("Back to form");
   expect(html).not.toContain('data-testid="json-view"');
   expect(html).not.toContain('aria-label="Recipe JSON"');

@@ -463,11 +463,11 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toContain('href="/recipes/lemon-tart"'); // cancel
   });
 
-  test("the editor is headed by a toolbar naming the recipe, with the save and the JSON toggle (M22.2)", async () => {
+  test("the editor is headed by a toolbar naming the recipe, with the save and the JSON toggle's menu (M22.2, M27.6)", async () => {
     await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "", ingredients: [], steps: [] }] });
     const html = await renderRoute("/recipes/lemon-tart/edit");
     expect(html).toContain('data-testid="editor-toolbar"');
-    expect(html).toContain('data-testid="json-toggle"');
+    expect(html).toContain('data-testid="menu-trigger"');
     // The toolbar comes first, before any field.
     expect(html.indexOf('data-testid="editor-toolbar"')).toBeLessThan(html.indexOf('name="name"'));
     // The phone footer is still there, hidden from md up.

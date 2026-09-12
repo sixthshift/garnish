@@ -46,12 +46,14 @@
 //
 // "Edit as JSON" swaps the fields for the document itself. Apply parses the
 // text with `recipeInputSchema`, the same schema Save uses, and reports the
-// failing paths; nothing reaches the draft until it parses.
+// failing paths; nothing reaches the draft until it parses. It sits behind a
+// one-item `Menu` at the toolbar's end (M27.6), the item reading "Edit as
+// JSON" or "Back to form" depending on which view is showing.
 //
 // Save and Cancel live in two places, one per width (decisions.md row 56's
 // sibling, M22.2): an `EditorToolbar` above the form, sticky from `md` up and
-// carrying the recipe's name, the dirty note and "Edit as JSON"; and a
-// `SaveBar` at the foot, sticky above the phone's tab bar and hidden from `md`.
+// carrying the recipe's name, the dirty note and that menu; and a `SaveBar`
+// at the foot, sticky above the phone's tab bar and hidden from `md`.
 // The draft is compared with the one the form opened
 // on (`isDirty`, plus a picked image file, which never enters the draft), and
 // while it differs `useBlocker` stands in the way: leaving the route asks for
@@ -84,6 +86,7 @@ import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Disclosure } from "./ui/Disclosure";
 import { EditorToolbar } from "./ui/EditorToolbar";
 import { ImageUpload } from "./ui/ImageUpload";
+import { Menu } from "./ui/Menu";
 import { NumberStepper } from "./ui/NumberStepper";
 import { SaveBar } from "./ui/SaveBar";
 
@@ -340,9 +343,16 @@ export type RecipeFormProps = {
    * picture, and the field is right there to try again with.
    */
   importedImageUrl?: string | null;
+  /**
+   * Forwarded to the JSON toggle's `Menu` (tests). The menu is closed by
+   * default and opens on click, like every other `Menu` in the app; there is
+   * no jsdom in this project's vitest config, so a render test cannot click
+   * it open and instead renders it open through this prop.
+   */
+  jsonMenuOpen?: boolean;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl, storage: storageProp }: RecipeFormProps) {
+export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl, storage: storageProp, jsonMenuOpen }: RecipeFormProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const detectedOnline = useOnline();
@@ -511,25 +521,23 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         note={dirty ? "Unsaved changes" : undefined}
         cancel={cancelLink}
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            intent="neutral"
-            size="sm"
-            disabled={saving}
-            data-testid="json-toggle"
-            onClick={() => {
-              if (json !== null) {
-                setJson(null);
+          <Menu label="Editor actions" iconOnly open={jsonMenuOpen}>
+            <Menu.Item
+              data-testid="json-toggle"
+              disabled={saving}
+              onSelect={() => {
+                if (json !== null) {
+                  setJson(null);
+                  setJsonError(null);
+                  return;
+                }
+                setJson(draftToJson(draft));
                 setJsonError(null);
-                return;
-              }
-              setJson(draftToJson(draft));
-              setJsonError(null);
-            }}
-          >
-            {json !== null ? "Back to form" : "Edit as JSON"}
-          </Button>
+              }}
+            >
+              {json !== null ? "Back to form" : "Edit as JSON"}
+            </Menu.Item>
+          </Menu>
         }
       />
 
