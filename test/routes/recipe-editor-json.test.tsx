@@ -19,7 +19,7 @@ vi.mock("../../src/server/foods", local);
 useTempDataDir();
 
 test("the image field takes a pasted URL", async () => {
-  const html = await renderRoute("/recipes/new?blank=true");
+  const html = await renderRoute("/recipes/new");
   expect(html).toContain('data-testid="image-url"');
   expect(html).toContain("Or paste an image URL");
   expect(html).toMatch(/<input[^>]*type="url"/);
@@ -28,7 +28,7 @@ test("the image field takes a pasted URL", async () => {
 });
 
 test("the JSON view is offered but closed, so the form is what renders", async () => {
-  const html = await renderRoute("/recipes/new?blank=true");
+  const html = await renderRoute("/recipes/new");
   expect(html).toContain('data-testid="json-toggle"');
   expect(html).toContain("Edit as JSON");
   expect(html).not.toContain("Back to form");

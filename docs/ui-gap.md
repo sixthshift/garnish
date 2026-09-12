@@ -24,7 +24,9 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 | Search box, debounced, query mirrored in URL | Mealie, Tandoor, Cooklang | have | **have** | done (stage 1) |
 | Infinite scroll, scroll position restored on back | Mealie | full list, no restore | **copy** restore; paging unnecessary at household size | done M12.2 (restore); paging skipped, not needed at this size |
 | `/` opens a global search dialog with arrow-key results | Mealie | none | **copy** | done M12.5 |
-| Adding a recipe starts with a choice of how, not a blank form | Mealie's Add Recipe modal, Tandoor's import wizard `Type` step | New nav item | **copy** the framing; the options differ | done M19.2: Paste or Start blank (decision 52). URL scraping and `claude -p` stay Later |
+| Adding a recipe starts with a choice of source, not a blank form | Mealie's Add Recipe modal, Tandoor's import wizard `Type` step | New nav item | **copy** the framing; the options differ | M23.6: a web page, or your own (decision 57) |
+| Import a recipe from a URL | Mealie and Tandoor both run `recipe_scrapers`: ~500 per-site classes, then "wild mode" over schema.org `ld+json`/microdata. Mealie then falls through to AI transcription, AI, and an OpenGraph stub; Tandoor falls through to nothing and errors | none | **copy the wild-mode and OpenGraph rungs only** — per-site classes are what intent.md means by "scrapers rot per site" | M23.2–M23.6 (decision 58) |
+| Warn when a URL has already been imported | Tandoor matches on `source_url` and returns the duplicates | none | **copy**, one query | M23.7 |
 
 ## Recipe view `/recipes/$slug`
 
@@ -85,7 +87,7 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 | Standing "these are not parsed" alert with one Parse button | Mealie | per-row Parse in the row menu (M17.6) | **copy**, scoped to a part | done M21.3 |
 | Press Enter to create the typed unit or food | Mealie | had it while the suggestion list was open; Enter with it closed reached the form | **copy** | done M21.5 |
 | Tab out of the last ingredient appends a row and focuses it | Tandoor | "Add ingredient" only | **copy** the idea on Enter, not Tab — Tab is the browser's focus order | done M21.4 (decision 55) |
-| Paste free recipe text and have it split into ingredients and steps | **neither** — Mealie's paste takes HTML/JSON (schema.org) and sends prose to its AI import; Tandoor's wizard offers URL, AI, file, bookmarklet, JSON/HTML and URL-list, with no plain-text option | bulk add, one list at a time | **new**: no incumbent to copy, and Mealie's answer is AI, which v1 rules out | done M19.2, M19.3 (decision 52). The review step it commits through is Mealie's (decision 47); only the split is ours |
+| Paste free recipe text and have it split into ingredients and steps | **neither** — Mealie's paste takes HTML/JSON (schema.org) and sends prose to its AI import; Tandoor's wizard offers URL, AI, file, bookmarklet, JSON/HTML and URL-list, with no plain-text option | none | **skip**: rules cannot read prose, and neither incumbent tries without an LLM | built in M19, removed in M23.1 (decision 57). It waits for `claude -p`, which scope.md has under Later |
 | Toolbar above the form carrying the title and the save | Mealie, Tandoor | save at the foot only | **copy** | done M22.2 |
 | Meta behind tabs so the steps come first | Tandoor | one metadata-first column | **copy** the intent as a folded `Details` disclosure, not tabs | done M20.1 (decision 50) |
 | Confirmations as bottom sheets on phone | Mealie | centred modal | **copy** if the design system's Modal supports it | done M13.6 (decision 45: Modal is already a sheet on phone) |
