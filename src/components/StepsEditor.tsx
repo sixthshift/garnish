@@ -20,6 +20,7 @@ import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
 import { paragraphs } from "../domain/bulkText";
 import { randomUuid } from "../lib/ids";
+import { focusNamed, rowEnter, rowFieldName } from "../lib/rowKeys";
 import type { DraftStep, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { BulkAddSheet } from "./ui/BulkAddSheet";
 import { Menu } from "./ui/Menu";
@@ -194,6 +195,23 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
   const path = stepsPath(pi);
   const last = steps.length - 1;
 
+  /**
+   * Enter in a step's textarea is a newline, so appending takes the modifier
+   * (⌘/Ctrl+Enter) — the same key every chat box uses to send. From the last
+   * step it appends and focuses; from any earlier one it moves to the next
+   * (decisions.md row 55).
+   */
+  const enterOnStep = (si: number) => {
+    const action = rowEnter(si, steps.length);
+    if (action === "ignore") return;
+    if (action === "append") {
+      onChange(addStep(draft, pi));
+      focusNamed(rowFieldName(path, steps.length, "text"));
+      return;
+    }
+    focusNamed(rowFieldName(path, si + 1, "text"));
+  };
+
   return (
     <div className="flex flex-col gap-2" data-steps={pi}>
       <div className="flex items-center justify-between gap-3">
@@ -258,6 +276,11 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                     placeholder="What to do"
                     value={step.text ?? ""}
                     disabled={disabled}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
+                      event.preventDefault();
+                      enterOnStep(si);
+                    }}
                     onChange={(event) => onChange(updateStep(draft, pi, si, event.target.value))}
                   />
                   {error !== undefined && (

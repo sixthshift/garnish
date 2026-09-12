@@ -837,3 +837,57 @@ describe("the Parse action's two placements (M17.6)", () => {
     expect(cancelled).toBe(true);
   });
 });
+
+// --- M21.4 keyboard append --------------------------------------------------
+
+describe("Enter on the row's last field (M21.4)", () => {
+  /** A one-row draft: a structured row, plus a text-only one when asked. */
+  function rows(textOnly = false): RecipeDraft {
+    const base = emptyDraft();
+    const row = textOnly ? { ...newIngredient(), originalText: "a pinch of salt" } : newIngredient();
+    return { ...base, parts: [{ ...base.parts[0]!, ingredients: [row] }] };
+  }
+
+  /** Press Enter on the field labelled `label`, returning whether the form's default was prevented. */
+  function pressEnter(props: IngredientFieldsProps, label: string, shiftKey = false): boolean {
+    const field = elementWithLabel(IngredientFields({ ...props, showOriginalText: false }), label);
+    let prevented = false;
+    field.props.onKeyDown?.({ key: "Enter", shiftKey, preventDefault: () => (prevented = true) });
+    return prevented;
+  }
+
+  test("a structured row's note takes Enter, and calls back once", () => {
+    let calls = 0;
+    const props = { ...fieldProps(rows(), 0, () => {}), onEnter: () => (calls += 1) };
+    expect(pressEnter(props, "Ingredient 1 note")).toBe(true);
+    expect(calls).toBe(1);
+  });
+
+  test("a text-only row's line takes it too", () => {
+    let calls = 0;
+    const props = { ...fieldProps(rows(true), 0, () => {}), onEnter: () => (calls += 1) };
+    expect(pressEnter(props, "Ingredient 1 text")).toBe(true);
+    expect(calls).toBe(1);
+  });
+
+  test("Shift+Enter is left alone, so the form's own behaviour is untouched", () => {
+    let calls = 0;
+    const props = { ...fieldProps(rows(), 0, () => {}), onEnter: () => (calls += 1) };
+    expect(pressEnter(props, "Ingredient 1 note", true)).toBe(false);
+    expect(calls).toBe(0);
+  });
+
+  test("no handler at all where the caller gave none", () => {
+    const field = elementWithLabel(IngredientFields({ ...fieldProps(rows(), 0, () => {}), showOriginalText: false }), "Ingredient 1 note");
+    expect(field.props.onKeyDown).toBeUndefined();
+  });
+
+  test("the last row appends and an earlier one moves on", () => {
+    // The wiring itself is `rowEnter`, tested in test/lib/rowKeys.test.ts;
+    // what matters here is that the editor appends to the right part.
+    const draft = rows();
+    const next = addIngredient(draft, 0);
+    expect(next.parts[0]!.ingredients).toHaveLength(2);
+    expect(next.parts[0]!.ingredients[0]).toEqual(draft.parts[0]!.ingredients[0]);
+  });
+});

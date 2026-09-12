@@ -49,12 +49,13 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
-import { type ReactNode, useEffect, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useState } from "react";
 import { type CommitRef, pendingCreations, reviewRow, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
 import { formatIngredient } from "../domain/format";
 import type { Food as FoodRow } from "../db/models/food/repo";
 import { parseIngredient } from "../domain/parseIngredient";
 import type { Food, Unit } from "../domain/recipe";
+import { focusNamed, rowEnter, rowFieldName } from "../lib/rowKeys";
 import { randomUuid } from "../lib/ids";
 import { findOrCreateFood, listFoods } from "../server/foods";
 import { findOrCreateUnit } from "../server/units";
@@ -395,6 +396,25 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
 
   if (!part) return null;
   const { ingredients } = part;
+  const path = `parts.${pi}.ingredients`;
+
+  /**
+   * Enter on row `ii`'s last field: append and focus from the last row, move
+   * to the next row's first field from any earlier one (decisions.md row 55).
+   * The new row's first field is `quantity` on a structured row and `text` on
+   * a text-only one; a blank row is always structured.
+   */
+  const enterOnRow = (ii: number) => {
+    const action = rowEnter(ii, ingredients.length);
+    if (action === "ignore") return;
+    if (action === "append") {
+      onChange(addIngredient(draft, pi));
+      focusNamed(rowFieldName(path, ingredients.length, "quantity"));
+      return;
+    }
+    const next = ingredients[ii + 1]!;
+    focusNamed(rowFieldName(path, ii + 1, isTextOnly(next) ? "originalText" : "quantity"));
+  };
 
   return (
     <div className="flex flex-col gap-2" data-ingredients={pi}>
@@ -473,6 +493,7 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
               pi={pi}
               ii={ii}
               units={units}
+              onEnter={() => enterOnRow(ii)}
               parts={draft.parts.map((c, i) => ({ value: String(i), label: partLabel(c, i) })).filter((_, i) => i !== pi)}
               errors={errors}
               disabled={disabled}
@@ -557,6 +578,12 @@ export type IngredientFieldsProps = {
    * confirm or decline, same as bulk add — or null before Parse is pressed
    * and after it is applied or cancelled.
    */
+  /**
+   * Enter on the row's last field (M21.4): appends a row and focuses it from
+   * the last row, moves to the next row from any earlier one. Absent where
+   * there is no list to append to.
+   */
+  onEnter?: () => void;
   parse?: {
     review: IngredientReview | null;
     busy: boolean;
@@ -638,7 +665,17 @@ function parseAction(
 }
 
 export function IngredientFields(props: IngredientFieldsProps) {
-  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText, originalTextAbove, parse } = props;
+  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText, originalTextAbove, parse, onEnter } = props;
+  // Enter in a single-line field submits the form by default; the list's own
+  // meaning for it has to say so explicitly (decisions.md row 55).
+  const enterKey =
+    onEnter === undefined
+      ? undefined
+      : (event: KeyboardEvent<HTMLInputElement>) => {
+          if (event.key !== "Enter" || event.shiftKey) return;
+          event.preventDefault();
+          onEnter();
+        };
   const quantityError = errors[`${path}.quantity`];
 
   const originalText = (ingredient.originalText ?? "").trim();
@@ -668,6 +705,7 @@ export function IngredientFields(props: IngredientFieldsProps) {
           autoComplete="off"
           value={ingredient.originalText ?? ""}
           disabled={disabled}
+          onKeyDown={enterKey}
           onChange={(event) => props.onPatch({ originalText: event.target.value })}
         />
         {controls !== undefined && <div className="flex flex-wrap items-center gap-2">{controls}</div>}
@@ -755,6 +793,7 @@ export function IngredientFields(props: IngredientFieldsProps) {
           className="min-w-40 grow"
           value={ingredient.note ?? ""}
           disabled={disabled}
+          onKeyDown={enterKey}
           onChange={(event) => props.onPatch({ note: event.target.value })}
         />
         <Checkbox
@@ -783,9 +822,11 @@ type IngredientRowProps = {
   disabled?: boolean;
   onPatch: (patch: Partial<DraftIngredient>) => void;
   onMove: (toPi: number) => void;
+  /** Enter on the row's last field (M21.4). */
+  onEnter?: () => void;
 };
 
-function IngredientRow({ ingredient, pi, ii, units, parts, errors, disabled, onPatch, onMove }: IngredientRowProps) {
+function IngredientRow({ ingredient, pi, ii, units, parts, errors, disabled, onPatch, onMove, onEnter }: IngredientRowProps) {
   const path = `parts.${pi}.ingredients.${ii}`;
   const label = `Ingredient ${ii + 1}`;
   const [textOnly, setTextOnly] = useState(() => isTextOnly(ingredient));
@@ -961,6 +1002,7 @@ function IngredientRow({ ingredient, pi, ii, units, parts, errors, disabled, onP
     foodText,
     foodRows,
     controls,
+    onEnter,
     parse: canParse
       ? {
           review: parseReview,
