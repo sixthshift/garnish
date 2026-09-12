@@ -1,6 +1,8 @@
-// One recipe. `?servings=N` asks the server for the document scaled to N; the
-// scale control only ever navigates, so the loader is the one read path and the
-// page always shows what `getRecipe` returned.
+// One recipe. The loader is still the one read path: it fetches the stored
+// document once, and `?servings=N` is a pure view over it — the page runs
+// `scaledForServings` itself (M25.1, decisions.md row 62), so plus and minus
+// repaint without a request while the URL still carries the scale and a
+// refresh lands on it. The scale control only ever navigates.
 //
 // Layout (M24.1): the header spans the page; from `md` the body is a grid with
 // the ingredients in a sticky aside (a third) and the method beside it (two
@@ -24,6 +26,7 @@ import { IngredientsSheet } from "../../../components/IngredientsSheet";
 import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader";
 import { StepList } from "../../../components/StepList";
 import { mergeIngredients } from "../../../domain/merge";
+import { scaledForServings } from "../../../domain/scale";
 import { TimelineList } from "../../../components/Timeline";
 import type { Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
@@ -35,14 +38,13 @@ export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),
 });
 
-/** What the page reads: the (possibly scaled) document and its logged cooks. */
+/** What the page reads: the stored document and its logged cooks. Scaling is applied in the component. */
 export type RecipeViewData = { recipe: Recipe; timeline: TimelineEvent[] };
 
 export const Route = createFileRoute("/recipes/$slug/")({
   validateSearch: RecipeViewSearch,
-  loaderDeps: ({ search: { servings } }) => ({ servings }),
-  loader: async ({ params, deps }): Promise<RecipeViewData> => {
-    const recipe = await getRecipe({ data: { slug: params.slug, servings: deps.servings } });
+  loader: async ({ params }): Promise<RecipeViewData> => {
+    const recipe = await getRecipe({ data: { slug: params.slug } });
     return { recipe, timeline: await listTimeline({ data: { recipeId: recipe.id } }) };
   },
   component: RecipePage,
@@ -59,12 +61,17 @@ export function nextServings(current: number, direction: -1 | 1): number {
 }
 
 function RecipePage() {
-  const { recipe, timeline } = Route.useLoaderData();
+  const { recipe: stored, timeline } = Route.useLoaderData();
   const navigate = Route.useNavigate();
   const { servings: requested } = Route.useSearch();
-  // A servings search param means the loader scaled the document away from
-  // the recipe's own servings; the ingredient amounts get a "scaled" class.
-  const scaled = requested !== undefined;
+  // The stored document, scaled here rather than on the server, so a tap on
+  // plus or minus is a re-render and not a round trip. Everything below reads
+  // `recipe`, never `stored`.
+  const recipe = scaledForServings(stored, requested);
+  // Scaled away from the recipe's own servings: the ingredient amounts get a
+  // "scaled" class. Identity, so a recipe with no servings recorded (nothing
+  // to scale by, as on the server) does not claim to be scaled.
+  const scaled = recipe !== stored;
   const [ingredientMode] = useIngredientMode();
   const summary = ingredientMode === "summary";
   const hasIngredients = recipe.parts.some((part) => part.ingredients.length > 0);

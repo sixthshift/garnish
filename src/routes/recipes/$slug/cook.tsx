@@ -1,7 +1,10 @@
 // Cook mode: the recipe as a deck of cards, one on screen at a time in large
-// type. `?step=N` is the card index and `?servings=N` scales the document, both
-// through the URL so the loader is still the one read path (as on the view
-// page) and a refresh lands on the same card. The shell hides its nav here
+// type. `?step=N` is the card index and `?servings=N` the scale, both through
+// the URL so a refresh lands on the same card at the same scale. The loader is
+// still the one read path — it fetches the stored document once — and the
+// scale is a pure view over it, applied here with `scaledForServings` rather
+// than by the server, so the stepper repaints without a request (M25.1,
+// decisions.md row 62; the view page does the same). The shell hides its nav here
 // (`staticData.fullscreen`), leaving the header and footer of this page as the
 // only chrome. A screen wake lock is held while the page is mounted.
 //
@@ -32,6 +35,7 @@ import {
   type CookCard,
 } from "../../../domain/cook";
 import { formatIngredient } from "../../../domain/format";
+import { scaledForServings } from "../../../domain/scale";
 import type { Ingredient, Recipe } from "../../../domain/recipe";
 import { useIngredientTick } from "../../../lib/ticks";
 import { useWakeLock } from "../../../lib/useWakeLock";
@@ -50,8 +54,7 @@ export const CookSearch = z.object({
 export const Route = createFileRoute("/recipes/$slug/cook")({
   validateSearch: CookSearch,
   staticData: { fullscreen: true },
-  loaderDeps: ({ search: { servings } }) => ({ servings }),
-  loader: async ({ params, deps }): Promise<Recipe> => getRecipe({ data: { slug: params.slug, servings: deps.servings } }),
+  loader: async ({ params }): Promise<Recipe> => getRecipe({ data: { slug: params.slug } }),
   component: CookPage,
 });
 
@@ -69,8 +72,11 @@ export function positionLabel(index: number, count: number, part: string): strin
 }
 
 function CookPage() {
-  const recipe = Route.useLoaderData();
+  const stored = Route.useLoaderData();
   const { step, servings: requested } = Route.useSearch();
+  // Scaled on the client from the search param: the deck is rebuilt from the
+  // scaled document, so the stepper is a re-render and not a round trip.
+  const recipe = scaledForServings(stored, requested);
   const navigate = Route.useNavigate();
   const screenOn = useWakeLock();
 

@@ -51,6 +51,19 @@ export function scaleRecipe(doc: Recipe, targetServings: number): Recipe {
   };
 }
 
+/**
+ * The document as a page should show it for a requested servings: `undefined`
+ * (no `?servings=` in the URL) or a recipe with no servings recorded comes back
+ * as stored, anything else is scaled. Exactly what `getRecipe({ servings })`
+ * returns for the same document, so the client can scale a document the loader
+ * fetched once instead of asking the server per tap (M25.1, decisions.md row
+ * 62). Pure; the input document is returned by identity when nothing scales.
+ */
+export function scaledForServings(doc: Recipe, targetServings: number | undefined): Recipe {
+  if (targetServings === undefined || !(doc.recipeServings > 0)) return doc;
+  return scaleRecipe(doc, targetServings);
+}
+
 function scaleIngredient(ingredient: Ingredient, factor: number): Ingredient {
   if (ingredient.fixed || ingredient.quantity === null) return { ...ingredient };
   return { ...ingredient, quantity: ingredient.quantity * factor };

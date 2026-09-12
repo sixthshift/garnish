@@ -111,7 +111,9 @@ The document the API reads and writes (`src/domain/recipe.ts`) mirrors these col
 - `factor = target_servings / recipe.servings`
 - Linear ingredients multiply by `factor`, and so does `recipeYieldQuantity`. Fixed and null quantities do not.
 - Timers and cookware never scale.
-- Scaling is computed on read (`getRecipe` with `servings`). Nothing scaled is persisted. A recipe stored with 0 servings has no factor and is returned as stored.
+- Nothing scaled is ever persisted. A recipe stored with 0 servings has no factor and is returned as stored.
+- Where it happens (decisions.md row 62): **on the client**. The recipe and cook loaders fetch the stored document once — `?servings=` is not a loader dep — and each page applies `scaledForServings(doc, servings)` from the search param, so − and + repaint without a request while the URL still carries the scale.
+- `getRecipe({ slug, servings })` scales the same way on the server, for outside callers and for a URL opened cold. Both sides call the one pure function in `src/domain/scale.ts`, so they cannot drift.
 
 ## Shopping list
 
@@ -147,7 +149,7 @@ Design only. Not built in v1; see "Later" in [scope.md](scope.md). The schema ho
 
 ## Frontend
 
-- Routes: `/` (list; `q`, `tag`/`tags`, `match`, `foods`, `favourite`, `sort`, `dir`, `seed` search params), `/recipes/new`, `/recipes/$slug` (`?servings=`), `/recipes/$slug/edit`, `/recipes/$slug/cook` (`?servings=&step=`), `/settings`. Search params are zod-validated and feed the loader, so the URL is the state.
+- Routes: `/` (list; `q`, `tag`/`tags`, `match`, `foods`, `favourite`, `sort`, `dir`, `seed` search params), `/recipes/new`, `/recipes/$slug` (`?servings=`), `/recipes/$slug/edit`, `/recipes/$slug/cook` (`?servings=&step=`), `/settings`. Search params are zod-validated and feed the loader, so the URL is the state — except `servings`, which the recipe and cook pages read straight from the search and apply themselves (see Scaling), and `step`, which is only a card index.
 - Shell: bottom nav on phones, side nav from `md` up. Cook mode opts out with `staticData.fullscreen`. Router-wide pending, error and not-found views (`src/components/RouteStates.tsx`) built from design system pieces; a design system `ErrorBoundary` around the shell is the last line of defence; every list sits in an `EmptyBoundary`. A failed fetch is shown as "can't reach the server" with Retry, or "you are offline" when the browser knows. One design system `Toaster` is mounted in `__root.tsx`; saves, deletes and upload failures report through `notify()` (`src/lib/notify.ts`) rather than inline copy.
 - Client stores, all guarded with try/catch so a blocked or full storage degrades to defaults:
   - `src/lib/prefs.ts` — localStorage, per device: list view mode, sort, structured/summary ingredients, theme, screen-awake.

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { type Recipe, recipeSchema } from "../../src/domain/recipe";
-import { ScaleError, scaleRecipe, servingsForTarget } from "../../src/domain/scale";
+import { ScaleError, scaleRecipe, scaledForServings, servingsForTarget } from "../../src/domain/scale";
 
 const ids = {
   recipe: "11111111-1111-4111-8111-111111111111",
@@ -156,5 +156,33 @@ describe("servingsForTarget", () => {
     expect(() => servingsForTarget({ quantity: 50, fixed: false }, 100, 0)).toThrow(ScaleError);
     expect(() => servingsForTarget({ quantity: 50, fixed: false }, 100, -4)).toThrow(ScaleError);
     expect(() => servingsForTarget({ quantity: 50, fixed: false }, 100, Number.POSITIVE_INFINITY)).toThrow(ScaleError);
+  });
+});
+
+// M25.1: the view and cook pages scale the loader's stored document themselves.
+// This is the shape `getRecipe({ servings })` applies on the server, kept in
+// one pure function so both sides agree.
+describe("scaledForServings", () => {
+  test("no requested servings returns the stored document itself", () => {
+    const doc = fixture();
+    expect(scaledForServings(doc, undefined)).toBe(doc);
+  });
+
+  test("a requested servings scales exactly as scaleRecipe does", () => {
+    const doc = fixture();
+    expect(scaledForServings(doc, 8)).toEqual(scaleRecipe(doc, 8));
+  });
+
+  test("a recipe with no servings recorded comes back as stored, as the server returns it", () => {
+    const doc = fixture({ recipeServings: 0 });
+    expect(scaledForServings(doc, 8)).toBe(doc);
+    expect(() => scaleRecipe(doc, 8)).toThrow(ScaleError);
+  });
+
+  test("the same servings as the recipe's own still returns a scaled (equal) copy", () => {
+    const doc = fixture();
+    const same = scaledForServings(doc, 4);
+    expect(same).not.toBe(doc);
+    expect(same).toEqual(doc);
   });
 });

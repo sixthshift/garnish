@@ -8,13 +8,28 @@ import { RouteError, RouteNotFound, RoutePending } from "../../src/components/Ro
 import { routeTree } from "../../src/routeTree.gen";
 
 export async function renderRoute(path: string): Promise<string> {
-  const router = createRouter({
+  const router = testRouter(path);
+  await router.load();
+  return renderToString(<RouterProvider router={router} />);
+}
+
+/**
+ * The same router `renderRoute` builds, unloaded, for tests that need to drive
+ * it: navigate, `router.load()` again and render, e.g. to prove a search-param
+ * change re-runs no loader (M25.1).
+ */
+export function testRouter(path: string) {
+  return createRouter({
     routeTree,
     history: createMemoryHistory({ initialEntries: [path] }),
     defaultPendingComponent: RoutePending,
     defaultErrorComponent: RouteError,
     defaultNotFoundComponent: RouteNotFound,
   });
+}
+
+/** Load the router and render it, the way `renderRoute` does once it exists. */
+export async function renderRouter(router: ReturnType<typeof testRouter>): Promise<string> {
   await router.load();
   return renderToString(<RouterProvider router={router} />);
 }
