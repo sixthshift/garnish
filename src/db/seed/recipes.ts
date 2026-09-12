@@ -2,8 +2,8 @@
 // that keep them readable. Data only — `seed.ts` inserts them through the recipe
 // repository, so they take exactly the path the editor does.
 //
-// Three en-AU metric recipes: one flat (a single unnamed component), one with
-// named components, one carrying a source URL. One is favourited and one has
+// Three en-AU metric recipes: one flat (a single unnamed part), one with
+// named parts, one carrying a source URL. One is favourited and one has
 // timeline events (see ./timeline.ts), so every stage 2 screen has something to
 // show without a person seeding it by hand.
 import type { z } from "zod";
@@ -83,7 +83,7 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       { title: "Chewy or crisp", text: "Bake 12 minutes for chewy biscuits, 15 for crisp ones. They firm up as they cool." },
       { title: "Storage", text: "Airtight tin, room temperature, up to a week." },
     ],
-    components: [
+    parts: [
       {
         name: "",
         ingredients: [
@@ -108,7 +108,7 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
     ],
   },
 
-  // Two components with their own steps, and recipe-level steps for the assembly.
+  // Two named parts with their own steps, then the unnamed part for the assembly.
   {
     name: "Roast Pumpkin Soup with Garlic Croutons",
     description: "Kent pumpkin roasted until caramelised, blended with stock and finished with crunchy croutons.",
@@ -122,7 +122,7 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
     sourceUrl: "https://www.homegrown-kitchen.example/recipes/roast-pumpkin-soup-with-garlic-croutons",
     tags: [tag("Soup"), tag("Vegetarian"), tag("Weeknight")],
     notes: [{ title: "Make ahead", text: "The soup keeps 4 days in the fridge and freezes well. Make the croutons on the day." }],
-    components: [
+    parts: [
       {
         name: "Soup",
         ingredients: [
@@ -151,11 +151,15 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
         ],
         steps: [step("Toss the bread with the oil and garlic. Bake at 200°C for 8 to 10 minutes, turning once, until golden.")],
       },
+      {
+        name: "",
+        ingredients: [],
+        steps: [step("Ladle the soup into warm bowls and top with the croutons and a grind of pepper.")],
+      },
     ],
-    steps: [step("Ladle the soup into warm bowls and top with the croutons and a grind of pepper.")],
   },
 
-  // Three components, in order.
+  // Three parts, in order.
   {
     name: "Lemon Tart",
     description: "Shortcrust pastry with a sharp, just-set lemon filling. Best made the day before serving.",
@@ -170,7 +174,7 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       { title: "Blind baking", text: "Chill the lined tin for 30 minutes before baking so the pastry does not shrink." },
       { title: "Wobble", text: "The filling should still wobble in the centre when it comes out. It sets as it cools." },
     ],
-    components: [
+    parts: [
       {
         name: "Pastry",
         ingredients: [

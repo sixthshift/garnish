@@ -4,7 +4,7 @@
 //
 // The point of the mix is coverage, not realism. Across the set there is
 // always at least one of each of: a flat recipe, a recipe with several named
-// components, one with no rating, one never made, one with no image, one with
+// parts, one with no rating, one never made, one with no image, one with
 // a source URL, one with a very long name, one with a single ingredient, and
 // one with many. The list, filter, sort and cook screens all have an awkward
 // case to render.
@@ -191,22 +191,22 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
       : name;
 
     const pantry = rng.shuffle(FOODS);
-    const componentCount = shape.components.length;
+    const partCount = shape.parts.length;
 
     // Deliberate outliers: one single-ingredient recipe, one very long one.
-    const perComponent = i === 5 ? 1 : i === 8 ? 14 : rng.int(3, 8);
+    const perPart = i === 5 ? 1 : i === 8 ? 14 : rng.int(3, 8);
 
     let cursor = 0;
-    const components = shape.components.map((componentName) => {
-      const foods = pantry.slice(cursor, cursor + perComponent);
-      cursor += perComponent;
+    const parts = shape.parts.map((partName) => {
+      const foods = pantry.slice(cursor, cursor + perPart);
+      cursor += perPart;
       const ingredients: Ing[] = foods.map((entry) => ingredient(rng, entry));
       // One recipe in six has a verbatim line the parser never touched.
       if (rng.chance(0.16)) ingredients.push(rawIngredient("a good splash of whatever wine is open"));
       return {
-        name: componentName,
+        name: partName,
         ingredients,
-        steps: Array.from({ length: componentCount === 1 ? rng.int(4, 8) : rng.int(2, 4) }, () => ({
+        steps: Array.from({ length: partCount === 1 ? rng.int(4, 8) : rng.int(2, 4) }, () => ({
           text: stepText(rng, foods.length > 0 ? foods : pantry),
         })),
       };
@@ -253,8 +253,7 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
         favourite: rng.chance(0.2),
         notes: rng.chance(0.5) ? rng.sample(NOTES, rng.int(1, 2)).map((n) => ({ ...n })) : [],
         tags: pickTags(rng, shape.tags),
-        components,
-        steps: [],
+        parts,
       },
       createdAt: daysBefore(createdDaysAgo),
       updatedAt: daysBefore(updatedDaysAgo),

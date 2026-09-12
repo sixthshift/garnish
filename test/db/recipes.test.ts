@@ -23,6 +23,7 @@ const ids = {
   recipe: "11111111-1111-4111-8111-111111111111",
   pasta: "22222222-2222-4222-8222-222222222222",
   sauce: "33333333-3333-4333-8333-333333333333",
+  finish: "34343434-3434-4343-8343-343434343434",
   g: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   ml: "abababab-abab-4bab-8bab-abababababab",
   butter: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -80,7 +81,7 @@ const fullDoc: RecipeInput = {
   sourceUrl: "https://example.com/butter-pasta",
   notes: [{ id: ids.note, title: "Tip", text: "Salt the water well." }],
   tags: [pastaTag, weeknight],
-  components: [
+  parts: [
     {
       id: ids.pasta,
       name: "Pasta",
@@ -96,13 +97,13 @@ const fullDoc: RecipeInput = {
       ingredients: [{ id: ids.ing3, quantity: 50, unit: gram, food: butter, note: "cold", originalText: "50 g cold butter", fixed: true }],
       steps: [{ id: ids.step2, text: "Melt the butter." }],
     },
+    { id: ids.finish, name: "", ingredients: [], steps: [{ id: ids.step3, text: "Toss together and serve." }] },
   ],
-  steps: [{ id: ids.step3, text: "Toss together and serve." }],
 };
 
 const minimal = (name: string, extra: Partial<RecipeInput> = {}): RecipeInput => ({
   name,
-  components: [{ name: "", ingredients: [], steps: [] }],
+  parts: [{ name: "", ingredients: [], steps: [] }],
   ...extra,
 });
 
@@ -120,7 +121,7 @@ test("create round-trips a full document and creates its references", () => {
   expect(count("aisle")).toBe(1);
   expect(count("tag")).toBe(2);
   const g = created.yieldUnit!;
-  const foodByName = Object.fromEntries(created.components.flatMap((c) => c.ingredients).filter((i) => i.food).map((i) => [i.food!.name, i.food!]));
+  const foodByName = Object.fromEntries(created.parts.flatMap((c) => c.ingredients).filter((i) => i.food).map((i) => [i.food!.name, i.food!]));
   const tagByName = Object.fromEntries(created.tags.map((t) => [t.name, t]));
   expect(g).toEqual({ ...gram, id: g.id });
   expect(foodByName.butter).toEqual({ ...butter, id: foodByName.butter!.id, aisle: { ...dairy, id: foodByName.butter!.aisle!.id } });
@@ -135,7 +136,7 @@ test("create round-trips a full document and creates its references", () => {
     ...expected,
     yieldUnit: g,
     tags: [tagByName.Pasta, tagByName.Weeknight],
-    components: expected.components.map((c) => ({
+    parts: expected.parts.map((c) => ({
       ...c,
       ingredients: c.ingredients.map((i) => ({ ...i, unit: i.unit ? g : null, food: i.food ? foodByName[i.food.name] : null })),
     })),
@@ -162,7 +163,7 @@ test("create resolves references by id, then by name case-insensitively, and nev
       minimal("Buttered Toast", {
         yieldUnit: { ...gram, id: g.id, abbreviation: "grams!" }, // by id; attributes ignored
         tags: [{ id: crypto.randomUUID(), name: "WEEKNIGHT", slug: "whatever" }], // by name
-        components: [
+        parts: [
           {
             name: "",
             ingredients: [{ quantity: 10, unit: { ...gram, id: crypto.randomUUID(), name: " Gram " }, food: { ...butter, id: crypto.randomUUID(), name: "Butter" }, note: "", originalText: "", fixed: false }],
@@ -177,8 +178,8 @@ test("create resolves references by id, then by name case-insensitively, and nev
   expect(count("food")).toBe(2);
   expect(count("tag")).toBe(2);
   expect(second.yieldUnit).toEqual(g);
-  expect(second.components[0]!.ingredients[0]!.unit).toEqual(g);
-  expect(second.components[0]!.ingredients[0]!.food!.name).toBe("butter");
+  expect(second.parts[0]!.ingredients[0]!.unit).toEqual(g);
+  expect(second.parts[0]!.ingredients[0]!.food!.name).toBe("butter");
   expect(second.tags.map((t) => t.name)).toEqual(["Weeknight"]);
 });
 
@@ -200,14 +201,14 @@ test("update replaces components, steps, notes and tags in place and keeps id an
       rating: 5,
       tags: [weeknight],
       notes: [],
-      components: [
+      parts: [
         {
           name: "",
           ingredients: [{ quantity: 1, unit: null, food: { ...butter, id: crypto.randomUUID(), name: "Parmesan" }, note: "", originalText: "a handful of parmesan", fixed: false }],
           steps: [{ id: ids.step1, text: "Grate." }],
         },
+        { name: "", ingredients: [], steps: [{ text: "Serve." }, { text: "Eat." }] },
       ],
-      steps: [{ text: "Serve." }, { text: "Eat." }],
     }),
   )!;
 
@@ -219,15 +220,15 @@ test("update replaces components, steps, notes and tags in place and keeps id an
   expect(updated.rating).toBe(5);
   expect(updated.notes).toEqual([]);
   expect(updated.tags.map((t) => t.name)).toEqual(["Weeknight"]);
-  expect(updated.components).toHaveLength(1);
-  expect(updated.components[0]!.name).toBe("");
-  expect(updated.components[0]!.ingredients).toHaveLength(1);
-  expect(updated.components[0]!.ingredients[0]!.food!.name).toBe("Parmesan");
-  expect(updated.components[0]!.steps).toEqual([{ id: ids.step1, text: "Grate." }]);
-  expect(updated.steps.map((s) => s.text)).toEqual(["Serve.", "Eat."]);
+  expect(updated.parts).toHaveLength(2);
+  expect(updated.parts[0]!.name).toBe("");
+  expect(updated.parts[0]!.ingredients).toHaveLength(1);
+  expect(updated.parts[0]!.ingredients[0]!.food!.name).toBe("Parmesan");
+  expect(updated.parts[0]!.steps).toEqual([{ id: ids.step1, text: "Grate." }]);
+  expect(updated.parts[1]!.steps.map((s) => s.text)).toEqual(["Serve.", "Eat."]);
 
   // Old children are gone from the tables, not just from the document.
-  expect(count("component")).toBe(1);
+  expect(count("part")).toBe(2);
   expect(count("ingredient")).toBe(1);
   expect(count("step")).toBe(3);
   expect(count("recipe_note")).toBe(0);
@@ -259,15 +260,15 @@ test("a failing write leaves the previous recipe intact", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
   const bad = recipeInputSchema.parse({ ...fullDoc, description: "broken" });
   // Duplicate child id inside one document violates the primary key mid-transaction.
-  bad.steps = [{ id: ids.step1, text: "dup" }];
+  bad.parts[0]!.steps = [{ id: ids.step1, text: "dup" }, { id: ids.step1, text: "dup" }];
 
   expect(() => repo.update(created.id, bad)).toThrow(/UNIQUE|PRIMARY/);
   expect(repo.get("butter-pasta")).toEqual(created);
   expect(count("recipe")).toBe(1);
 
-  expect(() => repo.create(recipeInputSchema.parse({ ...minimal("Broken"), steps: [{ id: ids.step1, text: "dup" }] }))).toThrow(/UNIQUE|PRIMARY/);
+  expect(() => repo.create(recipeInputSchema.parse({ ...minimal("Broken"), parts: [{ name: "", ingredients: [], steps: [{ id: ids.step1, text: "dup" }, { id: ids.step1, text: "dup" }] }] }))).toThrow(/UNIQUE|PRIMARY/);
   expect(count("recipe")).toBe(1);
-  expect(count("component")).toBe(2);
+  expect(count("part")).toBe(3);
 });
 
 test("remove cascades to every child and leaves references", () => {
@@ -279,7 +280,7 @@ test("remove cascades to every child and leaves references", () => {
 
   expect(repo.get("butter-pasta")).toBeNull();
   expect(count("recipe")).toBe(1);
-  expect(count("component")).toBe(1);
+  expect(count("part")).toBe(1);
   expect(count("ingredient")).toBe(0);
   expect(count("step")).toBe(0);
   expect(count("recipe_note")).toBe(0);
@@ -359,8 +360,8 @@ test("list filters by tags[] with any (default) and all match", () => {
 test("list filters by foods[]", () => {
   const full = repo.create(recipeInputSchema.parse(fullDoc)); // Pasta: spaghetti, salt; Sauce: butter
   repo.create(recipeInputSchema.parse(minimal("Cheese Toast")));
-  const spaghettiId = full.components[0]!.ingredients[0]!.food!.id;
-  const butterId = full.components[1]!.ingredients[0]!.food!.id;
+  const spaghettiId = full.parts[0]!.ingredients[0]!.food!.id;
+  const butterId = full.parts[1]!.ingredients[0]!.food!.id;
 
   expect(repo.list({ foods: [spaghettiId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
   expect(repo.list({ foods: [butterId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);

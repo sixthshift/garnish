@@ -66,6 +66,15 @@ The core gap stage 2 left: nothing turns a typed or pasted line into `quantity` 
 
 Deferred here on purpose, not to be re-raised without a decisions row: fuzzy (edit-distance) food matching, and learning from a correction. Both are where Mealie's parser gets complicated and neither earns its place until the plain matcher has been lived with. Backfilling the text-only rows already in the database is left to M17.6, one row at a time.
 
+## M18 Parts
+
+Done outside the loop, in one pass, because a rename that touches the schema, the document and every editor cannot be half-applied.
+
+- [x] **M18.1 `component` becomes `part`.** `003_parts.sql` renames the table and both foreign keys; `schema.ts`, `repo.ts`, `recipe.ts`, `cook.ts`, the editors and the routes follow. `ComponentsEditor` is `PartsEditor`; the editor prop `ci` is `pi`. decisions.md row 48. Check: the drift test and the full suite.
+- [x] **M18.2 Every step belongs to a part.** Same migration drops `step.recipe_id`, makes `step.part_id` NOT NULL and rescopes `position` to the part; existing recipe-level steps move into the recipe's unnamed part, one being appended where the recipe had none. The document loses its recipe-level `steps` array and the editor its "Method"/"To finish" section; the view page and cook mode print the unnamed part without a heading. decisions.md row 49. Check: schema test covers the new cascade and per-part ordering; loader and cook tests assert no "To finish" heading.
+
+Not done here, and not to be re-raised without a decisions row: step-to-ingredient references (Mealie's `ingredientReferences`, Tandoor's `Step.ingredients`). It is a join table over two tables that already have stable ids, the picker can be pre-filled by `parseIngredient` against the step text, and references scope naturally to the step's own part — but it is Later, after the shopping list.
+
 ## Blocked
 
 _(none)_
@@ -84,3 +93,5 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-11  M17.4  done  d3048cb  opus  parseIngredient composes the three readers non-destructively, with a unit backtrack that proposes an unknown unit only when dropping it finds a food; round-trips all 497 food-bearing corpus rows through formatIngredient
 2026-09-11  M17.5  done  19aed33  opus  bulk add reviews a parsed paste before committing; unmatched foods and units are proposals declined by default, and only approved names reach findOrCreateFood/findOrCreateUnit
 2026-09-11  M17.6  done  e02a3bf  sonnet  a text-only row's Parse reruns parseIngredient over originalText and reviews it like bulk add; Apply patches quantity/unit/food/note only, never originalText, and creates nothing the reviewer declined
+2026-09-12  M18.1  done  —  opus  component renamed part across migration, schema, repo, document, editors and routes; PartsEditor replaces ComponentsEditor
+2026-09-12  M18.2  done  —  opus  steps moved onto the part: part_id NOT NULL, recipe_id dropped, position per part; the unnamed part is the recipe's main body and prints without a heading

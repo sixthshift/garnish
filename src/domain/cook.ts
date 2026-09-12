@@ -1,44 +1,38 @@
 // Cook mode's card sequence. Pure: the recipe document in, a flat list of
-// cards out, so the route only has to pick one by index. Component order first
-// (each component's ingredients as one card, then a card per step), then the
-// recipe-level steps. A component with no ingredients gets no ingredient card
-// and one with nothing at all contributes nothing: a blank card is a wasted tap.
+// cards out, so the route only has to pick one by index. Part order: each
+// part's ingredients as one card, then a card per step. A part with no
+// ingredients gets no ingredient card and one with nothing at all contributes
+// nothing: a blank card is a wasted tap.
 import type { Ingredient, Recipe, Step } from "./recipe";
 
 export type CookCard =
   | {
       kind: "ingredients";
-      /** Component name, trimmed; "" for the unnamed section of a flat recipe. */
-      component: string;
+      /** Part name, trimmed; "" for the unnamed part. */
+      part: string;
       ingredients: Ingredient[];
     }
   | {
       kind: "step";
-      component: string;
+      part: string;
       step: Step;
-      /** 1-based position within its component (or the recipe-level list). */
+      /** 1-based position within its part. */
       number: number;
-      /** Steps in that same list. */
+      /** Steps in that same part. */
       total: number;
     };
 
-/** Label the view page gives recipe-level steps: "To finish" only when there is more than one component. */
-export function finishLabel(recipe: Pick<Recipe, "components">): string {
-  return recipe.components.length > 1 ? "To finish" : "";
-}
-
-/** Component cards in order, then recipe-level steps. Pure. */
-export function buildCookCards(recipe: Pick<Recipe, "components" | "steps">): CookCard[] {
+/** Every part's cards in order: its ingredients, then a card per step. Pure. */
+export function buildCookCards(recipe: Pick<Recipe, "parts">): CookCard[] {
   const cards: CookCard[] = [];
-  const stepCards = (component: string, steps: Step[]) =>
-    steps.forEach((step, index) => cards.push({ kind: "step", component, step, number: index + 1, total: steps.length }));
 
-  for (const component of recipe.components) {
-    const name = component.name.trim();
-    if (component.ingredients.length > 0) cards.push({ kind: "ingredients", component: name, ingredients: component.ingredients });
-    stepCards(name, component.steps);
+  for (const part of recipe.parts) {
+    const name = part.name.trim();
+    if (part.ingredients.length > 0) cards.push({ kind: "ingredients", part: name, ingredients: part.ingredients });
+    part.steps.forEach((step, index) =>
+      cards.push({ kind: "step", part: name, step, number: index + 1, total: part.steps.length }),
+    );
   }
-  stepCards(finishLabel(recipe), recipe.steps);
   return cards;
 }
 
@@ -66,32 +60,32 @@ export function isFinishedIndex(index: number, cardCount: number): boolean {
 
 /**
  * A card's spoken label for the live region: "Step 2 of 5", or "Ingredients for
- * Dough" ("Ingredients" where the component has no name). Pure.
+ * Dough" ("Ingredients" where the part has no name). Pure.
  */
 export function cardAnnouncement(card: CookCard): string {
   if (card.kind === "step") return `Step ${card.number} of ${card.total}`;
-  return card.component === "" ? "Ingredients" : `Ingredients for ${card.component}`;
+  return card.part === "" ? "Ingredients" : `Ingredients for ${card.part}`;
 }
 
-/** One component pill: the deck index its first card sits at. */
+/** One part pill: the deck index its first card sits at. */
 export type CookPill = {
-  /** The component name as the cards carry it; "" for the unnamed section. */
+  /** The part name as the cards carry it; "" for the unnamed part. */
   name: string;
-  /** What the pill reads; the unnamed section is "Recipe". */
+  /** What the pill reads; the unnamed part is "Recipe". */
   label: string;
   index: number;
 };
 
 /**
- * A pill per component in deck order, each pointing at that component's first
- * card. Components are contiguous in the deck, but the first index is taken by
- * name so a repeated name still lands on its opening card. Pure.
+ * A pill per part in deck order, each pointing at that part's first card.
+ * Parts are contiguous in the deck, but the first index is taken by name so a
+ * repeated name still lands on its opening card. Pure.
  */
-export function componentPills(cards: CookCard[]): CookPill[] {
+export function partPills(cards: CookCard[]): CookPill[] {
   const pills: CookPill[] = [];
   cards.forEach((card, index) => {
-    if (pills.some((pill) => pill.name === card.component)) return;
-    pills.push({ name: card.component, label: card.component === "" ? "Recipe" : card.component, index });
+    if (pills.some((pill) => pill.name === card.part)) return;
+    pills.push({ name: card.part, label: card.part === "" ? "Recipe" : card.part, index });
   });
   return pills;
 }

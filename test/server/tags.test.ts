@@ -56,7 +56,7 @@ test("validation rejects a blank name and a missing id", async () => {
 
 test("usingTag lists the recipes carrying that tag", async () => {
   const weeknight = await callServerFn(createTag, { name: "Weeknight" });
-  await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", components: [{ name: "", ingredients: [], steps: [] }], tags: [weeknight] }));
+  await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }], tags: [weeknight] }));
   expect((await callServerFn(usingTag, { id: weeknight.id })).map((r) => r.name)).toEqual(["Toast"]);
 
   const baking = await callServerFn(createTag, { name: "Baking" });
@@ -68,7 +68,7 @@ test("mergeTag repoints recipes to the target tag, deletes the source, and drops
   const quick = await callServerFn(createTag, { name: "Quick" });
   await callServerFn(
     createRecipe,
-    recipeInputSchema.parse({ name: "Shortbread", components: [{ name: "", ingredients: [], steps: [] }], tags: [quick] }),
+    recipeInputSchema.parse({ name: "Shortbread", parts: [{ name: "", ingredients: [], steps: [] }], tags: [quick] }),
   );
 
   const merged = await callServerFn(mergeTag, { sourceId: quick.id, targetId: weeknight.id });

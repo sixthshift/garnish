@@ -185,7 +185,7 @@ export const UNITS: readonly string[] = [
 ];
 
 /**
- * Dish shapes: the name pattern, the components a recipe of that shape gets,
+ * Dish shapes: the name pattern, the parts a recipe of that shape gets,
  * and the headline ingredients that actually make sense with it. Pairing
  * headlines per shape rather than crossing every headline with every shape is
  * the difference between "Lamb Rogan Josh" and "Barramundi Biscuits".
@@ -193,8 +193,8 @@ export const UNITS: readonly string[] = [
 export type Shape = {
   /** `{food}` is replaced with one of this shape's headlines. */
   pattern: string;
-  /** Component names. A single `""` is the flat recipe with no named component. */
-  components: readonly string[];
+  /** Part names. A single `""` is the flat recipe with no named part. */
+  parts: readonly string[];
   tags: readonly string[];
   servings: number;
   yieldUnit: string;
@@ -204,7 +204,7 @@ export type Shape = {
 export const SHAPES: readonly Shape[] = [
   {
     pattern: "{food} Curry",
-    components: ["Curry paste", "Curry"],
+    parts: ["Curry paste", "Curry"],
     tags: ["Curry", "Weeknight"],
     servings: 4,
     yieldUnit: "bowls",
@@ -212,7 +212,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "Slow-Cooked {food}",
-    components: [""],
+    parts: [""],
     tags: ["Slow Cooked"],
     servings: 6,
     yieldUnit: "serves",
@@ -220,7 +220,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Soup",
-    components: [""],
+    parts: [""],
     tags: ["Soup", "Freezer Friendly"],
     servings: 4,
     yieldUnit: "bowls",
@@ -228,7 +228,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "Roast {food}",
-    components: ["The roast", "Gravy"],
+    parts: ["The roast", "Gravy"],
     tags: ["Roast"],
     servings: 6,
     yieldUnit: "serves",
@@ -236,7 +236,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Salad",
-    components: [""],
+    parts: [""],
     tags: ["Salad", "Weeknight"],
     servings: 4,
     yieldUnit: "serves",
@@ -244,7 +244,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Pasta",
-    components: ["Sauce", "To serve"],
+    parts: ["Sauce", "To serve"],
     tags: ["Pasta", "Weeknight"],
     servings: 4,
     yieldUnit: "serves",
@@ -252,7 +252,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Tray Bake",
-    components: [""],
+    parts: [""],
     tags: ["One Pot", "Weeknight"],
     servings: 4,
     yieldUnit: "serves",
@@ -260,7 +260,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Tart",
-    components: ["Pastry", "Filling", "To finish"],
+    parts: ["Pastry", "Filling", "To finish"],
     tags: ["Baking", "Dessert"],
     servings: 8,
     yieldUnit: "slices",
@@ -268,7 +268,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Biscuits",
-    components: [""],
+    parts: [""],
     tags: ["Baking", "Snack"],
     servings: 24,
     yieldUnit: "biscuits",
@@ -276,7 +276,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Cake",
-    components: ["Cake", "Icing"],
+    parts: ["Cake", "Icing"],
     tags: ["Baking", "Dessert"],
     servings: 10,
     yieldUnit: "slices",
@@ -284,7 +284,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Stir-Fry",
-    components: ["Sauce", "Stir-fry"],
+    parts: ["Sauce", "Stir-fry"],
     tags: ["Weeknight"],
     servings: 4,
     yieldUnit: "serves",
@@ -292,7 +292,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Risotto",
-    components: [""],
+    parts: [""],
     tags: ["One Pot"],
     servings: 4,
     yieldUnit: "serves",
@@ -300,7 +300,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Burgers",
-    components: ["Patties", "To assemble"],
+    parts: ["Patties", "To assemble"],
     tags: ["BBQ", "Kid Approved"],
     servings: 4,
     yieldUnit: "burgers",
@@ -308,7 +308,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Tacos",
-    components: ["Filling", "Slaw", "To serve"],
+    parts: ["Filling", "Slaw", "To serve"],
     tags: ["Party"],
     servings: 4,
     yieldUnit: "tacos",
@@ -316,7 +316,7 @@ export const SHAPES: readonly Shape[] = [
   },
   {
     pattern: "{food} Pie",
-    components: ["Filling", "Pastry"],
+    parts: ["Filling", "Pastry"],
     tags: ["Baking"],
     servings: 6,
     yieldUnit: "serves",

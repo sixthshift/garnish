@@ -54,7 +54,7 @@ Both must pass. `bun run test` is the only way to run the tests; `bun test` is a
 
 ## Seed
 
-The server seeds the default units itself on every start, so this is optional. `bun run seed` migrates and seeds the database in `DATA_DIR` without starting the server; `--sample` also adds three demo recipes, one with three components:
+The server seeds the default units itself on every start, so this is optional. `bun run seed` migrates and seeds the database in `DATA_DIR` without starting the server; `--sample` also adds three demo recipes, one with three parts:
 
 ```bash
 bun run seed
@@ -68,9 +68,9 @@ The sample recipes also carry a favourite, a source URL and two logged cooks, so
 ## Use
 
 - **Recipes** (`/`) — search, filter by tags (any or all), foods and favourites, sort, or press the dice for a random recipe. Grid or list view is remembered per device; `/` anywhere outside a text field opens the search dialog.
-- **A recipe** — tick ingredients and steps off as you go, switch between the per-component and merged ingredient lists, scale by servings, and use the ⋯ menu for Edit, Cook, Duplicate, Copy link, Copy ingredients, Print and Delete.
+- **A recipe** — tick ingredients and steps off as you go, switch between the per-part and merged ingredient lists, scale by servings, and use the ⋯ menu for Edit, Cook, Duplicate, Copy link, Copy ingredients, Print and Delete.
 - **Made this** — the button beside "last made" logs a cook: date, comment and an optional photo. Logged cooks appear as a timeline under the notes, and the newest one sets the recipe's last-made date. Cook mode's final card offers the same button.
-- **Cook** — one card at a time, full screen, with component pills, swipe or arrow keys, and the screen kept awake.
+- **Cook** — one card at a time, full screen, with part pills, swipe or arrow keys, and the screen kept awake.
 - **Settings** (`/settings`) — tabs for Foods, Units, Aisles, Tags and Appearance. The first four are editable tables with search, merge and a delete that lists the recipes it affects; Appearance holds the light / dark / system theme toggle.
 
 Photos live on disk under `DATA_DIR/images/` (logged-cook photos under `images/timeline/`), not in the database — see [Backup](#backup).

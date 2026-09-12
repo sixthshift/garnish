@@ -26,7 +26,7 @@ const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x4
 
 async function createRecipe(name = "Flatbread"): Promise<string> {
   const repo = recipes(await getDb());
-  return repo.create(recipeInputSchema.parse({ name, components: [{ name: "", ingredients: [], steps: [] }] })).id;
+  return repo.create(recipeInputSchema.parse({ name, parts: [{ name: "", ingredients: [], steps: [] }] })).id;
 }
 
 function upload(id: string, body: BodyInit | null, field = "image", type = "image/png", name = "photo.png"): Promise<Response> {

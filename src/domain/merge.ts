@@ -1,6 +1,5 @@
 // Structured vs. Summary (M11.3, src/lib/prefs.ts IngredientMode): flattens a
-// recipe's per-component ingredient blocks into one list for the "Summary"
-// view. Pure: no IO, importable by the client.
+// recipe's per-part ingredient blocks into one list for the "Summary" view. Pure: no IO, importable by the client.
 //
 // Mirrors the shopping list's merge rule (decisions.md row 13): lines are
 // merged by food and unit, quantities summed. Two exceptions, both because
@@ -18,7 +17,7 @@
 // picking one arbitrarily. A group's id is its first member's id, so a
 // singleton group (the common case — most food/unit pairs appear once) keeps
 // the same tick state (src/lib/ticks.ts) whichever view is showing.
-import type { Component, Ingredient } from "./recipe";
+import type { Ingredient, Part } from "./recipe";
 
 /** True for ingredients that fold into a summed group; false for lines kept on their own. */
 function isMergeable(ingredient: Ingredient): boolean {
@@ -33,17 +32,17 @@ function mergeKey(ingredient: Ingredient): string {
 }
 
 /**
- * One flat ingredient list for the whole recipe: every component's
- * ingredients, in order, merged by food and unit with quantities summed.
+ * One flat ingredient list for the whole recipe: every part's ingredients, in
+ * order, merged by food and unit with quantities summed.
  * `fixed` and null-quantity lines never merge, even with a matching food and
  * unit, and appear once per occurrence. Pure; the input is not mutated.
  */
-export function mergeIngredients(recipe: { components: ReadonlyArray<Pick<Component, "ingredients">> }): Ingredient[] {
+export function mergeIngredients(recipe: { parts: ReadonlyArray<Pick<Part, "ingredients">> }): Ingredient[] {
   const merged: Ingredient[] = [];
   const groups = new Map<string, Ingredient>();
 
-  for (const component of recipe.components) {
-    for (const ingredient of component.ingredients) {
+  for (const part of recipe.parts) {
+    for (const ingredient of part.ingredients) {
       const { quantity, fixed, note } = ingredient;
       if (fixed || quantity === null) {
         merged.push({ ...ingredient });

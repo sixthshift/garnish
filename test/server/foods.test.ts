@@ -60,7 +60,7 @@ test("validation rejects a blank name and wrong types before the handler", async
 
 test("usingFood lists the recipes with an ingredient of that food", async () => {
   const butter = await callServerFn(createFood, { name: "butter" });
-  await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", components: [{ name: "", ingredients: [{ food: butter }], steps: [] }] }));
+  await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [{ food: butter }], steps: [] }] }));
   expect((await callServerFn(usingFood, { id: butter.id })).map((r) => r.name)).toEqual(["Toast"]);
 
   const salt = await callServerFn(createFood, { name: "salt" });
@@ -72,7 +72,7 @@ test("mergeFood repoints ingredients to the target, deletes the source, and drop
   const unsalted = await callServerFn(createFood, { name: "unsalted butter" });
   await callServerFn(
     createRecipe,
-    recipeInputSchema.parse({ name: "Shortbread", components: [{ name: "", ingredients: [{ food: unsalted }], steps: [] }] }),
+    recipeInputSchema.parse({ name: "Shortbread", parts: [{ name: "", ingredients: [{ food: unsalted }], steps: [] }] }),
   );
 
   const merged = await callServerFn(mergeFood, { sourceId: unsalted.id, targetId: butter.id });

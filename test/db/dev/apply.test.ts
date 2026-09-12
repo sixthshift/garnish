@@ -69,7 +69,7 @@ test("a hand-written recipe survives a re-run, even sharing a name", async () =>
 
   // Same name as a generated one: the slug collides, the id does not.
   const mine = recipes(db).create(
-    recipeInputSchema.parse({ name: dataset[0]!.input.name, components: [{ name: "", ingredients: [], steps: [] }] }),
+    recipeInputSchema.parse({ name: dataset[0]!.input.name, parts: [{ name: "", ingredients: [], steps: [] }] }),
   );
 
   await applyDevData(db, dataset, images);

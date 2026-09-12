@@ -5,7 +5,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { addComponent, renameComponent } from "../../src/components/ComponentsEditor";
+import { addPart, renamePart } from "../../src/components/PartsEditor";
 import {
   addIngredient,
   addReviewedIngredients,
@@ -32,7 +32,7 @@ import {
   unitReference,
   updateIngredient,
 } from "../../src/components/IngredientsEditor";
-import { type DraftComponent, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
+import { type DraftPart, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
 import { pendingCreations, type ReviewRow, rowCommit, reviewRows } from "../../src/domain/bulkIngredients";
 import { findOrCreateFood, listFoods } from "../../src/server/foods";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
@@ -57,8 +57,8 @@ const units = [gram, cup];
 
 /** Two components, Pastry (two rows) and Filling (one row), built with the helpers. */
 function tart(): RecipeDraft {
-  let draft = renameComponent({ ...emptyDraft(), name: "Lemon tart" }, 0, "Pastry");
-  draft = addComponent(draft, "Filling");
+  let draft = renamePart({ ...emptyDraft(), name: "Lemon tart" }, 0, "Pastry");
+  draft = addPart(draft, "Filling");
   draft = addIngredient(draft, 0);
   draft = updateIngredient(draft, 0, 0, { quantity: 200, unit: gram, food: foodReference({ name: "flour" }) });
   draft = addIngredient(draft, 0);
@@ -168,36 +168,36 @@ describe("matchUnit and filterUnits", () => {
 
 describe("addIngredient, updateIngredient, removeIngredient", () => {
   test("addIngredient appends a blank row to the indexed component only", () => {
-    const draft = addComponent(emptyDraft(), "Filling");
+    const draft = addPart(emptyDraft(), "Filling");
     const next = addIngredient(draft, 1);
-    expect(next.components[0]!.ingredients).toHaveLength(0);
-    expect(next.components[1]!.ingredients).toHaveLength(1);
-    expect(next.components[1]!.ingredients[0]!.id).toMatch(UUID);
-    expect(draft.components[1]!.ingredients).toHaveLength(0);
-    expect(next.components[0]).toBe(draft.components[0]);
+    expect(next.parts[0]!.ingredients).toHaveLength(0);
+    expect(next.parts[1]!.ingredients).toHaveLength(1);
+    expect(next.parts[1]!.ingredients[0]!.id).toMatch(UUID);
+    expect(draft.parts[1]!.ingredients).toHaveLength(0);
+    expect(next.parts[0]).toBe(draft.parts[0]);
   });
 
   test("updateIngredient merges a patch into one row, leaving the rest alone", () => {
     const draft = tart();
     const next = updateIngredient(draft, 0, 1, { note: "chilled", fixed: true });
-    expect(next.components[0]!.ingredients[1]).toMatchObject({ quantity: 1, unit: cup, note: "chilled", fixed: true });
-    expect(next.components[0]!.ingredients[0]).toBe(draft.components[0]!.ingredients[0]);
-    expect(next.components[1]).toBe(draft.components[1]);
-    expect(draft.components[0]!.ingredients[1]!.note).toBe("cold");
+    expect(next.parts[0]!.ingredients[1]).toMatchObject({ quantity: 1, unit: cup, note: "chilled", fixed: true });
+    expect(next.parts[0]!.ingredients[0]).toBe(draft.parts[0]!.ingredients[0]);
+    expect(next.parts[1]).toBe(draft.parts[1]);
+    expect(draft.parts[0]!.ingredients[1]!.note).toBe("cold");
   });
 
   test("removeIngredient drops one row", () => {
     const draft = tart();
     const next = removeIngredient(draft, 0, 0);
-    expect(next.components[0]!.ingredients.map((r) => r.note)).toEqual(["cold"]);
-    expect(draft.components[0]!.ingredients).toHaveLength(2);
+    expect(next.parts[0]!.ingredients.map((r) => r.note)).toEqual(["cold"]);
+    expect(draft.parts[0]!.ingredients).toHaveLength(2);
   });
 
   test("out-of-range indices return an unchanged copy", () => {
     const draft = tart();
     for (const next of [addIngredient(draft, 2), updateIngredient(draft, 0, 5, { note: "x" }), updateIngredient(draft, -1, 0, {}), removeIngredient(draft, 1, 1), removeIngredient(draft, 3, 0)]) {
-      expect(next.components).toEqual(draft.components);
-      expect(next.components).not.toBe(draft.components);
+      expect(next.parts).toEqual(draft.parts);
+      expect(next.parts).not.toBe(draft.parts);
     }
   });
 });
@@ -205,20 +205,20 @@ describe("addIngredient, updateIngredient, removeIngredient", () => {
 describe("moveIngredient", () => {
   test("appends the row to the target component and removes it from the source", () => {
     const draft = tart();
-    const moved = draft.components[0]!.ingredients[0]!;
+    const moved = draft.parts[0]!.ingredients[0]!;
     const next = moveIngredient(draft, 0, 0, 1);
-    expect(next.components[0]!.ingredients.map((r) => r.note)).toEqual(["cold"]);
-    expect(next.components[1]!.ingredients).toHaveLength(2);
-    expect(next.components[1]!.ingredients[1]).toBe(moved);
-    expect(draft.components[0]!.ingredients).toHaveLength(2);
-    expect(draft.components[1]!.ingredients).toHaveLength(1);
+    expect(next.parts[0]!.ingredients.map((r) => r.note)).toEqual(["cold"]);
+    expect(next.parts[1]!.ingredients).toHaveLength(2);
+    expect(next.parts[1]!.ingredients[1]).toBe(moved);
+    expect(draft.parts[0]!.ingredients).toHaveLength(2);
+    expect(draft.parts[1]!.ingredients).toHaveLength(1);
   });
 
   test("same component or out-of-range indices return an unchanged copy", () => {
     const draft = tart();
     for (const next of [moveIngredient(draft, 0, 0, 0), moveIngredient(draft, 0, 2, 1), moveIngredient(draft, 0, 0, 2), moveIngredient(draft, 5, 0, 1)]) {
-      expect(next.components).toEqual(draft.components);
-      expect(next.components).not.toBe(draft.components);
+      expect(next.parts).toEqual(draft.parts);
+      expect(next.parts).not.toBe(draft.parts);
     }
   });
 });
@@ -226,18 +226,18 @@ describe("moveIngredient", () => {
 describe("moveIngredientTo", () => {
   test("a drag drops the row at the index it was released over", () => {
     const draft = tart();
-    const moved = draft.components[0]!.ingredients[0]!;
+    const moved = draft.parts[0]!.ingredients[0]!;
     const next = moveIngredientTo(draft, 0, 0, 1, 0);
-    expect(next.components[1]!.ingredients[0]).toBe(moved);
-    expect(next.components[1]!.ingredients).toHaveLength(2);
-    expect(next.components[0]!.ingredients.map((r) => r.note)).toEqual(["cold"]);
+    expect(next.parts[1]!.ingredients[0]).toBe(moved);
+    expect(next.parts[1]!.ingredients).toHaveLength(2);
+    expect(next.parts[0]!.ingredients.map((r) => r.note)).toEqual(["cold"]);
   });
 
   test("an index past the end appends, and a negative one lands first", () => {
     const draft = tart();
-    const moved = draft.components[0]!.ingredients[1]!;
-    expect(moveIngredientTo(draft, 0, 1, 1, 99).components[1]!.ingredients[1]).toBe(moved);
-    expect(moveIngredientTo(draft, 0, 1, 1, -3).components[1]!.ingredients[0]).toBe(moved);
+    const moved = draft.parts[0]!.ingredients[1]!;
+    expect(moveIngredientTo(draft, 0, 1, 1, 99).parts[1]!.ingredients[1]).toBe(moved);
+    expect(moveIngredientTo(draft, 0, 1, 1, -3).parts[1]!.ingredients[0]).toBe(moved);
   });
 
   test("with no index it appends, which is what the move-to select does", () => {
@@ -248,8 +248,8 @@ describe("moveIngredientTo", () => {
   test("same component or out-of-range indices return an unchanged copy", () => {
     const draft = tart();
     for (const next of [moveIngredientTo(draft, 0, 0, 0, 0), moveIngredientTo(draft, 0, 9, 1, 0), moveIngredientTo(draft, 0, 0, 7, 0)]) {
-      expect(next.components).toEqual(draft.components);
-      expect(next.components).not.toBe(draft.components);
+      expect(next.parts).toEqual(draft.parts);
+      expect(next.parts).not.toBe(draft.parts);
     }
   });
 });
@@ -310,20 +310,20 @@ describe("addReviewedIngredients", () => {
     const draft = tart();
     const rows = reviewRows(["200 g flour", "a pinch of pixie dust"], { units, foods: [flourRow] });
     const next = addReviewedIngredients(draft, 1, rows.map(rowCommit), new Map(), new Map());
-    expect(next.components[1]!.ingredients).toHaveLength(3);
-    expect(next.components[1]!.ingredients[1]).toMatchObject({ quantity: 200, originalText: "200 g flour" });
-    expect(next.components[1]!.ingredients[2]).toMatchObject({ originalText: "a pinch of pixie dust", food: null, quantity: null });
-    expect(isTextOnly(next.components[1]!.ingredients[2]!)).toBe(true);
-    expect(next.components[0]).toBe(draft.components[0]);
-    expect(draft.components[1]!.ingredients).toHaveLength(1);
+    expect(next.parts[1]!.ingredients).toHaveLength(3);
+    expect(next.parts[1]!.ingredients[1]).toMatchObject({ quantity: 200, originalText: "200 g flour" });
+    expect(next.parts[1]!.ingredients[2]).toMatchObject({ originalText: "a pinch of pixie dust", food: null, quantity: null });
+    expect(isTextOnly(next.parts[1]!.ingredients[2]!)).toBe(true);
+    expect(next.parts[0]).toBe(draft.parts[0]);
+    expect(draft.parts[1]!.ingredients).toHaveLength(1);
   });
 
   test("no rows, or an out-of-range component, returns an unchanged copy", () => {
     const draft = tart();
     const rows = reviewRows(["x"], { units, foods: [flourRow] }).map(rowCommit);
     for (const next of [addReviewedIngredients(draft, 0, [], new Map(), new Map()), addReviewedIngredients(draft, 5, rows, new Map(), new Map())]) {
-      expect(next.components).toEqual(draft.components);
-      expect(next.components).not.toBe(draft.components);
+      expect(next.parts).toEqual(draft.parts);
+      expect(next.parts).not.toBe(draft.parts);
     }
   });
 
@@ -336,7 +336,7 @@ describe("addReviewedIngredients", () => {
 
 describe("IngredientsEditor", () => {
   test("has a Bulk add button beside Add ingredient, and the sheet is closed by default", () => {
-    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
     expect(html).toContain(">Bulk add<");
     expect(html).toContain(">Add ingredient<");
     expect(html).not.toContain('role="dialog"');
@@ -344,7 +344,7 @@ describe("IngredientsEditor", () => {
 
   test("each row has a drag handle and the list joins the shared drag group", () => {
     const draft = tart();
-    const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
     expect(html).toContain(`data-reorder-group="${INGREDIENT_DRAG_GROUP}"`);
     expect(html.match(/aria-label="Drag ingredient \d"/g)).toHaveLength(2);
     // The move-to select survives alongside the handle.
@@ -352,13 +352,13 @@ describe("IngredientsEditor", () => {
   });
 
 
-  test("renders the row inputs for a component: quantity, unit, food, note, fixed, text toggle, move-to", () => {
+  test("renders the row inputs for a part: quantity, unit, food, note, fixed, text toggle, move-to", () => {
     const draft = tart();
-    const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
     expect(html).toContain(">Add ingredient<");
     expect(html).not.toContain("No ingredients yet");
     expect(tagWithLabel(html, "Ingredient 1 quantity")).toContain('value="200"');
-    expect(tagWithLabel(html, "Ingredient 1 quantity")).toContain('name="components.0.ingredients.0.quantity"');
+    expect(tagWithLabel(html, "Ingredient 1 quantity")).toContain('name="parts.0.ingredients.0.quantity"');
     expect(tagWithLabel(html, "Ingredient 1 unit")).toContain('value="gram"');
     expect(tagWithLabel(html, "Ingredient 1 unit")).toContain('role="combobox"');
     expect(tagWithLabel(html, "Ingredient 1 food")).toContain('value="flour"');
@@ -371,7 +371,7 @@ describe("IngredientsEditor", () => {
     expect(html.match(/aria-label="Ingredient \d text only"/g)).toHaveLength(2);
     expect(tagWithLabel(html, "Ingredient 1 text only")).toContain('aria-pressed="false"');
     // Move-to offers the other component, by name.
-    expect(html).toContain('aria-label="Move ingredient 1 to component"');
+    expect(html).toContain('aria-label="Move ingredient 1 to part"');
     expect(html).toContain("Move to…");
     // Reorder and remove controls per row; the food list does not query on the server.
     expect(html.match(/aria-label="Move ingredient \d up"/g)).toHaveLength(2);
@@ -381,9 +381,9 @@ describe("IngredientsEditor", () => {
 
   test("a text-only row shows one text input and no amount fields", () => {
     const draft = updateIngredient(addIngredient({ ...emptyDraft(), name: "Toast" }, 0), 0, 0, { originalText: "a pinch of salt" });
-    const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
     expect(tagWithLabel(html, "Ingredient 1 text")).toContain('value="a pinch of salt"');
-    expect(tagWithLabel(html, "Ingredient 1 text")).toContain('name="components.0.ingredients.0.originalText"');
+    expect(tagWithLabel(html, "Ingredient 1 text")).toContain('name="parts.0.ingredients.0.originalText"');
     expect(tagWithLabel(html, "Ingredient 1 text only")).toContain('aria-pressed="true"');
     expect(html).not.toContain("Ingredient 1 quantity");
     expect(html).not.toContain("Ingredient 1 food");
@@ -392,11 +392,11 @@ describe("IngredientsEditor", () => {
   });
 
   test("an empty component says so; disabled disables the inputs and the add button; a quantity error shows on its row", () => {
-    const empty = renderToString(<IngredientsEditor draft={emptyDraft()} ci={0} units={units} onChange={() => {}} />);
+    const empty = renderToString(<IngredientsEditor draft={emptyDraft()} pi={0} units={units} onChange={() => {}} />);
     expect(empty).toContain("No ingredients yet");
 
     const html = renderToString(
-      <IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} disabled errors={{ "components.0.ingredients.1.quantity": "Too small" }} />,
+      <IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} disabled errors={{ "parts.0.ingredients.1.quantity": "Too small" }} />,
     );
     expect(tagWithLabel(html, "Ingredient 1 quantity")).toContain('disabled=""');
     expect(tagWithLabel(html, "Ingredient 1 food")).toContain('disabled=""');
@@ -408,7 +408,7 @@ describe("IngredientsEditor", () => {
   });
 
   test("an unknown component index renders nothing", () => {
-    expect(renderToString(<IngredientsEditor draft={emptyDraft()} ci={3} units={units} onChange={() => {}} />)).toBe("");
+    expect(renderToString(<IngredientsEditor draft={emptyDraft()} pi={3} units={units} onChange={() => {}} />)).toBe("");
   });
 });
 
@@ -421,7 +421,7 @@ describe("Check: null quantity and text-only rows save", () => {
     draft = updateIngredient(draft, 0, 1, { quantity: null, food: foodReference({ name: "butter" }), note: "to taste" });
     draft = addIngredient(draft, 0);
     draft = updateIngredient(draft, 0, 2, { originalText: "a pinch of flaky salt" });
-    const rows = (draft.components[0] as DraftComponent).ingredients;
+    const rows = (draft.parts[0] as DraftPart).ingredients;
     expect(rows.map(isTextOnly)).toEqual([false, false, true]);
 
     const parsed = validateDraft(draft);
@@ -431,8 +431,8 @@ describe("Check: null quantity and text-only rows save", () => {
     const created = await callServerFn(createRecipe, parsed.data);
     const fetched = await callServerFn(getRecipe, { slug: created.slug });
     expect(fetched).toEqual(created);
-    const [bread, butter, salt] = fetched.components[0]!.ingredients;
-    expect(fetched.components[0]!.ingredients).toHaveLength(3);
+    const [bread, butter, salt] = fetched.parts[0]!.ingredients;
+    expect(fetched.parts[0]!.ingredients).toHaveLength(3);
 
     // Normal row: quantity, unit and food resolved to stored rows.
     expect(bread).toMatchObject({ quantity: 2, note: "thick", originalText: "", fixed: false });
@@ -456,7 +456,7 @@ describe("Check: null quantity and text-only rows save", () => {
   });
 
   test("a row moved to another component saves there", async () => {
-    let draft = addComponent({ ...emptyDraft(), name: "Two part" }, "Sauce");
+    let draft = addPart({ ...emptyDraft(), name: "Two part" }, "Sauce");
     draft = addIngredient(draft, 0);
     draft = updateIngredient(draft, 0, 0, { quantity: 1, food: foodReference({ name: "onion" }) });
     draft = moveIngredient(draft, 0, 0, 1);
@@ -465,9 +465,9 @@ describe("Check: null quantity and text-only rows save", () => {
     if (!parsed.ok) return;
     const created = await callServerFn(createRecipe, parsed.data);
     const fetched = await callServerFn(getRecipe, { slug: created.slug });
-    expect(fetched.components[0]!.ingredients).toEqual([]);
-    expect(fetched.components[1]!.ingredients).toHaveLength(1);
-    expect(fetched.components[1]!.ingredients[0]!.food).toMatchObject({ name: "onion" });
+    expect(fetched.parts[0]!.ingredients).toEqual([]);
+    expect(fetched.parts[1]!.ingredients).toHaveLength(1);
+    expect(fetched.parts[1]!.ingredients[0]!.food).toMatchObject({ name: "onion" });
   });
 });
 
@@ -495,12 +495,12 @@ function elementWithLabel(node: ReactNode, label: string): ReactElement<Record<s
   }
 }
 
-/** The props `IngredientRow` hands `IngredientFields`, for row `ii` of component 0. */
+/** The props `IngredientRow` hands `IngredientFields`, for row `ii` of part 0. */
 function fieldProps(draft: RecipeDraft, ii: number, onPatch: (patch: Partial<DraftIngredient>) => void): IngredientFieldsProps {
-  const ingredient = draft.components[0]!.ingredients[ii]!;
+  const ingredient = draft.parts[0]!.ingredients[ii]!;
   return {
     ingredient,
-    path: `components.0.ingredients.${ii}`,
+    path: `parts.0.ingredients.${ii}`,
     label: `Ingredient ${ii + 1}`,
     units,
     errors: {},
@@ -522,9 +522,9 @@ function fieldProps(draft: RecipeDraft, ii: number, onPatch: (patch: Partial<Dra
 describe("ingredientSummary", () => {
   test("is the formatted line for a structured row", () => {
     const draft = tart();
-    expect(ingredientSummary(draft.components[0]!.ingredients[0]!)).toBe("200 g flour");
-    expect(ingredientSummary(draft.components[0]!.ingredients[1]!)).toBe("1 cup, cold");
-    expect(ingredientSummary(draft.components[1]!.ingredients[0]!)).toBe("3 lemon");
+    expect(ingredientSummary(draft.parts[0]!.ingredients[0]!)).toBe("200 g flour");
+    expect(ingredientSummary(draft.parts[0]!.ingredients[1]!)).toBe("1 cup, cold");
+    expect(ingredientSummary(draft.parts[1]!.ingredients[0]!)).toBe("3 lemon");
   });
 
   test("is the raw line for a text-only row, and blank for an empty one", () => {
@@ -540,7 +540,7 @@ describe("ingredientSummary", () => {
 
 describe("IngredientsEditor at both widths", () => {
   test("phone gets a one-line summary with a chevron; the inline fields are md-only", () => {
-    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
 
     // Phone: one tappable line per row, hidden from md up.
     const summary = html.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>/)?.[0] ?? "";
@@ -561,11 +561,11 @@ describe("IngredientsEditor at both widths", () => {
   });
 
   test("an empty row's summary reads as new, and a text-only row shows its raw line", () => {
-    const blank = renderToString(<IngredientsEditor draft={addIngredient(emptyDraft(), 0)} ci={0} units={units} onChange={() => {}} />);
+    const blank = renderToString(<IngredientsEditor draft={addIngredient(emptyDraft(), 0)} pi={0} units={units} onChange={() => {}} />);
     expect(blank).toContain(`>${EMPTY_INGREDIENT_SUMMARY}<`);
 
     const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
-    const html = renderToString(<IngredientsEditor draft={text} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={text} pi={0} units={units} onChange={() => {}} />);
     const summary = html.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>/)?.[0] ?? "";
     expect(summary).toContain("md:hidden");
     expect(html).toContain(">a pinch of salt<");
@@ -573,7 +573,7 @@ describe("IngredientsEditor at both widths", () => {
 
   test("a parsed row's original text prints in grey above the inline fields, not the phone summary (M13.6)", () => {
     const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
-    const html = renderToString(<IngredientsEditor draft={draft} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
 
     expect(html.match(/data-original-text-above=""/g)).toHaveLength(1);
     expect(html).toMatch(/data-original-text-above=""[^>]*>200g plain flour</);
@@ -585,11 +585,11 @@ describe("IngredientsEditor at both widths", () => {
   });
 
   test("no grey line when there is no original text, or when the row is text only", () => {
-    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
     expect(html).not.toContain("data-original-text-above");
 
     const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
-    const withText = renderToString(<IngredientsEditor draft={text} ci={0} units={units} onChange={() => {}} />);
+    const withText = renderToString(<IngredientsEditor draft={text} pi={0} units={units} onChange={() => {}} />);
     expect(withText).not.toContain("data-original-text-above");
   });
 });
@@ -604,7 +604,7 @@ describe("the phone sheet's fields", () => {
     expect(html).toContain("Original text");
     expect(html).toContain("200g plain flour");
     // Read only: the raw line is not an input.
-    expect(html).not.toContain('name="components.0.ingredients.0.originalText"');
+    expect(html).not.toContain('name="parts.0.ingredients.0.originalText"');
   });
 
   test("a row with no original text says so, and a text-only row edits the line instead", () => {
@@ -623,20 +623,20 @@ describe("the phone sheet's fields", () => {
     const tree = IngredientFields({ ...fieldProps(draft, 1, (patch) => { next = updateIngredient(draft, 0, 1, patch); }), showOriginalText: true });
 
     elementWithLabel(tree, "Ingredient 2 quantity").props.onChange({ target: { value: "1 1/2" } });
-    expect(next!.components[0]!.ingredients[1]!.quantity).toBe(1.5);
-    expect(draft.components[0]!.ingredients[1]!.quantity).toBe(1);
+    expect(next!.parts[0]!.ingredients[1]!.quantity).toBe(1.5);
+    expect(draft.parts[0]!.ingredients[1]!.quantity).toBe(1);
 
     elementWithLabel(tree, "Ingredient 2 note").props.onChange({ target: { value: "chilled" } });
-    expect(next!.components[0]!.ingredients[1]!.note).toBe("chilled");
+    expect(next!.parts[0]!.ingredients[1]!.note).toBe("chilled");
 
     elementWithLabel(tree, "Ingredient 2 fixed").props.onCheckedChange(true);
-    expect(next!.components[0]!.ingredients[1]!.fixed).toBe(true);
+    expect(next!.parts[0]!.ingredients[1]!.fixed).toBe(true);
 
     elementWithLabel(tree, "Ingredient 2 unit").props.onCreate("handful");
-    expect(next!.components[0]!.ingredients[1]!.unit).toMatchObject({ name: "handful" });
+    expect(next!.parts[0]!.ingredients[1]!.unit).toMatchObject({ name: "handful" });
 
     elementWithLabel(tree, "Ingredient 2 food").props.onCreate("butter");
-    expect(next!.components[0]!.ingredients[1]!.food).toMatchObject({ name: "butter" });
+    expect(next!.parts[0]!.ingredients[1]!.food).toMatchObject({ name: "butter" });
     expect(validateDraft(next!).ok).toBe(true);
   });
 });
@@ -735,7 +735,7 @@ describe("parsedRowPatch", () => {
 describe("Check: parsing a saved row (M17.6)", () => {
   test("a matched parse fills the draft row and leaves originalText intact", () => {
     const draft = textOnlyDraft("200 g flour, sifted");
-    const before = draft.components[0]!.ingredients[0]!;
+    const before = draft.parts[0]!.ingredients[0]!;
     const parsed = parseRowFor(before.originalText ?? "", { units, foods: [flourRow] }, before.id ?? "row");
     expect(parsed.food).toEqual({ kind: "existing", row: flourRow });
 
@@ -743,7 +743,7 @@ describe("Check: parsing a saved row (M17.6)", () => {
     expect(patch).not.toBeNull();
     expect(patch).not.toHaveProperty("originalText");
 
-    const after = updateIngredient(draft, 0, 0, patch!).components[0]!.ingredients[0]!;
+    const after = updateIngredient(draft, 0, 0, patch!).parts[0]!.ingredients[0]!;
     expect(after.originalText).toBe("200 g flour, sifted");
     expect(after.quantity).toBe(200);
     expect(after.note).toBe("sifted");
@@ -754,18 +754,18 @@ describe("Check: parsing a saved row (M17.6)", () => {
 
   test("declining an unknown food leaves the row exactly as it was", () => {
     const draft = textOnlyDraft("100 g almond meal");
-    const before = draft.components[0]!.ingredients[0]!;
+    const before = draft.parts[0]!.ingredients[0]!;
     const parsed = parseRowFor(before.originalText ?? "", { units, foods: [flourRow] }, before.id ?? "row");
     expect(parsed.food).toEqual({ kind: "none" });
     expect(parsedRowPatch(parsed, new Map(), new Map())).toBeNull();
     // Nothing to apply: the row is untouched, still text only.
-    expect(draft.components[0]!.ingredients[0]).toEqual(before);
+    expect(draft.parts[0]!.ingredients[0]).toEqual(before);
     expect(isTextOnly(before)).toBe(true);
   });
 
   test("an approved creation is made only from the confirmed name, and originalText survives it", async () => {
     const draft = textOnlyDraft("100 g almond meal");
-    const before = draft.components[0]!.ingredients[0]!;
+    const before = draft.parts[0]!.ingredients[0]!;
     const parsed = parseRowFor(before.originalText ?? "", { units, foods: [] }, before.id ?? "row");
     const approved = { ...parsed, food: { kind: "create" as const, name: parsed.foodText } };
     const pending = pendingCreations([approved]);
@@ -773,7 +773,7 @@ describe("Check: parsing a saved row (M17.6)", () => {
 
     const created = await callServerFn(findOrCreateFood, { name: pending.foods[0]! });
     const patch = parsedRowPatch(approved, new Map([[pending.foods[0]!.toLowerCase(), created]]), new Map());
-    const after = updateIngredient(draft, 0, 0, patch!).components[0]!.ingredients[0]!;
+    const after = updateIngredient(draft, 0, 0, patch!).parts[0]!.ingredients[0]!;
     expect(after.originalText).toBe("100 g almond meal");
     expect(after.food?.name).toBe("almond meal");
     expect(isTextOnly(after)).toBe(false);
@@ -784,13 +784,13 @@ describe("the Parse action's two placements (M17.6)", () => {
   const noopParse = { review: null, busy: false, error: null, onStart: () => {}, onChange: () => {}, onCancel: () => {}, onConfirm: () => {} };
 
   test("a text-only row's inline fields (md+) offer Parse inside a row menu", () => {
-    const html = renderToString(<IngredientsEditor draft={textOnlyDraft("3 lemons")} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={textOnlyDraft("3 lemons")} pi={0} units={units} onChange={() => {}} />);
     expect(html).toContain('aria-label="Ingredient 1 actions"');
     expect(html).toContain('aria-haspopup="menu"');
   });
 
   test("a structured row gets no row menu at all", () => {
-    const html = renderToString(<IngredientsEditor draft={tart()} ci={0} units={units} onChange={() => {}} />);
+    const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
     expect(html).not.toContain('aria-label="Ingredient 1 actions"');
     expect(html).not.toContain(">Parse<");
   });

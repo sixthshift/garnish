@@ -29,7 +29,7 @@ const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x4
 
 async function createEvent(): Promise<TimelineEvent> {
   const db = await getDb();
-  const recipe = recipes(db).create(recipeInputSchema.parse({ name: "Flatbread", components: [{ name: "", ingredients: [], steps: [] }] }));
+  const recipe = recipes(db).create(recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [] }] }));
   return timeline(db).create(recipe.id, { occurredOn: "2026-09-11", message: "", image: null });
 }
 

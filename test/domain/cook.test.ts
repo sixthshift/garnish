@@ -3,36 +3,36 @@ import {
   buildCookCards,
   cardAnnouncement,
   clampStep,
-  componentPills,
-  finishLabel,
   isFinishedIndex,
+  partPills,
   SWIPE_MAX_MS,
   SWIPE_MIN_PX,
   SWIPE_RATIO,
   swipeIntent,
   totalWithFinish,
 } from "../../src/domain/cook";
-import type { Component, Ingredient, Step } from "../../src/domain/recipe";
+import type { Ingredient, Part, Step } from "../../src/domain/recipe";
 
 const uuid = () => crypto.randomUUID();
 const step = (text: string): Step => ({ id: uuid(), text });
 const ingredient = (note: string, fixed = false): Ingredient => ({ id: uuid(), quantity: 1, unit: null, food: null, note, originalText: "", fixed });
-const component = (name: string, ingredients: Ingredient[], steps: Step[]): Component => ({ id: uuid(), name, ingredients, steps });
+const part = (name: string, ingredients: Ingredient[], steps: Step[]): Part => ({ id: uuid(), name, ingredients, steps });
 
 describe("buildCookCards", () => {
-  test("two components: each gives its ingredients then a card per step, then the recipe-level steps as 'To finish'", () => {
-    const pastry = component("Pastry", [ingredient("flour")], [step("Rub."), step("Chill.")]);
-    const filling = component(" Filling ", [ingredient("lemon"), ingredient("vanilla", true)], [step("Whisk.")]);
-    const cards = buildCookCards({ components: [pastry, filling], steps: [step("Bake."), step("Cool.")] });
+  test("three parts: each gives its ingredients then a card per step, the unnamed one last", () => {
+    const pastry = part("Pastry", [ingredient("flour")], [step("Rub."), step("Chill.")]);
+    const filling = part(" Filling ", [ingredient("lemon"), ingredient("vanilla", true)], [step("Whisk.")]);
+    const assembly = part("", [], [step("Bake."), step("Cool.")]);
+    const cards = buildCookCards({ parts: [pastry, filling, assembly] });
 
-    expect(cards.map((c) => (c.kind === "ingredients" ? `${c.component}:ingredients` : `${c.component}:${c.step.text}`))).toEqual([
+    expect(cards.map((c) => (c.kind === "ingredients" ? `${c.part}:ingredients` : `${c.part}:${c.step.text}`))).toEqual([
       "Pastry:ingredients",
       "Pastry:Rub.",
       "Pastry:Chill.",
       "Filling:ingredients",
       "Filling:Whisk.",
-      "To finish:Bake.",
-      "To finish:Cool.",
+      ":Bake.",
+      ":Cool.",
     ]);
     // Step numbering restarts per list and knows the list's length.
     expect(cards.filter((c) => c.kind === "step").map((c) => (c.kind === "step" ? `${c.number}/${c.total}` : ""))).toEqual([
@@ -42,31 +42,24 @@ describe("buildCookCards", () => {
       "1/2",
       "2/2",
     ]);
-    // Ingredient cards carry the component's rows untouched, fixed flag included.
+    // Ingredient cards carry the part's rows untouched, fixed flag included.
     const fillingCard = cards[3];
     expect(fillingCard?.kind).toBe("ingredients");
     if (fillingCard?.kind === "ingredients") expect(fillingCard.ingredients.map((i) => i.fixed)).toEqual([false, true]);
   });
 
-  test("a single unnamed component labels its cards and the recipe-level steps with an empty string", () => {
-    const cards = buildCookCards({ components: [component("", [ingredient("bread")], [step("Toast.")])], steps: [step("Butter.")] });
-    expect(cards.map((c) => c.component)).toEqual(["", "", ""]);
+  test("a single unnamed part labels its cards with an empty string", () => {
+    const cards = buildCookCards({ parts: [part("", [ingredient("bread")], [step("Toast."), step("Butter.")])] });
+    expect(cards.map((c) => c.part)).toEqual(["", "", ""]);
     expect(cards.map((c) => c.kind)).toEqual(["ingredients", "step", "step"]);
   });
 
-  test("an empty component contributes no cards; a component with steps but no ingredients skips the ingredient card", () => {
-    const empty = component("Garnish", [], []);
-    const stepsOnly = component("Assembly", [], [step("Stack.")]);
-    expect(buildCookCards({ components: [empty], steps: [] })).toEqual([]);
-    const cards = buildCookCards({ components: [empty, stepsOnly], steps: [] });
-    expect(cards.map((c) => [c.kind, c.component])).toEqual([["step", "Assembly"]]);
-  });
-});
-
-describe("finishLabel", () => {
-  test("names the recipe-level steps only when there is more than one component", () => {
-    expect(finishLabel({ components: [component("", [], [])] })).toBe("");
-    expect(finishLabel({ components: [component("A", [], []), component("B", [], [])] })).toBe("To finish");
+  test("an empty part contributes no cards; a part with steps but no ingredients skips the ingredient card", () => {
+    const empty = part("Garnish", [], []);
+    const stepsOnly = part("Assembly", [], [step("Stack.")]);
+    expect(buildCookCards({ parts: [empty] })).toEqual([]);
+    const cards = buildCookCards({ parts: [empty, stepsOnly] });
+    expect(cards.map((c) => [c.kind, c.part])).toEqual([["step", "Assembly"]]);
   });
 });
 
@@ -102,42 +95,44 @@ describe("isFinishedIndex", () => {
 });
 
 describe("cardAnnouncement", () => {
-  test("a step is counted within its list; an ingredient card names its component", () => {
+  test("a step is counted within its list; an ingredient card names its part", () => {
     const cards = buildCookCards({
-      components: [component("Dough", [ingredient("flour")], [step("Knead."), step("Rest.")])],
-      steps: [],
+      parts: [part("Dough", [ingredient("flour")], [step("Knead."), step("Rest.")])],
     });
     expect(cardAnnouncement(cards[0]!)).toBe("Ingredients for Dough");
     expect(cardAnnouncement(cards[1]!)).toBe("Step 1 of 2");
     expect(cardAnnouncement(cards[2]!)).toBe("Step 2 of 2");
   });
 
-  test("an unnamed component's ingredient card is just 'Ingredients'", () => {
-    const cards = buildCookCards({ components: [component("", [ingredient("bread")], [])], steps: [] });
+  test("an unnamed part's ingredient card is just 'Ingredients'", () => {
+    const cards = buildCookCards({ parts: [part("", [ingredient("bread")], [])] });
     expect(cardAnnouncement(cards[0]!)).toBe("Ingredients");
   });
 });
 
-describe("componentPills", () => {
-  test("one pill per component in deck order, each at that component's first card", () => {
+describe("partPills", () => {
+  test("one pill per part in deck order, each at that part's first card", () => {
     const cards = buildCookCards({
-      components: [component("Pastry", [ingredient("flour")], [step("Rub.")]), component("Filling", [], [step("Whisk."), step("Chill.")])],
-      steps: [step("Bake.")],
+      parts: [
+        part("Pastry", [ingredient("flour")], [step("Rub.")]),
+        part("Filling", [], [step("Whisk."), step("Chill.")]),
+        part("", [], [step("Bake.")]),
+      ],
     });
-    expect(componentPills(cards)).toEqual([
+    expect(partPills(cards)).toEqual([
       { name: "Pastry", label: "Pastry", index: 0 },
       { name: "Filling", label: "Filling", index: 2 },
-      { name: "To finish", label: "To finish", index: 4 },
+      { name: "", label: "Recipe", index: 4 },
     ]);
   });
 
-  test("the unnamed section reads 'Recipe', and a flat recipe is a single pill", () => {
-    const cards = buildCookCards({ components: [component("", [ingredient("bread")], [step("Toast.")])], steps: [step("Butter.")] });
-    expect(componentPills(cards)).toEqual([{ name: "", label: "Recipe", index: 0 }]);
+  test("the unnamed part reads 'Recipe', and a flat recipe is a single pill", () => {
+    const cards = buildCookCards({ parts: [part("", [ingredient("bread")], [step("Toast."), step("Butter.")])] });
+    expect(partPills(cards)).toEqual([{ name: "", label: "Recipe", index: 0 }]);
   });
 
   test("an empty deck has no pills", () => {
-    expect(componentPills([])).toEqual([]);
+    expect(partPills([])).toEqual([]);
   });
 });
 

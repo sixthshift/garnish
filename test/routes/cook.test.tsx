@@ -25,14 +25,14 @@ useTempDataDir();
 
 const food = (name: string, pluralName: string | null = null) => ({ id: crypto.randomUUID(), name, pluralName });
 
-// Deck: 0 Pastry ingredients, 1 Pastry step, 2 Filling ingredients, 3 Filling step, 4 To finish step.
+// Deck: 0 Pastry ingredients, 1 Pastry step, 2 Filling ingredients, 3 Filling step, 4 the unnamed part's step.
 async function seedTart() {
   const units = await callServerFn(listUnits, {});
   const gram = units.find((u) => u.abbreviation === "g")!;
   return callServerFn(createRecipe, {
     name: "Lemon tart",
     recipeServings: 4,
-    components: [
+    parts: [
       {
         name: "Pastry",
         ingredients: [{ quantity: 200, unit: gram, food: food("flour") }],
@@ -46,8 +46,8 @@ async function seedTart() {
         ],
         steps: [{ text: "Whisk everything together." }],
       },
+      { name: "", steps: [{ text: "Bake for 30 minutes." }] },
     ],
-    steps: [{ text: "Bake for 30 minutes." }],
   });
 }
 
@@ -117,11 +117,11 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain('href="/recipes/lemon-tart?servings=8"');
   });
 
-  test("the last card is the recipe-level step, with Next now enabled onto Finished", async () => {
+  test("the last card is the unnamed part's step, with Next now enabled onto Finished", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
     expect(html).toContain("Bake for 30 minutes.");
-    expect(html).toContain("5 of 5 · To finish");
+    expect(html).toContain("5 of 5");
     expect(isDisabled(html, "Next")).toBe(false);
     expect(isDisabled(html, "Prev")).toBe(false);
   });
@@ -154,7 +154,7 @@ describe("/recipes/$slug/cook", () => {
   test("no servings hides the scale control; an unnamed component has no heading in the indicator", async () => {
     await callServerFn(createRecipe, {
       name: "Toast",
-      components: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
+      parts: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
     });
     const html = await renderRoute("/recipes/toast/cook?step=1");
     expect(html).toContain("Toast it.");
@@ -163,7 +163,7 @@ describe("/recipes/$slug/cook", () => {
   });
 
   test("a recipe with nothing to cook says so", async () => {
-    await callServerFn(createRecipe, { name: "Air", components: [{ name: "" }] });
+    await callServerFn(createRecipe, { name: "Air", parts: [{ name: "" }] });
     const html = await renderRoute("/recipes/air/cook");
     expect(html).toContain("Nothing to cook yet");
     expect(html).toContain(">0 of 0<");
@@ -171,11 +171,11 @@ describe("/recipes/$slug/cook", () => {
     expect(isDisabled(html, "Next")).toBe(true);
   });
 
-  test("component pills jump to each component's first card and mark the current one", async () => {
+  test("part pills jump to each part's first card and mark the current one", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart/cook?step=2");
-    expect(html).toContain('aria-label="Components"');
-    for (const name of ["Pastry", "Filling", "To finish"]) expect(html).toContain(`data-pill="${name}"`);
+    expect(html).toContain('aria-label="Parts"');
+    for (const name of ["Pastry", "Filling", ""]) expect(html).toContain(`data-pill="${name}"`);
     // The Filling card is showing, so only Filling's pill is current.
     expect(html).toMatch(/data-pill="Filling"[^>]*aria-current="true"|aria-current="true"[^>]*data-pill="Filling"/);
     expect(html).not.toMatch(/data-pill="Pastry"[^>]*aria-current/);
@@ -184,10 +184,10 @@ describe("/recipes/$slug/cook", () => {
   test("a single-component recipe has no pill bar", async () => {
     await callServerFn(createRecipe, {
       name: "Toast",
-      components: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
+      parts: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
     });
     const html = await renderRoute("/recipes/toast/cook");
-    expect(html).not.toContain('aria-label="Components"');
+    expect(html).not.toContain('aria-label="Parts"');
     expect(html).not.toContain("data-pill=");
   });
 
@@ -219,7 +219,7 @@ describe("/recipes/$slug/cook", () => {
 
   test("an ingredient ticked in cook mode reads back ticked on the view page: ticks.ts is shared, keyed by recipe and ingredient id", async () => {
     const tart = await seedTart();
-    const flour = tart.components[0]!.ingredients[0]!;
+    const flour = tart.parts[0]!.ingredients[0]!;
 
     const storage = fakeStorage();
     setIngredientTicked(storage, tart.id, flour.id, true);

@@ -6,7 +6,7 @@
 // only chrome. A screen wake lock is held while the page is mounted.
 //
 // Three ways through the deck: the Prev/Next buttons and arrow keys, a pill per
-// component that jumps to its first card, and a vertical swipe (pure
+// part that jumps to its first card, and a vertical swipe (pure
 // `swipeIntent`, so the scroll-versus-swipe line is a tested function rather
 // than a feel). A live region speaks the card as it changes.
 import { Button } from "@sixthshift/design-system/button";
@@ -25,7 +25,7 @@ import {
   buildCookCards,
   cardAnnouncement,
   clampStep,
-  componentPills,
+  partPills,
   isFinishedIndex,
   swipeIntent,
   totalWithFinish,
@@ -62,10 +62,10 @@ export function stepForKey(key: string, index: number, count: number): number | 
   return null;
 }
 
-/** "3 of 12", with the component name when the card has one. Pure. */
-export function positionLabel(index: number, count: number, component: string): string {
+/** "3 of 12", with the part name when the card has one. Pure. */
+export function positionLabel(index: number, count: number, part: string): string {
   const position = `${index + 1} of ${count}`;
-  return component === "" ? position : `${position} · ${component}`;
+  return part === "" ? position : `${position} · ${part}`;
 }
 
 function CookPage() {
@@ -79,7 +79,7 @@ function CookPage() {
   const index = clampStep(step ?? 0, total);
   const finished = isFinishedIndex(index, cards.length);
   const card: CookCard | undefined = finished ? undefined : cards[index];
-  const pills = componentPills(cards);
+  const pills = partPills(cards);
 
   const goTo = (next: number) => void navigate({ search: (prev) => ({ ...prev, step: next }) });
   const scaleTo = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
@@ -140,9 +140,9 @@ function CookPage() {
           <NumberStepper label="Serves" value={Number(recipe.recipeServings.toFixed(2))} min={1} onChange={scaleTo} className="flex-row items-center gap-2" />
         )}
         {pills.length > 1 && (
-          <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1" aria-label="Components">
+          <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1" aria-label="Parts">
             {pills.map((pill) => {
-              const current = card !== undefined && card.component === pill.name;
+              const current = card !== undefined && card.part === pill.name;
               return (
                 <Button
                   key={pill.name}
@@ -191,7 +191,7 @@ function CookPage() {
             Prev
           </Button>
           <span className="min-w-0 flex-1 truncate text-center text-sm text-fg-subtle" data-position>
-            {finished ? "Finished" : cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.component ?? "")}
+            {finished ? "Finished" : cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.part ?? "")}
           </span>
           <Button variant="solid" intent="brand" size="lg" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
             Next
@@ -244,9 +244,9 @@ function CookIngredientItem({ recipeId, ingredient }: { recipeId: string; ingred
   );
 }
 
-/** One card in large type: the component's ingredient list, or a single step. */
+/** One card in large type: the part's ingredient list, or a single step. */
 function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) {
-  const heading = card.component === "" ? undefined : card.component;
+  const heading = card.part === "" ? undefined : card.part;
   if (card.kind === "ingredients") {
     return (
       <Card title={heading && <span className="text-xl">{heading}</span>} data-card="ingredients">

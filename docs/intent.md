@@ -31,7 +31,7 @@ Shared holes, which switching doesn't fix:
 
 ## The shape of a recipe
 
-- A recipe is an ordered list of named components. Each owns its ingredients.
+- A recipe is an ordered list of named parts. Each owns its ingredients and its steps; the unnamed part is the recipe's main body.
 - Tandoor's shape, Cooklang's sections. One design decision among several, not the reason the project exists.
 - Worth stating because Mealie gets it wrong, and a flag can't become a table later.
 

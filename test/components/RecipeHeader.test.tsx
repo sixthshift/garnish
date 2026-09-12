@@ -37,8 +37,7 @@ const base: Recipe = {
   sourceUrl: null,
   notes: [],
   tags: [{ id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" }],
-  components: [{ id: "22222222-2222-4222-8222-222222222222", name: "", ingredients: [], steps: [] }],
-  steps: [],
+  parts: [{ id: "22222222-2222-4222-8222-222222222222", name: "", ingredients: [], steps: [] }],
   createdAt: "2026-03-04T02:30:00.000Z",
   updatedAt: "2026-09-11T02:30:00.000Z",
 };

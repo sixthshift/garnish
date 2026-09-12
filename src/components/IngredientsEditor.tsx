@@ -1,8 +1,8 @@
-// The ingredient rows of one component: quantity, unit, food, note and the
+// The ingredient rows of one part: quantity, unit, food, note and the
 // fixed flag, in a ReorderList, plus a "move to" that sends a row to the end
-// of another component and a drag handle that does the same by hand: every
-// component's list shares one drag group, so a row dropped on another
-// component's list lands where it was released (M13.3). The parent owns the
+// of another part and a drag handle that does the same by hand: every part's
+// list shares one drag group, so a row dropped on another part's list lands
+// where it was released (M13.3). The parent owns the
 // draft; every change goes through a pure helper and comes back through
 // `onChange` as a new `RecipeDraft`.
 //
@@ -57,7 +57,7 @@ import type { Food, Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
 import { findOrCreateFood, listFoods } from "../server/foods";
 import { findOrCreateUnit } from "../server/units";
-import { componentLabel } from "./ComponentsEditor";
+import { partLabel } from "./PartsEditor";
 import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
 import type { DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { BulkAddSheet } from "./ui/BulkAddSheet";
@@ -188,20 +188,20 @@ export function filterUnits(units: readonly Unit[], text: string): Unit[] {
   );
 }
 
-function withIngredients(draft: RecipeDraft, ci: number, ingredients: DraftIngredient[]): RecipeDraft {
-  return { ...draft, components: draft.components.map((component, i) => (i === ci ? { ...component, ingredients } : component)) };
+function withIngredients(draft: RecipeDraft, pi: number, ingredients: DraftIngredient[]): RecipeDraft {
+  return { ...draft, parts: draft.parts.map((part, i) => (i === pi ? { ...part, ingredients } : part)) };
 }
 
-function inRange(draft: RecipeDraft, ci: number, ii?: number): boolean {
-  const component = draft.components[ci];
-  if (ci < 0 || !component) return false;
-  return ii === undefined || (ii >= 0 && ii < component.ingredients.length);
+function inRange(draft: RecipeDraft, pi: number, ii?: number): boolean {
+  const part = draft.parts[pi];
+  if (pi < 0 || !part) return false;
+  return ii === undefined || (ii >= 0 && ii < part.ingredients.length);
 }
 
-/** The draft with a blank row appended to component `ci`. An out-of-range `ci` returns a copy unchanged. Pure apart from the row's id. */
-export function addIngredient(draft: RecipeDraft, ci: number): RecipeDraft {
-  if (!inRange(draft, ci)) return { ...draft, components: draft.components.slice() };
-  return withIngredients(draft, ci, [...draft.components[ci]!.ingredients, newIngredient()]);
+/** The draft with a blank row appended to part `pi`. An out-of-range `pi` returns a copy unchanged. Pure apart from the row's id. */
+export function addIngredient(draft: RecipeDraft, pi: number): RecipeDraft {
+  if (!inRange(draft, pi)) return { ...draft, parts: draft.parts.slice() };
+  return withIngredients(draft, pi, [...draft.parts[pi]!.ingredients, newIngredient()]);
 }
 
 /**
@@ -271,67 +271,67 @@ export function parsedRowPatch(
 }
 
 /**
- * The draft with one row appended per reviewed line, in order, to component
- * `ci`. What the bulk-add sheet's Add commits once the review step has run.
- * No rows, or an out-of-range `ci`, returns a copy unchanged. Pure apart from
+ * The draft with one row appended per reviewed line, in order, to part
+ * `pi`. What the bulk-add sheet's Add commits once the review step has run.
+ * No rows, or an out-of-range `pi`, returns a copy unchanged. Pure apart from
  * the rows' ids.
  */
 export function addReviewedIngredients(
   draft: RecipeDraft,
-  ci: number,
+  pi: number,
   commits: readonly RowCommit<Unit, FoodRow>[],
   createdFoods: ReadonlyMap<string, FoodRow>,
   createdUnits: ReadonlyMap<string, Unit>,
 ): RecipeDraft {
-  if (!inRange(draft, ci) || commits.length === 0) return { ...draft, components: draft.components.slice() };
+  if (!inRange(draft, pi) || commits.length === 0) return { ...draft, parts: draft.parts.slice() };
   const rows = commits.map((commit) => reviewedIngredient(commit, createdFoods, createdUnits));
-  return withIngredients(draft, ci, [...draft.components[ci]!.ingredients, ...rows]);
+  return withIngredients(draft, pi, [...draft.parts[pi]!.ingredients, ...rows]);
 }
 
-/** The draft with `patch` merged into row `ii` of component `ci`. Out-of-range indices return a copy unchanged. Pure. */
-export function updateIngredient(draft: RecipeDraft, ci: number, ii: number, patch: Partial<DraftIngredient>): RecipeDraft {
-  if (!inRange(draft, ci, ii)) return { ...draft, components: draft.components.slice() };
-  const ingredients = draft.components[ci]!.ingredients.map((row, i) => (i === ii ? { ...row, ...patch } : row));
-  return withIngredients(draft, ci, ingredients);
+/** The draft with `patch` merged into row `ii` of part `pi`. Out-of-range indices return a copy unchanged. Pure. */
+export function updateIngredient(draft: RecipeDraft, pi: number, ii: number, patch: Partial<DraftIngredient>): RecipeDraft {
+  if (!inRange(draft, pi, ii)) return { ...draft, parts: draft.parts.slice() };
+  const ingredients = draft.parts[pi]!.ingredients.map((row, i) => (i === ii ? { ...row, ...patch } : row));
+  return withIngredients(draft, pi, ingredients);
 }
 
-/** The draft without row `ii` of component `ci`. Out-of-range indices return a copy unchanged. Pure. */
-export function removeIngredient(draft: RecipeDraft, ci: number, ii: number): RecipeDraft {
-  if (!inRange(draft, ci, ii)) return { ...draft, components: draft.components.slice() };
+/** The draft without row `ii` of part `pi`. Out-of-range indices return a copy unchanged. Pure. */
+export function removeIngredient(draft: RecipeDraft, pi: number, ii: number): RecipeDraft {
+  if (!inRange(draft, pi, ii)) return { ...draft, parts: draft.parts.slice() };
   return withIngredients(
     draft,
-    ci,
-    draft.components[ci]!.ingredients.filter((_, i) => i !== ii),
+    pi,
+    draft.parts[pi]!.ingredients.filter((_, i) => i !== ii),
   );
 }
 
 /**
- * The draft with row `ii` of component `fromCi` inserted into component `toCi`
- * at `toIndex`, which is clamped to that component's length — so the default,
- * `Infinity`, appends. The same component, or an out-of-range index, returns a
+ * The draft with row `ii` of part `fromPi` inserted into part `toPi`
+ * at `toIndex`, which is clamped to that part's length — so the default,
+ * `Infinity`, appends. The same part, or an out-of-range index, returns a
  * copy unchanged. Pure.
  */
-export function moveIngredientTo(draft: RecipeDraft, fromCi: number, ii: number, toCi: number, toIndex = Number.POSITIVE_INFINITY): RecipeDraft {
-  if (fromCi === toCi || !inRange(draft, fromCi, ii) || !inRange(draft, toCi)) return { ...draft, components: draft.components.slice() };
-  const row = draft.components[fromCi]!.ingredients[ii]!;
-  const target = draft.components[toCi]!.ingredients;
+export function moveIngredientTo(draft: RecipeDraft, fromPi: number, ii: number, toPi: number, toIndex = Number.POSITIVE_INFINITY): RecipeDraft {
+  if (fromPi === toPi || !inRange(draft, fromPi, ii) || !inRange(draft, toPi)) return { ...draft, parts: draft.parts.slice() };
+  const row = draft.parts[fromPi]!.ingredients[ii]!;
+  const target = draft.parts[toPi]!.ingredients;
   const at = Math.max(0, Math.min(Number.isFinite(toIndex) ? toIndex : target.length, target.length));
   return {
     ...draft,
-    components: draft.components.map((component, i) => {
-      if (i === fromCi) return { ...component, ingredients: component.ingredients.filter((_, j) => j !== ii) };
-      if (i === toCi) return { ...component, ingredients: [...target.slice(0, at), row, ...target.slice(at)] };
-      return component;
+    parts: draft.parts.map((part, i) => {
+      if (i === fromPi) return { ...part, ingredients: part.ingredients.filter((_, j) => j !== ii) };
+      if (i === toPi) return { ...part, ingredients: [...target.slice(0, at), row, ...target.slice(at)] };
+      return part;
     }),
   };
 }
 
 /**
- * The draft with row `ii` of component `fromCi` appended to component `toCi`.
+ * The draft with row `ii` of part `fromPi` appended to part `toPi`.
  * What the "Move to" select does. Pure.
  */
-export function moveIngredient(draft: RecipeDraft, fromCi: number, ii: number, toCi: number): RecipeDraft {
-  return moveIngredientTo(draft, fromCi, ii, toCi);
+export function moveIngredient(draft: RecipeDraft, fromPi: number, ii: number, toPi: number): RecipeDraft {
+  return moveIngredientTo(draft, fromPi, ii, toPi);
 }
 
 /** The row patch that switches modes: to text only clears amount and food; back to structured clears the raw line. Pure. */
@@ -341,20 +341,20 @@ export function textOnlyPatch(textOnly: boolean): Partial<DraftIngredient> {
 
 // --- Component --------------------------------------------------------------
 
-/** Every component's ingredient list shares this drag group, so a row can be dragged from one to another. */
+/** Every part's ingredient list shares this drag group, so a row can be dragged from one to another. */
 export const INGREDIENT_DRAG_GROUP = "recipe-ingredients";
 
 export type IngredientsEditorProps = {
   draft: RecipeDraft;
-  /** Index of the component whose rows these are. */
-  ci: number;
+  /** Index of the part whose rows these are. */
+  pi: number;
   units: readonly Unit[];
   onChange: (draft: RecipeDraft) => void;
   errors?: FieldErrors;
   disabled?: boolean;
 };
 
-export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
+export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   // The whole food vocabulary, loaded once the bulk sheet opens: parsing a
   // pasted block needs every food, not the query-by-query slice a row's
@@ -376,7 +376,7 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
     };
   }, [bulkOpen]);
 
-  const component = draft.components[ci];
+  const part = draft.parts[pi];
 
   /** Create only what the reviewer approved, then append the rows. */
   const confirmBulk = async (rows: IngredientReview[]) => {
@@ -385,14 +385,14 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
     for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
     const createdUnits = new Map<string, Unit>();
     for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
-    onChange(addReviewedIngredients(draft, ci, rows.map(rowCommit), createdFoods, createdUnits));
+    onChange(addReviewedIngredients(draft, pi, rows.map(rowCommit), createdFoods, createdUnits));
   };
 
-  if (!component) return null;
-  const { ingredients } = component;
+  if (!part) return null;
+  const { ingredients } = part;
 
   return (
-    <div className="flex flex-col gap-2" data-ingredients={ci}>
+    <div className="flex flex-col gap-2" data-ingredients={pi}>
       <div className="flex items-center justify-between gap-3">
         <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
           Ingredients
@@ -401,7 +401,7 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
           <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
             Bulk add
           </Button>
-          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addIngredient(draft, ci))}>
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addIngredient(draft, pi))}>
             Add ingredient
           </Button>
         </div>
@@ -440,22 +440,22 @@ export function IngredientsEditor({ draft, ci, units, onChange, errors = {}, dis
           keyOf={(row) => row.id ?? "unsaved"}
           itemName="ingredient"
           group={INGREDIENT_DRAG_GROUP}
-          listKey={String(ci)}
-          onMoveOut={(_, ii, toCi, toIndex) => onChange(moveIngredientTo(draft, ci, ii, Number(toCi), toIndex))}
-          onReorder={(next) => onChange(withIngredients(draft, ci, next))}
-          onRemove={(_, ii) => onChange(removeIngredient(draft, ci, ii))}
+          listKey={String(pi)}
+          onMoveOut={(_, ii, toPi, toIndex) => onChange(moveIngredientTo(draft, pi, ii, Number(toPi), toIndex))}
+          onReorder={(next) => onChange(withIngredients(draft, pi, next))}
+          onRemove={(_, ii) => onChange(removeIngredient(draft, pi, ii))}
           renderItem={(row, ii) => (
             <IngredientRow
               key={row.id ?? ii}
               ingredient={row}
-              ci={ci}
+              pi={pi}
               ii={ii}
               units={units}
-              components={draft.components.map((c, i) => ({ value: String(i), label: componentLabel(c, i) })).filter((_, i) => i !== ci)}
+              parts={draft.parts.map((c, i) => ({ value: String(i), label: partLabel(c, i) })).filter((_, i) => i !== pi)}
               errors={errors}
               disabled={disabled}
-              onPatch={(patch) => onChange(updateIngredient(draft, ci, ii, patch))}
-              onMove={(toCi) => onChange(moveIngredient(draft, ci, ii, toCi))}
+              onPatch={(patch) => onChange(updateIngredient(draft, pi, ii, patch))}
+              onMove={(toPi) => onChange(moveIngredient(draft, pi, ii, toPi))}
             />
           )}
         />
@@ -508,7 +508,7 @@ function Chevron() {
  */
 export type IngredientFieldsProps = {
   ingredient: DraftIngredient;
-  /** Field name prefix, e.g. "components.0.ingredients.1". */
+  /** Field name prefix, e.g. "parts.0.ingredients.1". */
   path: string;
   /** Label prefix for every control, e.g. "Ingredient 2". */
   label: string;
@@ -752,19 +752,19 @@ export function IngredientFields(props: IngredientFieldsProps) {
 
 type IngredientRowProps = {
   ingredient: DraftIngredient;
-  ci: number;
+  pi: number;
   ii: number;
   units: readonly Unit[];
-  /** The other components, as "move to" options (value is the component index). */
-  components: ComboboxOption[];
+  /** The other parts, as "move to" options (value is the part index). */
+  parts: ComboboxOption[];
   errors: FieldErrors;
   disabled?: boolean;
   onPatch: (patch: Partial<DraftIngredient>) => void;
-  onMove: (toCi: number) => void;
+  onMove: (toPi: number) => void;
 };
 
-function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled, onPatch, onMove }: IngredientRowProps) {
-  const path = `components.${ci}.ingredients.${ii}`;
+function IngredientRow({ ingredient, pi, ii, units, parts, errors, disabled, onPatch, onMove }: IngredientRowProps) {
+  const path = `parts.${pi}.ingredients.${ii}`;
   const label = `Ingredient ${ii + 1}`;
   const [textOnly, setTextOnly] = useState(() => isTextOnly(ingredient));
   // Local text while a field is mid-edit; the committed value lives on the row.
@@ -908,10 +908,10 @@ function IngredientRow({ ingredient, ci, ii, units, components, errors, disabled
   };
 
   const moveTo =
-    components.length > 0 ? (
+    parts.length > 0 ? (
       <Select
-        aria-label={`Move ${label.toLowerCase()} to component`}
-        options={components}
+        aria-label={`Move ${label.toLowerCase()} to part`}
+        options={parts}
         placeholder="Move to…"
         disabled={disabled}
         className="w-36"

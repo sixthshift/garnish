@@ -78,7 +78,7 @@ describe("toggleFavourite against the real server function", () => {
   test("round-trips through setFavourite: the stored flag flips both ways", async () => {
     const created = await callServerFn(
       createRecipe,
-      recipeInputSchema.parse({ name: "Toast", components: [{ name: "", ingredients: [], steps: [] }] }),
+      recipeInputSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }] }),
     );
 
     const write = (id: string, favourite: boolean) => callServerFn(setFavourite, { id, favourite });

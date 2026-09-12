@@ -27,7 +27,7 @@ async function seedTart() {
   return callServerFn(createRecipe, {
     name: "Lemon tart",
     recipeServings: 4,
-    components: [
+    parts: [
       {
         name: "",
         ingredients: [
@@ -92,7 +92,7 @@ describe("ingredient row Scale to...", () => {
   test("a recipe with no servings recorded hides both the scale chip and Scale to...", async () => {
     await callServerFn(createRecipe, {
       name: "Toast",
-      components: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice") }], steps: [{ text: "Toast it." }] }],
+      parts: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice") }], steps: [{ text: "Toast it." }] }],
     });
     const html = await renderRoute("/recipes/toast");
     expect(html).not.toContain('data-testid="servings-chip"');

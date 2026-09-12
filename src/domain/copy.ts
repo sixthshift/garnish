@@ -2,24 +2,23 @@
 // IO, no clipboard, importable by the client.
 //
 // Mealie's copy button hands over the ingredient lines as text, one per line.
-// Here the recipe's components each contribute a heading (a named component
-// only — the unnamed single component of a flat recipe has nothing to head)
-// followed by its lines, so a pasted list of a multi-component recipe still
-// says which ingredients belong to what. Empty lines and empty components are
-// dropped; a recipe with nothing to copy yields "".
+// Here the recipe's parts each contribute a heading (a named part only — the
+// unnamed part has nothing to head) followed by its lines, so a pasted list of
+// a multi-part recipe still says which ingredients belong to what. Empty lines
+// and empty parts are dropped; a recipe with nothing to copy yields "".
 import { formatIngredient } from "./format";
-import type { Component, Ingredient } from "./recipe";
+import type { Ingredient, Part } from "./recipe";
 
-export type CopyRecipe = { name: string; components: ReadonlyArray<Pick<Component, "name" | "ingredients">> };
+export type CopyRecipe = { name: string; parts: ReadonlyArray<Pick<Part, "name" | "ingredients">> };
 
 /** One ingredient per line, headed by the recipe name. Pure. */
 export function ingredientsText(recipe: CopyRecipe): string {
   const blocks: string[] = [];
 
-  for (const component of recipe.components) {
-    const lines = ingredientLines(component.ingredients);
+  for (const part of recipe.parts) {
+    const lines = ingredientLines(part.ingredients);
     if (lines.length === 0) continue;
-    const name = component.name.trim();
+    const name = part.name.trim();
     blocks.push(name === "" ? lines.join("\n") : [`${name}:`, ...lines].join("\n"));
   }
 

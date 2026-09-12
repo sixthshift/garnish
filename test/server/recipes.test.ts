@@ -27,7 +27,7 @@ function doc(overrides: Partial<RecipeInput> = {}): RecipeInput {
     recipeYieldQuantity: 4,
     recipeYield: "4 flatbreads",
     tags: [weeknight],
-    components: [
+    parts: [
       {
         name: "",
         ingredients: [
@@ -53,15 +53,15 @@ test("createRecipe stores the document and returns it with slug, ids and timesta
   expect(recipeSchema.safeParse(created).success).toBe(true);
   expect(created.slug).toBe("flatbread");
   expect(created.recipeServings).toBe(2);
-  expect(created.components[0]!.ingredients.map((i) => i.quantity)).toEqual([200, 1, null]);
-  expect(created.components[0]!.ingredients[0]!.food?.name).toBe("flour");
-  expect(created.components[0]!.steps.map((s) => s.text)).toEqual(["Mix.", "Cook."]);
+  expect(created.parts[0]!.ingredients.map((i) => i.quantity)).toEqual([200, 1, null]);
+  expect(created.parts[0]!.ingredients[0]!.food?.name).toBe("flour");
+  expect(created.parts[0]!.steps.map((s) => s.text)).toEqual(["Mix.", "Cook."]);
   expect(created.tags.map((t) => t.slug)).toEqual(["weeknight"]);
 });
 
 test("createRecipe rejects an invalid document before touching the database", async () => {
   await expect(callServerFn(createRecipe, doc({ name: "" }))).rejects.toThrow(/too_small|at least 1/);
-  await expect(callServerFn(createRecipe, doc({ components: [] }))).rejects.toThrow(/at least one component/);
+  await expect(callServerFn(createRecipe, doc({ parts: [] }))).rejects.toThrow(/at least one part/);
   await expect(callServerFn(createRecipe, { ...doc(), recipeServings: -1 })).rejects.toThrow(/too_small|>=0/);
   await expect(callServerFn(listRecipes, {})).resolves.toEqual([]);
 });
@@ -73,7 +73,7 @@ test("listRecipes returns summaries newest first and filters by name and tag", a
   const all = await callServerFn(listRecipes, {});
   expect(all.map((r) => r.name)).toEqual(["Pancakes", "Flatbread"]);
   expect(all.every((r) => recipeSummarySchema.safeParse(r).success)).toBe(true);
-  expect(all[0]).not.toHaveProperty("components");
+  expect(all[0]).not.toHaveProperty("parts");
 
   expect((await callServerFn(listRecipes, { q: "flat" })).map((r) => r.slug)).toEqual(["flatbread"]);
   expect((await callServerFn(listRecipes, { tag: "weeknight" })).map((r) => r.slug)).toEqual(["flatbread"]);
@@ -85,12 +85,12 @@ test("listRecipes filters by tags[] with match, foods[] and favourite", async ()
   // A distinct food (doc()'s default ingredients would otherwise resolve to the same "flour" row by name).
   await callServerFn(
     createRecipe,
-    doc({ name: "Pancakes", tags: [], components: [{ name: "", ingredients: [{ quantity: 2, food: food(ids.missing, "maple syrup") }], steps: [{ text: "Stack." }] }] }),
+    doc({ name: "Pancakes", tags: [], parts: [{ name: "", ingredients: [{ quantity: 2, food: food(ids.missing, "maple syrup") }], steps: [{ text: "Stack." }] }] }),
   );
 
   expect((await callServerFn(listRecipes, { tags: ["weeknight"] })).map((r) => r.slug)).toEqual(["flatbread"]);
   expect((await callServerFn(listRecipes, { tags: ["weeknight"], match: "all" })).map((r) => r.slug)).toEqual(["flatbread"]);
-  expect((await callServerFn(listRecipes, { foods: [flat.components[0]!.ingredients[0]!.food!.id] })).map((r) => r.slug)).toEqual(["flatbread"]);
+  expect((await callServerFn(listRecipes, { foods: [flat.parts[0]!.ingredients[0]!.food!.id] })).map((r) => r.slug)).toEqual(["flatbread"]);
   expect((await callServerFn(listRecipes, { favourite: true })).map((r) => r.slug)).toEqual(["flatbread"]);
   await expect(callServerFn(listRecipes, { foods: ["not-a-uuid"] })).rejects.toThrow(/uuid/i);
 });
@@ -121,12 +121,12 @@ test("getRecipe with servings scales linear quantities and yield, leaves fixed a
   const scaled = await callServerFn(getRecipe, { slug: "flatbread", servings: 4 });
   expect(scaled.recipeServings).toBe(4);
   expect(scaled.recipeYieldQuantity).toBe(8);
-  expect(scaled.components[0]!.ingredients.map((i) => i.quantity)).toEqual([400, 1, null]);
+  expect(scaled.parts[0]!.ingredients.map((i) => i.quantity)).toEqual([400, 1, null]);
 
   // Scaling is a view: the stored recipe is unchanged.
   const stored = await callServerFn(getRecipe, { slug: "flatbread" });
   expect(stored.recipeServings).toBe(2);
-  expect(stored.components[0]!.ingredients.map((i) => i.quantity)).toEqual([200, 1, null]);
+  expect(stored.parts[0]!.ingredients.map((i) => i.quantity)).toEqual([200, 1, null]);
 
   await expect(callServerFn(getRecipe, { slug: "flatbread", servings: 0 })).rejects.toThrow(/too_small|>0/);
 });
@@ -135,21 +135,21 @@ test("getRecipe with servings returns a recipe with 0 servings unscaled", async 
   await callServerFn(createRecipe, doc({ recipeServings: 0 }));
   const out = await callServerFn(getRecipe, { slug: "flatbread", servings: 6 });
   expect(out.recipeServings).toBe(0);
-  expect(out.components[0]!.ingredients.map((i) => i.quantity)).toEqual([200, 1, null]);
+  expect(out.parts[0]!.ingredients.map((i) => i.quantity)).toEqual([200, 1, null]);
 });
 
 test("updateRecipe replaces the document, keeps the id, and maps an unknown id to notFound", async () => {
   const created = await callServerFn(createRecipe, doc());
   const updated = await callServerFn(updateRecipe, {
     id: created.id,
-    doc: doc({ name: "Garlic Flatbread", recipeServings: 3, components: [{ name: "Dough", ingredients: [{ quantity: 300, food: food(ids.flour, "flour") }] }] }),
+    doc: doc({ name: "Garlic Flatbread", recipeServings: 3, parts: [{ name: "Dough", ingredients: [{ quantity: 300, food: food(ids.flour, "flour") }] }] }),
   });
   expect(updated.id).toBe(created.id);
   expect(updated.slug).toBe("garlic-flatbread");
   expect(updated.createdAt).toBe(created.createdAt);
   expect(updated.recipeServings).toBe(3);
-  expect(updated.components.map((c) => c.name)).toEqual(["Dough"]);
-  expect(updated.components[0]!.ingredients.map((i) => i.quantity)).toEqual([300]);
+  expect(updated.parts.map((c) => c.name)).toEqual(["Dough"]);
+  expect(updated.parts[0]!.ingredients.map((i) => i.quantity)).toEqual([300]);
   await expect(callServerFn(getRecipe, { slug: "garlic-flatbread" })).resolves.toEqual(updated);
 
   const data = await notFoundData(callServerFn(updateRecipe, { id: ids.missing, doc: doc() }));

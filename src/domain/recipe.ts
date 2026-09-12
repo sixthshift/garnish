@@ -13,11 +13,11 @@
 //     repository writes them from array index and reads them back in order.
 //   - Foreign keys (unit_id, food_id, yield_unit_id, tag_id) are nested
 //     reference objects, as in Mealie. Writes use only the nested `id`.
-//   - Steps belong to the recipe. A step whose component_id is set nests under
-//     that component's `steps`; steps with a null component_id live in the
-//     recipe-level `steps` array. Recipe position is component order first,
-//     then recipe-level steps.
-//   - Parent ids (recipe_id, component_id) are implied by nesting and omitted.
+//   - Every step belongs to a part, so `steps` exists only inside `parts`.
+//     The unnamed part ('') is the recipe's main body: a flat recipe is one
+//     unnamed part, and a sectioned recipe puts its unsectioned method there
+//     rather than inventing a heading for it (decisions.md row 49).
+//   - Parent ids (recipe_id, part_id) are implied by nesting and omitted.
 import { z } from "zod";
 
 const id = z.uuid();
@@ -87,13 +87,13 @@ export const ingredientSchema = z.object({ id, ...ingredientFields });
 export const stepSchema = z.object({ id, ...stepFields });
 export const recipeNoteSchema = z.object({ id, ...noteFields });
 
-const componentFields = {
-  name: text, // '' is the single unnamed component (flat recipe)
+const partFields = {
+  name: text, // '' is the unnamed part: the flat recipe, or the main body beside named parts
 };
 
-export const componentSchema = z.object({
+export const partSchema = z.object({
   id,
-  ...componentFields,
+  ...partFields,
   ingredients: z.array(ingredientSchema).default([]),
   steps: z.array(stepSchema).default([]),
 });
@@ -121,13 +121,12 @@ export const recipeSchema = z.object({
   id,
   slug: nonEmpty,
   ...recipeFields,
-  components: z.array(componentSchema).min(1, "a recipe needs at least one component"),
-  steps: z.array(stepSchema).default([]),
+  parts: z.array(partSchema).min(1, "a recipe needs at least one part"),
   createdAt: timestamp,
   updatedAt: timestamp,
 });
 
-/** List shape: what a recipe card needs, without components, steps or notes. */
+/** List shape: what a recipe card needs, without parts, steps or notes. */
 export const recipeSummarySchema = z.object({
   id,
   slug: nonEmpty,
@@ -170,9 +169,9 @@ export const ingredientInputSchema = z.object({ ...optionalId, ...ingredientFiel
 export const stepInputSchema = z.object({ ...optionalId, ...stepFields });
 export const recipeNoteInputSchema = z.object({ ...optionalId, ...noteFields });
 
-export const componentInputSchema = z.object({
+export const partInputSchema = z.object({
   ...optionalId,
-  ...componentFields,
+  ...partFields,
   ingredients: z.array(ingredientInputSchema).default([]),
   steps: z.array(stepInputSchema).default([]),
 });
@@ -181,8 +180,7 @@ export const recipeInputSchema = z.object({
   ...optionalId,
   ...recipeFields,
   notes: z.array(recipeNoteInputSchema).default([]),
-  components: z.array(componentInputSchema).min(1, "a recipe needs at least one component"),
-  steps: z.array(stepInputSchema).default([]),
+  parts: z.array(partInputSchema).min(1, "a recipe needs at least one part"),
 });
 
 // --- Types ------------------------------------------------------------------
@@ -194,7 +192,7 @@ export type Tag = z.infer<typeof tagSchema>;
 export type Ingredient = z.infer<typeof ingredientSchema>;
 export type Step = z.infer<typeof stepSchema>;
 export type RecipeNote = z.infer<typeof recipeNoteSchema>;
-export type Component = z.infer<typeof componentSchema>;
+export type Part = z.infer<typeof partSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
 export type RecipeSummary = z.infer<typeof recipeSummarySchema>;
 export type TimelineEvent = z.infer<typeof timelineEventSchema>;

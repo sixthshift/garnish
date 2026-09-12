@@ -40,9 +40,9 @@ export function duplicateInput(recipe: Recipe): RecipeInput {
     favourite: false,
     tags: recipe.tags,
     notes: recipe.notes.map(({ title, text }) => ({ title, text })),
-    components: recipe.components.map((component) => ({
-      name: component.name,
-      ingredients: component.ingredients.map(({ quantity, unit, food, note, originalText, fixed }) => ({
+    parts: recipe.parts.map((part) => ({
+      name: part.name,
+      ingredients: part.ingredients.map(({ quantity, unit, food, note, originalText, fixed }) => ({
         quantity,
         unit,
         food,
@@ -50,8 +50,7 @@ export function duplicateInput(recipe: Recipe): RecipeInput {
         originalText,
         fixed,
       })),
-      steps: component.steps.map(({ text }) => ({ text })),
+      steps: part.steps.map(({ text }) => ({ text })),
     })),
-    steps: recipe.steps.map(({ text }) => ({ text })),
   };
 }

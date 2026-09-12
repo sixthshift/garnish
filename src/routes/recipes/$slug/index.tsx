@@ -18,7 +18,7 @@ import { RecipeHeader } from "../../../components/RecipeHeader";
 import { StepList } from "../../../components/StepList";
 import { mergeIngredients } from "../../../domain/merge";
 import { MadeThisButton, TimelineList } from "../../../components/Timeline";
-import type { Component, Ingredient, Recipe, TimelineEvent } from "../../../domain/recipe";
+import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { getRecipe } from "../../../server/recipes";
 import { listTimeline } from "../../../server/timeline";
@@ -59,7 +59,7 @@ function RecipePage() {
   const scaled = requested !== undefined;
   const [ingredientMode] = useIngredientMode();
   const summary = ingredientMode === "summary";
-  const hasIngredients = recipe.components.some((component) => component.ingredients.length > 0);
+  const hasIngredients = recipe.parts.some((part) => part.ingredients.length > 0);
   // Shared by the scale chip and each ingredient row's "Scale to...": both
   // just need a new servings value turned into a navigation.
   const goToServings = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
@@ -99,10 +99,10 @@ function RecipePage() {
         />
       )}
 
-      {recipe.components.map((component) => (
-        <ComponentSection
-          key={component.id}
-          component={component}
+      {recipe.parts.map((part) => (
+        <PartSection
+          key={part.id}
+          part={part}
           recipeId={recipe.id}
           scaled={scaled}
           hideIngredients={summary}
@@ -110,13 +110,6 @@ function RecipePage() {
           onScaleTo={goToServings}
         />
       ))}
-
-      {recipe.steps.length > 0 && (
-        <section className="flex flex-col gap-3" aria-label="Method">
-          {recipe.components.length > 1 && <SectionTitle as="h2">To finish</SectionTitle>}
-          <StepList recipeId={recipe.id} steps={recipe.steps} />
-        </section>
-      )}
 
       {recipe.notes.length > 0 && (
         <section className="flex flex-col gap-3" aria-label="Notes">
@@ -221,36 +214,35 @@ function ScaleControl({ servings }: { servings: number }) {
 }
 
 /**
- * One component: its heading, ingredients, then steps. An unnamed component
- * (the single section of a flat recipe) has no heading, as in Mealie. A
- * component with one of the two lists empty hides that list (a flat recipe
- * keeps its steps at recipe level, so "No steps" under every ingredient list
- * would be noise); one with both empty says so instead of rendering nothing.
+ * One part: its heading, ingredients, then steps. The unnamed part — a flat
+ * recipe's only part, or the main body beside named ones — has no heading, as
+ * in Mealie. A part with one of the two lists empty hides that list; one with
+ * both empty says so instead of rendering nothing.
  *
- * `hideIngredients` is set in Summary mode: this component's own ingredients
- * are already shown in the one merged list above (`mergeIngredients`), so
- * they are skipped here. A component whose only content is ingredients then
- * has nothing left to show and renders nothing at all — not the "empty"
- * fallback, which stays for a component that is genuinely blank.
+ * `hideIngredients` is set in Summary mode: this part's own ingredients are
+ * already shown in the one merged list above (`mergeIngredients`), so they are
+ * skipped here. A part whose only content is ingredients then has nothing left
+ * to show and renders nothing at all — not the "empty" fallback, which stays
+ * for a part that is genuinely blank.
  */
-function ComponentSection({
-  component,
+function PartSection({
+  part,
   recipeId,
   scaled,
   hideIngredients = false,
   currentServings,
   onScaleTo,
 }: {
-  component: Component;
+  part: Part;
   recipeId: string;
   scaled: boolean;
   hideIngredients?: boolean;
   currentServings: number;
   onScaleTo: (servings: number) => void;
 }) {
-  const name = component.name.trim();
-  const hasIngredients = component.ingredients.length > 0;
-  const hasSteps = component.steps.length > 0;
+  const name = part.name.trim();
+  const hasIngredients = part.ingredients.length > 0;
+  const hasSteps = part.steps.length > 0;
   if (hideIngredients && hasIngredients && !hasSteps) return null;
 
   const showIngredients = !hideIngredients && hasIngredients;
@@ -261,15 +253,15 @@ function ComponentSection({
       <EmptyBoundary
         isEmpty={!showIngredients && !hasSteps}
         fallback={
-          <Muted as="p" className="text-sm" data-empty="component">
+          <Muted as="p" className="text-sm" data-empty="part">
             No ingredients or steps yet
           </Muted>
         }
       >
         {showIngredients && (
-          <IngredientList ingredients={component.ingredients} recipeId={recipeId} scaled={scaled} currentServings={currentServings} onScaleTo={onScaleTo} />
+          <IngredientList ingredients={part.ingredients} recipeId={recipeId} scaled={scaled} currentServings={currentServings} onScaleTo={onScaleTo} />
         )}
-        {hasSteps && <StepList recipeId={recipeId} steps={component.steps} />}
+        {hasSteps && <StepList recipeId={recipeId} steps={part.steps} />}
       </EmptyBoundary>
     </section>
   );

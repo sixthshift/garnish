@@ -22,7 +22,7 @@ function fixture(overrides: Partial<Recipe> = {}): Recipe {
     name: "Buttered spaghetti",
     recipeServings: 4,
     recipeYieldQuantity: 800,
-    components: [
+    parts: [
       {
         id: ids.sauce,
         name: "Sauce",
@@ -46,7 +46,7 @@ function fixture(overrides: Partial<Recipe> = {}): Recipe {
 }
 
 function quantities(doc: Recipe) {
-  return doc.components.flatMap((c) => c.ingredients.map((i) => i.quantity));
+  return doc.parts.flatMap((c) => c.ingredients.map((i) => i.quantity));
 }
 
 describe("scaleRecipe", () => {
@@ -66,14 +66,14 @@ describe("scaleRecipe", () => {
 
   test("fixed ingredients keep their quantity", () => {
     const out = scaleRecipe(fixture(), 12);
-    const bayLeaf = out.components[0]!.ingredients[1]!;
+    const bayLeaf = out.parts[0]!.ingredients[1]!;
     expect(bayLeaf.fixed).toBe(true);
     expect(bayLeaf.quantity).toBe(1);
   });
 
   test("null quantity stays null", () => {
     const out = scaleRecipe(fixture(), 12);
-    expect(out.components[0]!.ingredients[2]!.quantity).toBeNull();
+    expect(out.parts[0]!.ingredients[2]!.quantity).toBeNull();
   });
 
   test("a yield of 0 (none recorded) stays 0", () => {
@@ -92,8 +92,8 @@ describe("scaleRecipe", () => {
     const out = scaleRecipe(input, 8);
     expect(input).toEqual(snapshot);
     expect(out).not.toBe(input);
-    expect(out.components[0]).not.toBe(input.components[0]);
-    expect(out.components[0]!.ingredients[0]).not.toBe(input.components[0]!.ingredients[0]);
+    expect(out.parts[0]).not.toBe(input.parts[0]);
+    expect(out.parts[0]!.ingredients[0]).not.toBe(input.parts[0]!.ingredients[0]);
   });
 
   test("output still satisfies the recipe schema", () => {

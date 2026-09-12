@@ -2,7 +2,7 @@
 // Reads and writes exactly the document in src/domain/recipe.ts.
 //
 // Writes replace the whole recipe in one transaction: the recipe row is
-// inserted or updated, every child row (note, component, ingredient, step,
+// inserted or updated, every child row (note, part, ingredient, step,
 // recipe_tag) is deleted and re-inserted from the document, positions come
 // from array index. Referenced units, foods, tags and aisles are resolved by
 // id, then by name (case-insensitive); a name nobody has yet is inserted so a
@@ -11,10 +11,10 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, exists, inArray, ne, type SQL, sql } from "drizzle-orm";
 import type {
-  Component,
   Food,
   Ingredient,
   ParsedRecipeInput,
+  Part,
   Recipe,
   RecipeNote,
   RecipeSummary,
@@ -29,7 +29,7 @@ import { type Executor, orm } from "../../connection/client";
 import { foods as foodRepository } from "../food/repo";
 import { slugify, uniqueSlug } from "../../../domain/names";
 import { tag } from "../tag/schema";
-import { component, ingredient, recipe, recipeNote, recipeTag, step } from "./schema";
+import { ingredient, part, recipe, recipeNote, recipeTag, step } from "./schema";
 import { tags as tagRepository } from "../tag/repo";
 import { units as unitRepository } from "../unit/repo";
 
@@ -190,7 +190,7 @@ export function recipes(db: Database) {
     const ingredientRows = dz
       .select({
         id: ingredient.id,
-        componentId: ingredient.componentId,
+        partId: ingredient.partId,
         quantity: ingredient.quantity,
         unitId: ingredient.unitId,
         foodId: ingredient.foodId,
@@ -199,14 +199,14 @@ export function recipes(db: Database) {
         fixed: ingredient.fixed,
       })
       .from(ingredient)
-      .innerJoin(component, eq(component.id, ingredient.componentId))
-      .where(eq(component.recipeId, row.id))
-      .orderBy(asc(component.position), asc(ingredient.position))
+      .innerJoin(part, eq(part.id, ingredient.partId))
+      .where(eq(part.recipeId, row.id))
+      .orderBy(asc(part.position), asc(ingredient.position))
       .all();
 
-    const ingredientsByComponent = new Map<string, Ingredient[]>();
+    const ingredientsByPart = new Map<string, Ingredient[]>();
     for (const i of ingredientRows) {
-      const list = ingredientsByComponent.get(i.componentId) ?? [];
+      const list = ingredientsByPart.get(i.partId) ?? [];
       list.push({
         id: i.id,
         quantity: i.quantity,
@@ -216,34 +216,35 @@ export function recipes(db: Database) {
         originalText: i.originalText,
         fixed: i.fixed,
       });
-      ingredientsByComponent.set(i.componentId, list);
+      ingredientsByPart.set(i.partId, list);
     }
 
     const stepRows = dz
-      .select({ id: step.id, componentId: step.componentId, text: step.text })
+      .select({ id: step.id, partId: step.partId, text: step.text })
       .from(step)
-      .where(eq(step.recipeId, row.id))
-      .orderBy(asc(step.position))
+      .innerJoin(part, eq(part.id, step.partId))
+      .where(eq(part.recipeId, row.id))
+      .orderBy(asc(part.position), asc(step.position))
       .all();
 
-    const stepsByComponent = new Map<string | null, Step[]>();
+    const stepsByPart = new Map<string, Step[]>();
     for (const s of stepRows) {
-      const list = stepsByComponent.get(s.componentId) ?? [];
+      const list = stepsByPart.get(s.partId) ?? [];
       list.push({ id: s.id, text: s.text });
-      stepsByComponent.set(s.componentId, list);
+      stepsByPart.set(s.partId, list);
     }
 
-    const components: Component[] = dz
-      .select({ id: component.id, name: component.name })
-      .from(component)
-      .where(eq(component.recipeId, row.id))
-      .orderBy(asc(component.position))
+    const parts: Part[] = dz
+      .select({ id: part.id, name: part.name })
+      .from(part)
+      .where(eq(part.recipeId, row.id))
+      .orderBy(asc(part.position))
       .all()
-      .map((c) => ({
-        id: c.id,
-        name: c.name,
-        ingredients: ingredientsByComponent.get(c.id) ?? [],
-        steps: stepsByComponent.get(c.id) ?? [],
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        ingredients: ingredientsByPart.get(p.id) ?? [],
+        steps: stepsByPart.get(p.id) ?? [],
       }));
 
     const notes: RecipeNote[] = dz
@@ -271,8 +272,7 @@ export function recipes(db: Database) {
       favourite: row.favourite,
       notes,
       tags: selectTags(row.id),
-      components,
-      steps: stepsByComponent.get(null) ?? [],
+      parts,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -333,11 +333,10 @@ export function recipes(db: Database) {
 
   /** Delete every child row and re-insert them from the document. */
   function writeChildren(tx: Executor, recipeId: string, doc: ParsedRecipeInput): void {
-    // Steps reference components with SET NULL, so components go after steps.
+    // Steps and ingredients cascade from the part, so deleting parts clears both.
     tx.delete(recipeTag).where(eq(recipeTag.recipeId, recipeId)).run();
     tx.delete(recipeNote).where(eq(recipeNote.recipeId, recipeId)).run();
-    tx.delete(step).where(eq(step.recipeId, recipeId)).run();
-    tx.delete(component).where(eq(component.recipeId, recipeId)).run(); // ingredients cascade
+    tx.delete(part).where(eq(part.recipeId, recipeId)).run(); // steps and ingredients cascade
 
     for (const t of doc.tags) {
       tx.insert(recipeTag).values({ recipeId, tagId: resolveTag(t) }).onConflictDoNothing().run();
@@ -349,16 +348,14 @@ export function recipes(db: Database) {
         .run();
     });
 
-    // Step position is recipe-wide: component order first, then recipe-level steps.
-    let stepPosition = 0;
-    doc.components.forEach((c, position) => {
-      const componentId = c.id ?? crypto.randomUUID();
-      tx.insert(component).values({ id: componentId, recipeId, position, name: c.name }).run();
-      c.ingredients.forEach((line, i) => {
+    doc.parts.forEach((p, position) => {
+      const partId = p.id ?? crypto.randomUUID();
+      tx.insert(part).values({ id: partId, recipeId, position, name: p.name }).run();
+      p.ingredients.forEach((line, i) => {
         tx.insert(ingredient)
           .values({
             id: line.id ?? crypto.randomUUID(),
-            componentId,
+            partId,
             position: i,
             quantity: line.quantity,
             unitId: resolveUnit(line.unit),
@@ -369,17 +366,12 @@ export function recipes(db: Database) {
           })
           .run();
       });
-      for (const s of c.steps) {
+      p.steps.forEach((s, i) => {
         tx.insert(step)
-          .values({ id: s.id ?? crypto.randomUUID(), recipeId, componentId, position: stepPosition++, text: s.text })
+          .values({ id: s.id ?? crypto.randomUUID(), partId, position: i, text: s.text })
           .run();
-      }
+      });
     });
-    for (const s of doc.steps) {
-      tx.insert(step)
-        .values({ id: s.id ?? crypto.randomUUID(), recipeId, componentId: null, position: stepPosition++, text: s.text })
-        .run();
-    }
   }
 
   // --- Usage ---------------------------------------------------------------
@@ -440,9 +432,9 @@ export function recipes(db: Database) {
           exists(
             dz
               .select({ one: sql`1` })
-              .from(component)
-              .innerJoin(ingredient, eq(ingredient.componentId, component.id))
-              .where(and(eq(component.recipeId, recipe.id), inArray(ingredient.foodId, foodIds))),
+              .from(part)
+              .innerJoin(ingredient, eq(ingredient.partId, part.id))
+              .where(and(eq(part.recipeId, recipe.id), inArray(ingredient.foodId, foodIds))),
           ),
         );
       }
@@ -509,8 +501,8 @@ export function recipes(db: Database) {
       dz
         .selectDistinct(summaryColumns)
         .from(recipe)
-        .innerJoin(component, eq(component.recipeId, recipe.id))
-        .innerJoin(ingredient, eq(ingredient.componentId, component.id))
+        .innerJoin(part, eq(part.recipeId, recipe.id))
+        .innerJoin(ingredient, eq(ingredient.partId, part.id))
         .where(eq(ingredient.foodId, foodId))
         .orderBy(byName)
         .all()
@@ -526,9 +518,9 @@ export function recipes(db: Database) {
           sql`${recipe.yieldUnitId} = ${unitId} OR ${exists(
             dz
               .select({ one: sql`1` })
-              .from(component)
-              .innerJoin(ingredient, eq(ingredient.componentId, component.id))
-              .where(and(eq(component.recipeId, recipe.id), eq(ingredient.unitId, unitId))),
+              .from(part)
+              .innerJoin(ingredient, eq(ingredient.partId, part.id))
+              .where(and(eq(part.recipeId, recipe.id), eq(ingredient.unitId, unitId))),
           )}`,
         )
         .orderBy(byName)

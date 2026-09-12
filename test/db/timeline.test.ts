@@ -13,7 +13,7 @@ let repo: TimelineRepository;
 let recipeRepo: RecipeRepository;
 let recipeId: string;
 
-const minimal = (name: string): RecipeInput => ({ name, components: [{ name: "", ingredients: [], steps: [] }] });
+const minimal = (name: string): RecipeInput => ({ name, parts: [{ name: "", ingredients: [], steps: [] }] });
 
 beforeEach(async () => {
   db = openDatabase(":memory:");

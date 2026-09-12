@@ -41,12 +41,11 @@ export function scaleRecipe(doc: Recipe, targetServings: number): Recipe {
     ...doc,
     recipeServings: targetServings,
     recipeYieldQuantity: doc.recipeYieldQuantity * factor,
-    components: doc.components.map((component) => ({
-      ...component,
-      ingredients: component.ingredients.map((ingredient) => scaleIngredient(ingredient, factor)),
-      steps: component.steps.map((step) => ({ ...step })),
+    parts: doc.parts.map((part) => ({
+      ...part,
+      ingredients: part.ingredients.map((ingredient) => scaleIngredient(ingredient, factor)),
+      steps: part.steps.map((step) => ({ ...step })),
     })),
-    steps: doc.steps.map((step) => ({ ...step })),
     notes: doc.notes.map((note) => ({ ...note })),
     tags: doc.tags.map((tag) => ({ ...tag })),
   };

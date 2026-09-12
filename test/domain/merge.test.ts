@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { mergeIngredients } from "../../src/domain/merge";
-import type { Component, Ingredient } from "../../src/domain/recipe";
+import type { Ingredient, Part } from "../../src/domain/recipe";
 
 const gram = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -43,16 +43,16 @@ function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {
   };
 }
 
-function component(ingredients: Ingredient[]): Pick<Component, "ingredients"> {
+function component(ingredients: Ingredient[]): Pick<Part, "ingredients"> {
   return { ingredients };
 }
 
 describe("mergeIngredients", () => {
-  test("same food and unit across components: quantities summed into one line", () => {
+  test("same food and unit across parts: quantities summed into one line", () => {
     const flourA = ingredient({ quantity: 200, unit: gram, food: flour });
     const flourB = ingredient({ quantity: 50, unit: gram, food: flour });
     const merged = mergeIngredients({
-      components: [component([flourA]), component([flourB])],
+      parts: [component([flourA]), component([flourB])],
     });
 
     expect(merged).toHaveLength(1);
@@ -62,7 +62,7 @@ describe("mergeIngredients", () => {
   test("different unit keeps lines separate even for the same food", () => {
     const grams = ingredient({ quantity: 200, unit: gram, food: flour });
     const cups = ingredient({ quantity: 1, unit: cup, food: flour });
-    const merged = mergeIngredients({ components: [component([grams, cups])] });
+    const merged = mergeIngredients({ parts: [component([grams, cups])] });
 
     expect(merged).toHaveLength(2);
     expect(merged.map((i) => i.quantity)).toEqual([200, 1]);
@@ -71,7 +71,7 @@ describe("mergeIngredients", () => {
   test("different food keeps lines separate even for the same unit", () => {
     const flourLine = ingredient({ quantity: 200, unit: gram, food: flour });
     const saltLine = ingredient({ quantity: 5, unit: gram, food: salt });
-    const merged = mergeIngredients({ components: [component([flourLine, saltLine])] });
+    const merged = mergeIngredients({ parts: [component([flourLine, saltLine])] });
 
     expect(merged).toHaveLength(2);
   });
@@ -80,7 +80,7 @@ describe("mergeIngredients", () => {
     const linear = ingredient({ quantity: 1, unit: cup, food: vanilla });
     const fixedA = ingredient({ quantity: 1, unit: cup, food: vanilla, fixed: true });
     const fixedB = ingredient({ quantity: 1, unit: cup, food: vanilla, fixed: true });
-    const merged = mergeIngredients({ components: [component([linear, fixedA, fixedB])] });
+    const merged = mergeIngredients({ parts: [component([linear, fixedA, fixedB])] });
 
     // The linear one stands alone; each fixed line keeps its own too.
     expect(merged).toHaveLength(3);
@@ -90,7 +90,7 @@ describe("mergeIngredients", () => {
   test("null-quantity ingredients are never merged, even with a matching food and unit", () => {
     const toTaste1 = ingredient({ quantity: null, food: salt, note: "to taste" });
     const toTaste2 = ingredient({ quantity: null, food: salt, note: "to taste" });
-    const merged = mergeIngredients({ components: [component([toTaste1, toTaste2])] });
+    const merged = mergeIngredients({ parts: [component([toTaste1, toTaste2])] });
 
     expect(merged).toHaveLength(2);
     expect(merged.every((i) => i.quantity === null)).toBe(true);
@@ -100,7 +100,7 @@ describe("mergeIngredients", () => {
     const basilA = ingredient({ quantity: 1, food: null, originalText: "a handful of basil" });
     const basilB = ingredient({ quantity: 1, food: null, originalText: "a handful of basil" });
     const mint = ingredient({ quantity: 1, food: null, originalText: "a sprig of mint" });
-    const merged = mergeIngredients({ components: [component([basilA, basilB, mint])] });
+    const merged = mergeIngredients({ parts: [component([basilA, basilB, mint])] });
 
     expect(merged).toHaveLength(2);
     const basilLine = merged.find((i) => i.originalText === "a handful of basil")!;
@@ -110,13 +110,13 @@ describe("mergeIngredients", () => {
   test("matching notes are kept; differing notes are dropped rather than picking one", () => {
     const sifted = ingredient({ quantity: 100, unit: gram, food: flour, note: "sifted" });
     const alsoSifted = ingredient({ quantity: 50, unit: gram, food: flour, note: "sifted" });
-    const same = mergeIngredients({ components: [component([sifted, alsoSifted])] });
+    const same = mergeIngredients({ parts: [component([sifted, alsoSifted])] });
     expect(same).toHaveLength(1);
     expect(same[0]!.note).toBe("sifted");
 
     const forDusting = ingredient({ quantity: 100, unit: gram, food: flour, note: "sifted" });
     const plain = ingredient({ quantity: 50, unit: gram, food: flour, note: "for dusting" });
-    const differing = mergeIngredients({ components: [component([forDusting, plain])] });
+    const differing = mergeIngredients({ parts: [component([forDusting, plain])] });
     expect(differing).toHaveLength(1);
     expect(differing[0]!.note).toBe("");
   });
@@ -125,20 +125,20 @@ describe("mergeIngredients", () => {
     const eggs = ingredient({ quantity: 2, food: { ...flour, id: "eggs-id", name: "egg" } });
     const flourLine = ingredient({ quantity: 200, unit: gram, food: flour });
     const moreEggs = ingredient({ quantity: 1, food: { ...flour, id: "eggs-id", name: "egg" } });
-    const merged = mergeIngredients({ components: [component([eggs, flourLine]), component([moreEggs])] });
+    const merged = mergeIngredients({ parts: [component([eggs, flourLine]), component([moreEggs])] });
 
     expect(merged.map((i) => i.food?.id)).toEqual(["eggs-id", flour.id]);
     expect(merged[0]!.quantity).toBe(3);
   });
 
   test("no ingredients anywhere: an empty list", () => {
-    expect(mergeIngredients({ components: [component([]), component([])] })).toEqual([]);
+    expect(mergeIngredients({ parts: [component([]), component([])] })).toEqual([]);
   });
 
   test("does not mutate the input ingredients", () => {
     const flourA = ingredient({ quantity: 200, unit: gram, food: flour });
     const flourB = ingredient({ quantity: 50, unit: gram, food: flour });
-    mergeIngredients({ components: [component([flourA, flourB])] });
+    mergeIngredients({ parts: [component([flourA, flourB])] });
 
     expect(flourA.quantity).toBe(200);
     expect(flourB.quantity).toBe(50);

@@ -33,15 +33,20 @@ const stored: Recipe = {
   sourceUrl: "https://example.com/tart",
   notes: [{ id: "22222222-2222-4222-8222-222222222222", title: "Storage", text: "Two days." }],
   tags: [{ id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" }],
-  components: [
+  parts: [
     {
       id: "33333333-3333-4333-8333-333333333333",
       name: "Pastry",
       ingredients: [{ id: "44444444-4444-4444-8444-444444444444", quantity: 200, unit: gram, food: null, note: "flour", originalText: "200 g flour", fixed: true }],
       steps: [{ id: "55555555-5555-4555-8555-555555555555", text: "Rub in." }],
     },
+    {
+      id: "77777777-7777-4777-8777-777777777777",
+      name: "",
+      ingredients: [],
+      steps: [{ id: "66666666-6666-4666-8666-666666666666", text: "Bake." }],
+    },
   ],
-  steps: [{ id: "66666666-6666-4666-8666-666666666666", text: "Bake." }],
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
@@ -83,15 +88,15 @@ describe("draftFromJson", () => {
   });
 
   test("fills in the defaults and ids a hand-written document leaves out", () => {
-    const result = draftFromJson('{"name":"Toast","components":[{"name":"","ingredients":[{"note":"bread"}],"steps":[{"text":"Toast it."}]}]}');
+    const result = draftFromJson('{"name":"Toast","parts":[{"name":"","ingredients":[{"note":"bread"}],"steps":[{"text":"Toast it."}]}]}');
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.draft.description).toBe("");
     expect(result.draft.recipeServings).toBe(0);
     expect(result.draft.tags).toEqual([]);
-    expect(result.draft.components[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(result.draft.components[0]?.ingredients[0]).toMatchObject({ note: "bread", quantity: null, fixed: false });
-    expect(result.draft.components[0]?.steps[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(result.draft.parts[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(result.draft.parts[0]?.ingredients[0]).toMatchObject({ note: "bread", quantity: null, fixed: false });
+    expect(result.draft.parts[0]?.steps[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   test("reports a syntax error", () => {
@@ -102,12 +107,12 @@ describe("draftFromJson", () => {
   });
 
   test("reports the failing field paths", () => {
-    const result = draftFromJson('{"name":"","components":[]}');
+    const result = draftFromJson('{"name":"","parts":[]}');
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error).toContain("name:");
-    expect(result.error).toContain("components:");
-    expect(result.error).toContain("a recipe needs at least one component");
+    expect(result.error).toContain("parts:");
+    expect(result.error).toContain("a recipe needs at least one part");
   });
 
   test("rejects a document that is not an object", () => {
@@ -123,9 +128,9 @@ describe("draftFromInput", () => {
     const parsed = recipeInputSchema.parse(JSON.parse(draftToJson(draftFromRecipe(stored))));
     const draft = draftFromInput(parsed);
     expect(draft.id).toBe(stored.id);
-    expect(draft.components[0]?.id).toBe(stored.components[0]?.id);
-    expect(draft.components[0]?.ingredients[0]?.id).toBe(stored.components[0]?.ingredients[0]?.id);
-    expect(draft.steps[0]?.id).toBe(stored.steps[0]?.id);
+    expect(draft.parts[0]?.id).toBe(stored.parts[0]?.id);
+    expect(draft.parts[0]?.ingredients[0]?.id).toBe(stored.parts[0]?.ingredients[0]?.id);
+    expect(draft.parts[1]?.steps[0]?.id).toBe(stored.parts[1]?.steps[0]?.id);
     expect(draft.notes[0]?.id).toBe(stored.notes[0]?.id);
   });
 });

@@ -1,7 +1,7 @@
 // The recipe aggregate: the recipe row and the five tables it owns.
 //
 // They live in one file because they are written as one thing — `repo.ts`
-// replaces a recipe's components, ingredients, steps, notes and tag links in a
+// replaces a recipe's parts, ingredients, steps, notes and tag links in a
 // single transaction, and nothing addresses them independently. The aggregate
 // is the boundary, so it is also the file.
 //
@@ -69,26 +69,27 @@ export const recipeNote = sqliteTable(
 );
 
 /**
- * A named part of a recipe, owning its ingredients. Every recipe has at least
- * one; a single unnamed component is the flat case.
+ * A named part of a recipe, owning its ingredients and its steps. Every recipe
+ * has at least one; a single unnamed part is the flat case, and among named
+ * parts the unnamed one is the recipe's main body (decisions.md row 49).
  */
-export const component = sqliteTable(
-  "component",
+export const part = sqliteTable(
+  "part",
   {
     id: text("id").primaryKey(),
     recipeId: text("recipe_id")
       .notNull()
       .references(() => recipe.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
-    /** '' is the single unnamed component (the flat recipe). */
+    /** '' is the unnamed part: the flat recipe, or the main body beside named parts. */
     name: text("name").notNull().default(""),
   },
   (t) => [unique().on(t.recipeId, t.position)],
 );
 
 /**
- * One ingredient line, owned by a component. `original_text` is always kept, so
- * a line that parsed into nothing still round-trips.
+ * One ingredient line, owned by a part. `original_text` is always kept, so a
+ * line that parsed into nothing still round-trips.
  *
  * `foodId` and `food/schema.ts`'s `recipeId` point at each other's tables (the
  * sub-recipe hook), so the two modules form an import cycle. It resolves
@@ -100,9 +101,9 @@ export const ingredient = sqliteTable(
   "ingredient",
   {
     id: text("id").primaryKey(),
-    componentId: text("component_id")
+    partId: text("part_id")
       .notNull()
-      .references(() => component.id, { onDelete: "cascade" }),
+      .references(() => part.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     /** NULL: no amount ("salt to taste"). */
     quantity: real("quantity"),
@@ -114,7 +115,7 @@ export const ingredient = sqliteTable(
     fixed: integer("fixed", { mode: "boolean" }).notNull().default(false),
   },
   (t) => [
-    unique().on(t.componentId, t.position),
+    unique().on(t.partId, t.position),
     index("ingredient_unit_id").on(t.unitId),
     index("ingredient_food_id").on(t.foodId),
     check("fixed_flag", sql`${t.fixed} IN (0, 1)`),
@@ -122,21 +123,21 @@ export const ingredient = sqliteTable(
 );
 
 /**
- * A method step. Steps belong to the recipe and may point at a component;
- * `position` is recipe-wide, so component steps and loose steps share one order.
+ * A method step, owned by a part. `position` is scoped to the part, so a step
+ * has exactly one container and one place in it (decisions.md row 49). The
+ * recipe is reached through the part rather than stored again here.
  */
 export const step = sqliteTable(
   "step",
   {
     id: text("id").primaryKey(),
-    recipeId: text("recipe_id")
+    partId: text("part_id")
       .notNull()
-      .references(() => recipe.id, { onDelete: "cascade" }),
-    componentId: text("component_id").references(() => component.id, { onDelete: "set null" }),
+      .references(() => part.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     text: text("text").notNull().default(""),
   },
-  (t) => [unique().on(t.recipeId, t.position), index("step_component_id").on(t.componentId)],
+  (t) => [unique().on(t.partId, t.position)],
 );
 
 /** Recipe-to-tag links. The primary key is the pair, so a recipe carries a tag at most once. */

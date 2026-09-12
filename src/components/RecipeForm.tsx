@@ -2,11 +2,10 @@
 // rating, tags and image. It is a controlled form over a `RecipeDraft`, a
 // concrete `RecipeInput`, so what it holds is exactly what `createRecipe` and
 // `updateRecipe` accept; submit zod-parses the draft and shows field errors
-// inline. Components are edited through `ComponentsEditor` (add, rename,
-// reorder, remove) with their ingredient and step rows; the recipe's own
-// steps (the ones printed after every component) and its notes have editors
-// of their own below the components. A new recipe carries one blank component
-// so the document validates.
+// inline. Parts are edited through `PartsEditor` (add, rename, reorder,
+// remove) with their ingredient and step rows; every step lives in a part, so
+// the form has no step list of its own. Notes have an editor below the parts.
+// A new recipe carries one blank part so the document validates.
 //
 // The image is not part of the document write. A chosen file is held until the
 // recipe has an id, then posted to /api/recipes/:id/image; both happen inside
@@ -38,7 +37,6 @@ import { Input } from "@sixthshift/design-system/input";
 import { Label } from "@sixthshift/design-system/label";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
-import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Select } from "@sixthshift/design-system/select";
 import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
@@ -53,22 +51,21 @@ import { messageFrom, type NoticeInput, notify, notifyError } from "../lib/notif
 import { useOnline } from "../lib/useOnline";
 import { fetchImage } from "../server/imageFetch";
 import { createRecipe, updateRecipe } from "../server/recipes";
-import { ComponentsEditor, newComponent } from "./ComponentsEditor";
+import { newPart, PartsEditor } from "./PartsEditor";
 import { NotesEditor } from "./NotesEditor";
-import { StepsEditor } from "./StepsEditor";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { ImageUpload } from "./ui/ImageUpload";
 import { NumberStepper } from "./ui/NumberStepper";
 import { Rating } from "./ui/Rating";
 import { SaveBar } from "./ui/SaveBar";
 
-type ComponentInput = RecipeInput["components"][number];
-export type DraftIngredient = NonNullable<ComponentInput["ingredients"]>[number];
-export type DraftStep = NonNullable<ComponentInput["steps"]>[number];
+type PartInput = RecipeInput["parts"][number];
+export type DraftIngredient = NonNullable<PartInput["ingredients"]>[number];
+export type DraftStep = NonNullable<PartInput["steps"]>[number];
 export type DraftNote = NonNullable<RecipeInput["notes"]>[number];
 
-/** A component input with both lists present, so the editor never has to default them. */
-export type DraftComponent = Omit<ComponentInput, "ingredients" | "steps"> & { ingredients: DraftIngredient[]; steps: DraftStep[] };
+/** A part input with both lists present, so the editor never has to default them. */
+export type DraftPart = Omit<PartInput, "ingredients" | "steps"> & { ingredients: DraftIngredient[]; steps: DraftStep[] };
 
 /** A `RecipeInput` with every field present, so each input has a value to control. */
 export type RecipeDraft = {
@@ -88,11 +85,10 @@ export type RecipeDraft = {
   favourite: boolean;
   notes: DraftNote[];
   tags: Tag[];
-  components: DraftComponent[];
-  steps: DraftStep[];
+  parts: DraftPart[];
 };
 
-/** Field path ("name", "components.0.name") to its first error message. */
+/** Field path ("name", "parts.0.name") to its first error message. */
 export type FieldErrors = Record<string, string>;
 
 export type ValidationResult = { ok: true; data: ParsedRecipeInput } | { ok: false; errors: FieldErrors };
@@ -115,8 +111,7 @@ export function emptyDraft(): RecipeDraft {
     favourite: false,
     notes: [],
     tags: [],
-    components: [newComponent()],
-    steps: [],
+    parts: [newPart()],
   };
 }
 
@@ -127,12 +122,11 @@ export function draftFromRecipe(recipe: Recipe): RecipeDraft {
     ...rest,
     notes: rest.notes.map((note) => ({ ...note })),
     tags: rest.tags.map((tag) => ({ ...tag })),
-    components: rest.components.map((component) => ({
-      ...component,
-      ingredients: component.ingredients.map((ingredient) => ({ ...ingredient })),
-      steps: component.steps.map((step) => ({ ...step })),
+    parts: rest.parts.map((part) => ({
+      ...part,
+      ingredients: part.ingredients.map((ingredient) => ({ ...ingredient })),
+      steps: part.steps.map((step) => ({ ...step })),
     })),
-    steps: rest.steps.map((step) => ({ ...step })),
   };
 }
 
@@ -194,13 +188,12 @@ export function draftFromInput(input: ParsedRecipeInput): RecipeDraft {
     ...input,
     notes: input.notes.map((note) => ({ ...note, id: note.id ?? randomUuid() })),
     tags: input.tags.map((tag) => ({ ...tag })),
-    components: input.components.map((component) => ({
-      ...component,
-      id: component.id ?? randomUuid(),
-      ingredients: component.ingredients.map((ingredient) => ({ ...ingredient, id: ingredient.id ?? randomUuid() })),
-      steps: component.steps.map((step) => ({ ...step, id: step.id ?? randomUuid() })),
+    parts: input.parts.map((part) => ({
+      ...part,
+      id: part.id ?? randomUuid(),
+      ingredients: part.ingredients.map((ingredient) => ({ ...ingredient, id: ingredient.id ?? randomUuid() })),
+      steps: part.steps.map((step) => ({ ...step, id: step.id ?? randomUuid() })),
     })),
-    steps: input.steps.map((step) => ({ ...step, id: step.id ?? randomUuid() })),
   };
 }
 
@@ -490,15 +483,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         />
       </div>
 
-      <ComponentsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
-
-      <section className="flex flex-col gap-3" aria-label="Method">
-        <SectionTitle as="h2">{draft.components.length > 1 ? "To finish" : "Method"}</SectionTitle>
-        <Muted as="p" className="text-sm">
-          Steps that come after every component.
-        </Muted>
-        <StepsEditor draft={draft} ci={null} onChange={setDraft} errors={errors} disabled={saving} />
-      </section>
+      <PartsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
 
       <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
         </>

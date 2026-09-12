@@ -68,8 +68,8 @@ test("update merges a patch, keeps the id, and enforces uniqueness", () => {
 test("remove deletes the food and nulls the ingredient reference", () => {
   const butter = repo.create({ name: "butter" });
   db.run("INSERT INTO recipe (id, slug, name) VALUES ('r', 'r', 'R')");
-  db.run("INSERT INTO component (id, recipe_id, position) VALUES ('c', 'r', 0)");
-  db.run("INSERT INTO ingredient (id, component_id, position, quantity, food_id, original_text) VALUES ('i', 'c', 0, 50, ?, '50 g butter')", [butter.id]);
+  db.run("INSERT INTO part (id, recipe_id, position) VALUES ('c', 'r', 0)");
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, food_id, original_text) VALUES ('i', 'c', 0, 50, ?, '50 g butter')", [butter.id]);
 
   expect(repo.remove(butter.id)).toBe(true);
   expect(repo.remove(butter.id)).toBe(false);
@@ -84,11 +84,11 @@ test("merge repoints ingredient rows to the target and deletes the source", () =
   const butter = repo.create({ name: "butter" });
   const unsalted = repo.create({ name: "unsalted butter" });
   db.run("INSERT INTO recipe (id, slug, name) VALUES ('r', 'r', 'R')");
-  db.run("INSERT INTO component (id, recipe_id, position) VALUES ('c', 'r', 0)");
-  db.run("INSERT INTO ingredient (id, component_id, position, quantity, food_id, original_text) VALUES ('i1', 'c', 0, 50, ?, '50 g unsalted butter')", [
+  db.run("INSERT INTO part (id, recipe_id, position) VALUES ('c', 'r', 0)");
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, food_id, original_text) VALUES ('i1', 'c', 0, 50, ?, '50 g unsalted butter')", [
     unsalted.id,
   ]);
-  db.run("INSERT INTO ingredient (id, component_id, position, quantity, food_id, original_text) VALUES ('i2', 'c', 1, 10, ?, '10 g butter')", [butter.id]);
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, food_id, original_text) VALUES ('i2', 'c', 1, 10, ?, '10 g butter')", [butter.id]);
 
   const merged = repo.merge(unsalted.id, butter.id);
   expect(merged).toEqual(butter);

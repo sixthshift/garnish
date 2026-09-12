@@ -38,8 +38,8 @@ test("the mix covers the cases the screens have to handle", () => {
   const dataset = generateDevRecipes().map((r) => ({ ...r, input: recipeInputSchema.parse(r.input) }));
   const has = (predicate: (r: (typeof dataset)[number]) => boolean) => dataset.some(predicate);
 
-  expect(has((r) => r.input.components.length === 1 && r.input.components[0]!.name === "")).toBe(true); // flat
-  expect(has((r) => r.input.components.length > 1)).toBe(true); // named components
+  expect(has((r) => r.input.parts.length === 1 && r.input.parts[0]!.name === "")).toBe(true); // flat
+  expect(has((r) => r.input.parts.length > 1)).toBe(true); // named components
   expect(has((r) => r.input.rating === null)).toBe(true); // unrated
   expect(has((r) => r.input.rating !== null)).toBe(true);
   expect(has((r) => r.timeline.length === 0)).toBe(true); // never made
@@ -51,12 +51,12 @@ test("the mix covers the cases the screens have to handle", () => {
   expect(has((r) => r.input.sourceUrl !== null)).toBe(true);
   expect(has((r) => r.input.notes.length > 0)).toBe(true);
   expect(has((r) => r.input.name.length > 60)).toBe(true); // truncation
-  expect(has((r) => r.input.components.some((c) => c.ingredients.length === 1))).toBe(true);
-  expect(has((r) => r.input.components.some((c) => c.ingredients.length >= 14))).toBe(true);
+  expect(has((r) => r.input.parts.some((c) => c.ingredients.length === 1))).toBe(true);
+  expect(has((r) => r.input.parts.some((c) => c.ingredients.length >= 14))).toBe(true);
   // A verbatim line the parser never touched, and a line with no amount.
-  expect(has((r) => r.input.components.some((c) => c.ingredients.some((i) => i.food == null && i.originalText !== "")))).toBe(true);
-  expect(has((r) => r.input.components.some((c) => c.ingredients.some((i) => i.quantity == null && i.food != null)))).toBe(true);
-  expect(has((r) => r.input.components.some((c) => c.ingredients.some((i) => i.fixed)))).toBe(true);
+  expect(has((r) => r.input.parts.some((c) => c.ingredients.some((i) => i.food == null && i.originalText !== "")))).toBe(true);
+  expect(has((r) => r.input.parts.some((c) => c.ingredients.some((i) => i.quantity == null && i.food != null)))).toBe(true);
+  expect(has((r) => r.input.parts.some((c) => c.ingredients.some((i) => i.fixed)))).toBe(true);
 });
 
 test("created and updated fan out, and updated is never before created", () => {

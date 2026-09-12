@@ -13,7 +13,7 @@ useTempDataDir();
 const missing = "99999999-9999-4999-8999-999999999999";
 
 const doc = (name = "Flatbread"): RecipeInput =>
-  ({ name, components: [{ name: "", ingredients: [], steps: [{ text: "Mix." }] }] }) as RecipeInput;
+  ({ name, parts: [{ name: "", ingredients: [], steps: [{ text: "Mix." }] }] }) as RecipeInput;
 
 async function seed(name?: string) {
   return callServerFn(createRecipe, doc(name));

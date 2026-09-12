@@ -40,15 +40,20 @@ const stored: Recipe = {
   sourceUrl: null,
   notes: [{ id: "22222222-2222-4222-8222-222222222222", title: "Storage", text: "Two days." }],
   tags: [weeknight],
-  components: [
+  parts: [
     {
       id: "33333333-3333-4333-8333-333333333333",
       name: "Pastry",
       ingredients: [{ id: "44444444-4444-4444-8444-444444444444", quantity: 200, unit: gram, food: null, note: "flour", originalText: "", fixed: false }],
       steps: [{ id: "55555555-5555-4555-8555-555555555555", text: "Rub in." }],
     },
+    {
+      id: "77777777-7777-4777-8777-777777777777",
+      name: "",
+      ingredients: [],
+      steps: [{ id: "66666666-6666-4666-8666-666666666666", text: "Bake." }],
+    },
   ],
-  steps: [{ id: "66666666-6666-4666-8666-666666666666", text: "Bake." }],
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
@@ -57,9 +62,9 @@ describe("emptyDraft", () => {
   test("is blank apart from one unnamed empty component, and fails validation only on the name", () => {
     const draft = emptyDraft();
     expect(draft.name).toBe("");
-    expect(draft.components).toHaveLength(1);
-    expect(draft.components[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
-    expect(draft.components[0]!.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(draft.parts).toHaveLength(1);
+    expect(draft.parts[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
+    expect(draft.parts[0]!.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(draft.tags).toEqual([]);
     expect(draft.rating).toBeNull();
     expect(draft.id).toBeUndefined();
@@ -70,14 +75,14 @@ describe("emptyDraft", () => {
   test("with a name it is a valid RecipeInput", () => {
     const result = validateDraft({ ...emptyDraft(), name: "Toast" });
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.components).toHaveLength(1);
+    if (result.ok) expect(result.data.parts).toHaveLength(1);
   });
 
   test("returns a fresh object each time", () => {
     const a = emptyDraft();
     const b = emptyDraft();
     expect(a).not.toBe(b);
-    expect(a.components).not.toBe(b.components);
+    expect(a.parts).not.toBe(b.parts);
   });
 });
 
@@ -91,16 +96,15 @@ describe("draftFromRecipe", () => {
     expect(draft.name).toBe("Lemon tart");
     expect(draft.yieldUnit).toEqual(gram);
     expect(draft.tags).toEqual([weeknight]);
-    expect(draft.components).toEqual(stored.components);
-    expect(draft.steps).toEqual(stored.steps);
+    expect(draft.parts).toEqual(stored.parts);
     expect(draft.notes).toEqual(stored.notes);
   });
 
   test("is a copy: editing the draft leaves the recipe alone", () => {
     const draft = draftFromRecipe(stored);
-    draft.components[0]!.name = "Changed";
+    draft.parts[0]!.name = "Changed";
     draft.tags.push(weeknight);
-    expect(stored.components[0]!.name).toBe("Pastry");
+    expect(stored.parts[0]!.name).toBe("Pastry");
     expect(stored.tags).toHaveLength(1);
   });
 
@@ -124,9 +128,9 @@ describe("validateDraft", () => {
   });
 
   test("nested paths are dotted", () => {
-    const result = validateDraft({ ...emptyDraft(), name: "Toast", components: [{ name: "", ingredients: [{ quantity: -1 }], steps: [] }] });
+    const result = validateDraft({ ...emptyDraft(), name: "Toast", parts: [{ name: "", ingredients: [{ quantity: -1 }], steps: [] }] });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(Object.keys(result.errors)).toEqual(["components.0.ingredients.0.quantity"]);
+    if (!result.ok) expect(Object.keys(result.errors)).toEqual(["parts.0.ingredients.0.quantity"]);
   });
 
   test("a valid draft returns the parsed document with defaults applied", () => {
@@ -134,7 +138,7 @@ describe("validateDraft", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.name).toBe("Toast");
-      expect(result.data.components[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
+      expect(result.data.parts[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
     }
   });
 });
@@ -185,10 +189,10 @@ describe("Check: the form's default document round-trips", () => {
   test("emptyDraft plus a name creates a recipe with one component and reads back by slug", async () => {
     const created = await callServerFn(createRecipe, { ...emptyDraft(), name: "Toast" });
     expect(created.slug).toBe("toast");
-    expect(created.components).toHaveLength(1);
+    expect(created.parts).toHaveLength(1);
     const fetched = await callServerFn(getRecipe, { slug: "toast" });
     expect(fetched).toEqual(created);
-    expect(fetched.components[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
+    expect(fetched.parts[0]).toMatchObject({ name: "", ingredients: [], steps: [] });
     expect(fetched.tags).toEqual([]);
     expect(fetched.rating).toBeNull();
     // And the stored recipe becomes a draft that validates unchanged.
@@ -231,8 +235,8 @@ describe("isDirty", () => {
     expect(isDirty(initial, { ...initial, name: "Lime tart" })).toBe(true);
     expect(isDirty(initial, { ...initial, prepTime: null })).toBe(true);
     expect(isDirty(initial, { ...initial, tags: [] })).toBe(true);
-    const components = initial.components.map((component) => ({ ...component, steps: [{ ...component.steps[0]!, text: "Rub in well." }] }));
-    expect(isDirty(initial, { ...initial, components })).toBe(true);
+    const parts = initial.parts.map((part) => ({ ...part, steps: part.steps.map((step) => ({ ...step, text: "Rub in well." })) }));
+    expect(isDirty(initial, { ...initial, parts })).toBe(true);
   });
 
   test("typing a field back to what it was is clean again", () => {
@@ -255,6 +259,6 @@ describe("isDirty", () => {
     const initial = draftFromRecipe(stored);
     expect(isDirty(initial, { ...initial, rating: null })).toBe(true);
     expect(isDirty({ ...initial, id: undefined }, initial)).toBe(true);
-    expect(isDirty({ ...emptyDraft(), components: [] }, { ...emptyDraft(), components: [] })).toBe(false);
+    expect(isDirty({ ...emptyDraft(), parts: [] }, { ...emptyDraft(), parts: [] })).toBe(false);
   });
 });

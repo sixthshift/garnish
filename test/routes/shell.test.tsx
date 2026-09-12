@@ -23,7 +23,7 @@ vi.mock("../../src/server/aisles", local);
 
 useTempDataDir();
 beforeEach(async () => {
-  await callServerFn(createRecipe, { name: "Lemon tart", components: [{ name: "" }] });
+  await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "" }] });
 });
 
 const pages: Array<[string, string]> = [

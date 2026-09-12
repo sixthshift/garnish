@@ -61,14 +61,14 @@ test("usingUnit lists the recipes with an ingredient or a yield of that unit", a
   const [gram] = await callServerFn(listUnits, { q: "gram" });
   await callServerFn(
     createRecipe,
-    recipeInputSchema.parse({ name: "Bread", components: [{ name: "", ingredients: [{ unit: gram, quantity: 500 }], steps: [] }] }),
+    recipeInputSchema.parse({ name: "Bread", parts: [{ name: "", ingredients: [{ unit: gram, quantity: 500 }], steps: [] }] }),
   );
   expect((await callServerFn(usingUnit, { id: gram!.id })).map((r) => r.name)).toEqual(["Bread"]);
 
   const [cup] = await callServerFn(listUnits, { q: "cup" });
   await callServerFn(
     createRecipe,
-    recipeInputSchema.parse({ name: "Muffins", yieldUnit: cup, recipeYieldQuantity: 12, components: [{ name: "", ingredients: [], steps: [] }] }),
+    recipeInputSchema.parse({ name: "Muffins", yieldUnit: cup, recipeYieldQuantity: 12, parts: [{ name: "", ingredients: [], steps: [] }] }),
   );
   expect((await callServerFn(usingUnit, { id: cup!.id })).map((r) => r.name)).toEqual(["Muffins"]);
 
@@ -81,7 +81,7 @@ test("mergeUnit repoints ingredients and recipe yields to the target, deletes th
   const stone = await callServerFn(createUnit, { name: "stone", abbreviation: "st", useAbbreviation: true, fraction: false });
   await callServerFn(
     createRecipe,
-    recipeInputSchema.parse({ name: "Sourdough", components: [{ name: "", ingredients: [{ unit: stone, quantity: 1 }], steps: [] }] }),
+    recipeInputSchema.parse({ name: "Sourdough", parts: [{ name: "", ingredients: [{ unit: stone, quantity: 1 }], steps: [] }] }),
   );
 
   const merged = await callServerFn(mergeUnit, { sourceId: stone.id, targetId: gram!.id });

@@ -22,13 +22,13 @@ const flour = { ...butter, id: crypto.randomUUID(), name: "flour" };
 const weeknight = { id: crypto.randomUUID(), name: "Weeknight", slug: "weeknight" };
 const baking = { id: crypto.randomUUID(), name: "Baking", slug: "baking" };
 
-type Ingredients = RecipeInput["components"][number]["ingredients"];
+type Ingredients = RecipeInput["parts"][number]["ingredients"];
 
 function make(name: string, ingredients: Ingredients, extra: Partial<RecipeInput> = {}) {
   return repo.create(
     recipeInputSchema.parse({
       name,
-      components: [{ name: "", ingredients, steps: [] }],
+      parts: [{ name: "", ingredients, steps: [] }],
       ...extra,
     } satisfies RecipeInput),
   );

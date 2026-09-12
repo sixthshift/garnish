@@ -22,7 +22,7 @@ function doc(overrides: Partial<RecipeInput> = {}): RecipeInput {
     sourceUrl: "https://example.test/flatbread",
     tags: [{ id: crypto.randomUUID(), name: "Weeknight", slug: "weeknight" }],
     notes: [{ title: "Tip", text: "Rest the dough." }],
-    components: [
+    parts: [
       {
         name: "Dough",
         ingredients: [
@@ -31,8 +31,8 @@ function doc(overrides: Partial<RecipeInput> = {}): RecipeInput {
         ],
         steps: [{ text: "Mix." }],
       },
+      { name: "", ingredients: [], steps: [{ text: "Serve warm." }] },
     ],
-    steps: [{ text: "Serve warm." }],
     ...overrides,
   };
 }
@@ -70,14 +70,14 @@ test("the copy carries the content but not the ids, the last-made date or the fa
   expect(copy.notes.map((note) => note.text)).toEqual(["Rest the dough."]);
   expect(copy.notes[0]!.id).not.toBe(original.notes[0]!.id);
 
-  const line = (recipe: typeof copy) => recipe.components[0]!.ingredients.map((row) => [row.food?.name, row.quantity, row.fixed]);
+  const line = (recipe: typeof copy) => recipe.parts[0]!.ingredients.map((row) => [row.food?.name, row.quantity, row.fixed]);
   expect(line(copy)).toEqual(line(original));
-  expect(copy.components[0]!.id).not.toBe(original.components[0]!.id);
-  expect(copy.components[0]!.ingredients[0]!.id).not.toBe(original.components[0]!.ingredients[0]!.id);
-  expect(copy.components[0]!.steps.map((step) => step.text)).toEqual(["Mix."]);
-  expect(copy.steps.map((step) => step.text)).toEqual(["Serve warm."]);
+  expect(copy.parts[0]!.id).not.toBe(original.parts[0]!.id);
+  expect(copy.parts[0]!.ingredients[0]!.id).not.toBe(original.parts[0]!.ingredients[0]!.id);
+  expect(copy.parts[0]!.steps.map((step) => step.text)).toEqual(["Mix."]);
+  expect(copy.parts[1]!.steps.map((step) => step.text)).toEqual(["Serve warm."]);
   // Foods are reference rows: the copy points at the same ones, no duplicates made.
-  expect(copy.components[0]!.ingredients[0]!.food!.id).toBe(original.components[0]!.ingredients[0]!.food!.id);
+  expect(copy.parts[0]!.ingredients[0]!.food!.id).toBe(original.parts[0]!.ingredients[0]!.food!.id);
 });
 
 test("duplicating a duplicate gets its own slug again", async () => {

@@ -30,7 +30,7 @@ test("the sample documents are valid RecipeInput and have distinct names", () =>
   expect(SAMPLE_RECIPES).toHaveLength(3);
   for (const doc of SAMPLE_RECIPES) expect(recipeInputSchema.safeParse(doc).success).toBe(true);
   expect(new Set(SAMPLE_RECIPES.map((r) => r.name)).size).toBe(3);
-  expect(SAMPLE_RECIPES.map((r) => r.components.length).sort()).toEqual([1, 2, 3]);
+  expect(SAMPLE_RECIPES.map((r) => r.parts.length).sort()).toEqual([1, 3, 3]);
   expect(SAMPLE_RECIPES.every((r) => r.image === undefined || r.image === null)).toBe(true);
 });
 
@@ -47,27 +47,28 @@ test("seeds three recipes that read back as full documents", () => {
   expect(listed.every((r) => r.tags.length > 0)).toBe(true);
 });
 
-test("one recipe has three components in order, one has two plus recipe-level steps, one is flat", () => {
+test("one recipe has three parts in order, one has two named parts plus the unnamed body, one is flat", () => {
   seedSample(db);
   const repo = recipes(db);
 
   const tart = repo.get("lemon-tart")!;
-  expect(tart.components.map((c) => c.name)).toEqual(["Pastry", "Filling", "To finish"]);
-  expect(tart.components.every((c) => c.ingredients.length > 0 && c.steps.length > 0)).toBe(true);
+  expect(tart.parts.map((c) => c.name)).toEqual(["Pastry", "Filling", "To finish"]);
+  expect(tart.parts.every((c) => c.ingredients.length > 0 && c.steps.length > 0)).toBe(true);
   expect(tart.notes.map((n) => n.title)).toEqual(["Blind baking", "Wobble"]);
   expect(tart.recipeServings).toBe(8);
   expect(tart.prepTime).toBe(40);
   expect(tart.performTime).toBe(50);
 
   const soup = repo.get("roast-pumpkin-soup-with-garlic-croutons")!;
-  expect(soup.components.map((c) => c.name)).toEqual(["Soup", "Garlic croutons"]);
-  expect(soup.steps).toHaveLength(1);
+  expect(soup.parts.map((c) => c.name)).toEqual(["Soup", "Garlic croutons", ""]);
+  expect(soup.parts[2]!.steps).toHaveLength(1);
+  expect(soup.parts[2]!.ingredients).toEqual([]);
   expect(soup.yieldUnit?.name).toBe("litre");
 
   const biscuits = repo.get("anzac-biscuits")!;
-  expect(biscuits.components).toHaveLength(1);
-  expect(biscuits.components[0]!.name).toBe("");
-  expect(biscuits.components[0]!.steps.length).toBeGreaterThan(0);
+  expect(biscuits.parts).toHaveLength(1);
+  expect(biscuits.parts[0]!.name).toBe("");
+  expect(biscuits.parts[0]!.steps.length).toBeGreaterThan(0);
   expect(biscuits.rating).toBe(5);
 });
 
@@ -75,25 +76,25 @@ test("fixed, null-quantity and text-only rows survive the round trip", () => {
   seedSample(db);
   const repo = recipes(db);
 
-  const soupRows = repo.get("roast-pumpkin-soup-with-garlic-croutons")!.components[0]!.ingredients;
+  const soupRows = repo.get("roast-pumpkin-soup-with-garlic-croutons")!.parts[0]!.ingredients;
   const bayLeaf = soupRows.find((i) => i.food?.name === "bay leaf")!;
   expect(bayLeaf).toMatchObject({ quantity: 1, fixed: true, unit: null });
   const salt = soupRows.find((i) => i.food?.name === "salt")!;
   expect(salt).toMatchObject({ quantity: null, unit: null, note: "to taste", fixed: false });
 
   const tart = repo.get("lemon-tart")!;
-  const textOnly = tart.components.flatMap((c) => c.ingredients).filter((i) => i.food === null);
+  const textOnly = tart.parts.flatMap((c) => c.ingredients).filter((i) => i.food === null);
   expect(textOnly.map((i) => i.originalText)).toEqual(["Finely grated zest of 2 lemons", "Icing sugar, for dusting"]);
   expect(textOnly.every((i) => i.quantity === null && i.unit === null)).toBe(true);
-  expect(tart.components[0]!.ingredients.find((i) => i.food?.name === "salt")).toMatchObject({ quantity: 1, fixed: true });
-  expect(tart.components[0]!.ingredients.find((i) => i.food?.name === "salt")!.unit?.name).toBe("pinch");
+  expect(tart.parts[0]!.ingredients.find((i) => i.food?.name === "salt")).toMatchObject({ quantity: 1, fixed: true });
+  expect(tart.parts[0]!.ingredients.find((i) => i.food?.name === "salt")!.unit?.name).toBe("pinch");
 });
 
 test("references resolve to the seeded units and shared foods and tags", () => {
   seedSample(db);
   expect(count("unit")).toBe(DEFAULT_UNITS.length);
   const seededGram = db.query<{ id: string }, []>("SELECT id FROM unit WHERE name = 'gram'").get()!.id;
-  const flour = recipes(db).get("anzac-biscuits")!.components[0]!.ingredients.find((i) => i.food?.name === "brown sugar")!;
+  const flour = recipes(db).get("anzac-biscuits")!.parts[0]!.ingredients.find((i) => i.food?.name === "brown sugar")!;
   expect(flour.unit?.id).toBe(seededGram);
 
   // "butter" appears in two recipes and "Baking" tags two: one row each.
@@ -127,7 +128,7 @@ test("seeding twice leaves three recipes, two timeline events and no duplicate c
   expect(count("timeline_event")).toBe(2);
   const before = {
     recipe: count("recipe"),
-    component: count("component"),
+    part: count("part"),
     ingredient: count("ingredient"),
     step: count("step"),
     food: count("food"),
@@ -139,7 +140,7 @@ test("seeding twice leaves three recipes, two timeline events and no duplicate c
   expect(count("recipe")).toBe(3);
   expect({
     recipe: count("recipe"),
-    component: count("component"),
+    part: count("part"),
     ingredient: count("ingredient"),
     step: count("step"),
     food: count("food"),
@@ -150,7 +151,7 @@ test("seeding twice leaves three recipes, two timeline events and no duplicate c
 
 test("skips only the recipes whose slug exists and does not touch the user's copy", () => {
   const repo = recipes(db);
-  const mine = repo.create(recipeInputSchema.parse({ name: "Lemon Tart", components: [{ name: "", ingredients: [], steps: [] }] }));
+  const mine = repo.create(recipeInputSchema.parse({ name: "Lemon Tart", parts: [{ name: "", ingredients: [], steps: [] }] }));
   const { recipes: created } = seedSample(db);
   expect(created.map((r) => r.slug).sort()).toEqual(["anzac-biscuits", "roast-pumpkin-soup-with-garlic-croutons"]);
   expect(count("recipe")).toBe(3);
@@ -163,7 +164,7 @@ test("works without the units seed, creating the units it names", async () => {
   await migrate(bare);
   seedSample(bare);
   expect(bare.query<{ n: number }, []>("SELECT count(*) AS n FROM recipe").get()!.n).toBe(3);
-  expect(recipes(bare).get("anzac-biscuits")!.components[0]!.ingredients[3]!.unit).toMatchObject({ name: "gram", abbreviation: "g", useAbbreviation: true });
+  expect(recipes(bare).get("anzac-biscuits")!.parts[0]!.ingredients[3]!.unit).toMatchObject({ name: "gram", abbreviation: "g", useAbbreviation: true });
   bare.close();
 });
 

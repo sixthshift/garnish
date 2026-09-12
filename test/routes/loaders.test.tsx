@@ -44,7 +44,7 @@ function seed(
     recipeServings: opts.servings ?? 2,
     tags: opts.tags ?? [],
     favourite: opts.favourite ?? false,
-    components: [{ name: "", ingredients: [opts.food ? { quantity: 200, food: opts.food } : { quantity: 200, note: "flour" }], steps: [{ text: "Mix." }] }],
+    parts: [{ name: "", ingredients: [opts.food ? { quantity: 200, food: opts.food } : { quantity: 200, note: "flour" }], steps: [{ text: "Mix." }] }],
   });
 }
 
@@ -112,7 +112,7 @@ describe("/ (list)", () => {
     const flat = await seed("Flatbread", { tags: [weeknight, pasta], favourite: true, food: { id: crypto.randomUUID(), name: "flour" } });
     await seed("Pancakes", { tags: [pasta] });
     await seed("Toast", { tags: [weeknight] });
-    const flourId = flat.components[0]!.ingredients[0]!.food!.id;
+    const flourId = flat.parts[0]!.ingredients[0]!.food!.id;
 
     // any (the default): either tag matches.
     let html = await renderRoute(`/?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}`);
@@ -264,7 +264,7 @@ describe("/recipes/$slug (view)", () => {
       prepTime: 20,
       performTime: 40,
       tags: [weeknight],
-      components: [
+      parts: [
         {
           name: "Pastry",
           ingredients: [{ quantity: 200, unit: gram, food: food("flour") }],
@@ -279,8 +279,8 @@ describe("/recipes/$slug (view)", () => {
           ],
           steps: [{ text: "Whisk everything together." }],
         },
+        { name: "", steps: [{ text: "Bake for 30 minutes." }] },
       ],
-      steps: [{ text: "Bake for 30 minutes." }],
       notes: [{ title: "Storage", text: "Keeps two days in the fridge." }],
     });
   }
@@ -300,14 +300,14 @@ describe("/recipes/$slug (view)", () => {
     }
     expect(html).toContain("Serves 4");
     expect(html).not.toContain('data-empty="tags"'); // it has a tag
-    expect(html).not.toContain('data-empty="component"'); // both components have content
+    expect(html).not.toContain('data-empty="part"'); // every part has content
     expect(html).toContain('aria-label="Scale servings"');
     expect(html).not.toContain(">Reset<"); // nothing requested yet
     // Edit moved into the action menu (M11.6); the trigger is what the closed page shows.
     expect(html).toContain('aria-label="Recipe actions"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
 
-    // Components in order, each with its ingredients then its steps.
+    // Parts in order, each with its ingredients then its steps.
     const pastry = html.indexOf(">Pastry<");
     const filling = html.indexOf(">Filling<");
     expect(pastry).toBeGreaterThan(-1);
@@ -334,10 +334,9 @@ describe("/recipes/$slug (view)", () => {
     expect(html.match(/data-fixed="true"/g)).toHaveLength(1);
     expect(html).toMatch(/data-fixed="true"[\s\S]*?>fixed</);
 
-    // Recipe-level steps after the components, then notes.
-    const finish = html.indexOf(">To finish<");
-    expect(finish).toBeGreaterThan(html.indexOf("Whisk everything together."));
-    expect(html.indexOf("Bake for 30 minutes.")).toBeGreaterThan(finish);
+    // The unnamed part's steps come after the named parts, without a heading, then notes.
+    expect(html.indexOf("Bake for 30 minutes.")).toBeGreaterThan(html.indexOf("Whisk everything together."));
+    expect(html).not.toContain(">To finish<");
     const notes = html.indexOf(">Notes<");
     expect(notes).toBeGreaterThan(html.indexOf("Bake for 30 minutes."));
     expect(html.indexOf(">Storage<")).toBeGreaterThan(notes);
@@ -366,7 +365,7 @@ describe("/recipes/$slug (view)", () => {
   test("a single unnamed component renders without a heading, and no servings hides the scale control", async () => {
     await callServerFn(createRecipe, {
       name: "Toast",
-      components: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
+      parts: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
     });
     const html = await renderRoute("/recipes/toast");
     expect(html).toContain('ingredient-amount">1<');
@@ -379,13 +378,13 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain("No tags");
     // Only the steps list is empty here, so the component says nothing: a flat
     // recipe keeps its steps at recipe level and "No steps" would be noise.
-    expect(html).not.toContain('data-empty="component"');
+    expect(html).not.toContain('data-empty="part"');
   });
 
   test("a component with neither ingredients nor steps says so, and an untagged recipe says No tags", async () => {
     await callServerFn(createRecipe, {
       name: "Blank",
-      components: [{ name: "Pastry", ingredients: [], steps: [] }],
+      parts: [{ name: "Pastry", ingredients: [], steps: [] }],
     });
     const html = await renderRoute("/recipes/blank");
     expect(html).toContain(">Pastry<");
@@ -424,7 +423,7 @@ describe("/recipes/$slug/edit", () => {
       prepTime: 20,
       performTime: 40,
       tags: [weeknight],
-      components: [{ name: "", ingredients: [], steps: [] }],
+      parts: [{ name: "", ingredients: [], steps: [] }],
     });
     const html = await renderRoute("/recipes/lemon-tart/edit");
     expect(html).toContain("Edit recipe");
@@ -449,15 +448,15 @@ describe("/recipes/$slug/edit", () => {
   test("shows both components of a two-component recipe in order, each with its rows read-only", async () => {
     await callServerFn(createRecipe, {
       name: "Lemon tart",
-      components: [
+      parts: [
         { name: "Pastry", ingredients: [{ quantity: 200, note: "flour" }], steps: [{ text: "Rub the butter in." }] },
         { name: "Filling", ingredients: [{ quantity: 3, note: "lemons" }], steps: [{ text: "Whisk everything together." }] },
       ],
     });
     const html = await renderRoute("/recipes/lemon-tart/edit");
-    expect(html).toContain('aria-label="Components"');
-    expect(html).toMatch(/<input[^>]*name="components\.0\.name"[^>]*value="Pastry"/);
-    expect(html).toMatch(/<input[^>]*name="components\.1\.name"[^>]*value="Filling"/);
+    expect(html).toContain('aria-label="Parts"');
+    expect(html).toMatch(/<input[^>]*name="parts\.0\.name"[^>]*value="Pastry"/);
+    expect(html).toMatch(/<input[^>]*name="parts\.1\.name"[^>]*value="Filling"/);
     const pastry = html.indexOf('value="Pastry"');
     const filling = html.indexOf('value="Filling"');
     expect(pastry).toBeGreaterThan(-1);
@@ -465,8 +464,8 @@ describe("/recipes/$slug/edit", () => {
     expect(html.indexOf("Rub the butter in.")).toBeGreaterThan(pastry);
     expect(html.indexOf("Rub the butter in.")).toBeLessThan(filling);
     expect(html.indexOf("Whisk everything together.")).toBeGreaterThan(filling);
-    expect(html.match(/aria-label="Remove component \d"/g)).toHaveLength(2);
-    expect(html).toContain(">Add component<");
+    expect(html.match(/aria-label="Remove part \d"/g)).toHaveLength(2);
+    expect(html).toContain(">Add part<");
   });
 
   test("a missing slug renders the not-found view", async () => {

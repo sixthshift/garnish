@@ -57,8 +57,8 @@ test("remove nulls ingredient, recipe yield and standard-unit references", () =>
   const gram = repo.create({ name: "gram" });
   const kilogram = repo.create({ name: "kilogram", standardQuantity: 1000, standardUnitId: gram.id });
   db.run("INSERT INTO recipe (id, slug, name, yield_unit_id) VALUES ('r', 'r', 'R', ?)", [gram.id]);
-  db.run("INSERT INTO component (id, recipe_id, position) VALUES ('c', 'r', 0)");
-  db.run("INSERT INTO ingredient (id, component_id, position, quantity, unit_id) VALUES ('i', 'c', 0, 50, ?)", [gram.id]);
+  db.run("INSERT INTO part (id, recipe_id, position) VALUES ('c', 'r', 0)");
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, unit_id) VALUES ('i', 'c', 0, 50, ?)", [gram.id]);
 
   expect(repo.remove(gram.id)).toBe(true);
   expect(repo.remove(gram.id)).toBe(false);
@@ -80,9 +80,9 @@ test("merge repoints ingredient rows and recipe yield to the target and deletes 
   const gram = repo.create({ name: "gram", abbreviation: "g", useAbbreviation: true, fraction: false });
   const kg = repo.create({ name: "kilogram", pluralName: "kilograms", abbreviation: "kg", useAbbreviation: true, fraction: false });
   db.run("INSERT INTO recipe (id, slug, name, yield_quantity, yield_unit_id) VALUES ('r', 'r', 'R', 2, ?)", [kg.id]);
-  db.run("INSERT INTO component (id, recipe_id, position) VALUES ('c', 'r', 0)");
-  db.run("INSERT INTO ingredient (id, component_id, position, quantity, unit_id, original_text) VALUES ('i1', 'c', 0, 500, ?, '500 kg flour')", [kg.id]);
-  db.run("INSERT INTO ingredient (id, component_id, position, quantity, unit_id, original_text) VALUES ('i2', 'c', 1, 10, ?, '10 g salt')", [gram.id]);
+  db.run("INSERT INTO part (id, recipe_id, position) VALUES ('c', 'r', 0)");
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, unit_id, original_text) VALUES ('i1', 'c', 0, 500, ?, '500 kg flour')", [kg.id]);
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, unit_id, original_text) VALUES ('i2', 'c', 1, 10, ?, '10 g salt')", [gram.id]);
 
   const merged = repo.merge(kg.id, gram.id);
   expect(merged).toEqual(gram);

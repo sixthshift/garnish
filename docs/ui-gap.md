@@ -8,9 +8,9 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 
 ## Already ahead
 
-- Named components owning ingredients and steps. Mealie fakes sections with a `title` string on the first ingredient or step; Tandoor's shape matches ours.
+- Named parts owning ingredients and steps. Mealie fakes sections with a `title` string on the first ingredient or step; Tandoor's shape matches ours.
 - Fixed (`=`) quantities, with a visible marker. Neither Mealie nor Cooklang badge them.
-- Cook mode as one card per component-ingredients then per step. Matches the Cooklang app; Mealie's cook mode is a two-pane scroll.
+- Cook mode as one card per part-ingredients then per step. Matches the Cooklang app; Mealie's cook mode is a two-pane scroll.
 - Wake lock, offline read, installable PWA, phone bottom nav. Mealie has no bottom nav.
 
 ## Recipe list `/`
@@ -37,8 +37,8 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 | Step done state, tap to dim and collapse | Mealie, Tandoor | none | **copy**, sessionStorage | done M11.4 |
 | Ingredient row: quantity, unit, **bold food**, note dimmed on its own line | Mealie | one plain line | **copy** Mealie's render | done M11.2 |
 | Ingredient table columns with note as a tooltip icon | Tandoor | | alternative to the line above; pick one | skipped: Mealie's row won |
-| Structured vs Summary toggle: per-component tables or one merged list | Tandoor | per-component only | **copy** as a per-device toggle | done M11.3 |
-| Ingredients repeated under the step that uses them | Cooklang, Mealie via links | none | **skip** for now; components already scope ingredients to steps | skipped |
+| Structured vs Summary toggle: per-part tables or one merged list | Tandoor | per-part only | **copy** as a per-device toggle | done M11.3 |
+| Ingredients repeated under the step that uses them | Cooklang, Mealie via links | none | **skip** for now; parts already scope ingredients to steps | skipped |
 | Scale chip "Serves N" with − / + and a number popover, reset; yield text scales | Mealie | − / + / Reset | **copy** the number input; **have** the rest | done M11.5 |
 | Scaled numbers styled differently from base | Tandoor | none | **copy** | done M11.2 |
 | Scale so one ingredient hits a target amount | Tandoor | none | **copy**, small | done M11.5 |
@@ -56,10 +56,10 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 
 | Incumbent behaviour | Source | garnish | Action | Status |
 |---|---|---|---|---|
-| Section pills at the top to jump between components | Cooklang | progress bar and position label | **copy** | done M14.1 |
+| Section pills at the top to jump between parts | Cooklang | progress bar and position label | **copy** | done M14.1 |
 | Vertical swipe between cards | Cooklang | buttons and arrow keys | **copy** | done M14.1 |
 | Ingredient card items tick on tap | Cooklang | plain list | **copy**, shares the view page's sessionStorage state | done M14.2 |
-| Step card repeats that step's ingredients | Cooklang | ingredients card per component only | **skip**, no step links | skipped |
+| Step card repeats that step's ingredients | Cooklang | ingredients card per part only | **skip**, no step links | skipped |
 | Final "done" card, offering to log the cook | Cooklang, Tandoor | ends on last step | **copy**; the log part depends on the cook log question | done M14.2 |
 | ARIA live region announcing the card | Cooklang | none | **copy** | done M14.1 |
 | Screen-awake as a labelled switch, persisted | Mealie | automatic with indicator | **have**; add the switch only if the automatic lock annoys | deferred: the pref exists, the switch is unbuilt; the automatic lock has not annoyed |
@@ -69,7 +69,7 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 | Incumbent behaviour | Source | garnish | Action | Status |
 |---|---|---|---|---|
 | Edit in place on the view page (`?edit=true`), sticky Save, floating save when scrolled, discard-changes guard | Mealie | separate route, no guard | see Questions; the discard guard is **copy** either way | deferred: decision 40 keeps the route; the guard shipped in M13.1 |
-| Ingredient rows drag to reorder and drag between components | Mealie, Tandoor | up/down buttons, "Move to" select | **copy** drag with the buttons kept as fallback | done M13.3 |
+| Ingredient rows drag to reorder and drag between parts | Mealie, Tandoor | up/down buttons, "Move to" select | **copy** drag with the buttons kept as fallback | done M13.3 |
 | Phone: ingredient row is a one-line summary, tap opens a bottom sheet with the fields | Tandoor | full row of inputs on every width | **copy**; this is the single biggest phone-editor fix | done M13.2 |
 | `originalText` shown in grey above a parsed row | Tandoor | hidden unless text-only mode | **copy** | done M13.6 |
 | Bulk add: paste a block, one ingredient or step per line, cleanup buttons | Mealie, Tandoor | none | **copy** as text-only rows; parsing is Later (`claude -p`) | done M13.4 |
@@ -77,7 +77,7 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 | Per-step image, markdown body with preview | Mealie | plain textarea | **copy** markdown render only; step images are **model** | done M11.4 (markdown render); step images deferred |
 | Image from URL as well as upload | Mealie | upload only | **copy** | done M13.5 |
 | Tag input creates on Enter, `+` opens a create dialog | Mealie | have | **have** | done (stage 1) |
-| Component optional fields revealed from a menu: name, time | Tandoor | name always shown | **copy** the pattern if per-component time is wanted; time is **model** | deferred: per-component time is a model change |
+| Part optional fields revealed from a menu: name, time | Tandoor | name always shown | **copy** the pattern if per-part time is wanted; time is **model** | deferred: per-part time is a model change |
 | JSON editor of the whole document | Mealie | none | **copy**, cheap, and it is the `claude -p` import preview later | done M13.5 |
 | Duplicate recipe | Mealie | none | **copy** | done M11.6 |
 | Confirmations as bottom sheets on phone | Mealie | centred modal | **copy** if the design system's Modal supports it | done M13.6 (decision 45: Modal is already a sheet on phone) |
@@ -101,7 +101,7 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 |---|---|---|---|---|
 | Light / dark toggle in addition to system | Mealie | system only | **copy** | done M10.3 |
 | Toasts for save, delete, errors, with an action button | Mealie | inline messages | **copy** if the design system has a toast | done M10.3 |
-| Sidebar sections: Recipes, organisers, settings | Mealie | Recipes, New, Settings | **have**; New moves into a create button once import exists | deferred: New stays a nav item until import exists |
+| Sidebar sections: Recipes, organisers, settings | Mealie | Recipes, New, Settings | **have**; New moves into a create button once import exists | done 2026-09-12, ahead of import: New is a "New recipe" button in the recipes page header, and Settings sinks to the bottom of the side nav |
 
 ## Concepts that would be new
 
@@ -110,7 +110,7 @@ Each needed a decisions.md row before any task touched it. Ordered by how often 
 1. Cook log or timeline — **done**: `timeline_event` in `002_stage2.sql`, Mealie's shape (decision 41).
 2. Favourite flag on recipe — **done**: `recipe.favourite` in `002_stage2.sql` (decision 43).
 3. Categories and tools as organisers beside tags — **skipped**: tags are the only organiser (decision 42).
-4. Step images and per-component time — **deferred**: both are model changes, neither has been missed.
+4. Step images and per-part time — **deferred**: both are model changes, neither has been missed.
 5. Timers parsed from step text — **deferred**: needs the step text parsed, which is the future `claude -p` work.
 6. Nutrition — **skipped**: Later at best, see [scope.md](scope.md).
 

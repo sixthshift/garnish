@@ -3,9 +3,9 @@
 ## v1
 
 - Recipe library: list, search by name and tag, view.
-- Recipe editor: components, ingredients, steps, tags, servings, times, image.
+- Recipe editor: parts, ingredients, steps, tags, servings, times, image.
 - Scaling with fixed-quantity support.
-- Cook view: per-component, wake lock, scale control.
+- Cook view: per-part, wake lock, scale control.
 - PWA: installable, offline read of cached recipes.
 - Foods, units, aisles: managed lists, autocomplete in the editor. Units seeded, metric default.
 - Rating, notes, last made.

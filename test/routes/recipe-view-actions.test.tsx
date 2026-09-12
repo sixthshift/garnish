@@ -27,7 +27,7 @@ async function seedTart() {
   return callServerFn(createRecipe, {
     name: "Lemon tart",
     recipeServings: 4,
-    components: [{ name: "", ingredients: [{ quantity: 200, food: food("flour") }], steps: [{ text: "Mix." }] }],
+    parts: [{ name: "", ingredients: [{ quantity: 200, food: food("flour") }], steps: [{ text: "Mix." }] }],
     notes: [{ title: "Tip", text: "Chill it." }],
   });
 }

@@ -211,8 +211,8 @@ function corpusIngredients(): CorpusIngredient[] {
   const documents = [...SAMPLE_RECIPES, ...generateDevRecipes().map((made) => made.input)];
   const rows: CorpusIngredient[] = [];
   for (const recipe of documents) {
-    for (const component of recipe.components) {
-      for (const ingredient of component.ingredients ?? []) {
+    for (const part of recipe.parts) {
+      for (const ingredient of part.ingredients ?? []) {
         if (!ingredient.food) continue;
         rows.push({
           recipe: recipe.name,

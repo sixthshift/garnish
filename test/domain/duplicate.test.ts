@@ -24,15 +24,15 @@ const tart: Recipe = {
   favourite: true,
   notes: [{ id: id(), title: "Tip", text: "Chill the pastry." }],
   tags: [{ id: id(), name: "Dessert", slug: "dessert" }],
-  components: [
+  parts: [
     {
       id: id(),
       name: "Pastry",
       ingredients: [{ id: id(), quantity: 200, unit: null, food: null, note: "sifted", originalText: "200 g flour", fixed: true }],
       steps: [{ id: id(), text: "Rub in the butter." }],
     },
+    { id: id(), name: "", ingredients: [], steps: [{ id: id(), text: "Serve cold." }] },
   ],
-  steps: [{ id: id(), text: "Serve cold." }],
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-02-01T00:00:00.000Z",
 };
@@ -65,10 +65,9 @@ describe("duplicateInput", () => {
 
   test("drops every child id so the insert cannot collide", () => {
     expect(copy.notes?.every((note) => note.id === undefined)).toBe(true);
-    expect(copy.components.every((component) => component.id === undefined)).toBe(true);
-    expect(copy.components.flatMap((component) => component.ingredients ?? []).every((row) => row.id === undefined)).toBe(true);
-    expect(copy.components.flatMap((component) => component.steps ?? []).every((step) => step.id === undefined)).toBe(true);
-    expect(copy.steps?.every((step) => step.id === undefined)).toBe(true);
+    expect(copy.parts.every((component) => component.id === undefined)).toBe(true);
+    expect(copy.parts.flatMap((component) => component.ingredients ?? []).every((row) => row.id === undefined)).toBe(true);
+    expect(copy.parts.flatMap((part) => part.steps ?? []).every((step) => step.id === undefined)).toBe(true);
   });
 
   test("resets what records what happened to the original", () => {
@@ -89,10 +88,10 @@ describe("duplicateInput", () => {
     });
     expect(copy.tags).toEqual(tart.tags);
     expect(copy.notes).toEqual([{ title: "Tip", text: "Chill the pastry." }]);
-    expect(copy.components[0]?.name).toBe("Pastry");
-    expect(copy.components[0]?.ingredients?.[0]).toMatchObject({ quantity: 200, note: "sifted", originalText: "200 g flour", fixed: true });
-    expect(copy.components[0]?.steps).toEqual([{ text: "Rub in the butter." }]);
-    expect(copy.steps).toEqual([{ text: "Serve cold." }]);
+    expect(copy.parts[0]?.name).toBe("Pastry");
+    expect(copy.parts[0]?.ingredients?.[0]).toMatchObject({ quantity: 200, note: "sifted", originalText: "200 g flour", fixed: true });
+    expect(copy.parts[0]?.steps).toEqual([{ text: "Rub in the butter." }]);
+    expect(copy.parts[1]?.steps).toEqual([{ text: "Serve cold." }]);
   });
 
   test("does not mutate the recipe it copies", () => {

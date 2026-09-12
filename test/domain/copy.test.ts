@@ -57,7 +57,7 @@ describe("ingredientsText", () => {
   test("a flat recipe is the name, a blank line, then one line per ingredient", () => {
     const text = ingredientsText({
       name: "Lemon tart",
-      components: [
+      parts: [
         {
           name: "",
           ingredients: [ingredient({ quantity: 200, unit: unit("gram", "grams"), food: food("flour") }), ingredient({ quantity: 2, food: food("egg", "eggs") })],
@@ -70,7 +70,7 @@ describe("ingredientsText", () => {
   test("named components become headings, blank-line separated", () => {
     const text = ingredientsText({
       name: "Tart",
-      components: [
+      parts: [
         { name: "Pastry", ingredients: [ingredient({ quantity: 200, unit: unit("gram", "grams"), food: food("flour") })] },
         { name: "Filling", ingredients: [ingredient({ quantity: 3, food: food("lemon", "lemons") })] },
       ],
@@ -81,7 +81,7 @@ describe("ingredientsText", () => {
   test("a component with no printable ingredients is skipped, heading and all", () => {
     const text = ingredientsText({
       name: "Tart",
-      components: [
+      parts: [
         { name: "Pastry", ingredients: [ingredient({ quantity: 200, unit: unit("gram", "grams"), food: food("flour") })] },
         { name: "Filling", ingredients: [] },
       ],
@@ -90,7 +90,7 @@ describe("ingredientsText", () => {
   });
 
   test("a recipe with nothing to copy is empty, not a lone name", () => {
-    expect(ingredientsText({ name: "Tart", components: [{ name: "", ingredients: [] }] })).toBe("");
+    expect(ingredientsText({ name: "Tart", parts: [{ name: "", ingredients: [] }] })).toBe("");
   });
 });
 

@@ -43,7 +43,7 @@ const minimalRead = {
   id: ids.recipe,
   slug: "toast",
   name: "Toast",
-  components: [{ id: ids.pasta }],
+  parts: [{ id: ids.pasta }],
   createdAt: "2026-09-10T00:00:00.000Z",
   updatedAt: "2026-09-10T00:00:00.000Z",
 };
@@ -66,7 +66,7 @@ const fullRead: Recipe = {
   sourceUrl: "https://example.com/burro",
   notes: [{ id: ids.note, title: "Tip", text: "Salt the water well." }],
   tags: [{ id: ids.tag, name: "Weeknight", slug: "weeknight" }],
-  components: [
+  parts: [
     {
       id: ids.sauce,
       name: "Sauce",
@@ -106,10 +106,12 @@ const fullRead: Recipe = {
           fixed: true,
         },
       ],
-      steps: [{ id: ids.step2, text: "Boil until al dente." }],
+      steps: [
+        { id: ids.step2, text: "Boil until al dente." },
+        { id: ids.step3, text: "Toss the pasta through the butter and serve." },
+      ],
     },
   ],
-  steps: [{ id: ids.step3, text: "Toss the pasta through the butter and serve." }],
   createdAt: "2026-09-10T00:00:00.000Z",
   updatedAt: "2026-09-10T00:00:00.000Z",
 };
@@ -122,8 +124,7 @@ describe("recipeSchema (read)", () => {
     expect(doc.recipeServings).toBe(0);
     expect(doc.recipeYield).toBe("");
     expect(doc.prepTime).toBeNull();
-    expect(doc.components).toEqual([{ id: ids.pasta, name: "", ingredients: [], steps: [] }]);
-    expect(doc.steps).toEqual([]);
+    expect(doc.parts).toEqual([{ id: ids.pasta, name: "", ingredients: [], steps: [] }]);
     expect(doc.notes).toEqual([]);
     expect(doc.tags).toEqual([]);
   });
@@ -141,11 +142,11 @@ describe("recipeSchema (read)", () => {
 });
 
 describe("recipeInputSchema (write)", () => {
-  test("create needs only a name and one component", () => {
-    const input: RecipeInput = { name: "Toast", components: [{}] };
+  test("create needs only a name and one part", () => {
+    const input: RecipeInput = { name: "Toast", parts: [{}] };
     const parsed = recipeInputSchema.parse(input);
     expect(parsed.id).toBeUndefined();
-    expect(parsed.components[0]).toEqual({ name: "", ingredients: [], steps: [] });
+    expect(parsed.parts[0]).toEqual({ name: "", ingredients: [], steps: [] });
     expect("slug" in parsed).toBe(false);
   });
 
@@ -158,26 +159,26 @@ describe("recipeInputSchema (write)", () => {
 
 describe("invalid documents", () => {
   test("no components", () => {
-    const result = recipeSchema.safeParse({ ...fullRead, components: [] });
+    const result = recipeSchema.safeParse({ ...fullRead, parts: [] });
     expect(result.success).toBe(false);
-    expect(recipeInputSchema.safeParse({ name: "Toast", components: [] }).success).toBe(false);
+    expect(recipeInputSchema.safeParse({ name: "Toast", parts: [] }).success).toBe(false);
     expect(recipeInputSchema.safeParse({ name: "Toast" }).success).toBe(false);
   });
 
   test("negative quantity", () => {
     const bad = structuredClone(fullRead);
-    bad.components[0]!.ingredients[0]!.quantity = -1;
+    bad.parts[0]!.ingredients[0]!.quantity = -1;
     const result = recipeSchema.safeParse(bad);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.path).toEqual(["components", 0, "ingredients", 0, "quantity"]);
+      expect(result.error.issues[0]?.path).toEqual(["parts", 0, "ingredients", 0, "quantity"]);
     }
   });
 
   test("empty name", () => {
     expect(recipeSchema.safeParse({ ...fullRead, name: "" }).success).toBe(false);
     expect(recipeSchema.safeParse({ ...fullRead, name: "   " }).success).toBe(false);
-    expect(recipeInputSchema.safeParse({ name: "", components: [{}] }).success).toBe(false);
+    expect(recipeInputSchema.safeParse({ name: "", parts: [{}] }).success).toBe(false);
   });
 
   test("rating outside 0..5 and non-integer minutes", () => {
@@ -221,7 +222,7 @@ describe("timelineEventSchema", () => {
 
 describe("favourite", () => {
   test("defaults to false on the input and is required on the read shape", () => {
-    expect(recipeInputSchema.parse({ name: "Toast", components: [{}] }).favourite).toBe(false);
+    expect(recipeInputSchema.parse({ name: "Toast", parts: [{}] }).favourite).toBe(false);
     expect(recipeSchema.parse({ ...fullRead, favourite: true }).favourite).toBe(true);
     expect(recipeSchema.safeParse({ ...fullRead, favourite: "yes" }).success).toBe(false);
   });
