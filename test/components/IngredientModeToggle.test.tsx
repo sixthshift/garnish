@@ -21,7 +21,7 @@ describe("IngredientModeToggle", () => {
     expect(html).toContain('role="switch"');
     expect(html).toContain('aria-checked="false"');
     expect(html).toContain('data-state="unchecked"');
-    expect(html).toContain("Summary");
+    expect(html).toContain("One list");
   });
 
   test("a stored summary preference survives a reload: the switch renders checked", () => {

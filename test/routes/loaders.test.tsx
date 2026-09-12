@@ -378,11 +378,16 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain('ingredient-amount">1<');
     expect(html).toContain(">bread slice<");
     expect(html).toContain("Toast it.");
-    expect(html).not.toContain("<h2");
+    // The single unnamed part still gets no heading of its own; the aside's
+    // "Ingredients" title (M24.2) is the page's only heading.
+    expect(elementHtml(html, "method-column")).not.toContain("<h2");
+    expect(elementHtml(html, "ingredients-column")).toContain(">Ingredients<");
     expect(html).toContain("Servings not set");
     expect(html).not.toContain('aria-label="Scale servings"');
     expect(html).not.toContain(">To finish<"); // no recipe-level steps
     expect(html).toContain("No tags");
+    // A single part: no toggle to switch between structured and one list.
+    expect(html).not.toContain('data-testid="ingredient-mode-toggle"');
     // Only the steps list is empty here, so the component says nothing: a flat
     // recipe keeps its steps at recipe level and "No steps" would be noise.
     expect(html).not.toContain('data-empty="part"');

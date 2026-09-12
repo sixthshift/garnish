@@ -107,8 +107,13 @@ describe("two columns from md (M24.1)", () => {
     const html = await renderRoute("/recipes/toast");
     expect(elementHtml(html, "ingredients-column")).toContain('aria-label="Ingredients"');
     expect(elementHtml(html, "method-column")).toContain('aria-label="Steps"');
-    // Still no heading anywhere: the unnamed part is nameless in both columns.
-    expect(html).not.toContain("<h2");
+    // The unnamed part is still nameless in both columns; the aside's only
+    // heading is the "Ingredients" title M24.2 adds.
+    expect(elementHtml(html, "method-column")).not.toContain("<h2");
+    expect(elementHtml(html, "ingredients-column")).toContain("<h2");
+    expect(elementHtml(html, "ingredients-column")).toContain(">Ingredients<");
+    // A single part: the mode toggle has nothing to switch between.
+    expect(html).not.toContain('data-testid="ingredient-mode-toggle"');
   });
 
   test("the grid starts at md, the aside sticks and scrolls itself, and the page widens at lg", async () => {
@@ -127,6 +132,20 @@ describe("two columns from md (M24.1)", () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     expect(elementHtml(html, "ingredients-column")).toContain('data-print="keep"');
+  });
+});
+
+describe("servings in the ingredients heading (M24.2)", () => {
+  test("the heading row holds the title and the scale control; a multi-part recipe also shows the mode toggle", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart");
+    const heading = elementHtml(html, "ingredients-heading");
+    expect(heading).toContain(">Ingredients<");
+    expect(heading).toContain('aria-label="Scale servings"');
+    // The toggle is not part of the heading row itself, but it only shows up
+    // in the aside once there is more than one part to merge.
+    expect(elementHtml(html, "ingredients-column")).toContain('data-testid="ingredient-mode-toggle"');
+    expect(elementHtml(html, "ingredients-column")).toContain(">One list<");
   });
 });
 

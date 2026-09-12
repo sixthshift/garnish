@@ -85,13 +85,6 @@ function RecipePage() {
           </>
         }
       />
-      <ScaleControl servings={recipe.recipeServings} />
-
-      {hasIngredients && (
-        <div className="flex justify-end">
-          <IngredientModeToggle />
-        </div>
-      )}
 
       {/* Two columns from `md` (M24.1): the ingredients stick beside the
           method rather than scrolling away above it. A third for the list, two
@@ -103,6 +96,24 @@ function RecipePage() {
           data-print="keep"
           className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
         >
+          {/* M24.2: the aside's own heading, as Mealie's ingredient list
+              header has both the title and the servings stepper together.
+              The loose row that used to sit between the page header and the
+              grid is gone; the scale control lives here instead. */}
+          <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
+            <SectionTitle as="h2">Ingredients</SectionTitle>
+            <ScaleControl servings={recipe.recipeServings} />
+          </div>
+
+          {/* Structured vs. one merged list only means something once there is
+              more than one part to merge; a flat recipe has nothing to
+              toggle. */}
+          {recipe.parts.length > 1 && (
+            <div className="flex justify-end">
+              <IngredientModeToggle />
+            </div>
+          )}
+
           {summary && hasIngredients && (
             <IngredientList
               ingredients={mergeIngredients(recipe)}
