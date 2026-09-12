@@ -103,8 +103,21 @@ describe("parseYield", () => {
     expect(parseYield(value)).toEqual(expected);
   });
 
+  test.each([
+    ["Makes 20", { servings: 20, yieldText: "" }],
+    ["Serves 4", { servings: 4, yieldText: "" }],
+    ["Makes 12 muffins", { servings: 12, yieldText: "muffins" }],
+    ["Makes about 20 biscuits", { servings: 20, yieldText: "biscuits" }],
+    ["Yields: 6", { servings: 6, yieldText: "" }],
+    ["approximately 8 slices", { servings: 8, yieldText: "slices" }],
+  ])("a leading verb is stripped: %s", (value, expected) => {
+    // Found against BBC Good Food, which writes "Makes 20".
+    expect(parseYield(value)).toEqual(expected);
+  });
+
   test("a list prefers the entry that carries a number", () => {
     expect(parseYield(["a tray", "12 muffins"])).toEqual({ servings: 12, yieldText: "muffins" });
+    expect(parseYield(["a tray", "Makes 20"])).toEqual({ servings: 20, yieldText: "" });
     expect(parseYield(["a tray", "a dish"])).toEqual({ servings: 0, yieldText: "a tray" });
   });
 });
@@ -252,6 +265,16 @@ describe("scrapedFromSchema", () => {
     // A lone string is still one ingredient, which is the charitable reading.
     expect(odd.ingredients).toEqual(["not a list"]);
     expect(odd.tags).toEqual(["7"]);
+  });
+
+  test("a page with only totalTime keeps it as the cook time rather than losing it", () => {
+    // Found against BBC Good Food, which emits totalTime and neither of the others.
+    const total = scrapedFromSchema({ "@type": "Recipe", name: "x", totalTime: "PT35M" });
+    expect(total.cookMinutes).toBe(35);
+    expect(total.prepMinutes).toBeNull();
+    // A page that states a cook time is taken at its word, total or no total.
+    const both = scrapedFromSchema({ "@type": "Recipe", name: "x", cookTime: "PT20M", totalTime: "PT35M" });
+    expect(both.cookMinutes).toBe(20);
   });
 
   test("older pages using `ingredients` and `performTime` still read", () => {

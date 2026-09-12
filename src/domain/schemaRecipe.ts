@@ -158,17 +158,32 @@ export function durationToMinutes(value: unknown): number | null {
 const GENERIC_YIELD = new Set(["serving", "servings", "serves", "portion", "portions", "person", "people", "yield"]);
 
 /**
+ * Words that introduce a yield rather than describe it. BBC Good Food writes
+ * "Makes 20" and plenty of sites write "Serves 4", so the number is not always
+ * the first thing in the string.
+ */
+const YIELD_PREFIX = /^\s*(?:makes|serves|yields?|serving\s+size|about|approx(?:imately)?|around|roughly|up\s+to)\b[:\s]*/i;
+
+/**
  * `recipeYield` as a count to scale by and what it makes. "12 muffins" is 12
- * and "muffins"; "4 servings" is 4 and nothing, because the word adds nothing
- * beside a servings field; a bare "4" is 4 and nothing; "1 loaf" is 1 and
- * "loaf". A list takes the first entry that yields a number, else the first
+ * and "muffins"; "Makes 20" is 20 and nothing; "4 servings" is 4 and nothing,
+ * because the word adds nothing beside a servings field; a bare "4" is 4 and
+ * nothing; "1 loaf" is 1 and "loaf". A leading "Makes"/"Serves"/"about" is
+ * stripped first, repeatedly, so "Makes about 20 biscuits" reads as 20
+ * biscuits. A list takes the first entry that yields a number, else the first
  * entry at all. Pure.
  */
 export function parseYield(value: unknown): { servings: number; yieldText: string } {
   const entries = list(value).map(text).filter((entry) => entry !== "");
-  const chosen = entries.find((entry) => /^\s*\d/.test(entry)) ?? entries[0] ?? "";
-  const match = chosen.match(/^\s*(\d+(?:\.\d+)?)\s*(.*)$/);
-  if (!match) return { servings: 0, yieldText: chosen };
+  const chosen = entries.find((entry) => /\d/.test(entry)) ?? entries[0] ?? "";
+  let body = chosen;
+  for (;;) {
+    const next = body.replace(YIELD_PREFIX, "");
+    if (next === body) break;
+    body = next;
+  }
+  const match = body.match(/^\s*(\d+(?:\.\d+)?)\s*(.*)$/);
+  if (!match) return { servings: 0, yieldText: chosen.trim() };
   const rest = (match[2] ?? "").trim();
   return { servings: Number(match[1]), yieldText: GENERIC_YIELD.has(rest.toLowerCase()) ? "" : rest };
 }
@@ -261,7 +276,12 @@ export function scrapedFromSchema(node: JsonLdNode): ScrapedRecipe {
     servings,
     yieldText,
     prepMinutes: durationToMinutes(node.prepTime),
-    cookMinutes: durationToMinutes(field(node, "cookTime", "performTime")),
+    // A page with only `totalTime` — BBC Good Food is one — would otherwise
+    // lose its timing entirely. Read it as the cook time: this document has no
+    // total of its own (it derives one from these two, decisions.md row 35),
+    // and putting the page's total here makes the total it shows correct. Only
+    // as a fallback, so a page that states both is taken at its word.
+    cookMinutes: durationToMinutes(field(node, "cookTime", "performTime")) ?? durationToMinutes(node.totalTime),
     tags: parseKeywords(field(node, "keywords", "recipeCategory")),
     ingredients: list(field(node, "recipeIngredient", "ingredients")).map(text).filter((line) => line !== ""),
     parts: partsFromInstructions(field(node, "recipeInstructions", "instructions")),
