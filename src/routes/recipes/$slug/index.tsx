@@ -15,17 +15,19 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { Popover } from "@sixthshift/design-system/popover";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { z } from "zod";
 import { RecipeActions } from "../../../components/RecipeActions";
 import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
-import { IngredientRow } from "../../../components/IngredientRow";
+import { IngredientList, PartIngredients } from "../../../components/IngredientList";
+import { IngredientsSheet } from "../../../components/IngredientsSheet";
 import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader";
 import { StepList } from "../../../components/StepList";
 import { mergeIngredients } from "../../../domain/merge";
 import { TimelineList } from "../../../components/Timeline";
-import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
+import type { Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
+import { useScrolledOff } from "../../../lib/useScrolledOff";
 import { getRecipe } from "../../../server/recipes";
 import { listTimeline } from "../../../server/timeline";
 
@@ -66,6 +68,11 @@ function RecipePage() {
   const [ingredientMode] = useIngredientMode();
   const summary = ingredientMode === "summary";
   const hasIngredients = recipe.parts.some((part) => part.ingredients.length > 0);
+  // Below `md` the lists scroll away above the method; once they have, a fixed
+  // button over the tab bar opens them again in a sheet (M24.6).
+  const asideRef = useRef<HTMLElement>(null);
+  const listsScrolledOff = useScrolledOff(asideRef);
+  const [sheetOpen, setSheetOpen] = useState(false);
   // Shared by the scale chip and each ingredient row's "Scale to...": both
   // just need a new servings value turned into a navigation.
   const goToServings = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
@@ -107,6 +114,7 @@ function RecipePage() {
           the viewport. Below `md` the two stack, ingredients first. */}
       <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:items-start md:gap-8" data-testid="recipe-columns">
         <aside
+          ref={asideRef}
           data-testid="ingredients-column"
           data-print="keep"
           className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
@@ -151,6 +159,28 @@ function RecipePage() {
           ))}
         </div>
       </div>
+
+      {/* Phone only, and only once the lists are off screen: everything above
+          `md` has them beside the method already. Fixed above the tab bar,
+          which sits at the bottom of every non-fullscreen page. It renders
+          here rather than last so the meta footer stays the page's final
+          element (M24.3); being fixed, its place in the flow does not show. */}
+      {hasIngredients && listsScrolledOff && (
+        <>
+          <Button
+            variant="solid"
+            intent="brand"
+            size="sm"
+            data-print="hide"
+            data-testid="ingredients-sheet-button"
+            className="fixed bottom-20 right-4 z-30 shadow-lg md:hidden"
+            onClick={() => setSheetOpen(true)}
+          >
+            Ingredients
+          </Button>
+          <IngredientsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} recipe={recipe} summary={summary} scaled={scaled} />
+        </>
+      )}
 
       <TimelineList events={timeline} />
 
@@ -246,36 +276,6 @@ function ScaleControl({ servings }: { servings: number }) {
 }
 
 /**
- * One part's ingredients in the aside, under the part's name. The unnamed part
- * — a flat recipe's only part, or the main body beside named ones — has no
- * heading, as in Mealie. A part with no ingredients contributes nothing here.
- * Structured mode only: Summary mode shows one merged list instead.
- */
-function PartIngredients({
-  part,
-  recipeId,
-  scaled,
-  currentServings,
-  onScaleTo,
-}: {
-  part: Part;
-  recipeId: string;
-  scaled: boolean;
-  currentServings: number;
-  onScaleTo: (servings: number) => void;
-}) {
-  const name = part.name.trim();
-  if (part.ingredients.length === 0) return null;
-
-  return (
-    <section className="flex flex-col gap-3" aria-label={name === "" ? undefined : `${name} ingredients`}>
-      {name !== "" && <SectionTitle as="h2">{name}</SectionTitle>}
-      <IngredientList ingredients={part.ingredients} recipeId={recipeId} scaled={scaled} currentServings={currentServings} onScaleTo={onScaleTo} />
-    </section>
-  );
-}
-
-/**
  * One part's steps in the main column, under the part's name (repeated from
  * the aside so the method reads on its own). A part with ingredients but no
  * steps has nothing to show here — its list is in the aside — so it renders
@@ -300,34 +300,5 @@ function PartSteps({ part, recipeId }: { part: Part; recipeId: string }) {
         <StepList recipeId={recipeId} steps={part.steps} />
       </EmptyBoundary>
     </section>
-  );
-}
-
-function IngredientList({
-  ingredients,
-  recipeId,
-  scaled,
-  currentServings,
-  onScaleTo,
-}: {
-  ingredients: Ingredient[];
-  recipeId: string;
-  scaled: boolean;
-  currentServings: number;
-  onScaleTo: (servings: number) => void;
-}) {
-  return (
-    <ul className="flex flex-col gap-2" aria-label="Ingredients">
-      {ingredients.map((ingredient) => (
-        <IngredientRow
-          key={ingredient.id}
-          recipeId={recipeId}
-          ingredient={ingredient}
-          scaled={scaled}
-          currentServings={currentServings}
-          onScaleTo={onScaleTo}
-        />
-      ))}
-    </ul>
   );
 }

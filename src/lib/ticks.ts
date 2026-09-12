@@ -4,9 +4,11 @@
 // view page and its cook mode within one (both read and write the same key).
 //
 // Same shape as prefs.ts: a pure controller over a storage-like interface,
-// try/catch around every access, and thin hooks that read once on mount and
-// write through on every change.
-import { useCallback, useState } from "react";
+// try/catch around every access, and thin hooks over it. The hooks read on
+// mount and then follow the store: a write notifies every subscriber, so two
+// rows for the same ingredient — the page's and the phone sheet's (M24.6) —
+// stay in step.
+import { useCallback, useEffect, useState } from "react";
 
 /** The slice of `Storage` the controller uses. */
 export type StorageLike = {
@@ -45,6 +47,23 @@ export function getTicks(storage: StorageLike, recipeId: string): TicksState {
   }
 }
 
+/**
+ * Everything currently reading tick state. A recipe's rows can be on the page
+ * and in the phone's ingredients sheet at the same time (M24.6), so a write
+ * from either has to reach both: `putTicks` tells every listener, and the
+ * hooks below re-read through `useSyncExternalStore`. Module-level rather than
+ * a context because ticks are one process-wide store, not a tree's state.
+ */
+const listeners = new Set<() => void>();
+
+/** Listen for any tick write. Returns the unsubscribe. */
+export function subscribeTicks(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 /** Write `state` for `recipeId`. A throwing storage (full, disabled) just means ticks do not persist this session. */
 function putTicks(storage: StorageLike, recipeId: string, state: TicksState): void {
   try {
@@ -52,6 +71,7 @@ function putTicks(storage: StorageLike, recipeId: string, state: TicksState): vo
   } catch {
     // ignored: see above
   }
+  for (const listener of [...listeners]) listener();
 }
 
 /** `list` with `id` present or absent according to `done`, de-duplicated. Pure. */
@@ -102,36 +122,58 @@ function browserStorage(): StorageLike | undefined {
   return typeof window === "undefined" ? undefined : window.sessionStorage;
 }
 
-/** A `[done, toggle]` pair for one ingredient row, backed by sessionStorage. Reads once on mount (keyed to `recipeId`/`ingredientId`); `toggle` writes through. */
+/** Whether `ingredientId` is ticked in the browser's own storage. False on the server. */
+export function ingredientTickSnapshot(recipeId: string, ingredientId: string): boolean {
+  const storage = browserStorage();
+  return storage ? isIngredientTicked(storage, recipeId, ingredientId) : false;
+}
+
+/** Flip `ingredientId`'s tick in the browser's own storage, notifying every reader. No-op on the server. */
+export function toggleIngredientTickNow(recipeId: string, ingredientId: string): void {
+  const storage = browserStorage();
+  if (storage) toggleIngredientTicked(storage, recipeId, ingredientId);
+}
+
+/** Whether `stepId` is ticked in the browser's own storage. False on the server. */
+export function stepTickSnapshot(recipeId: string, stepId: string): boolean {
+  const storage = browserStorage();
+  return storage ? isStepTicked(storage, recipeId, stepId) : false;
+}
+
+/** Flip `stepId`'s tick in the browser's own storage, notifying every reader. No-op on the server. */
+export function toggleStepTickNow(recipeId: string, stepId: string): void {
+  const storage = browserStorage();
+  if (storage) toggleStepTicked(storage, recipeId, stepId);
+}
+
+/**
+ * A `[done, toggle]` pair for one ingredient row, backed by sessionStorage.
+ * Reads on mount, then re-reads on every tick write anywhere: the same
+ * ingredient can be on the page and in the phone's ingredients sheet at once
+ * (M24.6), and ticking either has to strike both through.
+ */
 export function useIngredientTick(recipeId: string, ingredientId: string): [boolean, () => void] {
-  const [done, setDone] = useState(() => {
-    const storage = browserStorage();
-    return storage ? isIngredientTicked(storage, recipeId, ingredientId) : false;
-  });
+  const [done, setDone] = useState(() => ingredientTickSnapshot(recipeId, ingredientId));
+  useEffect(() => subscribeTicks(() => setDone(ingredientTickSnapshot(recipeId, ingredientId))), [recipeId, ingredientId]);
   const toggle = useCallback(() => {
-    setDone((was) => {
-      const next = !was;
-      const storage = browserStorage();
-      if (storage) setIngredientTicked(storage, recipeId, ingredientId, next);
-      return next;
-    });
+    // The write notifies this hook's own subscription, which sets the state.
+    // Without a storage (the server, a locked-down browser) nothing is written
+    // and nothing is notified, so the row keeps the flip locally.
+    const storage = browserStorage();
+    if (storage) toggleIngredientTicked(storage, recipeId, ingredientId);
+    else setDone((was) => !was);
   }, [recipeId, ingredientId]);
   return [done, toggle];
 }
 
 /** A `[done, toggle]` pair for one step, backed by sessionStorage. Same shape as `useIngredientTick`. */
 export function useStepTick(recipeId: string, stepId: string): [boolean, () => void] {
-  const [done, setDone] = useState(() => {
-    const storage = browserStorage();
-    return storage ? isStepTicked(storage, recipeId, stepId) : false;
-  });
+  const [done, setDone] = useState(() => stepTickSnapshot(recipeId, stepId));
+  useEffect(() => subscribeTicks(() => setDone(stepTickSnapshot(recipeId, stepId))), [recipeId, stepId]);
   const toggle = useCallback(() => {
-    setDone((was) => {
-      const next = !was;
-      const storage = browserStorage();
-      if (storage) setStepTicked(storage, recipeId, stepId, next);
-      return next;
-    });
+    const storage = browserStorage();
+    if (storage) toggleStepTicked(storage, recipeId, stepId);
+    else setDone((was) => !was);
   }, [recipeId, stepId]);
   return [done, toggle];
 }

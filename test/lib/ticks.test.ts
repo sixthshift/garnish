@@ -10,6 +10,7 @@ import {
   isStepTicked,
   setIngredientTicked,
   setStepTicked,
+  subscribeTicks,
   toggleIngredientTicked,
   toggleStepTicked,
   type StorageLike,
@@ -143,5 +144,34 @@ describe("clearTicks", () => {
 
   test("a throwing storage never throws", () => {
     expect(() => clearTicks(throwingStorage(), RECIPE)).not.toThrow();
+  });
+});
+
+describe("subscribeTicks", () => {
+  test("every write notifies every listener until it unsubscribes", () => {
+    const storage = memoryStorage();
+    let seen = 0;
+    const unsubscribe = subscribeTicks(() => {
+      seen += 1;
+    });
+
+    setIngredientTicked(storage, RECIPE, ING_A, true);
+    setStepTicked(storage, RECIPE, STEP_A, true);
+    clearTicks(storage, RECIPE);
+    expect(seen).toBe(3);
+
+    unsubscribe();
+    setIngredientTicked(storage, RECIPE, ING_A, true);
+    expect(seen).toBe(3);
+  });
+
+  test("a throwing storage still notifies: the readers re-read and find nothing changed", () => {
+    let seen = 0;
+    const unsubscribe = subscribeTicks(() => {
+      seen += 1;
+    });
+    setIngredientTicked(throwingStorage(), RECIPE, ING_A, true);
+    unsubscribe();
+    expect(seen).toBe(1);
   });
 });
