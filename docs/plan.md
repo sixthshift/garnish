@@ -85,7 +85,7 @@ Not in this stage, and not to be re-raised without a decisions row: step-to-ingr
 ## M22 Polish
 
 - [x] **M22.1 Step markdown preview.** Each step row's menu gains a preview toggle, rendering `Markdown.tsx` over the step's text in place of the textarea. decisions.md row 56. Check: render test toggling one row into preview and back, leaving the other rows editing.
-- [ ] **M22.2 Sticky editor toolbar.** The editor gains a header that stays put while the form scrolls: the recipe's name, the dirty note, "Edit as JSON" and the Save/Cancel pair `SaveBar` holds today. `SaveBar` keeps its phone-footer role or is folded into the toolbar, whichever reads better at both widths. Check: render tests at both widths; the blocker and dirty state still behave.
+- [x] **M22.2 Sticky editor toolbar.** The editor gains a header that stays put while the form scrolls: the recipe's name, the dirty note, "Edit as JSON" and the Save/Cancel pair `SaveBar` holds today. `SaveBar` keeps its phone-footer role or is folded into the toolbar, whichever reads better at both widths. Check: render tests at both widths; the blocker and dirty state still behave.
 
 ## Blocked
 
@@ -109,3 +109,4 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-12  M21.4  done  —  opus  rowEnter decides append-or-next and focusNamed does the focusing; Enter on an ingredient row's last field and ⌘/Ctrl+Enter in a step's textarea both preventDefault so the form is never submitted
 2026-09-12  M21.5  done  —  opus  enterChoice is the Combobox's Enter rule: open, plain autocomplete; closed, the exact option or the typed name as a new reference, so Enter never reaches the form. Nothing is written while typing — the repository still find-or-creates on save
 2026-09-12  M22.1  done  —  opus  the step menu's Preview swaps that row's textarea for Markdown, tracked by step id so inserting above does not move it; previewSteps renders the state a click reaches, for the static tests
+2026-09-12  M22.2  done  —  opus  EditorToolbar heads the form with the recipe's name, the dirty note, Edit as JSON and the save, sticky from md up; SaveBar keeps the phone footer and hides from md, so each width has exactly one save

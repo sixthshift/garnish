@@ -10,6 +10,7 @@
 // The Cancel control is passed in rather than built here: the editor's is a
 // `Link` back to wherever the form was opened from, which only the form knows.
 import { Button } from "@sixthshift/design-system/button";
+import { cn } from "@sixthshift/design-system/utils";
 import type { ReactNode } from "react";
 
 export type SaveBarProps = {
@@ -25,13 +26,17 @@ export type SaveBarProps = {
   cancel: ReactNode;
   /** A standing line beside the buttons, e.g. "Unsaved changes". */
   note?: ReactNode;
+  className?: string;
 };
 
-export function SaveBar({ label, busyLabel, busy = false, disabled = false, cancel, note }: SaveBarProps) {
+export function SaveBar({ label, busyLabel, busy = false, disabled = false, cancel, note, className }: SaveBarProps) {
   return (
     <div
       data-testid="save-bar"
-      className="sticky bottom-20 z-10 -mx-6 flex flex-wrap items-center gap-3 border-t border-border-normal bg-bg-normal px-6 py-3 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0"
+      className={cn(
+        "sticky bottom-20 z-10 -mx-6 flex flex-wrap items-center gap-3 border-t border-border-normal bg-bg-normal px-6 py-3 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0",
+        className,
+      )}
     >
       <Button type="submit" variant="solid" intent="brand" disabled={busy || disabled}>
         {busy ? (busyLabel ?? label) : label}

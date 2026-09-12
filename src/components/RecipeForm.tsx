@@ -38,8 +38,11 @@
 // text with `recipeInputSchema`, the same schema Save uses, and reports the
 // failing paths; nothing reaches the draft until it parses.
 //
-// Save and Cancel live in a `SaveBar`: sticky at the foot of the screen on
-// phone, inline from `md`. The draft is compared with the one the form opened
+// Save and Cancel live in two places, one per width (decisions.md row 56's
+// sibling, M22.2): an `EditorToolbar` above the form, sticky from `md` up and
+// carrying the recipe's name, the dirty note and "Edit as JSON"; and a
+// `SaveBar` at the foot, sticky above the phone's tab bar and hidden from `md`.
+// The draft is compared with the one the form opened
 // on (`isDirty`, plus a picked image file, which never enters the draft), and
 // while it differs `useBlocker` stands in the way: leaving the route asks for
 // a confirm, and closing the tab gets the browser's own prompt. A save in
@@ -68,6 +71,7 @@ import { newPart, PartsEditor } from "./PartsEditor";
 import { NotesEditor } from "./NotesEditor";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Disclosure } from "./ui/Disclosure";
+import { EditorToolbar } from "./ui/EditorToolbar";
 import { ImageUpload } from "./ui/ImageUpload";
 import { NumberStepper } from "./ui/NumberStepper";
 import { SaveBar } from "./ui/SaveBar";
@@ -332,6 +336,18 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
 
   const patch = (fields: Partial<RecipeDraft>) => setDraft((current) => ({ ...current, ...fields }));
 
+  const cancelLink = (
+    <Button asChild variant="ghost" intent="neutral" size="sm" disabled={saving}>
+      {existing ? (
+        <Link to="/recipes/$slug" params={{ slug: existing.slug }}>
+          Cancel
+        </Link>
+      ) : (
+        <Link to="/">Cancel</Link>
+      )}
+    </Button>
+  );
+
   const fetchFromUrl = async (url: string): Promise<File> => fetchedImageFile(await fetchImage({ data: { url } }));
 
   const applyJson = () => {
@@ -387,27 +403,37 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
           Changes cannot be saved offline. Keep editing; Save comes back with the connection.
         </Message>
       )}
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          variant="outline"
-          intent="neutral"
-          size="sm"
-          disabled={saving}
-          data-testid="json-toggle"
-          onClick={() => {
-            if (json !== null) {
-              setJson(null);
+      <EditorToolbar
+        title={draft.name}
+        placeholder={existing ? "Untitled recipe" : "New recipe"}
+        label={existing ? "Save changes" : "Create recipe"}
+        busyLabel="Saving…"
+        busy={saving}
+        disabled={!online}
+        note={dirty ? "Unsaved changes" : undefined}
+        cancel={cancelLink}
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            intent="neutral"
+            size="sm"
+            disabled={saving}
+            data-testid="json-toggle"
+            onClick={() => {
+              if (json !== null) {
+                setJson(null);
+                setJsonError(null);
+                return;
+              }
+              setJson(draftToJson(draft));
               setJsonError(null);
-              return;
-            }
-            setJson(draftToJson(draft));
-            setJsonError(null);
-          }}
-        >
-          {json !== null ? "Back to form" : "Edit as JSON"}
-        </Button>
-      </div>
+            }}
+          >
+            {json !== null ? "Back to form" : "Edit as JSON"}
+          </Button>
+        }
+      />
 
       {json !== null ? (
         <div className="flex flex-col gap-3" data-testid="json-view">
@@ -542,23 +568,15 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         </>
       )}
 
+      {/* The phone's footer save; from `md` the toolbar above carries it. */}
       <SaveBar
+        className="md:hidden"
         label={existing ? "Save changes" : "Create recipe"}
         busyLabel="Saving…"
         busy={saving}
         disabled={!online}
         note={dirty ? "Unsaved changes" : undefined}
-        cancel={
-          <Button asChild variant="ghost" intent="neutral" disabled={saving}>
-            {existing ? (
-              <Link to="/recipes/$slug" params={{ slug: existing.slug }}>
-                Cancel
-              </Link>
-            ) : (
-              <Link to="/">Cancel</Link>
-            )}
-          </Button>
-        }
+        cancel={cancelLink}
       />
 
       {blocker.status === "blocked" && (
