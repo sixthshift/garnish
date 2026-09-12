@@ -8,18 +8,15 @@
 // above; "list" is Mealie's `RecipeCardMobile` row — a small square image on
 // the left, text stacked to the right — for the list view mode in prefs.ts.
 import { Badge } from "@sixthshift/design-system/badge";
-import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { formatDuration } from "../domain/format";
 import type { RecipeSummary, Tag } from "../domain/recipe";
 import { recipeImageUrl } from "../lib/images";
-import { useMutate } from "../lib/mutate";
-import { notifyError } from "../lib/notify";
 import type { ViewMode } from "../lib/prefs";
-import { setFavourite } from "../server/recipes";
+import { FavouriteButton } from "./ui/FavouriteButton";
 import { Rating } from "./ui/Rating";
 
 export type RecipeCardProps = { recipe: RecipeSummary; mode?: ViewMode };
@@ -43,27 +40,6 @@ export const CARD_MIN_WIDTH = "22rem";
 /** The tags to render and how many more are hidden beyond `max`. Pure. */
 export function capTags(tags: readonly Tag[], max: number = MAX_CARD_TAGS): { shown: Tag[]; more: number } {
   return { shown: tags.slice(0, max), more: Math.max(0, tags.length - max) };
-}
-
-export type FavouriteToggleResult = { favourite: boolean; error?: unknown };
-
-/**
- * Flip `current` and run `write` with the new value. On failure `favourite`
- * reverts to `current` and the error comes back for the caller to surface.
- * Pure apart from the injected `write`.
- */
-export async function toggleFavourite(
-  id: string,
-  current: boolean,
-  write: (id: string, favourite: boolean) => Promise<unknown>,
-): Promise<FavouriteToggleResult> {
-  const next = !current;
-  try {
-    await write(id, next);
-    return { favourite: next };
-  } catch (error) {
-    return { favourite: current, error };
-  }
 }
 
 function ImagePlaceholder({ className }: { className: string }) {
@@ -124,43 +100,6 @@ function CardTags({ tags }: { tags: readonly Tag[] }) {
   );
 }
 
-function HeartIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      data-favourite={filled ? "true" : "false"}
-    >
-      <path d="M12 21s-7.1-4.5-9.6-9A5.4 5.4 0 0 1 12 6.3 5.4 5.4 0 0 1 21.6 12c-2.5 4.5-9.6 9-9.6 9Z" />
-    </svg>
-  );
-}
-
-function FavouriteButton({ favourite, onToggle }: { favourite: boolean; onToggle: (event: MouseEvent) => void }) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      intent={favourite ? "danger" : "neutral"}
-      iconOnly
-      size="sm"
-      aria-label={favourite ? "Remove from favourites" : "Add to favourites"}
-      aria-pressed={favourite}
-      onClick={onToggle}
-      className="absolute right-2 top-2 z-10 bg-bg-normal/80 backdrop-blur-sm hover:bg-bg-normal"
-    >
-      <HeartIcon filled={favourite} />
-    </Button>
-  );
-}
-
 /** Grid card body: image on top, text below. The original, still the default. */
 function GridBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: string | null; totalTime: string }) {
   return (
@@ -191,21 +130,6 @@ function ListBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: stri
 
 export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
   const src = recipeImageUrl(recipe.image);
-  const mutate = useMutate();
-  const [favourite, setFav] = useState(recipe.favourite);
-  useEffect(() => setFav(recipe.favourite), [recipe.favourite]);
-
-  async function handleToggle(event: MouseEvent) {
-    // The heart sits over the card's link; keep the click from navigating.
-    event.preventDefault();
-    event.stopPropagation();
-    setFav(!favourite);
-    const result = await toggleFavourite(recipe.id, favourite, (id, next) =>
-      mutate(() => setFavourite({ data: { id, favourite: next } })),
-    );
-    setFav(result.favourite);
-    if (result.error !== undefined) notifyError("Couldn't update favourite", result.error);
-  }
 
   const totalTime = formatDuration(recipe.totalTime);
   const body: ReactNode = mode === "list" ? (
@@ -216,7 +140,11 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
 
   return (
     <div className="group relative h-full" data-card-mode={mode}>
-      <FavouriteButton favourite={favourite} onToggle={handleToggle} />
+      <FavouriteButton
+        id={recipe.id}
+        favourite={recipe.favourite}
+        className="absolute right-2 top-2 z-10 bg-bg-normal/80 backdrop-blur-sm hover:bg-bg-normal"
+      />
       <Link
         to="/recipes/$slug"
         params={{ slug: recipe.slug }}

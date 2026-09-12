@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { formatDuration, formatYield, totalMinutes } from "../domain/format";
 import type { Recipe } from "../domain/recipe";
 import { recipeImageUrl } from "../lib/images";
+import { FavouriteButton } from "./ui/FavouriteButton";
 import { Rating } from "./ui/Rating";
 
 export type RecipeHeaderProps = {
@@ -149,12 +150,11 @@ export function RecipeHeader({ recipe, actions, onRate }: RecipeHeaderProps) {
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <Heading as="h1">{recipe.name}</Heading>
-            {actions !== undefined && (
-              /* Controls, not content: the print stylesheet drops them. */
-              <div className="flex gap-2" data-print="hide">
-                {actions}
-              </div>
-            )}
+            {/* Controls, not content: the print stylesheet drops them. */}
+            <div className="flex items-center gap-2" data-print="hide">
+              <FavouriteButton id={recipe.id} favourite={recipe.favourite} />
+              {actions}
+            </div>
           </div>
           {(recipe.rating !== null || onRate !== undefined) && (
             <Rating value={recipe.rating ?? 0} onChange={onRate} className={onRate === undefined ? undefined : "-ml-0.5"} />

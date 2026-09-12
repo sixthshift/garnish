@@ -178,6 +178,26 @@ describe("RecipeHeader", () => {
   });
 });
 
+describe("the favourite heart (M25.4)", () => {
+  test("renders beside the actions, hidden from print", async () => {
+    const html = await render(base, <button type="button">Edit</button>);
+    expect(html).toMatch(/aria-label="Add to favourites"/);
+
+    const actions = html.indexOf('data-print="hide"');
+    const heart = html.indexOf('aria-label="Add to favourites"');
+    const edit = html.indexOf(">Edit<");
+    expect(actions).toBeGreaterThan(-1);
+    expect(heart).toBeGreaterThan(actions);
+    expect(heart).toBeLessThan(edit);
+  });
+
+  test("reflects a favourited recipe", async () => {
+    const html = await render({ ...base, favourite: true });
+    expect(html).toMatch(/aria-label="Remove from favourites"/);
+    expect(html).toMatch(/aria-pressed="true"/);
+  });
+});
+
 describe("the header's stars (M25.3)", () => {
   test("without onRate they are read-only: no buttons, and an unrated recipe shows none", async () => {
     const rated = await render(base);

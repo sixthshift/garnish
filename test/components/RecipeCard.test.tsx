@@ -1,16 +1,12 @@
-// RecipeCard: the pure helpers (tag capping, the optimistic favourite toggle)
-// and the rendered markup — stars, the total-time chip, capped tags and the
-// favourite button's pressed state. `toggleFavourite` is also exercised
-// against the real `setFavourite` server function, so the toggle is proven to
-// round-trip through it, not just through a mock.
+// RecipeCard: the pure helpers (tag capping) and the rendered markup — stars,
+// the total-time chip, capped tags and that the favourite button (moved to
+// src/components/ui/FavouriteButton.tsx) still renders over the image. The
+// button's own toggle behaviour is tested there.
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
-import { describe, expect, test, vi } from "vitest";
-import { capTags, RecipeCard, toggleFavourite } from "../../src/components/RecipeCard";
-import { recipeInputSchema } from "../../src/domain/recipe";
+import { describe, expect, test } from "vitest";
+import { capTags, RecipeCard } from "../../src/components/RecipeCard";
 import type { RecipeSummary, Tag } from "../../src/domain/recipe";
-import { createRecipe, getRecipe, setFavourite } from "../../src/server/recipes";
-import { callServerFn, useTempDataDir } from "../helpers/server";
 
 const tag = (n: number): Tag => ({ id: `dddddddd-dddd-4ddd-8ddd-dddddddddd0${n}`, name: `Tag ${n}`, slug: `tag-${n}` });
 
@@ -53,43 +49,6 @@ describe("capTags", () => {
   test("defaults to a cap of 3", () => {
     const tags = [tag(1), tag(2), tag(3), tag(4)];
     expect(capTags(tags).more).toBe(1);
-  });
-});
-
-describe("toggleFavourite", () => {
-  test("flips the flag and reports no error once the write resolves", async () => {
-    const write = vi.fn().mockResolvedValue(undefined);
-    const result = await toggleFavourite("r1", false, write);
-    expect(result).toEqual({ favourite: true });
-    expect(write).toHaveBeenCalledWith("r1", true);
-  });
-
-  test("reverts to the current value and surfaces the error when the write rejects", async () => {
-    const error = new Error("offline");
-    const write = vi.fn().mockRejectedValue(error);
-    const result = await toggleFavourite("r1", true, write);
-    expect(result).toEqual({ favourite: true, error });
-  });
-});
-
-describe("toggleFavourite against the real server function", () => {
-  useTempDataDir();
-
-  test("round-trips through setFavourite: the stored flag flips both ways", async () => {
-    const created = await callServerFn(
-      createRecipe,
-      recipeInputSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }] }),
-    );
-
-    const write = (id: string, favourite: boolean) => callServerFn(setFavourite, { id, favourite });
-
-    const on = await toggleFavourite(created.id, false, write);
-    expect(on).toEqual({ favourite: true });
-    expect((await callServerFn(getRecipe, { slug: created.slug })).favourite).toBe(true);
-
-    const off = await toggleFavourite(created.id, true, write);
-    expect(off).toEqual({ favourite: false });
-    expect((await callServerFn(getRecipe, { slug: created.slug })).favourite).toBe(false);
   });
 });
 
