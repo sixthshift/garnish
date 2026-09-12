@@ -163,3 +163,19 @@ describe("StepRow ingredient chips", () => {
     expect(html).not.toContain('data-testid="step-ingredients"');
   });
 });
+
+// M26.2: a duration named in a step's text becomes a TimerChip inline, through Markdown's decorator.
+describe("StepRow duration chips", () => {
+  test("a step naming a duration renders a timer chip", () => {
+    withStorage(fakeStorage());
+    const html = renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Rest for 20 minutes.")]} />);
+    expect(html).toContain('data-testid="timer-chip"');
+    expect(html).toContain("20 minutes");
+  });
+
+  test("a step naming nothing gets no timer chip", () => {
+    withStorage(fakeStorage());
+    const html = renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Beat the eggs.")]} />);
+    expect(html).not.toContain('data-testid="timer-chip"');
+  });
+});

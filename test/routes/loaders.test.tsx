@@ -343,7 +343,8 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toMatch(/data-fixed="true"[\s\S]*?>fixed</);
 
     // The unnamed part's steps come after the named parts, without a heading.
-    expect(main.indexOf("Bake for 30 minutes.")).toBeGreaterThan(main.indexOf("Whisk everything together."));
+    // "30 minutes" is its own timer chip (M26.2), so the sentence is no longer one contiguous string.
+    expect(main.indexOf("Bake for")).toBeGreaterThan(main.indexOf("Whisk everything together."));
     expect(html).not.toContain(">To finish<");
     // Notes sit before the ingredients/method grid (M24.4): read before you start.
     const notes = html.indexOf(">Notes<");

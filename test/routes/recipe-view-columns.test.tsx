@@ -72,7 +72,9 @@ describe("two columns from md (M24.1)", () => {
     expect(count(aside, 'aria-label="Steps"')).toBe(0);
     expect(main).toContain("Rub the butter in.");
     expect(main).toContain("Whisk it together.");
-    expect(main).toContain("Bake for 30 minutes.");
+    // "30 minutes" is its own timer chip (M26.2), so the sentence is no longer one contiguous string.
+    expect(main).toContain("Bake for");
+    expect(main).toContain("30 minutes");
     // The main column repeats the named parts' headings above their steps.
     expect(main.indexOf(">Pastry<")).toBeLessThan(main.indexOf("Rub the butter in."));
     expect(main.indexOf(">Filling<")).toBeLessThan(main.indexOf("Whisk it together."));
@@ -97,7 +99,9 @@ describe("two columns from md (M24.1)", () => {
     expect(count(main, 'aria-label="Steps"')).toBe(3);
     expect(count(aside, 'aria-label="Steps"')).toBe(0);
     expect(main).toContain("Rub the butter in.");
-    expect(main).toContain("Bake for 30 minutes.");
+    // "30 minutes" is its own timer chip (M26.2), so the sentence is no longer one contiguous string.
+    expect(main).toContain("Bake for");
+    expect(main).toContain("30 minutes");
   });
 
   test("a flat recipe puts its one list in the aside and its steps in the main column", async () => {

@@ -34,13 +34,19 @@ import {
   totalWithFinish,
   type CookCard,
 } from "../../../domain/cook";
+import { Markdown } from "../../../components/Markdown";
 import { StepIngredientChips } from "../../../components/StepIngredientChips";
+import { decorateDurations } from "../../../components/TimerChip";
 import { formatIngredient } from "../../../domain/format";
 import { scaledForServings } from "../../../domain/scale";
 import type { Ingredient, Recipe } from "../../../domain/recipe";
 import { useIngredientTick } from "../../../lib/ticks";
 import { useWakeLock } from "../../../lib/useWakeLock";
 import { getRecipe } from "../../../server/recipes";
+
+// One decorator, reused across every step card: no per-card state, only the
+// (absent, until M26.3) onStart callback.
+const decorateTimers = decorateDurations();
 
 export const CookSearch = z.object({
   servings: z.number().positive().finite().optional(),
@@ -271,7 +277,7 @@ function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) 
       <p className="mb-3 text-sm font-medium uppercase tracking-wide text-fg-subtle">
         Step {card.number} of {card.total}
       </p>
-      <p className="whitespace-pre-line text-3xl leading-snug">{card.step.text}</p>
+      <Markdown source={card.step.text} className="text-3xl leading-snug" decorate={decorateTimers} />
       {/* The ingredients this step names, tickable, on the same session ticks
           as the ingredient card's rows (M26.1). */}
       <StepIngredientChips recipeId={recipeId} text={card.step.text} ingredients={card.ingredients} className="mt-4 text-lg" />

@@ -96,7 +96,9 @@ describe("/recipes/$slug/cook", () => {
     const html = await renderRoute("/recipes/lemon-tart/cook?step=1");
     expect(html).toContain('data-card="step"');
     expect(html).toContain("Rub the butter into the flour.");
-    expect(html).toMatch(/<p class="[^"]*text-3xl[^"]*">Rub the butter into the flour\.<\/p>/);
+    // The step is markdown (M26.2), rendered through the same component as the view page.
+    expect(html).toMatch(/<div class="[^"]*text-3xl[^"]*" data-testid="markdown">/);
+    expect(html).toContain('<p class="whitespace-pre-line">Rub the butter into the flour.</p>');
     expect(html).toContain("Step <!-- -->1<!-- --> of <!-- -->1");
     expect(html).toContain("2 of 5 · Pastry");
     // The part's list is not on the card; only the chip for the food the step names (M26.1).
@@ -121,7 +123,9 @@ describe("/recipes/$slug/cook", () => {
   test("the last card is the unnamed part's step, with Next now enabled onto Finished", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
-    expect(html).toContain("Bake for 30 minutes.");
+    // "30 minutes" is its own timer chip now (M26.2), so the sentence is no longer one contiguous string.
+    expect(html).toContain("Bake for");
+    expect(html).toContain("30 minutes");
     expect(html).toContain("5 of 5");
     expect(isDisabled(html, "Next")).toBe(false);
     expect(isDisabled(html, "Prev")).toBe(false);
@@ -137,7 +141,8 @@ describe("/recipes/$slug/cook", () => {
       expect(html).toContain(">Made this<");
       expect(html).toContain('href="/recipes/lemon-tart"');
       expect(html).toContain(">Exit<");
-      expect(html).not.toContain("Bake for 30 minutes.");
+      expect(html).not.toContain("Bake for");
+      expect(html).not.toContain("30 minutes");
       expect(isDisabled(html, "Next")).toBe(true);
       expect(isDisabled(html, "Prev")).toBe(false);
       expect(html).toMatch(/aria-live="polite"[^>]*data-announce[^>]*>Finished</);
@@ -255,6 +260,15 @@ describe("/recipes/$slug/cook", () => {
     // "Bake for 30 minutes." is the unnamed part's step, and that part has no ingredients.
     const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
     expect(html).not.toContain('aria-label="Ingredients in this step"');
+  });
+
+  // M26.2: a duration named in a step becomes a timer chip inline in its text.
+  test("a step card chips the durations it names", async () => {
+    await seedTart();
+    // "Bake for 30 minutes." is the unnamed part's step (index 4).
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
+    expect(html).toContain('data-testid="timer-chip"');
+    expect(html).toContain("30 minutes");
   });
 
   test("the view page links to cook mode, carrying the requested scale", async () => {

@@ -11,6 +11,11 @@ import type { Ingredient, Step } from "../domain/recipe";
 import { useStepTick } from "../lib/ticks";
 import { Markdown } from "./Markdown";
 import { StepIngredientChips } from "./StepIngredientChips";
+import { decorateDurations } from "./TimerChip";
+
+// One decorator, reused across every step row: it carries no per-step state,
+// only the (absent, until M26.3) onStart callback.
+const decorateTimers = decorateDurations();
 
 export type StepRowProps = {
   /** The owning recipe's id: ticks.ts keys session state by it. */
@@ -49,7 +54,7 @@ export function StepRow({ recipeId, step, position, ingredients = [] }: StepRowP
           data-testid="step-toggle"
         >
           <span className="sr-only">{`Step ${position}. ${done ? "Done. " : ""}`}</span>
-          <Markdown source={step.text} className={cn(done && "line-clamp-1")} />
+          <Markdown source={step.text} className={cn(done && "line-clamp-1")} decorate={decorateTimers} />
         </button>
         {/* A done step collapses to one line; its chips go with it. */}
         {!done && <StepIngredientChips recipeId={recipeId} text={step.text} ingredients={ingredients} className="md:hidden" />}
