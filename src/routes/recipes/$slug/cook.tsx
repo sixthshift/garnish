@@ -27,6 +27,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { z } from "zod";
+import { AddToShoppingButton } from "../../../components/AddToShoppingSheet";
 import { MadeThisButton } from "../../../components/Timeline";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { StepCard } from "../../../components/StepCard";
@@ -252,13 +253,17 @@ function CookPage() {
 }
 
 /** The deck's last "card": logged the cook is done, with a shortcut to log it (M11.7's sheet, reused as-is) and a way out. */
-function FinishedCard({ recipe, servings }: { recipe: Pick<Recipe, "id" | "name" | "slug" | "rating">; servings: number | undefined }) {
+function FinishedCard({ recipe, servings }: { recipe: Recipe; servings: number | undefined }) {
   return (
     <Card title={<span className="text-xl">Finished</span>} data-card="finished">
       <div className="flex flex-col items-center gap-4 py-6 text-center">
         <p className="text-2xl font-semibold text-fg-strong">Nice work, that's everything.</p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <MadeThisButton recipe={recipe} />
+          {/* The same button the recipe page carries (M31.3), on the scaled
+              document the deck was built from: what you just cooked is what
+              you need to replace. */}
+          <AddToShoppingButton recipe={recipe} />
           <Button asChild variant="outline" intent="neutral" size="sm">
             <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings }}>
               Exit

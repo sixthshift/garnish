@@ -132,3 +132,11 @@ describe("createNoticeStore", () => {
     expect(store.snapshot()).toHaveLength(MAX_NOTICES);
   });
 });
+
+test("a notice can carry one action button, and only when given", () => {
+  const onSelect = () => {};
+  expect(toNotice({ title: "3 items added", action: { label: "View list", onSelect } }, () => "id")).toMatchObject({
+    action: { label: "View list", onSelect },
+  });
+  expect(toNotice({ title: "Saved" }, () => "id")).not.toHaveProperty("action");
+});

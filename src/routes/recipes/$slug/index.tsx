@@ -16,10 +16,10 @@ import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Popover } from "@sixthshift/design-system/popover";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { z } from "zod";
+import { AddToShoppingButton } from "../../../components/AddToShoppingSheet";
 import { RecipeActions } from "../../../components/RecipeActions";
 import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientList, PartIngredients } from "../../../components/IngredientList";
@@ -126,19 +126,10 @@ function RecipePage() {
                   Cook
                 </Link>
               </Button>
-              {/* M30.4: designed against the button the shopping list (Later,
-                  scope.md) will need, so the page already carries it, disabled,
-                  with a tooltip saying when. */}
-              <Tooltip>
-                <Tooltip.Trigger asChild>
-                  <span className="inline-flex">
-                    <Button variant="outline" intent="neutral" size="sm" disabled data-testid="shopping-list-button" data-print="hide">
-                      Add to shopping list
-                    </Button>
-                  </span>
-                </Tooltip.Trigger>
-                <Tooltip.Body>Coming later</Tooltip.Body>
-              </Tooltip>
+              {/* M30.4 drew this button disabled; M31.3 wired it up. It takes
+                  the scaled document, so what the sheet offers is what the page
+                  is showing. */}
+              <AddToShoppingButton recipe={recipe} />
               <RecipeActions recipe={recipe} />
             </>
           }

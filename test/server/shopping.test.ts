@@ -13,6 +13,7 @@ import {
   addShoppingItems,
   clearTickedShoppingItems,
   listShoppingItems,
+  mergeShoppingItems,
   removeShoppingItem,
   reorderShoppingItems,
   tickShoppingItem,
@@ -139,4 +140,37 @@ test("reorderShoppingItems writes the sent order and returns the list", async ()
   const after = await callServerFn(reorderShoppingItems, { ids: [eggs!.id, bread!.id, milk!.id] });
   expect(after.map((i) => i.text)).toEqual(["Eggs", "Bread", "Milk"]);
   expect((await callServerFn(listShoppingItems)).map((i) => i.text)).toEqual(["Eggs", "Bread", "Milk"]);
+});
+
+test("mergeShoppingItems tops a line up and appends the sources behind it", async () => {
+  const food = await callServerFn(createFood, { name: "Plain flour" });
+  const unit = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const [flour] = await callServerFn(addShoppingItems, {
+    items: [
+      {
+        quantity: 100,
+        foodId: food.id,
+        unitId: unit.id,
+        sources: [{ recipeName: "Scones", partName: "", servings: 4, quantity: 100 }],
+      },
+    ],
+  });
+
+  const [merged] = await callServerFn(mergeShoppingItems, {
+    merges: [{ id: flour!.id, quantity: 300, sources: [{ recipeName: "Lemon tart", partName: "Pastry", servings: 8, quantity: 200 }] }],
+  });
+
+  expect(merged).toMatchObject({ id: flour!.id, quantity: 300 });
+  expect(merged!.sources.map((s) => [s.recipeName, s.quantity])).toEqual([
+    ["Scones", 100],
+    ["Lemon tart", 200],
+  ]);
+  expect((await callServerFn(listShoppingItems)).length).toBe(1);
+});
+
+test("mergeShoppingItems misses on an unknown id", async () => {
+  expect(await notFoundData(callServerFn(mergeShoppingItems, { merges: [{ id: MISSING, quantity: 1, sources: [] }] }))).toMatchObject({
+    entity: "shopping item",
+    id: MISSING,
+  });
 });

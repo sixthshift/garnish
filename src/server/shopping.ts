@@ -8,11 +8,22 @@ import { z } from "zod";
 import { required } from "./errors";
 import { shopping } from "../db/models/shopping/repo";
 import { Id, IdInput } from "../domain/reference";
-import { shoppingItemInputSchema, shoppingItemPatchSchema } from "../domain/shopping";
+import { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSourceInputSchema } from "../domain/shopping";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";
 
 export const AddShoppingItemsInput = z.object({ items: z.array(shoppingItemInputSchema) });
+
+/** One entry of `mergeIntoList`'s `merges`: a line's new total and the sources behind it. */
+export const MergeShoppingItemsInput = z.object({
+  merges: z.array(
+    z.object({
+      id: Id,
+      quantity: z.number().nonnegative().nullable(),
+      sources: z.array(shoppingItemSourceInputSchema).default([]),
+    }),
+  ),
+});
 
 export const UpdateShoppingItemInput = shoppingItemPatchSchema.extend({ id: Id });
 
@@ -30,6 +41,20 @@ export const addShoppingItems = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(AddShoppingItemsInput)
   .handler(async ({ data }) => shopping(await getDb()).addMany(data.items));
+
+/**
+ * Apply `mergeIntoList`'s `merges` half (M31.2): each named line takes its new
+ * total and keeps the sources appended to it. The `additions` half goes through
+ * `addShoppingItems`; the two together are one "Add to shopping list" tap.
+ * Not-found when any id is unknown.
+ */
+export const mergeShoppingItems = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(MergeShoppingItemsInput)
+  .handler(async ({ data }) => {
+    const repo = shopping(await getDb());
+    return data.merges.map((merge) => required(repo.mergeInto(merge.id, merge.quantity, merge.sources), "shopping item", merge.id));
+  });
 
 /** Merge a patch into one line. Not-found when the id is unknown. */
 export const updateShoppingItem = createServerFn({ method: "POST" })

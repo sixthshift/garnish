@@ -21,7 +21,17 @@ export type Notice = {
   message?: string;
   /** Milliseconds until it dismisses itself. 0 keeps it until dismissed by hand. */
   duration: number;
+  /**
+   * One optional link-style button inside the notice: "3 items added" with a
+   * "View list" beside it (M31.3). A callback rather than an href because the
+   * Toaster is not the router's business — the caller, which is already inside
+   * a route, navigates.
+   */
+  action?: NoticeAction;
 };
+
+/** The notice's one button: its label and what it does. */
+export type NoticeAction = { label: string; onSelect: () => void };
 
 /** What a caller passes to `notify()`. Everything but the text has a default. */
 export type NoticeInput = {
@@ -29,6 +39,7 @@ export type NoticeInput = {
   title?: string;
   message?: string;
   duration?: number;
+  action?: NoticeAction;
 };
 
 /** How many notices are shown at once; the oldest falls off the bottom. Mealie shows one, a small stack reads better on a phone. */
@@ -58,6 +69,7 @@ export function toNotice(input: NoticeInput, newId: () => string): Notice {
     intent,
     ...(input.title === undefined ? {} : { title: input.title }),
     ...(input.message === undefined ? {} : { message: input.message }),
+    ...(input.action === undefined ? {} : { action: input.action }),
     duration: input.duration ?? defaultDuration(intent),
   };
 }

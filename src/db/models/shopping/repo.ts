@@ -17,7 +17,7 @@ import { aisles as aisleRepository } from "../aisle/repo";
 import { foods as foodRepository } from "../food/repo";
 import { units as unitRepository } from "../unit/repo";
 import type { Food, Unit } from "../../../domain/recipe";
-import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemPatch } from "../../../domain/shopping";
+import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemPatch, ShoppingItemSourceInput } from "../../../domain/shopping";
 import { orm } from "../../connection/client";
 import { shoppingItem, shoppingItemSource } from "./schema";
 
@@ -156,6 +156,33 @@ export function shopping(db: Database) {
         });
       });
       return ids.map((id) => get(id)!);
+    },
+
+    /**
+     * Absorb additions into an existing line (M31.2's `merges`): set its new
+     * total and append the sources that made it up, in one transaction. Null
+     * when `id` is unknown. `update` cannot do this — a patch has no `sources`,
+     * because every other write to a line leaves its provenance alone.
+     */
+    mergeInto(id: string, quantity: number | null, sources: readonly ShoppingItemSourceInput[]): ShoppingItem | null {
+      if (!get(id)) return null;
+      dz.transaction((tx) => {
+        tx.update(shoppingItem).set({ quantity, updatedAt: nowUtc }).where(eq(shoppingItem.id, id)).run();
+        for (const source of sources) {
+          tx.insert(shoppingItemSource)
+            .values({
+              id: crypto.randomUUID(),
+              itemId: id,
+              recipeId: source.recipeId,
+              recipeName: source.recipeName,
+              partName: source.partName,
+              servings: source.servings,
+              quantity: source.quantity,
+            })
+            .run();
+        }
+      });
+      return get(id);
     },
 
     /** Merge `patch` into a line and stamp `updated_at`. Null when `id` is unknown. */

@@ -28,7 +28,21 @@ export function NoticeToast({ notice, onDismiss }: NoticeToastProps) {
 
   return (
     <div className="pointer-events-auto" data-notice={notice.intent} data-notice-id={id}>
-      <Toast standalone={false} intent={notice.intent} title={notice.title} onClose={() => onDismiss(id)}>
+      <Toast
+        standalone={false}
+        intent={notice.intent}
+        title={notice.title}
+        {...(notice.action === undefined
+          ? {}
+          : {
+              action: notice.action.label,
+              onAction: () => {
+                notice.action?.onSelect();
+                onDismiss(id);
+              },
+            })}
+        onClose={() => onDismiss(id)}
+      >
         {notice.message}
       </Toast>
     </div>
