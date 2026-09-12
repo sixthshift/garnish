@@ -484,7 +484,7 @@ describe("/recipes/$slug/edit", () => {
     });
     const edit = await renderRoute("/recipes/lemon-tart/edit");
     const order = (html: string, needles: string[]) => needles.map((needle) => html.indexOf(needle));
-    const editAt = order(edit, ['data-placeholder="image"', 'name="name"', 'aria-label="Notes"', 'aria-label="Parts"', 'aria-label="Details"']);
+    const editAt = order(edit, ['name="name"', 'data-placeholder="image"', 'aria-label="Notes"', 'aria-label="Parts"', 'aria-label="Details"']);
     expect(editAt.every((at) => at >= 0)).toBe(true);
     expect(editAt).toEqual([...editAt].sort((a, b) => a - b));
 

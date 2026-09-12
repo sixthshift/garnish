@@ -1,12 +1,28 @@
 // The recipe form's pure helpers, and the Check for M5.2: the default document
 // the form submits (emptyDraft plus a name) saves and reads back with one
-// component. The form's rendering is covered by the route tests in
-// test/routes/loaders.test.tsx, which mount it with a router.
-import { describe, expect, test } from "vitest";
+// component, plus the head of the form (M27.1). Most of the form's rendering is
+// covered by the route tests in test/routes/loaders.test.tsx, which mount it
+// with a router, as the two render tests at the foot of this file do.
+import { describe, expect, test, vi } from "vitest";
 import { detailsHint, draftFromRecipe, emptyDraft, hasDetails, isDirty, parseAmount, parseMinutes, saveNotice, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
 import { type Recipe, recipeInputSchema } from "../../src/domain/recipe";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
+import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
+
+// The two render tests below go through the real routes, whose loaders call
+// server functions; under vitest those need running in-process (see
+// helpers/server.ts).
+const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<string, unknown>>) => {
+  const { runLocally } = await import("../helpers/server");
+  return runLocally(await importOriginal());
+});
+vi.mock("../../src/server/recipes", local);
+vi.mock("../../src/server/units", local);
+vi.mock("../../src/server/tags", local);
+vi.mock("../../src/server/foods", local);
+vi.mock("../../src/server/aisles", local);
+vi.mock("../../src/server/timeline", local);
 
 useTempDataDir();
 
@@ -299,5 +315,31 @@ describe("detailsHint", () => {
 
   test("says what could go in there when it is empty", () => {
     expect(detailsHint(emptyDraft())).toBe("Yield, times, tags, source");
+  });
+});
+
+// M27.1: the head of the form. Rendered through the real routes, because the
+// form needs a router (useNavigate, useBlocker). There is no DOM here, so the
+// autofocus is asserted as the attribute React serialises, not as
+// document.activeElement.
+describe("the head of the form", () => {
+  const head = (html: string) => ["name=\"name\"", "name=\"description\"", 'data-placeholder="image"', 'aria-label="Servings"'].map((needle) => html.indexOf(needle));
+
+  test("a new recipe: name, description, image, servings, and the name is autofocused", async () => {
+    const html = await renderRoute("/recipes/new?source=manual");
+    const at = head(html);
+    expect(at.every((index) => index >= 0)).toBe(true);
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+    const nameInput = /<input[^>]*name="name"[^>]*>/.exec(html)?.[0] ?? "";
+    expect(nameInput).toContain('autofocus=""');
+  });
+
+  test("an existing recipe runs the same order and does not steal the focus", async () => {
+    await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "", ingredients: [], steps: [] }] });
+    const html = await renderRoute("/recipes/lemon-tart/edit");
+    const at = head(html);
+    expect(at.every((index) => index >= 0)).toBe(true);
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+    expect(html).not.toContain("autofocus");
   });
 });

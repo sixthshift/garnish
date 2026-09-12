@@ -7,7 +7,10 @@
 // the document validates.
 //
 // The order is the view page's order (decisions.md row 50, updated by row 61):
-// image and name, then notes, then the parts with their ingredients and steps.
+// name first — autofocused on a new recipe, so typing starts where the recipe
+// does — then description, then the image, then notes, then the parts with
+// their ingredients and steps. The picture is the one field you can only fill
+// from the camera roll, so it does not stand between "New recipe" and the name.
 // Everything else — yield, times, tags, source — is behind a `Details`
 // disclosure that opens folded on a new recipe and open on one that has any of
 // it, so the first thing between "New recipe" and the first ingredient is the
@@ -479,6 +482,21 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         </div>
       ) : (
         <>
+      <FormField label="Name" required feedback={feedback(errors, "name")}>
+        <Input
+          name="name"
+          value={draft.name}
+          autoComplete="off"
+          autoFocus={existing === undefined}
+          disabled={saving}
+          onChange={(event) => patch({ name: event.target.value })}
+        />
+      </FormField>
+
+      <FormField label="Description" feedback={feedback(errors, "description")}>
+        <Textarea name="description" rows={3} value={draft.description} disabled={saving} onChange={(event) => patch({ description: event.target.value })} />
+      </FormField>
+
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium">Image</span>
         <ImageUpload
@@ -493,14 +511,6 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
           }}
         />
       </div>
-
-      <FormField label="Name" required feedback={feedback(errors, "name")}>
-        <Input name="name" value={draft.name} autoComplete="off" disabled={saving} onChange={(event) => patch({ name: event.target.value })} />
-      </FormField>
-
-      <FormField label="Description" feedback={feedback(errors, "description")}>
-        <Textarea name="description" rows={3} value={draft.description} disabled={saving} onChange={(event) => patch({ description: event.target.value })} />
-      </FormField>
 
       <NumberStepper label="Servings" value={draft.recipeServings} min={0} disabled={saving} onChange={(recipeServings) => patch({ recipeServings })} />
 
