@@ -57,7 +57,7 @@ import { Select } from "@sixthshift/design-system/select";
 import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
 import { slugify } from "../domain/names";
 import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchema, type Tag, type Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
@@ -313,9 +313,16 @@ export type RecipeFormProps = {
   existing?: { id: string; slug: string };
   /** Override the detected online state (tests). Writes are refused offline; nothing is queued. */
   online?: boolean;
+  /**
+   * An image an import found, as a remote URL (M23.6). Shown straight away and
+   * fetched once through `fetchImage`, so it joins the same upload path a
+   * picked file does. A failure is silent: the recipe is worth more than its
+   * picture, and the field is right there to try again with.
+   */
+  importedImageUrl?: string | null;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride }: RecipeFormProps) {
+export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl }: RecipeFormProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const detectedOnline = useOnline();
@@ -349,6 +356,24 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
   );
 
   const fetchFromUrl = async (url: string): Promise<File> => fetchedImageFile(await fetchImage({ data: { url } }));
+
+  // An imported image is a URL on someone else's server. Fetch it once, into
+  // the same `file` a picked one lands in, so Save stores it here.
+  useEffect(() => {
+    if (importedImageUrl == null || importedImageUrl === "") return;
+    let stale = false;
+    fetchFromUrl(importedImageUrl)
+      .then((fetched) => {
+        if (!stale) setFile(fetched);
+      })
+      .catch(() => {
+        // Shown as a warning by `saveNotice` only if a save actually tries it.
+      });
+    return () => {
+      stale = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importedImageUrl]);
 
   const applyJson = () => {
     const result = draftFromJson(json ?? "");
@@ -458,6 +483,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         <span className="text-sm font-medium">Image</span>
         <ImageUpload
           image={draft.image}
+          previewUrl={importedImageUrl}
           disabled={saving}
           onUrl={fetchFromUrl}
           onSelect={(chosen) => setFile(chosen)}

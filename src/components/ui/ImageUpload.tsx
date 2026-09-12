@@ -19,6 +19,8 @@ import { messageFrom } from "../../lib/notify";
 export type ImageUploadProps = {
   /** Stored image file name, as on the recipe row. */
   image?: string | null;
+  /** An image that exists only as a remote URL — one an import found, before it has been fetched and stored (M23.6). Shown when nothing local or stored is. */
+  previewUrl?: string | null;
   onSelect: (file: File) => void;
   /** When given, a "Remove image" button shows while there is an image. */
   onRemove?: () => void;
@@ -28,12 +30,12 @@ export type ImageUploadProps = {
   className?: string;
 };
 
-/** The URL to show: a local preview wins over the stored image; null means placeholder. Pure. */
-export function imageSrc(preview: string | null, image: string | null | undefined): string | null {
-  return preview ?? recipeImageUrl(image);
+/** The URL to show, most local first: a just-picked file, the stored image, then a remote one an import found. Null means placeholder. Pure. */
+export function imageSrc(preview: string | null, image: string | null | undefined, previewUrl?: string | null): string | null {
+  return preview ?? recipeImageUrl(image) ?? previewUrl ?? null;
 }
 
-export function ImageUpload({ image, onSelect, onRemove, onUrl, disabled, className }: ImageUploadProps) {
+export function ImageUpload({ image, previewUrl, onSelect, onRemove, onUrl, disabled, className }: ImageUploadProps) {
   const inputId = useId();
   const urlId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ export function ImageUpload({ image, onSelect, onRemove, onUrl, disabled, classN
     return () => URL.revokeObjectURL(preview);
   }, [preview]);
 
-  const src = imageSrc(preview, image);
+  const src = imageSrc(preview, image, previewUrl);
   const hasImage = src !== null;
 
   const choose = (file: File | undefined) => {

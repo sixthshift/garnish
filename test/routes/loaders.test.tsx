@@ -542,10 +542,26 @@ describe("/recipes/$slug/edit", () => {
 });
 
 describe("/recipes/new", () => {
+  test("opens on the source chooser, not the form (M23.6)", async () => {
+    const html = await renderRoute("/recipes/new");
+    expect(html).toContain('data-source-stage="choose"');
+    expect(html).toContain("Where is this recipe from?");
+    expect(html).toContain('data-source="url"');
+    expect(html).toContain('data-source="manual"');
+    expect(html).not.toContain('aria-label="New recipe"'); // the form is not mounted yet
+  });
+
+  test("?source=url opens the address field", async () => {
+    const html = await renderRoute("/recipes/new?source=url");
+    expect(html).toContain('data-source-stage="url"');
+    expect(html).toContain('aria-label="Recipe address"');
+    expect(html).not.toContain('aria-label="New recipe"');
+  });
+
   test("renders the blank form with the seeded units available", async () => {
     const units = await callServerFn(listUnits, {});
     expect(units.length).toBeGreaterThan(0); // seeded reference data
-    const html = await renderRoute("/recipes/new");
+    const html = await renderRoute("/recipes/new?source=manual");
     expect(html).toContain("New recipe");
     expect(html).toContain('aria-label="New recipe"');
     expect(html).toMatch(/<input[^>]*name="name"[^>]*value=""/);
