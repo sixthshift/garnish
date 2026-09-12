@@ -1,6 +1,15 @@
 // The recipe editor's part list: add, rename, reorder and delete the named
 // parts a recipe is made of. Each row edits its ingredients through
 // `IngredientsEditor` and its steps through `StepsEditor`.
+//
+// A flat recipe — one part, unnamed — gets none of that chrome (decisions.md
+// row 53). It is the common case, the view page has printed it without a
+// heading since row 49, and a blank "Part name" input above the only
+// ingredient list made every simple recipe look like a structured one that
+// had forgotten its label. `isBare` is the test; "Add part" is the way out of
+// it, and pressing it gives this part its name field back along with the new
+// one.
+//
 // The parent owns the draft: every change goes through one of the pure
 // helpers below and comes back through `onChange` as a new `RecipeDraft`.
 //
@@ -84,6 +93,16 @@ export function ingredientLine(ingredient: DraftIngredient): string {
   return (ingredient.originalText ?? "").trim() || (ingredient.note ?? "").trim();
 }
 
+/**
+ * Is this draft a flat recipe — one part, unnamed? Then the part is not a part
+ * anyone chose, it is just the recipe (decisions.md rows 49 and 53), and the
+ * editor prints its two lists without a name field, a card or a reorder
+ * handle, exactly as the view page prints it without a heading. Pure.
+ */
+export function isBare(draft: RecipeDraft): boolean {
+  return draft.parts.length === 1 && (draft.parts[0]!.name ?? "").trim() === "";
+}
+
 /** "3 ingredients and 1 step", "1 ingredient", "2 steps". Pure. */
 export function contentSummary(part: DraftPart): string {
   const phrases: string[] = [];
@@ -113,13 +132,30 @@ export function PartsEditor({ draft, onChange, units = [], errors = {}, disabled
     onChange(removePart(draft, index));
   };
 
+  const addButton = (
+    <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addPart(draft))}>
+      Add part
+    </Button>
+  );
+
+  // A flat recipe is its own main body: no heading, no name, no card. "Add
+  // part" is the one control, and pressing it gives this part its chrome back
+  // along with the new one's.
+  if (isBare(draft)) {
+    return (
+      <section className="flex flex-col gap-4" aria-label="Parts" data-bare="">
+        <IngredientsEditor draft={draft} pi={0} units={units} onChange={onChange} errors={errors} disabled={disabled} />
+        <StepsEditor draft={draft} pi={0} onChange={onChange} errors={errors} disabled={disabled} />
+        <div className="flex justify-end">{addButton}</div>
+      </section>
+    );
+  }
+
   return (
     <section className="flex flex-col gap-3" aria-label="Parts">
       <div className="flex items-center justify-between gap-3">
         <SectionTitle as="h2">Parts</SectionTitle>
-        <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addPart(draft))}>
-          Add part
-        </Button>
+        {addButton}
       </div>
 
       {/* A draft normally keeps at least one part (the schema requires it); the fallback covers a draft that lost it. */}

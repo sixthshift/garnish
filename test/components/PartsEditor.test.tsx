@@ -10,6 +10,7 @@ import {
   contentSummary,
   hasContent,
   ingredientLine,
+  isBare,
   movePart,
   newPart,
   removePart,
@@ -191,13 +192,44 @@ describe("PartsEditor", () => {
     expect(html).not.toContain('role="dialog"');
   });
 
-  test("a sole component has no remove button, and empty lists say so", () => {
+  test("a flat recipe prints its two lists with no part chrome at all (M21.1)", () => {
     const html = renderToString(<PartsEditor draft={emptyDraft()} onChange={() => {}} />);
-    expect(html).toContain('aria-label="Part 1 name"');
+    expect(html).toContain('data-bare=""');
+    expect(html).not.toContain('aria-label="Part 1 name"');
+    expect(html).not.toContain("Part name"); // no placeholder either
+    expect(html).not.toContain(">Parts<"); // no heading
     expect(html).not.toContain("Remove part");
+    expect(html).not.toContain("Move part");
+    // The lists themselves are all there, and so is the way out.
     expect(html).toContain("No ingredients yet");
     expect(html).toContain("No steps yet");
     expect(html).not.toContain("No parts yet");
+    expect(html).toContain(">Add part<");
+  });
+
+  test("a sole part that has been named keeps its chrome", () => {
+    const named = { ...emptyDraft(), parts: [{ ...emptyDraft().parts[0]!, name: "Pastry" }] };
+    const html = renderToString(<PartsEditor draft={named} onChange={() => {}} />);
+    expect(html).not.toContain('data-bare=""');
+    expect(html).toContain('aria-label="Part 1 name"');
+    expect(html).toContain(">Parts<");
+    // Still the only part, so still nothing to remove it with.
+    expect(html).not.toContain("Remove part");
+  });
+
+  test("Add part on a flat recipe keeps its rows and gives both parts a name field", () => {
+    const base = emptyDraft();
+    const flat: RecipeDraft = { ...base, parts: [{ ...base.parts[0]!, steps: [{ id: "s1", text: "Mix." }] }] };
+    // The bare branch's one control is Add part, which is `addPart`.
+    expect(isBare(flat)).toBe(true);
+    const next: RecipeDraft = addPart(flat);
+    expect(isBare(next)).toBe(false);
+    expect(next.parts).toHaveLength(2);
+    expect(next.parts[0]!.steps).toEqual(flat.parts[0]!.steps);
+    const html = renderToString(<PartsEditor draft={next} onChange={() => {}} />);
+    expect(html).toContain('aria-label="Part 1 name"');
+    expect(html).toContain('aria-label="Part 2 name"');
+    expect(html).toMatch(/<textarea[^>]*name="parts\.0\.steps\.0\.text"[^>]*>Mix\.<\/textarea>/);
   });
 
   test("a draft with no components says so instead of rendering an empty list", () => {
@@ -205,6 +237,11 @@ describe("PartsEditor", () => {
     expect(html).toContain("No parts yet");
     expect(html).not.toContain('aria-label="Part 1 name"');
     expect(html).toContain(">Add part<"); // the way out of the empty state
+  });
+
+  test("disabled disables the add button on a flat recipe too", () => {
+    const html = renderToString(<PartsEditor draft={emptyDraft()} onChange={() => {}} disabled />);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Add part</);
   });
 
   test("disabled disables the inputs and the add button", () => {
