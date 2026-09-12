@@ -3,7 +3,7 @@
 // component. The form's rendering is covered by the route tests in
 // test/routes/loaders.test.tsx, which mount it with a router.
 import { describe, expect, test } from "vitest";
-import { draftFromRecipe, emptyDraft, isDirty, parseAmount, parseMinutes, saveNotice, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
+import { detailsHint, draftFromRecipe, emptyDraft, hasDetails, isDirty, parseAmount, parseMinutes, saveNotice, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
 import { type Recipe, recipeInputSchema } from "../../src/domain/recipe";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -260,5 +260,44 @@ describe("isDirty", () => {
     expect(isDirty(initial, { ...initial, rating: null })).toBe(true);
     expect(isDirty({ ...initial, id: undefined }, initial)).toBe(true);
     expect(isDirty({ ...emptyDraft(), parts: [] }, { ...emptyDraft(), parts: [] })).toBe(false);
+  });
+});
+
+describe("hasDetails", () => {
+  test("a blank recipe has nothing in Details, so it opens folded", () => {
+    expect(hasDetails(emptyDraft())).toBe(false);
+  });
+
+  test.each([
+    ["recipeYieldQuantity", { recipeYieldQuantity: 12 }],
+    ["yieldUnit", { yieldUnit: gram }],
+    ["recipeYield", { recipeYield: "muffins" }],
+    ["prepTime", { prepTime: 20 }],
+    ["performTime", { performTime: 40 }],
+    ["tags", { tags: [weeknight] }],
+    ["sourceUrl", { sourceUrl: "https://example.test/x" }],
+  ])("any of %s opens it", (_field, patch) => {
+    expect(hasDetails({ ...emptyDraft(), ...patch })).toBe(true);
+  });
+
+  test("what is not in Details does not open it", () => {
+    expect(hasDetails({ ...emptyDraft(), name: "Toast", description: "Hot bread", recipeServings: 4, rating: 5 })).toBe(false);
+  });
+
+  test("a zero yield and a blank source are not values", () => {
+    expect(hasDetails({ ...emptyDraft(), recipeYieldQuantity: 0, recipeYield: "  ", sourceUrl: "  " })).toBe(false);
+  });
+});
+
+describe("detailsHint", () => {
+  test("names what is in there", () => {
+    expect(detailsHint({ ...emptyDraft(), recipeYield: "tart", prepTime: 20, tags: [weeknight], sourceUrl: "https://example.test/x" })).toBe(
+      "yield, times, 1 tag, source",
+    );
+    expect(detailsHint({ ...emptyDraft(), tags: [weeknight, { ...weeknight, id: "x", name: "Baking", slug: "baking" }] })).toBe("2 tags");
+  });
+
+  test("says what could go in there when it is empty", () => {
+    expect(detailsHint(emptyDraft())).toBe("Yield, times, tags, source");
   });
 });

@@ -1,11 +1,24 @@
-// The recipe editor's header form: name, description, servings, yield, times,
-// rating, tags and image. It is a controlled form over a `RecipeDraft`, a
-// concrete `RecipeInput`, so what it holds is exactly what `createRecipe` and
+// The recipe editor. A controlled form over a `RecipeDraft`, a concrete
+// `RecipeInput`, so what it holds is exactly what `createRecipe` and
 // `updateRecipe` accept; submit zod-parses the draft and shows field errors
 // inline. Parts are edited through `PartsEditor` (add, rename, reorder,
 // remove) with their ingredient and step rows; every step lives in a part, so
-// the form has no step list of its own. Notes have an editor below the parts.
-// A new recipe carries one blank part so the document validates.
+// the form has no step list of its own. A new recipe carries one blank part so
+// the document validates.
+//
+// The order is the view page's order (decisions.md row 50): image and name,
+// then the parts with their ingredients and steps, then notes. Everything else
+// — yield, times, tags, source — is behind a `Details` disclosure that opens
+// folded on a new recipe and open on one that has any of it, so the first
+// thing between "New recipe" and the first ingredient is the name and not six
+// pieces of paperwork. The disclosure is a `<details>`, so a field inside a
+// closed one is still in the form and still validates.
+//
+// Rating and last made are not here at all (decisions.md row 51). Decision 41
+// made "Made this" the thing that records a cook and writes `last_made`, and
+// rating a recipe on the screen where you are first typing it in is rating
+// something you have not cooked. The draft still carries both and an edit
+// round-trips them untouched.
 //
 // The image is not part of the document write. A chosen file is held until the
 // recipe has an id, then posted to /api/recipes/:id/image; both happen inside
@@ -54,9 +67,9 @@ import { createRecipe, updateRecipe } from "../server/recipes";
 import { newPart, PartsEditor } from "./PartsEditor";
 import { NotesEditor } from "./NotesEditor";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
+import { Disclosure } from "./ui/Disclosure";
 import { ImageUpload } from "./ui/ImageUpload";
 import { NumberStepper } from "./ui/NumberStepper";
-import { Rating } from "./ui/Rating";
 import { SaveBar } from "./ui/SaveBar";
 
 type PartInput = RecipeInput["parts"][number];
@@ -255,6 +268,34 @@ export function parseMinutes(text: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+/**
+ * Does the draft have anything in the Details section — yield, times, tags or
+ * a source? A new recipe has none of it, which is why the section opens
+ * folded; an existing one usually has some, and a field you cannot see is a
+ * field you will forget to change. Pure.
+ */
+export function hasDetails(draft: RecipeDraft): boolean {
+  return (
+    draft.recipeYieldQuantity > 0 ||
+    draft.yieldUnit !== null ||
+    draft.recipeYield.trim() !== "" ||
+    draft.prepTime !== null ||
+    draft.performTime !== null ||
+    draft.tags.length > 0 ||
+    (draft.sourceUrl ?? "").trim() !== ""
+  );
+}
+
+/** The quiet line beside "Details": what is in there, or what is not. Pure. */
+export function detailsHint(draft: RecipeDraft): string {
+  const parts: string[] = [];
+  if (draft.recipeYieldQuantity > 0 || draft.recipeYield.trim() !== "") parts.push("yield");
+  if (draft.prepTime !== null || draft.performTime !== null) parts.push("times");
+  if (draft.tags.length > 0) parts.push(`${draft.tags.length} tag${draft.tags.length === 1 ? "" : "s"}`);
+  if ((draft.sourceUrl ?? "").trim() !== "") parts.push("source");
+  return parts.length === 0 ? "Yield, times, tags, source" : parts.join(", ");
+}
+
 function feedback(errors: FieldErrors, path: string): FormFieldFeedback | undefined {
   const message = errors[path];
   return message === undefined ? undefined : { intent: "danger", message };
@@ -282,6 +323,9 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
   const [saving, setSaving] = useState(false);
   const [json, setJson] = useState<string | null>(null);
   const [jsonError, setJsonError] = useState<string | null>(null);
+  // Decided from the draft the form opened on, not the live one, so typing a
+  // tag does not fold the section you typed it into.
+  const [detailsOpen] = useState(() => hasDetails(initial));
 
   const dirty = (isDirty(initial, draft) || file !== null) && !saving;
   const blocker = useBlocker({ shouldBlockFn: () => true, enableBeforeUnload: () => dirty, disabled: !dirty, withResolver: true });
@@ -406,86 +450,95 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         <Textarea name="description" rows={3} value={draft.description} disabled={saving} onChange={(event) => patch({ description: event.target.value })} />
       </FormField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <NumberStepper label="Servings" value={draft.recipeServings} min={0} disabled={saving} onChange={(recipeServings) => patch({ recipeServings })} />
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium">Rating</span>
-          <Rating value={draft.rating ?? 0} disabled={saving} onChange={(rating) => patch({ rating: rating === 0 ? null : rating })} />
-        </div>
-      </div>
-
-      <fieldset className="grid gap-4 sm:grid-cols-3">
-        <legend className="mb-2 text-sm font-medium">Yield</legend>
-        <FormField label="Quantity" feedback={feedback(errors, "recipeYieldQuantity")}>
-          <Input
-            name="recipeYieldQuantity"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="any"
-            value={draft.recipeYieldQuantity === 0 ? "" : String(draft.recipeYieldQuantity)}
-            disabled={saving}
-            onChange={(event) => patch({ recipeYieldQuantity: parseAmount(event.target.value) })}
-          />
-        </FormField>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">Unit</span>
-          <Select
-            aria-label="Yield unit"
-            options={unitOptions}
-            value={draft.yieldUnit?.id}
-            placeholder="No unit"
-            clearable
-            searchable
-            disabled={saving}
-            onValueChange={(id) => patch({ yieldUnit: units.find((unit) => unit.id === id) ?? null })}
-          />
-        </div>
-        <FormField label="Makes" description="e.g. loaf, 12 muffins" feedback={feedback(errors, "recipeYield")}>
-          <Input name="recipeYield" value={draft.recipeYield} autoComplete="off" disabled={saving} onChange={(event) => patch({ recipeYield: event.target.value })} />
-        </FormField>
-      </fieldset>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Prep time (minutes)" feedback={feedback(errors, "prepTime")}>
-          <Input
-            name="prepTime"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1}
-            value={draft.prepTime ?? ""}
-            disabled={saving}
-            onChange={(event) => patch({ prepTime: parseMinutes(event.target.value) })}
-          />
-        </FormField>
-        <FormField label="Cook time (minutes)" feedback={feedback(errors, "performTime")}>
-          <Input
-            name="performTime"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1}
-            value={draft.performTime ?? ""}
-            disabled={saving}
-            onChange={(event) => patch({ performTime: parseMinutes(event.target.value) })}
-          />
-        </FormField>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={tagsId}>Tags</Label>
-        <TagInput
-          id={tagsId}
-          value={draft.tags.map((tag) => tag.name)}
-          placeholder="Add a tag and press Enter"
-          onChange={(names) => patch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
-        />
-      </div>
+      <NumberStepper label="Servings" value={draft.recipeServings} min={0} disabled={saving} onChange={(recipeServings) => patch({ recipeServings })} />
 
       <PartsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
 
       <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
+
+      <Disclosure title="Details" hint={detailsHint(draft)} defaultOpen={detailsOpen}>
+        <fieldset className="grid gap-4 sm:grid-cols-3">
+          <legend className="mb-2 text-sm font-medium">Yield</legend>
+          <FormField label="Quantity" feedback={feedback(errors, "recipeYieldQuantity")}>
+            <Input
+              name="recipeYieldQuantity"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              value={draft.recipeYieldQuantity === 0 ? "" : String(draft.recipeYieldQuantity)}
+              disabled={saving}
+              onChange={(event) => patch({ recipeYieldQuantity: parseAmount(event.target.value) })}
+            />
+          </FormField>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">Unit</span>
+            <Select
+              aria-label="Yield unit"
+              options={unitOptions}
+              value={draft.yieldUnit?.id}
+              placeholder="No unit"
+              clearable
+              searchable
+              disabled={saving}
+              onValueChange={(id) => patch({ yieldUnit: units.find((unit) => unit.id === id) ?? null })}
+            />
+          </div>
+          <FormField label="Makes" description="e.g. loaf, 12 muffins" feedback={feedback(errors, "recipeYield")}>
+            <Input name="recipeYield" value={draft.recipeYield} autoComplete="off" disabled={saving} onChange={(event) => patch({ recipeYield: event.target.value })} />
+          </FormField>
+        </fieldset>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Prep time (minutes)" feedback={feedback(errors, "prepTime")}>
+            <Input
+              name="prepTime"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1}
+              value={draft.prepTime ?? ""}
+              disabled={saving}
+              onChange={(event) => patch({ prepTime: parseMinutes(event.target.value) })}
+            />
+          </FormField>
+          <FormField label="Cook time (minutes)" feedback={feedback(errors, "performTime")}>
+            <Input
+              name="performTime"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1}
+              value={draft.performTime ?? ""}
+              disabled={saving}
+              onChange={(event) => patch({ performTime: parseMinutes(event.target.value) })}
+            />
+          </FormField>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={tagsId}>Tags</Label>
+          <TagInput
+            id={tagsId}
+            value={draft.tags.map((tag) => tag.name)}
+            placeholder="Add a tag and press Enter"
+            onChange={(names) => patch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
+          />
+        </div>
+
+        <FormField label="Source" description="Where the recipe came from" feedback={feedback(errors, "sourceUrl")}>
+          <Input
+            name="sourceUrl"
+            type="url"
+            inputMode="url"
+            placeholder="https://"
+            value={draft.sourceUrl ?? ""}
+            autoComplete="off"
+            disabled={saving}
+            onChange={(event) => patch({ sourceUrl: event.target.value.trim() === "" ? null : event.target.value })}
+          />
+        </FormField>
+      </Disclosure>
         </>
       )}
 

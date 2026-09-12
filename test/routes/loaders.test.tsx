@@ -431,8 +431,10 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toMatch(/<input[^>]*name="name"[^>]*value="Lemon tart"/);
     expect(html).toMatch(/<textarea[^>]*name="description"[^>]*>Sharp and buttery\.<\/textarea>/);
     expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="6"/);
-    expect(html).toContain('aria-label="Rated 4 out of 5"');
-    expect(html.match(/aria-pressed="true"/g)).toHaveLength(4);
+    // Rating and last made are set from the view page, not here (decisions row 51).
+    expect(html).not.toContain('aria-label="Rated 4 out of 5"');
+    // A recipe with a yield and times opens its Details section (decisions row 50).
+    expect(html).toMatch(/<details open=""[^>]*aria-label="Details"/);
     expect(html).toMatch(/<input[^>]*name="recipeYieldQuantity"[^>]*value="1"/);
     expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">gram<\/span>/);
     expect(html).toMatch(/<input[^>]*name="recipeYield"[^>]*value="tart"/);
@@ -443,6 +445,26 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toContain('data-placeholder="image"');
     expect(html).toContain(">Save changes<");
     expect(html).toContain('href="/recipes/lemon-tart"'); // cancel
+  });
+
+  test("the editor's sections run in the view page's order (decisions row 50)", async () => {
+    await callServerFn(createRecipe, {
+      name: "Lemon tart",
+      recipeYield: "tart",
+      notes: [{ title: "Tip", text: "Chill the pastry." }],
+      parts: [{ name: "", ingredients: [], steps: [] }],
+    });
+    const edit = await renderRoute("/recipes/lemon-tart/edit");
+    const order = (html: string, needles: string[]) => needles.map((needle) => html.indexOf(needle));
+    const editAt = order(edit, ['data-placeholder="image"', 'name="name"', 'aria-label="Parts"', 'aria-label="Notes"', 'aria-label="Details"']);
+    expect(editAt.every((at) => at >= 0)).toBe(true);
+    expect(editAt).toEqual([...editAt].sort((a, b) => a - b));
+
+    // The view page runs the same way as far as it goes: header, parts, notes.
+    const view = await renderRoute("/recipes/lemon-tart");
+    const viewAt = order(view, ["Lemon tart", 'aria-label="Notes"']);
+    expect(viewAt.every((at) => at >= 0)).toBe(true);
+    expect(viewAt).toEqual([...viewAt].sort((a, b) => a - b));
   });
 
   test("shows both components of a two-component recipe in order, each with its rows read-only", async () => {
@@ -524,8 +546,11 @@ describe("/recipes/new", () => {
     expect(html).toMatch(/<input[^>]*name="name"[^>]*value=""/);
     expect(html).toMatch(/<textarea[^>]*name="description"[^>]*><\/textarea>/);
     expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="0"/);
-    expect(html).toContain('aria-label="Rated 0 out of 5"');
-    expect(html).not.toContain('aria-pressed="true"');
+    expect(html).not.toContain('aria-label="Rated 0 out of 5"'); // decisions row 51
+    // A blank recipe has nothing in Details, so it opens folded — but the
+    // fields are still in the form (decisions row 50).
+    expect(html).toMatch(/<details data-disclosure[^>]*aria-label="Details"/);
+    expect(html).not.toContain('<details open=""');
     expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">No unit<\/span>/);
     expect(html).toMatch(/<input[^>]*name="prepTime"[^>]*value=""/);
     expect(html).not.toContain('aria-label="Remove '); // no tags yet
