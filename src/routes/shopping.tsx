@@ -15,6 +15,7 @@
 // `ShoppingListView` takes its writes as callbacks and renders anywhere; the
 // route component binds them to the server functions through `useMutate`, the
 // way every other page writes. That split is what the render tests exercise.
+import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
@@ -22,11 +23,13 @@ import { Heading } from "@sixthshift/design-system/heading";
 import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { groupByAisle, shoppingItemLabel, sourceLabel, type ShoppingItem } from "../domain/shopping";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
+import { applyOutbox, pendingLabel, useOutbox, type OutboxEntry, type OutboxKind } from "../lib/outbox";
+import { useOnline } from "../lib/useOnline";
 import {
   addShoppingItems,
   clearTickedShoppingItems,
@@ -34,6 +37,12 @@ import {
   removeShoppingItem,
   tickShoppingItem,
 } from "../server/shopping";
+
+/** One queued write, sent. The list's two offline-able writes and nothing else. */
+export function sendOutboxEntry(entry: OutboxEntry): Promise<unknown> {
+  if (entry.kind === "remove") return removeShoppingItem({ data: { id: entry.itemId } });
+  return tickShoppingItem({ data: { id: entry.itemId, ticked: entry.kind === "tick" } });
+}
 
 export type ShoppingListData = { items: ShoppingItem[] };
 
@@ -57,20 +66,44 @@ export type ShoppingListViewProps = {
   onClearTicked: () => void;
   /** A write is in flight: every control is disabled, as the editor's SaveBar does. */
   busy?: boolean;
+  /** How many ticks are queued for the server (M31.5). Shown in the header; 0 shows nothing. */
+  pending?: number;
+  /**
+   * No network: adding a line and clearing the ticked are refused (they create
+   * and destroy rows), while ticking and removing queue. The one exception to
+   * the editor's "writes are never attempted offline".
+   */
+  offline?: boolean;
 };
 
 /** The list itself, writes injected. Rendered by the route and by the tests. */
-export function ShoppingListView({ items, onAdd, onTick, onRemove, onClearTicked, busy = false }: ShoppingListViewProps) {
+export function ShoppingListView({
+  items,
+  onAdd,
+  onTick,
+  onRemove,
+  onClearTicked,
+  busy = false,
+  pending = 0,
+  offline = false,
+}: ShoppingListViewProps) {
   const groups = groupByAisle(items);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 md:p-6">
       <div className="flex items-center justify-between gap-3">
         <Heading as="h1">Shopping</Heading>
-        {items.length > 0 && <Muted as="p">{toBuyLabel(items)}</Muted>}
+        <div className="flex items-center gap-2">
+          {pending > 0 && (
+            <Badge intent="warning" data-testid="shopping-pending">
+              {pendingLabel(pending)}
+            </Badge>
+          )}
+          {items.length > 0 && <Muted as="p">{toBuyLabel(items)}</Muted>}
+        </div>
       </div>
 
-      <AddItemForm onAdd={onAdd} busy={busy} />
+      <AddItemForm onAdd={onAdd} busy={busy || offline} />
 
       <EmptyBoundary
         isEmpty={items.length === 0}
@@ -87,7 +120,7 @@ export function ShoppingListView({ items, onAdd, onTick, onRemove, onClearTicked
               <div className="flex items-center justify-between gap-3">
                 <SectionTitle as="h2">{group.name}</SectionTitle>
                 {group.ticked && (
-                  <Button type="button" variant="ghost" intent="danger" size="sm" disabled={busy} onClick={onClearTicked}>
+                  <Button type="button" variant="ghost" intent="danger" size="sm" disabled={busy || offline} onClick={onClearTicked}>
                     Clear ticked
                   </Button>
                 )}
@@ -184,10 +217,21 @@ function ShoppingRow({
   );
 }
 
+/**
+ * The route's own wiring. Reads are the loader's (the service worker's data
+ * cache answers them offline); writes are server-first as everywhere else,
+ * with one exception: a tick, an untick or a remove made with no network — or
+ * one whose write fails anyway, `navigator.onLine` being optimistic — goes
+ * into the outbox instead and is applied to the rendered list at once. The
+ * header says how many are waiting until they land.
+ */
 function ShoppingPage() {
   const { items } = Route.useLoaderData();
   const mutate = useMutate();
+  const router = useRouter();
+  const online = useOnline();
   const [busy, setBusy] = useState(false);
+  const { queue, push } = useOutbox({ send: sendOutboxEntry, online, onFlushed: () => void router.invalidate() });
 
   const write = async (what: string, run: () => Promise<unknown>) => {
     setBusy(true);
@@ -200,13 +244,34 @@ function ShoppingPage() {
     }
   };
 
+  /** A tick or a remove: straight through when there is a network, queued when there is not or when it fails. */
+  const queued = (itemId: string, kind: OutboxKind, run: () => Promise<unknown>) => {
+    if (!online) {
+      push(itemId, kind);
+      return;
+    }
+    void (async () => {
+      setBusy(true);
+      try {
+        await mutate(run);
+      } catch {
+        push(itemId, kind);
+        notify({ intent: "warning", title: "Saved for when you're back online" });
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+
   return (
     <ShoppingListView
-      items={items}
+      items={applyOutbox(items, queue)}
       busy={busy}
+      pending={queue.length}
+      offline={!online}
       onAdd={(text) => void write("Couldn't add the item", () => addShoppingItems({ data: { items: [{ text }] } }))}
-      onTick={(id, ticked) => void write("Couldn't tick the item", () => tickShoppingItem({ data: { id, ticked } }))}
-      onRemove={(id) => void write("Couldn't remove the item", () => removeShoppingItem({ data: { id } }))}
+      onTick={(id, ticked) => queued(id, ticked ? "tick" : "untick", () => tickShoppingItem({ data: { id, ticked } }))}
+      onRemove={(id) => queued(id, "remove", () => removeShoppingItem({ data: { id } }))}
       onClearTicked={() =>
         void write("Couldn't clear the ticked items", async () => {
           const { removed } = await clearTickedShoppingItems();

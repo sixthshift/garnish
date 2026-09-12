@@ -8,8 +8,9 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { shoppingItemSchema, type ShoppingItem } from "../../src/domain/shopping";
-import { ShoppingListView, toBuyLabel } from "../../src/routes/shopping";
-import { addShoppingItems } from "../../src/server/shopping";
+import { ShoppingListView, sendOutboxEntry, toBuyLabel } from "../../src/routes/shopping";
+import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../src/lib/outbox";
+import { addShoppingItems, listShoppingItems } from "../../src/server/shopping";
 import { createFood } from "../../src/server/foods";
 import { findOrCreateAisle } from "../../src/server/aisles";
 import { elementHtml, renderRoute } from "../helpers/routes";
@@ -173,5 +174,82 @@ describe("/shopping", () => {
     expect(html).toContain("Batteries");
     expect(html).toContain("Other");
     expect(html).toContain("2 items to buy");
+  });
+});
+
+// --- M31.5, ticking with no server -------------------------------------------
+// The page's offline path is: push onto the outbox, render the list with the
+// queue applied. These drive the same two functions the route component does.
+
+describe("an offline tick", () => {
+  function memoryStorage(): StorageLike & { map: Map<string, string> } {
+    const map = new Map<string, string>();
+    return { map, getItem: (k) => map.get(k) ?? null, setItem: (k, v) => void map.set(k, v), removeItem: (k) => void map.delete(k) };
+  }
+
+  test("shows ticked, queues the write, and says how many are waiting", () => {
+    const lemon = item({ quantity: 3, food: lemons });
+    const storage = memoryStorage();
+    const outbox = createOutbox(storage);
+
+    // Before the tap: nothing queued, nothing ticked, no badge.
+    const before = renderToString(
+      <ShoppingListView items={applyOutbox([lemon], outbox.list())} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} offline />,
+    );
+    expect(before).toContain('data-ticked="false"');
+    expect(before).not.toContain('data-testid="shopping-pending"');
+
+    outbox.push(lemon.id, "tick");
+
+    const after = renderToString(
+      <ShoppingListView
+        items={applyOutbox([lemon], outbox.list())}
+        onAdd={noop}
+        onTick={noop}
+        onRemove={noop}
+        onClearTicked={noop}
+        pending={outbox.list().length}
+        offline
+      />,
+    );
+    expect(after).toContain('data-ticked="true"');
+    expect(after).toContain('aria-checked="true"');
+    expect(after).toContain("1 change waiting");
+    // And it survives the phone closing the tab in the car park.
+    expect(readOutbox(storage).map((entry) => [entry.itemId, entry.kind])).toEqual([[lemon.id, "tick"]]);
+  });
+
+  test("offline, adding a line and clearing the ticked are refused: they are not tick writes", () => {
+    const html = renderToString(
+      <ShoppingListView
+        items={[item({ quantity: 3, food: lemons, ticked: true })]}
+        onAdd={noop}
+        onTick={noop}
+        onRemove={noop}
+        onClearTicked={noop}
+        offline
+      />,
+    );
+    expect(elementHtml(html, "shopping-add")).toMatch(/\sdisabled(=""|\s|>)/);
+    const clear = html.match(/<button[^>]*>Clear ticked</)?.[0] ?? "";
+    expect(clear).toMatch(/\sdisabled(=""|\s|>)/);
+  });
+});
+
+describe("sendOutboxEntry", () => {
+  useTempDataDir();
+
+  test("a queued tick, untick and remove each reach the server", async () => {
+    await callServerFn(addShoppingItems, { items: [{ text: "Batteries" }, { text: "Milk" }] });
+    const [batteries, milk] = await listShoppingItems();
+
+    await sendOutboxEntry({ id: "e1", itemId: batteries!.id, kind: "tick", at: stamp });
+    expect((await listShoppingItems()).find((row) => row.id === batteries!.id)?.ticked).toBe(true);
+
+    await sendOutboxEntry({ id: "e2", itemId: batteries!.id, kind: "untick", at: stamp });
+    expect((await listShoppingItems()).find((row) => row.id === batteries!.id)?.ticked).toBe(false);
+
+    await sendOutboxEntry({ id: "e3", itemId: milk!.id, kind: "remove", at: stamp });
+    expect((await listShoppingItems()).map((row) => row.id)).toEqual([batteries!.id]);
   });
 });
