@@ -17,15 +17,26 @@ import {
   mergeStepWithNext,
   moveStep,
   newStep,
+  linkableIngredients,
+  linkedIngredients,
+  linkIngredient,
   removeStep,
   splitAllSteps,
   splitStepByParagraph,
   StepsEditor,
+  stepLinks,
   stepsOf,
   stepsPath,
+  suggestNotice,
+  suggestPartLinks,
+  unionLinks,
+  unlinkIngredient,
+  unlinkStepIngredient,
   updateStep,
   withSteps,
 } from "../../src/components/StepsEditor";
+import { addIngredient, foodReference, updateIngredient } from "../../src/components/IngredientsEditor";
+import { ingredientLine } from "../../src/components/PartsEditor";
 import { paragraphs } from "../../src/domain/bulkText";
 import { createRecipe, getRecipe, updateRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -483,5 +494,215 @@ describe("splitAllSteps, mergeAllSteps and canSplitAll (M21.2)", () => {
   test("merge all drops blank steps rather than leaving blank lines", () => {
     const draft = withSteps(emptyDraft(), 0, [newStep("Mix."), newStep("  "), newStep("Bake.")]);
     expect(mergeAllSteps(draft, 0).parts[0]!.steps[0]!.text).toBe("Mix.\n\nBake.");
+  });
+});
+
+// --- Ingredient links (M28.3) ----------------------------------------------
+
+/** One part: three ingredients (flour, butter, water) and three steps, the first already linked to flour. */
+function pastry(): RecipeDraft {
+  let draft: RecipeDraft = { ...emptyDraft(), name: "Pastry" };
+  draft = addIngredient(draft, 0);
+  draft = updateIngredient(draft, 0, 0, { quantity: 200, food: foodReference({ name: "flour" }) });
+  draft = addIngredient(draft, 0);
+  draft = updateIngredient(draft, 0, 1, { quantity: 100, food: foodReference({ name: "butter" }) });
+  draft = addIngredient(draft, 0);
+  draft = updateIngredient(draft, 0, 2, { quantity: 2, food: foodReference({ name: "water" }) });
+  draft = addStep(draft, 0, "Rub the butter into the flour.");
+  draft = addStep(draft, 0, "Add the water.");
+  draft = addStep(draft, 0, "Rest it.");
+  return draft;
+}
+
+const rowIds = (draft: RecipeDraft) => draft.parts[0]!.ingredients.map((row) => row.id!);
+const links = (draft: RecipeDraft, pi = 0) => draft.parts[pi]!.steps.map((step) => stepLinks(step));
+
+describe("stepLinks, unionLinks and newStep's links", () => {
+  test("a new step starts with no links", () => {
+    expect(newStep("Mix.").ingredientIds).toEqual([]);
+  });
+
+  test("stepLinks reads a missing array as none", () => {
+    expect(stepLinks({ id: "x", text: "Mix." })).toEqual([]);
+    expect(stepLinks({ id: "x", text: "Mix.", ingredientIds: ["a"] })).toEqual(["a"]);
+  });
+
+  test("unionLinks keeps step order then link order, each id once", () => {
+    const steps = [
+      { id: "1", text: "", ingredientIds: ["a", "b"] },
+      { id: "2", text: "" },
+      { id: "3", text: "", ingredientIds: ["b", "c"] },
+    ];
+    expect(unionLinks(steps)).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("linkedIngredients and linkableIngredients", () => {
+  test("linked rows come back in link order, and a link naming no row is skipped", () => {
+    const draft = pastry();
+    const [flour, butter] = rowIds(draft);
+    const part = draft.parts[0]!;
+    const step = { id: "s", text: "", ingredientIds: [butter!, flour!, "gone"] };
+    expect(linkedIngredients(part, step).map((row) => row.food?.name)).toEqual(["butter", "flour"]);
+  });
+
+  test("a row already linked is not offered again", () => {
+    const draft = pastry();
+    const [flour] = rowIds(draft);
+    const part = draft.parts[0]!;
+    expect(linkableIngredients(part, { id: "s", text: "" }).map((row) => row.food?.name)).toEqual(["flour", "butter", "water"]);
+    expect(linkableIngredients(part, { id: "s", text: "", ingredientIds: [flour!] }).map((row) => row.food?.name)).toEqual(["butter", "water"]);
+  });
+});
+
+describe("linkIngredient and unlinkStepIngredient", () => {
+  test("linking appends to that step only, in the order picked", () => {
+    const draft = pastry();
+    const [flour, butter] = rowIds(draft);
+    const next = linkIngredient(linkIngredient(draft, 0, 0, butter!), 0, 0, flour!);
+    expect(links(next)).toEqual([[butter, flour], [], []]);
+  });
+
+  test("linking a row twice, or an out-of-range step, is an unchanged copy", () => {
+    const base = pastry();
+    const draft = linkIngredient(base, 0, 1, rowIds(base)[0]!);
+    const [flour] = rowIds(draft);
+    expect(links(linkIngredient(draft, 0, 1, flour!))).toEqual(links(draft));
+    expect(linkIngredient(draft, 0, 9, flour!).parts).toEqual(draft.parts);
+    expect(linkIngredient(draft, 9, 0, flour!).parts).toEqual(draft.parts);
+  });
+
+  test("unlinking removes one chip and leaves the rest", () => {
+    const draft = pastry();
+    const [flour, butter] = rowIds(draft);
+    const linkedDraft = linkIngredient(linkIngredient(draft, 0, 0, flour!), 0, 0, butter!);
+    expect(links(unlinkStepIngredient(linkedDraft, 0, 0, flour!))).toEqual([[butter], [], []]);
+    expect(unlinkStepIngredient(linkedDraft, 0, 9, flour!).parts).toEqual(linkedDraft.parts);
+  });
+});
+
+describe("unlinkIngredient", () => {
+  test("strips the id from every step of the part", () => {
+    const draft = pastry();
+    const [flour, butter] = rowIds(draft);
+    let linkedDraft = linkIngredient(draft, 0, 0, flour!);
+    linkedDraft = linkIngredient(linkedDraft, 0, 0, butter!);
+    linkedDraft = linkIngredient(linkedDraft, 0, 2, flour!);
+    const part = unlinkIngredient(linkedDraft.parts[0]!, flour!);
+    expect(part.steps.map((step) => stepLinks(step))).toEqual([[butter], [], []]);
+  });
+
+  test("a part that never linked it comes back as it was", () => {
+    const part = pastry().parts[0]!;
+    expect(unlinkIngredient(part, "nobody")).toBe(part);
+  });
+});
+
+describe("suggestPartLinks and suggestNotice", () => {
+  test("fills only the steps with no links, and counts them", () => {
+    const draft = pastry();
+    const [flour, butter, water] = rowIds(draft);
+    // Step 1 is already linked to water by hand, though its text names butter and flour.
+    const seeded = linkIngredient(draft, 0, 0, water!);
+    const suggested = suggestPartLinks(seeded, 0);
+    expect(links(suggested.draft)).toEqual([[water], [water], []]);
+    expect(suggested.filled).toBe(1);
+
+    const fresh = suggestPartLinks(draft, 0);
+    expect(links(fresh.draft)).toEqual([[flour, butter], [water], []]);
+    expect(fresh.filled).toBe(2);
+  });
+
+  test("an out-of-range part fills nothing", () => {
+    const draft = pastry();
+    const suggested = suggestPartLinks(draft, 9);
+    expect(suggested.filled).toBe(0);
+    expect(suggested.draft.parts).toEqual(draft.parts);
+  });
+
+  test("says how many it linked", () => {
+    expect(suggestNotice(0)).toBe("Nothing to link");
+    expect(suggestNotice(1)).toBe("Linked 1 step");
+    expect(suggestNotice(3)).toBe("Linked 3 steps");
+  });
+});
+
+describe("split and merge decide what happens to links (M28.3)", () => {
+  test("split keeps the links on the first chunk and starts the rest empty", () => {
+    const base = updateStep(pastry(), 0, 0, "Rub the butter in.\n\nAdd flour.");
+    const draft = linkIngredient(base, 0, 0, rowIds(base)[0]!);
+    const linked = stepLinks(draft.parts[0]!.steps[0]!);
+    const next = splitStepByParagraph(draft, 0, 0);
+    expect(next.parts[0]!.steps.map((step) => stepLinks(step))).toEqual([linked, [], [], []]);
+  });
+
+  test("split all does the same for every step it splits", () => {
+    let draft = updateStep(pastry(), 0, 1, "Add the water.\n\nBring it together.");
+    const [flour, water] = rowIds(draft);
+    draft = linkIngredient(draft, 0, 0, flour!);
+    draft = linkIngredient(draft, 0, 1, water!);
+    expect(links(splitAllSteps(draft, 0))).toEqual([[flour], [water], [], []]);
+  });
+
+  test("merge with next unions the two steps' links, in order", () => {
+    let draft = pastry();
+    const [flour, butter, water] = rowIds(draft);
+    draft = linkIngredient(draft, 0, 0, butter!);
+    draft = linkIngredient(draft, 0, 0, flour!);
+    draft = linkIngredient(draft, 0, 1, water!);
+    draft = linkIngredient(draft, 0, 1, flour!);
+    expect(links(mergeStepWithNext(draft, 0, 0))).toEqual([[butter, flour, water], []]);
+  });
+
+  test("merge all unions every step's links, in order", () => {
+    let draft = pastry();
+    const [flour, butter, water] = rowIds(draft);
+    draft = linkIngredient(draft, 0, 1, water!);
+    draft = linkIngredient(draft, 0, 2, butter!);
+    draft = linkIngredient(draft, 0, 2, flour!);
+    expect(links(mergeAllSteps(draft, 0))).toEqual([[water, butter, flour]]);
+  });
+});
+
+describe("StepsEditor ingredient picker (M28.3)", () => {
+  test("every step gets an Ingredients combobox over the part's rows, closed on the server", () => {
+    const html = renderToString(<StepsEditor draft={pastry()} pi={0} onChange={() => {}} />);
+    expect(html.match(/aria-label="Step \d ingredients"/g)).toHaveLength(3);
+    expect(tagWithLabel(html, "Step 1 ingredients")).toContain('role="combobox"');
+    expect(html).not.toContain('role="listbox"');
+  });
+
+  test("a linked row shows as a chip with a remove button under the textarea", () => {
+    const draft = pastry();
+    const [flour, butter] = rowIds(draft);
+    const line = ingredientLine(draft.parts[0]!.ingredients[0]!);
+    const linkedDraft = linkIngredient(linkIngredient(draft, 0, 0, flour!), 0, 0, butter!);
+    const html = renderToString(<StepsEditor draft={linkedDraft} pi={0} onChange={() => {}} />);
+    expect(html).toContain('data-step-links="0"');
+    expect(html).toContain(line);
+    expect(html).toContain(`aria-label="Unlink ${line} from step 1"`);
+    // Only the step that links anything gets a chip row.
+    expect(html).not.toContain('data-step-links="1"');
+  });
+
+  test("a step linking every row of the part is offered no picker", () => {
+    let draft = pastry();
+    for (const id of rowIds(draft)) draft = linkIngredient(draft, 0, 0, id);
+    const html = renderToString(<StepsEditor draft={draft} pi={0} onChange={() => {}} />);
+    expect(html).not.toContain('aria-label="Step 1 ingredients"');
+    expect(html).toContain('aria-label="Step 2 ingredients"');
+  });
+
+  test("a part with no ingredients has no picker and cannot suggest", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
+    expect(html).not.toContain("ingredients");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Suggest links</);
+  });
+
+  test("Suggest links sits in the header beside Split all", () => {
+    const html = renderToString(<StepsEditor draft={pastry()} pi={0} onChange={() => {}} />);
+    expect(html).toContain(">Suggest links<");
+    expect(html.indexOf(">Suggest links<")).toBeLessThan(html.indexOf(">Split all<"));
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Suggest links</);
   });
 });

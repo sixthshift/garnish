@@ -34,6 +34,7 @@ import {
   unitReference,
   updateIngredient,
 } from "../../src/components/IngredientsEditor";
+import { addStep, linkIngredient } from "../../src/components/StepsEditor";
 import type { IngredientReview } from "../../src/components/IngredientReviewRow";
 import { BulkInlinePanel } from "../../src/components/ui/BulkAddSheet";
 import { type DraftPart, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
@@ -964,5 +965,58 @@ describe("Enter on the row's last field (M21.4)", () => {
     const next = addIngredient(draft, 0);
     expect(next.parts[0]!.ingredients).toHaveLength(2);
     expect(next.parts[0]!.ingredients[0]).toEqual(draft.parts[0]!.ingredients[0]);
+  });
+});
+
+// --- A row that leaves a part leaves its step links (M28.3) -----------------
+
+/** The tart, with a step in Pastry linking both of its rows and a step in Filling linking its one. */
+function tartWithLinks(): RecipeDraft {
+  let draft = addStep(tart(), 0, "Rub the butter into the flour.");
+  draft = addStep(draft, 1, "Squeeze the lemon.");
+  const [flour, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
+  draft = linkIngredient(draft, 0, 0, flour!);
+  draft = linkIngredient(draft, 0, 0, butter!);
+  draft = linkIngredient(draft, 1, 0, draft.parts[1]!.ingredients[0]!.id!);
+  return draft;
+}
+
+const stepLinksOf = (draft: RecipeDraft, pi: number) => draft.parts[pi]!.steps.map((step) => step.ingredientIds ?? []);
+
+describe("removeIngredient and moveIngredientTo clear the row's links (M28.3)", () => {
+  test("deleting a row removes it from every step of its part", () => {
+    const draft = tartWithLinks();
+    const [flour, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
+    const next = removeIngredient(draft, 0, 0);
+    expect(next.parts[0]!.ingredients.map((row) => row.id)).toEqual([butter]);
+    expect(stepLinksOf(next, 0)).toEqual([[butter]]);
+    // The other part is untouched.
+    expect(stepLinksOf(next, 1)).toEqual(stepLinksOf(draft, 1));
+    expect(flour).not.toBe(butter);
+  });
+
+  test("moving a row to another part removes it from the links of the part it left, and adds none in the part it joined", () => {
+    const draft = tartWithLinks();
+    const [flour, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
+    const lemon = draft.parts[1]!.ingredients[0]!.id!;
+    const next = moveIngredient(draft, 0, 0, 1);
+    expect(next.parts[1]!.ingredients.map((row) => row.id)).toEqual([lemon, flour]);
+    expect(stepLinksOf(next, 0)).toEqual([[butter]]);
+    expect(stepLinksOf(next, 1)).toEqual([[lemon]]);
+  });
+
+  test("moveIngredientTo at an index does the same", () => {
+    const draft = tartWithLinks();
+    const [, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
+    const next = moveIngredientTo(draft, 0, 1, 1, 0);
+    expect(next.parts[1]!.ingredients[0]!.id).toBe(butter);
+    expect(stepLinksOf(next, 0)).toEqual([[draft.parts[0]!.ingredients[0]!.id]]);
+  });
+
+  test("a row nothing links leaves the links alone", () => {
+    const draft = tartWithLinks();
+    const before = stepLinksOf(draft, 1);
+    const next = removeIngredient(addIngredient(draft, 1), 1, 1);
+    expect(stepLinksOf(next, 1)).toEqual(before);
   });
 });

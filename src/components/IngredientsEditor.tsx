@@ -68,6 +68,7 @@ import { findOrCreateFood, listFoods } from "../server/foods";
 import { findOrCreateUnit } from "../server/units";
 import { needsParseAll, ParseAllSheet } from "./ParseAllSheet";
 import { partLabel } from "./PartsEditor";
+import { unlinkIngredient } from "./StepsEditor";
 import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
 import type { DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { BulkAddSheet, BulkInlineAdd, type BulkReview } from "./ui/BulkAddSheet";
@@ -305,19 +306,35 @@ export function updateIngredient(draft: RecipeDraft, pi: number, ii: number, pat
   return withIngredients(draft, pi, ingredients);
 }
 
-/** The draft without row `ii` of part `pi`. Out-of-range indices return a copy unchanged. Pure. */
+/**
+ * The draft with part `pi`'s steps no longer linking `ingredientId`. A link
+ * never crosses a part, so a row that leaves a part — deleted, or moved
+ * elsewhere — goes out of that part's step links too, in the draft, before
+ * save (M28.3). An id-less row (never saved, never linked) is a no-op. Pure.
+ */
+function withoutLinks(draft: RecipeDraft, pi: number, ingredientId: string | undefined): RecipeDraft {
+  if (ingredientId === undefined) return draft;
+  return { ...draft, parts: draft.parts.map((part, i) => (i === pi ? unlinkIngredient(part, ingredientId) : part)) };
+}
+
+/** The draft without row `ii` of part `pi`, and without its links in that part's steps. Out-of-range indices return a copy unchanged. Pure. */
 export function removeIngredient(draft: RecipeDraft, pi: number, ii: number): RecipeDraft {
   if (!inRange(draft, pi, ii)) return { ...draft, parts: draft.parts.slice() };
-  return withIngredients(
-    draft,
+  const row = draft.parts[pi]!.ingredients[ii]!;
+  return withoutLinks(
+    withIngredients(
+      draft,
+      pi,
+      draft.parts[pi]!.ingredients.filter((_, i) => i !== ii),
+    ),
     pi,
-    draft.parts[pi]!.ingredients.filter((_, i) => i !== ii),
+    row.id,
   );
 }
 
 /**
  * The draft with row `ii` of part `fromPi` inserted into part `toPi`
- * at `toIndex`, which is clamped to that part's length — so the default,
+ * at `toIndex`, and out of the step links of the part it left, which is clamped to that part's length — so the default,
  * `Infinity`, appends. The same part, or an out-of-range index, returns a
  * copy unchanged. Pure.
  */
@@ -326,7 +343,7 @@ export function moveIngredientTo(draft: RecipeDraft, fromPi: number, ii: number,
   const row = draft.parts[fromPi]!.ingredients[ii]!;
   const target = draft.parts[toPi]!.ingredients;
   const at = Math.max(0, Math.min(Number.isFinite(toIndex) ? toIndex : target.length, target.length));
-  return {
+  const moved: RecipeDraft = {
     ...draft,
     parts: draft.parts.map((part, i) => {
       if (i === fromPi) return { ...part, ingredients: part.ingredients.filter((_, j) => j !== ii) };
@@ -334,6 +351,9 @@ export function moveIngredientTo(draft: RecipeDraft, fromPi: number, ii: number,
       return part;
     }),
   };
+  // The row is another part's now, and a link never crosses a part: the part
+  // it left forgets it. The part it joined links nothing to it yet (M28.3).
+  return withoutLinks(moved, fromPi, row.id);
 }
 
 /**
