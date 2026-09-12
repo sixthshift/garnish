@@ -16,8 +16,7 @@
 // the document unchanged, so a caller that shows a scaling control on such a
 // recipe finds out in tests rather than by a silent no-op. Callers should hide
 // the control when servings is 0.
-import { mergeIngredients } from "./merge";
-import type { Ingredient, Part, Recipe } from "./recipe";
+import type { Ingredient, Recipe } from "./recipe";
 
 export class ScaleError extends Error {
   constructor(message: string) {
@@ -70,48 +69,3 @@ function scaleIngredient(ingredient: Ingredient, factor: number): Ingredient {
   return { ...ingredient, quantity: ingredient.quantity * factor };
 }
 
-/**
- * The servings that would make one ingredient's currently-displayed quantity
- * read as `targetAmount`, given the servings the page is currently showing
- * (`currentServings` — the recipe's own servings, or the requested scale when
- * one is in effect). Proportional, like `scaleRecipe`: `currentServings *
- * (targetAmount / ingredient.quantity)`.
- *
- * Throws for a `fixed` ingredient (Cooklang `=`, never scales, so it cannot
- * be a scaling target) or one with no positive quantity to derive a factor
- * from, and for a non-positive or non-finite `targetAmount` or
- * `currentServings`. Pure.
- */
-export function servingsForTarget(
-  ingredient: Pick<Ingredient, "quantity" | "fixed">,
-  targetAmount: number,
-  currentServings: number,
-): number {
-  if (typeof targetAmount !== "number" || !Number.isFinite(targetAmount) || targetAmount <= 0) {
-    throw new ScaleError(`targetAmount must be a finite number greater than 0, got ${String(targetAmount)}`);
-  }
-  if (typeof currentServings !== "number" || !Number.isFinite(currentServings) || currentServings <= 0) {
-    throw new ScaleError(`currentServings must be a finite number greater than 0, got ${String(currentServings)}`);
-  }
-  if (ingredient.fixed) {
-    throw new ScaleError("a fixed ingredient does not scale with servings and cannot be a scaling target");
-  }
-  if (ingredient.quantity === null || !Number.isFinite(ingredient.quantity) || ingredient.quantity <= 0) {
-    throw new ScaleError(`ingredient has no quantity to scale from (${String(ingredient.quantity)})`);
-  }
-
-  return currentServings * (targetAmount / ingredient.quantity);
-}
-
-/**
- * The ingredients a "Scale to..." picker can offer: merged across every part
- * (`mergeIngredients`, so a food split between parts is one line and one
- * target), excluding a `fixed` ingredient (Cooklang `=`, never scales) and one
- * with no positive quantity (nothing for `servingsForTarget` to derive a
- * factor from). Pure.
- */
-export function scalableIngredients(recipe: { parts: ReadonlyArray<Pick<Part, "ingredients">> }): Ingredient[] {
-  return mergeIngredients(recipe).filter(
-    (ingredient) => !ingredient.fixed && ingredient.quantity !== null && ingredient.quantity > 0,
-  );
-}

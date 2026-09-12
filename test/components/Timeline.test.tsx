@@ -91,39 +91,29 @@ test("the row menu is chrome the print stylesheet drops", async () => {
   expect(await render([event()])).toContain('data-print="hide"');
 });
 
-describe("saveCook (M25.3)", () => {
+// M25.3 had saveCook also write a rating when the sheet's stars were
+// touched. M29.4 removed the stars from the sheet (rating lives in the
+// header only), so saveCook is left with just the event and its photo.
+describe("saveCook", () => {
   const input = { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null };
   const writes = () => ({
     createEvent: vi.fn().mockResolvedValue(event()),
     uploadPhoto: vi.fn().mockResolvedValue(undefined),
-    rate: vi.fn().mockResolvedValue(undefined),
   });
 
-  test("untouched stars write no rating", async () => {
+  test("creates the event and does not write a rating", async () => {
     const w = writes();
-    const created = await saveCook({ recipeId, event: input, photo: null, rating: null }, w);
+    const created = await saveCook({ recipeId, event: input, photo: null }, w);
     expect(created.id).toBe(event().id);
     expect(w.createEvent).toHaveBeenCalledWith(recipeId, input);
-    expect(w.rate).not.toHaveBeenCalled();
     expect(w.uploadPhoto).not.toHaveBeenCalled();
   });
 
-  test("touched stars write the rating alongside the event, 0 clearing it", async () => {
-    const w = writes();
-    await saveCook({ recipeId, event: input, photo: null, rating: 4 }, w);
-    expect(w.rate).toHaveBeenCalledWith(recipeId, 4);
-
-    const cleared = writes();
-    await saveCook({ recipeId, event: input, photo: null, rating: 0 }, cleared);
-    expect(cleared.rate).toHaveBeenCalledWith(recipeId, 0);
-  });
-
-  test("a photo is uploaded under the new event's id, before the rating", async () => {
+  test("a photo is uploaded under the new event's id", async () => {
     const w = writes();
     const photo = new File(["x"], "cook.png", { type: "image/png" });
-    await saveCook({ recipeId, event: input, photo, rating: 5 }, w);
+    await saveCook({ recipeId, event: input, photo }, w);
     expect(w.uploadPhoto).toHaveBeenCalledWith(event().id, photo);
-    expect(w.uploadPhoto.mock.invocationCallOrder[0]!).toBeLessThan(w.rate.mock.invocationCallOrder[0]!);
   });
 });
 
@@ -132,7 +122,6 @@ describe("saveCookAndClearTicks (M25.6)", () => {
   const writes = () => ({
     createEvent: vi.fn().mockResolvedValue(event()),
     uploadPhoto: vi.fn().mockResolvedValue(undefined),
-    rate: vi.fn().mockResolvedValue(undefined),
   });
   const ING_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
@@ -141,7 +130,7 @@ describe("saveCookAndClearTicks (M25.6)", () => {
     setIngredientTicked(storage, recipeId, ING_A, true);
     (globalThis as { window?: unknown }).window = { sessionStorage: storage };
 
-    const created = await saveCookAndClearTicks({ recipeId, event: input, photo: null, rating: null }, writes());
+    const created = await saveCookAndClearTicks({ recipeId, event: input, photo: null }, writes());
 
     expect(created.id).toBe(event().id);
     expect(getTicks(storage, recipeId)).toEqual({ ingredients: [], steps: [] });
@@ -153,7 +142,7 @@ describe("saveCookAndClearTicks (M25.6)", () => {
     setIngredientTicked(storage, otherRecipeId, ING_A, true);
     (globalThis as { window?: unknown }).window = { sessionStorage: storage };
 
-    await saveCookAndClearTicks({ recipeId, event: input, photo: null, rating: null }, writes());
+    await saveCookAndClearTicks({ recipeId, event: input, photo: null }, writes());
 
     expect(getTicks(storage, otherRecipeId).ingredients).toEqual([ING_A]);
   });

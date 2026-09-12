@@ -1,5 +1,5 @@
 // Quick edit from the recipe page (M27.5): fixing one ingredient or one step
-// without opening the editor. A pencil at the row's end opens a `sheet` over
+// without opening the editor. A trigger at the row's end opens a `sheet` over
 // that row alone — the editor's own `IngredientFields` for an ingredient, a
 // `Textarea` with the same preview toggle the steps editor has for a step —
 // and Save stays on the page.
@@ -23,11 +23,14 @@
 //   and replaces the recipe, so a partial write would drop everything it
 //   omitted. The draft is the stored document with one row swapped.
 //
-// The trigger is a pencil that is invisible until wanted: from `md` it appears
-// on hover or focus, and below `md`, where there is no hover, a long press on
-// the row opens the sheet (src/lib/useLongPress.ts — touch and pen only, as
-// cook mode's swipe is). It carries `data-print="hide"`: a printed recipe has
-// no controls.
+// The two rows differ in their trigger (M29.4 — fewer controls). An
+// ingredient's is a pencil, invisible until wanted: from `md` it appears on
+// hover or focus. Below `md`, where there is no hover, there is no
+// alternative any more — an ingredient is edited from the editor instead. A
+// step's is a quiet "…" menu (`ui/Menu`) in the card's corner, holding one
+// item, "Edit step"; it is always visible, since a step card has no hover
+// affordance of its own to borrow. Both carry `data-print="hide"`: a printed
+// recipe has no controls.
 //
 // Rows render the pencil only inside `QuickEditProvider`, which the view route
 // supplies; in cook mode and the phone's merged ingredient list there is none,
@@ -45,7 +48,6 @@ import { Toggle } from "@sixthshift/design-system/toggle";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import type { Food as FoodRow } from "../db/models/food/repo";
 import type { Recipe, Unit } from "../domain/recipe";
-import { type LongPressHandlers, useLongPress } from "../lib/useLongPress";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
 import { listFoods } from "../server/foods";
@@ -61,6 +63,7 @@ import {
   unitReference,
 } from "./IngredientsEditor";
 import { Markdown } from "./Markdown";
+import { Menu } from "./ui/Menu";
 import { draftFromRecipe, type DraftIngredient, type RecipeDraft, validateDraft } from "./RecipeForm";
 
 // --- Pure helpers -----------------------------------------------------------
@@ -142,13 +145,6 @@ export function useQuickEditContext(): QuickEditContext | null {
 }
 
 // --- The ingredient sheet ----------------------------------------------------
-
-const NO_PRESS: LongPressHandlers = {
-  onPointerDown: () => {},
-  onPointerMove: () => {},
-  onPointerUp: () => {},
-  onPointerCancel: () => {},
-};
 
 export type QuickEditIngredientBodyProps = {
   ingredient: DraftIngredient;
@@ -408,11 +404,6 @@ function PencilIcon() {
   );
 }
 
-/** What a row spreads onto itself: the long-press handlers, and the pencil and its sheet. */
-export type QuickEditRow = { press: LongPressHandlers; node: ReactNode };
-
-const NONE: QuickEditRow = { press: NO_PRESS, node: null };
-
 function pencil(label: string, onOpen: () => void) {
   return (
     <button
@@ -428,18 +419,31 @@ function pencil(label: string, onOpen: () => void) {
   );
 }
 
+/** The step card's own trigger: a quiet "…" menu in its corner, one item, "Edit step" — the pencil and the long press below `md` are gone (M29.4). */
+function stepMenu(onOpen: () => void) {
+  return (
+    <div data-print="hide" className="mt-0.5 shrink-0">
+      <Menu label="Step actions" iconOnly>
+        <Menu.Item onSelect={onOpen}>Edit step</Menu.Item>
+      </Menu>
+    </div>
+  );
+}
+
 /**
- * The quick edit for one ingredient row. Outside a `QuickEditProvider`, or for
- * a row whose part is unknown (the merged summary list), there is nothing to
- * render and nothing to hold: the row is what it always was.
+ * The quick edit for one ingredient row: the hover pencil (`md` and up) and
+ * its sheet, or nothing outside the recipe page. Outside a
+ * `QuickEditProvider`, or for a row whose part is unknown (the merged summary
+ * list), there is nothing to render: the row is what it always was. Below
+ * `md`, where there is no hover, an ingredient is edited from the editor
+ * instead (M29.4 dropped the long-press alternative here).
  */
-export function useQuickEditIngredient(partId: string | undefined, ingredientId: string): QuickEditRow {
+export function useQuickEditIngredient(partId: string | undefined, ingredientId: string): ReactNode {
   const context = useQuickEditContext();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [units, setUnits] = useState<readonly Unit[]>([]);
-  const press = useLongPress(() => setOpen(true));
 
   // The units list is the sheet's, not the page's: it is only worth a request
   // once a row is actually being edited.
@@ -458,11 +462,11 @@ export function useQuickEditIngredient(partId: string | undefined, ingredientId:
     };
   }, [open]);
 
-  if (context === null || partId === undefined) return NONE;
+  if (context === null || partId === undefined) return null;
 
   const part = context.recipe.parts.find((candidate) => candidate.id === partId);
   const stored = part?.ingredients.find((candidate) => candidate.id === ingredientId);
-  if (stored === undefined) return NONE;
+  if (stored === undefined) return null;
 
   const save = async (next: DraftIngredient) => {
     setBusy(true);
@@ -479,39 +483,38 @@ export function useQuickEditIngredient(partId: string | undefined, ingredientId:
     }
   };
 
-  return {
-    press,
-    node: (
-      <>
-        {pencil("Edit ingredient", () => setOpen(true))}
-        <QuickEditIngredientSheet
-          open={open}
-          // The stored row, never the scaled one on screen: this is what a save writes back.
-          ingredient={{ ...stored }}
-          units={units}
-          busy={busy}
-          error={error}
-          onSave={(next) => void save(next)}
-          onCancel={() => setOpen(false)}
-        />
-      </>
-    ),
-  };
+  return (
+    <>
+      {pencil("Edit ingredient", () => setOpen(true))}
+      <QuickEditIngredientSheet
+        open={open}
+        // The stored row, never the scaled one on screen: this is what a save writes back.
+        ingredient={{ ...stored }}
+        units={units}
+        busy={busy}
+        error={error}
+        onSave={(next) => void save(next)}
+        onCancel={() => setOpen(false)}
+      />
+    </>
+  );
 }
 
-/** The quick edit for one step. Same rules as `useQuickEditIngredient`. */
-export function useQuickEditStep(partId: string | undefined, stepId: string): QuickEditRow {
+/**
+ * The quick edit for one step: the corner "…" menu (`stepMenu`) and its
+ * sheet. Same context and "unknown row" rules as `useQuickEditIngredient`.
+ */
+export function useQuickEditStep(partId: string | undefined, stepId: string): ReactNode {
   const context = useQuickEditContext();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const press = useLongPress(() => setOpen(true));
 
-  if (context === null || partId === undefined) return NONE;
+  if (context === null || partId === undefined) return null;
 
   const part = context.recipe.parts.find((candidate) => candidate.id === partId);
   const stored = part?.steps.find((candidate) => candidate.id === stepId);
-  if (stored === undefined) return NONE;
+  if (stored === undefined) return null;
 
   const save = async (text: string) => {
     setBusy(true);
@@ -528,13 +531,10 @@ export function useQuickEditStep(partId: string | undefined, stepId: string): Qu
     }
   };
 
-  return {
-    press,
-    node: (
-      <>
-        {pencil("Edit step", () => setOpen(true))}
-        <QuickEditStepSheet open={open} text={stored.text} busy={busy} error={error} onSave={(text) => void save(text)} onCancel={() => setOpen(false)} />
-      </>
-    ),
-  };
+  return (
+    <>
+      {stepMenu(() => setOpen(true))}
+      <QuickEditStepSheet open={open} text={stored.text} busy={busy} error={error} onSave={(text) => void save(text)} onCancel={() => setOpen(false)} />
+    </>
+  );
 }

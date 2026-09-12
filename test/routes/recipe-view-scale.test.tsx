@@ -1,11 +1,12 @@
 // M11.5 scale control: the "Serves N" chip that opens a popover with a
 // number input and Reset. M25.2 added a second form to that same popover —
 // pick a scalable ingredient and type the amount you have — replacing the
-// per-row "Scale to..." link. Rendered through the real route tree, the same
-// way as test/routes/loaders.test.tsx, since a popover's body only exists in
-// the markup once the design system's Popover is open — these tests stick to
-// what a default (closed) render can show: the chip and that no row carries
-// the old link.
+// per-row "Scale to..." link; M29.4 removed that second form again, leaving
+// the one servings form. Rendered through the real route tree, the same way
+// as test/routes/loaders.test.tsx, since a popover's body only exists in the
+// markup once the design system's Popover is open — these tests stick to
+// what a default (closed) render can show: the chip and that no row or
+// popover carries the removed "Scale to..." controls.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRecipe } from "../../src/server/recipes";
 import { renderRoute } from "../helpers/routes";
@@ -65,7 +66,7 @@ describe("scale control chip and popover", () => {
   });
 });
 
-describe("Scale to... moved into the popover (M25.2)", () => {
+describe("Scale to... removed again (M29.4)", () => {
   test("no ingredient row renders the old per-row trigger", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
@@ -73,7 +74,7 @@ describe("Scale to... moved into the popover (M25.2)", () => {
     expect(html).not.toMatch(/aria-label="Scale to a set amount of/);
   });
 
-  test("the popover's second form (ingredient select, target amount, Set) is closed by default, not in the markup", async () => {
+  test("the popover carries no second form (ingredient select, target amount)", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     expect(html).not.toContain('data-testid="scale-to-form"');

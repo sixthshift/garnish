@@ -3,10 +3,12 @@
 // real `IngredientRow`s on the shared session ticks, the step's text through
 // the safe subset, a footer of timer chips deduplicated by length, the tick
 // that dims and collapses it, and the two type scales.
+import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
+import { QuickEditProvider } from "../../src/components/QuickEdit";
 import { linkedIngredients, StepCard, stepDurations } from "../../src/components/StepCard";
-import type { Food, Ingredient, Step } from "../../src/domain/recipe";
+import type { Food, Ingredient, Recipe, Step } from "../../src/domain/recipe";
 import { setIngredientTicked, setStepTicked, type StorageLike } from "../../src/lib/ticks";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
@@ -196,5 +198,65 @@ describe("StepCard", () => {
       expect(html).toContain("Rest for 20 minutes.");
       expect(html).toContain('data-testid="timer-chip"');
     }
+  });
+});
+
+// M29.4: the long-press pencil is gone. Inside a QuickEditProvider the card
+// gets a quiet "…" menu in its corner instead, one item, "Edit step" —
+// checked here rather than in QuickEdit.test.tsx since it is StepCard that
+// wires the trigger on.
+describe("StepCard's quick-edit menu (M29.4)", () => {
+  const PART_ID = "66666666-6666-4666-8666-666666666666";
+
+  const recipe: Recipe = {
+    id: "77777777-7777-4777-8777-777777777777",
+    slug: "test-recipe",
+    name: "Test recipe",
+    description: "",
+    image: null,
+    rating: null,
+    lastMade: null,
+    favourite: false,
+    recipeServings: 4,
+    recipeYieldQuantity: 0,
+    yieldUnit: null,
+    recipeYield: "",
+    prepTime: null,
+    performTime: null,
+    sourceUrl: null,
+    notes: [],
+    tags: [],
+    parts: [{ id: PART_ID, name: "", ingredients: [], steps: [step("Mix")] }],
+    createdAt: "2026-03-04T02:30:00.000Z",
+    updatedAt: "2026-03-04T02:30:00.000Z",
+  };
+
+  async function renderInProvider(): Promise<string> {
+    const rootRoute = createRootRoute({
+      component: () => (
+        <QuickEditProvider recipe={recipe}>
+          <StepCard recipeId={RECIPE_ID} step={step("Mix")} position={1} partId={PART_ID} />
+        </QuickEditProvider>
+      ),
+    });
+    const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ["/"] }) });
+    await router.load();
+    return renderToString(<RouterProvider router={router} />);
+  }
+
+  test("carries a 'Step actions' menu trigger, not a pencil, marked hidden from print", async () => {
+    withStorage(fakeStorage());
+    const html = await renderInProvider();
+    expect(html).toContain('data-testid="menu-trigger"');
+    expect(html).toContain('aria-label="Step actions"');
+    expect(html).toContain('data-print="hide"');
+    expect(html).not.toContain('data-testid="quick-edit-trigger"');
+  });
+
+  test("closed by default: the Edit step item and the sheet are not in the markup", async () => {
+    withStorage(fakeStorage());
+    const html = await renderInProvider();
+    expect(html).not.toContain('role="menu"');
+    expect(html).not.toContain(">Edit step<");
   });
 });

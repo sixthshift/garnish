@@ -77,7 +77,7 @@ export type StepCardProps = {
 
 export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId }: StepCardProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
-  // The pencil and its sheet, or nothing outside the recipe page (M27.5).
+  // The corner "…" menu and its sheet, or nothing outside the recipe page (M27.5, M29.4).
   const quickEdit = useQuickEditStep(partId, step.id);
   // `find` closes over the current timers, so it changes on every second's
   // tick; that is exactly when a running chip has to repaint.
@@ -94,7 +94,6 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
       data-testid="step-card"
       data-size={size}
       data-ticked={done ? "true" : undefined}
-      {...quickEdit.press}
     >
       <div className="flex gap-3">
         <span
@@ -146,7 +145,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
             </div>
           )}
         </div>
-        {quickEdit.node}
+        {quickEdit}
       </div>
     </li>
   );

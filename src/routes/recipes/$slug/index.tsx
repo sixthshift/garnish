@@ -16,7 +16,6 @@ import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Popover } from "@sixthshift/design-system/popover";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { Select } from "@sixthshift/design-system/select";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
 import { z } from "zod";
@@ -27,11 +26,10 @@ import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader
 import { QuickEditProvider } from "../../../components/QuickEdit";
 import { StepList } from "../../../components/StepList";
 import { TimerStrip } from "../../../components/TimerStrip";
-import { formatIngredient } from "../../../domain/format";
 import { mergeIngredients } from "../../../domain/merge";
-import { scalableIngredients, scaledForServings, servingsForTarget } from "../../../domain/scale";
+import { scaledForServings } from "../../../domain/scale";
 import { MadeThisButton, TimelineList } from "../../../components/Timeline";
-import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
+import type { Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
 import { useMutate } from "../../../lib/mutate";
@@ -163,7 +161,7 @@ function RecipePage() {
             <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
               <SectionTitle as="h2">Ingredients</SectionTitle>
               <div className="flex flex-wrap items-center gap-3">
-                <ScaleControl servings={recipe.recipeServings} ingredients={scalableIngredients(recipe)} />
+                <ScaleControl servings={recipe.recipeServings} />
                 {anyTicked && (
                   <Button variant="link" intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
                     Clear
@@ -217,45 +215,27 @@ function RecipePage() {
  * scaled document. Hidden when the recipe has no servings recorded: there is
  * nothing to scale by.
  *
- * Tapping the chip opens a `popover` with two forms stacked in it: a number
- * input for typing an exact servings count directly, rather than stepping one
- * at a time, and (M25.2 — moved here from a per-row "Scale to..." link, since
- * a link picks whichever row it happens to sit on rather than the ingredient
- * you actually measured) a second form that picks one of the recipe's
- * scalable ingredients from a `Select` and takes the amount of it you have,
- * computing the servings that reach it (`servingsForTarget`) the same way the
- * per-row link used to. That second form is omitted when the recipe has no
- * scalable ingredient to offer. Reset (outside the popover, so it stays
- * visible without opening it) clears a requested scale back to the recipe's
- * own servings.
+ * Tapping the chip opens a `popover` with a single form in it: a number input
+ * for typing an exact servings count directly, rather than stepping one at a
+ * time. (M25.2 added a second form here to scale to an amount of a chosen
+ * ingredient you had on hand; M29.4 removed it — one way to set servings is
+ * enough.) Reset (outside the popover, so it stays visible without opening
+ * it) clears a requested scale back to the recipe's own servings.
  */
-function ScaleControl({ servings, ingredients }: { servings: number; ingredients: Ingredient[] }) {
+function ScaleControl({ servings }: { servings: number }) {
   const navigate = Route.useNavigate();
   const { servings: requested } = Route.useSearch();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => String(Number(servings.toFixed(2))));
-  const [targetIngredientId, setTargetIngredientId] = useState<string | undefined>(ingredients[0]?.id);
-  const [targetAmount, setTargetAmount] = useState("");
   if (servings <= 0) return <Muted as="p">Servings not set</Muted>;
 
   const go = (value: number | undefined) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
   const label = `Serves ${Number(servings.toFixed(2))}`;
-  const ingredientOptions = ingredients.map((ingredient) => ({ value: ingredient.id, label: formatIngredient(ingredient) || "Ingredient" }));
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = Number(draft);
     if (Number.isFinite(value) && value > 0) go(value);
-    setOpen(false);
-  };
-
-  const submitScaleTo = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const ingredient = ingredients.find((candidate) => candidate.id === targetIngredientId);
-    const amount = Number(targetAmount);
-    if (ingredient !== undefined && Number.isFinite(amount) && amount > 0) {
-      go(servingsForTarget(ingredient, amount, servings));
-    }
     setOpen(false);
   };
 
@@ -268,11 +248,7 @@ function ScaleControl({ servings, ingredients }: { servings: number; ingredients
         <Popover
           open={open}
           onOpenChange={(next) => {
-            if (next) {
-              setDraft(String(Number(servings.toFixed(2))));
-              setTargetIngredientId(ingredients[0]?.id);
-              setTargetAmount("");
-            }
+            if (next) setDraft(String(Number(servings.toFixed(2))));
             setOpen(next);
           }}
         >
@@ -306,35 +282,6 @@ function ScaleControl({ servings, ingredients }: { servings: number; ingredients
                 Set
               </Button>
             </form>
-
-            {ingredientOptions.length > 0 && (
-              <form className="flex flex-col gap-2 border-t border-border-subtle pt-3" onSubmit={submitScaleTo} data-testid="scale-to-form">
-                <span className="text-sm text-fg-subtle">Scale to an amount you have</span>
-                <div className="flex items-center gap-2">
-                  <Select
-                    aria-label="Ingredient to scale to"
-                    options={ingredientOptions}
-                    value={targetIngredientId}
-                    placeholder="Ingredient"
-                    searchable
-                    onValueChange={setTargetIngredientId}
-                  />
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    min={0}
-                    value={targetAmount}
-                    onChange={(event) => setTargetAmount(event.target.value)}
-                    aria-label="Target amount"
-                    className="w-20"
-                  />
-                  <Button type="submit" variant="solid" intent="brand" size="sm">
-                    Set
-                  </Button>
-                </div>
-              </form>
-            )}
           </Popover.Body>
         </Popover>
         <Button variant="outline" intent="neutral" size="sm" iconOnly aria-label="More servings" onClick={() => go(nextServings(servings, 1))}>

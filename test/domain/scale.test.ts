@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { type Recipe, recipeSchema } from "../../src/domain/recipe";
-import { ScaleError, scalableIngredients, scaleRecipe, scaledForServings, servingsForTarget } from "../../src/domain/scale";
+import { ScaleError, scaleRecipe, scaledForServings } from "../../src/domain/scale";
 
 const ids = {
   recipe: "11111111-1111-4111-8111-111111111111",
@@ -42,20 +42,6 @@ function fixture(overrides: Partial<Recipe> = {}): Recipe {
     createdAt: now,
     updatedAt: now,
     ...overrides,
-  });
-}
-
-/** Like `fixture`, but replaces `parts` wholesale with a loosely-shaped input parsed the same way `fixture` parses its own — for tests that need a `parts` shape `Partial<Recipe>` can't type. */
-function recipeWithParts(parts: unknown): Recipe {
-  return recipeSchema.parse({
-    id: ids.recipe,
-    slug: "buttered-spaghetti",
-    name: "Buttered spaghetti",
-    recipeServings: 4,
-    recipeYieldQuantity: 800,
-    parts,
-    createdAt: now,
-    updatedAt: now,
   });
 }
 
@@ -132,47 +118,6 @@ describe("scaleRecipe", () => {
   });
 });
 
-describe("servingsForTarget", () => {
-  test("scales servings proportionally to reach the target amount", () => {
-    // 50 g of butter at 4 servings; wanting 100 g means doubling to 8.
-    expect(servingsForTarget({ quantity: 50, fixed: false }, 100, 4)).toBe(8);
-    // Wanting 25 g halves to 2.
-    expect(servingsForTarget({ quantity: 50, fixed: false }, 25, 4)).toBe(2);
-  });
-
-  test("can land on a fractional servings count", () => {
-    expect(servingsForTarget({ quantity: 400, fixed: false }, 500, 4)).toBeCloseTo(5);
-  });
-
-  test("starting from an already-scaled current servings", () => {
-    // The page is showing 8 servings (100 g butter shown); scaling that
-    // ingredient down to 50 g halves the current 8, not the recipe's own 4.
-    expect(servingsForTarget({ quantity: 100, fixed: false }, 50, 8)).toBe(4);
-  });
-
-  test("rejects a fixed ingredient", () => {
-    expect(() => servingsForTarget({ quantity: 1, fixed: true }, 2, 4)).toThrow(ScaleError);
-    expect(() => servingsForTarget({ quantity: 1, fixed: true }, 2, 4)).toThrow(/fixed/);
-  });
-
-  test("rejects a null or non-positive quantity to derive a factor from", () => {
-    expect(() => servingsForTarget({ quantity: null, fixed: false }, 2, 4)).toThrow(ScaleError);
-    expect(() => servingsForTarget({ quantity: 0, fixed: false }, 2, 4)).toThrow(ScaleError);
-  });
-
-  test("rejects a non-positive or non-finite target amount", () => {
-    expect(() => servingsForTarget({ quantity: 50, fixed: false }, 0, 4)).toThrow(ScaleError);
-    expect(() => servingsForTarget({ quantity: 50, fixed: false }, -1, 4)).toThrow(ScaleError);
-    expect(() => servingsForTarget({ quantity: 50, fixed: false }, Number.NaN, 4)).toThrow(ScaleError);
-  });
-
-  test("rejects a non-positive or non-finite current servings", () => {
-    expect(() => servingsForTarget({ quantity: 50, fixed: false }, 100, 0)).toThrow(ScaleError);
-    expect(() => servingsForTarget({ quantity: 50, fixed: false }, 100, -4)).toThrow(ScaleError);
-    expect(() => servingsForTarget({ quantity: 50, fixed: false }, 100, Number.POSITIVE_INFINITY)).toThrow(ScaleError);
-  });
-});
-
 // M25.1: the view and cook pages scale the loader's stored document themselves.
 // This is the shape `getRecipe({ servings })` applies on the server, kept in
 // one pure function so both sides agree.
@@ -198,43 +143,5 @@ describe("scaledForServings", () => {
     const same = scaledForServings(doc, 4);
     expect(same).not.toBe(doc);
     expect(same).toEqual(doc);
-  });
-});
-
-// M25.2: the "Scale to..." popover picks from these rather than acting on
-// whichever row it happened to sit on.
-describe("scalableIngredients", () => {
-  test("drops fixed and null-quantity ingredients, keeps the rest merged across parts", () => {
-    const doc = recipeWithParts([
-      {
-        id: ids.sauce,
-        name: "Sauce",
-        ingredients: [
-          { id: ids.butter, quantity: 50, food: { id: ids.butter, name: "butter" } },
-          { id: ids.bayLeaf, quantity: 1, fixed: true, food: { id: ids.bayLeaf, name: "bay leaf" } },
-          { id: ids.salt, quantity: null, food: { id: ids.salt, name: "salt" } },
-        ],
-      },
-      { id: ids.pasta, name: "Pasta", ingredients: [{ id: ids.spaghetti, quantity: 400, food: { id: ids.spaghetti, name: "spaghetti" } }] },
-    ]);
-    const result = scalableIngredients(doc);
-    expect(result.map((i) => i.id)).toEqual([ids.butter, ids.spaghetti]);
-  });
-
-  test("a food split across parts is offered once, its quantities summed", () => {
-    const doc = recipeWithParts([
-      { id: ids.sauce, name: "Sauce", ingredients: [{ id: ids.butter, quantity: 50, food: { id: ids.spaghetti, name: "butter" } }] },
-      { id: ids.pasta, name: "Pasta", ingredients: [{ id: ids.salt, quantity: 25, food: { id: ids.spaghetti, name: "butter" } }] },
-    ]);
-    const result = scalableIngredients(doc);
-    expect(result).toHaveLength(1);
-    expect(result[0]?.quantity).toBe(75);
-  });
-
-  test("no scalable ingredients (everything fixed or unquantified) returns an empty list", () => {
-    const doc = recipeWithParts([
-      { id: ids.sauce, name: "Sauce", ingredients: [{ id: ids.bayLeaf, quantity: 1, fixed: true }, { id: ids.salt, quantity: null }] },
-    ]);
-    expect(scalableIngredients(doc)).toEqual([]);
   });
 });

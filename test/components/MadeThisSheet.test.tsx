@@ -1,8 +1,10 @@
 // The "Made this" sheet: its pure date helpers, and the form
-// MadeThisSheetContent renders.
+// MadeThisSheetContent renders. M25.3 added a rating star row here; M29.4
+// removed it again (rating lives in the header only), so these tests check
+// the sheet has no stars rather than that it does.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { MadeThisSheetContent, isValidDate, ratingForSave, todayIso } from "../../src/components/MadeThisSheet";
+import { MadeThisSheetContent, isValidDate, todayIso } from "../../src/components/MadeThisSheet";
 
 describe("todayIso", () => {
   test("writes the local calendar date as YYYY-MM-DD", () => {
@@ -31,21 +33,8 @@ describe("isValidDate", () => {
   });
 });
 
-describe("ratingForSave", () => {
-  test("untouched stars write no rating, whatever they show", () => {
-    expect(ratingForSave(false, 0)).toBeNull();
-    expect(ratingForSave(false, 4)).toBeNull();
-  });
-
-  test("touched stars write what they show, 0 included so the rating can be cleared", () => {
-    expect(ratingForSave(true, 3)).toBe(3);
-    expect(ratingForSave(true, 0)).toBe(0);
-  });
-});
-
 describe("MadeThisSheetContent render", () => {
-  const render = (busy = false, rating: number | null = null) =>
-    renderToString(<MadeThisSheetContent today="2026-09-11" busy={busy} rating={rating} onSave={() => {}} onCancel={() => {}} />);
+  const render = (busy = false) => renderToString(<MadeThisSheetContent today="2026-09-11" busy={busy} onSave={() => {}} onCancel={() => {}} />);
 
   test("offers a date defaulting to today, a comment and a photo picker", () => {
     const html = render();
@@ -59,15 +48,10 @@ describe("MadeThisSheetContent render", () => {
     expect(html).toContain(">Cancel<");
   });
 
-  test("carries stars above the comment, pressable, so a cook can be rated as it is logged", () => {
+  test("carries no rating stars: rating lives in the header only", () => {
     const html = render();
-    for (const star of [1, 2, 3, 4, 5]) expect(html).toContain(`aria-label="Rate ${star} out of 5"`);
-    expect(html.indexOf("Rating")).toBeLessThan(html.indexOf("Comment"));
-  });
-
-  test("the stars start on the recipe's current rating", () => {
-    expect(render(false, 3)).toContain('aria-label="Rated 3 out of 5"');
-    expect(render()).toContain('aria-label="Rated 0 out of 5"');
+    expect(html).not.toContain("Rating");
+    for (const star of [1, 2, 3, 4, 5]) expect(html).not.toContain(`aria-label="Rate ${star} out of 5"`);
   });
 
   test("while saving the buttons are disabled", () => {

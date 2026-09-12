@@ -53,7 +53,7 @@ export function ingredientLineParts(ingredient: Pick<Ingredient, "quantity" | "u
 
 export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: IngredientRowProps) {
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
-  // The pencil and its sheet, or nothing outside the recipe page (M27.5).
+  // The hover pencil (from `md`) and its sheet, or nothing outside the recipe page (M27.5, M29.4).
   const quickEdit = useQuickEditIngredient(partId, ingredient.id);
   const { amount, food, raw } = ingredientLineParts(ingredient);
   const note = ingredient.note.trim();
@@ -65,7 +65,6 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: 
       data-ticked={done ? "true" : undefined}
       data-fixed={ingredient.fixed ? "true" : undefined}
       data-scaled={scaled ? "true" : undefined}
-      {...quickEdit.press}
     >
       <Checkbox checked={done} onCheckedChange={toggle} className="mt-0.5" aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`} />
       <button type="button" onClick={toggle} className={cn("flex flex-1 flex-col gap-0.5 text-left", done && "text-fg-subtle")}>
@@ -84,7 +83,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: 
         </span>
         {note !== "" && <Muted as="p" className={cn("text-sm", done && "line-through")}>{note}</Muted>}
       </button>
-      {quickEdit.node}
+      {quickEdit}
     </li>
   );
 }
