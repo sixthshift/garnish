@@ -7,6 +7,12 @@
 // live (decisions.md row 49). The document carries no position fields: the
 // repository writes them from array order on save, so moving a row is the
 // whole story.
+//
+// Row actions are in one `⋮` per step and list actions are in the section
+// header, once (decisions.md row 54). Four buttons under every textarea is
+// forty controls for a ten-step method, and on a phone they wrapped to three
+// lines under each one; Mealie's step menu carries seven entries and Tandoor
+// puts split-all and merge-all above the list, which is what this is.
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
@@ -16,6 +22,7 @@ import { paragraphs } from "../domain/bulkText";
 import { randomUuid } from "../lib/ids";
 import type { DraftStep, FieldErrors, RecipeDraft } from "./RecipeForm";
 import { BulkAddSheet } from "./ui/BulkAddSheet";
+import { Menu } from "./ui/Menu";
 import { moveItem, ReorderList } from "./ui/ReorderList";
 
 // --- Pure helpers -----------------------------------------------------------
@@ -122,6 +129,46 @@ export function mergeStepWithNext(draft: RecipeDraft, pi: number, si: number): R
   return withSteps(draft, pi, [...steps.slice(0, si), merged, ...steps.slice(si + 2)]);
 }
 
+/**
+ * The draft with every step of part `pi` replaced by one step per paragraph in
+ * its own text — Tandoor's "Split" over the whole list rather than one row at
+ * a time. A list where no step has two paragraphs comes back unchanged, the
+ * same rule the button uses to disable itself. Pure apart from the new steps'
+ * ids.
+ */
+export function splitAllSteps(draft: RecipeDraft, pi: number): RecipeDraft {
+  const steps = stepsOf(draft, pi);
+  if (!steps || !canSplitAll(steps)) return withSteps(draft, pi, steps?.slice() ?? []);
+  return withSteps(
+    draft,
+    pi,
+    steps.flatMap((step) => {
+      const chunks = paragraphs(step.text ?? "");
+      return chunks.length < 2 ? [step] : chunks.map((text, i) => (i === 0 ? { ...step, text } : newStep(text)));
+    }),
+  );
+}
+
+/**
+ * The draft with every step of part `pi` merged into one, their text joined by
+ * blank lines and the first step's id kept — Tandoor's "Merge" over the whole
+ * list. Fewer than two steps comes back unchanged. Pure.
+ */
+export function mergeAllSteps(draft: RecipeDraft, pi: number): RecipeDraft {
+  const steps = stepsOf(draft, pi);
+  if (!steps || steps.length < 2) return withSteps(draft, pi, steps?.slice() ?? []);
+  const text = steps
+    .map((step) => (step.text ?? "").trim())
+    .filter((part) => part !== "")
+    .join("\n\n");
+  return withSteps(draft, pi, [{ ...steps[0]!, text }]);
+}
+
+/** Would "Split all" change anything: does any step hold more than one paragraph? Pure. */
+export function canSplitAll(steps: readonly DraftStep[]): boolean {
+  return steps.some((step) => paragraphs(step.text ?? "").length > 1);
+}
+
 /** The field-name prefix for step rows: "parts.0.steps". Pure. */
 export function stepsPath(pi: number): string {
   return `parts.${pi}.steps`;
@@ -154,6 +201,19 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
           {heading}
         </Muted>
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            intent="neutral"
+            size="sm"
+            disabled={disabled || !canSplitAll(steps)}
+            onClick={() => onChange(splitAllSteps(draft, pi))}
+          >
+            Split all
+          </Button>
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled || steps.length < 2} onClick={() => onChange(mergeAllSteps(draft, pi))}>
+            Merge all
+          </Button>
           <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
             Bulk add
           </Button>
@@ -182,7 +242,6 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
           keyOf={(step) => step.id ?? "unsaved"}
           itemName="step"
           onReorder={(next) => onChange(withSteps(draft, pi, next))}
-          onRemove={(_, si) => onChange(removeStep(draft, pi, si))}
           renderItem={(step, si) => {
             const error = errors[`${path}.${si}.text`];
             return (
@@ -206,53 +265,20 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                       {error}
                     </p>
                   )}
-                  <div className="flex flex-wrap gap-1" role="group" aria-label={`Step ${si + 1} tools`}>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      intent="neutral"
-                      size="sm"
-                      aria-label={`Insert step above step ${si + 1}`}
-                      disabled={disabled}
-                      onClick={() => onChange(insertStepAbove(draft, pi, si))}
-                    >
-                      Insert above
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      intent="neutral"
-                      size="sm"
-                      aria-label={`Insert step below step ${si + 1}`}
-                      disabled={disabled}
-                      onClick={() => onChange(insertStepBelow(draft, pi, si))}
-                    >
-                      Insert below
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      intent="neutral"
-                      size="sm"
-                      aria-label={`Split step ${si + 1} by paragraph`}
-                      disabled={disabled || paragraphs(step.text ?? "").length < 2}
-                      onClick={() => onChange(splitStepByParagraph(draft, pi, si))}
-                    >
-                      Split by paragraph
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      intent="neutral"
-                      size="sm"
-                      aria-label={`Merge step ${si + 1} with next`}
-                      disabled={disabled || si === last}
-                      onClick={() => onChange(mergeStepWithNext(draft, pi, si))}
-                    >
-                      Merge with next
-                    </Button>
-                  </div>
                 </div>
+                <Menu label={`Step ${si + 1} actions`} iconOnly>
+                  <Menu.Item onSelect={() => onChange(insertStepAbove(draft, pi, si))}>Insert above</Menu.Item>
+                  <Menu.Item onSelect={() => onChange(insertStepBelow(draft, pi, si))}>Insert below</Menu.Item>
+                  <Menu.Item disabled={paragraphs(step.text ?? "").length < 2} onSelect={() => onChange(splitStepByParagraph(draft, pi, si))}>
+                    Split by paragraph
+                  </Menu.Item>
+                  <Menu.Item disabled={si === last} onSelect={() => onChange(mergeStepWithNext(draft, pi, si))}>
+                    Merge with next
+                  </Menu.Item>
+                  <Menu.Item intent="danger" onSelect={() => onChange(removeStep(draft, pi, si))}>
+                    Delete
+                  </Menu.Item>
+                </Menu>
               </div>
             );
           }}

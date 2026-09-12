@@ -10,12 +10,15 @@ import { emptyDraft, type RecipeDraft, validateDraft } from "../../src/component
 import {
   addBulkSteps,
   addStep,
+  canSplitAll,
   insertStepAbove,
   insertStepBelow,
+  mergeAllSteps,
   mergeStepWithNext,
   moveStep,
   newStep,
   removeStep,
+  splitAllSteps,
   splitStepByParagraph,
   StepsEditor,
   stepsOf,
@@ -264,22 +267,31 @@ describe("StepsEditor", () => {
     expect(html).not.toContain('role="dialog"');
   });
 
-  test("each step has insert above/below, split by paragraph and merge with next tools", () => {
+  test("each step has one actions menu, not a row of buttons (M21.2)", () => {
     const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
-    expect(html.match(/aria-label="Insert step above step \d"/g)).toHaveLength(3);
-    expect(html.match(/aria-label="Insert step below step \d"/g)).toHaveLength(3);
-    expect(html.match(/aria-label="Split step \d by paragraph"/g)).toHaveLength(3);
-    expect(html.match(/aria-label="Merge step \d with next"/g)).toHaveLength(3);
-    // A single-paragraph step's split tool is disabled; the last step's merge tool is disabled.
-    expect(tagWithLabel(html, "Split step 1 by paragraph")).toContain('disabled=""');
-    expect(tagWithLabel(html, "Merge step 3 with next")).toContain('disabled=""');
-    expect(tagWithLabel(html, "Merge step 1 with next")).not.toContain('disabled=""');
+    expect(html.match(/aria-label="Step \d actions"/g)).toHaveLength(3);
+    // The four inline tools are gone; the menu holds them, closed until asked.
+    expect(html).not.toContain("Insert above");
+    expect(html).not.toContain("Insert below");
+    expect(html).not.toContain("Split by paragraph");
+    expect(html).not.toContain("Merge with next");
+    expect(html).not.toContain('role="menu"');
   });
 
-  test("a step with more than one paragraph gets an enabled split tool", () => {
-    const draft = updateStep(focaccia(), 0, 0, "Mix flour and water.\n\nKnead for ten minutes.");
-    const html = renderToString(<StepsEditor draft={draft} pi={0} onChange={() => {}} />);
-    expect(tagWithLabel(html, "Split step 1 by paragraph")).not.toContain('disabled=""');
+  test("split all and merge all sit once in the header, disabled when they would do nothing", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
+    expect(html).toContain(">Split all<");
+    expect(html).toContain(">Merge all<");
+    // No step has two paragraphs, so Split all has nothing to do.
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Split all</);
+    // Three steps, so Merge all does.
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Merge all</);
+
+    const split = renderToString(<StepsEditor draft={updateStep(focaccia(), 0, 0, "Mix.\n\nKnead.")} pi={0} onChange={() => {}} />);
+    expect(split).not.toMatch(/<button[^>]*disabled=""[^>]*>Split all</);
+
+    const one = renderToString(<StepsEditor draft={withSteps(emptyDraft(), 0, [newStep("Only one.")])} pi={0} onChange={() => {}} />);
+    expect(one).toMatch(/<button[^>]*disabled=""[^>]*>Merge all</);
   });
 
   test("renders a numbered textarea per step, in order, with reorder and remove controls", () => {
@@ -295,7 +307,8 @@ describe("StepsEditor", () => {
     expect(html).toContain('aria-label="Step 3"');
     expect(html.match(/aria-label="Move step \d up"/g)).toHaveLength(3);
     expect(html.match(/aria-label="Move step \d down"/g)).toHaveLength(3);
-    expect(html.match(/aria-label="Remove step \d"/g)).toHaveLength(3);
+    // Delete moved into the row's menu (M21.2), so the list has no remove button.
+    expect(html).not.toContain('aria-label="Remove step 1"');
     // Recipe-level steps are not part of a component's editor.
     expect(html).not.toContain("Dimple.");
   });
@@ -362,5 +375,50 @@ describe("Check: saved step and note order matches the draft", () => {
     expect(fetched.parts[1]!.steps.map((s) => s.text)).toEqual(["Bake.", "Dimple."]);
     expect(fetched.notes.map((n) => n.title)).toEqual(["Timing", "Flour"]);
     expect(fetched.notes.map((n) => n.text)).toEqual(["Overnight in the fridge is better.", "Bread flour, not plain."]);
+  });
+});
+
+describe("splitAllSteps, mergeAllSteps and canSplitAll (M21.2)", () => {
+  test("canSplitAll is true only when some step holds more than one paragraph", () => {
+    expect(canSplitAll(focaccia().parts[0]!.steps)).toBe(false);
+    expect(canSplitAll(updateStep(focaccia(), 0, 0, "Mix.\n\nKnead.").parts[0]!.steps)).toBe(true);
+  });
+
+  test("split all splits every multi-paragraph step and leaves the rest alone", () => {
+    const draft = updateStep(focaccia(), 0, 1, "Rest.\n\nCover it.");
+    const next = splitAllSteps(draft, 0);
+    expect(next.parts[0]!.steps.map((step) => step.text)).toEqual(["Mix.", "Rest.", "Cover it.", "Fold."]);
+    // The step that was split keeps its id on the first chunk.
+    expect(next.parts[0]!.steps[1]!.id).toBe(draft.parts[0]!.steps[1]!.id);
+  });
+
+  test("split all with nothing to split is an unchanged copy", () => {
+    const draft = focaccia();
+    const next = splitAllSteps(draft, 0);
+    expect(next.parts[0]!.steps).toEqual(draft.parts[0]!.steps);
+    expect(next).not.toBe(draft);
+  });
+
+  test("merge all joins the list into one step on the first step's id", () => {
+    const draft = focaccia();
+    const next = mergeAllSteps(draft, 0);
+    expect(next.parts[0]!.steps).toHaveLength(1);
+    expect(next.parts[0]!.steps[0]!.text).toBe("Mix.\n\nRest.\n\nFold.");
+    expect(next.parts[0]!.steps[0]!.id).toBe(draft.parts[0]!.steps[0]!.id);
+    // The other part is untouched.
+    expect(next.parts[1]).toEqual(draft.parts[1]);
+  });
+
+  test("merge all with fewer than two steps, or an out-of-range part, is an unchanged copy", () => {
+    const one = withSteps(emptyDraft(), 0, [newStep("Only one.")]);
+    expect(mergeAllSteps(one, 0).parts[0]!.steps).toEqual(one.parts[0]!.steps);
+    const draft = focaccia();
+    expect(mergeAllSteps(draft, 9).parts).toEqual(draft.parts);
+    expect(splitAllSteps(draft, 9).parts).toEqual(draft.parts);
+  });
+
+  test("merge all drops blank steps rather than leaving blank lines", () => {
+    const draft = withSteps(emptyDraft(), 0, [newStep("Mix."), newStep("  "), newStep("Bake.")]);
+    expect(mergeAllSteps(draft, 0).parts[0]!.steps[0]!.text).toBe("Mix.\n\nBake.");
   });
 });
