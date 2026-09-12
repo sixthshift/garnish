@@ -1,0 +1,159 @@
+// Reading a recipe from a URL (M23.5): the pure extraction, and the fetch
+// against an injected fetcher.
+import { describe, expect, test } from "vitest";
+import {
+  extractRecipe,
+  type Fetcher,
+  IMPORT_USER_AGENT,
+  importRecipeFromUrl,
+  MAX_PAGE_BYTES,
+  parsePageUrl,
+  scrapedFromStub,
+} from "../../src/server/recipeImport";
+
+const URL_UNDER_TEST = "https://example.test/anzac-biscuits";
+
+/** A page carrying a schema.org Recipe. */
+const SCHEMA_PAGE = `<html><head>
+<meta property="og:title" content="Ignored, the schema wins">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+  {"@type":"WebSite","name":"Site"},
+  {"@type":"Recipe","name":"Anzac biscuits","recipeYield":"24 biscuits","prepTime":"PT20M",
+   "recipeIngredient":["1 cup plain flour","125 g butter"],
+   "recipeInstructions":[{"@type":"HowToStep","text":"Mix."},{"@type":"HowToStep","text":"Bake."}]}
+]}</script></head><body></body></html>`;
+
+/** A page with only OpenGraph tags. */
+const STUB_PAGE = `<html><head>
+<meta property="og:title" content="Nan's shortbread">
+<meta property="og:description" content="A family recipe.">
+<meta property="og:image" content="https://example.test/sb.jpg">
+</head><body><p>Cream the butter and sugar…</p></body></html>`;
+
+/** A page carrying a Recipe node with nothing in it, as some sites emit for SEO. */
+const EMPTY_SCHEMA_PAGE = `<html><head>
+<script type="application/ld+json">{"@type":"Recipe","name":"Shell"}</script>
+<meta property="og:title" content="Shell from OpenGraph">
+</head><body></body></html>`;
+
+const BARE_PAGE = "<html><head><title>Nothing here</title></head><body><p>Prose.</p></body></html>";
+
+/** A fetcher returning `body` with `status`, recording what it was called with. */
+function stubFetch(body: string, status = 200): Fetcher & { calls: { url: string; init?: RequestInit }[] } {
+  const calls: { url: string; init?: RequestInit }[] = [];
+  const fetcher = (async (url: string, init?: RequestInit) => {
+    calls.push({ url, init });
+    return new Response(body, { status });
+  }) as Fetcher & { calls: typeof calls };
+  fetcher.calls = calls;
+  return fetcher;
+}
+
+describe("parsePageUrl", () => {
+  test.each(["https://example.com/r", "http://192.168.1.4:8080/r"])("accepts %s", (raw) => {
+    expect(parsePageUrl(raw)?.href).toBe(new URL(raw).href);
+  });
+
+  test("trims surrounding whitespace", () => {
+    expect(parsePageUrl("  https://example.com/r \n")?.pathname).toBe("/r");
+  });
+
+  test.each(["", "not a url", "/local/page", "file:///etc/passwd", "javascript:alert(1)", "data:text/html,x"])("rejects %j", (raw) => {
+    expect(parsePageUrl(raw)).toBeNull();
+  });
+});
+
+describe("scrapedFromStub", () => {
+  test("keeps what it knows and leaves the lists empty", () => {
+    const scraped = scrapedFromStub({ name: "Toast", description: "Hot bread.", image: "https://x.test/a.jpg" });
+    expect(scraped).toMatchObject({ name: "Toast", description: "Hot bread.", image: "https://x.test/a.jpg", servings: 0 });
+    expect(scraped.ingredients).toEqual([]);
+    // One empty part, so the draft it builds still validates.
+    expect(scraped.parts).toEqual([{ name: "", steps: [] }]);
+  });
+});
+
+describe("extractRecipe", () => {
+  test("schema.org wins where the page has it", () => {
+    const found = extractRecipe(SCHEMA_PAGE, URL_UNDER_TEST);
+    expect(found?.from).toBe("schema");
+    expect(found?.url).toBe(URL_UNDER_TEST);
+    expect(found?.recipe.name).toBe("Anzac biscuits");
+    expect(found?.recipe.ingredients).toEqual(["1 cup plain flour", "125 g butter"]);
+    expect(found?.recipe.parts[0]!.steps).toEqual(["Mix.", "Bake."]);
+    expect(found?.recipe.servings).toBe(24);
+    expect(found?.recipe.prepMinutes).toBe(20);
+  });
+
+  test("OpenGraph is the fallback", () => {
+    const found = extractRecipe(STUB_PAGE, URL_UNDER_TEST);
+    expect(found?.from).toBe("stub");
+    expect(found?.recipe.name).toBe("Nan's shortbread");
+    expect(found?.recipe.description).toBe("A family recipe.");
+    expect(found?.recipe.image).toBe("https://example.test/sb.jpg");
+    expect(found?.recipe.ingredients).toEqual([]);
+  });
+
+  test("an empty Recipe node falls through to the stub rather than importing a shell", () => {
+    const found = extractRecipe(EMPTY_SCHEMA_PAGE, URL_UNDER_TEST);
+    expect(found?.from).toBe("stub");
+    expect(found?.recipe.name).toBe("Shell from OpenGraph");
+  });
+
+  test("neither is null", () => {
+    expect(extractRecipe(BARE_PAGE, URL_UNDER_TEST)).toBeNull();
+    expect(extractRecipe("", URL_UNDER_TEST)).toBeNull();
+  });
+});
+
+describe("importRecipeFromUrl", () => {
+  test("reads a schema page", async () => {
+    const found = await importRecipeFromUrl(URL_UNDER_TEST, stubFetch(SCHEMA_PAGE));
+    expect(found.from).toBe("schema");
+    expect(found.recipe.name).toBe("Anzac biscuits");
+  });
+
+  test("sends a browser User-Agent, because a default one gets a 403", async () => {
+    const fetcher = stubFetch(SCHEMA_PAGE);
+    await importRecipeFromUrl(URL_UNDER_TEST, fetcher);
+    const headers = fetcher.calls[0]!.init?.headers as Record<string, string>;
+    expect(headers["User-Agent"]).toBe(IMPORT_USER_AGENT);
+    expect(headers.Accept).toContain("text/html");
+    expect(fetcher.calls[0]!.init?.redirect).toBe("follow");
+  });
+
+  test("falls back to the stub", async () => {
+    expect((await importRecipeFromUrl(URL_UNDER_TEST, stubFetch(STUB_PAGE))).from).toBe("stub");
+  });
+
+  test("a page with neither says so, and suggests the way forward", async () => {
+    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch(BARE_PAGE))).rejects.toThrow(/No recipe data on that page/);
+  });
+
+  test.each([
+    ["", /http or https/],
+    ["file:///etc/passwd", /http or https/],
+  ])("refuses %j", async (raw, message) => {
+    await expect(importRecipeFromUrl(raw, stubFetch(SCHEMA_PAGE))).rejects.toThrow(message);
+  });
+
+  test("an error response names the host and the status", async () => {
+    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch("", 403))).rejects.toThrow("example.test returned 403");
+  });
+
+  test("an unreachable host says so rather than leaking the cause", async () => {
+    const failing: Fetcher = async () => {
+      throw new Error("ECONNREFUSED 10.0.0.1:443");
+    };
+    await expect(importRecipeFromUrl(URL_UNDER_TEST, failing)).rejects.toThrow("Could not reach example.test");
+  });
+
+  test("an empty page says so", async () => {
+    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch(""))).rejects.toThrow("empty page");
+  });
+
+  test("an oversized page is refused before it is parsed", async () => {
+    const huge = `<html>${"x".repeat(MAX_PAGE_BYTES + 1)}</html>`;
+    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch(huge))).rejects.toThrow("too large");
+  });
+});
