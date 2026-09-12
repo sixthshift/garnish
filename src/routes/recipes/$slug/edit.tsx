@@ -40,7 +40,7 @@ function EditRecipePage() {
   const { recipe, units, tags } = Route.useLoaderData();
   const { servings } = Route.useSearch();
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-6">
       <Heading as="h1">Edit recipe</Heading>
       <RecipeForm
         key={recipe.id}

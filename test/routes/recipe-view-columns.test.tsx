@@ -137,7 +137,7 @@ describe("two columns from md (M24.1)", () => {
     expect(aside.startsWith("<aside")).toBe(true);
     expect(aside).toMatch(/class="[^"]*md:sticky[^"]*md:top-6/);
     expect(aside).toMatch(/class="[^"]*md:overflow-y-auto/);
-    expect(html).toMatch(/<article[^>]*class="[^"]*max-w-3xl[^"]*lg:max-w-5xl/);
+    expect(html).toMatch(/<article[^>]*class="[^"]*max-w-6xl/);
   });
 
   test("the ingredients aside opts out of the print rule that hides the shell's aside", async () => {

@@ -114,7 +114,7 @@ function RecipePage() {
   // sheet writes back what was stored, whatever scale the page is showing.
   return (
     <QuickEditProvider recipe={stored}>
-      <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6 lg:max-w-5xl">
+      <article className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
         <RecipeHeader
           recipe={recipe}
           onRate={(rating) => void rate(rating)}
@@ -196,7 +196,7 @@ function RecipePage() {
               recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
           </aside>
 
-          <div className="flex flex-col gap-6 md:col-span-2" data-testid="method-column">
+          <div className="flex max-w-prose flex-col gap-6 md:col-span-2" data-testid="method-column">
             {recipe.parts.map((part) => (
               <PartSteps key={part.id} part={part} recipeId={recipe.id} />
             ))}

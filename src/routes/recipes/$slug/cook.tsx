@@ -12,6 +12,10 @@
 // part that jumps to its first card, and a vertical swipe (pure
 // `swipeIntent`, so the scroll-versus-swipe line is a tested function rather
 // than a feel). A live region speaks the card as it changes.
+//
+// The page stays `max-w-3xl` (M24.7) while the view and editor routes widen:
+// one card of large type at roughly 35 characters a line is the right measure
+// for reading across a bench, so this is a deliberate exception, not a leftover.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Checkbox } from "@sixthshift/design-system/checkbox";

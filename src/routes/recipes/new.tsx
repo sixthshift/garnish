@@ -87,7 +87,7 @@ async function findDuplicateBySource(url: string): Promise<{ name: string; slug:
 
 function Page({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-6">
       <Heading as="h1">New recipe</Heading>
       {children}
     </div>
