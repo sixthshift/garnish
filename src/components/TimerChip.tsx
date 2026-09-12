@@ -1,14 +1,11 @@
-// A duration named in a step (src/domain/timers.ts), rendered inline as a
-// tappable chip. Still presentational: it reports the tap upward and shows
+// A duration named in a step (src/domain/timers.ts), rendered in the step
+// card's footer as a tappable chip. Still presentational: it reports the tap upward and shows
 // whatever the caller says its timer is doing. The running-timer store
 // (src/lib/timers.ts) and the strip that lists them (TimerStrip.tsx) are
-// wired to it by `decorateDurations` below, which the step rows and the cook
-// card build with a step's id so a chip can find its own timer again.
+// wired to it by `StepCard`, which builds one chip per duration in the step's
+// footer with an id derived from the step so a chip finds its own timer again.
 import { Badge } from "@sixthshift/design-system/badge";
 import { cn } from "@sixthshift/design-system/utils";
-import { Fragment, type ReactNode } from "react";
-import { durationsIn } from "../domain/timers";
-import { chipTimerId } from "../lib/timers";
 
 function ClockIcon() {
   // Same face as RecipeHeader's "total time" stat, at chip scale.
@@ -73,56 +70,4 @@ export function TimerChip({ seconds, upperSeconds, label, onStart, timer, classN
       </Badge>
     </button>
   );
-}
-
-/** What a decorated chip needs to reach the running-timer store. All optional: with none of it the chips are inert. */
-export type DurationTimers = {
-  /**
-   * Prefix for the ids of the timers these chips start — the step's id. Two
-   * chips in one step get different ids from their offsets in the text, so
-   * each finds its own timer again after a reload.
-   */
-  keyPrefix?: string;
-  /** What the timer is called on the strip and in its notification. Defaults to the matched text. */
-  label?: string;
-  onStart?: (input: { id: string; label: string; seconds: number }) => void;
-  /** This chip's timer, if the store has one under `id`. */
-  timerFor?: (id: string) => { text: string; done: boolean } | undefined;
-};
-
-/**
- * A `Markdown` `decorate` function that splices a `TimerChip` in for every
- * duration `durationsIn` finds in a text run, leaving the rest as plain text.
- * Each chip gets a stable timer id (`keyPrefix` plus its offset and text), so
- * it can show its own timer's remaining time and restart it on a second tap.
- */
-export function decorateDurations(timers: DurationTimers = {}): (text: string) => ReactNode {
-  return (text: string) => {
-    const durations = durationsIn(text);
-    if (durations.length === 0) return text;
-
-    const nodes: ReactNode[] = [];
-    let cursor = 0;
-    durations.forEach((duration, index) => {
-      if (duration.start > cursor) nodes.push(<Fragment key={`text-${index}`}>{text.slice(cursor, duration.start)}</Fragment>);
-      const id = chipTimerId(timers.keyPrefix ?? "", duration.start, duration.text);
-      nodes.push(
-        <TimerChip
-          key={`timer-${index}`}
-          seconds={duration.seconds}
-          upperSeconds={duration.upperSeconds}
-          label={duration.text}
-          timer={timers.timerFor?.(id)}
-          onStart={
-            timers.onStart === undefined
-              ? undefined
-              : (seconds, matched) => timers.onStart?.({ id, label: timers.label?.trim() || matched, seconds })
-          }
-        />,
-      );
-      cursor = duration.end;
-    });
-    if (cursor < text.length) nodes.push(<Fragment key="text-tail">{text.slice(cursor)}</Fragment>);
-    return nodes;
-  };
 }

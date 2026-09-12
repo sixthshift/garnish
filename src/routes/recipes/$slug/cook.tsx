@@ -25,7 +25,7 @@ import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { cn } from "@sixthshift/design-system/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { z } from "zod";
 import { MadeThisButton } from "../../../components/Timeline";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
@@ -41,13 +41,10 @@ import {
   type CookCard,
 } from "../../../domain/cook";
 import { Markdown } from "../../../components/Markdown";
-import { StepIngredientChips } from "../../../components/StepIngredientChips";
-import { decorateDurations } from "../../../components/TimerChip";
 import { formatIngredient } from "../../../domain/format";
 import { scaledForServings } from "../../../domain/scale";
 import type { Ingredient, Recipe } from "../../../domain/recipe";
 import { useIngredientTick } from "../../../lib/ticks";
-import { useTimers } from "../../../lib/timers";
 import { TimerStrip } from "../../../components/TimerStrip";
 import { useWakeLock } from "../../../lib/useWakeLock";
 import { getRecipe } from "../../../server/recipes";
@@ -319,15 +316,6 @@ function CookCardView({
   onNext: () => void;
 }) {
   const heading = card.part === "" ? undefined : card.part;
-  const { start, find } = useTimers(recipeId);
-  const stepId = card.kind === "step" ? card.step.id : "";
-  const stepText = card.kind === "step" ? card.step.text : "";
-  // Same decorator as the view page's step rows: this step's id keys its
-  // chips' timers, and its text is what the notification at zero says.
-  const decorateTimers = useMemo(
-    () => decorateDurations({ keyPrefix: stepId, label: stepText, onStart: start, timerFor: find }),
-    [stepId, stepText, start, find],
-  );
   if (card.kind === "ingredients") {
     return (
       <Card title={heading && <span className="text-xl">{heading}</span>} data-card="ingredients">
@@ -346,10 +334,9 @@ function CookCardView({
       <p className="mb-3 text-sm font-medium uppercase tracking-wide text-fg-subtle">
         Step {card.number} of {card.total}
       </p>
-      <Markdown source={card.step.text} className="text-3xl leading-snug" decorate={decorateTimers} />
-      {/* The ingredients this step names, tickable, on the same session ticks
-          as the ingredient card's rows (M26.1). */}
-      <StepIngredientChips recipeId={recipeId} text={card.step.text} ingredients={card.ingredients} className="mt-4 text-lg" />
+      {/* Plain until M29.2 deals `StepCard` here: the linked ingredients and
+          the step's timers come back with the card. */}
+      <Markdown source={card.step.text} className="text-3xl leading-snug" />
       <NextPreview preview={preview} onNext={onNext} />
     </Card>
   );

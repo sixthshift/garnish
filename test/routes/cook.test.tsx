@@ -274,38 +274,9 @@ describe("/recipes/$slug/cook", () => {
     expect(view).toMatch(/data-testid="ingredient-row" data-ticked="true"/);
   });
 
-  test("a step card chips the ingredients it names, tickable through the shared store", async () => {
-    const tart = await seedTart();
-    const flour = tart.parts[0]!.ingredients[0]!;
-
-    const html = await renderRoute("/recipes/lemon-tart/cook?step=1");
-    expect(html).toContain('aria-label="Ingredients in this step"');
-    expect(html).toMatch(/data-testid="step-ingredient-chip"[^>]*>(?:<[^>]*>)*200 g flour/);
-    expect(html).not.toContain('data-ticked="true"');
-
-    // Ticking anywhere strikes the chip through: same key as the ingredient card's row.
-    const storage = fakeStorage();
-    setIngredientTicked(storage, tart.id, flour.id, true);
-    (globalThis as { window?: unknown }).window = { sessionStorage: storage };
-    const ticked = await renderRoute("/recipes/lemon-tart/cook?step=1");
-    expect(ticked).toMatch(/data-testid="step-ingredient-chip"[^>]*data-ticked="true"/);
-  });
-
-  test("a step naming none of its part's ingredients gets no chips", async () => {
-    await seedTart();
-    // "Bake for 30 minutes." is the unnamed part's step, and that part has no ingredients.
-    const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
-    expect(html).not.toContain('aria-label="Ingredients in this step"');
-  });
-
-  // M26.2: a duration named in a step becomes a timer chip inline in its text.
-  test("a step card chips the durations it names", async () => {
-    await seedTart();
-    // "Bake for 30 minutes." is the unnamed part's step (index 4).
-    const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
-    expect(html).toContain('data-testid="timer-chip"');
-    expect(html).toContain("30 minutes");
-  });
+  // M29.1 took the name-matched chips and the timer chips spliced into the
+  // prose off the cook card; M29.2 deals it a `StepCard`, which brings the
+  // step's linked ingredients and its timers back in the card's own shape.
 
   test("the view page links to cook mode, carrying the requested scale", async () => {
     await seedTart();
