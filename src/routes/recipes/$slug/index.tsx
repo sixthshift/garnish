@@ -1,6 +1,10 @@
 // One recipe. `?servings=N` asks the server for the document scaled to N; the
 // scale control only ever navigates, so the loader is the one read path and the
 // page always shows what `getRecipe` returned.
+//
+// Layout (M24.1): the header spans the page; from `md` the body is a grid with
+// the ingredients in a sticky aside (a third) and the method beside it (two
+// thirds). Below `md` the two stack, ingredients first.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
@@ -65,7 +69,7 @@ function RecipePage() {
   const goToServings = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
 
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">
+    <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 lg:max-w-5xl">
       <RecipeHeader
         recipe={recipe}
         madeAction={<MadeThisButton recipe={recipe} />}
@@ -89,27 +93,38 @@ function RecipePage() {
         </div>
       )}
 
-      {summary && hasIngredients && (
-        <IngredientList
-          ingredients={mergeIngredients(recipe)}
-          recipeId={recipe.id}
-          scaled={scaled}
-          currentServings={recipe.recipeServings}
-          onScaleTo={goToServings}
-        />
-      )}
+      {/* Two columns from `md` (M24.1): the ingredients stick beside the
+          method rather than scrolling away above it. A third for the list, two
+          thirds for the steps; the aside scrolls itself when it is taller than
+          the viewport. Below `md` the two stack, ingredients first. */}
+      <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:items-start md:gap-8" data-testid="recipe-columns">
+        <aside
+          data-testid="ingredients-column"
+          data-print="keep"
+          className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
+        >
+          {summary && hasIngredients && (
+            <IngredientList
+              ingredients={mergeIngredients(recipe)}
+              recipeId={recipe.id}
+              scaled={scaled}
+              currentServings={recipe.recipeServings}
+              onScaleTo={goToServings}
+            />
+          )}
 
-      {recipe.parts.map((part) => (
-        <PartSection
-          key={part.id}
-          part={part}
-          recipeId={recipe.id}
-          scaled={scaled}
-          hideIngredients={summary}
-          currentServings={recipe.recipeServings}
-          onScaleTo={goToServings}
-        />
-      ))}
+          {!summary &&
+            recipe.parts.map((part) => (
+              <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} currentServings={recipe.recipeServings} onScaleTo={goToServings} />
+            ))}
+        </aside>
+
+        <div className="flex flex-col gap-6 md:col-span-2" data-testid="method-column">
+          {recipe.parts.map((part) => (
+            <PartSteps key={part.id} part={part} recipeId={recipe.id} />
+          ))}
+        </div>
+      </div>
 
       {recipe.notes.length > 0 && (
         <section className="flex flex-col gap-3" aria-label="Notes">
@@ -214,54 +229,58 @@ function ScaleControl({ servings }: { servings: number }) {
 }
 
 /**
- * One part: its heading, ingredients, then steps. The unnamed part — a flat
- * recipe's only part, or the main body beside named ones — has no heading, as
- * in Mealie. A part with one of the two lists empty hides that list; one with
- * both empty says so instead of rendering nothing.
- *
- * `hideIngredients` is set in Summary mode: this part's own ingredients are
- * already shown in the one merged list above (`mergeIngredients`), so they are
- * skipped here. A part whose only content is ingredients then has nothing left
- * to show and renders nothing at all — not the "empty" fallback, which stays
- * for a part that is genuinely blank.
+ * One part's ingredients in the aside, under the part's name. The unnamed part
+ * — a flat recipe's only part, or the main body beside named ones — has no
+ * heading, as in Mealie. A part with no ingredients contributes nothing here.
+ * Structured mode only: Summary mode shows one merged list instead.
  */
-function PartSection({
+function PartIngredients({
   part,
   recipeId,
   scaled,
-  hideIngredients = false,
   currentServings,
   onScaleTo,
 }: {
   part: Part;
   recipeId: string;
   scaled: boolean;
-  hideIngredients?: boolean;
   currentServings: number;
   onScaleTo: (servings: number) => void;
 }) {
   const name = part.name.trim();
-  const hasIngredients = part.ingredients.length > 0;
-  const hasSteps = part.steps.length > 0;
-  if (hideIngredients && hasIngredients && !hasSteps) return null;
+  if (part.ingredients.length === 0) return null;
 
-  const showIngredients = !hideIngredients && hasIngredients;
+  return (
+    <section className="flex flex-col gap-3" aria-label={name === "" ? undefined : `${name} ingredients`}>
+      {name !== "" && <SectionTitle as="h2">{name}</SectionTitle>}
+      <IngredientList ingredients={part.ingredients} recipeId={recipeId} scaled={scaled} currentServings={currentServings} onScaleTo={onScaleTo} />
+    </section>
+  );
+}
+
+/**
+ * One part's steps in the main column, under the part's name (repeated from
+ * the aside so the method reads on its own). A part with ingredients but no
+ * steps has nothing to show here — its list is in the aside — so it renders
+ * nothing; a part that is genuinely blank says so, as before.
+ */
+function PartSteps({ part, recipeId }: { part: Part; recipeId: string }) {
+  const name = part.name.trim();
+  const hasSteps = part.steps.length > 0;
+  if (!hasSteps && part.ingredients.length > 0) return null;
 
   return (
     <section className="flex flex-col gap-3" aria-label={name === "" ? undefined : name}>
       {name !== "" && <SectionTitle as="h2">{name}</SectionTitle>}
       <EmptyBoundary
-        isEmpty={!showIngredients && !hasSteps}
+        isEmpty={!hasSteps}
         fallback={
           <Muted as="p" className="text-sm" data-empty="part">
             No ingredients or steps yet
           </Muted>
         }
       >
-        {showIngredients && (
-          <IngredientList ingredients={part.ingredients} recipeId={recipeId} scaled={scaled} currentServings={currentServings} onScaleTo={onScaleTo} />
-        )}
-        {hasSteps && <StepList recipeId={recipeId} steps={part.steps} />}
+        <StepList recipeId={recipeId} steps={part.steps} />
       </EmptyBoundary>
     </section>
   );

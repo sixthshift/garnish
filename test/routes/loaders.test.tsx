@@ -14,7 +14,7 @@ import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/se
 import { createFood, listFoods } from "../../src/server/foods";
 import { listTags } from "../../src/server/tags";
 import { listUnits } from "../../src/server/units";
-import { renderRoute } from "../helpers/routes";
+import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 // vi.mock is hoisted above imports and needs literal specifiers, so the shared
@@ -307,24 +307,31 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain('aria-label="Recipe actions"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
 
-    // Parts in order, each with its ingredients then its steps.
-    const pastry = html.indexOf(">Pastry<");
-    const filling = html.indexOf(">Filling<");
+    // Two columns from md (M24.1): the parts' ingredients in the aside, their
+    // steps in the main column, both in part order.
+    const aside = elementHtml(html, "ingredients-column");
+    const main = elementHtml(html, "method-column");
+    const pastry = aside.indexOf(">Pastry<");
+    const filling = aside.indexOf(">Filling<");
     expect(pastry).toBeGreaterThan(-1);
     expect(filling).toBeGreaterThan(pastry);
     // Quantity/unit and food render separately (food bold), so check each in
     // place rather than as one joined string.
-    const flourAmount = html.indexOf('ingredient-amount">200 g<');
-    const flourFood = html.indexOf(">flour<");
+    const flourAmount = aside.indexOf('ingredient-amount">200 g<');
+    const flourFood = aside.indexOf(">flour<");
     expect(flourAmount).toBeGreaterThan(pastry);
     expect(flourFood).toBeGreaterThan(flourAmount);
     expect(flourFood).toBeLessThan(filling);
-    expect(html.indexOf("Rub the butter into the flour.")).toBeGreaterThan(flourFood);
-    expect(html.indexOf("Rub the butter into the flour.")).toBeLessThan(filling);
-    const lemonsAmount = html.indexOf('ingredient-amount">3<');
+    const lemonsAmount = aside.indexOf('ingredient-amount">3<');
     expect(lemonsAmount).toBeGreaterThan(filling);
-    expect(html.indexOf(">lemons<")).toBeGreaterThan(lemonsAmount);
-    expect(html.indexOf("Whisk everything together.")).toBeGreaterThan(lemonsAmount);
+    expect(aside.indexOf(">lemons<")).toBeGreaterThan(lemonsAmount);
+    // The method column repeats each part's name above its own steps.
+    const mainPastry = main.indexOf(">Pastry<");
+    const mainFilling = main.indexOf(">Filling<");
+    expect(mainPastry).toBeGreaterThan(-1);
+    expect(main.indexOf("Rub the butter into the flour.")).toBeGreaterThan(mainPastry);
+    expect(main.indexOf("Rub the butter into the flour.")).toBeLessThan(mainFilling);
+    expect(main.indexOf("Whisk everything together.")).toBeGreaterThan(mainFilling);
     // No amount ("salt to taste"): bold food, note dimmed on its own line, no comma join.
     expect(html).toContain(">salt<");
     expect(html).toContain(">to taste</p>"); // dimmed on its own line, not comma-joined into the visible text
@@ -335,7 +342,7 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toMatch(/data-fixed="true"[\s\S]*?>fixed</);
 
     // The unnamed part's steps come after the named parts, without a heading, then notes.
-    expect(html.indexOf("Bake for 30 minutes.")).toBeGreaterThan(html.indexOf("Whisk everything together."));
+    expect(main.indexOf("Bake for 30 minutes.")).toBeGreaterThan(main.indexOf("Whisk everything together."));
     expect(html).not.toContain(">To finish<");
     const notes = html.indexOf(">Notes<");
     expect(notes).toBeGreaterThan(html.indexOf("Bake for 30 minutes."));

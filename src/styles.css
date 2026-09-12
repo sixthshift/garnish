@@ -18,9 +18,11 @@
   }
 
   /* Chrome and controls: nav, the action menu, the view toggles, the tick
-     boxes and the per-ingredient scale trigger. */
+     boxes and the per-ingredient scale trigger. The shell's side nav is an
+     aside; the recipe page's ingredients column is one too (M24.1), and it
+     opts out with data-print="keep". */
   nav,
-  aside,
+  aside:not([data-print="keep"]),
   [data-print="hide"],
   [data-testid="menu"],
   [data-testid="ingredient-mode-toggle"],
@@ -47,6 +49,20 @@
 
   [data-layout="split"] > :first-child {
     width: 33% !important;
+  }
+
+  /* The screen's two columns (M24.1) print as one flow: the sticky aside
+     scrolls nothing on paper, and the ingredients get their own two columns
+     below. */
+  [data-testid="recipe-columns"] {
+    display: block !important;
+  }
+
+  [data-testid="ingredients-column"] {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin-bottom: 1rem;
   }
 
   /* Ingredients read across two columns; a line never splits over the break. */
