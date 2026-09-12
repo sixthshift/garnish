@@ -462,6 +462,21 @@ test("favourite round-trips through create, update and the list summary", () => 
   expect(updated.favourite).toBe(false);
 });
 
+test("setRating writes the rating, clears it with null, and reports whether the id exists", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
+  expect(created.rating).toBeNull();
+
+  expect(repo.setRating(created.id, 4)).toBe(true);
+  const after = repo.getById(created.id)!;
+  expect(after.rating).toBe(4);
+  expect({ ...after, rating: null, updatedAt: created.updatedAt }).toEqual(created);
+  expect(repo.list().find((r) => r.id === created.id)!.rating).toBe(4);
+
+  expect(repo.setRating(created.id, null)).toBe(true);
+  expect(repo.getById(created.id)!.rating).toBeNull();
+  expect(repo.setRating(ids.recipe, 3)).toBe(false);
+});
+
 test("setFavourite changes only the favourite column and reports whether the id exists", () => {
   const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
   expect(created.favourite).toBe(false);

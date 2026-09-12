@@ -4,7 +4,7 @@ import { isNotFound } from "@tanstack/react-router";
 import { describe, expect, test } from "vitest";
 import { recipeSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
 import type { NotFoundData } from "../../src/server/fn";
-import { createRecipe, deleteRecipe, getRecipe, listRecipes, recipeBySource, setFavourite, updateRecipe } from "../../src/server/recipes";
+import { createRecipe, deleteRecipe, getRecipe, listRecipes, recipeBySource, setFavourite, setRating, updateRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -170,6 +170,38 @@ test("setFavourite flips the flag and round-trips through listRecipes; an unknow
 
   const data = await notFoundData(callServerFn(setFavourite, { id: ids.missing, favourite: true }));
   expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
+});
+
+describe("setRating (M25.3)", () => {
+  test("stores a rating from 1 to 5 and shows it on the document and the summary", async () => {
+    const created = await callServerFn(createRecipe, doc());
+    expect(created.rating).toBeNull();
+
+    await expect(callServerFn(setRating, { id: created.id, rating: 4 })).resolves.toEqual({ id: created.id, rating: 4 });
+    expect((await callServerFn(getRecipe, { slug: created.slug })).rating).toBe(4);
+    expect((await callServerFn(listRecipes, {}))[0]!.rating).toBe(4);
+
+    await expect(callServerFn(setRating, { id: created.id, rating: 5 })).resolves.toEqual({ id: created.id, rating: 5 });
+    expect((await callServerFn(getRecipe, { slug: created.slug })).rating).toBe(5);
+  });
+
+  test("zero clears the rating back to null", async () => {
+    const created = await callServerFn(createRecipe, doc());
+    await callServerFn(setRating, { id: created.id, rating: 3 });
+
+    await expect(callServerFn(setRating, { id: created.id, rating: 0 })).resolves.toEqual({ id: created.id, rating: null });
+    expect((await callServerFn(getRecipe, { slug: created.slug })).rating).toBeNull();
+  });
+
+  test("rejects a rating outside 0 to 5, and an unknown id maps to notFound", async () => {
+    const created = await callServerFn(createRecipe, doc());
+    await expect(callServerFn(setRating, { id: created.id, rating: 6 })).rejects.toThrow();
+    await expect(callServerFn(setRating, { id: created.id, rating: -1 })).rejects.toThrow();
+    expect((await callServerFn(getRecipe, { slug: created.slug })).rating).toBeNull();
+
+    const data = await notFoundData(callServerFn(setRating, { id: ids.missing, rating: 3 }));
+    expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
+  });
 });
 
 test("deleteRecipe removes the recipe, returns it, and maps an unknown id to notFound", async () => {

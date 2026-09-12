@@ -33,7 +33,9 @@ import { TimelineList } from "../../../components/Timeline";
 import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { useScrolledOff } from "../../../lib/useScrolledOff";
-import { getRecipe } from "../../../server/recipes";
+import { useMutate } from "../../../lib/mutate";
+import { notifyError } from "../../../lib/notify";
+import { getRecipe, setRating } from "../../../server/recipes";
 import { listTimeline } from "../../../server/timeline";
 
 export const RecipeViewSearch = z.object({
@@ -79,13 +81,25 @@ function RecipePage() {
   // Below `md` the lists scroll away above the method; once they have, a fixed
   // button over the tab bar opens them again in a sheet (M24.6).
   const asideRef = useRef<HTMLElement>(null);
+  const mutate = useMutate();
   const listsScrolledOff = useScrolledOff(asideRef);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // The header's stars write straight through (M25.3): 0 clears the rating,
+  // and the loader re-reads it, so there is nothing optimistic to unwind.
+  const rate = async (rating: number) => {
+    try {
+      await mutate(() => setRating({ data: { id: recipe.id, rating } }));
+    } catch (error) {
+      notifyError("Couldn't update rating", error);
+    }
+  };
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6 lg:max-w-5xl">
       <RecipeHeader
         recipe={recipe}
+        onRate={(rating) => void rate(rating)}
         actions={
           <>
             <Button asChild variant="solid" intent="brand" size="sm">

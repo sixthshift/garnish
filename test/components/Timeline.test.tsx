@@ -3,8 +3,8 @@
 // inside a throwaway router because the rows write through `useMutate`.
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
-import { expect, test } from "vitest";
-import { TimelineList } from "../../src/components/Timeline";
+import { describe, expect, test, vi } from "vitest";
+import { TimelineList, saveCook } from "../../src/components/Timeline";
 import type { TimelineEvent } from "../../src/domain/recipe";
 
 const recipeId = "11111111-1111-4111-8111-111111111111";
@@ -58,4 +58,40 @@ test("no events renders nothing at all", async () => {
 
 test("the Delete buttons are chrome the print stylesheet drops", async () => {
   expect(await render([event()])).toContain('data-print="hide"');
+});
+
+describe("saveCook (M25.3)", () => {
+  const input = { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null };
+  const writes = () => ({
+    createEvent: vi.fn().mockResolvedValue(event()),
+    uploadPhoto: vi.fn().mockResolvedValue(undefined),
+    rate: vi.fn().mockResolvedValue(undefined),
+  });
+
+  test("untouched stars write no rating", async () => {
+    const w = writes();
+    const created = await saveCook({ recipeId, event: input, photo: null, rating: null }, w);
+    expect(created.id).toBe(event().id);
+    expect(w.createEvent).toHaveBeenCalledWith(recipeId, input);
+    expect(w.rate).not.toHaveBeenCalled();
+    expect(w.uploadPhoto).not.toHaveBeenCalled();
+  });
+
+  test("touched stars write the rating alongside the event, 0 clearing it", async () => {
+    const w = writes();
+    await saveCook({ recipeId, event: input, photo: null, rating: 4 }, w);
+    expect(w.rate).toHaveBeenCalledWith(recipeId, 4);
+
+    const cleared = writes();
+    await saveCook({ recipeId, event: input, photo: null, rating: 0 }, cleared);
+    expect(cleared.rate).toHaveBeenCalledWith(recipeId, 0);
+  });
+
+  test("a photo is uploaded under the new event's id, before the rating", async () => {
+    const w = writes();
+    const photo = new File(["x"], "cook.png", { type: "image/png" });
+    await saveCook({ recipeId, event: input, photo, rating: 5 }, w);
+    expect(w.uploadPhoto).toHaveBeenCalledWith(event().id, photo);
+    expect(w.uploadPhoto.mock.invocationCallOrder[0]!).toBeLessThan(w.rate.mock.invocationCallOrder[0]!);
+  });
 });

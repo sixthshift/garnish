@@ -210,7 +210,7 @@ function CookPage() {
 }
 
 /** The deck's last "card": logged the cook is done, with a shortcut to log it (M11.7's sheet, reused as-is) and a way out. */
-function FinishedCard({ recipe, servings }: { recipe: Pick<Recipe, "id" | "name" | "slug">; servings: number | undefined }) {
+function FinishedCard({ recipe, servings }: { recipe: Pick<Recipe, "id" | "name" | "slug" | "rating">; servings: number | undefined }) {
   return (
     <Card title={<span className="text-xl">Finished</span>} data-card="finished">
       <div className="flex flex-col items-center gap-4 py-6 text-center">

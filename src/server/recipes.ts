@@ -53,6 +53,9 @@ export const DuplicateRecipeInput = z.object({ id: recipeId });
 
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
 
+/** `rating` is 0 to 5; 0 means "no rating" and clears the column to null, as pressing the current star does. */
+export const SetRatingInput = z.object({ id: recipeId, rating: z.number().min(0).max(5) });
+
 /** Card summaries, newest first by default, optionally filtered by name substring and tag slug, and sorted or shuffled per `sort`/`dir`/`seed` (M12.4). */
 export const listRecipes = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
@@ -100,6 +103,21 @@ export const setFavourite = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!recipes(await getDb()).setFavourite(data.id, data.favourite)) throw new NotFound("recipe", data.id);
     return { id: data.id, favourite: data.favourite };
+  });
+
+/**
+ * Set the rating alone, 0 to 5. Zero clears it: the stars have no separate
+ * "un-rate" control, so pressing the star that is already the rating comes
+ * through as 0 and the column goes back to null (Mealie's behaviour).
+ * Returns the rating as stored. Not-found for an unknown id.
+ */
+export const setRating = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(SetRatingInput)
+  .handler(async ({ data }) => {
+    const rating = data.rating === 0 ? null : data.rating;
+    if (!recipes(await getDb()).setRating(data.id, rating)) throw new NotFound("recipe", data.id);
+    return { id: data.id, rating };
   });
 
 /**

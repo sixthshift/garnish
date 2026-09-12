@@ -22,6 +22,13 @@ export type RecipeHeaderProps = {
   recipe: Recipe;
   /** Buttons for this recipe (Edit, Cook); rendered opposite the name. */
   actions?: ReactNode;
+  /**
+   * When given, the stars are editable and this is called with the new rating
+   * (0 clears it). With it the row shows five empty stars on an unrated
+   * recipe, so it can be rated from the page; without it an unrated recipe
+   * shows nothing.
+   */
+  onRate?: (rating: number) => void;
 };
 
 /**
@@ -126,7 +133,7 @@ function ImagePlaceholder() {
   );
 }
 
-export function RecipeHeader({ recipe, actions }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, actions, onRate }: RecipeHeaderProps) {
   const src = recipeImageUrl(recipe.image);
   const stats = timeStats(recipe);
   const yieldText = formatYield(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
@@ -149,7 +156,9 @@ export function RecipeHeader({ recipe, actions }: RecipeHeaderProps) {
               </div>
             )}
           </div>
-          {recipe.rating !== null && <Rating value={recipe.rating} />}
+          {(recipe.rating !== null || onRate !== undefined) && (
+            <Rating value={recipe.rating ?? 0} onChange={onRate} className={onRate === undefined ? undefined : "-ml-0.5"} />
+          )}
 
           {/* One strip: prep / cook / total, the yield, and the last made
               date as text. The "Made this" button used to sit beside the

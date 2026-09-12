@@ -501,6 +501,18 @@ export function recipes(db: Database) {
     setFavourite: (id: string, favourite: boolean): boolean =>
       dz.update(recipe).set({ favourite }).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
 
+    /**
+     * Set the rating alone (null clears it), and touch `updated_at`. Nothing
+     * else changes. True when `id` exists.
+     */
+    setRating: (id: string, rating: number | null): boolean =>
+      dz
+        .update(recipe)
+        .set({ rating, updatedAt: nowUtc })
+        .where(eq(recipe.id, id))
+        .returning({ id: recipe.id })
+        .all().length > 0,
+
     /** Set the image file name alone (null clears it). Nothing else changes. True when `id` exists. */
     setImage: (id: string, image: string | null): boolean =>
       dz

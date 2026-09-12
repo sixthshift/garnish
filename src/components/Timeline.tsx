@@ -14,26 +14,55 @@ import type { Recipe, TimelineEvent, TimelineEventInput } from "../domain/recipe
 import { timelineImageUrl, uploadTimelineImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
+import { setRating } from "../server/recipes";
 import { createTimelineEvent, deleteTimelineEvent } from "../server/timeline";
 import { formatDateStamp } from "./RecipeHeader";
 import { MadeThisSheet } from "./MadeThisSheet";
 
-export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name"> };
+export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "rating"> };
 
-/** Opens the sheet, logs the cook and uploads the photo, if there is one. */
+/** What one logged cook writes: the event, an optional photo, and the rating when the sheet's stars were touched. */
+export type CookSave = { recipeId: string; event: TimelineEventInput; photo: File | null; rating: number | null };
+
+/** The three writes a logged cook makes, injected so the order is testable without a server. */
+export type CookWrites = {
+  createEvent: (recipeId: string, event: TimelineEventInput) => Promise<TimelineEvent>;
+  uploadPhoto: (eventId: string, photo: File) => Promise<unknown>;
+  rate: (recipeId: string, rating: number) => Promise<unknown>;
+};
+
+/**
+ * Log a cook: create the event, upload the photo under its id if there is one,
+ * and write the rating only when the stars were touched (`rating` null means
+ * they were not, so an existing rating is left alone). Returns the event.
+ * Pure apart from the injected writes.
+ */
+export async function saveCook({ recipeId, event, photo, rating }: CookSave, writes: CookWrites): Promise<TimelineEvent> {
+  const created = await writes.createEvent(recipeId, event);
+  if (photo) await writes.uploadPhoto(created.id, photo);
+  if (rating !== null) await writes.rate(recipeId, rating);
+  return created;
+}
+
+/** Opens the sheet, logs the cook, uploads the photo and writes the rating, if either was given. */
 export function MadeThisButton({ recipe }: MadeThisButtonProps) {
   const mutate = useMutate();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const save = async (input: TimelineEventInput, photo: File | null) => {
+  const save = async (input: TimelineEventInput, photo: File | null, rating: number | null) => {
     setSaving(true);
     try {
-      const event = await mutate(async () => {
-        const created = await createTimelineEvent({ data: { recipeId: recipe.id, event: input } });
-        if (photo) await uploadTimelineImage(created.id, photo);
-        return created;
-      });
+      const event = await mutate(() =>
+        saveCook(
+          { recipeId: recipe.id, event: input, photo, rating },
+          {
+            createEvent: (recipeId, created) => createTimelineEvent({ data: { recipeId, event: created } }),
+            uploadPhoto: uploadTimelineImage,
+            rate: (id, value) => setRating({ data: { id, rating: value } }),
+          },
+        ),
+      );
       notify({ intent: "success", title: "Cook logged", message: formatDateStamp(event.occurredOn) });
       setOpen(false);
     } catch (error) {
@@ -55,7 +84,13 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
       >
         Made this
       </Button>
-      <MadeThisSheet open={open} busy={saving} onCancel={() => setOpen(false)} onSave={(input, photo) => void save(input, photo)} />
+      <MadeThisSheet
+        open={open}
+        busy={saving}
+        rating={recipe.rating}
+        onCancel={() => setOpen(false)}
+        onSave={(input, photo, rating) => void save(input, photo, rating)}
+      />
     </>
   );
 }

@@ -7,6 +7,12 @@
 // under the event's id; the caller does that in `onSave` and only needs to
 // hand back a promise it can await.
 //
+// The moment a cook is logged is the moment to rate it, as Tandoor's cook log
+// does, so the stars sit above the comment (M25.3). They start on the recipe's
+// current rating and are only written when they were actually touched:
+// `onSave`'s third argument is null for a save that leaves them alone, so
+// logging a cook never quietly re-writes an existing rating.
+//
 // Sheet only paints after mounting on the client, so the form lives in
 // `MadeThisSheetContent`, which renders anywhere and is what the tests
 // exercise.
@@ -18,6 +24,7 @@ import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
 import type { TimelineEventInput } from "../domain/recipe";
 import { ImageUpload } from "./ui/ImageUpload";
+import { Rating } from "./ui/Rating";
 
 /** Today as the calendar date the form and `occurred_on` use (YYYY-MM-DD), in local time. Pure. */
 export function todayIso(now: Date = new Date()): string {
@@ -32,27 +39,42 @@ export function isValidDate(value: string): boolean {
   return !Number.isNaN(at.getTime()) && at.toISOString().slice(0, 10) === value;
 }
 
+/** The rating a save carries: the stars when they were touched, null when they were left alone. Pure. */
+export function ratingForSave(touched: boolean, rating: number): number | null {
+  return touched ? rating : null;
+}
+
 export type MadeThisSheetContentProps = {
-  /** Called with the event and the chosen photo, if any. */
-  onSave: (event: TimelineEventInput, photo: File | null) => void;
+  /** Called with the event, the chosen photo, and the rating when the stars were touched (null otherwise). */
+  onSave: (event: TimelineEventInput, photo: File | null, rating: number | null) => void;
   onCancel: () => void;
   busy?: boolean;
   /** Injected so tests get a fixed default date. */
   today?: string;
+  /** The recipe's rating now; the stars start here and only travel when touched. */
+  rating?: number | null;
 };
 
-export function MadeThisSheetContent({ onSave, onCancel, busy = false, today = todayIso() }: MadeThisSheetContentProps) {
+export function MadeThisSheetContent({
+  onSave,
+  onCancel,
+  busy = false,
+  today = todayIso(),
+  rating = null,
+}: MadeThisSheetContentProps) {
   const [occurredOn, setOccurredOn] = useState(today);
   const [message, setMessage] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [stars, setStars] = useState(rating ?? 0);
+  const [touched, setTouched] = useState(false);
 
   const submit = () => {
     if (!isValidDate(occurredOn)) {
       setError("Pick a date.");
       return;
     }
-    onSave({ occurredOn, message: message.trim(), image: null }, photo);
+    onSave({ occurredOn, message: message.trim(), image: null }, photo, ratingForSave(touched, stars));
   };
 
   return (
@@ -70,6 +92,16 @@ export function MadeThisSheetContent({ onSave, onCancel, busy = false, today = t
         >
           <FormField label="Date" required feedback={error ? { message: error, intent: "danger" } : undefined}>
             <Input type="date" value={occurredOn} disabled={busy} aria-label="Date" onChange={(event) => setOccurredOn(event.target.value)} />
+          </FormField>
+          <FormField label="Rating" description="How was it?">
+            <Rating
+              value={stars}
+              disabled={busy}
+              onChange={(next) => {
+                setStars(next);
+                setTouched(true);
+              }}
+            />
           </FormField>
           <FormField label="Comment" description="How did it go?">
             <Textarea value={message} disabled={busy} aria-label="Comment" onChange={(event) => setMessage(event.target.value)} />

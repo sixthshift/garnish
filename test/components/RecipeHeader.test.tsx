@@ -8,6 +8,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { RecipeHeader, RecipeMetaFooter, formatDateStamp, isLinkable, sourceLabel, timeStats } from "../../src/components/RecipeHeader";
 import type { Recipe } from "../../src/domain/recipe";
+import { nextRating } from "../../src/components/ui/Rating";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -44,8 +45,8 @@ const base: Recipe = {
 };
 
 /** Render the header inside a throwaway router, so its tag `Link`s resolve. */
-async function render(recipe: Recipe, actions?: ReactNode): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} actions={actions} /> });
+async function render(recipe: Recipe, actions?: ReactNode, onRate?: (rating: number) => void): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} actions={actions} onRate={onRate} /> });
   const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => null });
   const router = createRouter({
     routeTree: rootRoute.addChildren([indexRoute]),
@@ -174,6 +175,33 @@ describe("RecipeHeader", () => {
     expect(stars).toBeLessThan(strip);
     expect(strip).toBeLessThan(description);
     expect(description).toBeLessThan(tags);
+  });
+});
+
+describe("the header's stars (M25.3)", () => {
+  test("without onRate they are read-only: no buttons, and an unrated recipe shows none", async () => {
+    const rated = await render(base);
+    expect(rated).toContain('aria-label="Rated 4 out of 5"');
+    expect(rated).not.toContain('aria-label="Rate 4 out of 5"');
+
+    const unrated = await render({ ...base, rating: null });
+    expect(unrated).not.toContain("out of 5");
+  });
+
+  test("with onRate every star is a button, and an unrated recipe still shows five to press", async () => {
+    const html = await render(base, undefined, () => {});
+    for (const star of [1, 2, 3, 4, 5]) expect(html).toContain(`aria-label="Rate ${star} out of 5"`);
+    expect(html).toContain('aria-pressed="true"');
+
+    const unrated = await render({ ...base, rating: null }, undefined, () => {});
+    expect(unrated).toContain('aria-label="Rated 0 out of 5"');
+    expect(unrated).toContain('aria-label="Rate 1 out of 5"');
+    expect(unrated).not.toContain('aria-pressed="true"');
+  });
+
+  test("pressing the star that is already the rating asks for 0, which clears it", () => {
+    expect(nextRating(4, 4)).toBe(0);
+    expect(nextRating(4, 5)).toBe(5);
   });
 });
 
