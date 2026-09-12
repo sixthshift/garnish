@@ -1,6 +1,6 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { Combobox, exactMatch, listItems, stepActive } from "../../../src/components/ui/Combobox";
+import { Combobox, enterChoice, exactMatch, listItems, stepActive } from "../../../src/components/ui/Combobox";
 
 const options = [
   { value: "g", label: "gram", hint: "g" },
@@ -63,5 +63,42 @@ describe("Combobox", () => {
     const html = renderToString(<Combobox aria-label="Food" value="" options={[]} onChange={() => {}} onSelect={() => {}} disabled aria-invalid />);
     expect(html).toMatch(/<input[^>]*disabled=""/);
     expect(html).toMatch(/<input[^>]*aria-invalid="true"/);
+  });
+});
+
+describe("enterChoice (M21.5)", () => {
+  // A local pair with a shared prefix, so "first row" and "exact match" differ.
+  const options = [
+    { value: "1", label: "gram" },
+    { value: "2", label: "grain" },
+  ];
+  const items = (text: string, canCreate = true) => listItems(options, text, canCreate);
+
+  test("open: the highlighted row wins", () => {
+    const active = { kind: "option" as const, option: options[1]! };
+    expect(enterChoice(items("gr"), options, "gr", true, active, true)).toEqual({ kind: "pick", item: active });
+  });
+
+  test("open: with nothing highlighted the exact match wins, else the first row", () => {
+    expect(enterChoice(items("gram"), options, "gram", true, undefined, true)).toEqual({ kind: "pick", item: { kind: "option", option: options[0] } });
+    expect(enterChoice(items("gr"), options, "gr", true, undefined, true)).toEqual({ kind: "pick", item: { kind: "option", option: options[0] } });
+  });
+
+  test("closed: an exact match is still taken", () => {
+    expect(enterChoice(items("gram"), options, " Gram ", false, undefined, true)).toEqual({ kind: "pick", item: { kind: "option", option: options[0] } });
+  });
+
+  test("closed: an unknown name is offered as a new value, Mealie's press-enter-to-create", () => {
+    expect(enterChoice(items("almond meal"), options, "almond meal", false, undefined, true)).toEqual({ kind: "pick", item: { kind: "create", text: "almond meal" } });
+  });
+
+  test("closed: nothing to make of it passes the key on", () => {
+    expect(enterChoice([], options, "  ", false, undefined, true)).toEqual({ kind: "pass" });
+    // A field that cannot create has nothing to do with an unknown name.
+    expect(enterChoice(items("almond meal", false), options, "almond meal", false, undefined, false)).toEqual({ kind: "pass" });
+  });
+
+  test("open with an empty list passes rather than picking nothing", () => {
+    expect(enterChoice([], options, "", true, undefined, true)).toEqual({ kind: "pass" });
   });
 });

@@ -8,8 +8,13 @@
 // query. When `onCreate` is given and the text matches no option label, a
 // final "Create “text”" row offers the typed value as a new entry. The list
 // opens while the input has focus and there is something to show; it renders
-// closed on the server. Arrow keys move, Enter picks, Escape closes. Enter is
-// swallowed only while the list is open, so it cannot submit the form mid-pick.
+// closed on the server. Arrow keys move, Enter picks, Escape closes.
+//
+// Enter with the list closed — after an Escape, or a pick, or on a field whose
+// suggestions never arrived — takes the typed text anyway: the exact option if
+// there is one, else the new name (M21.5). That is Mealie's "press enter to
+// create", and it also means Enter in this field never reaches the form and
+// saves the recipe by accident, which is what it used to do.
 import { Input } from "@sixthshift/design-system/input";
 import { cn } from "@sixthshift/design-system/utils";
 import { type KeyboardEvent, useId, useState } from "react";
@@ -53,6 +58,35 @@ export function listItems(options: readonly ComboboxOption[], text: string, canC
   const trimmed = text.trim();
   if (canCreate && trimmed !== "" && exactMatch(options, trimmed) === undefined) items.push({ kind: "create", text: trimmed });
   return items;
+}
+
+/** What Enter should do: take a row, take the typed text as a new value, or leave the key alone. */
+export type ComboboxEnter = { kind: "pick"; item: ComboboxItem } | { kind: "pass" };
+
+/**
+ * What Enter does, given the list's state. Open, it takes the highlighted row,
+ * else the exact match, else the first row — plain autocomplete. Closed, it
+ * takes the exact match if there is one and otherwise offers the typed text as
+ * a new value, so the key is never handed to the form while there is something
+ * in the field. Blank text, or text with nothing to make of it, passes. Pure.
+ */
+export function enterChoice(
+  items: readonly ComboboxItem[],
+  options: readonly ComboboxOption[],
+  text: string,
+  open: boolean,
+  activeItem: ComboboxItem | undefined,
+  canCreate: boolean,
+): ComboboxEnter {
+  const exact = exactMatch(options, text);
+  if (open) {
+    const chosen = activeItem ?? (exact ? { kind: "option" as const, option: exact } : items[0]);
+    return chosen ? { kind: "pick", item: chosen } : { kind: "pass" };
+  }
+  const trimmed = text.trim();
+  if (exact) return { kind: "pick", item: { kind: "option", option: exact } };
+  if (canCreate && trimmed !== "") return { kind: "pick", item: { kind: "create", text: trimmed } };
+  return { kind: "pass" };
 }
 
 /** `active` moved by `delta` within `count` rows, wrapping; -1 (nothing active) steps to the first or last row. Pure. */
@@ -107,11 +141,11 @@ export function Combobox({
       setActive(-1);
       return;
     }
-    if (event.key === "Enter" && open) {
+    if (event.key === "Enter") {
+      const choice = enterChoice(items, options, value, open, activeItem, onCreate !== undefined);
+      if (choice.kind === "pass") return;
       event.preventDefault();
-      // Enter with nothing highlighted takes the exact match, else the first row.
-      const chosen = activeItem ?? (exactMatch(options, value) ? { kind: "option" as const, option: exactMatch(options, value)! } : items[0]);
-      if (chosen) pick(chosen);
+      pick(choice.item);
     }
   };
 
