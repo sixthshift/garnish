@@ -130,36 +130,8 @@ describe("IngredientRow", () => {
     expect(html).not.toContain("line-through");
   });
 
-  describe("Scale to... (M11.5)", () => {
-    test("no currentServings or onScaleTo: no trigger at all", () => {
-      const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient()} />);
-      expect(html).not.toContain('data-testid="scale-to-trigger"');
-    });
-
-    test("a scalable ingredient with both wired gets the trigger", () => {
-      const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient()} currentServings={4} onScaleTo={() => {}} />);
-      expect(html).toContain('data-testid="scale-to-trigger"');
-      expect(html).toContain('aria-label="Scale to a set amount of flour"');
-    });
-
-    test("a fixed ingredient gets no trigger even when wired", () => {
-      const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient({ fixed: true })} currentServings={4} onScaleTo={() => {}} />);
-      expect(html).not.toContain('data-testid="scale-to-trigger"');
-    });
-
-    test("a null-quantity ingredient gets no trigger even when wired", () => {
-      const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient({ quantity: null })} currentServings={4} onScaleTo={() => {}} />);
-      expect(html).not.toContain('data-testid="scale-to-trigger"');
-    });
-
-    test("currentServings of 0 (no servings recorded) gets no trigger", () => {
-      const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient()} currentServings={0} onScaleTo={() => {}} />);
-      expect(html).not.toContain('data-testid="scale-to-trigger"');
-    });
-
-    test("the popover body is closed by default, so its number input is not in the markup", () => {
-      const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient()} currentServings={4} onScaleTo={() => {}} />);
-      expect(html).not.toContain('aria-label="Target amount"');
-    });
+  test("M25.2: no row renders a 'Scale to...' trigger — that control moved into the servings popover", () => {
+    const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient()} />);
+    expect(html).not.toContain('data-testid="scale-to-trigger"');
   });
 });

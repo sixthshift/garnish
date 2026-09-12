@@ -99,10 +99,6 @@ describe("IngredientsSheetContent", () => {
     expect(count(html, 'aria-label="Ingredients"')).toBe(1);
   });
 
-  test("the sheet's rows carry no per-row 'Scale to...': that control lives in the aside's heading", () => {
-    expect(renderToString(<IngredientsSheetContent recipe={recipe} summary />)).not.toContain('data-testid="scale-to-trigger"');
-  });
-
   test("scaled marks the amounts, as the page's rows do", () => {
     expect(renderToString(<IngredientsSheetContent recipe={recipe} summary scaled />)).toContain('data-scaled="true"');
   });
@@ -114,7 +110,7 @@ describe("ticks are shared between the sheet and the page", () => {
     (globalThis as { window?: unknown }).window = { sessionStorage: storage };
 
     // The page's aside and the sheet render the same ingredient, both unticked.
-    const page = () => renderToString(<IngredientList ingredients={[ingredient(PASTRY_FLOUR, flour, 200)]} recipeId={recipe.id} currentServings={4} onScaleTo={() => {}} />);
+    const page = () => renderToString(<IngredientList ingredients={[ingredient(PASTRY_FLOUR, flour, 200)]} recipeId={recipe.id} />);
     expect(page()).not.toContain('data-ticked="true"');
     expect(renderToString(<IngredientsSheetContent recipe={recipe} summary={false} />)).not.toContain('data-ticked="true"');
 

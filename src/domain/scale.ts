@@ -16,7 +16,8 @@
 // the document unchanged, so a caller that shows a scaling control on such a
 // recipe finds out in tests rather than by a silent no-op. Callers should hide
 // the control when servings is 0.
-import type { Ingredient, Recipe } from "./recipe";
+import { mergeIngredients } from "./merge";
+import type { Ingredient, Part, Recipe } from "./recipe";
 
 export class ScaleError extends Error {
   constructor(message: string) {
@@ -100,4 +101,17 @@ export function servingsForTarget(
   }
 
   return currentServings * (targetAmount / ingredient.quantity);
+}
+
+/**
+ * The ingredients a "Scale to..." picker can offer: merged across every part
+ * (`mergeIngredients`, so a food split between parts is one line and one
+ * target), excluding a `fixed` ingredient (Cooklang `=`, never scales) and one
+ * with no positive quantity (nothing for `servingsForTarget` to derive a
+ * factor from). Pure.
+ */
+export function scalableIngredients(recipe: { parts: ReadonlyArray<Pick<Part, "ingredients">> }): Ingredient[] {
+  return mergeIngredients(recipe).filter(
+    (ingredient) => !ingredient.fixed && ingredient.quantity !== null && ingredient.quantity > 0,
+  );
 }

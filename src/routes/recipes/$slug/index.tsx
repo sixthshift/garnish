@@ -16,6 +16,7 @@ import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Popover } from "@sixthshift/design-system/popover";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { Select } from "@sixthshift/design-system/select";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type FormEvent, useRef, useState } from "react";
 import { z } from "zod";
@@ -25,10 +26,11 @@ import { IngredientList, PartIngredients } from "../../../components/IngredientL
 import { IngredientsSheet } from "../../../components/IngredientsSheet";
 import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader";
 import { StepList } from "../../../components/StepList";
+import { formatIngredient } from "../../../domain/format";
 import { mergeIngredients } from "../../../domain/merge";
-import { scaledForServings } from "../../../domain/scale";
+import { scalableIngredients, scaledForServings, servingsForTarget } from "../../../domain/scale";
 import { TimelineList } from "../../../components/Timeline";
-import type { Part, Recipe, TimelineEvent } from "../../../domain/recipe";
+import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { useScrolledOff } from "../../../lib/useScrolledOff";
 import { getRecipe } from "../../../server/recipes";
@@ -62,7 +64,6 @@ export function nextServings(current: number, direction: -1 | 1): number {
 
 function RecipePage() {
   const { recipe: stored, timeline } = Route.useLoaderData();
-  const navigate = Route.useNavigate();
   const { servings: requested } = Route.useSearch();
   // The stored document, scaled here rather than on the server, so a tap on
   // plus or minus is a re-render and not a round trip. Everything below reads
@@ -80,9 +81,6 @@ function RecipePage() {
   const asideRef = useRef<HTMLElement>(null);
   const listsScrolledOff = useScrolledOff(asideRef);
   const [sheetOpen, setSheetOpen] = useState(false);
-  // Shared by the scale chip and each ingredient row's "Scale to...": both
-  // just need a new servings value turned into a navigation.
-  const goToServings = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6 lg:max-w-5xl">
@@ -132,7 +130,7 @@ function RecipePage() {
               grid is gone; the scale control lives here instead. */}
           <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
             <SectionTitle as="h2">Ingredients</SectionTitle>
-            <ScaleControl servings={recipe.recipeServings} />
+            <ScaleControl servings={recipe.recipeServings} ingredients={scalableIngredients(recipe)} />
           </div>
 
           {/* Structured vs. one merged list only means something once there is
@@ -145,19 +143,11 @@ function RecipePage() {
           )}
 
           {summary && hasIngredients && (
-            <IngredientList
-              ingredients={mergeIngredients(recipe)}
-              recipeId={recipe.id}
-              scaled={scaled}
-              currentServings={recipe.recipeServings}
-              onScaleTo={goToServings}
-            />
+            <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />
           )}
 
           {!summary &&
-            recipe.parts.map((part) => (
-              <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} currentServings={recipe.recipeServings} onScaleTo={goToServings} />
-            ))}
+            recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
         </aside>
 
         <div className="flex flex-col gap-6 md:col-span-2" data-testid="method-column">
@@ -202,25 +192,45 @@ function RecipePage() {
  * scaled document. Hidden when the recipe has no servings recorded: there is
  * nothing to scale by.
  *
- * Tapping the chip opens a `popover` with a number input for typing an exact
- * servings count directly, rather than stepping one at a time. Reset (outside
- * the popover, so it stays visible without opening it) clears a requested
- * scale back to the recipe's own servings.
+ * Tapping the chip opens a `popover` with two forms stacked in it: a number
+ * input for typing an exact servings count directly, rather than stepping one
+ * at a time, and (M25.2 — moved here from a per-row "Scale to..." link, since
+ * a link picks whichever row it happens to sit on rather than the ingredient
+ * you actually measured) a second form that picks one of the recipe's
+ * scalable ingredients from a `Select` and takes the amount of it you have,
+ * computing the servings that reach it (`servingsForTarget`) the same way the
+ * per-row link used to. That second form is omitted when the recipe has no
+ * scalable ingredient to offer. Reset (outside the popover, so it stays
+ * visible without opening it) clears a requested scale back to the recipe's
+ * own servings.
  */
-function ScaleControl({ servings }: { servings: number }) {
+function ScaleControl({ servings, ingredients }: { servings: number; ingredients: Ingredient[] }) {
   const navigate = Route.useNavigate();
   const { servings: requested } = Route.useSearch();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(() => String(Number(servings.toFixed(2))));
+  const [targetIngredientId, setTargetIngredientId] = useState<string | undefined>(ingredients[0]?.id);
+  const [targetAmount, setTargetAmount] = useState("");
   if (servings <= 0) return <Muted as="p">Servings not set</Muted>;
 
   const go = (value: number | undefined) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
   const label = `Serves ${Number(servings.toFixed(2))}`;
+  const ingredientOptions = ingredients.map((ingredient) => ({ value: ingredient.id, label: formatIngredient(ingredient) || "Ingredient" }));
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = Number(draft);
     if (Number.isFinite(value) && value > 0) go(value);
+    setOpen(false);
+  };
+
+  const submitScaleTo = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const ingredient = ingredients.find((candidate) => candidate.id === targetIngredientId);
+    const amount = Number(targetAmount);
+    if (ingredient !== undefined && Number.isFinite(amount) && amount > 0) {
+      go(servingsForTarget(ingredient, amount, servings));
+    }
     setOpen(false);
   };
 
@@ -233,7 +243,11 @@ function ScaleControl({ servings }: { servings: number }) {
         <Popover
           open={open}
           onOpenChange={(next) => {
-            if (next) setDraft(String(Number(servings.toFixed(2))));
+            if (next) {
+              setDraft(String(Number(servings.toFixed(2))));
+              setTargetIngredientId(ingredients[0]?.id);
+              setTargetAmount("");
+            }
             setOpen(next);
           }}
         >
@@ -247,7 +261,7 @@ function ScaleControl({ servings }: { servings: number }) {
               {label}
             </button>
           </Popover.Trigger>
-          <Popover.Body className="flex flex-col gap-2 p-3" aria-label="Set servings">
+          <Popover.Body className="flex flex-col gap-3 p-3" aria-label="Set servings">
             <form className="flex items-center gap-2" onSubmit={submit}>
               <label htmlFor="servings-target" className="text-sm text-fg-subtle">
                 Servings
@@ -267,6 +281,35 @@ function ScaleControl({ servings }: { servings: number }) {
                 Set
               </Button>
             </form>
+
+            {ingredientOptions.length > 0 && (
+              <form className="flex flex-col gap-2 border-t border-border-subtle pt-3" onSubmit={submitScaleTo} data-testid="scale-to-form">
+                <span className="text-sm text-fg-subtle">Scale to an amount you have</span>
+                <div className="flex items-center gap-2">
+                  <Select
+                    aria-label="Ingredient to scale to"
+                    options={ingredientOptions}
+                    value={targetIngredientId}
+                    placeholder="Ingredient"
+                    searchable
+                    onValueChange={setTargetIngredientId}
+                  />
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="any"
+                    min={0}
+                    value={targetAmount}
+                    onChange={(event) => setTargetAmount(event.target.value)}
+                    aria-label="Target amount"
+                    className="w-20"
+                  />
+                  <Button type="submit" variant="solid" intent="brand" size="sm">
+                    Set
+                  </Button>
+                </div>
+              </form>
+            )}
           </Popover.Body>
         </Popover>
         <Button variant="outline" intent="neutral" size="sm" iconOnly aria-label="More servings" onClick={() => go(nextServings(servings, 1))}>

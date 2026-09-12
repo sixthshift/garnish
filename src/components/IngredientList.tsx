@@ -2,9 +2,6 @@
 // part's list under the part's name. Lifted out of the view route (M24.6) so
 // the phone's ingredients sheet renders exactly the same markup — the same
 // `IngredientRow`s, reading the same ticks — rather than a second copy of it.
-//
-// "Scale to..." is optional: the sheet leaves `currentServings`/`onScaleTo`
-// off, so its rows carry no per-row control.
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { IngredientRow } from "./IngredientRow";
 import type { Ingredient, Part } from "../domain/recipe";
@@ -15,23 +12,13 @@ export type IngredientListProps = {
   recipeId: string;
   /** True when the page is showing servings other than the recipe's own. */
   scaled?: boolean;
-  /** Wired together, these two put "Scale to..." on each scalable row. */
-  currentServings?: number;
-  onScaleTo?: (servings: number) => void;
 };
 
-export function IngredientList({ ingredients, recipeId, scaled = false, currentServings, onScaleTo }: IngredientListProps) {
+export function IngredientList({ ingredients, recipeId, scaled = false }: IngredientListProps) {
   return (
     <ul className="flex flex-col gap-2" aria-label="Ingredients">
       {ingredients.map((ingredient) => (
-        <IngredientRow
-          key={ingredient.id}
-          recipeId={recipeId}
-          ingredient={ingredient}
-          scaled={scaled}
-          currentServings={currentServings}
-          onScaleTo={onScaleTo}
-        />
+        <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} scaled={scaled} />
       ))}
     </ul>
   );

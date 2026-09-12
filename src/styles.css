@@ -17,16 +17,14 @@
     margin: 15mm;
   }
 
-  /* Chrome and controls: nav, the action menu, the view toggles, the tick
-     boxes and the per-ingredient scale trigger. The shell's side nav is an
-     aside; the recipe page's ingredients column is one too (M24.1), and it
-     opts out with data-print="keep". */
+  /* Chrome and controls: nav, the action menu, the view toggles and the tick
+     boxes. The shell's side nav is an aside; the recipe page's ingredients
+     column is one too (M24.1), and it opts out with data-print="keep". */
   nav,
   aside:not([data-print="keep"]),
   [data-print="hide"],
   [data-testid="menu"],
   [data-testid="ingredient-mode-toggle"],
-  [data-testid="scale-to-trigger"],
   [data-testid="step-toggle"] > span:first-child,
   [aria-label="Scale servings"],
   [aria-label^="Tick off"] {

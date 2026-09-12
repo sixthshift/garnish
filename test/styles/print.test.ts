@@ -33,7 +33,6 @@ describe("print stylesheet", () => {
       '[data-print="hide"]',
       '[data-testid="menu"]',
       '[data-testid="ingredient-mode-toggle"]',
-      '[data-testid="scale-to-trigger"]',
       '[aria-label="Scale servings"]',
       '[aria-label^="Tick off"]',
     ]) {

@@ -1,9 +1,11 @@
 // M11.5 scale control: the "Serves N" chip that opens a popover with a
-// number input and Reset, and each scalable ingredient row's "Scale to..."
-// trigger. Rendered through the real route tree, the same way as
-// test/routes/loaders.test.tsx, since a popover's body only exists in the
-// markup once the design system's Popover is open — these tests stick to
-// what a default (closed) render can show: the trigger and its wiring.
+// number input and Reset. M25.2 added a second form to that same popover —
+// pick a scalable ingredient and type the amount you have — replacing the
+// per-row "Scale to..." link. Rendered through the real route tree, the same
+// way as test/routes/loaders.test.tsx, since a popover's body only exists in
+// the markup once the design system's Popover is open — these tests stick to
+// what a default (closed) render can show: the chip and that no row carries
+// the old link.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRecipe } from "../../src/server/recipes";
 import { renderRoute } from "../helpers/routes";
@@ -63,33 +65,23 @@ describe("scale control chip and popover", () => {
   });
 });
 
-describe("ingredient row Scale to...", () => {
-  test("a plain scalable ingredient gets a Scale to... trigger", async () => {
+describe("Scale to... moved into the popover (M25.2)", () => {
+  test("no ingredient row renders the old per-row trigger", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
-    expect(html.match(/data-testid="scale-to-trigger"/g)).toHaveLength(1);
-    expect(html).toMatch(/aria-label="Scale to a set amount of flour"/);
+    expect(html).not.toContain('data-testid="scale-to-trigger"');
+    expect(html).not.toMatch(/aria-label="Scale to a set amount of/);
   });
 
-  test("a fixed ingredient gets no Scale to... trigger", async () => {
+  test("the popover's second form (ingredient select, target amount, Set) is closed by default, not in the markup", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
-    expect(html).not.toMatch(/aria-label="Scale to a set amount of vanilla pod"/);
-  });
-
-  test("a null-quantity ingredient (salt, to taste) gets no Scale to... trigger", async () => {
-    await seedTart();
-    const html = await renderRoute("/recipes/lemon-tart");
-    expect(html).not.toMatch(/aria-label="Scale to a set amount of salt"/);
-  });
-
-  test("the trigger's target-amount input is closed by default, not in the markup", async () => {
-    await seedTart();
-    const html = await renderRoute("/recipes/lemon-tart");
+    expect(html).not.toContain('data-testid="scale-to-form"');
     expect(html).not.toContain('aria-label="Target amount"');
+    expect(html).not.toContain('aria-label="Ingredient to scale to"');
   });
 
-  test("a recipe with no servings recorded hides both the scale chip and Scale to...", async () => {
+  test("a recipe with no servings recorded hides the scale chip too, so there is nothing to scale to", async () => {
     await callServerFn(createRecipe, {
       name: "Toast",
       parts: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice") }], steps: [{ text: "Toast it." }] }],
