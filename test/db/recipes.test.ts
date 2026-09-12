@@ -89,15 +89,15 @@ const fullDoc: RecipeInput = {
         { id: ids.ing1, quantity: 200, unit: gram, food: spaghetti, note: "", originalText: "200 g spaghetti", fixed: false },
         { id: ids.ing2, quantity: null, unit: null, food: null, note: "to taste", originalText: "salt, to taste", fixed: false },
       ],
-      steps: [{ id: ids.step1, text: "Boil the pasta." }],
+      steps: [{ id: ids.step1, text: "Boil the pasta.", ingredientIds: [] }],
     },
     {
       id: ids.sauce,
       name: "Sauce",
       ingredients: [{ id: ids.ing3, quantity: 50, unit: gram, food: butter, note: "cold", originalText: "50 g cold butter", fixed: true }],
-      steps: [{ id: ids.step2, text: "Melt the butter." }],
+      steps: [{ id: ids.step2, text: "Melt the butter.", ingredientIds: [] }],
     },
-    { id: ids.finish, name: "", ingredients: [], steps: [{ id: ids.step3, text: "Toss together and serve." }] },
+    { id: ids.finish, name: "", ingredients: [], steps: [{ id: ids.step3, text: "Toss together and serve.", ingredientIds: [] }] },
   ],
 };
 
@@ -205,7 +205,7 @@ test("update replaces components, steps, notes and tags in place and keeps id an
         {
           name: "",
           ingredients: [{ quantity: 1, unit: null, food: { ...butter, id: crypto.randomUUID(), name: "Parmesan" }, note: "", originalText: "a handful of parmesan", fixed: false }],
-          steps: [{ id: ids.step1, text: "Grate." }],
+          steps: [{ id: ids.step1, text: "Grate.", ingredientIds: [] }],
         },
         { name: "", ingredients: [], steps: [{ text: "Serve." }, { text: "Eat." }] },
       ],
@@ -224,7 +224,7 @@ test("update replaces components, steps, notes and tags in place and keeps id an
   expect(updated.parts[0]!.name).toBe("");
   expect(updated.parts[0]!.ingredients).toHaveLength(1);
   expect(updated.parts[0]!.ingredients[0]!.food!.name).toBe("Parmesan");
-  expect(updated.parts[0]!.steps).toEqual([{ id: ids.step1, text: "Grate." }]);
+  expect(updated.parts[0]!.steps).toEqual([{ id: ids.step1, text: "Grate.", ingredientIds: [] }]);
   expect(updated.parts[1]!.steps.map((s) => s.text)).toEqual(["Serve.", "Eat."]);
 
   // Old children are gone from the tables, not just from the document.
@@ -260,13 +260,13 @@ test("a failing write leaves the previous recipe intact", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
   const bad = recipeInputSchema.parse({ ...fullDoc, description: "broken" });
   // Duplicate child id inside one document violates the primary key mid-transaction.
-  bad.parts[0]!.steps = [{ id: ids.step1, text: "dup" }, { id: ids.step1, text: "dup" }];
+  bad.parts[0]!.steps = [{ id: ids.step1, text: "dup", ingredientIds: [] }, { id: ids.step1, text: "dup", ingredientIds: [] }];
 
   expect(() => repo.update(created.id, bad)).toThrow(/UNIQUE|PRIMARY/);
   expect(repo.get("butter-pasta")).toEqual(created);
   expect(count("recipe")).toBe(1);
 
-  expect(() => repo.create(recipeInputSchema.parse({ ...minimal("Broken"), parts: [{ name: "", ingredients: [], steps: [{ id: ids.step1, text: "dup" }, { id: ids.step1, text: "dup" }] }] }))).toThrow(/UNIQUE|PRIMARY/);
+  expect(() => repo.create(recipeInputSchema.parse({ ...minimal("Broken"), parts: [{ name: "", ingredients: [], steps: [{ id: ids.step1, text: "dup", ingredientIds: [] }, { id: ids.step1, text: "dup", ingredientIds: [] }] }] }))).toThrow(/UNIQUE|PRIMARY/);
   expect(count("recipe")).toBe(1);
   expect(count("part")).toBe(3);
 });
@@ -490,4 +490,65 @@ test("setFavourite changes only the favourite column and reports whether the id 
   expect(repo.setFavourite(created.id, false)).toBe(true);
   expect(repo.getById(created.id)!.favourite).toBe(false);
   expect(repo.setFavourite(ids.recipe, true)).toBe(false);
+});
+
+// --- Step links (M28.1) ------------------------------------------------------
+// A step names the ingredients of its own part, in the order the document
+// listed them. Many to many: two rows on one step, one row on two steps.
+
+/** Butter Pasta with a second pasta step, so the pasta part has two steps to link from. */
+const linkedDoc = (): RecipeInput => ({
+  ...fullDoc,
+  parts: [
+    {
+      ...fullDoc.parts[0]!,
+      steps: [
+        { id: ids.step1, text: "Boil the pasta.", ingredientIds: [ids.ing2, ids.ing1] },
+        { id: ids.step3, text: "Drain.", ingredientIds: [ids.ing1] },
+      ],
+    },
+    { ...fullDoc.parts[1]!, steps: [{ id: ids.step2, text: "Melt the butter.", ingredientIds: [ids.ing3] }] },
+    { id: ids.finish, name: "", ingredients: [], steps: [] },
+  ],
+});
+
+test("a step reads back with the ingredients it links, in link order, and a row links from two steps", () => {
+  const created = repo.create(recipeInputSchema.parse(linkedDoc()));
+
+  const [pasta, sauce, finish] = created.parts;
+  expect(pasta!.steps.map((s) => s.ingredientIds)).toEqual([[ids.ing2, ids.ing1], [ids.ing1]]);
+  expect(sauce!.steps[0]!.ingredientIds).toEqual([ids.ing3]);
+  expect(finish!.steps).toEqual([]);
+  expect(count("step_ingredient")).toBe(4);
+
+  // Round-trip: saving what was read changes nothing.
+  const again = repo.update(created.id, recipeInputSchema.parse(created))!;
+  expect({ ...again, updatedAt: created.updatedAt }).toEqual(created);
+});
+
+test("a link naming an ingredient outside the step's part is dropped, and so is a repeat", () => {
+  const doc = linkedDoc();
+  // ing3 lives in Sauce; ing1 lives in Pasta. Each step reaches into the other part.
+  doc.parts[0]!.steps = [{ id: ids.step1, text: "Boil the pasta.", ingredientIds: [ids.ing3, ids.ing1, ids.ing1] }];
+  doc.parts[1]!.steps = [{ id: ids.step2, text: "Melt the butter.", ingredientIds: [ids.ing1] }];
+
+  const created = repo.create(recipeInputSchema.parse(doc));
+  expect(created.parts[0]!.steps[0]!.ingredientIds).toEqual([ids.ing1]);
+  expect(created.parts[1]!.steps[0]!.ingredientIds).toEqual([]);
+  expect(count("step_ingredient")).toBe(1);
+});
+
+test("a step link goes with either side: deleting the recipe clears the table, and so does dropping a row", () => {
+  const created = repo.create(recipeInputSchema.parse(linkedDoc()));
+  expect(count("step_ingredient")).toBe(4);
+
+  // Dropping the ingredient row from the document takes the two links naming it.
+  const trimmed = recipeInputSchema.parse(created);
+  trimmed.parts[0]!.ingredients = trimmed.parts[0]!.ingredients.filter((i) => i.id !== ids.ing1);
+  const updated = repo.update(created.id, trimmed)!;
+  expect(updated.parts[0]!.steps.map((s) => s.ingredientIds)).toEqual([[ids.ing2], []]);
+  expect(count("step_ingredient")).toBe(2);
+
+  expect(repo.remove(created.id)).toBe(true);
+  expect(count("step_ingredient")).toBe(0);
 });

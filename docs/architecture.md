@@ -78,6 +78,7 @@ part          id, recipe_id, position, name
 ingredient    id, part_id, position, quantity?, unit_id?, food_id?,
               note, original_text, fixed
 step          id, part_id, position, text
+step_ingredient step_id, ingredient_id, position
 food          id, name, plural_name, aliases, aisle_id?, recipe_id?, skip_shopping
 aisle         id, name, position
 unit          id, name, plural_name, abbreviation, use_abbreviation, fraction,
@@ -87,14 +88,15 @@ recipe_tag    recipe_id, tag_id
 migration     id, name, applied_at
 ```
 
-Ids are UUID text; timestamps are ISO 8601 UTC text. `food`, `unit`, `aisle` and `tag` names are unique case-insensitively. Deleting a recipe cascades to its parts, ingredients, steps, notes, timeline events and tag links; deleting a part cascades to its ingredients and steps; deleting a food, unit or aisle sets the references null. `position` is unique within its parent.
+Ids are UUID text; timestamps are ISO 8601 UTC text. `food`, `unit`, `aisle` and `tag` names are unique case-insensitively. Deleting a recipe cascades to its parts, ingredients, steps, notes, timeline events and tag links; deleting a part cascades to its ingredients and steps; a step link cascades from either side, so deleting a step or an ingredient takes the links naming it; deleting a food, unit or aisle sets the references null. `position` is unique within its parent.
 
-Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49).
+Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64).
 
-The document the API reads and writes (`src/domain/recipe.ts`) mirrors these columns in camelCase, with Mealie's names where Mealie has the concept: `servings` → `recipeServings`, `yield_quantity` → `recipeYieldQuantity`, `yield_text` → `recipeYield`, `prep_minutes` → `prepTime`, `cook_minutes` → `performTime`. The two times are integer minutes, not Mealie's free-text strings (decisions.md row 35). Array order carries `position`, so the document has no position fields. Foreign keys come back as nested objects (`unit`, `food`, `yieldUnit`, `tags`); writes use only the nested `id`. Steps exist only inside `parts`; the document has no recipe-level `steps` array.
+The document the API reads and writes (`src/domain/recipe.ts`) mirrors these columns in camelCase, with Mealie's names where Mealie has the concept: `servings` → `recipeServings`, `yield_quantity` → `recipeYieldQuantity`, `yield_text` → `recipeYield`, `prep_minutes` → `prepTime`, `cook_minutes` → `performTime`. The two times are integer minutes, not Mealie's free-text strings (decisions.md row 35). Array order carries `position`, so the document has no position fields. Foreign keys come back as nested objects (`unit`, `food`, `yieldUnit`, `tags`); writes use only the nested `id`. Steps exist only inside `parts`; the document has no recipe-level `steps` array. A step carries `ingredientIds`: the ids of the ingredients it uses, in link order.
 
 - A recipe is an ordered list of parts. Every recipe has at least one; a single unnamed part is the flat case.
 - Each part owns its ingredients and its steps. Same food in two parts is two rows.
+- Steps link ingredients, many to many, **within one part** (decisions.md row 64). Ownership is the tree; a link is only "this step uses that row". A step may link any ingredient of its own part, and an ingredient may be linked from several of that part's steps. A link across parts is dropped on save rather than failing it — the row belongs in this part, or in the recipe's body. A link carries the whole row: splitting one amount across steps is two rows, not two links.
 - The unnamed part (`name = ''`) is the recipe's main body, printed without a heading — so a recipe with one named sub-preparation does not have to invent a heading like "To assemble" for the rest of its method.
 - `quantity` null means "no amount" (salt to taste). `fixed` true means "has an amount, does not scale" (one egg wash). Cooklang's `=`.
 - `food_id` and `unit_id` are nullable. A line that is only text still saves. `original_text` is always kept.

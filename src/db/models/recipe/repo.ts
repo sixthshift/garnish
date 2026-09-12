@@ -3,7 +3,7 @@
 //
 // Writes replace the whole recipe in one transaction: the recipe row is
 // inserted or updated, every child row (note, part, ingredient, step,
-// recipe_tag) is deleted and re-inserted from the document, positions come
+// step_ingredient, recipe_tag) is deleted and re-inserted from the document, positions come
 // from array index. Referenced units, foods, tags and aisles are resolved by
 // id, then by name (case-insensitive); a name nobody has yet is inserted so a
 // document with a new tag or food saves. Existing reference rows are never
@@ -29,7 +29,7 @@ import { type Executor, orm } from "../../connection/client";
 import { foods as foodRepository } from "../food/repo";
 import { slugify, uniqueSlug } from "../../../domain/names";
 import { tag } from "../tag/schema";
-import { ingredient, part, recipe, recipeNote, recipeTag, step } from "./schema";
+import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
 import { tags as tagRepository } from "../tag/repo";
 import { units as unitRepository } from "../unit/repo";
 
@@ -227,10 +227,28 @@ export function recipes(db: Database) {
       .orderBy(asc(part.position), asc(step.position))
       .all();
 
+    // Step links, in the order they were written. Both ends are in this recipe
+    // by construction, so joining through the step's part scopes the read.
+    const linkRows = dz
+      .select({ stepId: stepIngredient.stepId, ingredientId: stepIngredient.ingredientId })
+      .from(stepIngredient)
+      .innerJoin(step, eq(step.id, stepIngredient.stepId))
+      .innerJoin(part, eq(part.id, step.partId))
+      .where(eq(part.recipeId, row.id))
+      .orderBy(asc(stepIngredient.position))
+      .all();
+
+    const linksByStep = new Map<string, string[]>();
+    for (const link of linkRows) {
+      const list = linksByStep.get(link.stepId) ?? [];
+      list.push(link.ingredientId);
+      linksByStep.set(link.stepId, list);
+    }
+
     const stepsByPart = new Map<string, Step[]>();
     for (const s of stepRows) {
       const list = stepsByPart.get(s.partId) ?? [];
-      list.push({ id: s.id, text: s.text });
+      list.push({ id: s.id, text: s.text, ingredientIds: linksByStep.get(s.id) ?? [] });
       stepsByPart.set(s.partId, list);
     }
 
@@ -333,10 +351,10 @@ export function recipes(db: Database) {
 
   /** Delete every child row and re-insert them from the document. */
   function writeChildren(tx: Executor, recipeId: string, doc: ParsedRecipeInput): void {
-    // Steps and ingredients cascade from the part, so deleting parts clears both.
+    // Steps and ingredients cascade from the part, and step links cascade from both.
     tx.delete(recipeTag).where(eq(recipeTag.recipeId, recipeId)).run();
     tx.delete(recipeNote).where(eq(recipeNote.recipeId, recipeId)).run();
-    tx.delete(part).where(eq(part.recipeId, recipeId)).run(); // steps and ingredients cascade
+    tx.delete(part).where(eq(part.recipeId, recipeId)).run(); // steps, ingredients and their links cascade
 
     for (const t of doc.tags) {
       tx.insert(recipeTag).values({ recipeId, tagId: resolveTag(t) }).onConflictDoNothing().run();
@@ -351,10 +369,15 @@ export function recipes(db: Database) {
     doc.parts.forEach((p, position) => {
       const partId = p.id ?? crypto.randomUUID();
       tx.insert(part).values({ id: partId, recipeId, position, name: p.name }).run();
+      // Ingredients first: their ids are what the part's steps may link to.
+      // A line the document gave no id gets a fresh one, which nothing can name.
+      const linkable = new Set<string>();
       p.ingredients.forEach((line, i) => {
+        const ingredientId = line.id ?? crypto.randomUUID();
+        linkable.add(ingredientId);
         tx.insert(ingredient)
           .values({
-            id: line.id ?? crypto.randomUUID(),
+            id: ingredientId,
             partId,
             position: i,
             quantity: line.quantity,
@@ -366,10 +389,18 @@ export function recipes(db: Database) {
           })
           .run();
       });
+      // Then the steps, then their links: a link is dropped, not raised, when it
+      // names an ingredient outside this part or names one twice (decisions.md
+      // row 64). A saved recipe is never rejected over a stale link.
       p.steps.forEach((s, i) => {
-        tx.insert(step)
-          .values({ id: s.id ?? crypto.randomUUID(), partId, position: i, text: s.text })
-          .run();
+        const stepId = s.id ?? crypto.randomUUID();
+        tx.insert(step).values({ id: stepId, partId, position: i, text: s.text }).run();
+        const seen = new Set<string>();
+        for (const ingredientId of s.ingredientIds) {
+          if (!linkable.has(ingredientId) || seen.has(ingredientId)) continue;
+          seen.add(ingredientId);
+          tx.insert(stepIngredient).values({ stepId, ingredientId, position: seen.size - 1 }).run();
+        }
       });
     });
   }

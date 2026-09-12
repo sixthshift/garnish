@@ -11,7 +11,7 @@ import { setIngredientTicked, setStepTicked, type StorageLike } from "../../src/
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const STEP_ID = "33333333-3333-4333-8333-333333333333";
 
-const step = (text: string, id = STEP_ID): Step => ({ id, text });
+const step = (text: string, id = STEP_ID): Step => ({ id, text, ingredientIds: [] });
 
 let seq = 0;
 const uuid = () => `55555555-5555-4555-8555-${String(seq++).padStart(12, "0")}`;

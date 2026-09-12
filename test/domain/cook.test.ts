@@ -16,7 +16,7 @@ import {
 import type { Ingredient, Part, Step } from "../../src/domain/recipe";
 
 const uuid = () => crypto.randomUUID();
-const step = (text: string): Step => ({ id: uuid(), text });
+const step = (text: string): Step => ({ id: uuid(), text, ingredientIds: [] });
 const ingredient = (note: string, fixed = false): Ingredient => ({ id: uuid(), quantity: 1, unit: null, food: null, note, originalText: "", fixed });
 const part = (name: string, ingredients: Ingredient[], steps: Step[]): Part => ({ id: uuid(), name, ingredients, steps });
 

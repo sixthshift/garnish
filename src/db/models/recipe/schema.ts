@@ -1,8 +1,8 @@
-// The recipe aggregate: the recipe row and the five tables it owns.
+// The recipe aggregate: the recipe row and the tables it owns.
 //
 // They live in one file because they are written as one thing — `repo.ts`
-// replaces a recipe's parts, ingredients, steps, notes and tag links in a
-// single transaction, and nothing addresses them independently. The aggregate
+// replaces a recipe's parts, ingredients, steps, step links, notes and tag
+// links in a single transaction, and nothing addresses them independently. The aggregate
 // is the boundary, so it is also the file.
 //
 // Mealie's field names where Mealie has the concept; the two times are integer
@@ -138,6 +138,31 @@ export const step = sqliteTable(
     text: text("text").notNull().default(""),
   },
   (t) => [unique().on(t.partId, t.position)],
+);
+
+/**
+ * Step-to-ingredient links (decisions.md row 64). Many to many within one part:
+ * a step may link any ingredient of its own part, and an ingredient may be
+ * linked from several of that part's steps. The pair is the primary key, so a
+ * step links a row at most once; `position` is the order the document listed
+ * the links in. "Same part" is enforced by `repo.ts` on write — a link across
+ * parts is dropped — because no foreign key can state it.
+ */
+export const stepIngredient = sqliteTable(
+  "step_ingredient",
+  {
+    stepId: text("step_id")
+      .notNull()
+      .references(() => step.id, { onDelete: "cascade" }),
+    ingredientId: text("ingredient_id")
+      .notNull()
+      .references(() => ingredient.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.stepId, t.ingredientId] }),
+    index("step_ingredient_ingredient_id").on(t.ingredientId),
+  ],
 );
 
 /** Recipe-to-tag links. The primary key is the pair, so a recipe carries a tag at most once. */

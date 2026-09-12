@@ -13,6 +13,9 @@
 //     repository writes them from array index and reads them back in order.
 //   - Foreign keys (unit_id, food_id, yield_unit_id, tag_id) are nested
 //     reference objects, as in Mealie. Writes use only the nested `id`.
+//   - A step's `ingredientIds` are links, not ownership: ids of ingredients in
+//     the same part, in link order. Many to many within the part; a link
+//     naming a row outside it is dropped on save (decisions.md row 64).
 //   - Every step belongs to a part, so `steps` exists only inside `parts`.
 //     The unnamed part ('') is the recipe's main body: a flat recipe is one
 //     unnamed part, and a sectioned recipe puts its unsectioned method there
@@ -76,6 +79,11 @@ const ingredientFields = {
 
 const stepFields = {
   text,
+  /**
+   * The ingredients this step uses, in link order (decisions.md row 64). Ids of
+   * rows in the step's own part; a link naming anything else is dropped on save.
+   */
+  ingredientIds: z.array(id).default([]),
 };
 
 const noteFields = {
