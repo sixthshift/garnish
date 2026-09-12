@@ -29,6 +29,7 @@ import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react
 import { z } from "zod";
 import { MadeThisButton } from "../../../components/Timeline";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
+import { StepCard } from "../../../components/StepCard";
 import {
   buildCookCards,
   cardAnnouncement,
@@ -40,7 +41,6 @@ import {
   totalWithFinish,
   type CookCard,
 } from "../../../domain/cook";
-import { Markdown } from "../../../components/Markdown";
 import { formatIngredient } from "../../../domain/format";
 import { scaledForServings } from "../../../domain/scale";
 import type { Ingredient, Recipe } from "../../../domain/recipe";
@@ -334,9 +334,11 @@ function CookCardView({
       <p className="mb-3 text-sm font-medium uppercase tracking-wide text-fg-subtle">
         Step {card.number} of {card.total}
       </p>
-      {/* Plain until M29.2 deals `StepCard` here: the linked ingredients and
-          the step's timers come back with the card. */}
-      <Markdown source={card.step.text} className="text-3xl leading-snug" />
+      {/* Same card the recipe page deals, in the cook deck's bigger type: its
+          own linked ingredients and timers come with it (M29.2). */}
+      <ul>
+        <StepCard recipeId={recipeId} step={card.step} position={card.number} ingredients={card.ingredients} size="cook" />
+      </ul>
       <NextPreview preview={preview} onNext={onNext} />
     </Card>
   );

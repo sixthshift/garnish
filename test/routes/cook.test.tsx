@@ -111,15 +111,70 @@ describe("/recipes/$slug/cook", () => {
     const html = await renderRoute("/recipes/lemon-tart/cook?step=1");
     expect(html).toContain('data-card="step"');
     expect(html).toContain("Rub the butter into the flour.");
-    // The step is markdown (M26.2), rendered through the same component as the view page.
+    // The step is dealt through StepCard (M29.2), the same component as the view page.
+    expect(html).toContain('data-testid="step-card"');
+    expect(html).toContain('data-size="cook"');
     expect(html).toMatch(/<div class="[^"]*text-3xl[^"]*" data-testid="markdown">/);
     expect(html).toContain('<p class="whitespace-pre-line">Rub the butter into the flour.</p>');
     expect(html).toContain("Step <!-- -->1<!-- --> of <!-- -->1");
     expect(html).toContain("2 of 5 · Pastry");
-    // The part's list is not on the card; only the chip for the food the step names (M26.1).
+    // This step links nothing, so the part's list is not on the card either.
     expect(html).not.toContain('data-testid="cook-ingredient"');
+    expect(html).not.toContain('data-testid="step-ingredients"');
     expect(isDisabled(html, "Prev")).toBe(false);
     expect(isDisabled(html, "Next")).toBe(false);
+  });
+
+  // M29.2: the ingredients card at the front of a part holds only the rows no
+  // step of that part links; a linked row is read on its own step card instead.
+  test("a linked ingredient appears on its own step card, not on the part's ingredients card", async () => {
+    const units = await callServerFn(listUnits, {});
+    const gram = units.find((u) => u.abbreviation === "g")!;
+    const flourId = crypto.randomUUID();
+    const butterId = crypto.randomUUID();
+    await callServerFn(createRecipe, {
+      name: "Shortcrust",
+      parts: [
+        {
+          name: "Pastry",
+          ingredients: [
+            { id: flourId, quantity: 200, unit: gram, food: food("flour") },
+            { id: butterId, quantity: 100, unit: gram, food: food("butter") },
+          ],
+          steps: [{ text: "Rub the butter into the flour.", ingredientIds: [butterId] }],
+        },
+      ],
+    });
+
+    const ingredientsCard = await renderRoute("/recipes/shortcrust/cook");
+    expect(ingredientsCard).toContain('data-card="ingredients"');
+    expect(ingredientsCard).toContain("Tick off 200 g flour");
+    expect(ingredientsCard).not.toContain("Tick off 100 g butter");
+
+    const stepCard = await renderRoute("/recipes/shortcrust/cook?step=1");
+    expect(stepCard).toContain('data-card="step"');
+    expect(stepCard).toContain('data-testid="step-ingredients"');
+    expect(stepCard).toContain("Tick off 100 g butter");
+  });
+
+  // M29.2: a part where every ingredient is linked gets no ingredients card at all.
+  test("a part with everything linked skips the ingredients card", async () => {
+    const butterId = crypto.randomUUID();
+    await callServerFn(createRecipe, {
+      name: "Butter toast",
+      parts: [
+        {
+          name: "",
+          ingredients: [{ id: butterId, quantity: 1, food: food("butter knob", "butter knobs") }],
+          steps: [{ text: "Spread the butter.", ingredientIds: [butterId] }],
+        },
+      ],
+    });
+
+    const html = await renderRoute("/recipes/butter-toast/cook");
+    expect(html).not.toContain('data-card="ingredients"');
+    expect(html).toContain('data-card="step"');
+    expect(html).toContain("Tick off 1 butter knob");
   });
 
   test("the second component's ingredient card marks the fixed row and scales the rest", async () => {
@@ -273,10 +328,6 @@ describe("/recipes/$slug/cook", () => {
     const view = await renderRoute("/recipes/lemon-tart");
     expect(view).toMatch(/data-testid="ingredient-row" data-ticked="true"/);
   });
-
-  // M29.1 took the name-matched chips and the timer chips spliced into the
-  // prose off the cook card; M29.2 deals it a `StepCard`, which brings the
-  // step's linked ingredients and its timers back in the card's own shape.
 
   test("the view page links to cook mode, carrying the requested scale", async () => {
     await seedTart();

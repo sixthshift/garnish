@@ -1,8 +1,10 @@
 // Cook mode's card sequence. Pure: the recipe document in, a flat list of
 // cards out, so the route only has to pick one by index. Part order: each
-// part's ingredients as one card, then a card per step. A part with no
-// ingredients gets no ingredient card and one with nothing at all contributes
-// nothing: a blank card is a wasted tap.
+// part's ingredients card, then a card per step. The ingredients card carries
+// only the rows none of the part's steps link — a linked row is read on its
+// step card instead (M29.2, StepCard resolves the link) — so a part where
+// every row is linked gets no ingredients card, and one with nothing at all
+// contributes nothing: a blank card is a wasted tap.
 import type { Ingredient, Recipe, Step } from "./recipe";
 
 export type CookCard =
@@ -28,13 +30,19 @@ export type CookCard =
       ingredients: Ingredient[];
     };
 
-/** Every part's cards in order: its ingredients, then a card per step. Pure. */
+/**
+ * Every part's cards in order: an ingredients card for its rows that no step
+ * of the part links, then a card per step (each still carrying the part's
+ * full ingredients, so `StepCard` can resolve its own links). Pure.
+ */
 export function buildCookCards(recipe: Pick<Recipe, "parts">): CookCard[] {
   const cards: CookCard[] = [];
 
   for (const part of recipe.parts) {
     const name = part.name.trim();
-    if (part.ingredients.length > 0) cards.push({ kind: "ingredients", part: name, ingredients: part.ingredients });
+    const linkedIds = new Set(part.steps.flatMap((step) => step.ingredientIds));
+    const unlinked = part.ingredients.filter((ingredient) => !linkedIds.has(ingredient.id));
+    if (unlinked.length > 0) cards.push({ kind: "ingredients", part: name, ingredients: unlinked });
     part.steps.forEach((step, index) =>
       cards.push({
         kind: "step",

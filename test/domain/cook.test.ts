@@ -16,7 +16,7 @@ import {
 import type { Ingredient, Part, Step } from "../../src/domain/recipe";
 
 const uuid = () => crypto.randomUUID();
-const step = (text: string): Step => ({ id: uuid(), text, ingredientIds: [] });
+const step = (text: string, ingredientIds: string[] = []): Step => ({ id: uuid(), text, ingredientIds });
 const ingredient = (note: string, fixed = false): Ingredient => ({ id: uuid(), quantity: 1, unit: null, food: null, note, originalText: "", fixed });
 const part = (name: string, ingredients: Ingredient[], steps: Step[]): Part => ({ id: uuid(), name, ingredients, steps });
 
@@ -62,6 +62,59 @@ describe("buildCookCards", () => {
     expect(buildCookCards({ parts: [empty] })).toEqual([]);
     const cards = buildCookCards({ parts: [empty, stepsOnly] });
     expect(cards.map((c) => [c.kind, c.part])).toEqual([["step", "Assembly"]]);
+  });
+
+  // M29.2: the ingredients card carries only the rows none of the part's steps
+  // link — a linked row is read on its step card, resolved there from the
+  // step card's own (full) `ingredients`.
+  test("the ingredients card carries only the rows no step of the part links", () => {
+    const flour = ingredient("flour");
+    const butter = ingredient("butter");
+    const pastry = part("Pastry", [flour, butter], [step("Rub the butter in.", [butter.id])]);
+
+    const cards = buildCookCards({ parts: [pastry] });
+
+    const ingredientsCard = cards.find((c) => c.kind === "ingredients");
+    expect(ingredientsCard?.kind).toBe("ingredients");
+    if (ingredientsCard?.kind === "ingredients") expect(ingredientsCard.ingredients).toEqual([flour]);
+    // The step card still carries the part's full rows, so StepCard can resolve its own link.
+    const stepCard = cards.find((c) => c.kind === "step");
+    expect(stepCard?.kind).toBe("step");
+    if (stepCard?.kind === "step") expect(stepCard.ingredients).toEqual([flour, butter]);
+  });
+
+  test("a part where every ingredient is linked from its steps has no ingredients card", () => {
+    const butter = ingredient("butter");
+    const pastry = part("Pastry", [butter], [step("Melt the butter.", [butter.id])]);
+
+    const cards = buildCookCards({ parts: [pastry] });
+
+    expect(cards.map((c) => c.kind)).toEqual(["step"]);
+  });
+
+  test("a part with no steps keeps all its rows on the ingredients card", () => {
+    const flour = ingredient("flour");
+    const garnish = part("Garnish", [flour], []);
+
+    const cards = buildCookCards({ parts: [garnish] });
+
+    expect(cards).toEqual([{ kind: "ingredients", part: "Garnish", ingredients: [flour] }]);
+  });
+
+  test("a row linked from one of several steps, and one linked from more than one, both drop off the ingredients card", () => {
+    const flour = ingredient("flour");
+    const butter = ingredient("butter");
+    const salt = ingredient("salt");
+    const pastry = part(
+      "Pastry",
+      [flour, butter, salt],
+      [step("Rub the butter in.", [butter.id]), step("Add the salt.", [salt.id]), step("Add the butter again.", [butter.id])],
+    );
+
+    const cards = buildCookCards({ parts: [pastry] });
+    const ingredientsCard = cards.find((c) => c.kind === "ingredients");
+    expect(ingredientsCard?.kind).toBe("ingredients");
+    if (ingredientsCard?.kind === "ingredients") expect(ingredientsCard.ingredients).toEqual([flour]);
   });
 });
 
