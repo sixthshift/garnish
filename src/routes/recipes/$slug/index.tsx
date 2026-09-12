@@ -18,10 +18,10 @@ import { z } from "zod";
 import { RecipeActions } from "../../../components/RecipeActions";
 import { IngredientModeToggle } from "../../../components/IngredientModeToggle";
 import { IngredientRow } from "../../../components/IngredientRow";
-import { RecipeHeader } from "../../../components/RecipeHeader";
+import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader";
 import { StepList } from "../../../components/StepList";
 import { mergeIngredients } from "../../../domain/merge";
-import { MadeThisButton, TimelineList } from "../../../components/Timeline";
+import { TimelineList } from "../../../components/Timeline";
 import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { getRecipe } from "../../../server/recipes";
@@ -72,7 +72,6 @@ function RecipePage() {
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6 lg:max-w-5xl">
       <RecipeHeader
         recipe={recipe}
-        madeAction={<MadeThisButton recipe={recipe} />}
         actions={
           <>
             <Button asChild variant="solid" intent="brand" size="sm">
@@ -149,6 +148,8 @@ function RecipePage() {
       )}
 
       <TimelineList events={timeline} />
+
+      <RecipeMetaFooter recipe={recipe} />
     </article>
   );
 }

@@ -2,9 +2,11 @@
 // recipe document, and the caller passes its own action buttons in.
 //
 // Layout follows Mealie's recipe page: from `md` the image sits beside the
-// text, below `md` it stacks above it. Under the text comes the stat strip
-// (prep / cook / total, each with an icon) and the yield line, then a footer
-// with the source link and the created and updated dates.
+// text, below `md` it stacks above it. Order (M24.3): image, name with the
+// actions, stars, one strip holding prep / cook / total, yield and the last
+// made date as text. The source/added/updated meta moves out of the header;
+// `RecipeMetaFooter` below renders it as the page's own footer, at the foot
+// of the page rather than under the header.
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
@@ -20,8 +22,6 @@ export type RecipeHeaderProps = {
   recipe: Recipe;
   /** Buttons for this recipe (Edit, Cook); rendered opposite the name. */
   actions?: ReactNode;
-  /** "Made this" button, rendered beside the last made date in the footer. */
-  madeAction?: ReactNode;
 };
 
 /**
@@ -126,13 +126,10 @@ function ImagePlaceholder() {
   );
 }
 
-export function RecipeHeader({ recipe, actions, madeAction }: RecipeHeaderProps) {
+export function RecipeHeader({ recipe, actions }: RecipeHeaderProps) {
   const src = recipeImageUrl(recipe.image);
   const stats = timeStats(recipe);
   const yieldText = formatYield(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
-  const source = sourceLabel(recipe.sourceUrl);
-  const created = formatDateStamp(recipe.createdAt);
-  const updated = formatDateStamp(recipe.updatedAt);
   const lastMade = formatDateStamp(recipe.lastMade);
 
   return (
@@ -153,6 +150,38 @@ export function RecipeHeader({ recipe, actions, madeAction }: RecipeHeaderProps)
             )}
           </div>
           {recipe.rating !== null && <Rating value={recipe.rating} />}
+
+          {/* One strip: prep / cook / total, the yield, and the last made
+              date as text. The "Made this" button used to sit beside the
+              last made line; it moved out of the header (M25.6 gives it a
+              home in the timeline section). */}
+          <div className="flex flex-col gap-1" data-testid="stat-strip">
+            {stats.length > 0 && (
+              <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                {stats.map((stat) => (
+                  <div key={stat.key} className="flex items-center gap-1.5" data-stat={stat.key}>
+                    <StatIcon stat={stat.key} />
+                    <dt className="text-fg-subtle">{stat.label}</dt>
+                    <dd className="font-medium text-fg-strong">{stat.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {/* The yield sits on its own line under the times, as in Mealie. */}
+            {yieldText !== "" && (
+              <dl className="text-sm" data-testid="yield">
+                <div className="flex gap-1.5">
+                  <dt className="text-fg-subtle">Makes</dt>
+                  <dd className="font-medium text-fg-strong">{yieldText}</dd>
+                </div>
+              </dl>
+            )}
+            <p className="text-sm text-fg-subtle" data-testid="last-made">
+              {lastMade === "" ? "Never made" : "Last made "}
+              {lastMade !== "" && <span className="font-medium text-fg-strong">{lastMade}</span>}
+            </p>
+          </div>
+
           {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}
           <EmptyBoundary
             isEmpty={recipe.tags.length === 0}
@@ -174,63 +203,39 @@ export function RecipeHeader({ recipe, actions, madeAction }: RecipeHeaderProps)
           </EmptyBoundary>
         </div>
       </div>
-
-      {(stats.length > 0 || yieldText !== "") && (
-        <div className="flex flex-col gap-1" data-testid="stat-strip">
-          {stats.length > 0 && (
-            <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              {stats.map((stat) => (
-                <div key={stat.key} className="flex items-center gap-1.5" data-stat={stat.key}>
-                  <StatIcon stat={stat.key} />
-                  <dt className="text-fg-subtle">{stat.label}</dt>
-                  <dd className="font-medium text-fg-strong">{stat.value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          {/* The yield sits on its own line under the times, as in Mealie. */}
-          {yieldText !== "" && (
-            <dl className="text-sm" data-testid="yield">
-              <div className="flex gap-1.5">
-                <dt className="text-fg-subtle">Makes</dt>
-                <dd className="font-medium text-fg-strong">{yieldText}</dd>
-              </div>
-            </dl>
-          )}
-        </div>
-      )}
-
-      {/* Last made sits with its own button: the log is written from here. */}
-      <div className="flex flex-wrap items-center gap-3 text-sm" data-testid="last-made">
-        <span className="text-fg-subtle">
-          {lastMade === "" ? "Never made" : "Last made "}
-          {lastMade !== "" && <span className="font-medium text-fg-strong">{lastMade}</span>}
-        </span>
-        {madeAction !== undefined && (
-          <div data-print="hide">{madeAction}</div>
-        )}
-      </div>
-
-      {(source !== "" || created !== "" || updated !== "") && (
-        <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border-subtle pt-3 text-xs text-fg-subtle" data-testid="recipe-meta">
-          {source !== "" &&
-            (isLinkable(recipe.sourceUrl) ? (
-              <a
-                href={recipe.sourceUrl ?? undefined}
-                target="_blank"
-                rel="noreferrer noopener"
-                data-testid="source-url"
-                className="underline underline-offset-2 hover:text-fg-normal"
-              >
-                Source: {source}
-              </a>
-            ) : (
-              <span data-testid="source-url">Source: {source}</span>
-            ))}
-          {created !== "" && <span data-testid="created">Added {created}</span>}
-          {updated !== "" && <span data-testid="updated">Updated {updated}</span>}
-        </footer>
-      )}
     </header>
+  );
+}
+
+/**
+ * Source, added and updated: the page's own footer, at the foot of the page
+ * under the timeline (M24.3) rather than under the header. Renders nothing
+ * when the recipe has none of the three.
+ */
+export function RecipeMetaFooter({ recipe }: { recipe: Recipe }) {
+  const source = sourceLabel(recipe.sourceUrl);
+  const created = formatDateStamp(recipe.createdAt);
+  const updated = formatDateStamp(recipe.updatedAt);
+  if (source === "" && created === "" && updated === "") return null;
+
+  return (
+    <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border-subtle pt-3 text-xs text-fg-subtle" data-testid="recipe-meta">
+      {source !== "" &&
+        (isLinkable(recipe.sourceUrl) ? (
+          <a
+            href={recipe.sourceUrl ?? undefined}
+            target="_blank"
+            rel="noreferrer noopener"
+            data-testid="source-url"
+            className="underline underline-offset-2 hover:text-fg-normal"
+          >
+            Source: {source}
+          </a>
+        ) : (
+          <span data-testid="source-url">Source: {source}</span>
+        ))}
+      {created !== "" && <span data-testid="created">Added {created}</span>}
+      {updated !== "" && <span data-testid="updated">Updated {updated}</span>}
+    </footer>
   );
 }

@@ -1,11 +1,12 @@
 // The recipe header: its pure helpers, and the rendered markup — both layouts
 // (stacked below md, image beside the text from md) asserted through the
-// classes on the split container, and the source URL as a link when set.
+// classes on the split container, the order the header's children run in
+// (M24.3), and `RecipeMetaFooter`'s source URL as a link when set.
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { RecipeHeader, formatDateStamp, isLinkable, sourceLabel, timeStats } from "../../src/components/RecipeHeader";
+import { RecipeHeader, RecipeMetaFooter, formatDateStamp, isLinkable, sourceLabel, timeStats } from "../../src/components/RecipeHeader";
 import type { Recipe } from "../../src/domain/recipe";
 
 const gram = {
@@ -43,8 +44,8 @@ const base: Recipe = {
 };
 
 /** Render the header inside a throwaway router, so its tag `Link`s resolve. */
-async function render(recipe: Recipe, madeAction?: ReactNode): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} madeAction={madeAction} /> });
+async function render(recipe: Recipe, actions?: ReactNode): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeHeader recipe={recipe} actions={actions} /> });
   const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => null });
   const router = createRouter({
     routeTree: rootRoute.addChildren([indexRoute]),
@@ -137,14 +138,66 @@ describe("RecipeHeader", () => {
     expect(html).toMatch(/<dt[^>]*>Makes<\/dt><dd[^>]*>1 tart<\/dd>/);
   });
 
-  test("no image gives the placeholder, no times or yield gives no stat strip", async () => {
+  test("no image gives the placeholder; no times or yield still leaves the strip for the last made line", async () => {
     const html = await render({ ...base, image: null, prepTime: null, performTime: null, recipeYieldQuantity: 0, recipeYield: "" });
     expect(html).toContain('data-placeholder="image"');
-    expect(html).not.toContain('data-testid="stat-strip"');
+    expect(html).toContain('data-testid="stat-strip"');
+    expect(html).not.toContain('data-stat="prep"');
+    expect(html).not.toContain('data-testid="yield"');
+    expect(html).toContain("Never made");
   });
 
-  test("footer shows the source as a link when set, with the created and updated dates", async () => {
-    const html = await render({ ...base, sourceUrl: "https://www.nytimes.com/recipes/1234-lemon-tart", yieldUnit: gram });
+  test("no source, added or updated moved into the header: RecipeMetaFooter is a separate component", async () => {
+    const html = await render(base);
+    expect(html).not.toContain('data-testid="recipe-meta"');
+    expect(html).not.toContain('data-testid="source-url"');
+    expect(html).not.toContain("Added ");
+    expect(html).not.toContain("Updated ");
+  });
+
+  test("the header's children run image, name with the actions, stars, the strip, description, tags", async () => {
+    const html = await render(base, <button type="button">Edit</button>);
+
+    const image = html.indexOf('src="/api/images/lemon%20tart.webp"');
+    const nameAndActions = html.indexOf("Lemon tart");
+    const editAction = html.indexOf(">Edit<");
+    const stars = html.indexOf('aria-label="Rated 4 out of 5"');
+    const strip = html.indexOf('data-testid="stat-strip"');
+    const description = html.indexOf("Sharp and short.");
+    const tags = html.indexOf('aria-label="Tags"');
+
+    for (const index of [image, nameAndActions, editAction, stars, strip, description, tags]) expect(index).toBeGreaterThan(-1);
+
+    expect(image).toBeLessThan(nameAndActions);
+    expect(nameAndActions).toBeLessThan(editAction);
+    expect(editAction).toBeLessThan(stars);
+    expect(stars).toBeLessThan(strip);
+    expect(strip).toBeLessThan(description);
+    expect(description).toBeLessThan(tags);
+  });
+});
+
+describe("last made", () => {
+  test("a recipe never cooked says so, in the strip", async () => {
+    const html = await render(base);
+    expect(html).toContain('data-testid="last-made"');
+    expect(html).toContain("Never made");
+    expect(html.indexOf('data-testid="stat-strip"')).toBeLessThan(html.indexOf('data-testid="last-made"'));
+  });
+
+  test("a cooked recipe shows the date as text; the header renders no button for it", async () => {
+    const html = await render({ ...base, lastMade: "2026-09-11T00:00:00.000Z" });
+    expect(html).toContain("Last made");
+    expect(html).toMatch(/11 Sept? 2026/);
+    expect(html).not.toContain("Never made");
+    expect(html).not.toContain('data-testid="made-this"');
+  });
+});
+
+describe("RecipeMetaFooter", () => {
+  test("shows the source as a link when set, with the created and updated dates", () => {
+    const html = renderToString(<RecipeMetaFooter recipe={{ ...base, sourceUrl: "https://www.nytimes.com/recipes/1234-lemon-tart", yieldUnit: gram }} />);
+    expect(html).toContain('data-testid="recipe-meta"');
     expect(html).toContain('href="https://www.nytimes.com/recipes/1234-lemon-tart"');
     expect(html).toMatch(/<a[^>]*data-testid="source-url"/);
     expect(html).toContain("nytimes.com");
@@ -152,31 +205,20 @@ describe("RecipeHeader", () => {
     expect(html).toContain("Updated ");
   });
 
-  test("a source that is not a URL is plain text, not a link", async () => {
-    const html = await render({ ...base, sourceUrl: "Nonna's notebook" });
+  test("a source that is not a URL is plain text, not a link", () => {
+    const html = renderToString(<RecipeMetaFooter recipe={{ ...base, sourceUrl: "Nonna's notebook" }} />);
     expect(html).toMatch(/<span[^>]*data-testid="source-url"/);
     expect(html).not.toContain("<a href=\"Nonna");
   });
 
-  test("no source at all leaves the footer to the dates alone", async () => {
-    const html = await render(base);
+  test("no source at all leaves the footer to the dates alone", () => {
+    const html = renderToString(<RecipeMetaFooter recipe={base} />);
     expect(html).not.toContain('data-testid="source-url"');
     expect(html).toContain('data-testid="recipe-meta"');
   });
-});
 
-describe("last made", () => {
-  test("a recipe never cooked says so", async () => {
-    const html = await render(base);
-    expect(html).toContain('data-testid="last-made"');
-    expect(html).toContain("Never made");
-  });
-
-  test("a cooked recipe shows the date, and the caller's button sits beside it", async () => {
-    const html = await render({ ...base, lastMade: "2026-09-11T00:00:00.000Z" }, <button type="button">Made this</button>);
-    expect(html).toContain("Last made");
-    expect(html).toMatch(/11 Sept? 2026/);
-    expect(html).not.toContain("Never made");
-    expect(html).toContain(">Made this<");
+  test("nothing to show renders nothing", () => {
+    const html = renderToString(<RecipeMetaFooter recipe={{ ...base, sourceUrl: null, createdAt: "", updatedAt: "" }} />);
+    expect(html).toBe("");
   });
 });

@@ -5,6 +5,7 @@
 // presence, can be asserted.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRecipe } from "../../src/server/recipes";
+import { createTimelineEvent } from "../../src/server/timeline";
 import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -146,6 +147,22 @@ describe("servings in the ingredients heading (M24.2)", () => {
     // in the aside once there is more than one part to merge.
     expect(elementHtml(html, "ingredients-column")).toContain('data-testid="ingredient-mode-toggle"');
     expect(elementHtml(html, "ingredients-column")).toContain(">One list<");
+  });
+});
+
+describe("the meta footer moves to the foot of the page (M24.3)", () => {
+  test("recipe-meta renders after the timeline, as the page's last element", async () => {
+    const tart = await seedTart();
+    await callServerFn(createTimelineEvent, { recipeId: tart.id, event: { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null } });
+    const html = await renderRoute("/recipes/lemon-tart");
+
+    expect(html).toContain('data-testid="recipe-meta"');
+    // No longer under the header: the header's own markup carries no meta.
+    expect(elementHtml(html, "recipe-header")).not.toContain('data-testid="recipe-meta"');
+    expect(html.indexOf('data-testid="recipe-header"')).toBeLessThan(html.indexOf('data-testid="timeline"'));
+    expect(html.indexOf('data-testid="timeline"')).toBeLessThan(html.indexOf('data-testid="recipe-meta"'));
+    // Nothing else follows the footer before the page's <article> closes.
+    expect(html).toMatch(/data-testid="recipe-meta"[\s\S]*<\/footer>\s*<\/article>/);
   });
 });
 

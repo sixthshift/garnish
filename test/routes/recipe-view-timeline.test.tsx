@@ -1,6 +1,7 @@
-// M11.7 on the recipe view route, rendered through the real route tree: the
-// "Made this" button beside last-made in the header, the timeline under Notes,
-// and the last made date the logged cook moved.
+// M11.7 on the recipe view route, rendered through the real route tree: last
+// made as text in the header's strip (M24.3 moved the "Made this" button out
+// of the header; M25.6 gives it a home), the timeline under Notes, and the
+// last made date the logged cook moved.
 import { expect, test, vi } from "vitest";
 import { createRecipe } from "../../src/server/recipes";
 import { createTimelineEvent, deleteTimelineEvent } from "../../src/server/timeline";
@@ -27,12 +28,12 @@ async function seedTart() {
 const log = (recipeId: string, occurredOn: string, message: string) =>
   callServerFn(createTimelineEvent, { recipeId, event: { occurredOn, message, image: null } });
 
-test("a recipe never cooked says so and still offers the button", async () => {
+test("a recipe never cooked says so; the header renders no button (M24.3, M25.6)", async () => {
   await seedTart();
   const html = await renderRoute("/recipes/lemon-tart");
   expect(html).toContain("Never made");
-  expect(html).toContain('data-testid="made-this"');
-  expect(html).toContain(">Made this<");
+  expect(html).not.toContain('data-testid="made-this"');
+  expect(html).not.toContain(">Made this<");
   expect(html).not.toContain('data-testid="timeline-event"');
 });
 
