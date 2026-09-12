@@ -48,8 +48,14 @@ function tag(name: string): Tag {
 type Ing = z.input<typeof ingredientInputSchema>;
 
 /** `quantity unit food, note`. Unit and note optional. */
-function ing(quantity: number | null, unitName: string | null, foodName: string, opts: { plural?: string; note?: string; fixed?: boolean } = {}): Ing {
+function ing(
+  quantity: number | null,
+  unitName: string | null,
+  foodName: string,
+  opts: { plural?: string; note?: string; fixed?: boolean; id?: string } = {},
+): Ing {
   return {
+    id: opts.id,
     quantity,
     unit: unitName ? unit(unitName) : null,
     food: food(foodName, opts.plural ?? null),
@@ -59,11 +65,62 @@ function ing(quantity: number | null, unitName: string | null, foodName: string,
 }
 
 /** A line kept verbatim: no food, no amount, only the original text. */
-function raw(originalText: string): Ing {
-  return { quantity: null, unit: null, food: null, note: "", originalText, fixed: false };
+function raw(originalText: string, id?: string): Ing {
+  return { id, quantity: null, unit: null, food: null, note: "", originalText, fixed: false };
 }
 
-const step = (text: string) => ({ text });
+/** `text`, plus the ids of this part's rows the step uses, in link order. */
+const step = (text: string, ingredientIds: string[] = []) => ({ text, ingredientIds });
+
+/**
+ * A fixed id for a row a step below wants to name, derived from a label
+ * unique within this file. Not a real id — the repository keeps it as the
+ * row's own id (`repo.ts`'s `line.id ?? crypto.randomUUID()`), the same way a
+ * hand-written recipe from the editor would carry one. Only rows a step
+ * links need one; the rest are left to get a fresh id on insert, as before.
+ */
+function rowId(label: string): string {
+  let hash = 0;
+  for (let i = 0; i < label.length; i += 1) hash = (hash * 31 + label.charCodeAt(i)) >>> 0;
+  return `${hash.toString(16).padStart(8, "0")}-0000-4000-8000-000000000000`;
+}
+
+// --- Anzac Biscuits: the rows its steps name -------------------------------
+const ANZAC_OATS = rowId("anzac-oats");
+const ANZAC_FLOUR = rowId("anzac-flour");
+const ANZAC_COCONUT = rowId("anzac-coconut");
+const ANZAC_SUGAR = rowId("anzac-sugar");
+const ANZAC_BUTTER = rowId("anzac-butter");
+const ANZAC_SYRUP = rowId("anzac-golden-syrup");
+const ANZAC_BICARB = rowId("anzac-bicarb");
+const ANZAC_WATER = rowId("anzac-boiling-water");
+
+// --- Roast Pumpkin Soup with Garlic Croutons -------------------------------
+const SOUP_PUMPKIN = rowId("soup-pumpkin");
+const SOUP_ONION = rowId("soup-onion");
+const SOUP_GARLIC = rowId("soup-garlic");
+const SOUP_OIL = rowId("soup-oil");
+const SOUP_BAY_LEAF = rowId("soup-bay-leaf");
+const SOUP_STOCK = rowId("soup-stock");
+const SOUP_CREAM = rowId("soup-cream");
+const CROUTON_BREAD = rowId("crouton-bread");
+const CROUTON_OIL = rowId("crouton-oil");
+const CROUTON_GARLIC = rowId("crouton-garlic");
+
+// --- Lemon Tart -------------------------------------------------------------
+const PASTRY_FLOUR = rowId("tart-pastry-flour");
+const PASTRY_BUTTER = rowId("tart-pastry-butter");
+const PASTRY_ICING_SUGAR = rowId("tart-pastry-icing-sugar");
+const PASTRY_YOLK = rowId("tart-pastry-yolk");
+const PASTRY_SALT = rowId("tart-pastry-salt");
+const PASTRY_WATER = rowId("tart-pastry-water");
+const FILLING_EGG = rowId("tart-filling-egg");
+const FILLING_SUGAR = rowId("tart-filling-sugar");
+const FILLING_LEMON_JUICE = rowId("tart-filling-lemon-juice");
+const FILLING_ZEST = rowId("tart-filling-zest");
+const FILLING_CREAM = rowId("tart-filling-cream");
+const FINISH_ICING_SUGAR = rowId("tart-finish-icing-sugar");
+const FINISH_CREAM = rowId("tart-finish-cream");
 
 /** The demo documents, in the order they are inserted (the list shows newest first). */
 export const SAMPLE_RECIPES: readonly RecipeInput[] = [
@@ -87,20 +144,24 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       {
         name: "",
         ingredients: [
-          ing(1, "cup", "rolled oats"),
-          ing(1, "cup", "plain flour"),
-          ing(1, "cup", "desiccated coconut"),
-          ing(150, "gram", "brown sugar"),
-          ing(125, "gram", "butter", { note: "chopped" }),
-          ing(2, "tablespoon", "golden syrup"),
-          ing(1, "teaspoon", "bicarbonate of soda"),
-          ing(2, "tablespoon", "boiling water"),
+          ing(1, "cup", "rolled oats", { id: ANZAC_OATS }),
+          ing(1, "cup", "plain flour", { id: ANZAC_FLOUR }),
+          ing(1, "cup", "desiccated coconut", { id: ANZAC_COCONUT }),
+          ing(150, "gram", "brown sugar", { id: ANZAC_SUGAR }),
+          ing(125, "gram", "butter", { note: "chopped", id: ANZAC_BUTTER }),
+          ing(2, "tablespoon", "golden syrup", { id: ANZAC_SYRUP }),
+          ing(1, "teaspoon", "bicarbonate of soda", { id: ANZAC_BICARB }),
+          ing(2, "tablespoon", "boiling water", { id: ANZAC_WATER }),
         ],
         steps: [
           step("Preheat the oven to 160°C fan-forced. Line two trays with baking paper."),
-          step("Mix the oats, flour, coconut and sugar in a large bowl."),
-          step("Melt the butter and golden syrup in a small saucepan over low heat."),
-          step("Dissolve the bicarb in the boiling water, stir into the butter mixture, then pour over the dry ingredients and mix well."),
+          step("Mix the oats, flour, coconut and sugar in a large bowl.", [ANZAC_OATS, ANZAC_FLOUR, ANZAC_COCONUT, ANZAC_SUGAR]),
+          step("Melt the butter and golden syrup in a small saucepan over low heat.", [ANZAC_BUTTER, ANZAC_SYRUP]),
+          step("Dissolve the bicarb in the boiling water, stir into the butter mixture, then pour over the dry ingredients and mix well.", [
+            ANZAC_BICARB,
+            ANZAC_WATER,
+            ANZAC_BUTTER,
+          ]),
           step("Roll tablespoons of mixture into balls, place 5 cm apart and flatten slightly."),
           step("Bake 12 to 15 minutes until golden. Cool on the trays for 5 minutes before moving to a rack."),
         ],
@@ -126,30 +187,45 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       {
         name: "Soup",
         ingredients: [
-          ing(1.2, "kilogram", "Kent pumpkin", { note: "peeled, seeded and cut into 3 cm chunks" }),
-          ing(1, null, "brown onion", { plural: "brown onions", note: "roughly chopped" }),
-          ing(3, "clove", "garlic", { note: "unpeeled" }),
-          ing(2, "tablespoon", "olive oil"),
-          ing(1, null, "bay leaf", { plural: "bay leaves", fixed: true }),
-          ing(1, "litre", "vegetable stock"),
-          ing(100, "millilitre", "thickened cream"),
+          ing(1.2, "kilogram", "Kent pumpkin", { note: "peeled, seeded and cut into 3 cm chunks", id: SOUP_PUMPKIN }),
+          ing(1, null, "brown onion", { plural: "brown onions", note: "roughly chopped", id: SOUP_ONION }),
+          ing(3, "clove", "garlic", { note: "unpeeled", id: SOUP_GARLIC }),
+          ing(2, "tablespoon", "olive oil", { id: SOUP_OIL }),
+          ing(1, null, "bay leaf", { plural: "bay leaves", fixed: true, id: SOUP_BAY_LEAF }),
+          ing(1, "litre", "vegetable stock", { id: SOUP_STOCK }),
+          ing(100, "millilitre", "thickened cream", { id: SOUP_CREAM }),
           ing(null, null, "salt", { note: "to taste" }),
           ing(null, null, "black pepper", { note: "freshly ground" }),
         ],
         steps: [
-          step("Preheat the oven to 200°C. Toss the pumpkin, onion and garlic with the oil on a large tray, season, and roast 35 minutes until soft and browned at the edges."),
-          step("Squeeze the garlic from its skins into a large saucepan with the roasted vegetables, bay leaf and stock. Simmer 10 minutes."),
-          step("Discard the bay leaf. Blend until smooth, stir in the cream and season."),
+          step("Preheat the oven to 200°C. Toss the pumpkin, onion and garlic with the oil on a large tray, season, and roast 35 minutes until soft and browned at the edges.", [
+            SOUP_PUMPKIN,
+            SOUP_ONION,
+            SOUP_GARLIC,
+            SOUP_OIL,
+          ]),
+          step("Squeeze the garlic from its skins into a large saucepan with the roasted vegetables, bay leaf and stock. Simmer 10 minutes.", [
+            SOUP_GARLIC,
+            SOUP_BAY_LEAF,
+            SOUP_STOCK,
+          ]),
+          step("Discard the bay leaf. Blend until smooth, stir in the cream and season.", [SOUP_BAY_LEAF, SOUP_CREAM]),
         ],
       },
       {
         name: "Garlic croutons",
         ingredients: [
-          ing(2, "slice", "sourdough", { note: "day-old, cut into 2 cm cubes" }),
-          ing(1, "tablespoon", "olive oil"),
-          ing(1, "clove", "garlic", { note: "crushed" }),
+          ing(2, "slice", "sourdough", { note: "day-old, cut into 2 cm cubes", id: CROUTON_BREAD }),
+          ing(1, "tablespoon", "olive oil", { id: CROUTON_OIL }),
+          ing(1, "clove", "garlic", { note: "crushed", id: CROUTON_GARLIC }),
         ],
-        steps: [step("Toss the bread with the oil and garlic. Bake at 200°C for 8 to 10 minutes, turning once, until golden.")],
+        steps: [
+          step("Toss the bread with the oil and garlic. Bake at 200°C for 8 to 10 minutes, turning once, until golden.", [
+            CROUTON_BREAD,
+            CROUTON_OIL,
+            CROUTON_GARLIC,
+          ]),
+        ],
       },
       {
         name: "",
@@ -178,15 +254,22 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       {
         name: "Pastry",
         ingredients: [
-          ing(200, "gram", "plain flour"),
-          ing(100, "gram", "butter", { note: "cold, cubed" }),
-          ing(50, "gram", "icing sugar"),
-          ing(1, null, "egg yolk", { plural: "egg yolks" }),
-          ing(1, "pinch", "salt", { fixed: true }),
-          ing(1, "tablespoon", "cold water", { note: "if needed" }),
+          ing(200, "gram", "plain flour", { id: PASTRY_FLOUR }),
+          ing(100, "gram", "butter", { note: "cold, cubed", id: PASTRY_BUTTER }),
+          ing(50, "gram", "icing sugar", { id: PASTRY_ICING_SUGAR }),
+          ing(1, null, "egg yolk", { plural: "egg yolks", id: PASTRY_YOLK }),
+          ing(1, "pinch", "salt", { fixed: true, id: PASTRY_SALT }),
+          ing(1, "tablespoon", "cold water", { note: "if needed", id: PASTRY_WATER }),
         ],
         steps: [
-          step("Rub the butter into the flour, icing sugar and salt until it looks like breadcrumbs. Add the yolk and enough water to bring it together."),
+          step("Rub the butter into the flour, icing sugar and salt until it looks like breadcrumbs. Add the yolk and enough water to bring it together.", [
+            PASTRY_BUTTER,
+            PASTRY_FLOUR,
+            PASTRY_ICING_SUGAR,
+            PASTRY_SALT,
+            PASTRY_YOLK,
+            PASTRY_WATER,
+          ]),
           step("Wrap and chill 30 minutes. Roll out to line a 23 cm tart tin, trim, and chill again."),
           step("Blind bake at 180°C for 20 minutes with baking paper and weights, then 5 minutes without, until pale gold."),
         ],
@@ -194,22 +277,31 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       {
         name: "Filling",
         ingredients: [
-          ing(4, null, "egg", { plural: "eggs" }),
-          ing(150, "gram", "caster sugar"),
-          ing(150, "millilitre", "lemon juice", { note: "about 4 lemons" }),
-          raw("Finely grated zest of 2 lemons"),
-          ing(150, "millilitre", "thickened cream"),
+          ing(4, null, "egg", { plural: "eggs", id: FILLING_EGG }),
+          ing(150, "gram", "caster sugar", { id: FILLING_SUGAR }),
+          ing(150, "millilitre", "lemon juice", { note: "about 4 lemons", id: FILLING_LEMON_JUICE }),
+          raw("Finely grated zest of 2 lemons", FILLING_ZEST),
+          ing(150, "millilitre", "thickened cream", { id: FILLING_CREAM }),
         ],
         steps: [
           step("Turn the oven down to 150°C."),
-          step("Whisk the eggs and sugar until just combined, then whisk in the lemon juice, zest and cream."),
+          step("Whisk the eggs and sugar until just combined, then whisk in the lemon juice, zest and cream.", [
+            FILLING_EGG,
+            FILLING_SUGAR,
+            FILLING_LEMON_JUICE,
+            FILLING_ZEST,
+            FILLING_CREAM,
+          ]),
           step("Pour into the warm pastry case and bake 25 minutes, until set at the edges with a slight wobble in the centre."),
         ],
       },
       {
         name: "To finish",
-        ingredients: [raw("Icing sugar, for dusting"), ing(150, "millilitre", "double cream", { note: "to serve" })],
-        steps: [step("Cool completely in the tin, then chill at least 2 hours."), step("Dust with icing sugar and serve with cream.")],
+        ingredients: [raw("Icing sugar, for dusting", FINISH_ICING_SUGAR), ing(150, "millilitre", "double cream", { note: "to serve", id: FINISH_CREAM })],
+        steps: [
+          step("Cool completely in the tin, then chill at least 2 hours."),
+          step("Dust with icing sugar and serve with cream.", [FINISH_ICING_SUGAR, FINISH_CREAM]),
+        ],
       },
     ],
   },

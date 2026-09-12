@@ -72,6 +72,20 @@ test("one recipe has three parts in order, one has two named parts plus the unna
   expect(biscuits.rating).toBe(5);
 });
 
+test("each sample recipe has at least one linked step, and every link names a row in its own part", () => {
+  seedSample(db);
+  const repo = recipes(db);
+  for (const slug of ["anzac-biscuits", "roast-pumpkin-soup-with-garlic-croutons", "lemon-tart"]) {
+    const doc = repo.get(slug)!;
+    const linkedSteps = doc.parts.flatMap((p) => p.steps).filter((s) => s.ingredientIds.length > 0);
+    expect(linkedSteps.length).toBeGreaterThan(0);
+    for (const part of doc.parts) {
+      const ids = new Set(part.ingredients.map((i) => i.id));
+      for (const s of part.steps) for (const ingredientId of s.ingredientIds) expect(ids.has(ingredientId)).toBe(true);
+    }
+  }
+});
+
 test("fixed, null-quantity and text-only rows survive the round trip", () => {
   seedSample(db);
   const repo = recipes(db);

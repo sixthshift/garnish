@@ -11,9 +11,10 @@
 import type { z } from "zod";
 import { slugify } from "../../domain/names";
 import type { Food, ingredientInputSchema, RecipeInput, Tag, TimelineEventInput, Unit } from "../../domain/recipe";
+import { suggestLinks } from "../../domain/stepIngredients";
 import { DEFAULT_UNITS } from "../seed/units";
 import { random, type Random } from "./random";
-import { AISLES, DESCRIPTIONS, FOODS, type FoodEntry, NOTES, SHAPES, SOURCES, STEPS, TAGS, UNITS } from "./vocabulary";
+import { AISLES, DESCRIPTIONS, DOUBLE_STEPS, FOODS, type FoodEntry, NOTES, SHAPES, SOURCES, STEPS, TAGS, UNITS } from "./vocabulary";
 
 /** The seed the dataset is built from. Changing it changes every recipe. */
 export const DEV_SEED = "garnish-dev-data-v1";
@@ -44,6 +45,16 @@ export type DevRecipe = {
 const NEW = "00000000-0000-4000-8000-000000000000";
 
 type Ing = z.input<typeof ingredientInputSchema>;
+
+/**
+ * A generated row, settled enough for `suggestLinks` to match and name it: a
+ * real id (rather than the optional one the write shape allows) and a food
+ * that is present or plainly absent, never merely omitted.
+ */
+type LinkableIngredient = Omit<Ing, "id" | "food"> & { id: string; food: Food | null };
+
+/** A generated step, settled enough to pass through `suggestLinks`. */
+type LinkableStep = { id: string; text: string; ingredientIds: string[] };
 
 function unitRef(name: string): Unit {
   const known = DEFAULT_UNITS.find((u) => u.name === name);
@@ -102,12 +113,13 @@ function quantityFor(rng: Random, unitName: string): number {
   }
 }
 
-function ingredient(rng: Random, entry: FoodEntry): Ing {
+function ingredient(rng: Random, entry: FoodEntry): LinkableIngredient {
   // A few lines carry no amount at all ("salt, to taste"), and a few are fixed
   // so they do not scale with servings.
   const noAmount = rng.chance(0.1);
   const unitName = rng.pick(UNITS);
   return {
+    id: devId(rng),
     quantity: noAmount ? null : quantityFor(rng, unitName),
     unit: noAmount ? null : unitRef(unitName),
     food: foodRef(entry),
@@ -118,13 +130,29 @@ function ingredient(rng: Random, entry: FoodEntry): Ing {
 }
 
 /** A line kept verbatim: no food, no amount, only the text. */
-function rawIngredient(text: string): Ing {
-  return { quantity: null, unit: null, food: null, note: "", originalText: text, fixed: false };
+function rawIngredient(rng: Random, text: string): LinkableIngredient {
+  return { id: devId(rng), quantity: null, unit: null, food: null, note: "", originalText: text, fixed: false };
 }
 
 function stepText(rng: Random, pool: readonly FoodEntry[]): string {
   const template = rng.pick(STEPS);
   return template.replace(/\{food\}/g, () => rng.pick(pool).name);
+}
+
+/**
+ * A step that plainly names two distinct rows from `pool` at once, so
+ * `suggestLinks` always has something to link twice over. `pool` must have
+ * at least two entries; callers check `foods.length >= 2` first.
+ */
+function doubleStepText(rng: Random, pool: readonly FoodEntry[]): string {
+  const [a, b] = rng.sample(pool, 2) as [FoodEntry, FoodEntry];
+  const template = rng.pick(DOUBLE_STEPS);
+  let first = true;
+  return template.replace(/\{food\}/g, () => {
+    const chosen = first ? a : b;
+    first = false;
+    return chosen.name;
+  });
 }
 
 /**
@@ -200,16 +228,26 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
     const parts = shape.parts.map((partName) => {
       const foods = pantry.slice(cursor, cursor + perPart);
       cursor += perPart;
-      const ingredients: Ing[] = foods.map((entry) => ingredient(rng, entry));
+      const ingredients: LinkableIngredient[] = foods.map((entry) => ingredient(rng, entry));
       // One recipe in six has a verbatim line the parser never touched.
-      if (rng.chance(0.16)) ingredients.push(rawIngredient("a good splash of whatever wine is open"));
-      return {
-        name: partName,
-        ingredients,
-        steps: Array.from({ length: partCount === 1 ? rng.int(4, 8) : rng.int(2, 4) }, () => ({
-          text: stepText(rng, foods.length > 0 ? foods : pantry),
-        })),
-      };
+      if (rng.chance(0.16)) ingredients.push(rawIngredient(rng, "a good splash of whatever wine is open"));
+
+      const pool = foods.length > 0 ? foods : pantry;
+      const steps: LinkableStep[] = Array.from({ length: partCount === 1 ? rng.int(4, 8) : rng.int(2, 4) }, () => ({
+        id: devId(rng),
+        text: stepText(rng, pool),
+        ingredientIds: [],
+      }));
+      // One step per part plainly names two of its own rows, so the deck
+      // always deals a step card with two links; `suggestLinks` below fills
+      // in the rest of the matches and leaves the rows no step named alone,
+      // so the per-part ingredients card keeps something to show too.
+      if (foods.length >= 2) {
+        const index = rng.int(0, steps.length - 1);
+        steps[index] = { ...steps[index]!, text: doubleStepText(rng, foods) };
+      }
+
+      return { name: partName, ingredients, steps: suggestLinks({ ingredients, steps }) };
     });
 
     const rated = i % 7 !== 0; // one in seven unrated

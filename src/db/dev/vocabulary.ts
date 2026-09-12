@@ -325,6 +325,17 @@ export const SHAPES: readonly Shape[] = [
 ];
 
 /** Step sentences. `{food}` and `{unit}` are filled from the recipe's own ingredients. */
+/**
+ * Templates naming two of a part's rows in one line, so `suggestLinks` always
+ * has at least one step to link to two rows at once (see ./generate.ts).
+ */
+export const DOUBLE_STEPS: readonly string[] = [
+  "Combine the {food} and the {food} in a large bowl.",
+  "Toss the {food} through the {food} until well coated.",
+  "Stir the {food} into the {food} and bring back to a simmer.",
+  "Layer the {food} over the {food} in the dish.",
+];
+
 export const STEPS: readonly string[] = [
   "Preheat the oven to 180°C fan-forced and line a tray with baking paper.",
   "Heat the oil in a large heavy-based pan over medium-high heat.",

@@ -59,6 +59,27 @@ test("the mix covers the cases the screens have to handle", () => {
   expect(has((r) => r.input.parts.some((c) => c.ingredients.some((i) => i.fixed)))).toBe(true);
 });
 
+test("steps link the rows their text names, some doubly, and a fraction of rows stay unlinked", () => {
+  const dataset = generateDevRecipes().map((r) => recipeInputSchema.parse(r.input));
+  const parts = dataset.flatMap((r) => r.parts);
+  const steps = parts.flatMap((p) => p.steps);
+
+  expect(steps.some((s) => s.ingredientIds.length >= 2)).toBe(true);
+  expect(steps.some((s) => s.ingredientIds.length === 0)).toBe(true);
+
+  // Every link names a row within its own part.
+  for (const part of parts) {
+    const ids = new Set(part.ingredients.map((line) => line.id));
+    for (const step of part.steps) for (const ingredientId of step.ingredientIds) expect(ids.has(ingredientId)).toBe(true);
+  }
+
+  // A fraction of rows are named by no step at all, so the per-part
+  // ingredients card still has something to show.
+  const linkedIds = new Set(steps.flatMap((s) => s.ingredientIds));
+  const allIds = parts.flatMap((p) => p.ingredients.map((line) => line.id!));
+  expect(allIds.some((id) => !linkedIds.has(id))).toBe(true);
+});
+
 test("created and updated fan out, and updated is never before created", () => {
   const dataset = generateDevRecipes();
   const created = dataset.map((r) => r.createdAt);
