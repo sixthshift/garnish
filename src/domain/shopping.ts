@@ -16,6 +16,7 @@
 //   - `sources` is nested under its line: where the line came from, kept as
 //     copied names so it survives the recipe being deleted (M31.1).
 import { z } from "zod";
+import type { Food, Unit } from "./recipe";
 import { foodSchema, unitSchema } from "./recipe";
 
 const id = z.uuid();
@@ -97,3 +98,154 @@ export type ShoppingItemInput = z.input<typeof shoppingItemInputSchema>;
 /** A parsed ShoppingItemInput: defaults applied, ready for the repository. */
 export type ParsedShoppingItemInput = z.infer<typeof shoppingItemInputSchema>;
 export type ShoppingItemPatch = z.infer<typeof shoppingItemPatchSchema>;
+
+// --- Merging into the list ---------------------------------------------------
+// mergeIntoList(items, additions): where an "Add to shopping list" tap (M31.3)
+// or a week added from the plan (M33.3) lands. Reuses src/domain/merge.ts's
+// rule that a `fixed` or null-quantity ingredient never merges (decisions.md
+// row 13), plus three rules of its own that mergeIngredients has no reason to
+// know about, because they are about the *list*, not a single recipe:
+//   - an unticked line is fair game to absorb an addition; a ticked one is
+//     left alone (it is on its way out of the list, or already bought) and
+//     the addition gets a new line instead;
+//   - a `skipShopping` food (garlic, salt — already on hand) is dropped
+//     rather than ever appearing on the list;
+//   - a food-less addition (free text, or an ingredient whose parser found no
+//     food) always becomes its own new free-text line: unlike mergeIngredients,
+//     which merges identical unparsed lines by their raw text within one
+//     recipe, two food-less additions here never combine, because the list
+//     mixes text from unrelated sources and identical wording is coincidence.
+// Additions with a matching food and unit still merge with each other and with
+// the existing list in one pass, the same way mergeIngredients folds a
+// recipe's parts together.
+//
+// Pure: no ids or timestamps are minted here. The result is a plan the caller
+// hands to the repository — `merges` for existing lines (new total quantity,
+// sources to append) and `additions` as `ShoppingItemInput`s ready for
+// `addShoppingItems`, which already knows how to store more than one source.
+
+/** Where an addition came from, minus the amount — `mergeIntoList` fills that in per source. */
+export type ShoppingAdditionSource = Omit<ShoppingItemSourceInput, "quantity">;
+
+/**
+ * One line coming in: a recipe ingredient (scaled, with its food and unit
+ * resolved) or a plain line of text, plus where it came from. Shaped like
+ * `Ingredient` (src/domain/recipe.ts) rather than importing it, so a caller
+ * building additions from something other than a recipe isn't forced through
+ * that type.
+ */
+export interface ShoppingAddition {
+  quantity: number | null;
+  unit: Unit | null;
+  food: Food | null;
+  originalText: string;
+  fixed: boolean;
+  source: ShoppingAdditionSource;
+}
+
+/** An existing line absorbing one or more additions: its new total and the sources to append. */
+export interface ShoppingListMerge {
+  id: string;
+  quantity: number | null;
+  sources: ShoppingItemSourceInput[];
+}
+
+/** What `mergeIntoList` found to do with a batch of additions. */
+export interface ShoppingMergePlan {
+  merges: ShoppingListMerge[];
+  additions: ShoppingItemInput[];
+}
+
+function sameUnit(a: Unit | null, b: Unit | null): boolean {
+  return (a?.id ?? null) === (b?.id ?? null);
+}
+
+/** A food+unit key an addition merges under; unit-less is its own bucket. */
+function foodUnitKey(food: Food, unit: Unit | null): string {
+  return `${food.id}|${unit?.id ?? ""}`;
+}
+
+/**
+ * Fold a batch of additions into an existing list. See the module comment
+ * above for the rules. Pure; `items` is not mutated.
+ */
+export function mergeIntoList(items: readonly ShoppingItem[], additions: readonly ShoppingAddition[]): ShoppingMergePlan {
+  const merges = new Map<string, ShoppingListMerge>();
+  const newLines = new Map<string, ShoppingItemInput>();
+  const plannedAdditions: ShoppingItemInput[] = [];
+
+  function existingTarget(food: Food, unit: Unit | null) {
+    return items.find((item) => !item.ticked && item.food !== null && item.food.id === food.id && sameUnit(item.unit, unit));
+  }
+
+  for (const addition of additions) {
+    const { quantity, unit, food, originalText, fixed, source } = addition;
+
+    if (food !== null && food.skipShopping) continue; // on hand already: dropped
+
+    if (food === null) {
+      // Free text, or an ingredient the parser found no food for: its own new
+      // line every time, never merged with anything else.
+      plannedAdditions.push({
+        quantity: null,
+        unitId: null,
+        foodId: null,
+        text: originalText,
+        ticked: false,
+        sources: [{ ...source, quantity: null }],
+      });
+      continue;
+    }
+
+    const mergeable = !fixed && quantity !== null;
+
+    if (mergeable) {
+      const existing = existingTarget(food, unit);
+      if (existing !== undefined) {
+        const entry = merges.get(existing.id);
+        if (entry === undefined) {
+          merges.set(existing.id, {
+            id: existing.id,
+            quantity: (existing.quantity ?? 0) + quantity,
+            sources: [{ ...source, quantity }],
+          });
+        } else {
+          entry.quantity = (entry.quantity ?? 0) + quantity;
+          entry.sources.push({ ...source, quantity });
+        }
+        continue;
+      }
+
+      const key = foodUnitKey(food, unit);
+      const line = newLines.get(key);
+      if (line === undefined) {
+        const created: ShoppingItemInput = {
+          quantity,
+          unitId: unit?.id ?? null,
+          foodId: food.id,
+          text: "",
+          ticked: false,
+          sources: [{ ...source, quantity }],
+        };
+        newLines.set(key, created);
+        plannedAdditions.push(created);
+      } else {
+        line.quantity = (line.quantity ?? 0) + quantity;
+        line.sources!.push({ ...source, quantity });
+      }
+      continue;
+    }
+
+    // `fixed` or a null quantity: its own line, same as mergeIngredients.
+    plannedAdditions.push({
+      quantity,
+      unitId: unit?.id ?? null,
+      foodId: food.id,
+      text: "",
+      ticked: false,
+      sources: [{ ...source, quantity }],
+    });
+  }
+
+  return { merges: [...merges.values()], additions: plannedAdditions };
+}
