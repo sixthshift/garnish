@@ -37,6 +37,13 @@
 // GETs it on the server — the browser cannot, for CORS — and the bytes come
 // back as a File that joins the same upload path as a picked one.
 //
+// What is typed here survives the tab: every change while the form is dirty is
+// written to `localStorage` through src/lib/drafts.ts, keyed by the recipe id
+// (or `new`), and cleared on a save or a confirmed discard. Opening the form
+// on a stored draft that differs from `initial` shows a notice with Resume and
+// Discard before anything is written back. The picked image file is not stored
+// — it is a File handle — so the notice says to pick it again.
+//
 // "Edit as JSON" swaps the fields for the document itself. Apply parses the
 // text with `recipeInputSchema`, the same schema Save uses, and reports the
 // failing paths; nothing reaches the draft until it parses.
@@ -63,6 +70,7 @@ import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useId, useState } from "react";
 import { slugify } from "../domain/names";
 import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchema, type Tag, type Unit } from "../domain/recipe";
+import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft, type StorageLike } from "../lib/drafts";
 import { randomUuid } from "../lib/ids";
 import { fetchedImageFile, uploadRecipeImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
@@ -321,6 +329,11 @@ export type RecipeFormProps = {
   /** Override the detected online state (tests). Writes are refused offline; nothing is queued. */
   online?: boolean;
   /**
+   * Where the unsaved draft is kept (src/lib/drafts.ts). Defaults to
+   * `localStorage`; tests pass an in-memory one.
+   */
+  storage?: StorageLike;
+  /**
    * An image an import found, as a remote URL (M23.6). Shown straight away and
    * fetched once through `fetchImage`, so it joins the same upload path a
    * picked file does. A failure is silent: the recipe is worth more than its
@@ -329,7 +342,7 @@ export type RecipeFormProps = {
   importedImageUrl?: string | null;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl }: RecipeFormProps) {
+export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl, storage: storageProp }: RecipeFormProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const detectedOnline = useOnline();
@@ -344,11 +357,29 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
   // Decided from the draft the form opened on, not the live one, so typing a
   // tag does not fold the section you typed it into.
   const [detailsOpen] = useState(() => hasDetails(initial));
+  const storage = storageProp ?? browserStorage();
+  // A draft left behind by an earlier visit, read once on mount and only kept
+  // if it actually differs from what the form opened on. While it is here the
+  // fields are live but nothing is written back: the choice comes first.
+  const [pending, setPending] = useState<{ draft: RecipeDraft; text: string } | null>(() => {
+    const stored = storage ? getDraft(storage, existing?.id) : null;
+    if (stored === null) return null;
+    const candidate = draftFromInput(stored.draft);
+    return isDirty(initial, candidate) ? { draft: candidate, text: draftNoticeText(stored) } : null;
+  });
 
   const dirty = (isDirty(initial, draft) || file !== null) && !saving;
   const blocker = useBlocker({ shouldBlockFn: () => true, enableBeforeUnload: () => dirty, disabled: !dirty, withResolver: true });
 
   const patch = (fields: Partial<RecipeDraft>) => setDraft((current) => ({ ...current, ...fields }));
+
+  // Write through on every change while the form is dirty. The picked file is
+  // not stored (it is a File handle, not JSON); `hadImage` remembers there was
+  // one so the notice can say to pick it again.
+  useEffect(() => {
+    if (storage === undefined || pending !== null || saving) return;
+    if (isDirty(initial, draft) || file !== null) putDraft(storage, existing?.id, draft, file !== null);
+  }, [storage, pending, saving, initial, draft, file, existing?.id]);
 
   const cancelLink = (
     <Button asChild variant="ghost" intent="neutral" size="sm" disabled={saving}>
@@ -420,6 +451,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         }
         return recipe;
       });
+      if (storage) clearDraft(storage, existing?.id);
       notify(saveNotice({ existing: existing !== undefined, imageError: image.error }));
       await navigate({ to: "/recipes/$slug", params: { slug: saved.slug } });
     } catch (error) {
@@ -433,6 +465,40 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
       {!online && (
         <Message intent="warning" title="You are offline" data-testid="offline-notice">
           Changes cannot be saved offline. Keep editing; Save comes back with the connection.
+        </Message>
+      )}
+      {pending !== null && (
+        <Message intent="info" title="Unsaved changes" data-testid="draft-notice">
+          <div className="flex flex-col gap-2">
+            <p>{pending.text}</p>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                intent="primary"
+                size="sm"
+                data-testid="draft-resume"
+                onClick={() => {
+                  setDraft(pending.draft);
+                  setPending(null);
+                }}
+              >
+                Resume
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                intent="neutral"
+                size="sm"
+                data-testid="draft-discard"
+                onClick={() => {
+                  if (storage) clearDraft(storage, existing?.id);
+                  setPending(null);
+                }}
+              >
+                Discard
+              </Button>
+            </div>
+          </div>
         </Message>
       )}
       <EditorToolbar
@@ -625,7 +691,10 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
           confirmLabel="Discard"
           aria-label="Discard changes"
           onCancel={blocker.reset}
-          onConfirm={blocker.proceed}
+          onConfirm={() => {
+            if (storage) clearDraft(storage, existing?.id);
+            blocker.proceed();
+          }}
         >
           <p>This recipe has changes that have not been saved. Leaving now loses them.</p>
         </ConfirmDialog>

@@ -3,8 +3,24 @@
 // component, plus the head of the form (M27.1). Most of the form's rendering is
 // covered by the route tests in test/routes/loaders.test.tsx, which mount it
 // with a router, as the two render tests at the foot of this file do.
+import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
+import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
-import { detailsHint, draftFromRecipe, emptyDraft, hasDetails, isDirty, parseAmount, parseMinutes, saveNotice, tagsFromNames, validateDraft } from "../../src/components/RecipeForm";
+import {
+  detailsHint,
+  draftFromRecipe,
+  emptyDraft,
+  hasDetails,
+  isDirty,
+  parseAmount,
+  parseMinutes,
+  RecipeForm,
+  type RecipeFormProps,
+  saveNotice,
+  tagsFromNames,
+  validateDraft,
+} from "../../src/components/RecipeForm";
+import { clearDraft, putDraft } from "../../src/lib/drafts";
 import { type Recipe, recipeInputSchema } from "../../src/domain/recipe";
 import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { renderRoute } from "../helpers/routes";
@@ -341,5 +357,86 @@ describe("the head of the form", () => {
     expect(at.every((index) => index >= 0)).toBe(true);
     expect(at).toEqual([...at].sort((a, b) => a - b));
     expect(html).not.toContain("autofocus");
+  });
+});
+
+// M27.4: the draft that survives. The store itself is covered in
+// test/lib/drafts.test.ts; here the form is mounted over an in-memory storage
+// (the `storage` prop) to prove what it shows when it opens. Static render
+// only — there is no jsdom in this project's vitest config, so Resume and
+// Discard are asserted as the buttons the notice renders, and the clearing
+// they and a save do is asserted against the store.
+describe("the resume notice", () => {
+  const draftStorage = () => {
+    const map = new Map<string, string>();
+    return {
+      getItem: (key: string) => map.get(key) ?? null,
+      setItem: (key: string, value: string) => void map.set(key, value),
+      removeItem: (key: string) => void map.delete(key),
+      size: () => map.size,
+    };
+  };
+
+  const renderForm = async (props: Partial<RecipeFormProps>): Promise<string> => {
+    const rootRoute = createRootRoute({ component: () => <RecipeForm initial={emptyDraft()} units={[]} tags={[]} {...props} /> });
+    const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ["/"] }) });
+    await router.load();
+    return renderToString(<RouterProvider router={router} />);
+  };
+
+  const initial = { ...emptyDraft(), name: "Toast" };
+  const later = { ...initial, name: "Toast with jam" };
+
+  test("a stored draft that differs from the form's shows Resume and Discard", async () => {
+    const storage = draftStorage();
+    putDraft(storage, undefined, later, false, "2026-09-11T05:04:00.000Z");
+    const html = await renderForm({ initial, storage });
+    expect(html).toContain('data-testid="draft-notice"');
+    expect(html).toContain("You have unsaved changes from ");
+    expect(html).toContain('data-testid="draft-resume"');
+    expect(html).toContain("Resume");
+    expect(html).toContain('data-testid="draft-discard"');
+    expect(html).toContain("Discard");
+    // The fields are still rendered while the choice is open.
+    expect(html).toContain('name="name"');
+  });
+
+  test("no stored draft, no notice", async () => {
+    const html = await renderForm({ initial, storage: draftStorage() });
+    expect(html).not.toContain("draft-notice");
+    expect(html).not.toContain("You have unsaved changes from");
+  });
+
+  test("a stored draft equal to the one the form opened on is not worth offering", async () => {
+    const storage = draftStorage();
+    putDraft(storage, undefined, initial, false, "2026-09-11T05:04:00.000Z");
+    const html = await renderForm({ initial, storage });
+    expect(html).not.toContain("draft-notice");
+  });
+
+  test("a draft that had an image says the picture was not kept", async () => {
+    const storage = draftStorage();
+    putDraft(storage, undefined, later, true, "2026-09-11T05:04:00.000Z");
+    const html = await renderForm({ initial, storage });
+    expect(html).toContain("The picture you chose was not kept; pick it again.");
+  });
+
+  test("an edit form reads its own recipe's key, not the new one", async () => {
+    const storage = draftStorage();
+    putDraft(storage, undefined, later, false, "2026-09-11T05:04:00.000Z");
+    const existing = { id: stored.id, slug: stored.slug };
+    expect(await renderForm({ initial, existing, storage })).not.toContain("draft-notice");
+    putDraft(storage, stored.id, later, false, "2026-09-11T05:04:00.000Z");
+    expect(await renderForm({ initial, existing, storage })).toContain('data-testid="draft-notice"');
+  });
+
+  test("a save clears the key the form wrote under", async () => {
+    const storage = draftStorage();
+    putDraft(storage, undefined, later, false, "2026-09-11T05:04:00.000Z");
+    expect(await renderForm({ initial, storage })).toContain("draft-notice");
+    // What `submit` does once the recipe is stored, and Discard on the leave guard.
+    clearDraft(storage, undefined);
+    expect(storage.size()).toBe(0);
+    expect(await renderForm({ initial, storage })).not.toContain("draft-notice");
   });
 });
