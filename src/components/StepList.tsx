@@ -7,15 +7,13 @@
 // Step text is markdown, rendered through the hand-written safe subset
 // (src/domain/markdown.ts) — no raw HTML ever reaches the DOM.
 import { cn } from "@sixthshift/design-system/utils";
+import { useMemo } from "react";
 import type { Ingredient, Step } from "../domain/recipe";
 import { useStepTick } from "../lib/ticks";
+import { useTimers } from "../lib/timers";
 import { Markdown } from "./Markdown";
 import { StepIngredientChips } from "./StepIngredientChips";
 import { decorateDurations } from "./TimerChip";
-
-// One decorator, reused across every step row: it carries no per-step state,
-// only the (absent, until M26.3) onStart callback.
-const decorateTimers = decorateDurations();
 
 export type StepRowProps = {
   /** The owning recipe's id: ticks.ts keys session state by it. */
@@ -33,6 +31,17 @@ export type StepRowProps = {
 
 export function StepRow({ recipeId, step, position, ingredients = [] }: StepRowProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
+  // A decorator per step: it binds this step's id (so each chip's timer has a
+  // stable identity) and its text (so the notification at zero says what the
+  // timer was for). `find` is read at render, so a running chip repaints with
+  // the store's once-a-second tick.
+  const { start, find } = useTimers(recipeId);
+  const decorateTimers = useMemo(
+    () => decorateDurations({ keyPrefix: step.id, label: step.text, onStart: start, timerFor: find }),
+    // `find` closes over the current timers, so it changes every tick; that is
+    // exactly when the chips have to be rebuilt.
+    [step.id, step.text, start, find],
+  );
 
   return (
     <li className="flex gap-3" data-testid="step-row" data-ticked={done ? "true" : undefined}>

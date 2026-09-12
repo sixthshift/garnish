@@ -26,6 +26,7 @@ import { IngredientList, PartIngredients } from "../../../components/IngredientL
 import { IngredientsSheet } from "../../../components/IngredientsSheet";
 import { RecipeHeader, RecipeMetaFooter } from "../../../components/RecipeHeader";
 import { StepList } from "../../../components/StepList";
+import { TimerStrip } from "../../../components/TimerStrip";
 import { formatIngredient } from "../../../domain/format";
 import { mergeIngredients } from "../../../domain/merge";
 import { scalableIngredients, scaledForServings, servingsForTarget } from "../../../domain/scale";
@@ -219,6 +220,11 @@ function RecipePage() {
           <IngredientsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} recipe={recipe} summary={summary} scaled={scaled} />
         </>
       )}
+
+      {/* Any timers started from a step, fixed above the phone tab bar. Below
+          `md` the "Ingredients" button above sits at `bottom-20`, so the strip
+          takes the row above it (`bottom-32`) and the two stack. */}
+      <TimerStrip recipeId={recipe.id} fixed />
 
       <TimelineList events={timeline} recipe={recipe} />
 

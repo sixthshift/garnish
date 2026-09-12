@@ -20,7 +20,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { cn } from "@sixthshift/design-system/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { z } from "zod";
 import { MadeThisButton } from "../../../components/Timeline";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
@@ -41,12 +41,10 @@ import { formatIngredient } from "../../../domain/format";
 import { scaledForServings } from "../../../domain/scale";
 import type { Ingredient, Recipe } from "../../../domain/recipe";
 import { useIngredientTick } from "../../../lib/ticks";
+import { useTimers } from "../../../lib/timers";
+import { TimerStrip } from "../../../components/TimerStrip";
 import { useWakeLock } from "../../../lib/useWakeLock";
 import { getRecipe } from "../../../server/recipes";
-
-// One decorator, reused across every step card: no per-card state, only the
-// (absent, until M26.3) onStart callback.
-const decorateTimers = decorateDurations();
 
 export const CookSearch = z.object({
   servings: z.number().positive().finite().optional(),
@@ -198,6 +196,9 @@ function CookPage() {
       </main>
 
       <footer className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        {/* Timers started from any card, above the progress bar: they outlive
+            the card they were started on, so they follow you through the deck. */}
+        <TimerStrip recipeId={recipe.id} />
         <ProgressBar completed={index + 1} total={total} showFraction={false} label="Cook progress" />
         <div className="flex items-center justify-between gap-3">
           <Button variant="outline" intent="neutral" size="lg" disabled={index <= 0} onClick={() => goTo(index - 1)}>
@@ -260,6 +261,15 @@ function CookIngredientItem({ recipeId, ingredient }: { recipeId: string; ingred
 /** One card in large type: the part's ingredient list, or a single step. */
 function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) {
   const heading = card.part === "" ? undefined : card.part;
+  const { start, find } = useTimers(recipeId);
+  const stepId = card.kind === "step" ? card.step.id : "";
+  const stepText = card.kind === "step" ? card.step.text : "";
+  // Same decorator as the view page's step rows: this step's id keys its
+  // chips' timers, and its text is what the notification at zero says.
+  const decorateTimers = useMemo(
+    () => decorateDurations({ keyPrefix: stepId, label: stepText, onStart: start, timerFor: find }),
+    [stepId, stepText, start, find],
+  );
   if (card.kind === "ingredients") {
     return (
       <Card title={heading && <span className="text-xl">{heading}</span>} data-card="ingredients">
