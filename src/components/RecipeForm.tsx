@@ -6,13 +6,13 @@
 // the form has no step list of its own. A new recipe carries one blank part so
 // the document validates.
 //
-// The order is the view page's order (decisions.md row 50): image and name,
-// then the parts with their ingredients and steps, then notes. Everything else
-// — yield, times, tags, source — is behind a `Details` disclosure that opens
-// folded on a new recipe and open on one that has any of it, so the first
-// thing between "New recipe" and the first ingredient is the name and not six
-// pieces of paperwork. The disclosure is a `<details>`, so a field inside a
-// closed one is still in the form and still validates.
+// The order is the view page's order (decisions.md row 50, updated by row 61):
+// image and name, then notes, then the parts with their ingredients and steps.
+// Everything else — yield, times, tags, source — is behind a `Details`
+// disclosure that opens folded on a new recipe and open on one that has any of
+// it, so the first thing between "New recipe" and the first ingredient is the
+// name and not six pieces of paperwork. The disclosure is a `<details>`, so a
+// field inside a closed one is still in the form and still validates.
 //
 // Rating and last made are not here at all (decisions.md row 51). Decision 41
 // made "Made this" the thing that records a cook and writes `last_made`, and
@@ -504,9 +504,9 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
 
       <NumberStepper label="Servings" value={draft.recipeServings} min={0} disabled={saving} onChange={(recipeServings) => patch({ recipeServings })} />
 
-      <PartsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
-
       <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
+
+      <PartsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
 
       <Disclosure title="Details" hint={detailsHint(draft)} defaultOpen={detailsOpen}>
         <fieldset className="grid gap-4 sm:grid-cols-3">

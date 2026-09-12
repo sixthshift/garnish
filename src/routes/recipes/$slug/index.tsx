@@ -4,7 +4,9 @@
 //
 // Layout (M24.1): the header spans the page; from `md` the body is a grid with
 // the ingredients in a sticky aside (a third) and the method beside it (two
-// thirds). Below `md` the two stack, ingredients first.
+// thirds). Below `md` the two stack, ingredients first. Notes sit between the
+// header and the grid (M24.4, decisions.md row 61): they are the household's
+// amendments, read before you start.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
@@ -85,6 +87,20 @@ function RecipePage() {
         }
       />
 
+      {/* Notes before the ingredients (M24.4): they are the household's
+          amendments, read before you start, so they sit directly under the
+          header rather than after the steps. */}
+      {recipe.notes.length > 0 && (
+        <section className="flex flex-col gap-3" aria-label="Notes">
+          <SectionTitle as="h2">Notes</SectionTitle>
+          {recipe.notes.map((note) => (
+            <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
+              <p className="whitespace-pre-line">{note.text}</p>
+            </Card>
+          ))}
+        </section>
+      )}
+
       {/* Two columns from `md` (M24.1): the ingredients stick beside the
           method rather than scrolling away above it. A third for the list, two
           thirds for the steps; the aside scrolls itself when it is taller than
@@ -135,17 +151,6 @@ function RecipePage() {
           ))}
         </div>
       </div>
-
-      {recipe.notes.length > 0 && (
-        <section className="flex flex-col gap-3" aria-label="Notes">
-          <SectionTitle as="h2">Notes</SectionTitle>
-          {recipe.notes.map((note) => (
-            <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
-              <p className="whitespace-pre-line">{note.text}</p>
-            </Card>
-          ))}
-        </section>
-      )}
 
       <TimelineList events={timeline} />
 

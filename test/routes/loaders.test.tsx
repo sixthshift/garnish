@@ -285,7 +285,7 @@ describe("/recipes/$slug (view)", () => {
     });
   }
 
-  test("two-component recipe: header, components in order, recipe-level steps, notes, action menu", async () => {
+  test("two-component recipe: header, notes, components in order, recipe-level steps, action menu", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
 
@@ -341,11 +341,13 @@ describe("/recipes/$slug (view)", () => {
     expect(html.match(/data-fixed="true"/g)).toHaveLength(1);
     expect(html).toMatch(/data-fixed="true"[\s\S]*?>fixed</);
 
-    // The unnamed part's steps come after the named parts, without a heading, then notes.
+    // The unnamed part's steps come after the named parts, without a heading.
     expect(main.indexOf("Bake for 30 minutes.")).toBeGreaterThan(main.indexOf("Whisk everything together."));
     expect(html).not.toContain(">To finish<");
+    // Notes sit before the ingredients/method grid (M24.4): read before you start.
     const notes = html.indexOf(">Notes<");
-    expect(notes).toBeGreaterThan(html.indexOf("Bake for 30 minutes."));
+    expect(notes).toBeGreaterThan(-1);
+    expect(notes).toBeLessThan(html.indexOf(">Pastry<"));
     expect(html.indexOf(">Storage<")).toBeGreaterThan(notes);
     expect(html).toContain("Keeps two days in the fridge.");
   });
@@ -482,11 +484,11 @@ describe("/recipes/$slug/edit", () => {
     });
     const edit = await renderRoute("/recipes/lemon-tart/edit");
     const order = (html: string, needles: string[]) => needles.map((needle) => html.indexOf(needle));
-    const editAt = order(edit, ['data-placeholder="image"', 'name="name"', 'aria-label="Parts"', 'aria-label="Notes"', 'aria-label="Details"']);
+    const editAt = order(edit, ['data-placeholder="image"', 'name="name"', 'aria-label="Notes"', 'aria-label="Parts"', 'aria-label="Details"']);
     expect(editAt.every((at) => at >= 0)).toBe(true);
     expect(editAt).toEqual([...editAt].sort((a, b) => a - b));
 
-    // The view page runs the same way as far as it goes: header, parts, notes.
+    // The view page runs the same way as far as it goes: header, notes, parts.
     const view = await renderRoute("/recipes/lemon-tart");
     const viewAt = order(view, ["Lemon tart", 'aria-label="Notes"']);
     expect(viewAt.every((at) => at >= 0)).toBe(true);
