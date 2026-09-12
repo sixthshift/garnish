@@ -3,11 +3,13 @@
 // what the page no longer carries (the edit page's Delete section), plus the
 // panel's own contents rendered directly. Edit and Cook are their own buttons
 // beside the menu (M25.5), asserted separately from the menu's own items.
+import { Button } from "@sixthshift/design-system/button";
+import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { renderToString } from "react-dom/server";
 import { afterEach, expect, test, vi } from "vitest";
 import { Menu } from "../../src/components/ui/Menu";
 import { createRecipe } from "../../src/server/recipes";
-import { renderRoute } from "../helpers/routes";
+import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<string, unknown>>) => {
@@ -88,4 +90,38 @@ test("the open menu lists Duplicate, the two copy items and Print, with Delete l
   expect(html).not.toContain(">Cook<");
   expect(html.match(/role="menuitem"/g)).toHaveLength(5);
   expect(html.indexOf("text-fg-danger")).toBeGreaterThan(-1);
+});
+
+// M30.4: designed against the button the shopping list (Later, scope.md)
+// will need — disabled, beside Cook, with a tooltip saying when it lands.
+test("a disabled 'Add to shopping list' button sits beside Cook", async () => {
+  await seedTart();
+  const html = await renderRoute("/recipes/lemon-tart");
+  const button = elementHtml(html, "shopping-list-button");
+  expect(button).toContain(">Add to shopping list<");
+  expect(button).toMatch(/ disabled(=""|(?=[ >]))/);
+  expect(html.indexOf(button)).toBeGreaterThan(html.indexOf(">Cook<"));
+  expect(html).toContain('data-print="hide"');
+});
+
+// The tooltip body is a floating panel the design system portals into
+// `document.body` on mount (as the wake-lock tooltip found, M26.4), so it
+// never appears in a server render — that render only carries the trigger,
+// wired up (`aria-describedby`). This confirms the trigger/body pairing the
+// route uses does resolve to the same body text, once mounted.
+test("wraps the button in a tooltip trigger, with 'Coming later' as its body", () => {
+  const html = renderToString(
+    <Tooltip open>
+      <Tooltip.Trigger asChild>
+        <span>
+          <Button variant="outline" intent="neutral" size="sm" disabled data-testid="shopping-list-button">
+            Add to shopping list
+          </Button>
+        </span>
+      </Tooltip.Trigger>
+      <Tooltip.Body>Coming later</Tooltip.Body>
+    </Tooltip>,
+  );
+  expect(html).toContain('data-testid="shopping-list-button"');
+  expect(html).toMatch(/<span aria-describedby="[^"]+">/); // the trigger, wired to a tooltip
 });

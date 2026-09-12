@@ -14,7 +14,7 @@
 
 ## Later, in rough order
 
-- Shopping list. Merge rule decided: by food and unit, expandable, grouped by aisle.
+- Shopping list. Merge rule decided: by food and unit, expandable, grouped by aisle. The recipe page already carries a disabled "Add to shopping list" button beside Cook (M30.4), so the list is built against a real button rather than adding one when the list ships.
 - Unit conversions per food, so 1 cup flour and 300 g flour merge.
 - Import via `claude -p`: pasted prose and pages with no structured data, reviewed before save. Adds a rung under the JSON-LD import; it does not replace it, and the review step is shared either way.
 - Meal planning, feeding the shopping list.

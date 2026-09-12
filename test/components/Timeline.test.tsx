@@ -4,10 +4,21 @@
 // `useMutate`.
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
-import { afterEach, describe, expect, test, vi } from "vitest";
-import { TimelineList, saveCook, saveCookAndClearTicks } from "../../src/components/Timeline";
-import type { TimelineEvent } from "../../src/domain/recipe";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { offersSaveAsNote, TimelineList, saveCook, saveCookAndClearTicks, withNoteFromCook } from "../../src/components/Timeline";
+import { saveQuickEdit } from "../../src/components/QuickEdit";
+import type { Recipe, TimelineEvent } from "../../src/domain/recipe";
 import { getTicks, setIngredientTicked, type StorageLike } from "../../src/lib/ticks";
+
+// `updateRecipe` is the only server call `saveQuickEdit` makes; kept here so
+// the "save as note" test can compare what was sent with the stored document.
+const sent = vi.hoisted(() => [] as Array<{ data: { id: string; doc: unknown } }>);
+vi.mock("../../src/server/recipes", () => ({
+  updateRecipe: (args: { data: { id: string; doc: unknown } }) => {
+    sent.push(args);
+    return Promise.resolve({});
+  },
+}));
 
 const recipeId = "11111111-1111-4111-8111-111111111111";
 
@@ -20,6 +31,37 @@ const event = (overrides: Partial<TimelineEvent> = {}): TimelineEvent => ({
   createdAt: "2026-09-11T02:30:00.000Z",
   ...overrides,
 });
+
+/** A minimal stored recipe, with one note already, so a save-as-note test can tell "appended" from "replaced". */
+const stored: Recipe = {
+  id: recipeId,
+  slug: "lemon-tart",
+  name: "Lemon tart",
+  description: "",
+  image: null,
+  rating: null,
+  lastMade: null,
+  favourite: false,
+  recipeServings: 4,
+  recipeYieldQuantity: 0,
+  yieldUnit: null,
+  recipeYield: "",
+  prepTime: null,
+  performTime: null,
+  sourceUrl: null,
+  notes: [{ id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", title: "Tip", text: "Chill it." }],
+  tags: [],
+  parts: [
+    {
+      id: "22222222-2222-4222-8222-222222222221",
+      name: "",
+      ingredients: [],
+      steps: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1", text: "Mix.", ingredientIds: [] }],
+    },
+  ],
+  createdAt: "2026-03-04T02:30:00.000Z",
+  updatedAt: "2026-03-04T02:30:00.000Z",
+};
 
 async function render(events: TimelineEvent[]): Promise<string> {
   const rootRoute = createRootRoute({ component: () => <TimelineList events={events} /> });
@@ -145,5 +187,60 @@ describe("saveCookAndClearTicks (M25.6)", () => {
     await saveCookAndClearTicks({ recipeId, event: input, photo: null }, writes());
 
     expect(getTicks(storage, otherRecipeId).ingredients).toEqual([ING_A]);
+  });
+});
+
+// M30.4: a row's menu gains "Save as note", appending the comment to the
+// recipe's notes through the stored document.
+describe("withNoteFromCook", () => {
+  test("appends exactly one note, dated and worded from the cook, keeping the ones already there", () => {
+    const draft = withNoteFromCook(stored, event());
+
+    expect(draft.notes).toHaveLength(2);
+    expect(draft.notes[0]).toEqual(stored.notes[0]);
+    expect(draft.notes[1]!.title).toBe("Made 11 Sept 2026");
+    expect(draft.notes[1]!.text).toBe("Crispier at 220.");
+  });
+
+  test("trims the comment and gives the new note its own id", () => {
+    const draft = withNoteFromCook(stored, event({ message: "  Crispier at 220.  " }));
+
+    expect(draft.notes[1]!.text).toBe("Crispier at 220.");
+    expect(draft.notes[1]!.id).not.toBe(stored.notes[0]!.id);
+  });
+
+  test("every other id in the document, and every other field, survives untouched", () => {
+    const draft = withNoteFromCook(stored, event());
+
+    expect(draft.id).toBe(stored.id);
+    expect(draft.name).toBe(stored.name);
+    expect(draft.parts).toEqual(stored.parts);
+  });
+});
+
+describe("offersSaveAsNote", () => {
+  test("only when there is a comment and a stored document to write it into", () => {
+    expect(offersSaveAsNote(event(), true)).toBe(true);
+    expect(offersSaveAsNote(event({ message: "   " }), true)).toBe(false);
+    expect(offersSaveAsNote(event(), false)).toBe(false);
+  });
+});
+
+describe("saving a comment as a note", () => {
+  beforeEach(() => {
+    sent.length = 0;
+  });
+
+  test("sends the stored document plus one note through updateRecipe", async () => {
+    await saveQuickEdit(withNoteFromCook(stored, event()), (write) => write());
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.data.id).toBe(stored.id);
+    const doc = sent[0]!.data.doc as Recipe;
+    expect(doc.notes).toHaveLength(2);
+    expect(doc.notes[0]).toEqual(stored.notes[0]);
+    expect(doc.notes[1]!.title).toBe("Made 11 Sept 2026");
+    expect(doc.notes[1]!.text).toBe("Crispier at 220.");
+    expect(doc.parts).toEqual(stored.parts);
   });
 });
