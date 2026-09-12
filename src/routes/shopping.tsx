@@ -15,6 +15,15 @@
 // `ShoppingListView` takes its writes as callbacks and renders anywhere; the
 // route component binds them to the server functions through `useMutate`, the
 // way every other page writes. That split is what the render tests exercise.
+//
+// M31.6: a row whose food has no aisle gets a quiet "Set aisle" control in its
+// expansion — a `Select` over the same aisles Settings manages, writing the
+// food through `updateFood`. Aisles and foods are still only *managed* in
+// Settings; this is a shortcut to the one field the list cares about. The
+// loader fetches the aisle list alongside the items so the Select has
+// something to offer; picking one invalidates the loader like every other
+// write, so the row leaves "Other" on the next read rather than being moved
+// locally.
 import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
@@ -23,13 +32,17 @@ import { Heading } from "@sixthshift/design-system/heading";
 import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { Select } from "@sixthshift/design-system/select";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import type { Aisle } from "../domain/recipe";
 import { groupByAisle, shoppingItemLabel, sourceLabel, type ShoppingItem } from "../domain/shopping";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
 import { applyOutbox, pendingLabel, useOutbox, type OutboxEntry, type OutboxKind } from "../lib/outbox";
 import { useOnline } from "../lib/useOnline";
+import { listAisles } from "../server/aisles";
+import { updateFood } from "../server/foods";
 import {
   addShoppingItems,
   clearTickedShoppingItems,
@@ -44,10 +57,18 @@ export function sendOutboxEntry(entry: OutboxEntry): Promise<unknown> {
   return tickShoppingItem({ data: { id: entry.itemId, ticked: entry.kind === "tick" } });
 }
 
-export type ShoppingListData = { items: ShoppingItem[] };
+/** M31.6: the "Set aisle" Select writes straight through `updateFood`. One line so the route and the tests share it. */
+export function setFoodAisle(foodId: string, aisleId: string): Promise<unknown> {
+  return updateFood({ data: { id: foodId, aisleId } });
+}
+
+export type ShoppingListData = { items: ShoppingItem[]; aisles: Aisle[] };
 
 export const Route = createFileRoute("/shopping")({
-  loader: async (): Promise<ShoppingListData> => ({ items: await listShoppingItems() }),
+  loader: async (): Promise<ShoppingListData> => {
+    const [items, aisles] = await Promise.all([listShoppingItems(), listAisles({ data: {} })]);
+    return { items, aisles };
+  },
   component: ShoppingPage,
 });
 
@@ -59,11 +80,15 @@ export function toBuyLabel(items: readonly ShoppingItem[]): string {
 
 export type ShoppingListViewProps = {
   items: readonly ShoppingItem[];
+  /** Every aisle, in `position` order, for the "Set aisle" Select (M31.6). Empty hides the control. */
+  aisles?: readonly Aisle[];
   /** A line typed into the box at the top, already trimmed and never empty. */
   onAdd: (text: string) => void;
   onTick: (id: string, ticked: boolean) => void;
   onRemove: (id: string) => void;
   onClearTicked: () => void;
+  /** M31.6: a row's food has no aisle and one was picked from the Select. */
+  onSetAisle?: (foodId: string, aisleId: string) => void;
   /** A write is in flight: every control is disabled, as the editor's SaveBar does. */
   busy?: boolean;
   /** How many ticks are queued for the server (M31.5). Shown in the header; 0 shows nothing. */
@@ -79,10 +104,12 @@ export type ShoppingListViewProps = {
 /** The list itself, writes injected. Rendered by the route and by the tests. */
 export function ShoppingListView({
   items,
+  aisles = [],
   onAdd,
   onTick,
   onRemove,
   onClearTicked,
+  onSetAisle = () => {},
   busy = false,
   pending = 0,
   offline = false,
@@ -127,7 +154,15 @@ export function ShoppingListView({
               </div>
               <ul className="flex flex-col divide-y divide-border-subtle">
                 {group.items.map((item) => (
-                  <ShoppingRow key={item.id} item={item} onTick={onTick} onRemove={onRemove} busy={busy} />
+                  <ShoppingRow
+                    key={item.id}
+                    item={item}
+                    aisles={aisles}
+                    onTick={onTick}
+                    onRemove={onRemove}
+                    onSetAisle={onSetAisle}
+                    busy={busy}
+                  />
                 ))}
               </ul>
             </section>
@@ -170,16 +205,22 @@ function AddItemForm({ onAdd, busy }: { onAdd: (text: string) => void; busy: boo
  */
 function ShoppingRow({
   item,
+  aisles,
   onTick,
   onRemove,
+  onSetAisle,
   busy,
 }: {
   item: ShoppingItem;
+  aisles: readonly Aisle[];
   onTick: (id: string, ticked: boolean) => void;
   onRemove: (id: string) => void;
+  onSetAisle: (foodId: string, aisleId: string) => void;
   busy: boolean;
 }) {
   const label = shoppingItemLabel(item);
+  const food = item.food;
+  const needsAisle = food !== null && food.aisle === null;
   return (
     <li className="flex items-start gap-3" data-testid="shopping-row" data-ticked={item.ticked ? "true" : "false"}>
       <Checkbox
@@ -208,6 +249,18 @@ function ShoppingRow({
               ))}
             </ul>
           )}
+          {needsAisle && (
+            <div className="flex items-center gap-2" data-testid="shopping-set-aisle">
+              <Muted as="span">Set aisle</Muted>
+              <Select
+                aria-label={`Aisle for ${food.name}`}
+                placeholder="Choose an aisle"
+                options={aisles.map((aisle) => ({ value: aisle.id, label: aisle.name }))}
+                disabled={busy}
+                onValueChange={(aisleId) => onSetAisle(food.id, aisleId)}
+              />
+            </div>
+          )}
           <Button type="button" variant="link" intent="danger" size="sm" disabled={busy} onClick={() => onRemove(item.id)}>
             Remove
           </Button>
@@ -226,7 +279,7 @@ function ShoppingRow({
  * header says how many are waiting until they land.
  */
 function ShoppingPage() {
-  const { items } = Route.useLoaderData();
+  const { items, aisles } = Route.useLoaderData();
   const mutate = useMutate();
   const router = useRouter();
   const online = useOnline();
@@ -266,6 +319,7 @@ function ShoppingPage() {
   return (
     <ShoppingListView
       items={applyOutbox(items, queue)}
+      aisles={aisles}
       busy={busy}
       pending={queue.length}
       offline={!online}
@@ -278,6 +332,7 @@ function ShoppingPage() {
           notify({ intent: "success", title: `${removed} ${removed === 1 ? "item" : "items"} cleared` });
         })
       }
+      onSetAisle={(foodId, aisleId) => void write("Couldn't set the aisle", () => setFoodAisle(foodId, aisleId))}
     />
   );
 }

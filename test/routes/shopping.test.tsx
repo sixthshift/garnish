@@ -8,10 +8,10 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { shoppingItemSchema, type ShoppingItem } from "../../src/domain/shopping";
-import { ShoppingListView, sendOutboxEntry, toBuyLabel } from "../../src/routes/shopping";
+import { ShoppingListView, sendOutboxEntry, setFoodAisle, toBuyLabel } from "../../src/routes/shopping";
 import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../src/lib/outbox";
 import { addShoppingItems, listShoppingItems } from "../../src/server/shopping";
-import { createFood } from "../../src/server/foods";
+import { createFood, listFoods } from "../../src/server/foods";
 import { findOrCreateAisle } from "../../src/server/aisles";
 import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -103,6 +103,26 @@ describe("the sources expansion", () => {
 
   test("a hand-typed line says so rather than showing an empty expansion", () => {
     expect(elementHtml(render([item({ text: "Batteries" })]), "shopping-sources")).toContain("Added by hand");
+  });
+});
+
+describe("Set aisle (M31.6)", () => {
+  const unaisled = food("ffffffff-ffff-4fff-8fff-ffffffffffff", "flour", null);
+
+  test("the control shows only on a food line with no aisle, not an aisled food or a hand-typed line", () => {
+    const html = renderToString(
+      <ShoppingListView
+        items={[item({ quantity: 3, food: lemons }), item({ quantity: 400, food: unaisled }), item({ text: "Batteries" })]}
+        aisles={[produce, dairy]}
+        onAdd={noop}
+        onTick={noop}
+        onRemove={noop}
+        onClearTicked={noop}
+      />,
+    );
+    expect(html.match(/data-testid="shopping-set-aisle"/g)).toHaveLength(1);
+    expect(html).toContain("Set aisle");
+    expect(html).toContain('aria-label="Aisle for flour"');
   });
 });
 
@@ -251,5 +271,20 @@ describe("sendOutboxEntry", () => {
 
     await sendOutboxEntry({ id: "e3", itemId: milk!.id, kind: "remove", at: stamp });
     expect((await listShoppingItems()).map((row) => row.id)).toEqual([batteries!.id]);
+  });
+});
+
+describe("setFoodAisle", () => {
+  useTempDataDir();
+
+  test("choosing an aisle writes the food", async () => {
+    const aisle = await callServerFn(findOrCreateAisle, { name: "Baking" });
+    const created = await callServerFn(createFood, { name: "flour" });
+    expect(created.aisleId).toBeNull();
+
+    await setFoodAisle(created.id, aisle.id);
+
+    const updated = (await listFoods({ data: {} })).find((row) => row.id === created.id);
+    expect(updated?.aisleId).toBe(aisle.id);
   });
 });
