@@ -85,12 +85,16 @@ unit          id, name, plural_name, abbreviation, use_abbreviation, fraction,
               standard_quantity?, standard_unit_id?
 tag           id, name, slug
 recipe_tag    recipe_id, tag_id
+shopping_item id, position, food_id?, unit_id?, quantity?, text, ticked,
+              created_at, updated_at
+shopping_item_source id, item_id, recipe_id?, recipe_name, part_name,
+              servings?, quantity?
 migration     id, name, applied_at
 ```
 
 Ids are UUID text; timestamps are ISO 8601 UTC text. `food`, `unit`, `aisle` and `tag` names are unique case-insensitively. Deleting a recipe cascades to its parts, ingredients, steps, notes, timeline events and tag links; deleting a part cascades to its ingredients and steps; a step link cascades from either side, so deleting a step or an ingredient takes the links naming it; deleting a food, unit or aisle sets the references null. `position` is unique within its parent.
 
-Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64).
+Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64); `005_shopping.sql` adds `shopping_item` and `shopping_item_source` (decisions.md row 67).
 
 The document the API reads and writes (`src/domain/recipe.ts`) mirrors these columns in camelCase, with Mealie's names where Mealie has the concept: `servings` → `recipeServings`, `yield_quantity` → `recipeYieldQuantity`, `yield_text` → `recipeYield`, `prep_minutes` → `prepTime`, `cook_minutes` → `performTime`. The two times are integer minutes, not Mealie's free-text strings (decisions.md row 35). Array order carries `position`, so the document has no position fields. Foreign keys come back as nested objects (`unit`, `food`, `yieldUnit`, `tags`); writes use only the nested `id`. Steps exist only inside `parts`; the document has no recipe-level `steps` array. A step carries `ingredientIds`: the ids of the ingredients it uses, in link order.
 
@@ -119,12 +123,16 @@ The document the API reads and writes (`src/domain/recipe.ts`) mirrors these col
 
 ## Shopping list
 
-Design only. Not built in v1; see "Later" in [scope.md](scope.md). The schema hooks (`aisle`, `food.skip_shopping`, `unit.standard_*`) exist so it slots in without a migration of the recipe tables.
+One list for the household, with no owner and no list table (decisions.md row 67): Mealie has many lists because it has many users and groups, and garnish has neither. `005_shopping.sql` builds it; the document is `src/domain/shopping.ts`, the repository `src/db/models/shopping/repo.ts`, the server functions `src/server/shopping.ts`.
 
-- Aggregates ingredients across selected recipes.
-- Merges by `(food, unit)` into one line. Each line expands to its sources: recipe, part, quantity. Mealie's `recipeReferences` per item.
-- Until unit conversions exist, 1 cup flour and 300 g flour are two lines. Known and accepted.
-- Grouped by `aisle`. Foods with `skip_shopping` are omitted.
+- A line is a food line (`food_id`, with an optional `unit_id` and `quantity`) or a free-text line (`text`, "batteries"). One table holds both, as Mealie's `shopping_list_item` does.
+- `position` is the list order over the whole list. It is not unique: a reorder rewrites every row in one transaction.
+- `ticked` is the supermarket's only write, and the one write the app queues offline (M31.5). `updated_at` moves with every change.
+- `shopping_item_source` is where a line came from — Mealie's `recipeReferences`, one row per contributing recipe: `recipe_id` while the recipe exists, plus `recipe_name`, `part_name`, `servings` and the `quantity` that source contributed. The names are copies, not joins, so an expanded line still reads "Lemon tart, Pastry, serves 4" after the recipe is renamed or deleted; `recipe_id` goes null with the recipe, the sources cascade with their line.
+- The document nests `food` (carrying its aisle) and `unit` as the recipe document does, and nests `sources` under their line. Writes send ids only — everything a line points at already exists, so the list never creates reference rows the way a recipe save does.
+- Merging is the caller's job, not the table's: the repository appends what it is given. `mergeIntoList` (M31.2, pure, in `src/domain/shopping.ts`) is what merges an addition by `(food, unit)` into an unticked line and appends a source to it.
+- Grouped by `aisle` on the page, in `aisle.position` order with unassigned last. Foods with `skip_shopping` are never added.
+- Until unit conversions exist (M32), 1 cup flour and 300 g flour are two lines. Known and accepted.
 
 ## API
 
@@ -134,6 +142,7 @@ Design only. Not built in v1; see "Later" in [scope.md](scope.md). The schema ho
     - `sort` is `name | created | updated | lastMade | rating | random`, with `dir` defaulting per key and nulls last. `random` takes a `seed` so the same URL keeps the same order. Unsorted is newest first.
     - Summaries carry what the card draws: name, slug, image, rating, tags, `favourite`, `lastMade` and `totalTime`.
   - `timeline`: `listTimeline({ recipeId })` (newest first), `createTimelineEvent({ recipeId, event })`, `deleteTimelineEvent({ id })`. Both writes recompute `recipe.last_made`.
+  - `shopping`: `listShoppingItems()`, `addShoppingItems({ items })`, `updateShoppingItem({ id, ...patch })`, `tickShoppingItem({ id, ticked })`, `removeShoppingItem({ id })`, `clearTickedShoppingItems()`, `reorderShoppingItems({ ids })`. No list id anywhere: there is one list.
   - `foods`, `units`, `aisles`, `tags`: `list({ q? })`, `create`, `update`, `delete`, `findOrCreate({ name })` each, e.g. `listUnits`, `findOrCreateTag`. Input schemas in `src/domain/reference.ts`.
     - `usingFood`, `usingUnit`, `usingTag` list the recipes a delete would touch; the confirm dialog shows them.
     - `mergeFood`, `mergeUnit`, `mergeTag` repoint references onto a target and delete the source in one transaction. `reorderAisles` writes a new `position` order.
