@@ -44,6 +44,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";
+import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
@@ -57,6 +58,7 @@ import type { Food, Unit } from "../domain/recipe";
 import { randomUuid } from "../lib/ids";
 import { findOrCreateFood, listFoods } from "../server/foods";
 import { findOrCreateUnit } from "../server/units";
+import { needsParseAll, ParseAllSheet } from "./ParseAllSheet";
 import { PastePartSheet } from "./PastePartSheet";
 import { partLabel } from "./PartsEditor";
 import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
@@ -358,6 +360,7 @@ export type IngredientsEditorProps = {
 export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [parseAllOpen, setParseAllOpen] = useState(false);
   // The whole food vocabulary, loaded once the bulk sheet opens: parsing a
   // pasted block needs every food, not the query-by-query slice a row's
   // combobox asks for.
@@ -411,6 +414,19 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
           </Button>
         </div>
       </div>
+      {needsParseAll(part) && (
+        <Message intent="info" title="Nothing here is parsed" data-testid="parse-all-banner">
+          <div className="flex flex-col gap-2">
+            <span>These rows are plain text, so they will not scale, merge or match a food filter.</span>
+            <div>
+              <Button type="button" variant="outline" intent="brand" size="sm" disabled={disabled} onClick={() => setParseAllOpen(true)}>
+                Parse all
+              </Button>
+            </div>
+          </div>
+        </Message>
+      )}
+      <ParseAllSheet open={parseAllOpen} onOpenChange={setParseAllOpen} draft={draft} pi={pi} units={units} disabled={disabled} onChange={onChange} />
       <PastePartSheet open={pasteOpen} onOpenChange={setPasteOpen} draft={draft} pi={pi} units={units} disabled={disabled} onChange={onChange} />
       <BulkAddSheet<IngredientReview>
         open={bulkOpen}
