@@ -6,7 +6,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { BulkAddFields, BulkAddSheet, BulkReviewList } from "../../../src/components/ui/BulkAddSheet";
+import { BulkAddFields, BulkAddSheet, BulkInlinePanel, BulkReviewList } from "../../../src/components/ui/BulkAddSheet";
 import { splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/bulkText";
 
 /** The first element in `node` whose `children` prop is exactly `text`, without rendering it. */
@@ -123,5 +123,59 @@ describe("BulkAddSheet with a review stage", () => {
     const review = { rows: (lines: string[]) => lines, keyOf: (row: string) => row, renderRow: (row: string) => <span>{row}</span>, confirm: () => {} };
     expect(renderToString(<BulkAddSheet<string> open={false} onOpenChange={() => {}} itemName="ingredient" review={review} />)).toBe("");
     expect(renderToString(<BulkAddSheet<string> open onOpenChange={() => {}} itemName="ingredient" review={review} />)).toBe("");
+  });
+});
+
+// The inline panel (M27.2): the same two stages without the sheet, stateless
+// so both are rendered and driven directly.
+describe("BulkInlinePanel", () => {
+  const review = { rows: (lines: string[]) => lines, keyOf: (row: string) => row, renderRow: (row: string) => <span>{row}</span>, confirm: () => {} };
+  const props = { itemName: "ingredient", review, onTextChange: () => {}, onRowsChange: () => {}, onAdvance: () => {}, onBack: () => {} };
+
+  test("with no rows yet it is a textarea, one ingredient per line, and Add", () => {
+    const html = renderToString(<BulkInlinePanel {...props} text="Salt" rows={null} />);
+    expect(html).toContain('aria-label="New ingredients"');
+    expect(html).toContain('placeholder="One ingredient per line"');
+    expect(html).toContain(">Salt</textarea>");
+    expect(html).toContain(">Add<");
+    expect(html).not.toContain(">Confirm<");
+  });
+
+  test("Add is disabled while the text holds no lines, and enabled once it does", () => {
+    expect(renderToString(<BulkInlinePanel {...props} text="   " rows={null} />)).toMatch(/<button[^>]*disabled=""[^>]*>Add</);
+    expect(renderToString(<BulkInlinePanel {...props} text="Salt" rows={null} />)).not.toMatch(/<button[^>]*disabled=""[^>]*>Add</);
+  });
+
+  test("with rows the textarea is gone and the review rows show with Back and Confirm", () => {
+    const html = renderToString(<BulkInlinePanel {...props} text="Salt" rows={["Salt", "Pepper"]} />);
+    expect(html).not.toContain("<textarea");
+    expect(html).toContain("2 ingredients to review. Nothing is created until you press Confirm.");
+    expect(html).toContain("<span>Salt</span>");
+    expect(html).toContain(">Back<");
+    expect(html).toContain(">Confirm<");
+  });
+
+  test("an error from a failed confirm shows above the buttons", () => {
+    const html = renderToString(<BulkInlinePanel {...props} text="Salt" rows={["Salt"]} error="Could not add the ingredients" />);
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("Could not add the ingredients");
+  });
+
+  test("busy disables Back and Confirm", () => {
+    const html = renderToString(<BulkInlinePanel {...props} text="Salt" rows={["Salt"]} busy />);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Back</);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Confirm</);
+  });
+
+  test("Add and Confirm both call onAdvance; Back calls onBack", () => {
+    let advanced = 0;
+    let backed = 0;
+    const wired = { ...props, onAdvance: () => { advanced += 1; }, onBack: () => { backed += 1; } };
+    elementWithChildren(BulkInlinePanel({ ...wired, text: "Salt", rows: null }), "Add").props.onClick();
+    const reviewing = BulkInlinePanel({ ...wired, text: "Salt", rows: ["Salt"] });
+    elementWithChildren(reviewing, "Confirm").props.onClick();
+    elementWithChildren(reviewing, "Back").props.onClick();
+    expect(advanced).toBe(2);
+    expect(backed).toBe(1);
   });
 });

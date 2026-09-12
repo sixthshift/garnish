@@ -23,6 +23,13 @@
 // was declined lands as a text-only row holding the pasted text, exactly as
 // every bulk-added line used to.
 //
+// Entry is text first (M27.2, decisions.md row 63). An empty list renders
+// `BulkInlineAdd` — a textarea, one ingredient per line — instead of an empty
+// message, and Add runs the same review inline, in place of the textarea, that
+// the sheet runs in a sheet: one `ingredientReview` definition, one
+// `confirmReviewedIngredients`. Once the part has rows the textarea goes and
+// "Bulk add" in the header is the way to add more.
+//
 // A row is either structured (quantity, unit, food, note, fixed) or text only
 // (one free line in `originalText`, the shape a not-yet-parsed line has and
 // the closest thing here to Mealie's disable-amount setting, which shows one
@@ -63,7 +70,7 @@ import { needsParseAll, ParseAllSheet } from "./ParseAllSheet";
 import { partLabel } from "./PartsEditor";
 import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
 import type { DraftIngredient, FieldErrors, RecipeDraft } from "./RecipeForm";
-import { BulkAddSheet } from "./ui/BulkAddSheet";
+import { BulkAddSheet, BulkInlineAdd, type BulkReview } from "./ui/BulkAddSheet";
 import { Combobox, type ComboboxOption } from "./ui/Combobox";
 import { Menu } from "./ui/Menu";
 import { ReorderList } from "./ui/ReorderList";
@@ -337,6 +344,52 @@ export function moveIngredient(draft: RecipeDraft, fromPi: number, ii: number, t
   return moveIngredientTo(draft, fromPi, ii, toPi);
 }
 
+/**
+ * Confirm a set of reviewed lines: create only the foods and units the
+ * reviewer approved, then return the draft with one row appended per line.
+ * The one path that creates vocabulary up front, shared by the bulk-add sheet
+ * and the empty list's inline entry (M27.2), so both land rows identically —
+ * a line whose food was declined lands text-only either way.
+ */
+export async function confirmReviewedIngredients(rows: readonly IngredientReview[], draft: RecipeDraft, pi: number): Promise<RecipeDraft> {
+  const pending = pendingCreations(rows);
+  const createdFoods = new Map<string, FoodRow>();
+  for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
+  const createdUnits = new Map<string, Unit>();
+  for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
+  return addReviewedIngredients(draft, pi, rows.map(rowCommit), createdFoods, createdUnits);
+}
+
+/**
+ * The review stage for a pasted block of ingredient lines: how a line becomes
+ * a review row, how that row renders, and what Confirm does with it. One
+ * definition, handed to both the bulk-add sheet and the inline entry panel, so
+ * the two cannot drift.
+ */
+export function ingredientReview(args: {
+  units: readonly Unit[];
+  foods: readonly FoodRow[];
+  disabled?: boolean;
+  confirm: (rows: IngredientReview[]) => void | Promise<void>;
+}): BulkReview<IngredientReview> {
+  const { units, foods, disabled, confirm } = args;
+  return {
+    rows: (lines) => reviewRows(lines, { units, foods }),
+    keyOf: (row) => row.key,
+    confirm,
+    renderRow: (row, index, onRowChange) => (
+      <IngredientReviewRow
+        row={row}
+        label={`Line ${index + 1}`}
+        unitMatches={(text) => filterUnits(units, text)}
+        searchFoods={(q) => listFoods({ data: { q } })}
+        disabled={disabled}
+        onChange={onRowChange}
+      />
+    ),
+  };
+}
+
 /** The row patch that switches modes: to text only clears amount and food; back to structured clears the raw line. Pure. */
 export function textOnlyPatch(textOnly: boolean): Partial<DraftIngredient> {
   return textOnly ? { quantity: null, unit: null, food: null, fixed: false } : { originalText: "" };
@@ -360,13 +413,15 @@ export type IngredientsEditorProps = {
 export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [parseAllOpen, setParseAllOpen] = useState(false);
-  // The whole food vocabulary, loaded once the bulk sheet opens: parsing a
-  // pasted block needs every food, not the query-by-query slice a row's
-  // combobox asks for.
+  // The whole food vocabulary, loaded once the bulk sheet opens or the list is
+  // empty and showing its inline entry: parsing a pasted block needs every
+  // food, not the query-by-query slice a row's combobox asks for.
   const [vocabularyFoods, setVocabularyFoods] = useState<FoodRow[]>([]);
+  const part = draft.parts[pi];
+  const isEmpty = (part?.ingredients.length ?? 0) === 0;
 
   useEffect(() => {
-    if (!bulkOpen) return;
+    if (!bulkOpen && !isEmpty) return;
     let stale = false;
     listFoods({ data: {} })
       .then((rows) => {
@@ -378,19 +433,14 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
     return () => {
       stale = true;
     };
-  }, [bulkOpen]);
-
-  const part = draft.parts[pi];
+  }, [bulkOpen, isEmpty]);
 
   /** Create only what the reviewer approved, then append the rows. */
   const confirmBulk = async (rows: IngredientReview[]) => {
-    const pending = pendingCreations(rows);
-    const createdFoods = new Map<string, FoodRow>();
-    for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
-    const createdUnits = new Map<string, Unit>();
-    for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
-    onChange(addReviewedIngredients(draft, pi, rows.map(rowCommit), createdFoods, createdUnits));
+    onChange(await confirmReviewedIngredients(rows, draft, pi));
   };
+
+  const review = ingredientReview({ units, foods: vocabularyFoods, disabled, confirm: confirmBulk });
 
   if (!part) return null;
   const { ingredients } = part;
@@ -442,34 +492,10 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
         </Message>
       )}
       <ParseAllSheet open={parseAllOpen} onOpenChange={setParseAllOpen} draft={draft} pi={pi} units={units} disabled={disabled} onChange={onChange} />
-      <BulkAddSheet<IngredientReview>
-        open={bulkOpen}
-        onOpenChange={setBulkOpen}
-        itemName="ingredient"
-        disabled={disabled}
-        review={{
-          rows: (lines) => reviewRows(lines, { units, foods: vocabularyFoods }),
-          keyOf: (row) => row.key,
-          confirm: confirmBulk,
-          renderRow: (row, index, onRowChange) => (
-            <IngredientReviewRow
-              row={row}
-              label={`Line ${index + 1}`}
-              unitMatches={(text) => filterUnits(units, text)}
-              searchFoods={(q) => listFoods({ data: { q } })}
-              disabled={disabled}
-              onChange={onRowChange}
-            />
-          ),
-        }}
-      />
+      <BulkAddSheet<IngredientReview> open={bulkOpen} onOpenChange={setBulkOpen} itemName="ingredient" disabled={disabled} review={review} />
       <EmptyBoundary
         isEmpty={ingredients.length === 0}
-        fallback={
-          <Muted as="p" className="text-sm">
-            No ingredients yet
-          </Muted>
-        }
+        fallback={<BulkInlineAdd<IngredientReview> itemName="ingredient" review={review} disabled={disabled} />}
       >
         <ReorderList
           items={ingredients}

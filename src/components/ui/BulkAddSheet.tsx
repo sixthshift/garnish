@@ -21,6 +21,11 @@
 // row list, "Back" to the textarea, and the busy/error state around a confirm
 // that may hit the server. With no `review` (the steps side) nothing changes:
 // Add still hands the caller one string per line.
+//
+// Both stages are also available without the sheet: `useBulkStage` holds the
+// state and `BulkInlinePanel`/`BulkInlineAdd` render the same textarea and the
+// same review rows in place, which is what an empty ingredient list shows
+// instead of "nothing yet" (M27.2, decisions.md row 63).
 import { Button } from "@sixthshift/design-system/button";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
@@ -89,19 +94,34 @@ export type BulkAddSheetProps<R> = {
   | { onAdd?: undefined; review: BulkReview<R> }
 );
 
-export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, disabled }: BulkAddSheetProps<R>) {
+/**
+ * The two-stage state behind a bulk paste: the text, the reviewed rows once
+ * the first stage has run, and the busy/error state around a confirm that may
+ * hit the server. Shared so the sheet and the inline entry panel (M27.2) run
+ * literally the same stage logic; only the chrome and the button labels
+ * differ. `onDone` fires after a successful commit — the sheet closes, the
+ * inline panel has nothing left to do because its list is no longer empty.
+ */
+export type BulkStageOptions<R> = {
+  /** Noun for labels and copy: "ingredient" or "step". */
+  itemName: string;
+  review?: BulkReview<R>;
+  onAdd?: (lines: string[]) => void;
+  onDone?: () => void;
+};
+
+export function useBulkStage<R>({ itemName, review, onAdd, onDone }: BulkStageOptions<R>) {
   const [text, setText] = useState("");
-  // Null until "Review" has been pressed: the sheet is still on the textarea.
+  // Null until the first stage has been committed: still on the textarea.
   const [rows, setRows] = useState<R[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const close = () => {
+  const reset = () => {
     setText("");
     setRows(null);
     setBusy(false);
     setError(null);
-    onOpenChange(false);
   };
 
   const back = () => {
@@ -109,11 +129,13 @@ export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, d
     setError(null);
   };
 
-  const add = async () => {
+  /** The primary action: parse the lines into rows, or commit the rows already reviewed. */
+  const advance = async () => {
     const lines = bulkLines(text);
     if (review === undefined) {
       if (lines.length > 0) onAdd?.(lines);
-      close();
+      reset();
+      onDone?.();
       return;
     }
     if (rows === null) {
@@ -124,7 +146,8 @@ export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, d
     setError(null);
     try {
       await review.confirm(rows);
-      close();
+      reset();
+      onDone?.();
     } catch (cause) {
       setBusy(false);
       setError(cause instanceof Error ? cause.message : `Could not add the ${itemName}s`);
@@ -132,8 +155,36 @@ export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, d
   };
 
   const reviewing = review !== undefined && rows !== null;
+  return {
+    text,
+    setText,
+    rows,
+    setRows,
+    busy,
+    error,
+    reviewing,
+    /** True when the primary action has something to do: lines to parse, or rows to commit. */
+    canAdvance: reviewing ? rows.length > 0 : bulkLines(text).length > 0,
+    reset,
+    back,
+    advance,
+  };
+}
+
+export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, disabled }: BulkAddSheetProps<R>) {
+  const stage = useBulkStage<R>({ itemName, review, onAdd, onDone: () => onOpenChange(false) });
+  const { text, setText, rows, setRows, busy, error, reviewing } = stage;
+
+  const close = () => {
+    stage.reset();
+    onOpenChange(false);
+  };
+
+  const back = stage.back;
+  const add = stage.advance;
+
   const primaryLabel = review !== undefined && rows === null ? "Review" : "Add";
-  const primaryDisabled = disabled === true || busy || (reviewing ? rows.length === 0 : bulkLines(text).length === 0);
+  const primaryDisabled = disabled === true || busy || !stage.canAdvance;
 
   return (
     <Sheet
@@ -147,7 +198,7 @@ export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, d
         <h2 className="text-base font-medium">{`Bulk add ${itemName}s`}</h2>
       </Sheet.Header>
       <Sheet.Body>
-        {reviewing ? (
+        {review !== undefined && rows !== null ? (
           <BulkReviewList
             itemName={itemName}
             rows={rows}
@@ -180,6 +231,8 @@ export type BulkReviewListProps<R> = {
   itemName: string;
   rows: readonly R[];
   review: BulkReview<R>;
+  /** The commit button's label, named in the copy: "Add" in the sheet, "Confirm" inline. */
+  commitLabel?: string;
   onRowsChange: (rows: R[]) => void;
 };
 
@@ -188,10 +241,10 @@ export type BulkReviewListProps<R> = {
  * caller's `renderRow`, with `onChange` writing that row back in place. No
  * state of its own, so a test can render it directly.
  */
-export function BulkReviewList<R>({ itemName, rows, review, onRowsChange }: BulkReviewListProps<R>) {
+export function BulkReviewList<R>({ itemName, rows, review, commitLabel = "Add", onRowsChange }: BulkReviewListProps<R>) {
   return (
     <div className="flex flex-col gap-3" data-bulk-review="">
-      <p className="text-sm text-fg-subtle">{`${rows.length} ${itemName}${rows.length === 1 ? "" : "s"} to review. Nothing is created until you press Add.`}</p>
+      <p className="text-sm text-fg-subtle">{`${rows.length} ${itemName}${rows.length === 1 ? "" : "s"} to review. Nothing is created until you press ${commitLabel}.`}</p>
       <ul className="flex flex-col gap-3">
         {rows.map((row, index) => (
           <li key={review.keyOf(row, index)} className="rounded-lg border border-border-normal p-3">
@@ -200,5 +253,101 @@ export function BulkReviewList<R>({ itemName, rows, review, onRowsChange }: Bulk
         ))}
       </ul>
     </div>
+  );
+}
+
+// --- Inline entry (M27.2) -----------------------------------------------------
+
+export type BulkInlinePanelProps<R> = {
+  /** Noun for labels and copy: "ingredient" or "step". */
+  itemName: string;
+  review: BulkReview<R>;
+  text: string;
+  /** Null before "Add": the panel is still on the textarea. */
+  rows: R[] | null;
+  busy?: boolean;
+  error?: string | null;
+  disabled?: boolean;
+  onTextChange: (text: string) => void;
+  onRowsChange: (rows: R[]) => void;
+  /** The primary action: "Add" on the textarea, "Confirm" on the review. */
+  onAdvance: () => void;
+  onBack: () => void;
+};
+
+/**
+ * The same two stages the sheet runs, rendered in place rather than in a
+ * sheet: a plain textarea with "Add", which swaps itself for the caller's
+ * review rows and "Confirm". Text first, because typing a recipe out is how a
+ * recipe arrives; the structured row is the correction view (decisions.md row
+ * 63). No state of its own — `BulkInlineAdd` holds it — so a test can render
+ * either stage directly, the same split `BulkAddFields` uses.
+ */
+export function BulkInlinePanel<R>({ itemName, review, text, rows, busy, error, disabled, onTextChange, onRowsChange, onAdvance, onBack }: BulkInlinePanelProps<R>) {
+  const off = disabled === true || busy === true;
+  return (
+    <div className="flex flex-col gap-3" data-bulk-inline="">
+      {rows === null ? (
+        <>
+          <Textarea
+            aria-label={`New ${itemName}s`}
+            rows={6}
+            placeholder={`One ${itemName} per line`}
+            value={text}
+            disabled={off}
+            onChange={(event) => onTextChange(event.target.value)}
+          />
+          <div className="flex justify-end">
+            <Button type="button" variant="solid" intent="brand" size="sm" disabled={off || bulkLines(text).length === 0} onClick={onAdvance}>
+              Add
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <BulkReviewList itemName={itemName} rows={rows} review={review} commitLabel="Confirm" onRowsChange={onRowsChange} />
+          {error !== null && error !== undefined && (
+            <p className="text-sm text-fg-danger" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={off} onClick={onBack}>
+              Back
+            </Button>
+            <Button type="button" variant="solid" intent="brand" size="sm" disabled={off || rows.length === 0} onClick={onAdvance}>
+              Confirm
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export type BulkInlineAddProps<R> = {
+  /** Noun for labels and copy: "ingredient" or "step". */
+  itemName: string;
+  review: BulkReview<R>;
+  disabled?: boolean;
+};
+
+/** `BulkInlinePanel` with the shared stage state around it. What an empty list renders instead of "nothing yet". */
+export function BulkInlineAdd<R>({ itemName, review, disabled }: BulkInlineAddProps<R>) {
+  const stage = useBulkStage<R>({ itemName, review });
+  return (
+    <BulkInlinePanel
+      itemName={itemName}
+      review={review}
+      text={stage.text}
+      rows={stage.rows}
+      busy={stage.busy}
+      error={stage.error}
+      disabled={disabled}
+      onTextChange={stage.setText}
+      onRowsChange={stage.setRows}
+      onAdvance={() => void stage.advance()}
+      onBack={stage.back}
+    />
   );
 }

@@ -9,11 +9,13 @@ import { addPart, renamePart } from "../../src/components/PartsEditor";
 import {
   addIngredient,
   addReviewedIngredients,
+  confirmReviewedIngredients,
   EMPTY_INGREDIENT_SUMMARY,
   filterUnits,
   foodReference,
   IngredientFields,
   type IngredientFieldsProps,
+  ingredientReview,
   ingredientSummary,
   IngredientsEditor,
   isTextOnly,
@@ -32,6 +34,8 @@ import {
   unitReference,
   updateIngredient,
 } from "../../src/components/IngredientsEditor";
+import type { IngredientReview } from "../../src/components/IngredientReviewRow";
+import { BulkInlinePanel } from "../../src/components/ui/BulkAddSheet";
 import { type DraftPart, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
 import { pendingCreations, type ReviewRow, rowCommit, reviewRows } from "../../src/domain/bulkIngredients";
 import { findOrCreateFood, listFoods } from "../../src/server/foods";
@@ -391,9 +395,10 @@ describe("IngredientsEditor", () => {
     expect(html).not.toContain("Move to…");
   });
 
-  test("an empty component says so; disabled disables the inputs and the add button; a quantity error shows on its row", () => {
+  test("an empty component offers the textarea; disabled disables the inputs and the add button; a quantity error shows on its row", () => {
     const empty = renderToString(<IngredientsEditor draft={emptyDraft()} pi={0} units={units} onChange={() => {}} />);
-    expect(empty).toContain("No ingredients yet");
+    expect(empty).not.toContain("No ingredients yet");
+    expect(empty).toContain("One ingredient per line");
 
     const html = renderToString(
       <IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} disabled errors={{ "parts.0.ingredients.1.quantity": "Too small" }} />,
@@ -409,6 +414,76 @@ describe("IngredientsEditor", () => {
 
   test("an unknown component index renders nothing", () => {
     expect(renderToString(<IngredientsEditor draft={emptyDraft()} pi={3} units={units} onChange={() => {}} />)).toBe("");
+  });
+});
+
+
+// M27.2: entry is text first. An empty list is a textarea, Add runs the same
+// review the sheet runs but in place, and Confirm lands the rows through the
+// same `confirmReviewedIngredients` — so a declined food still lands text-only.
+describe("Text-first ingredients (M27.2)", () => {
+  /** The very review the editor hands both the sheet and the inline panel. */
+  const inlineReview = (confirm: (rows: IngredientReview[]) => void | Promise<void> = () => {}) => ingredientReview({ units, foods: [flourRow], confirm });
+
+  test("empty: the list renders a textarea, one ingredient per line, and no structured row", () => {
+    const html = renderToString(<IngredientsEditor draft={emptyDraft()} pi={0} units={units} onChange={() => {}} />);
+    expect(html).not.toContain("No ingredients yet");
+    expect(html).toContain('aria-label="New ingredients"');
+    expect(html).toContain("One ingredient per line");
+    expect(html).toContain(">Add<");
+    expect(html).not.toContain("Ingredient 1 quantity");
+    expect(html).not.toContain("Ingredient 1 food");
+    // Bulk add stays in the header, and so does Add ingredient for a single row.
+    expect(html).toContain(">Bulk add<");
+    expect(html).toContain(">Add ingredient<");
+  });
+
+  test("reviewing: the textarea is replaced by the rows the sheet shows, with Back and Confirm", () => {
+    const review = inlineReview();
+    const rows = review.rows(["200 g flour", "100 g almond meal"]);
+    const html = renderToString(
+      <BulkInlinePanel itemName="ingredient" review={review} text="200 g flour\n100 g almond meal" rows={rows} onTextChange={() => {}} onRowsChange={() => {}} onAdvance={() => {}} onBack={() => {}} />,
+    );
+    expect(html).not.toContain("One ingredient per line");
+    expect(html).toContain("2 ingredients to review");
+    expect(html).toContain("Nothing is created until you press Confirm.");
+    expect(html).toContain(">Back<");
+    expect(html).toContain(">Confirm<");
+    // The review rows themselves: line 1 matched outright, line 2 offers to create its unknown food.
+    expect(html).toContain('data-status="matched"');
+    expect(html).toContain('data-status="review"');
+    expect(html).toContain('aria-label="Line 2 food"');
+    expect(html).toContain("Unknown food “almond meal”");
+    expect(html).toContain("flour");
+  });
+
+  test("populated: the textarea is gone and the structured rows are back", () => {
+    const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
+    expect(html).not.toContain("One ingredient per line");
+    expect(html).not.toContain('aria-label="New ingredients"');
+    expect(html).toContain('aria-label="Ingredient 1 quantity"');
+    expect(html).toContain(">Bulk add<");
+  });
+
+  test("Confirm lands a declined food as a text-only row holding the pasted line", async () => {
+    const draft = { ...emptyDraft(), name: "Toast" };
+    let landed: RecipeDraft | null = null;
+    const review = inlineReview(async (rows) => {
+      landed = await confirmReviewedIngredients(rows, draft, 0);
+    });
+    const rows = review.rows(["200 g flour", "100 g almond meal"]);
+    // Nothing is approved by default, so the unknown food creates nothing.
+    expect(rows[1]!.food.kind).toBe("none");
+    expect(pendingCreations(rows)).toEqual({ foods: [], units: [] });
+
+    await review.confirm(rows);
+    const ingredients = landed!.parts[0]!.ingredients;
+    expect(ingredients).toHaveLength(2);
+    expect(ingredients[0]).toMatchObject({ quantity: 200, originalText: "200 g flour" });
+    expect(ingredients[0]!.food?.name).toBe("flour");
+    expect(ingredients[1]).toMatchObject({ quantity: null, unit: null, food: null, originalText: "100 g almond meal" });
+    expect(isTextOnly(ingredients[1]!)).toBe(true);
+    expect(validateDraft(landed!).ok).toBe(true);
   });
 });
 
