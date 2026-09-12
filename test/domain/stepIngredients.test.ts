@@ -3,8 +3,8 @@
 // ("brown sugar" must not also light up "sugar"), a step naming nothing, and a
 // food named twice.
 import { describe, expect, test } from "vitest";
-import type { Food, Ingredient } from "../../src/domain/recipe";
-import { foodNames, ingredientsInStep } from "../../src/domain/stepIngredients";
+import type { Food, Ingredient, Step } from "../../src/domain/recipe";
+import { foodNames, ingredientsInStep, suggestLinks } from "../../src/domain/stepIngredients";
 
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(seq++).padStart(12, "0")}`;
@@ -69,6 +69,45 @@ describe("ingredientsInStep", () => {
     const second = ingredient(food("butter"));
     // One occurrence is consumed by the first row; the second needs its own.
     expect(ingredientsInStep("Butter and more butter.", [first, second]).map((i) => i.id)).toEqual([first.id, second.id]);
+  });
+});
+
+function step(text: string, ingredientIds: string[] = []): Pick<Step, "id" | "text" | "ingredientIds"> {
+  return { id: uuid(), text, ingredientIds };
+}
+
+describe("suggestLinks", () => {
+  test("a step naming two rows links both, in list order", () => {
+    const [linked] = suggestLinks({ ingredients: part, steps: [step("Add flour and salt.")] });
+    expect(linked!.ingredientIds).toEqual([flour.id, salt.id]);
+  });
+
+  test("a row named in two steps is linked from both", () => {
+    const [first, second] = suggestLinks({
+      ingredients: part,
+      steps: [step("Beat the eggs."), step("Fold in the eggs.")],
+    });
+    expect(first!.ingredientIds).toEqual([egg.id]);
+    expect(second!.ingredientIds).toEqual([egg.id]);
+  });
+
+  test("a step that already has a link is left untouched", () => {
+    const already = step("Add the flour.", [salt.id]);
+    const [result] = suggestLinks({ ingredients: part, steps: [already] });
+    expect(result).toBe(already);
+    expect(result!.ingredientIds).toEqual([salt.id]);
+  });
+
+  test("a step naming nothing stays empty", () => {
+    const [result] = suggestLinks({ ingredients: part, steps: [step("Rest for ten minutes.")] });
+    expect(result!.ingredientIds).toEqual([]);
+  });
+
+  test("a food that exists only in another part is not linked", () => {
+    // Butter is a row of some other part; this part's own ingredient list
+    // (`part`, above) has no such row, so naming it here finds nothing.
+    const [result] = suggestLinks({ ingredients: part, steps: [step("Melt the butter.")] });
+    expect(result!.ingredientIds).toEqual([]);
   });
 });
 

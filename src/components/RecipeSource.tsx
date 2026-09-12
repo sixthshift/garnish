@@ -33,6 +33,8 @@ import type { Food as FoodRow } from "../db/models/food/repo";
 import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
 import type { Tag, Unit } from "../domain/recipe";
 import type { ScrapedRecipe } from "../domain/schemaRecipe";
+import { suggestLinks } from "../domain/stepIngredients";
+import { randomUuid } from "../lib/ids";
 import { messageFrom } from "../lib/notify";
 import { findOrCreateFood, listFoods } from "../server/foods";
 import type { ImportedRecipe, ImportSource } from "../server/recipeImport";
@@ -42,7 +44,31 @@ import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRo
 import { filterUnits, reviewedIngredient } from "./IngredientsEditor";
 import { emptyDraft, type DraftPart, type RecipeDraft, tagsFromNames } from "./RecipeForm";
 import { newStep } from "./StepsEditor";
-import { randomUuid } from "../lib/ids";
+
+/**
+ * `part` with `suggestLinks` (M28.2) run over its steps, so an imported
+ * recipe arrives with its links filled for review. `suggestLinks` needs an
+ * id on every row to name it in a link; the scraper's rows already carry
+ * one (`newStep`, `reviewedIngredient`), but a fresh id is given here too,
+ * defensively, rather than trusting that.
+ */
+function withSuggestedLinks(part: DraftPart): DraftPart {
+  const ingredients = part.ingredients.map((ingredient) => ({
+    ...ingredient,
+    id: ingredient.id ?? randomUuid(),
+    food: ingredient.food ?? null,
+  }));
+  const steps = suggestLinks({
+    ingredients,
+    steps: part.steps.map((step) => ({
+      ...step,
+      id: step.id ?? randomUuid(),
+      text: step.text ?? "",
+      ingredientIds: step.ingredientIds ?? [],
+    })),
+  });
+  return { ...part, ingredients, steps };
+}
 
 /** Which source the chooser is on. */
 export type SourceKind = "url" | "manual";
@@ -52,7 +78,9 @@ export type SourceKind = "url" | "manual";
  * the parts the page described (decisions.md row 59); the ingredients go on
  * the unnamed main body, one being added at the front when the page was all
  * named sections, because schema.org cannot say which section an ingredient
- * belongs to. Pure apart from the ids it fills in.
+ * belongs to. Each part then runs through `suggestLinks` (M28.2), so the
+ * draft arrives with its step-ingredient links already filled for review.
+ * Pure apart from the ids it fills in.
  */
 export function draftFromScraped(opts: {
   scraped: ScrapedRecipe;
@@ -75,6 +103,8 @@ export function draftFromScraped(opts: {
   if (main >= 0) parts[main]!.ingredients = rows;
   else if (rows.length > 0) parts.unshift({ id: randomUuid(), name: "", ingredients: rows, steps: [] });
 
+  const linked = parts.map(withSuggestedLinks);
+
   return {
     ...emptyDraft(),
     name: scraped.name,
@@ -88,7 +118,7 @@ export function draftFromScraped(opts: {
     performTime: scraped.cookMinutes,
     sourceUrl: sourceUrl.trim() === "" ? null : sourceUrl.trim(),
     tags: tagsFromNames(scraped.tags, knownTags),
-    parts: parts.length > 0 ? parts : emptyDraft().parts,
+    parts: linked.length > 0 ? linked : emptyDraft().parts,
   };
 }
 

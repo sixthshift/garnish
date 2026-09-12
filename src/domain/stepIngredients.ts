@@ -18,7 +18,7 @@
 //
 // A text-only ingredient (`food === null`) has nothing to match on and is
 // skipped: its `originalText` is a whole line, not a food name.
-import type { Food, Ingredient } from "./recipe";
+import type { Food, Step } from "./recipe";
 
 /** Letters and digits: anything else counts as a word boundary. */
 const WORD = /[\p{L}\p{N}]/u;
@@ -27,9 +27,16 @@ function isBoundary(character: string | undefined): boolean {
   return character === undefined || !WORD.test(character);
 }
 
+/**
+ * The parts of `Food` the matcher reads. `pluralName` and `aliases` are
+ * optional here (unlike on `Food` itself) so a draft row's food — built from
+ * the write shape, where a defaulted field is optional — fits too.
+ */
+type FoodLike = Pick<Food, "name"> & Partial<Pick<Food, "pluralName" | "aliases">>;
+
 /** Every name a food answers to, lowercased and trimmed, blanks dropped. Pure. */
-export function foodNames(food: Food): string[] {
-  const names = [food.name, food.pluralName ?? "", ...food.aliases].map((name) => name.trim().toLowerCase());
+export function foodNames(food: FoodLike): string[] {
+  const names = [food.name, food.pluralName ?? "", ...(food.aliases ?? [])].map((name) => name.trim().toLowerCase());
   return [...new Set(names.filter((name) => name !== ""))];
 }
 
@@ -38,8 +45,11 @@ type Candidate = { index: number; name: string };
 /**
  * The ingredients of `ingredients` whose food is named in `text`, in list
  * order, each at most once. Pure.
+ *
+ * Typed over anything with a `food`, not just a full `Ingredient`, so a draft
+ * row fits too.
  */
-export function ingredientsInStep(text: string, ingredients: Ingredient[]): Ingredient[] {
+export function ingredientsInStep<I extends { food: FoodLike | null }>(text: string, ingredients: readonly I[]): I[] {
   const haystack = text.toLowerCase();
   if (haystack.trim() === "") return [];
 
@@ -81,4 +91,28 @@ function findFree(haystack: string, name: string, consumed: boolean[]): number {
 function isConsumed(consumed: boolean[], from: number, to: number): boolean {
   for (let i = from; i < to; i += 1) if (consumed[i]) return true;
   return false;
+}
+
+type IngredientLike = { id: string; food: FoodLike | null };
+type StepLike = Pick<Step, "id" | "text" | "ingredientIds">;
+
+/**
+ * A part with `suggestLinks` filled in: every step with no links gets the
+ * ids of the ingredients `ingredientsInStep` finds in its text, in the
+ * part's ingredient order. A step that already links something is returned
+ * unchanged. Pure.
+ *
+ * Loosely typed over `id`, `food`, `text` and `ingredientIds` so both a
+ * saved `Part` and an editor `DraftPart` fit; the draft must give every row
+ * an id before calling this, since a link needs one to name.
+ */
+export function suggestLinks<I extends IngredientLike, S extends StepLike>(part: {
+  ingredients: readonly I[];
+  steps: readonly S[];
+}): S[] {
+  return part.steps.map((step) => {
+    if (step.ingredientIds.length > 0) return step;
+    const matches = ingredientsInStep(step.text, part.ingredients);
+    return matches.length === 0 ? step : { ...step, ingredientIds: matches.map((ingredient) => ingredient.id) };
+  });
 }

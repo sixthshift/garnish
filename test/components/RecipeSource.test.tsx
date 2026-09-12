@@ -297,6 +297,15 @@ describe("draftFromScraped", () => {
     expect(draft.recipeServings).toBe(0);
   });
 
+  test("the draft carries suggested step links (M28.2)", () => {
+    const withFlourStep = { ...scraped, parts: [{ name: "", steps: ["Heat the oven.", "Whisk in the flour."] }, scraped.parts[1]!] };
+    const draft = build(withFlourStep);
+    const [matched] = draft.parts[0]!.ingredients;
+    expect(matched!.food?.name).toBe("flour");
+    expect(draft.parts[0]!.steps[0]!.ingredientIds).toEqual([]);
+    expect(draft.parts[0]!.steps[1]!.ingredientIds).toEqual([matched!.id]);
+  });
+
   test("an existing tag is reused rather than duplicated", () => {
     const baking = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Baking", slug: "baking" };
     const draft = draftFromScraped({
