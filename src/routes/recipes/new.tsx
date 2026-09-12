@@ -13,6 +13,7 @@ import { z } from "zod";
 import { emptyDraft, type RecipeDraft, RecipeForm } from "../../components/RecipeForm";
 import { RecipeSource, type SourceKind } from "../../components/RecipeSource";
 import type { Tag, Unit } from "../../domain/recipe";
+import { recipeBySource } from "../../server/recipes";
 import { listTags } from "../../server/tags";
 import { listUnits } from "../../server/units";
 
@@ -65,9 +66,23 @@ function NewRecipePage() {
         source={source ?? null}
         onChoose={choose}
         onDraft={(draft, imageUrl) => setImported({ draft, imageUrl })}
+        findDuplicate={findDuplicateBySource}
       />
     </Page>
   );
+}
+
+/**
+ * A recipe already imported from `url`, for the review's warning (M23.7). A
+ * lookup that fails is reported as "no duplicate": a warning nobody got is
+ * better than an import nobody could finish.
+ */
+async function findDuplicateBySource(url: string): Promise<{ name: string; slug: string } | null> {
+  try {
+    return await recipeBySource({ data: { sourceUrl: url } });
+  } catch {
+    return null;
+  }
 }
 
 function Page({ children }: { children: React.ReactNode }) {

@@ -393,6 +393,20 @@ export function recipes(db: Database) {
     getById,
 
     /**
+     * The name and slug of a recipe already imported from `sourceUrl`, or null
+     * (M23.7). One query behind the import's "you already have this" warning,
+     * which is Tandoor's `RecipeUrlImportView` behaviour. Matched exactly: a
+     * URL that differs by a tracking parameter is a different address, and
+     * guessing which parameters are noise is not worth a wrong answer.
+     */
+    bySourceUrl(sourceUrl: string): { name: string; slug: string } | null {
+      const url = sourceUrl.trim();
+      if (url === "") return null;
+      const row = dz.select({ name: recipe.name, slug: recipe.slug }).from(recipe).where(eq(recipe.sourceUrl, url)).get();
+      return row ?? null;
+    },
+
+    /**
      * Card summaries, newest first by default (M12.4: `sort`/`dir` change
      * that, see `resolveSort`; `sort: "random"` shuffles by `seed` instead,
      * see `seededOrder`). `q` is a name substring; `tag` and `tags` (tag

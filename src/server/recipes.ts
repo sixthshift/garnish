@@ -59,6 +59,14 @@ export const listRecipes = createServerFn({ method: "GET" })
   .validator(ListRecipesInput)
   .handler(async ({ data }) => recipes(await getDb()).list(data));
 
+export const RecipeBySourceInput = z.object({ sourceUrl: z.string().trim().min(1) });
+
+/** A recipe already imported from this address, for the import's duplicate warning (M23.7). Null when there is none. */
+export const recipeBySource = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .validator(RecipeBySourceInput)
+  .handler(async ({ data }) => recipes(await getDb()).bySourceUrl(data.sourceUrl));
+
 /**
  * One recipe by slug. With `servings`, the document is scaled to that many
  * (Cooklang rules, see src/domain/scale.ts). A recipe whose stored servings is

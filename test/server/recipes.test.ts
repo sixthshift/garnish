@@ -1,10 +1,10 @@
 // Recipe server functions against a temp DATA_DIR: one test per function,
 // validation failures, not-found mapping, and servings scaling.
 import { isNotFound } from "@tanstack/react-router";
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { recipeSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
 import type { NotFoundData } from "../../src/server/fn";
-import { createRecipe, deleteRecipe, getRecipe, listRecipes, setFavourite, updateRecipe } from "../../src/server/recipes";
+import { createRecipe, deleteRecipe, getRecipe, listRecipes, recipeBySource, setFavourite, updateRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -180,4 +180,19 @@ test("deleteRecipe removes the recipe, returns it, and maps an unknown id to not
 
   const data = await notFoundData(callServerFn(deleteRecipe, { id: created.id }));
   expect(data).toEqual({ entity: "recipe", id: created.id, message: `recipe ${created.id} not found` });
+});
+
+describe("recipeBySource (M23.7)", () => {
+  test("finds a recipe already imported from the same address, and nothing else", async () => {
+    const url = "https://example.test/anzac-biscuits";
+    await callServerFn(createRecipe, { name: "Anzac biscuits", sourceUrl: url, parts: [{ name: "", ingredients: [], steps: [] }] });
+    await callServerFn(createRecipe, { name: "Pancakes", parts: [{ name: "", ingredients: [], steps: [] }] });
+
+    expect(await callServerFn(recipeBySource, { sourceUrl: url })).toEqual({ name: "Anzac biscuits", slug: "anzac-biscuits" });
+    // Whitespace around the pasted address does not change the answer.
+    expect(await callServerFn(recipeBySource, { sourceUrl: `  ${url} ` })).toMatchObject({ slug: "anzac-biscuits" });
+    // A different address, and a recipe with no source at all, are not matches.
+    expect(await callServerFn(recipeBySource, { sourceUrl: "https://example.test/other" })).toBeNull();
+    expect(await callServerFn(recipeBySource, { sourceUrl: `${url}?utm_source=x` })).toBeNull();
+  });
 });
