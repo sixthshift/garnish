@@ -27,6 +27,19 @@ export type RecipeCardProps = { recipe: RecipeSummary; mode?: ViewMode };
 /** How many tags a card shows before folding the rest into "+N". */
 export const MAX_CARD_TAGS = 3;
 
+/**
+ * The narrowest a grid card stays readable at: below this the image, the stat
+ * chips and the tag row start to crowd. The list builds its grid columns from
+ * it (`repeat(auto-fill, minmax(CARD_MIN_WIDTH, 1fr))`), so wider screens get
+ * more cards rather than fatter ones. The number is the card's own business
+ * and lives here; the arrangement stays with the list, which owns layout.
+ * It has to travel as a value rather than a class because grid tracks are
+ * sized by the container, and Tailwind cannot see a class name built at run
+ * time. Keep it under a phone viewport less the page padding, so a phone
+ * still gets exactly one column.
+ */
+export const CARD_MIN_WIDTH = "22rem";
+
 /** The tags to render and how many more are hidden beyond `max`. Pure. */
 export function capTags(tags: readonly Tag[], max: number = MAX_CARD_TAGS): { shown: Tag[]; more: number } {
   return { shown: tags.slice(0, max), more: Math.max(0, tags.length - max) };

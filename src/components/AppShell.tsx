@@ -15,10 +15,13 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// "New" is not here: creating a recipe is an action on the recipes page, not a
+// place to navigate to, so it lives as a button in that page's header.
+// `footer` items sink to the bottom of the side nav (Settings is chrome, not a
+// sibling of Recipes); the phone bar is one row, so it ignores the flag.
 export const navItems = [
-  { to: "/", label: "Recipes", exact: true },
-  { to: "/recipes/new", label: "New", exact: false },
-  { to: "/settings", label: "Settings", exact: false },
+  { to: "/", label: "Recipes", exact: true, footer: false },
+  { to: "/settings", label: "Settings", exact: false, footer: true },
 ] as const;
 
 const itemClass =
@@ -26,20 +29,24 @@ const itemClass =
   "hover:bg-bg-normal-hovered hover:text-fg-normal md:flex-none md:justify-start";
 const activeClass = "bg-bg-brand-subtle text-fg-brand";
 
-function Nav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
+/** `stacked` is the side nav, where a `footer` item is pushed to the bottom. */
+function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTMLElement> & { stacked?: boolean }) {
   return (
     <nav aria-label="Main" className={className} {...props}>
-      {navItems.map((item) => (
-        <Link
-          key={item.to}
-          to={item.to}
-          activeOptions={{ exact: item.exact }}
-          className={itemClass}
-          activeProps={{ className: cn(itemClass, activeClass) }}
-        >
-          {item.label}
-        </Link>
-      ))}
+      {navItems.map((item) => {
+        const base = cn(itemClass, stacked && item.footer && "mt-auto");
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            activeOptions={{ exact: item.exact }}
+            className={base}
+            activeProps={{ className: cn(base, activeClass) }}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
@@ -56,11 +63,14 @@ export function AppShell() {
   }
   return (
     <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal md:flex-row">
-      <aside className="hidden w-56 shrink-0 flex-col gap-1 border-r border-border-normal p-4 md:flex">
+      {/* Sticky and exactly one screen tall: as a plain flex child the aside
+          stretches to the content's height, so `mt-auto` would push Settings
+          past the fold on a long page. */}
+      <aside className="hidden w-56 shrink-0 flex-col gap-1 border-r border-border-normal p-4 md:sticky md:top-0 md:flex md:h-dvh md:overflow-y-auto">
         <Link to="/" className="mb-4 px-3 text-fg-brand">
           <Logo size={22} />
         </Link>
-        <Nav className="flex flex-col gap-1" />
+        <Nav stacked className="flex flex-1 flex-col gap-1" />
       </aside>
       <main className="flex-1 pb-20 md:pb-0">
         <Outlet />

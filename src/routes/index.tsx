@@ -13,7 +13,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { FilterBar } from "../components/FilterBar";
-import { RecipeCard } from "../components/RecipeCard";
+import { CARD_MIN_WIDTH, RecipeCard } from "../components/RecipeCard";
 import { SortMenu } from "../components/SortMenu";
 import { ViewModeToggle } from "../components/ViewModeToggle";
 import type { RecipeSummary, Tag } from "../domain/recipe";
@@ -114,7 +114,12 @@ function RecipesPage() {
 
   return (
     <div className="flex flex-col gap-4 p-6">
-      <Heading as="h1">Recipes</Heading>
+      <div className="flex items-center justify-between gap-3">
+        <Heading as="h1">Recipes</Heading>
+        <Button asChild variant="solid" intent="brand" size="sm">
+          <Link to="/recipes/new">New recipe</Link>
+        </Button>
+      </div>
       <form
         role="search"
         onSubmit={(e) => {
@@ -148,8 +153,11 @@ function RecipesPage() {
           </div>
         </div>
         <ul
-          className={
-            viewMode === "list" ? "flex flex-col gap-3" : "grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+          className={viewMode === "list" ? "flex max-w-5xl flex-col gap-3" : "grid gap-4"}
+          style={
+            viewMode === "list"
+              ? undefined
+              : { gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN_WIDTH}, 1fr))` }
           }
         >
           {recipes.map((recipe) => (
