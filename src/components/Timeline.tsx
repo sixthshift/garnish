@@ -1,15 +1,16 @@
-// The "Made this" log on the recipe page: the button beside last-made in the
-// header, and the list of logged cooks under Notes (newest first, as the
-// repository returns them).
+// The "Made this" log on the recipe page: `MadeThisButton` (rendered by the
+// route, beside the last step — M30.2) and `TimelineList`, the closed
+// disclosure of past cooks at the foot of the page (M30.3, decisions.md row
+// 64). History is read rarely, so it opens folded and each cook is one
+// compact row rather than the stacked card stage 5 shipped.
 //
 // Writes follow the app's one mutation pattern (src/lib/mutate.ts): call the
 // server function, then invalidate, so the loader re-reads both the events and
 // the recipe's refreshed `lastMade`. A photo is a second step: the event has
 // to exist before the file can be stored under its id.
 import { Button } from "@sixthshift/design-system/button";
-import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
-import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
 import type { Recipe, TimelineEvent, TimelineEventInput } from "../domain/recipe";
 import { timelineImageUrl, uploadTimelineImage } from "../lib/images";
@@ -19,6 +20,8 @@ import { clearTicksNow } from "../lib/ticks";
 import { setRating } from "../server/recipes";
 import { createTimelineEvent, deleteTimelineEvent } from "../server/timeline";
 import { formatDateStamp } from "./RecipeHeader";
+import { Disclosure } from "./ui/Disclosure";
+import { Menu } from "./ui/Menu";
 import { MadeThisSheet } from "./MadeThisSheet";
 
 export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "rating"> };
@@ -109,39 +112,43 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
   );
 }
 
-export type TimelineListProps = { events: readonly TimelineEvent[]; recipe: MadeThisButtonProps["recipe"] };
+export type TimelineListProps = { events: readonly TimelineEvent[] };
 
 /**
- * The logged cooks, newest first, under a heading that carries the button to
- * log a new one (M25.6: M24.3 dropped it from the header, and this is its
- * only home on the view page now — the finish card in cook mode keeps its own
- * copy). The heading renders even with nothing logged yet, "Not made yet"
- * standing in for the list.
+ * The logged cooks, newest first, as a closed `Disclosure` titled "History"
+ * with the count in its hint ("4 cooks", "1 cook") — history nobody reads
+ * while cooking, so it opens folded (decisions.md row 64). Renders nothing
+ * with no events: there is no "Not made yet" standing in for an empty list
+ * any more, since the disclosure itself would have nothing to hold.
  */
-export function TimelineList({ events, recipe }: TimelineListProps) {
+export function TimelineList({ events }: TimelineListProps) {
+  if (events.length === 0) return null;
+  const hint = events.length === 1 ? "1 cook" : `${events.length} cooks`;
+
   return (
-    <section className="flex flex-col gap-3" aria-label="Timeline" data-testid="timeline">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SectionTitle as="h2">Made this</SectionTitle>
-        <MadeThisButton recipe={recipe} />
-      </div>
-      <EmptyBoundary isEmpty={events.length === 0} fallback={<Muted as="p">Not made yet</Muted>}>
-        <ul className="flex flex-col gap-3">
-          {events.map((event) => (
-            <li key={event.id}>
-              <TimelineRow event={event} />
-            </li>
-          ))}
-        </ul>
-      </EmptyBoundary>
-    </section>
+    <Disclosure title="History" hint={hint}>
+      <ul className="flex flex-col divide-y divide-border-subtle" data-testid="timeline">
+        {events.map((event) => (
+          <TimelineRow key={event.id} event={event} />
+        ))}
+      </ul>
+    </Disclosure>
   );
 }
 
+/**
+ * One compact row: the date, the comment beside it on the same line
+ * (truncated, a tap expanding it to full text), a small square thumbnail when
+ * there is a photo, and a row menu holding Delete. No confirm — the same
+ * delete path stage 5 had.
+ */
 function TimelineRow({ event }: { event: TimelineEvent }) {
   const mutate = useMutate();
   const [deleting, setDeleting] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const photo = timelineImageUrl(event.image);
+  const date = formatDateStamp(event.occurredOn);
+  const hasComment = event.message.trim() !== "";
 
   const remove = async () => {
     setDeleting(true);
@@ -155,34 +162,33 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-border-subtle p-3" data-testid="timeline-event">
-      <div className="flex items-start justify-between gap-3">
-        <p className="font-medium text-fg-strong" data-testid="timeline-date">
-          {formatDateStamp(event.occurredOn)}
-        </p>
-        {/* A control, not content: the print stylesheet drops it. */}
-        <div data-print="hide">
-          <Button
-            type="button"
-            variant="ghost"
-            intent="danger"
-            size="sm"
-            disabled={deleting}
-            aria-label={`Delete entry from ${formatDateStamp(event.occurredOn)}`}
-            onClick={() => void remove()}
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-      {event.message.trim() !== "" ? (
-        <p className="whitespace-pre-line text-fg-normal">{event.message}</p>
+    <li className="flex items-center gap-3 py-2" data-testid="timeline-event">
+      <p className="shrink-0 font-medium text-fg-strong" data-testid="timeline-date">
+        {date}
+      </p>
+      {hasComment ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          className={cn("min-w-0 flex-1 text-left text-sm text-fg-normal", !expanded && "truncate")}
+        >
+          {event.message}
+        </button>
       ) : (
-        <Muted as="p" className="text-sm" data-empty="message">
+        <Muted as="p" className="min-w-0 flex-1 truncate text-sm" data-empty="message">
           No comment
         </Muted>
       )}
-      {photo !== null && <img src={photo} alt="" className="aspect-video w-full rounded-xl object-cover sm:max-w-sm" />}
-    </div>
+      {photo !== null && <img src={photo} alt="" className="size-12 shrink-0 rounded-md object-cover" />}
+      {/* A control, not content: the print stylesheet drops it. */}
+      <div data-print="hide">
+        <Menu label={`Actions for entry from ${date}`} iconOnly>
+          <Menu.Item intent="danger" disabled={deleting} onSelect={() => void remove()}>
+            Delete
+          </Menu.Item>
+        </Menu>
+      </div>
+    </li>
   );
 }

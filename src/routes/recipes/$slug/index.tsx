@@ -31,7 +31,7 @@ import { TimerStrip } from "../../../components/TimerStrip";
 import { formatIngredient } from "../../../domain/format";
 import { mergeIngredients } from "../../../domain/merge";
 import { scalableIngredients, scaledForServings, servingsForTarget } from "../../../domain/scale";
-import { TimelineList } from "../../../components/Timeline";
+import { MadeThisButton, TimelineList } from "../../../components/Timeline";
 import type { Ingredient, Part, Recipe, TimelineEvent } from "../../../domain/recipe";
 import { useIngredientMode } from "../../../lib/prefs";
 import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
@@ -231,7 +231,11 @@ function RecipePage() {
             takes the row above it (`bottom-32`) and the two stack. */}
         <TimerStrip recipeId={recipe.id} fixed />
 
-        <TimelineList events={timeline} recipe={recipe} />
+        {/* M30.2 will move this beside the last step; for now it keeps the
+            spot TimelineList's own heading used to hold (M25.6). */}
+        <MadeThisButton recipe={recipe} />
+
+        <TimelineList events={timeline} />
 
         <RecipeMetaFooter recipe={recipe} />
       </article>

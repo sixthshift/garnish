@@ -1,7 +1,7 @@
-// The timeline list under Notes: one card per logged cook, newest first as the
-// repository returns them, each with its photo, comment and Delete, under a
-// heading that carries the "Made this" button (M25.6). Rendered inside a
-// throwaway router because the rows write through `useMutate`.
+// The cook history at the foot of the page: a closed `Disclosure` titled
+// "History", one compact row per logged cook (M30.3, decisions.md row 64).
+// Rendered inside a throwaway router because the rows write through
+// `useMutate`.
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -10,8 +10,6 @@ import type { TimelineEvent } from "../../src/domain/recipe";
 import { getTicks, setIngredientTicked, type StorageLike } from "../../src/lib/ticks";
 
 const recipeId = "11111111-1111-4111-8111-111111111111";
-
-const recipe = { id: recipeId, name: "Lemon tart", rating: null };
 
 const event = (overrides: Partial<TimelineEvent> = {}): TimelineEvent => ({
   id: "22222222-2222-4222-8222-222222222222",
@@ -24,7 +22,7 @@ const event = (overrides: Partial<TimelineEvent> = {}): TimelineEvent => ({
 });
 
 async function render(events: TimelineEvent[]): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <TimelineList events={events} recipe={recipe} /> });
+  const rootRoute = createRootRoute({ component: () => <TimelineList events={events} /> });
   const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: ["/"] }) });
   await router.load();
   return renderToString(<RouterProvider router={router} />);
@@ -40,12 +38,28 @@ afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
 });
 
-test("shows a card per event with its date, comment and Delete", async () => {
+test("closed by default, titled History with the cook count in its hint", async () => {
+  const html = await render([event(), event({ id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", occurredOn: "2026-03-04" })]);
+  expect(html).toMatch(/<details data-disclosure[^>]*aria-label="History"/);
+  expect(html).not.toContain('<details open=""');
+  expect(html).toContain(">History<");
+  expect(html).toContain("2 cooks");
+});
+
+test("a single cook reads '1 cook', not '1 cooks'", async () => {
+  const html = await render([event()]);
+  expect(html).toContain("1 cook<");
+});
+
+test("a compact row: date and comment on one line, truncated, with Delete in a row menu", async () => {
   const html = await render([event()]);
   expect(html).toMatch(/11 Sept? 2026/);
   expect(html).toContain("Crispier at 220.");
-  expect(html).toContain(">Delete<");
+  expect(html).toContain('aria-expanded="false"');
   expect(html).toContain('data-testid="timeline-event"');
+  expect(html).not.toContain(">Delete<"); // it's inside the closed menu panel
+  expect(html).toMatch(/aria-label="Actions for entry from 11 Sept? 2026"/);
+  expect(html).not.toContain("<img"); // no photo on this event
 });
 
 test("keeps the order it is given, newest first", async () => {
@@ -56,9 +70,9 @@ test("keeps the order it is given, newest first", async () => {
   expect(html.indexOf("Second go")).toBeLessThan(html.indexOf("First go"));
 });
 
-test("an event with a photo renders it from the timeline image route", async () => {
+test("a compact row with a photo shows a small square thumbnail", async () => {
   const html = await render([event({ image: "22222222-2222-4222-8222-222222222222.png" })]);
-  expect(html).toContain("/api/images/timeline/22222222-2222-4222-8222-222222222222.png");
+  expect(html).toMatch(/<img[^>]*src="\/api\/images\/timeline\/22222222-2222-4222-8222-222222222222\.png"[^>]*class="[^"]*size-12[^"]*object-cover[^"]*"/);
 });
 
 test("an event with no comment says so instead of leaving a gap", async () => {
@@ -66,21 +80,14 @@ test("an event with no comment says so instead of leaving a gap", async () => {
   expect(html).toContain("No comment");
 });
 
-test("no events shows the heading and its button, with 'Not made yet' standing in for the list", async () => {
+test("no events renders nothing: no disclosure, no 'Not made yet'", async () => {
   const html = await render([]);
+  expect(html).toBe("");
   expect(html).not.toContain("timeline-event");
-  expect(html).toContain(">Made this<");
-  expect(html).toContain('data-testid="made-this"');
-  expect(html).toContain("Not made yet");
-});
-
-test("logged events replace the 'Not made yet' fallback, but the heading and button stay", async () => {
-  const html = await render([event()]);
   expect(html).not.toContain("Not made yet");
-  expect(html).toContain('data-testid="made-this"');
 });
 
-test("the Delete buttons are chrome the print stylesheet drops", async () => {
+test("the row menu is chrome the print stylesheet drops", async () => {
   expect(await render([event()])).toContain('data-print="hide"');
 });
 
