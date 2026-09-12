@@ -34,6 +34,7 @@ import {
   totalWithFinish,
   type CookCard,
 } from "../../../domain/cook";
+import { StepIngredientChips } from "../../../components/StepIngredientChips";
 import { formatIngredient } from "../../../domain/format";
 import { scaledForServings } from "../../../domain/scale";
 import type { Ingredient, Recipe } from "../../../domain/recipe";
@@ -271,6 +272,9 @@ function CookCardView({ card, recipeId }: { card: CookCard; recipeId: string }) 
         Step {card.number} of {card.total}
       </p>
       <p className="whitespace-pre-line text-3xl leading-snug">{card.step.text}</p>
+      {/* The ingredients this step names, tickable, on the same session ticks
+          as the ingredient card's rows (M26.1). */}
+      <StepIngredientChips recipeId={recipeId} text={card.step.text} ingredients={card.ingredients} className="mt-4 text-lg" />
     </Card>
   );
 }

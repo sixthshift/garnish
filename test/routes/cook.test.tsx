@@ -99,7 +99,8 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toMatch(/<p class="[^"]*text-3xl[^"]*">Rub the butter into the flour\.<\/p>/);
     expect(html).toContain("Step <!-- -->1<!-- --> of <!-- -->1");
     expect(html).toContain("2 of 5 · Pastry");
-    expect(html).not.toContain("200 g flour");
+    // The part's list is not on the card; only the chip for the food the step names (M26.1).
+    expect(html).not.toContain('data-testid="cook-ingredient"');
     expect(isDisabled(html, "Prev")).toBe(false);
     expect(isDisabled(html, "Next")).toBe(false);
   });
@@ -230,6 +231,30 @@ describe("/recipes/$slug/cook", () => {
 
     const view = await renderRoute("/recipes/lemon-tart");
     expect(view).toMatch(/data-testid="ingredient-row" data-ticked="true"/);
+  });
+
+  test("a step card chips the ingredients it names, tickable through the shared store", async () => {
+    const tart = await seedTart();
+    const flour = tart.parts[0]!.ingredients[0]!;
+
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=1");
+    expect(html).toContain('aria-label="Ingredients in this step"');
+    expect(html).toMatch(/data-testid="step-ingredient-chip"[^>]*>(?:<[^>]*>)*200 g flour/);
+    expect(html).not.toContain('data-ticked="true"');
+
+    // Ticking anywhere strikes the chip through: same key as the ingredient card's row.
+    const storage = fakeStorage();
+    setIngredientTicked(storage, tart.id, flour.id, true);
+    (globalThis as { window?: unknown }).window = { sessionStorage: storage };
+    const ticked = await renderRoute("/recipes/lemon-tart/cook?step=1");
+    expect(ticked).toMatch(/data-testid="step-ingredient-chip"[^>]*data-ticked="true"/);
+  });
+
+  test("a step naming none of its part's ingredients gets no chips", async () => {
+    await seedTart();
+    // "Bake for 30 minutes." is the unnamed part's step, and that part has no ingredients.
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=4");
+    expect(html).not.toContain('aria-label="Ingredients in this step"');
   });
 
   test("the view page links to cook mode, carrying the requested scale", async () => {

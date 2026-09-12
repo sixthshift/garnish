@@ -347,7 +347,7 @@ function PartSteps({ part, recipeId }: { part: Part; recipeId: string }) {
           </Muted>
         }
       >
-        <StepList recipeId={recipeId} steps={part.steps} />
+        <StepList recipeId={recipeId} steps={part.steps} ingredients={part.ingredients} />
       </EmptyBoundary>
     </section>
   );

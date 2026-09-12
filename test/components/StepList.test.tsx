@@ -5,13 +5,36 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { Markdown } from "../../src/components/Markdown";
 import { StepList } from "../../src/components/StepList";
-import type { Step } from "../../src/domain/recipe";
-import { setStepTicked, type StorageLike } from "../../src/lib/ticks";
+import type { Food, Ingredient, Step } from "../../src/domain/recipe";
+import { setIngredientTicked, setStepTicked, type StorageLike } from "../../src/lib/ticks";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const STEP_ID = "33333333-3333-4333-8333-333333333333";
 
 const step = (text: string, id = STEP_ID): Step => ({ id, text });
+
+let seq = 0;
+const uuid = () => `55555555-5555-4555-8555-${String(seq++).padStart(12, "0")}`;
+
+const food = (name: string, pluralName: string | null = null, aliases: string[] = []): Food => ({
+  id: uuid(),
+  name,
+  pluralName,
+  aliases,
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+});
+
+const ingredient = (quantity: number | null, f: Food): Ingredient => ({
+  id: uuid(),
+  quantity,
+  unit: null,
+  food: f,
+  note: "",
+  originalText: "",
+  fixed: false,
+});
 
 /** An in-memory sessionStorage, so useStepTick reads what a test seeds. */
 function fakeStorage(): StorageLike {
@@ -93,5 +116,50 @@ describe("StepList", () => {
 
     const html = renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Mix")]} />);
     expect(html).not.toContain('data-ticked="true"');
+  });
+});
+
+// M26.1: the step's own ingredients as chips, phone only — from `md` the list
+// is in the aside beside the method.
+describe("StepRow ingredient chips", () => {
+  const eggs = ingredient(2, food("egg", "eggs"));
+  const flour = ingredient(200, food("flour"));
+  const part = [eggs, flour];
+
+  test("chips the ingredients the step names, amount and food, hidden from md", () => {
+    withStorage(fakeStorage());
+    const html = renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Beat the eggs into the flour")]} ingredients={part} />);
+    expect(html).toContain('aria-label="Ingredients in this step"');
+    expect(html).toContain("md:hidden");
+    expect(html).toContain("2 eggs");
+    expect(html).toContain("200 flour");
+    expect((html.match(/data-testid="step-ingredient-chip"/g) ?? []).length).toBe(2);
+  });
+
+  test("a step naming nothing gets no chip list, and neither does a list without ingredients", () => {
+    withStorage(fakeStorage());
+    expect(renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Rest for ten minutes")]} ingredients={part} />)).not.toContain(
+      'data-testid="step-ingredients"',
+    );
+    expect(renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Beat the eggs")]} />)).not.toContain('data-testid="step-ingredients"');
+  });
+
+  test("a chip reads its tick from the shared store", () => {
+    const storage = fakeStorage();
+    setIngredientTicked(storage, RECIPE_ID, eggs.id, true);
+    withStorage(storage);
+
+    const html = renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Beat the eggs into the flour")]} ingredients={part} />);
+    expect(html).toMatch(/data-testid="step-ingredient-chip"[^>]*data-ticked="true"/);
+    expect(html).toContain('aria-label="Tick off 2 eggs"');
+  });
+
+  test("a ticked step collapses, chips and all", () => {
+    const storage = fakeStorage();
+    setStepTicked(storage, RECIPE_ID, STEP_ID, true);
+    withStorage(storage);
+
+    const html = renderToString(<StepList recipeId={RECIPE_ID} steps={[step("Beat the eggs")]} ingredients={part} />);
+    expect(html).not.toContain('data-testid="step-ingredients"');
   });
 });

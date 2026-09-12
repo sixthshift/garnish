@@ -20,6 +20,12 @@ export type CookCard =
       number: number;
       /** Steps in that same part. */
       total: number;
+      /**
+       * That part's ingredients, carried so the card can show the ones this
+       * step names (M26.1, src/domain/stepIngredients.ts). The card is the
+       * whole screen in cook mode, so the list is not on it anywhere else.
+       */
+      ingredients: Ingredient[];
     };
 
 /** Every part's cards in order: its ingredients, then a card per step. Pure. */
@@ -30,7 +36,14 @@ export function buildCookCards(recipe: Pick<Recipe, "parts">): CookCard[] {
     const name = part.name.trim();
     if (part.ingredients.length > 0) cards.push({ kind: "ingredients", part: name, ingredients: part.ingredients });
     part.steps.forEach((step, index) =>
-      cards.push({ kind: "step", part: name, step, number: index + 1, total: part.steps.length }),
+      cards.push({
+        kind: "step",
+        part: name,
+        step,
+        number: index + 1,
+        total: part.steps.length,
+        ingredients: part.ingredients,
+      }),
     );
   }
   return cards;
