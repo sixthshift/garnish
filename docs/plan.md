@@ -79,7 +79,7 @@ Not in this stage, and not to be re-raised without a decisions row: splitting on
 
 ## M30 Made this, subtly
 
-- [ ] **M30.1 One line in the strip.** The header strip's last-made entry reads "Last made 3 Sep · 4 times" (count from the timeline the loader already reads; "Never made" as today with no events). `RecipeHeader` takes the count as a prop. Check: render tests for zero, one and four events.
+- [x] **M30.1 One line in the strip.** The header strip's last-made entry reads "Last made 3 Sep · 4 times" (count from the timeline the loader already reads; "Never made" as today with no events). `RecipeHeader` takes the count as a prop. Check: render tests for zero, one and four events.
 - [ ] **M30.2 The button after the last step.** `MadeThisButton` renders once, in a row under the last step card on the page, and on the cook finish card as today. It leaves `TimelineList`. Check: route render test for its position; the finish card test still passes.
 - [ ] **M30.3 History as a disclosure.** `TimelineList` becomes a closed `Disclosure` titled "History" with the count in its hint, at the foot of the page above the meta footer, one compact row per cook: date, comment on the same line (truncated, expanding on tap), a small square thumbnail when there is a photo, delete in a row menu. Renders nothing with no events. "Not made yet" goes. decisions.md row. Check: render tests for closed-by-default, the compact row with and without a photo, and nothing rendered when empty.
 - [ ] **M30.4 Save a comment as a note.** A cook's row menu gains "Save as note", which appends `{ title: "Made <date>", text: comment }` to the recipe's notes through `updateRecipe` with the stored document, and says so. The page also gains a disabled "Add to shopping list" button beside Cook with a tooltip "Coming later", so the page is designed against the button the list will need; scope.md's Later entry for the shopping list notes it. Check: a test that the sent document is the stored one plus one note; the disabled button renders with its tooltip.
@@ -96,3 +96,4 @@ _(none)_
 
 _(one line per iteration: date, task id, outcome, model)_
 
+2026-09-12  M30.1  done  7d2b9f6  sonnet  RecipeHeader takes madeCount and the strip reads "Last made 3 Sep · 4 times" (1 time, Never made); the view route passes timeline.length. Cherry-picked from task/M30.1. Pre-run dirty tree (RecipeCard aspect class) stashed again as stash@{0}
