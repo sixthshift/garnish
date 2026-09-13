@@ -88,6 +88,7 @@ test("the migrations create every table in architecture.md", () => {
     "food",
     "food_conversion",
     "ingredient",
+    "meal_plan_entry",
     "migration",
     "part",
     "recipe",
@@ -407,4 +408,46 @@ test("deleting the food or either unit takes the conversion with it", () => {
   seed();
   db.run("DELETE FROM unit WHERE id = ?", [ids.g]);
   expect(count("food_conversion")).toBe(0);
+});
+
+// --- 007_plan ----------------------------------------------------------------
+
+test("meal_plan_entry holds a recipe or a plain line on a calendar day", () => {
+  seedRecipe();
+
+  db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id, servings) VALUES (?, ?, ?, ?, ?)", [
+    "mp-1",
+    "2026-09-14",
+    0,
+    ids.recipe,
+    6,
+  ]);
+  db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES (?, ?, ?, ?)", ["mp-2", "2026-09-14", 1, "Leftovers"]);
+
+  expect(db.query<Record<string, unknown>, []>("SELECT * FROM meal_plan_entry ORDER BY position").all()).toEqual([
+    { id: "mp-1", date: "2026-09-14", position: 0, recipe_id: ids.recipe, text: "", servings: 6 },
+    { id: "mp-2", date: "2026-09-14", position: 1, recipe_id: null, text: "Leftovers", servings: null },
+  ]);
+
+  // Two entries may share a day and a position: a move rewrites a day in one
+  // transaction, so the intermediate states must be legal.
+  db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES ('mp-3', '2026-09-14', 1, 'Also')");
+  expect(count("meal_plan_entry")).toBe(3);
+
+  expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES ('mp-4', '14 Sep 2026', 0, 'x')")).toThrow(/CHECK/);
+  expect(() => db.run("INSERT INTO meal_plan_entry (id, position, text) VALUES ('mp-5', 0, 'x')")).toThrow(/NOT NULL/);
+  expect(() => db.run("INSERT INTO meal_plan_entry (id, date, text) VALUES ('mp-6', '2026-09-14', 'x')")).toThrow(/NOT NULL/);
+  expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id) VALUES ('mp-7', '2026-09-14', 0, 'missing')")).toThrow(
+    /FOREIGN KEY/,
+  );
+});
+
+test("deleting a planned recipe empties the entry's recipe, not the day", () => {
+  seedRecipe();
+  db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id) VALUES (?, ?, ?, ?)", ["mp-1", "2026-09-14", 0, ids.recipe]);
+
+  db.run("DELETE FROM recipe WHERE id = ?", [ids.recipe]);
+
+  expect(count("meal_plan_entry")).toBe(1);
+  expect(db.query<{ recipe_id: string | null }, []>("SELECT recipe_id FROM meal_plan_entry").get()!.recipe_id).toBeNull();
 });

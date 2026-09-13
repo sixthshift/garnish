@@ -90,12 +90,13 @@ shopping_item id, position, food_id?, unit_id?, quantity?, text, ticked,
               created_at, updated_at
 shopping_item_source id, item_id, recipe_id?, recipe_name, part_name,
               servings?, quantity?
+meal_plan_entry id, date, position, recipe_id?, text, servings?
 migration     id, name, applied_at
 ```
 
 Ids are UUID text; timestamps are ISO 8601 UTC text. `food`, `unit`, `aisle` and `tag` names are unique case-insensitively. Deleting a recipe cascades to its parts, ingredients, steps, notes, timeline events and tag links; deleting a part cascades to its ingredients and steps; a step link cascades from either side, so deleting a step or an ingredient takes the links naming it; deleting a food, unit or aisle sets the references null. `position` is unique within its parent.
 
-Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64); `005_shopping.sql` adds `shopping_item` and `shopping_item_source` (decisions.md row 67); `006_conversions.sql` adds `food_conversion` (decisions.md row 69).
+Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64); `005_shopping.sql` adds `shopping_item` and `shopping_item_source` (decisions.md row 67); `006_conversions.sql` adds `food_conversion` (decisions.md row 69); `007_plan.sql` adds `meal_plan_entry` (decisions.md row 71).
 
 The document the API reads and writes (`src/domain/recipe.ts`) mirrors these columns in camelCase, with Mealie's names where Mealie has the concept: `servings` → `recipeServings`, `yield_quantity` → `recipeYieldQuantity`, `yield_text` → `recipeYield`, `prep_minutes` → `prepTime`, `cook_minutes` → `performTime`. The two times are integer minutes, not Mealie's free-text strings (decisions.md row 35). Array order carries `position`, so the document has no position fields. Foreign keys come back as nested objects (`unit`, `food`, `yieldUnit`, `tags`); writes use only the nested `id`. Steps exist only inside `parts`; the document has no recipe-level `steps` array. A step carries `ingredientIds`: the ids of the ingredients it uses, in link order.
 
@@ -136,6 +137,18 @@ One list for the household, with no owner and no list table (decisions.md row 67
 - Grouped by `aisle` on the page, in `aisle.position` order with unassigned last. Foods with `skip_shopping` are never added.
 - Until unit conversions exist (M32), 1 cup flour and 300 g flour are two lines. Known and accepted.
 
+## Meal plan
+
+One plan for the household, with no owner and no plan table (decisions.md row 71), and **days rather than meals**: there is no entry type, and a day holds as many entries as it holds. `007_plan.sql` builds it; the document is `src/domain/plan.ts`, the repository `src/db/models/plan/repo.ts`, the server functions `src/server/plan.ts`.
+
+- An entry is a recipe entry (`recipe_id`, with `servings` optionally overriding the recipe's own) or a plain line (`text`, "leftovers", "out"). One table holds both, as `shopping_item` does.
+- `date` is a calendar date, `YYYY-MM-DD`, with the same GLOB check `timeline_event.occurred_on` carries. `position` is the order within that day, and is not unique: a move rewrites a day's rows in one transaction.
+- `recipe_id` sets null rather than cascading: deleting a recipe must not silently empty a planned day, and the entry survives as the plain line it becomes.
+- Mealie's `entry_type` (breakfast / lunch / dinner / side) and Tandoor's meal types are the one deliberate divergence: this household plans "what are we eating on Thursday", and a second axis of slots does not fit a phone.
+- A week is the unit read: `week(monday)` answers seven `PlanDay`s, Monday first, **empty days included** — an empty Wednesday is part of the answer. Dates are arithmetic on strings in UTC (`addDays`, `mondayOf`, `weekDates`, `groupByDay` in `src/domain/plan.ts`, pure).
+- The document nests `recipe` with only what the week strip draws — id, slug, name, image — one select per week, not one per entry. An entry whose recipe has been deleted reads back with `recipe: null` and keeps its day. Writes send `recipeId`.
+- No copied recipe name, unlike a shopping source: a plan is read for the week it names, not asked weeks later where a line came from.
+
 ## API
 
 - **Server functions** (`createServerFn`) for everything the app itself calls, one file per resource in `src/server/`. Input validated with the shared zod schemas. Reads use `method: 'GET'` so they are cacheable; writes are `POST`.
@@ -145,6 +158,7 @@ One list for the household, with no owner and no list table (decisions.md row 67
     - Summaries carry what the card draws: name, slug, image, rating, tags, `favourite`, `lastMade` and `totalTime`.
   - `timeline`: `listTimeline({ recipeId })` (newest first), `createTimelineEvent({ recipeId, event })`, `deleteTimelineEvent({ id })`. Both writes recompute `recipe.last_made`.
   - `shopping`: `listShoppingItems()`, `addShoppingItems({ items })`, `updateShoppingItem({ id, ...patch })`, `tickShoppingItem({ id, ticked })`, `removeShoppingItem({ id })`, `clearTickedShoppingItems()`, `reorderShoppingItems({ ids })`. No list id anywhere: there is one list.
+  - `plan`: `listPlanWeek({ monday })` (seven days), `addPlanEntry({ date, recipeId?, text, servings? })`, `updatePlanEntry({ id, ...patch })`, `movePlanEntry({ id, date, position })`, `removePlanEntry({ id })`. No plan id and no meal type: there is one plan, and the day is the slot.
   - `foods`, `units`, `aisles`, `tags`: `list({ q? })`, `create`, `update`, `delete`, `findOrCreate({ name })` each, e.g. `listUnits`, `findOrCreateTag`. Input schemas in `src/domain/reference.ts`.
     - `usingFood`, `usingUnit`, `usingTag` list the recipes a delete would touch; the confirm dialog shows them.
     - `mergeFood`, `mergeUnit`, `mergeTag` repoint references onto a target and delete the source in one transaction. `reorderAisles` writes a new `position` order.
