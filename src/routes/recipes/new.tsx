@@ -1,6 +1,6 @@
 // New recipe. The first question is where the recipe is from (M23.6,
-// decisions.md row 57): a web page, or your own. `?source` carries the answer
-// — `url` or `manual` — so each stage is a place the browser's Back button
+// decisions.md row 57): a web page, a Mealie export (M34.3), or your own.
+// `?source` carries the answer — `url`, `file` or `manual` — so each stage is a place the browser's Back button
 // leaves the way it leaves any other, and a link to the blank editor is a link
 // anyone can keep.
 //
@@ -13,13 +13,13 @@ import { z } from "zod";
 import { emptyDraft, type RecipeDraft, RecipeForm } from "../../components/RecipeForm";
 import { RecipeSource, type SourceKind } from "../../components/RecipeSource";
 import type { Tag, Unit } from "../../domain/recipe";
-import { recipeBySource } from "../../server/recipes";
+import { recipeByName, recipeBySource } from "../../server/recipes";
 import { listTags } from "../../server/tags";
 import { listUnits } from "../../server/units";
 
 export const NewRecipeSearch = z.object({
   /** Where the recipe is from. Absent shows the chooser. */
-  source: z.enum(["url", "manual"]).optional(),
+  source: z.enum(["url", "manual", "file"]).optional(),
 });
 
 export type NewRecipeData = { units: Unit[]; tags: Tag[] };
@@ -67,6 +67,7 @@ function NewRecipePage() {
         onChoose={choose}
         onDraft={(draft, imageUrl) => setImported({ draft, imageUrl })}
         findDuplicate={findDuplicateBySource}
+        findDuplicateByName={findDuplicateByName}
       />
     </Page>
   );
@@ -80,6 +81,16 @@ function NewRecipePage() {
 async function findDuplicateBySource(url: string): Promise<{ name: string; slug: string } | null> {
   try {
     return await recipeBySource({ data: { sourceUrl: url } });
+  } catch {
+    return null;
+  }
+}
+
+/** A recipe already here under this name, for an uploaded export's warning (M34.3). Same rule: a failed lookup is no duplicate. */
+async function findDuplicateByName(name: string): Promise<{ name: string; slug: string } | null> {
+  if (name.trim() === "") return null;
+  try {
+    return await recipeByName({ data: { name } });
   } catch {
     return null;
   }

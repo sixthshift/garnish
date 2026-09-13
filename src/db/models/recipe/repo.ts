@@ -439,6 +439,23 @@ export function recipes(db: Database) {
     },
 
     /**
+     * The name and slug of a recipe already here under `name`, or null
+     * (M34.3). The same warning as `bySourceUrl`, for an import that has no
+     * address to compare — a Mealie export carries a name and often nothing
+     * else. Matched case-insensitively, as the name sort is.
+     */
+    byName(name: string): { name: string; slug: string } | null {
+      const wanted = name.trim();
+      if (wanted === "") return null;
+      const row = dz
+        .select({ name: recipe.name, slug: recipe.slug })
+        .from(recipe)
+        .where(sql`${recipe.name} = ${wanted} COLLATE NOCASE`)
+        .get();
+      return row ?? null;
+    },
+
+    /**
      * Card summaries, newest first by default (M12.4: `sort`/`dir` change
      * that, see `resolveSort`; `sort: "random"` shuffles by `seed` instead,
      * see `seededOrder`). `q` is a name substring; `tag` and `tags` (tag

@@ -70,6 +70,20 @@ export function base64ToBytes(base64: string): Uint8Array {
   return bytes;
 }
 
+/**
+ * A `data:` URL as a File. An image out of an uploaded Mealie backup (M34.3)
+ * arrives as bytes, not an address, so it comes back from the parser as a data
+ * URL and is rebuilt here rather than fetched. Pure; throws on anything that
+ * is not a base64 data URL.
+ */
+export function dataUrlFile(url: string, name = "image"): File {
+  const match = /^data:([^;,]+);base64,(.*)$/s.exec(url.trim());
+  if (match === null) throw new Error("that is not a base64 data URL");
+  const contentType = match[1]!;
+  const ext = contentType.split("/")[1] ?? "bin";
+  return new File([base64ToBytes(match[2]!) as BlobPart], `${name}.${ext.replace("jpeg", "jpg")}`, { type: contentType });
+}
+
 /** Rebuild a fetched image as a File, so a pasted URL joins the same upload path as a picked file. */
 export function fetchedImageFile(data: FetchedImageData): File {
   return new File([base64ToBytes(data.base64) as BlobPart], data.name, { type: data.contentType });

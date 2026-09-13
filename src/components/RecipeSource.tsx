@@ -3,7 +3,7 @@
 //
 // Three stages behind one route:
 //
-//   choose   a web page, or your own.
+//   choose   a web page, a Mealie or Tandoor export, or your own.
 //   url      a URL, fetched through `importFromUrl` (M23.5). What comes back
 //            is either a schema.org recipe or an OpenGraph stub, and the
 //            review says which — a stub has a name and a picture and nothing
@@ -12,6 +12,11 @@
 //            `parseIngredient` and the M17.5 review rows, the steps as a
 //            numbered list per part. Create builds the draft, fills
 //            `sourceUrl`, and creates only the foods and units approved here.
+//
+//   file     a Mealie export — a backup zip or one recipe's JSON — read by
+//            `importMealie` (M34.3). A zip holding several recipes asks which
+//            one first. It lands on the same review as a scraped page, with
+//            its parts already made from Mealie's section titles.
 //
 // "My own" is a navigation, not a stage: `?source=manual` renders the editor
 // directly, so the browser's Back leaves it the way it leaves any other
@@ -31,10 +36,12 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { type FormEvent, useState } from "react";
 import type { Food as FoodRow } from "../db/models/food/repo";
 import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
+import { type MealieRecipe, reviewRowsFromMealie } from "../domain/importMealie";
 import type { Tag, Unit } from "../domain/recipe";
 import type { ScrapedRecipe } from "../domain/schemaRecipe";
 import { suggestLinks } from "../domain/stepIngredients";
 import { randomUuid } from "../lib/ids";
+import { postImportFile } from "../lib/importFile";
 import { messageFrom } from "../lib/notify";
 import { findOrCreateFood, listFoods } from "../server/foods";
 import type { ImportedRecipe, ImportSource } from "../server/recipeImport";
@@ -71,7 +78,7 @@ function withSuggestedLinks(part: DraftPart): DraftPart {
 }
 
 /** Which source the chooser is on. */
-export type SourceKind = "url" | "manual";
+export type SourceKind = "url" | "manual" | "file";
 
 /**
  * A scraped recipe and its reviewed ingredient lines as a draft. Steps keep
@@ -89,8 +96,18 @@ export function draftFromScraped(opts: {
   createdFoods: ReadonlyMap<string, FoodRow>;
   createdUnits: ReadonlyMap<string, Unit>;
   knownTags?: readonly Tag[];
+  /**
+   * Which part each commit belongs to, by index into `scraped.parts` (M34.3).
+   * A source that knows — Mealie's ingredient sections — says so; a scraped
+   * page cannot, and leaves this out to put every row on the main body.
+   */
+  rowParts?: readonly number[];
+  /** Notes the source carried (Mealie's `notes`). */
+  notes?: readonly { title: string; text: string }[];
+  /** A rating the source carried, 1 to 5. */
+  rating?: number | null;
 }): RecipeDraft {
-  const { scraped, sourceUrl, commits, createdFoods, createdUnits, knownTags = [] } = opts;
+  const { scraped, sourceUrl, commits, createdFoods, createdUnits, knownTags = [], rowParts, notes = [], rating = null } = opts;
   const rows = commits.map((commit) => reviewedIngredient(commit, createdFoods, createdUnits));
 
   const parts: DraftPart[] = scraped.parts.map((part) => ({
@@ -99,9 +116,16 @@ export function draftFromScraped(opts: {
     ingredients: [],
     steps: part.steps.map((step) => newStep(step)),
   }));
-  const main = parts.findIndex((part) => (part.name ?? "") === "");
-  if (main >= 0) parts[main]!.ingredients = rows;
-  else if (rows.length > 0) parts.unshift({ id: randomUuid(), name: "", ingredients: rows, steps: [] });
+  if (rowParts !== undefined) {
+    rows.forEach((row, index) => {
+      const part = parts[rowParts[index] ?? 0];
+      if (part) part.ingredients.push(row);
+    });
+  } else {
+    const main = parts.findIndex((part) => (part.name ?? "") === "");
+    if (main >= 0) parts[main]!.ingredients = rows;
+    else if (rows.length > 0) parts.unshift({ id: randomUuid(), name: "", ingredients: rows, steps: [] });
+  }
 
   const linked = parts.map(withSuggestedLinks);
 
@@ -117,6 +141,8 @@ export function draftFromScraped(opts: {
     prepTime: scraped.prepMinutes,
     performTime: scraped.cookMinutes,
     sourceUrl: sourceUrl.trim() === "" ? null : sourceUrl.trim(),
+    rating,
+    notes: notes.filter((note) => note.text.trim() !== "" || note.title.trim() !== "").map((note) => ({ title: note.title, text: note.text })),
     tags: tagsFromNames(scraped.tags, knownTags),
     parts: linked.length > 0 ? linked : emptyDraft().parts,
   };
@@ -141,6 +167,16 @@ export function importSummary(from: ImportSource, ingredients: number, steps: nu
   return `Read ${count(ingredients, "ingredient")} and ${count(steps, "step")}. Nothing is saved yet, and no food or unit is created unless you ask for it below.`;
 }
 
+/** The review's duplicate warning: the same recipe by address (M23.7) or by name (M34.3). Pure. */
+export function duplicateMessage(name: string, by: DuplicateBy): string {
+  return by === "name"
+    ? `“${name}” is already here under that name. Creating this makes a second copy.`
+    : `“${name}” was imported from the same address. Creating this makes a second copy.`;
+}
+
+/** How the review found the duplicate it is warning about. */
+export type DuplicateBy = "url" | "name";
+
 // --- Stages ----------------------------------------------------------------
 
 export type SourceChooserProps = {
@@ -148,7 +184,7 @@ export type SourceChooserProps = {
   disabled?: boolean;
 };
 
-/** The first stage: two ways a recipe gets here. */
+/** The first stage: the three ways a recipe gets here. */
 export function SourceChooser({ onChoose, disabled }: SourceChooserProps) {
   return (
     <div className="flex flex-col gap-4" data-source-stage="choose">
@@ -164,6 +200,18 @@ export function SourceChooser({ onChoose, disabled }: SourceChooserProps) {
           <span className="block font-medium">A web page</span>
           <Muted as="span" className="mt-1 block text-sm">
             Paste the address. The recipe is read off the page and shown to you before anything is saved.
+          </Muted>
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          data-source="file"
+          className="rounded-xl border border-border-normal p-4 text-left hover:bg-bg-subtle disabled:opacity-50"
+          onClick={() => onChoose("file")}
+        >
+          <span className="block font-medium">A Mealie or Tandoor export</span>
+          <Muted as="span" className="mt-1 block text-sm">
+            Upload a backup or a single recipe file. Everything it holds is shown to you before anything is saved.
           </Muted>
         </button>
         <button
@@ -231,6 +279,109 @@ export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack }: Ur
   );
 }
 
+export type FileSourceProps = {
+  /** The chosen file, or null before one is picked. */
+  file: File | null;
+  busy?: boolean;
+  error?: string | null;
+  onFileChange: (file: File | null) => void;
+  onRead: () => void;
+  onBack: () => void;
+};
+
+/**
+ * The second stage for an export: one file. A Mealie backup zip, or one
+ * recipe's JSON. Tandoor's own export is named on the button because it is the
+ * other thing people arrive with; M34.4 is what reads it.
+ */
+export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: FileSourceProps) {
+  const inputId = "import-file";
+  return (
+    <div className="flex flex-col gap-4" data-source-stage="file">
+      <SectionTitle as="h2">From a Mealie or Tandoor export</SectionTitle>
+      <Muted as="p" className="text-sm">
+        A Mealie backup <code>.zip</code>, or a single recipe saved as JSON. Nothing is saved until you have looked at it.
+      </Muted>
+      <div className="flex flex-wrap items-center gap-3">
+        <label
+          htmlFor={inputId}
+          className="cursor-pointer rounded-lg border border-border-normal px-3 py-2 text-sm font-medium hover:bg-bg-subtle"
+        >
+          Choose file
+        </label>
+        <input
+          id={inputId}
+          name="file"
+          type="file"
+          accept=".zip,.json,application/zip,application/json"
+          aria-label="Mealie export"
+          className="sr-only"
+          disabled={busy}
+          onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+        />
+        <span className="text-sm text-fg-subtle" data-testid="import-file-name">
+          {file === null ? "No file chosen" : file.name}
+        </span>
+      </div>
+      {error != null && (
+        <Message intent="danger" title="That file could not be read" data-testid="import-error">
+          {error}
+        </Message>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="solid" intent="brand" disabled={busy || file === null} onClick={onRead}>
+          {busy ? "Reading…" : "Read the file"}
+        </Button>
+        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
+          Back
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export type RecipePickerProps = {
+  recipes: readonly MealieRecipe[];
+  busy?: boolean;
+  onPick: (index: number) => void;
+  onBack: () => void;
+};
+
+/** A backup holds a whole collection; one recipe is imported at a time, so it asks which. */
+export function RecipePicker({ recipes, busy, onPick, onBack }: RecipePickerProps) {
+  return (
+    <div className="flex flex-col gap-4" data-source-stage="pick">
+      <SectionTitle as="h2">{`That file holds ${recipes.length} recipes`}</SectionTitle>
+      <Muted as="p" className="text-sm">
+        Pick the one to import. Come back for the next one.
+      </Muted>
+      <ul className="flex flex-col gap-2">
+        {recipes.map((recipe, index) => (
+          <li key={`${index}-${recipe.name}`}>
+            <button
+              type="button"
+              data-import-choice={String(index)}
+              disabled={busy}
+              className="w-full rounded-lg border border-border-normal p-3 text-left hover:bg-bg-subtle disabled:opacity-50"
+              onClick={() => onPick(index)}
+            >
+              <span className="block font-medium">{recipe.name === "" ? "Untitled" : recipe.name}</span>
+              <Muted as="span" className="mt-0.5 block text-xs">
+                {`${recipe.ingredients.length} ingredients, ${stepCount(recipe)} steps`}
+              </Muted>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div>
+        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
+          Back
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export type ImportReviewProps = {
   imported: ImportedRecipe;
   rows: readonly IngredientReview[];
@@ -238,8 +389,10 @@ export type ImportReviewProps = {
   searchFoods: (q: string) => Promise<FoodRow[]>;
   busy?: boolean;
   error?: string | null;
-  /** A recipe already here with the same source (M23.7). */
+  /** A recipe already here with the same source (M23.7) or the same name (M34.3). */
   duplicate?: { name: string; slug: string } | null;
+  /** Which of the two the duplicate was found by; the address, by default. */
+  duplicateBy?: DuplicateBy;
   onRowsChange: (rows: IngredientReview[]) => void;
   onBack: () => void;
   onCreate: () => void;
@@ -247,7 +400,7 @@ export type ImportReviewProps = {
 
 /** The third stage: what the page gave up, before any of it is written. */
 export function ImportReview(props: ImportReviewProps) {
-  const { imported, rows, units, searchFoods, busy, error, duplicate, onRowsChange, onBack, onCreate } = props;
+  const { imported, rows, units, searchFoods, busy, error, duplicate, duplicateBy = "url", onRowsChange, onBack, onCreate } = props;
   const { recipe, from } = imported;
   const label = yieldLabel(recipe);
 
@@ -265,7 +418,7 @@ export function ImportReview(props: ImportReviewProps) {
 
       {duplicate != null && (
         <Message intent="warning" title="You already have this one" data-testid="duplicate-notice">
-          {`“${duplicate.name}” was imported from the same address. Creating this makes a second copy.`}
+          {duplicateMessage(duplicate.name, duplicateBy)}
         </Message>
       )}
 
@@ -360,17 +513,29 @@ export type RecipeSourceProps = {
   onDraft: (draft: RecipeDraft, imageUrl: string | null) => void;
   /** Look for a recipe already imported from this address (M23.7). */
   findDuplicate?: (url: string) => Promise<{ name: string; slug: string } | null>;
+  /** Look for a recipe already here under this name, for an upload (M34.3). */
+  findDuplicateByName?: (name: string) => Promise<{ name: string; slug: string } | null>;
   /** Override the food vocabulary (tests); otherwise `listFoods` supplies it. */
   loadFoods?: () => Promise<FoodRow[]>;
   /** Override the fetch (tests). */
   load?: (url: string) => Promise<ImportedRecipe>;
+  /** Override the upload (tests); otherwise `postImportFile` does it. */
+  loadFile?: (file: File) => Promise<MealieRecipe[]>;
 };
 
-export function RecipeSource({ units, tags, source, onChoose, onDraft, findDuplicate, loadFoods, load }: RecipeSourceProps) {
+export function RecipeSource(props: RecipeSourceProps) {
+  const { units, tags, source, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadFile } = props;
   const [url, setUrl] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [choices, setChoices] = useState<MealieRecipe[] | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
   const [rows, setRows] = useState<IngredientReview[]>([]);
+  // Which part each row belongs to; only an upload knows (M34.3).
+  const [rowParts, setRowParts] = useState<number[] | null>(null);
   const [duplicate, setDuplicate] = useState<{ name: string; slug: string } | null>(null);
+  // The food vocabulary the upload already fetched, so picking a recipe out of
+  // a backup does not fetch it again.
+  const [vocabulary, setVocabulary] = useState<readonly FoodRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -384,7 +549,37 @@ export function RecipeSource({ units, tags, source, onChoose, onDraft, findDupli
       ]);
       setImported(found);
       setRows(reviewRows(found.recipe.ingredients, { units, foods }));
+      setRowParts(null);
       setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
+    } catch (cause) {
+      setError(messageFrom(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** One recipe out of an upload, onto the same review the URL import uses. */
+  const chooseMealie = async (recipe: MealieRecipe, foods: readonly FoodRow[]) => {
+    const reviewed = reviewRowsFromMealie(recipe, { units, foods });
+    setImported({ from: "mealie", url: recipe.sourceUrl, recipe });
+    setRows(reviewed.rows);
+    setRowParts(reviewed.rowParts);
+    setDuplicate(findDuplicateByName ? await findDuplicateByName(recipe.name) : null);
+  };
+
+  const readFile = async () => {
+    if (file === null) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const [found, foods] = await Promise.all([
+        (loadFile ?? postImportFile)(file),
+        (loadFoods ?? (() => listFoods({ data: {} })))(),
+      ]);
+      if (found.length === 0) throw new Error("No recipe in that file");
+      setVocabulary(foods);
+      if (found.length === 1) await chooseMealie(found[0]!, foods);
+      else setChoices(found);
     } catch (cause) {
       setError(messageFrom(cause));
     } finally {
@@ -403,6 +598,7 @@ export function RecipeSource({ units, tags, source, onChoose, onDraft, findDupli
       for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
       const createdUnits = new Map<string, Unit>();
       for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
+      const mealie = imported.from === "mealie" ? (imported.recipe as MealieRecipe) : null;
       const draft = draftFromScraped({
         scraped: imported.recipe,
         sourceUrl: imported.url,
@@ -410,6 +606,9 @@ export function RecipeSource({ units, tags, source, onChoose, onDraft, findDupli
         createdFoods,
         createdUnits,
         knownTags: tags,
+        rowParts: rowParts ?? undefined,
+        notes: mealie?.notes,
+        rating: mealie?.rating ?? null,
       });
       onDraft(draft, imported.recipe.image);
     } catch (cause) {
@@ -430,13 +629,51 @@ export function RecipeSource({ units, tags, source, onChoose, onDraft, findDupli
         busy={busy}
         error={error}
         duplicate={duplicate}
+        duplicateBy={imported.from === "mealie" ? "name" : "url"}
         onRowsChange={setRows}
         onBack={() => {
           setImported(null);
+          setRowParts(null);
           setDuplicate(null);
           setError(null);
         }}
         onCreate={() => void create()}
+      />
+    );
+  }
+
+  if (choices !== null) {
+    return (
+      <RecipePicker
+        recipes={choices}
+        busy={busy}
+        onPick={(index) => {
+          const recipe = choices[index];
+          if (recipe) void chooseMealie(recipe, vocabulary);
+        }}
+        onBack={() => {
+          setChoices(null);
+          setError(null);
+        }}
+      />
+    );
+  }
+
+  if (source === "file") {
+    return (
+      <FileSource
+        file={file}
+        busy={busy}
+        error={error}
+        onFileChange={(next) => {
+          setFile(next);
+          setError(null);
+        }}
+        onRead={() => void readFile()}
+        onBack={() => {
+          setError(null);
+          onChoose(null);
+        }}
       />
     );
   }

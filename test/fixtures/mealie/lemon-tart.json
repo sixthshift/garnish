@@ -1,0 +1,87 @@
+{
+  "id": "5d0a2d0a-0f9f-4a2e-9c4a-3b1c9a0f0001",
+  "userId": "f1b1a0b0-0000-4000-8000-000000000001",
+  "groupId": "f1b1a0b0-0000-4000-8000-000000000002",
+  "name": "Lemon tart",
+  "slug": "lemon-tart",
+  "image": "AiU2",
+  "recipeServings": 8,
+  "recipeYieldQuantity": 1,
+  "recipeYield": "1 tart",
+  "totalTime": "1 Hour 30 Minutes",
+  "prepTime": "30 Minutes",
+  "cookTime": null,
+  "performTime": "1 Hour",
+  "description": "Sharp, set just enough to slice.",
+  "recipeCategory": [{ "id": "c1", "name": "Dessert", "slug": "dessert" }],
+  "tags": [
+    { "id": "t1", "name": "Baking", "slug": "baking" },
+    { "id": "t2", "name": "Dessert", "slug": "dessert" }
+  ],
+  "tools": [],
+  "rating": 5,
+  "orgURL": "https://example.test/lemon-tart",
+  "dateAdded": "2024-03-01",
+  "recipeIngredient": [
+    {
+      "quantity": 200,
+      "unit": { "id": "u1", "name": "gram", "pluralName": "grams", "abbreviation": "g" },
+      "food": { "id": "f1", "name": "flour", "pluralName": "flour" },
+      "note": "sifted",
+      "isFood": true,
+      "disableAmount": false,
+      "display": "200 g flour",
+      "title": "Pastry",
+      "originalText": "200 g plain flour, sifted",
+      "referenceId": "r1"
+    },
+    {
+      "quantity": 100,
+      "unit": { "id": "u1", "name": "gram", "pluralName": "grams", "abbreviation": "g" },
+      "food": { "id": "f2", "name": "butter", "pluralName": "butter" },
+      "note": "cold, cubed",
+      "isFood": true,
+      "disableAmount": false,
+      "display": "100 g butter",
+      "title": null,
+      "originalText": "100 g cold butter, cubed",
+      "referenceId": "r2"
+    },
+    {
+      "quantity": 4,
+      "unit": null,
+      "food": { "id": "f3", "name": "lemon", "pluralName": "lemons" },
+      "note": "juiced",
+      "isFood": true,
+      "disableAmount": false,
+      "display": "4 lemons",
+      "title": "Filling",
+      "originalText": "4 lemons, juiced",
+      "referenceId": "r3"
+    },
+    {
+      "quantity": 0,
+      "unit": null,
+      "food": null,
+      "note": "A pinch of sea salt",
+      "isFood": false,
+      "disableAmount": true,
+      "display": "A pinch of sea salt",
+      "title": null,
+      "originalText": null,
+      "referenceId": "r4"
+    }
+  ],
+  "recipeInstructions": [
+    { "id": "s1", "title": "Pastry", "summary": "", "text": "Rub the butter into the flour.", "ingredientReferences": [] },
+    { "id": "s2", "title": "", "summary": "", "text": "Chill for 30 minutes, then blind bake.", "ingredientReferences": [] },
+    { "id": "s3", "title": "Filling", "summary": "", "text": "Whisk the lemons with the eggs and sugar.", "ingredientReferences": [] },
+    { "id": "s4", "title": "To finish", "summary": "", "text": "Bake until barely set.", "ingredientReferences": [] }
+  ],
+  "nutrition": {},
+  "settings": { "public": true, "showNutrition": false },
+  "assets": [],
+  "notes": [{ "title": "Tip", "text": "Use a hot knife to slice it." }],
+  "extras": {},
+  "comments": []
+}

@@ -73,6 +73,14 @@ export const recipeBySource = createServerFn({ method: "GET" })
   .validator(RecipeBySourceInput)
   .handler(async ({ data }) => recipes(await getDb()).bySourceUrl(data.sourceUrl));
 
+export const RecipeByNameInput = z.object({ name: z.string().trim().min(1) });
+
+/** A recipe already here under this name, for the Mealie import's duplicate warning (M34.3). Null when there is none. */
+export const recipeByName = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .validator(RecipeByNameInput)
+  .handler(async ({ data }) => recipes(await getDb()).byName(data.name));
+
 /**
  * One recipe by slug. With `servings`, the document is scaled to that many
  * (Cooklang rules, see src/domain/scale.ts). A recipe whose stored servings is

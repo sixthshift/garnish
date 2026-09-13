@@ -74,7 +74,7 @@ import { slugify } from "../domain/names";
 import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchema, type Tag, type Unit } from "../domain/recipe";
 import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft, type StorageLike } from "../lib/drafts";
 import { randomUuid } from "../lib/ids";
-import { fetchedImageFile, uploadRecipeImage } from "../lib/images";
+import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
 import { messageFrom, type NoticeInput, notify, notifyError } from "../lib/notify";
 import { useOnline } from "../lib/useOnline";
@@ -403,7 +403,11 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
     </Button>
   );
 
-  const fetchFromUrl = async (url: string): Promise<File> => fetchedImageFile(await fetchImage({ data: { url } }));
+  // A `data:` URL is already the bytes — an image out of an uploaded Mealie
+  // backup (M34.3) — so it is rebuilt here rather than fetched through the
+  // server, which only reads http(s).
+  const fetchFromUrl = async (url: string): Promise<File> =>
+    url.trim().startsWith("data:") ? dataUrlFile(url) : fetchedImageFile(await fetchImage({ data: { url } }));
 
   // An imported image is a URL on someone else's server. Fetch it once, into
   // the same `file` a picked one lands in, so Save stores it here.

@@ -41,8 +41,12 @@ export const PAGE_TIMEOUT_MS = 15_000;
 export const IMPORT_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
-/** Which rung produced the result, so the review can say how much it actually got. */
-export type ImportSource = "schema" | "stub";
+/**
+ * Which rung produced the result, so the review can say how much it actually
+ * got. `mealie` is an uploaded export (M34.3) rather than a rung of the URL
+ * import, and reads as well as `schema` does: Mealie has already parsed it.
+ */
+export type ImportSource = "schema" | "stub" | "mealie";
 
 /** What the import found, and where it came from. */
 export type ImportedRecipe = {

@@ -10,6 +10,7 @@ import {
   getRecipe,
   listRecipes,
   listSubRecipes,
+  recipeByName,
   recipeBySource,
   setFavourite,
   setRating,
@@ -240,6 +241,16 @@ describe("recipeBySource (M23.7)", () => {
     // A different address, and a recipe with no source at all, are not matches.
     expect(await callServerFn(recipeBySource, { sourceUrl: "https://example.test/other" })).toBeNull();
     expect(await callServerFn(recipeBySource, { sourceUrl: `${url}?utm_source=x` })).toBeNull();
+  });
+});
+
+describe("recipeByName (M34.3)", () => {
+  test("finds a recipe already here under that name, whatever the case", async () => {
+    await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "", ingredients: [], steps: [] }] });
+
+    expect(await callServerFn(recipeByName, { name: "Lemon tart" })).toEqual({ name: "Lemon tart", slug: "lemon-tart" });
+    expect(await callServerFn(recipeByName, { name: "  lemon TART " })).toMatchObject({ slug: "lemon-tart" });
+    expect(await callServerFn(recipeByName, { name: "Lemon tarts" })).toBeNull();
   });
 });
 
