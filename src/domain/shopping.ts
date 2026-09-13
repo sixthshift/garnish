@@ -16,6 +16,7 @@
 //   - `sources` is nested under its line: where the line came from, kept as
 //     copied names so it survives the recipe being deleted (M31.1).
 import { z } from "zod";
+import { convert } from "./convert";
 import { formatAmount, formatFood, formatQuantity } from "./format";
 import type { Aisle, Food, Unit } from "./recipe";
 import { foodSchema, unitSchema } from "./recipe";
@@ -118,7 +119,16 @@ export type ShoppingItemPatch = z.infer<typeof shoppingItemPatchSchema>;
 //     mixes text from unrelated sources and identical wording is coincidence.
 // Additions with a matching food and unit still merge with each other and with
 // the existing list in one pass, the same way mergeIngredients folds a
-// recipe's parts together.
+// recipe's parts together. A matching food in a *convertible*, not identical,
+// unit (M32.2, src/domain/convert.ts) merges too:
+//   - into an existing persisted line, the amount is always converted into
+//     that line's own unit — a merge can only change a stored line's
+//     quantity, never its unit;
+//   - between two new additions (no persisted line yet, so no unit to keep
+//     stable), the surviving unit is whichever one is metric — the base/target
+//     side of the food conversion or unit `standard_*` link that connects
+//     them (decisions.md row 69). When neither or both look metric, the
+//     earlier addition's unit wins.
 //
 // Pure: no ids or timestamps are minted here. The result is a plan the caller
 // hands to the repository — `merges` for existing lines (new total quantity,
@@ -161,9 +171,40 @@ function sameUnit(a: Unit | null, b: Unit | null): boolean {
   return (a?.id ?? null) === (b?.id ?? null);
 }
 
-/** A food+unit key an addition merges under; unit-less is its own bucket. */
-function foodUnitKey(food: Food, unit: Unit | null): string {
-  return `${food.id}|${unit?.id ?? ""}`;
+/** Same unit, or a food conversion / unit standard link connects them (M32.2). */
+function unitsConvertible(a: Unit | null, b: Unit | null, food: Food): boolean {
+  if (sameUnit(a, b)) return true;
+  if (a === null || b === null) return false;
+  return convert(1, a, food, b) !== null;
+}
+
+/**
+ * Whether `unit` is the metric/base side relative to `other`, for this food:
+ * either `other`'s own `standard_*` link points at `unit`, or the food has a
+ * conversion row whose `toUnitId` is `unit` and whose `unitId` is `other`.
+ * Only ever asked of one unit against the other it is merging with, so it
+ * never needs a global "is this unit metric" answer.
+ */
+function isMetricRelativeTo(unit: Unit, other: Unit, food: Food): boolean {
+  if (other.standardUnitId === unit.id) return true;
+  return food.conversions.some((conversion) => conversion.unitId === other.id && conversion.toUnitId === unit.id);
+}
+
+/** Which of two convertible units a merged line should end up in: the metric
+ * one when exactly one of them is; `existing`'s otherwise (decisions.md
+ * "merge into the metric one", M32.2). */
+function preferredUnit(existing: Unit, incoming: Unit, food: Food): Unit {
+  const existingMetric = isMetricRelativeTo(existing, incoming, food);
+  const incomingMetric = isMetricRelativeTo(incoming, existing, food);
+  if (existingMetric === incomingMetric) return existing; // neither or both: keep the existing line's unit
+  return existingMetric ? existing : incoming;
+}
+
+/** A brand-new line not yet handed to the repository: its draft input, and the
+ * `Unit` object it currently carries (the input only keeps the id). */
+interface DraftLine {
+  input: ShoppingItemInput;
+  unit: Unit | null;
 }
 
 /**
@@ -172,11 +213,13 @@ function foodUnitKey(food: Food, unit: Unit | null): string {
  */
 export function mergeIntoList(items: readonly ShoppingItem[], additions: readonly ShoppingAddition[]): ShoppingMergePlan {
   const merges = new Map<string, ShoppingListMerge>();
-  const newLines = new Map<string, ShoppingItemInput>();
+  const newLines: DraftLine[] = [];
   const plannedAdditions: ShoppingItemInput[] = [];
 
   function existingTarget(food: Food, unit: Unit | null) {
-    return items.find((item) => !item.ticked && item.food !== null && item.food.id === food.id && sameUnit(item.unit, unit));
+    return items.find(
+      (item) => !item.ticked && item.food !== null && item.food.id === food.id && unitsConvertible(item.unit, unit, food),
+    );
   }
 
   for (const addition of additions) {
@@ -203,22 +246,24 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
     if (mergeable) {
       const existing = existingTarget(food, unit);
       if (existing !== undefined) {
+        // A merge can only change a stored line's quantity, never its unit,
+        // so the amount always lands in the existing line's own unit.
+        const inExistingUnit = sameUnit(existing.unit, unit) ? quantity : convert(quantity, unit!, food, existing.unit!)!;
         const entry = merges.get(existing.id);
         if (entry === undefined) {
           merges.set(existing.id, {
             id: existing.id,
-            quantity: (existing.quantity ?? 0) + quantity,
+            quantity: (existing.quantity ?? 0) + inExistingUnit,
             sources: [{ ...source, quantity }],
           });
         } else {
-          entry.quantity = (entry.quantity ?? 0) + quantity;
+          entry.quantity = (entry.quantity ?? 0) + inExistingUnit;
           entry.sources.push({ ...source, quantity });
         }
         continue;
       }
 
-      const key = foodUnitKey(food, unit);
-      const line = newLines.get(key);
+      const line = newLines.find((draft) => draft.input.foodId === food.id && unitsConvertible(draft.unit, unit, food));
       if (line === undefined) {
         const created: ShoppingItemInput = {
           quantity,
@@ -228,11 +273,24 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
           ticked: false,
           sources: [{ ...source, quantity }],
         };
-        newLines.set(key, created);
+        newLines.push({ input: created, unit });
         plannedAdditions.push(created);
+      } else if (sameUnit(line.unit, unit)) {
+        line.input.quantity = (line.input.quantity ?? 0) + quantity;
+        line.input.sources!.push({ ...source, quantity });
       } else {
-        line.quantity = (line.quantity ?? 0) + quantity;
-        line.sources!.push({ ...source, quantity });
+        // Different but convertible units: settle on the metric one, moving
+        // the running total across if the draft's own unit loses.
+        const winner = preferredUnit(line.unit!, unit!, food);
+        if (winner.id === line.unit!.id) {
+          line.input.quantity = (line.input.quantity ?? 0) + convert(quantity, unit!, food, winner)!;
+        } else {
+          const carriedOver = convert(line.input.quantity ?? 0, line.unit!, food, winner)!;
+          line.input.quantity = carriedOver + quantity;
+          line.input.unitId = winner.id;
+          line.unit = winner;
+        }
+        line.input.sources!.push({ ...source, quantity });
       }
       continue;
     }

@@ -237,6 +237,38 @@ describe("mergeIntoList", () => {
     ]);
   });
 
+  test("a cup and 300 g of flour merge into one line in the metric unit (M32.2)", () => {
+    const convertibleFlour = {
+      ...flour,
+      conversions: [{ id: "aaaaaaaa-1111-4111-8111-111111111111", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }],
+    };
+    const plan = mergeIntoList(
+      [],
+      [
+        addition({ quantity: 1, unit: cup, food: convertibleFlour }),
+        addition({ quantity: 300, unit: gram, food: convertibleFlour, source: { recipeId: null, recipeName: "Scones", partName: "", servings: 8 } }),
+      ],
+    );
+
+    expect(plan.additions).toHaveLength(1);
+    // 1 cup -> 125 g, plus the 300 g addition: 425 g, in the metric unit.
+    expect(plan.additions[0]).toMatchObject({ foodId: convertibleFlour.id, unitId: gram.id, quantity: 425 });
+  });
+
+  test("an addition merges into an existing persisted line's unit even when the addition's unit differs but converts", () => {
+    const convertibleFlour = {
+      ...flour,
+      conversions: [{ id: "aaaaaaaa-2222-4222-8222-222222222222", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }],
+    };
+    const existing = existingItem({ quantity: 100, unit: gram, food: convertibleFlour });
+    const plan = mergeIntoList([existing], [addition({ quantity: 1, unit: cup, food: convertibleFlour })]);
+
+    expect(plan.additions).toEqual([]);
+    expect(plan.merges).toHaveLength(1);
+    // The stored line stays in grams (a merge can't change a persisted unit): 100 + 125.
+    expect(plan.merges[0]).toMatchObject({ id: existing.id, quantity: 225 });
+  });
+
   test("a whole recipe at scale 2: merges an overlapping food into the list, drops skipShopping, keeps fixed apart", () => {
     const recipe = recipeSchema.parse({
       id: "10000000-0000-4000-8000-000000000000",
