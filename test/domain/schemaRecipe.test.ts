@@ -4,9 +4,11 @@ import {
   durationToMinutes,
   firstImage,
   hasContent,
+  normaliseScraped,
   parseKeywords,
   parseYield,
   partsFromInstructions,
+  ScrapedRecipeSchema,
   scrapedFromSchema,
   text,
 } from "../../src/domain/schemaRecipe";
@@ -290,5 +292,55 @@ describe("hasContent", () => {
     expect(hasContent(blank)).toBe(false);
     expect(hasContent({ ...blank, ingredients: ["2 eggs"] })).toBe(true);
     expect(hasContent({ ...blank, parts: [{ name: "", steps: ["Mix."] }] })).toBe(true);
+  });
+});
+
+describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
+  test("the schema is the type: a full recipe round-trips unchanged", () => {
+    const full = {
+      name: "Anzac biscuits",
+      description: "A family recipe.",
+      image: "https://example.test/a.jpg",
+      servings: 24,
+      yieldText: "biscuits",
+      prepMinutes: 20,
+      cookMinutes: 15,
+      tags: ["biscuits"],
+      ingredients: ["125 g butter"],
+      parts: [{ name: "", steps: ["Mix."] }],
+    };
+    expect(normaliseScraped(ScrapedRecipeSchema.parse(full))).toEqual(full);
+  });
+
+  test("only the name is required; what is left out comes back empty", () => {
+    expect(ScrapedRecipeSchema.parse({ name: "Toast" })).toEqual({
+      name: "Toast",
+      description: "",
+      image: null,
+      servings: 0,
+      yieldText: "",
+      prepMinutes: null,
+      cookMinutes: null,
+      tags: [],
+      ingredients: [],
+      parts: [],
+    });
+    expect(ScrapedRecipeSchema.safeParse({ description: "no name" }).success).toBe(false);
+    expect(ScrapedRecipeSchema.safeParse({ name: "Toast", ingredients: "bread" }).success).toBe(false);
+  });
+
+  test("normalising trims, drops blanks, and always leaves a main body to hold the ingredients", () => {
+    const parsed = ScrapedRecipeSchema.parse({
+      name: "  Anzac biscuits  ",
+      ingredients: ["  125 g butter ", "   "],
+      tags: [" biscuits ", ""],
+      parts: [{ name: " Syrup ", steps: [" Melt. ", ""] }, { name: "", steps: [] }],
+    });
+    const recipe = normaliseScraped(parsed);
+    expect(recipe.name).toBe("Anzac biscuits");
+    expect(recipe.ingredients).toEqual(["125 g butter"]);
+    expect(recipe.tags).toEqual(["biscuits"]);
+    expect(recipe.parts).toEqual([{ name: "", steps: [] }, { name: "Syrup", steps: ["Melt."] }]);
+    expect(hasContent(recipe)).toBe(true);
   });
 });

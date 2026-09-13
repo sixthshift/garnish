@@ -587,7 +587,7 @@ function SettingsPage() {
     { value: "units", label: "Units", badge: units.length, content: <UnitsTab units={units} /> },
     { value: "aisles", label: "Aisles", badge: aisles.length, content: <AislesTab aisles={aisles} /> },
     { value: "tags", label: "Tags", badge: tags.length, content: <TagsTab tags={tags} /> },
-    { value: "export", label: "Export", content: <ExportTab /> },
+    { value: "export", label: "Import and export", content: <ExportTab /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
   ];
 
@@ -625,7 +625,29 @@ export function ExportTab() {
       <Muted as="p" className="text-sm">
         One recipe on its own is at <code>/api/recipes/&lt;slug&gt;.json</code>.
       </Muted>
+      <AiImportNote />
     </section>
+  );
+}
+
+/**
+ * What the AI rung needs to exist (M34.5, decisions.md row 74). The paste
+ * option on the new-recipe screen appears only when the `claude` binary is on
+ * the server's path, and in the container it will not be until a token is
+ * injected (decision 12) — so the one place that can explain a missing option
+ * says so here, beside the other import and export plumbing.
+ */
+export function AiImportNote() {
+  return (
+    <div className="flex flex-col gap-2" data-testid="ai-import-note">
+      <SectionTitle as="h3">Importing with Claude</SectionTitle>
+      <Muted as="p" className="text-sm">
+        A new recipe can be read out of pasted text by <code>claude -p</code>, which runs on the server on your Claude subscription.
+        The option only appears when the <code>claude</code> command is installed there. In the container, run{" "}
+        <code>claude setup-token</code> on a machine you are logged in on and give the container that token; without it, the other
+        import paths still work and this one stays hidden.
+      </Muted>
+    </div>
   );
 }
 

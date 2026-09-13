@@ -646,7 +646,7 @@ describe("loader data types match the domain schemas", () => {
     expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeViewData>();
     expectTypeOf<RecipeViewData>().toEqualTypeOf<{ recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[] }>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();
-    expectTypeOf<(typeof NewRoute)["types"]["loaderData"]>().toEqualTypeOf<{ units: Unit[]; tags: Tag[] }>();
+    expectTypeOf<(typeof NewRoute)["types"]["loaderData"]>().toEqualTypeOf<{ units: Unit[]; tags: Tag[]; aiAvailable: boolean }>();
     expectTypeOf<(typeof SettingsRoute)["types"]["loaderData"]>().toEqualTypeOf<SettingsData>();
     expectTypeOf<SettingsData>().toEqualTypeOf<{ aisles: Aisle[]; units: Unit[]; foods: FoodRow[]; tags: Tag[]; recipes: RecipeSummary[] }>();
     // Search params are typed from their zod schemas.

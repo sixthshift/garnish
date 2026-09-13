@@ -1,6 +1,7 @@
 // New recipe. The first question is where the recipe is from (M23.6,
-// decisions.md row 57): a web page, a Mealie export (M34.3), or your own.
-// `?source` carries the answer — `url`, `file` or `manual` — so each stage is a place the browser's Back button
+// decisions.md row 57): a web page, a Mealie export (M34.3), pasted text read
+// by `claude -p` (M34.5), or your own.
+// `?source` carries the answer — `url`, `file`, `paste` or `manual` — so each stage is a place the browser's Back button
 // leaves the way it leaves any other, and a link to the blank editor is a link
 // anyone can keep.
 //
@@ -13,28 +14,36 @@ import { z } from "zod";
 import { emptyDraft, type RecipeDraft, RecipeForm } from "../../components/RecipeForm";
 import { RecipeSource, type SourceKind } from "../../components/RecipeSource";
 import type { Tag, Unit } from "../../domain/recipe";
+import { aiImportAvailable } from "../../server/aiImport";
 import { recipeByName, recipeBySource } from "../../server/recipes";
 import { listTags } from "../../server/tags";
 import { listUnits } from "../../server/units";
 
 export const NewRecipeSearch = z.object({
   /** Where the recipe is from. Absent shows the chooser. */
-  source: z.enum(["url", "manual", "file"]).optional(),
+  source: z.enum(["url", "manual", "file", "paste"]).optional(),
 });
 
-export type NewRecipeData = { units: Unit[]; tags: Tag[] };
+export type NewRecipeData = { units: Unit[]; tags: Tag[]; aiAvailable: boolean };
 
 export const Route = createFileRoute("/recipes/new")({
   validateSearch: NewRecipeSearch,
   loader: async (): Promise<NewRecipeData> => {
-    const [units, tags] = await Promise.all([listUnits({ data: {} }), listTags({ data: {} })]);
-    return { units, tags };
+    // Whether the AI rung can run is asked here rather than in the component,
+    // so the chooser never flashes an option that is about to disappear
+    // (M34.5). A failed ask is "not installed": the other rungs still work.
+    const [units, tags, ai] = await Promise.all([
+      listUnits({ data: {} }),
+      listTags({ data: {} }),
+      aiImportAvailable().catch(() => ({ available: false })),
+    ]);
+    return { units, tags, aiAvailable: ai.available };
   },
   component: NewRecipePage,
 });
 
 function NewRecipePage() {
-  const { units, tags } = Route.useLoaderData();
+  const { units, tags, aiAvailable } = Route.useLoaderData();
   const { source } = Route.useSearch();
   const navigate = Route.useNavigate();
   // An imported draft has no URL of its own, and the form must not be
@@ -64,6 +73,7 @@ function NewRecipePage() {
         units={units}
         tags={tags}
         source={source ?? null}
+        aiAvailable={aiAvailable}
         onChoose={choose}
         onDraft={(draft, imageUrl) => setImported({ draft, imageUrl })}
         findDuplicate={findDuplicateBySource}

@@ -20,6 +20,11 @@
 //            parts already made from Mealie's section titles or Tandoor's
 //            steps.
 //
+//   paste    a block of text, read by `claude -p` on the server (M34.5,
+//            decisions.md row 74). The rung under the two rules-based ones:
+//            what you have is prose, and no rule reads prose. Offered only
+//            when the binary is installed, and it lands on the same review.
+//
 // "My own" is a navigation, not a stage: `?source=manual` renders the editor
 // directly, so the browser's Back leaves it the way it leaves any other
 // screen.
@@ -35,6 +40,7 @@ import { Input } from "@sixthshift/design-system/input";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { Textarea } from "@sixthshift/design-system/textarea";
 import { type FormEvent, useState } from "react";
 import type { Food as FoodRow } from "../db/models/food/repo";
 import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
@@ -51,6 +57,7 @@ import { getRecipe, recipeByName } from "../server/recipes";
 import type { ImportedRecipe, ImportSource } from "../server/recipeImport";
 import { importFromUrl } from "../server/recipeImport";
 import { findOrCreateUnit } from "../server/units";
+import { importFromText } from "../server/aiImport";
 import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
 import { filterUnits, reviewedIngredient } from "./IngredientsEditor";
 import { emptyDraft, type DraftPart, type RecipeDraft, tagsFromNames } from "./RecipeForm";
@@ -103,8 +110,8 @@ function withStepRows(part: DraftPart, stepOfRow: readonly number[]): DraftPart 
   return { ...part, ingredients, steps };
 }
 
-/** Which source the chooser is on. */
-export type SourceKind = "url" | "manual" | "file";
+/** Which source the chooser is on. `paste` is the AI rung (M34.5) and only appears when `claude` is installed. */
+export type SourceKind = "url" | "manual" | "file" | "paste";
 
 /**
  * A scraped recipe and its reviewed ingredient lines as a draft. Steps keep
@@ -202,7 +209,11 @@ export function stepCount(scraped: ScrapedRecipe): number {
 export function importSummary(from: ImportSource, ingredients: number, steps: number): string {
   if (from === "stub") return "That page has no recipe data, so this is just its title and picture. The rest is yours to type in.";
   const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
-  return `Read ${count(ingredients, "ingredient")} and ${count(steps, "step")}. Nothing is saved yet, and no food or unit is created unless you ask for it below.`;
+  const read = `Read ${count(ingredients, "ingredient")} and ${count(steps, "step")}.`;
+  // An AI read is a reading, not a transcription, so the review is told to
+  // check it rather than merely approve it (M34.5).
+  if (from === "ai") return `Claude ${read.toLowerCase()} Check them against what you pasted — nothing is saved yet, and no food or unit is created unless you ask for it below.`;
+  return `${read} Nothing is saved yet, and no food or unit is created unless you ask for it below.`;
 }
 
 /** The review's duplicate warning: the same recipe by address (M23.7) or by name (M34.3). Pure. */
@@ -220,10 +231,12 @@ export type DuplicateBy = "url" | "name";
 export type SourceChooserProps = {
   onChoose: (kind: SourceKind) => void;
   disabled?: boolean;
+  /** Whether `claude` is installed on the server (M34.5); without it the paste option is not offered. */
+  aiAvailable?: boolean;
 };
 
-/** The first stage: the three ways a recipe gets here. */
-export function SourceChooser({ onChoose, disabled }: SourceChooserProps) {
+/** The first stage: the ways a recipe gets here. The pasted one appears only when the AI rung can run. */
+export function SourceChooser({ onChoose, disabled, aiAvailable = false }: SourceChooserProps) {
   return (
     <div className="flex flex-col gap-4" data-source-stage="choose">
       <SectionTitle as="h2">Where is this recipe from?</SectionTitle>
@@ -252,6 +265,21 @@ export function SourceChooser({ onChoose, disabled }: SourceChooserProps) {
             Upload a backup or a single recipe file. Everything it holds is shown to you before anything is saved.
           </Muted>
         </button>
+        {aiAvailable && (
+          <button
+            type="button"
+            disabled={disabled}
+            data-source="paste"
+            className="rounded-xl border border-border-normal p-4 text-left hover:bg-bg-subtle disabled:opacity-50"
+            onClick={() => onChoose("paste")}
+          >
+            <span className="block font-medium">Pasted text</span>
+            <Muted as="span" className="mt-1 block text-sm">
+              A photo's text, an email, a page that gave nothing up. Claude reads it here on the server, and you check it before anything
+              is saved.
+            </Muted>
+          </button>
+        )}
         <button
           type="button"
           disabled={disabled}
@@ -314,6 +342,58 @@ export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack }: Ur
         </Button>
       </div>
     </form>
+  );
+}
+
+export type PasteSourceProps = {
+  text: string;
+  busy?: boolean;
+  error?: string | null;
+  onTextChange: (text: string) => void;
+  onRead: () => void;
+  onBack: () => void;
+};
+
+/**
+ * The second stage for pasted text (M34.5): one box. What is in it goes to
+ * `claude -p` on the server and comes back as the same reviewable recipe a
+ * scraped page does. Nothing here is saved, and the note says so, because
+ * handing a recipe to a model is exactly the moment to be told what happens
+ * next.
+ */
+export function PasteSource({ text, busy, error, onTextChange, onRead, onBack }: PasteSourceProps) {
+  return (
+    <div className="flex flex-col gap-4" data-source-stage="paste">
+      <SectionTitle as="h2">From pasted text</SectionTitle>
+      <Muted as="p" className="text-sm">
+        Paste the whole recipe — ingredients and method together, in any order. Claude reads it into this app's fields and you check
+        every line before anything is saved.
+      </Muted>
+      <FormField label="The recipe">
+        <Textarea
+          name="text"
+          rows={12}
+          aria-label="Pasted recipe"
+          placeholder="Anzac biscuits&#10;&#10;1 cup plain flour&#10;125 g butter&#10;&#10;Mix the dry ingredients…"
+          value={text}
+          disabled={busy}
+          onChange={(event) => onTextChange(event.target.value)}
+        />
+      </FormField>
+      {error != null && (
+        <Message intent="danger" title="That text could not be read" data-testid="import-error">
+          {error}
+        </Message>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="solid" intent="brand" disabled={busy || text.trim() === ""} onClick={onRead}>
+          {busy ? "Reading…" : "Read the text"}
+        </Button>
+        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
+          Back
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -560,6 +640,10 @@ export type RecipeSourceProps = {
   load?: (url: string) => Promise<ImportedRecipe>;
   /** Override the upload (tests); otherwise `postImportFile` does it. */
   loadFile?: (file: File) => Promise<ExportRecipe[]>;
+  /** Whether `claude` is installed on the server (M34.5); false hides the paste option entirely. */
+  aiAvailable?: boolean;
+  /** Override the AI read (tests); otherwise `importFromText` does it. */
+  loadText?: (text: string) => Promise<ImportedRecipe>;
   /**
    * The food standing for a recipe already here under `name` (M32.3), for a
    * Tandoor export's nested recipes; null when no such recipe is here yet.
@@ -589,7 +673,9 @@ async function foodForRecipeNamed(name: string): Promise<FoodRow | null> {
 
 export function RecipeSource(props: RecipeSourceProps) {
   const { units, tags, source, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadFile, linkSubRecipeFood } = props;
+  const { aiAvailable = false, loadText } = props;
   const [url, setUrl] = useState("");
+  const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [choices, setChoices] = useState<ExportRecipe[] | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
@@ -621,6 +707,32 @@ export function RecipeSource(props: RecipeSourceProps) {
       setRowSteps(null);
       setSubRecipes([]);
       setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
+    } catch (cause) {
+      setError(messageFrom(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Pasted text through `claude -p` (M34.5), onto the same review. A failed
+   * read — no binary, a timeout, an answer that was not a recipe — is shown
+   * here and nothing is written, which is true of every rung above it too.
+   */
+  const readText = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const [found, foods] = await Promise.all([
+        loadText ? loadText(text) : importFromText({ data: { text, sourceUrl: "" } }),
+        (loadFoods ?? (() => listFoods({ data: {} })))(),
+      ]);
+      setImported(found);
+      setRows(reviewRows(found.recipe.ingredients, { units, foods }));
+      setRowParts(null);
+      setRowSteps(null);
+      setSubRecipes([]);
+      setDuplicate(findDuplicateByName ? await findDuplicateByName(found.recipe.name) : null);
     } catch (cause) {
       setError(messageFrom(cause));
     } finally {
@@ -700,7 +812,7 @@ export function RecipeSource(props: RecipeSourceProps) {
     }
   };
 
-  if (source === null) return <SourceChooser disabled={busy} onChoose={onChoose} />;
+  if (source === null) return <SourceChooser disabled={busy} aiAvailable={aiAvailable} onChoose={onChoose} />;
 
   if (imported !== null) {
     return (
@@ -712,7 +824,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         busy={busy}
         error={error}
         duplicate={duplicate}
-        duplicateBy={imported.from === "mealie" || imported.from === "tandoor" ? "name" : "url"}
+        duplicateBy={imported.from === "schema" || imported.from === "stub" ? "url" : "name"}
         onRowsChange={setRows}
         onBack={() => {
           setImported(null);
@@ -739,6 +851,25 @@ export function RecipeSource(props: RecipeSourceProps) {
         onBack={() => {
           setChoices(null);
           setError(null);
+        }}
+      />
+    );
+  }
+
+  if (source === "paste") {
+    return (
+      <PasteSource
+        text={text}
+        busy={busy}
+        error={error}
+        onTextChange={(next) => {
+          setText(next);
+          setError(null);
+        }}
+        onRead={() => void readText()}
+        onBack={() => {
+          setError(null);
+          onChoose(null);
         }}
       />
     );
