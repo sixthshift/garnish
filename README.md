@@ -71,7 +71,7 @@ The sample recipes also carry a favourite, a source URL and two logged cooks, so
 - **A recipe** — tick ingredients and steps off as you go, switch between the per-part and merged ingredient lists, scale by servings, and use the ⋯ menu for Edit, Cook, Duplicate, Copy link, Copy ingredients, Print and Delete.
 - **Made this** — the button beside "last made" logs a cook: date, comment and an optional photo. Logged cooks appear as a timeline under the notes, and the newest one sets the recipe's last-made date. Cook mode's final card offers the same button.
 - **Cook** — one card at a time, full screen, with part pills, swipe or arrow keys, and the screen kept awake.
-- **Settings** (`/settings`) — tabs for Foods, Units, Aisles, Tags and Appearance. The first four are editable tables with search, merge and a delete that lists the recipes it affects; Appearance holds the light / dark / system theme toggle.
+- **Settings** (`/settings`) — tabs for Foods, Units, Aisles, Tags, Export and Appearance. The first four are editable tables with search, merge and a delete that lists the recipes it affects; Export downloads every recipe as JSON (images referenced by URL, not included); Appearance holds the light / dark / system theme toggle.
 
 Photos live on disk under `DATA_DIR/images/` (logged-cook photos under `images/timeline/`), not in the database — see [Backup](#backup).
 

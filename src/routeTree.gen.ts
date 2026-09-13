@@ -13,9 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PlanRouteImport } from './routes/plan'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ShoppingRouteImport } from './routes/shopping'
+import { Route as ApiExportDotjsonRouteImport } from './routes/api/export[.]json'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 import { Route as ApiImagesFileRouteImport } from './routes/api/images/$file'
+import { Route as ApiRecipesChar123slugChar125DotjsonRouteImport } from './routes/api/recipes/{$slug}[.]json'
 import { Route as RecipesSlugIndexRouteImport } from './routes/recipes/$slug/index'
 import { Route as RecipesSlugCookRouteImport } from './routes/recipes/$slug/cook'
 import { Route as RecipesSlugEditRouteImport } from './routes/recipes/$slug/edit'
@@ -43,6 +45,11 @@ const ShoppingRoute = ShoppingRouteImport.update({
   path: '/shopping',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiExportDotjsonRoute = ApiExportDotjsonRouteImport.update({
+  id: '/api/export.json',
+  path: '/api/export.json',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
@@ -58,6 +65,12 @@ const ApiImagesFileRoute = ApiImagesFileRouteImport.update({
   path: '/api/images/$file',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRecipesChar123slugChar125DotjsonRoute =
+  ApiRecipesChar123slugChar125DotjsonRouteImport.update({
+    id: '/api/recipes/{$slug}.json',
+    path: '/api/recipes/{$slug}.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const RecipesSlugIndexRoute = RecipesSlugIndexRouteImport.update({
   id: '/recipes/$slug/',
   path: '/recipes/$slug/',
@@ -94,9 +107,11 @@ export interface FileRoutesByFullPath {
   '/plan': typeof PlanRoute
   '/settings': typeof SettingsRoute
   '/shopping': typeof ShoppingRoute
+  '/api/export.json': typeof ApiExportDotjsonRoute
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/api/recipes/{$slug}.json': typeof ApiRecipesChar123slugChar125DotjsonRoute
   '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug/': typeof RecipesSlugIndexRoute
@@ -109,9 +124,11 @@ export interface FileRoutesByTo {
   '/plan': typeof PlanRoute
   '/settings': typeof SettingsRoute
   '/shopping': typeof ShoppingRoute
+  '/api/export.json': typeof ApiExportDotjsonRoute
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/api/recipes/{$slug}.json': typeof ApiRecipesChar123slugChar125DotjsonRoute
   '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug': typeof RecipesSlugIndexRoute
@@ -125,9 +142,11 @@ export interface FileRoutesById {
   '/plan': typeof PlanRoute
   '/settings': typeof SettingsRoute
   '/shopping': typeof ShoppingRoute
+  '/api/export.json': typeof ApiExportDotjsonRoute
   '/api/health': typeof ApiHealthRoute
   '/recipes/new': typeof RecipesNewRoute
   '/api/images/$file': typeof ApiImagesFileRoute
+  '/api/recipes/{$slug}.json': typeof ApiRecipesChar123slugChar125DotjsonRoute
   '/recipes/$slug/cook': typeof RecipesSlugCookRoute
   '/recipes/$slug/edit': typeof RecipesSlugEditRoute
   '/recipes/$slug/': typeof RecipesSlugIndexRoute
@@ -142,9 +161,11 @@ export interface FileRouteTypes {
     | '/plan'
     | '/settings'
     | '/shopping'
+    | '/api/export.json'
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
+    | '/api/recipes/{$slug}.json'
     | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug/'
@@ -157,9 +178,11 @@ export interface FileRouteTypes {
     | '/plan'
     | '/settings'
     | '/shopping'
+    | '/api/export.json'
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
+    | '/api/recipes/{$slug}.json'
     | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug'
@@ -172,9 +195,11 @@ export interface FileRouteTypes {
     | '/plan'
     | '/settings'
     | '/shopping'
+    | '/api/export.json'
     | '/api/health'
     | '/recipes/new'
     | '/api/images/$file'
+    | '/api/recipes/{$slug}.json'
     | '/recipes/$slug/cook'
     | '/recipes/$slug/edit'
     | '/recipes/$slug/'
@@ -188,9 +213,11 @@ export interface RootRouteChildren {
   PlanRoute: typeof PlanRoute
   SettingsRoute: typeof SettingsRoute
   ShoppingRoute: typeof ShoppingRoute
+  ApiExportDotjsonRoute: typeof ApiExportDotjsonRoute
   ApiHealthRoute: typeof ApiHealthRoute
   RecipesNewRoute: typeof RecipesNewRoute
   ApiImagesFileRoute: typeof ApiImagesFileRoute
+  ApiRecipesChar123slugChar125DotjsonRoute: typeof ApiRecipesChar123slugChar125DotjsonRoute
   RecipesSlugCookRoute: typeof RecipesSlugCookRoute
   RecipesSlugEditRoute: typeof RecipesSlugEditRoute
   RecipesSlugIndexRoute: typeof RecipesSlugIndexRoute
@@ -229,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShoppingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/export.json': {
+      id: '/api/export.json'
+      path: '/api/export.json'
+      fullPath: '/api/export.json'
+      preLoaderRoute: typeof ApiExportDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health': {
       id: '/api/health'
       path: '/api/health'
@@ -248,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/api/images/$file'
       fullPath: '/api/images/$file'
       preLoaderRoute: typeof ApiImagesFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/recipes/{$slug}.json': {
+      id: '/api/recipes/{$slug}.json'
+      path: '/api/recipes/{$slug}.json'
+      fullPath: '/api/recipes/{$slug}.json'
+      preLoaderRoute: typeof ApiRecipesChar123slugChar125DotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recipes/$slug/': {
@@ -300,9 +341,12 @@ const rootRouteChildren: RootRouteChildren = {
   PlanRoute: PlanRoute,
   SettingsRoute: SettingsRoute,
   ShoppingRoute: ShoppingRoute,
+  ApiExportDotjsonRoute: ApiExportDotjsonRoute,
   ApiHealthRoute: ApiHealthRoute,
   RecipesNewRoute: RecipesNewRoute,
   ApiImagesFileRoute: ApiImagesFileRoute,
+  ApiRecipesChar123slugChar125DotjsonRoute:
+    ApiRecipesChar123slugChar125DotjsonRoute,
   RecipesSlugCookRoute: RecipesSlugCookRoute,
   RecipesSlugEditRoute: RecipesSlugEditRoute,
   RecipesSlugIndexRoute: RecipesSlugIndexRoute,

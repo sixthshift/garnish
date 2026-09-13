@@ -587,6 +587,7 @@ function SettingsPage() {
     { value: "units", label: "Units", badge: units.length, content: <UnitsTab units={units} /> },
     { value: "aisles", label: "Aisles", badge: aisles.length, content: <AislesTab aisles={aisles} /> },
     { value: "tags", label: "Tags", badge: tags.length, content: <TagsTab tags={tags} /> },
+    { value: "export", label: "Export", content: <ExportTab /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
   ];
 
@@ -598,6 +599,33 @@ function SettingsPage() {
         <Tabs.Panels />
       </Tabs>
     </div>
+  );
+}
+
+/**
+ * The Export tab (M34.1): one link at the whole database, and the caveat that
+ * matters — the file names its images by URL and does not carry their bytes,
+ * so it restores text, not photographs. The database is still the master
+ * (decisions.md row 72); this is a copy taken for reading elsewhere.
+ */
+export function ExportTab() {
+  return (
+    <section className="flex flex-col gap-2" aria-label="Export">
+      <SectionTitle as="h2">Export</SectionTitle>
+      <Muted as="p" className="text-sm">
+        Every recipe as JSON, with the foods, units, aisles and tags they use. Images are referenced by their URLs, not included in the file.
+      </Muted>
+      <div>
+        <Button asChild variant="outline" intent="neutral">
+          <a href="/api/export.json" download data-testid="export-download">
+            Download JSON
+          </a>
+        </Button>
+      </div>
+      <Muted as="p" className="text-sm">
+        One recipe on its own is at <code>/api/recipes/&lt;slug&gt;.json</code>.
+      </Muted>
+    </section>
   );
 }
 

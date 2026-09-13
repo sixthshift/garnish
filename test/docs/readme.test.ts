@@ -54,6 +54,20 @@ export function sourceDirectories(src: string): string[] {
 }
 
 /**
+ * One file-route segment as the URL it serves: `[x]` escapes a character the
+ * file convention would otherwise read (`export[.]json` is one segment, not
+ * two), `{$name}` is a param with a prefix or suffix beside it, and a bare
+ * `$name` is the whole segment. All three land in the `:param` form the docs
+ * use. Pure.
+ */
+export function routeSegmentToUrl(segment: string): string {
+  return segment
+    .replace(/\[(.)\]/g, "$1")
+    .replace(/\{\$(\w+)\}/g, ":$1")
+    .replace(/^\$/, ":");
+}
+
+/**
  * Server route URL paths under `src/routes/api/`, with `$param` segments in
  * the `:param` form the docs use. Not pure: reads the tree.
  */
@@ -67,7 +81,7 @@ export function serverRoutePaths(routes: string): string[] {
         continue;
       }
       const rel = relative(routes, path).split("\\").join("/").replace(/\.ts$/, "");
-      found.push(`/${rel.split("/").map((segment) => segment.replace(/^\$/, ":")).join("/")}`);
+      found.push(`/${rel.split("/").map(routeSegmentToUrl).join("/")}`);
     }
   };
   walk(join(routes, "api"));
@@ -90,6 +104,17 @@ describe("bunRunScripts", () => {
       "dev",
       "seed",
     ]);
+  });
+});
+
+describe("routeSegmentToUrl", () => {
+  test.each([
+    ["a plain segment", "health", "health"],
+    ["a whole-segment param", "$file", ":file"],
+    ["an escaped dot", "export[.]json", "export.json"],
+    ["a param with a suffix", "{$slug}[.]json", ":slug.json"],
+  ])("%s", (_label, segment, expected) => {
+    expect(routeSegmentToUrl(segment)).toBe(expected);
   });
 });
 

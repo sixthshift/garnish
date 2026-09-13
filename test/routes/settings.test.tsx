@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Aisle, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
-import { AislesTab, dedupeSummaries, foodsLabel, groupTagsAZ, TagsTab, unitsLabel, type FoodRow } from "../../src/routes/settings";
+import { AislesTab, dedupeSummaries, ExportTab, foodsLabel, groupTagsAZ, TagsTab, unitsLabel, type FoodRow } from "../../src/routes/settings";
 
 function summary(id: string, name: string): RecipeSummary {
   return {
@@ -147,5 +147,17 @@ describe("TagsTab render", () => {
 
   test("no tags says so instead of an empty list", async () => {
     expect(await renderWithRouter(() => <TagsTab tags={[]} />)).toContain("No tags yet.");
+  });
+});
+
+describe("ExportTab render", () => {
+  test("links at the whole-database export as a download and says images are not in the file", async () => {
+    const html = await renderWithRouter(() => <ExportTab />);
+    expect(html).toContain('href="/api/export.json"');
+    expect(html).toContain("download");
+    expect(html).toContain('data-testid="export-download"');
+    expect(html).toMatch(/Images are referenced by their URLs, not included/);
+    // The per-recipe endpoint is named so a reader can find it.
+    expect(html).toContain("/api/recipes/");
   });
 });
