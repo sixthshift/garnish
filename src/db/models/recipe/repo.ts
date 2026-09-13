@@ -22,16 +22,18 @@ import type {
   Tag,
   Unit,
 } from "../../../domain/recipe";
-import { totalMinutes } from "../../../domain/format";
+import { formatIngredient, totalMinutes } from "../../../domain/format";
 import { resolveSort, seededOrder, type SortDir, type SortKey } from "../../../domain/sort";
 import type { SubRecipe } from "../../../domain/subRecipe";
 import { aisles as aisleRepository } from "../aisle/repo";
 import { type Executor, orm } from "../../connection/client";
+import { food } from "../food/schema";
 import { foods as foodRepository } from "../food/repo";
 import { slugify, uniqueSlug } from "../../../domain/names";
 import { tag } from "../tag/schema";
 import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
 import { tags as tagRepository } from "../tag/repo";
+import { unit } from "../unit/schema";
 import { units as unitRepository } from "../unit/repo";
 
 export type ListFilter = {
@@ -118,6 +120,55 @@ export function recipes(db: Database) {
       .where(eq(recipeTag.recipeId, recipeId))
       .orderBy(asc(tag.name))
       .all();
+
+  /** How many ingredient lines a card's hover preview shows (M35.3). */
+  const INGREDIENT_PREVIEW_LIMIT = 6;
+
+  /**
+   * The card's hover preview (M35.3): the recipe's first `INGREDIENT_PREVIEW_LIMIT`
+   * ingredient lines, part order then row order, formatted the same way the
+   * recipe page's rows are (domain/format.ts's formatIngredient).
+   */
+  const selectIngredientPreview = (recipeId: string): string[] =>
+    dz
+      .select({
+        quantity: ingredient.quantity,
+        note: ingredient.note,
+        originalText: ingredient.originalText,
+        unitName: unit.name,
+        unitPluralName: unit.pluralName,
+        unitAbbreviation: unit.abbreviation,
+        unitUseAbbreviation: unit.useAbbreviation,
+        unitFraction: unit.fraction,
+        foodName: food.name,
+        foodPluralName: food.pluralName,
+      })
+      .from(ingredient)
+      .innerJoin(part, eq(part.id, ingredient.partId))
+      .leftJoin(unit, eq(unit.id, ingredient.unitId))
+      .leftJoin(food, eq(food.id, ingredient.foodId))
+      .where(eq(part.recipeId, recipeId))
+      .orderBy(asc(part.position), asc(ingredient.position))
+      .limit(INGREDIENT_PREVIEW_LIMIT)
+      .all()
+      .map((row) =>
+        formatIngredient({
+          quantity: row.quantity,
+          unit:
+            row.unitName === null
+              ? null
+              : {
+                  name: row.unitName,
+                  pluralName: row.unitPluralName,
+                  abbreviation: row.unitAbbreviation!,
+                  useAbbreviation: row.unitUseAbbreviation!,
+                  fraction: row.unitFraction!,
+                },
+          food: row.foodName === null ? null : { name: row.foodName, pluralName: row.foodPluralName },
+          note: row.note,
+          originalText: row.originalText,
+        }),
+      );
 
   const rowById = (id: string) => dz.select().from(recipe).where(eq(recipe.id, id)).get();
 
@@ -310,6 +361,7 @@ export function recipes(db: Database) {
       lastMade: row.lastMade,
       favourite: row.favourite,
       tags: selectTags(row.id),
+      ingredientPreview: selectIngredientPreview(row.id),
     };
   }
 

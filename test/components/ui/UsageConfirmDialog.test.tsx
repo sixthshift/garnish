@@ -17,6 +17,7 @@ function summary(name: string): RecipeSummary {
     lastMade: null,
     favourite: false,
     tags: [],
+    ingredientPreview: [],
   };
 }
 

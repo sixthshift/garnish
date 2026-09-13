@@ -7,9 +7,18 @@
 // `mode` (M12.2) switches the card's shape: "grid" is the plain vertical card
 // above; "list" is Mealie's `RecipeCardMobile` row — a small square image on
 // the left, text stacked to the right — for the list view mode in prefs.ts.
+//
+// An `ingredientPreview` (M35.3) wraps the link in a hover `Tooltip` of its
+// first six ingredient lines; the popup itself is shown only from `md` (a
+// phone has no hover, and a focus-triggered popup would otherwise still
+// appear there), so a smaller viewport gets the plain link. The lines
+// themselves are also mirrored onto the link's `data-ingredient-preview`
+// (JSON), since the tooltip's own body renders only once opened and cannot
+// be asserted from a static render.
 import { Badge } from "@sixthshift/design-system/badge";
 import { Card } from "@sixthshift/design-system/card";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
+import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { formatDuration } from "../domain/format";
@@ -138,6 +147,17 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
     <GridBody recipe={recipe} src={src} totalTime={totalTime} />
   );
 
+  const link = (
+    <Link
+      to="/recipes/$slug"
+      params={{ slug: recipe.slug }}
+      className="block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand"
+      data-ingredient-preview={recipe.ingredientPreview.length > 0 ? JSON.stringify(recipe.ingredientPreview) : undefined}
+    >
+      {body}
+    </Link>
+  );
+
   return (
     <div className="group relative h-full" data-card-mode={mode}>
       <FavouriteButton
@@ -145,13 +165,20 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
         favourite={recipe.favourite}
         className="absolute right-2 top-2 z-10 bg-bg-normal/80 backdrop-blur-sm hover:bg-bg-normal"
       />
-      <Link
-        to="/recipes/$slug"
-        params={{ slug: recipe.slug }}
-        className="block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand"
-      >
-        {body}
-      </Link>
+      {recipe.ingredientPreview.length > 0 ? (
+        <Tooltip>
+          <Tooltip.Trigger asChild>{link}</Tooltip.Trigger>
+          <Tooltip.Body className="hidden max-w-xs text-left md:block">
+            <ul>
+              {recipe.ingredientPreview.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </Tooltip.Body>
+        </Tooltip>
+      ) : (
+        link
+      )}
     </div>
   );
 }

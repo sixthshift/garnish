@@ -168,6 +168,8 @@ export const recipeSummarySchema = z.object({
   lastMade: timestamp.nullable(),
   favourite: z.boolean(),
   tags: z.array(tagSchema),
+  /** First six ingredient lines, part order then row order, formatted with domain/format.ts's formatIngredient (M35.3). */
+  ingredientPreview: z.array(z.string()),
 });
 
 /** One logged cook: "Made this" on a date, with an optional note and photo. */

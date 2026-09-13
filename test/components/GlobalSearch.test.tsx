@@ -21,6 +21,7 @@ const lemonTart: RecipeSummary = {
   lastMade: null,
   favourite: false,
   tags: [],
+  ingredientPreview: [],
 };
 
 const soup: RecipeSummary = {

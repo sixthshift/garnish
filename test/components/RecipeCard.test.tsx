@@ -22,6 +22,7 @@ const base: RecipeSummary = {
   lastMade: null,
   favourite: false,
   tags: [],
+  ingredientPreview: [],
 };
 
 /** Render inside a throwaway router, so the card's `Link` resolves. */
@@ -91,6 +92,23 @@ describe("RecipeCard render", () => {
   test("a placeholder image renders when the recipe has none", async () => {
     const html = await render(base);
     expect(html).toContain('data-placeholder="image"');
+  });
+});
+
+describe("RecipeCard ingredient preview (M35.3)", () => {
+  test("no ingredients: the card links out plainly, with no tooltip wiring", async () => {
+    const html = await render(base);
+    expect(html).not.toContain("data-ingredient-preview");
+    // The tooltip is closed by default; nothing it would show ever leaks into a static render.
+    expect(html).not.toContain("<ul");
+  });
+
+  test("carries the first six lines onto the link, in the order the repository gave them", async () => {
+    const ingredientPreview = ["200 g spaghetti", "salt, to taste", "50 g butter, cold"];
+    const html = await render({ ...base, ingredientPreview });
+    expect(html).toContain(`data-ingredient-preview="${JSON.stringify(ingredientPreview).replace(/"/g, "&quot;")}"`);
+    // Closed by default: the Tooltip's floating body never renders in a static string.
+    expect(html).not.toContain("<ul");
   });
 });
 

@@ -313,6 +313,7 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     lastMade: "2026-09-01T08:00:00.000Z",
     favourite: false,
     tags: full.tags,
+    ingredientPreview: ["200 g spaghetti", "salt, to taste", "50 g butter, cold"],
   });
   expect(bySlug["cheese-toast"]).toEqual({
     id: toast.id,
@@ -326,6 +327,7 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     lastMade: null,
     favourite: false,
     tags: toast.tags,
+    ingredientPreview: [],
   });
   expect(bySlug["pumpkin-soup"]!.rating).toBe(3);
   expect(bySlug["pumpkin-soup"]!.tags).toEqual([]);
@@ -340,6 +342,43 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
   expect(repo.list({ tag: "weeknight", q: "toast" }).map((r) => r.slug)).toEqual(["cheese-toast"]);
   expect(repo.list({ tag: "missing" })).toEqual([]);
   expect(soup.tags).toEqual([]);
+});
+
+test("a summary's ingredientPreview is the first six lines, part order then row order, capped at six (M35.3)", () => {
+  const doc: RecipeInput = {
+    name: "Many Lines",
+    parts: [
+      {
+        name: "A",
+        ingredients: [1, 2, 3, 4].map((n) => ({
+          quantity: n,
+          unit: gram,
+          food: { id: crypto.randomUUID(), name: `food ${n}` },
+        })),
+        steps: [],
+      },
+      {
+        name: "B",
+        ingredients: [5, 6, 7].map((n) => ({
+          quantity: n,
+          unit: gram,
+          food: { id: crypto.randomUUID(), name: `food ${n}` },
+        })),
+        steps: [],
+      },
+    ],
+  };
+  const created = repo.create(recipeInputSchema.parse(doc));
+  const summary = repo.list().find((r) => r.id === created.id)!;
+  // Seven lines across two parts; the seventh (part B's third row) is dropped.
+  expect(summary.ingredientPreview).toEqual([
+    "1 g food 1",
+    "2 g food 2",
+    "3 g food 3",
+    "4 g food 4",
+    "5 g food 5",
+    "6 g food 6",
+  ]);
 });
 
 test("list filters by tags[] with any (default) and all match", () => {
