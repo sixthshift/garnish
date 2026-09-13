@@ -89,3 +89,21 @@ describe("the menu's items", () => {
     expect(html).not.toContain("Make this a food");
   });
 });
+
+describe("Plan (M33.4)", () => {
+  test('"Plan" sits with the other non-destructive items', () => {
+    const html = renderToString(
+      <Menu label="Recipe actions" open>
+        <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
+        <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
+      </Menu>,
+    );
+    expect(html).toContain("Plan");
+  });
+
+  test("the closed menu shows no Plan item, and its popover is not in the markup", async () => {
+    const html = await render(base);
+    expect(html).not.toMatch(/>Plan</);
+    expect(html).not.toContain('data-testid="plan-popover"');
+  });
+});

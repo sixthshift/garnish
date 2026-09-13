@@ -73,6 +73,7 @@ test("the open menu lists Duplicate, Make this a food, the two copy items and Pr
     <Menu label="Recipe actions" open>
       <Menu.Item onSelect={() => {}}>Duplicate</Menu.Item>
       <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
+      <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
       <Menu.Item onSelect={() => {}}>Copy link</Menu.Item>
       <Menu.Item onSelect={() => {}}>Copy ingredients</Menu.Item>
       <Menu.Item onSelect={() => {}}>Print</Menu.Item>
@@ -82,13 +83,20 @@ test("the open menu lists Duplicate, Make this a food, the two copy items and Pr
       </Menu.Item>
     </Menu>,
   );
-  for (const label of ["Duplicate", "Make this a food", "Copy link", "Copy ingredients", "Print", "Delete"]) {
+  for (const label of ["Duplicate", "Make this a food", "Plan", "Copy link", "Copy ingredients", "Print", "Delete"]) {
     expect(html).toContain(label);
   }
   expect(html).not.toContain(">Edit<");
   expect(html).not.toContain(">Cook<");
-  expect(html.match(/role="menuitem"/g)).toHaveLength(6);
+  expect(html.match(/role="menuitem"/g)).toHaveLength(7);
   expect(html.indexOf("text-fg-danger")).toBeGreaterThan(-1);
+});
+
+test("the menu's Plan item opens a popover trigger sitting beside it, closed by default", async () => {
+  await seedTart();
+  const html = await renderRoute("/recipes/lemon-tart");
+  expect(html).not.toContain('aria-label="Plan Lemon tart"');
+  expect(html).not.toContain('data-testid="plan-popover"');
 });
 
 // M30.4 drew this button disabled; M31.3 wired it up, so the tooltip that

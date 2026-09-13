@@ -14,15 +14,23 @@
 // `recipeId` set, so the next recipe that calls for it can pick it out of the
 // ingredient editor's food list and get a link back here. Idempotent — running
 // it twice lands on the same food — so it needs no confirmation.
+//
+// "Plan" (M33.4) opens `PlanPopover` (src/components/PlanPopover.tsx): the
+// next seven days and a servings stepper. It sits in its own `relative` box
+// alongside the menu because the popover's trigger has to be an element that
+// outlives the menu item that opens it — see that file's header for why.
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ingredientsText, recipeUrl } from "../domain/copy";
+import { dayLabel } from "../domain/plan";
 import type { Recipe } from "../domain/recipe";
 import { writeClipboard } from "../lib/clipboard";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
 import { foodForRecipe } from "../server/foods";
+import { addPlanEntry } from "../server/plan";
 import { deleteRecipe, duplicateRecipe } from "../server/recipes";
+import { PlanPopover, planEntryFor } from "./PlanPopover";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Menu } from "./ui/Menu";
 
@@ -35,6 +43,7 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
   const mutate = useMutate();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [planning, setPlanning] = useState(false);
 
   const copy = async (text: string, what: string) => {
     if (text.trim() === "") {
@@ -69,6 +78,16 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
     }
   };
 
+  const planTo = async (date: string, servings: number) => {
+    try {
+      await mutate(() => addPlanEntry({ data: planEntryFor(recipe, date, servings) }));
+      notify({ intent: "success", title: `Added to ${dayLabel(date)}` });
+      setPlanning(false);
+    } catch (error) {
+      notifyError("Could not plan this recipe", error);
+    }
+  };
+
   const remove = async () => {
     setDeleting(true);
     try {
@@ -83,17 +102,21 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
 
   return (
     <>
-      <Menu label="Recipe actions" iconOnly>
-        <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
-        <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>
-        <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
-        <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
-        <Menu.Item onSelect={() => (globalThis as { print?: () => void }).print?.()}>Print</Menu.Item>
-        <Menu.Separator />
-        <Menu.Item intent="danger" onSelect={() => setConfirming(true)}>
-          Delete
-        </Menu.Item>
-      </Menu>
+      <div className="relative inline-block">
+        <Menu label="Recipe actions" iconOnly>
+          <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
+          <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>
+          <Menu.Item onSelect={() => setPlanning(true)}>Plan</Menu.Item>
+          <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
+          <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
+          <Menu.Item onSelect={() => (globalThis as { print?: () => void }).print?.()}>Print</Menu.Item>
+          <Menu.Separator />
+          <Menu.Item intent="danger" onSelect={() => setConfirming(true)}>
+            Delete
+          </Menu.Item>
+        </Menu>
+        <PlanPopover recipe={recipe} open={planning} onOpenChange={setPlanning} onChoose={(date, servings) => void planTo(date, servings)} />
+      </div>
       {confirming && (
         <ConfirmDialog
           title={`Delete ${recipe.name}?`}
