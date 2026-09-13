@@ -18,9 +18,12 @@ import {
   planEntryInputSchema,
   planEntryPatchSchema,
   planEntrySchema,
+  planWeekAdditions,
   weekDates,
+  type PlanDay,
   type PlanEntry,
 } from "../../src/domain/plan";
+import { recipeSchema, type Recipe } from "../../src/domain/recipe";
 
 const ids = {
   a: "11111111-1111-4111-8111-111111111111",
@@ -229,5 +232,131 @@ describe("reorderMove", () => {
 
   test("arrays of different lengths are not a reorder", () => {
     expect(reorderMove(["a", "b"], ["a"])).toBeNull();
+  });
+});
+
+// --- planWeekAdditions (M33.3) ------------------------------------------------
+
+const gram = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  name: "gram",
+  pluralName: "grams",
+  abbreviation: "g",
+  useAbbreviation: true,
+  fraction: false,
+  standardQuantity: null,
+  standardUnitId: null,
+};
+
+const flour = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const garlic = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", name: "garlic", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: true, conversions: [] };
+const butter = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "butter", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+
+const planStamp = "2026-09-13T00:00:00.000Z";
+
+/** The tart already scaled to `recipeServings`, as `getRecipe({ servings })` would return it. */
+function tartDoc(recipeServings: number): Recipe {
+  return recipeSchema.parse({
+    id: "44444444-4444-4444-8444-444444444444",
+    slug: "lemon-tart",
+    name: "Lemon tart",
+    recipeServings,
+    parts: [
+      {
+        id: "90000000-0000-4000-8000-000000000001",
+        name: "",
+        ingredients: [
+          { id: "a0000000-0000-4000-8000-000000000001", quantity: 200, unit: gram, food: flour },
+          { id: "a0000000-0000-4000-8000-000000000002", quantity: 1, unit: null, food: garlic },
+        ],
+      },
+    ],
+    createdAt: planStamp,
+    updatedAt: planStamp,
+  }) as Recipe;
+}
+
+/** A second recipe, already scaled to `recipeServings`. */
+function soupDoc(recipeServings: number): Recipe {
+  return recipeSchema.parse({
+    id: "55555555-5555-4555-8555-555555555555",
+    slug: "soup",
+    name: "Soup",
+    recipeServings,
+    parts: [
+      {
+        id: "90000000-0000-4000-8000-000000000002",
+        name: "Broth",
+        ingredients: [{ id: "b0000000-0000-4000-8000-000000000001", quantity: 500, unit: gram, food: butter }],
+      },
+    ],
+    createdAt: planStamp,
+    updatedAt: planStamp,
+  }) as Recipe;
+}
+
+describe("planWeekAdditions", () => {
+  const MONDAY = "2026-09-14";
+  const TUESDAY = "2026-09-15";
+  const WEDNESDAY = "2026-09-16";
+
+  const tartRef = { id: "44444444-4444-4444-8444-444444444444", slug: "lemon-tart", name: "Lemon tart", image: null };
+  const soupRef = { id: "55555555-5555-4555-8555-555555555555", slug: "soup", name: "Soup", image: null };
+
+  const tartEntry = entry(MONDAY, 0, { id: "99999999-9999-4999-8999-000000000001", recipe: tartRef, text: "Lemon tart", servings: null });
+  const soupEntry = entry(TUESDAY, 0, { id: "99999999-9999-4999-8999-000000000002", recipe: soupRef, text: "Soup", servings: 8 });
+  const textEntry = entry(WEDNESDAY, 0, { id: "99999999-9999-4999-8999-000000000003", recipe: null, text: "Leftovers" });
+
+  const days: PlanDay[] = [
+    { date: MONDAY, entries: [tartEntry] },
+    { date: TUESDAY, entries: [soupEntry] },
+    { date: WEDNESDAY, entries: [textEntry] },
+  ];
+
+  test("a week with two recipes and a text line becomes their ingredients and one free-text line, each stamped with its day", () => {
+    // The tart at its own 4 servings (the entry left servings unset); the soup
+    // at the 8 the entry asked for.
+    const recipesByEntry = new Map<string, Recipe>([
+      [tartEntry.id, tartDoc(4)],
+      [soupEntry.id, soupDoc(8)],
+    ]);
+
+    const additions = planWeekAdditions(days, recipesByEntry);
+
+    expect(additions).toHaveLength(3); // flour, butter and the text line — garlic is skipShopping and dropped
+
+    expect(additions[0]).toMatchObject({
+      quantity: 200,
+      unit: gram,
+      food: flour,
+      fixed: false,
+      source: { recipeId: tartRef.id, recipeName: "Lemon tart", partName: dayLabel(MONDAY), servings: 4 },
+    });
+
+    expect(additions[1]).toMatchObject({
+      quantity: 500,
+      unit: gram,
+      food: butter,
+      fixed: false,
+      source: { recipeId: soupRef.id, recipeName: "Soup", partName: dayLabel(TUESDAY), servings: 8 },
+    });
+
+    expect(additions[2]).toEqual({
+      quantity: null,
+      unit: null,
+      food: null,
+      originalText: "Leftovers",
+      fixed: false,
+      source: { recipeId: null, recipeName: "", partName: dayLabel(WEDNESDAY), servings: null },
+    });
+  });
+
+  test("a blank text entry contributes nothing", () => {
+    const blank = entry(MONDAY, 1, { id: "99999999-9999-4999-8999-000000000004", recipe: null, text: "   " });
+    expect(planWeekAdditions([{ date: MONDAY, entries: [blank] }], new Map())).toEqual([]);
+  });
+
+  test("a recipe entry with no fetched document contributes nothing", () => {
+    expect(planWeekAdditions([{ date: MONDAY, entries: [tartEntry] }], new Map())).toEqual([]);
   });
 });

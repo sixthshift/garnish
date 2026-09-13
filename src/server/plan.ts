@@ -8,8 +8,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { plan } from "../db/models/plan/repo";
-import { isoDate, planEntryInputSchema, planEntryPatchSchema } from "../domain/plan";
+import { recipes } from "../db/models/recipe/repo";
+import { shopping } from "../db/models/shopping/repo";
+import { isoDate, planEntryInputSchema, planEntryPatchSchema, planWeekAdditions } from "../domain/plan";
 import { Id, IdInput } from "../domain/reference";
+import type { Recipe } from "../domain/recipe";
+import { scaleRecipe } from "../domain/scale";
+import { mergeIntoList, shoppingItemInputSchema } from "../domain/shopping";
 import { getDb } from "./db";
 import { required } from "./errors";
 import { notFoundMiddleware } from "./fn";
@@ -60,4 +65,44 @@ export const removePlanEntry = createServerFn({ method: "POST" })
     required(repo.get(data.id), "plan entry", data.id);
     repo.remove(data.id);
     return { id: data.id };
+  });
+
+export const AddPlanWeekToShoppingInput = z.object({ monday: isoDate });
+
+/**
+ * "Add this week to the shopping list" (M33.3): every recipe entry's own
+ * ingredients at the entry's servings (the recipe's own when unset), plus
+ * every text entry as a free-text line, stamped with the entry's day rather
+ * than the recipe's own part (`planWeekAdditions`, src/domain/plan.ts), merged
+ * into the current list the same way the recipe page's own "Add to shopping
+ * list" does (`mergeIntoList`, M31.2). The week's recipes are loaded and
+ * scaled through the same path `getRecipe` takes, so the client need not
+ * re-read the plan or the recipes to build the additions itself. Returns how
+ * many lines the list gained, for the toast.
+ */
+export const addPlanWeekToShopping = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(AddPlanWeekToShoppingInput)
+  .handler(async ({ data }) => {
+    const db = await getDb();
+    const days = plan(db).week(data.monday);
+    const recipeRepo = recipes(db);
+    const scaled = new Map<string, Recipe>();
+    for (const day of days) {
+      for (const entry of day.entries) {
+        if (entry.recipe === null) continue;
+        const doc = recipeRepo.get(entry.recipe.slug);
+        if (doc === null) continue;
+        scaled.set(entry.id, entry.servings === null || doc.recipeServings <= 0 ? doc : scaleRecipe(doc, entry.servings));
+      }
+    }
+
+    const shoppingRepo = shopping(db);
+    const mergePlan = mergeIntoList(shoppingRepo.list(), planWeekAdditions(days, scaled));
+    // `mergeIntoList` hands back the write shape pre-defaults (as a caller's
+    // own POST body would arrive); parsed here since this handler writes
+    // straight through the repository rather than through `addShoppingItems`.
+    if (mergePlan.additions.length > 0) shoppingRepo.addMany(mergePlan.additions.map((item) => shoppingItemInputSchema.parse(item)));
+    for (const merge of mergePlan.merges) shoppingRepo.mergeInto(merge.id, merge.quantity, merge.sources);
+    return { added: mergePlan.merges.length + mergePlan.additions.length };
   });

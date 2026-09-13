@@ -95,6 +95,11 @@ describe("the week", () => {
     expect(html).toContain('aria-label="Previous week"');
     expect(html).toContain('aria-label="Next week"');
   });
+
+  test("the header offers to add the week to the shopping list", async () => {
+    const html = await render(emptyWeek());
+    expect(elementHtml(html, "plan-add-week")).toContain("Add this week to the shopping list");
+  });
 });
 
 describe("an entry of each kind", () => {

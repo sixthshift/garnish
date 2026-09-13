@@ -30,13 +30,15 @@
 // component binds them to the server functions through `useMutate`, as
 // `/shopping` does. That split is what the render tests exercise.
 import { Badge } from "@sixthshift/design-system/badge";
+import { Button } from "@sixthshift/design-system/button";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { SHOPPING_PATH } from "../components/AddToShoppingSheet";
 import { GLOBAL_SEARCH_DEBOUNCE_MS, SearchResultList } from "../components/GlobalSearch";
 import { Menu } from "../components/ui/Menu";
 import { ReorderList } from "../components/ui/ReorderList";
@@ -56,9 +58,10 @@ import {
 import type { RecipeSummary } from "../domain/recipe";
 import { clampSelection, nextSearchIndex, selectedResult } from "../domain/search";
 import { recipeImageUrl } from "../lib/images";
+import { addedMessage } from "../lib/shopping";
 import { useMutate } from "../lib/mutate";
-import { notifyError } from "../lib/notify";
-import { addPlanEntry, listPlanWeek, movePlanEntry, removePlanEntry } from "../server/plan";
+import { notify, notifyError } from "../lib/notify";
+import { addPlanEntry, addPlanWeekToShopping, listPlanWeek, movePlanEntry, removePlanEntry } from "../server/plan";
 import { listRecipes } from "../server/recipes";
 
 /** `?week=` is the Monday's date; anything else falls back to this week. */
@@ -117,7 +120,10 @@ export function PlanWeekView({
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Heading as="h1">Plan</Heading>
+        <div className="flex flex-wrap items-center gap-3">
+          <Heading as="h1">Plan</Heading>
+          <AddWeekToShoppingButton monday={monday} />
+        </div>
         <div className="flex items-center gap-2">
           <WeekArrow monday={addDays(monday, -7)} label="Previous week" glyph="‹" />
           <p className="min-w-40 text-center text-sm font-medium" data-testid="plan-week-label">
@@ -159,6 +165,48 @@ function WeekArrow({ monday, label, glyph }: { monday: string; label: string; gl
     >
       <span aria-hidden="true">{glyph}</span>
     </Link>
+  );
+}
+
+/**
+ * "Add this week to the shopping list" (M33.3): runs `addPlanWeekToShopping`
+ * for `monday`'s week and toasts how many lines the list gained, with a way
+ * to it — the same toast `AddToShoppingButton` raises for one recipe
+ * (src/components/AddToShoppingSheet.tsx). Its own busy state, not the page's:
+ * this is one self-contained write, not one of the entry writes the page
+ * threads through `onAddText`/`onAddRecipe`/`onMove`/`onRemove`.
+ */
+function AddWeekToShoppingButton({ monday }: { monday: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  const add = async () => {
+    setBusy(true);
+    try {
+      const { added } = await addPlanWeekToShopping({ data: { monday } });
+      notify({
+        intent: "success",
+        title: addedMessage(added),
+        action: { label: "View list", onSelect: () => void router.navigate({ to: SHOPPING_PATH }) },
+      });
+    } catch (error) {
+      notifyError("Couldn't add the week to the shopping list", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      intent="neutral"
+      size="sm"
+      disabled={busy}
+      data-testid="plan-add-week"
+      onClick={() => void add()}
+    >
+      {busy ? "Adding…" : "Add this week to the shopping list"}
+    </Button>
   );
 }
 

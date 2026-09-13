@@ -16,6 +16,8 @@
 // Days, not meals: there is no entry type, and a day holds as many entries as
 // it holds (decisions.md row 71).
 import { z } from "zod";
+import type { Recipe } from "./recipe";
+import { recipeAdditions, type ShoppingAddition } from "./shopping";
 
 /**
  * True when `date` is a real `YYYY-MM-DD` day. A round trip rather than
@@ -243,4 +245,54 @@ export function reorderMove(before: readonly string[], after: readonly string[])
   return before[first] === after[last]
     ? { id: after[last] as string, position: last }
     : { id: after[first] as string, position: first };
+}
+
+// --- Adding the week to the shopping list (M33.3) ---------------------------
+// "Add this week to the shopping list" in the plan's header: every recipe
+// entry's own ingredients, at the entry's servings (the recipe's own when
+// unset), plus every plain-text entry as its own free-text line — the same
+// additions the recipe page's own "Add to shopping list" sheet builds
+// (`recipeAdditions`, src/domain/shopping.ts), except every source's
+// `partName` is the entry's day (`dayLabel`) rather than the recipe's own
+// part: a shopping line remembers which day of the week asked for it, not
+// which section of the recipe it came from.
+//
+// Pure: `recipesByEntry` carries the already-scaled recipe document for every
+// recipe entry, keyed by the entry's own id rather than the recipe's, so the
+// same recipe planned twice at different servings does not collide. The
+// caller (`addPlanWeekToShopping`, src/server/plan.ts) fetches and scales
+// them through the same path `getRecipe` takes; an entry missing from the map
+// — its recipe not fetched, or already null because the recipe was deleted —
+// contributes nothing.
+
+/**
+ * What a week contributes to the shopping list, in day order: every recipe
+ * entry's buyable ingredients through `recipesByEntry`, and every text entry
+ * as a free-text line, both stamped with the entry's day as `partName`. Pure.
+ */
+export function planWeekAdditions(days: readonly PlanDay[], recipesByEntry: ReadonlyMap<string, Recipe>): ShoppingAddition[] {
+  const additions: ShoppingAddition[] = [];
+  for (const day of days) {
+    const partName = dayLabel(day.date);
+    for (const entry of day.entries) {
+      if (entry.recipe === null) {
+        const line = entry.text.trim();
+        if (line === "") continue;
+        additions.push({
+          quantity: null,
+          unit: null,
+          food: null,
+          originalText: entry.text,
+          fixed: false,
+          source: { recipeId: null, recipeName: "", partName, servings: null },
+        });
+        continue;
+      }
+      const recipe = recipesByEntry.get(entry.id);
+      if (recipe === undefined) continue;
+      const servings = recipe.recipeServings > 0 ? recipe.recipeServings : null;
+      additions.push(...recipeAdditions(recipe, () => ({ recipeId: recipe.id, recipeName: recipe.name, partName, servings })));
+    }
+  }
+  return additions;
 }

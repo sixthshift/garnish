@@ -332,16 +332,18 @@ function displayText(ingredient: Ingredient): string {
 }
 
 /**
- * The child's own rows as additions, already scaled: every part in order,
- * an on-hand food dropped and a food-less row with nothing to say dropped,
- * same as the sheet's own rows follow (`buyable` in
- * src/components/AddToShoppingSheet.tsx) — every row stamped with the child
- * recipe as source. Pure.
+ * One recipe's own buyable ingredients as additions: every part in order, an
+ * on-hand food dropped and a food-less row with nothing to say dropped, same
+ * as the sheet's own rows follow (`buyable` in
+ * src/components/AddToShoppingSheet.tsx). `sourceForPart` builds each row's
+ * source from its part's trimmed name — `childIngredientAdditions` (M32.5)
+ * uses the child's own part names, and `planWeekAdditions` (M33.3,
+ * src/domain/plan.ts) uses one name shared by every row: the plan day rather
+ * than the recipe's own part. Pure.
  */
-function childIngredientAdditions(childRecipe: Recipe): ShoppingAddition[] {
-  const servings = childRecipe.recipeServings > 0 ? childRecipe.recipeServings : null;
+export function recipeAdditions(recipe: Recipe, sourceForPart: (partName: string) => ShoppingAdditionSource): ShoppingAddition[] {
   const additions: ShoppingAddition[] = [];
-  for (const part of childRecipe.parts) {
+  for (const part of recipe.parts) {
     const partName = part.name.trim();
     for (const ingredient of part.ingredients) {
       if (ingredient.food !== null && ingredient.food.skipShopping) continue;
@@ -353,11 +355,20 @@ function childIngredientAdditions(childRecipe: Recipe): ShoppingAddition[] {
         food: ingredient.food,
         originalText,
         fixed: ingredient.fixed,
-        source: { recipeId: childRecipe.id, recipeName: childRecipe.name, partName, servings },
+        source: sourceForPart(partName),
       });
     }
   }
   return additions;
+}
+
+/**
+ * The child's own rows as additions, already scaled: `recipeAdditions` with
+ * every row stamped with the child recipe as source, its own part names.
+ */
+function childIngredientAdditions(childRecipe: Recipe): ShoppingAddition[] {
+  const servings = childRecipe.recipeServings > 0 ? childRecipe.recipeServings : null;
+  return recipeAdditions(childRecipe, (partName) => ({ recipeId: childRecipe.id, recipeName: childRecipe.name, partName, servings }));
 }
 
 /**

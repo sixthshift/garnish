@@ -3,10 +3,11 @@
 // by id.
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { planDaySchema } from "../../src/domain/plan";
+import { dayLabel, planDaySchema } from "../../src/domain/plan";
 import type { RecipeInput } from "../../src/domain/recipe";
-import { addPlanEntry, listPlanWeek, movePlanEntry, removePlanEntry, updatePlanEntry } from "../../src/server/plan";
+import { addPlanEntry, addPlanWeekToShopping, listPlanWeek, movePlanEntry, removePlanEntry, updatePlanEntry } from "../../src/server/plan";
 import { createRecipe, deleteRecipe } from "../../src/server/recipes";
+import { listShoppingItems } from "../../src/server/shopping";
 import type { NotFoundData } from "../../src/server/fn";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -118,4 +119,95 @@ test("deleting a planned recipe leaves the day's entry behind", async () => {
   const week = await callServerFn(listPlanWeek, { monday: MONDAY });
   expect(week[0]!.entries).toHaveLength(1);
   expect(week[0]!.entries[0]).toMatchObject({ id: entry.id, recipe: null, text: "Lemon tart" });
+});
+
+// --- addPlanWeekToShopping (M33.3) --------------------------------------------
+
+const foodRef = (id: string, name: string, over: Record<string, unknown> = {}) => ({
+  id,
+  name,
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  ...over,
+});
+
+test("addPlanWeekToShopping adds a week with two recipes and a text line, each stamped with its day", async () => {
+  const tart = await callServerFn(createRecipe, {
+    name: "Lemon tart",
+    recipeServings: 4,
+    parts: [
+      {
+        name: "",
+        ingredients: [
+          { quantity: 200, food: foodRef("11111111-1111-4111-8111-111111111111", "flour") },
+          { quantity: 1, food: foodRef("22222222-2222-4222-8222-222222222222", "garlic", { skipShopping: true }) },
+        ],
+        steps: [],
+      },
+    ],
+  } as RecipeInput);
+
+  const soup = await callServerFn(createRecipe, {
+    name: "Soup",
+    recipeServings: 4,
+    parts: [{ name: "Broth", ingredients: [{ quantity: 500, food: foodRef("33333333-3333-4333-8333-333333333333", "butter") }], steps: [] }],
+  } as RecipeInput);
+
+  await callServerFn(addPlanEntry, { date: MONDAY, recipeId: tart.id, text: tart.name }); // the recipe's own servings
+  await callServerFn(addPlanEntry, { date: TUESDAY, recipeId: soup.id, text: soup.name, servings: 8 }); // scaled up
+  await callServerFn(addPlanEntry, { date: "2026-09-16", text: "Leftovers" });
+
+  const result = await callServerFn(addPlanWeekToShopping, { monday: MONDAY });
+  expect(result).toEqual({ added: 3 }); // flour, butter and the text line; garlic is skipShopping
+
+  const list = await callServerFn(listShoppingItems);
+  expect(list).toHaveLength(3);
+
+  const flourLine = list.find((item) => item.food?.name === "flour");
+  expect(flourLine).toMatchObject({ quantity: 200 });
+  expect(flourLine!.sources[0]).toMatchObject({
+    recipeId: tart.id,
+    recipeName: "Lemon tart",
+    partName: dayLabel(MONDAY),
+    servings: 4,
+  });
+
+  const butterLine = list.find((item) => item.food?.name === "butter");
+  expect(butterLine).toMatchObject({ quantity: 1000 }); // 500 at 4 servings, scaled to the entry's 8
+  expect(butterLine!.sources[0]).toMatchObject({
+    recipeId: soup.id,
+    recipeName: "Soup",
+    partName: dayLabel(TUESDAY),
+    servings: 8,
+  });
+
+  const textLine = list.find((item) => item.food === null);
+  expect(textLine).toMatchObject({ text: "Leftovers" });
+  expect(textLine!.sources[0]).toMatchObject({ recipeId: null, recipeName: "", partName: dayLabel("2026-09-16"), servings: null });
+});
+
+test("addPlanWeekToShopping merges the same recipe planned twice into one line", async () => {
+  const tart = await callServerFn(createRecipe, {
+    name: "Lemon tart",
+    recipeServings: 4,
+    parts: [{ name: "", ingredients: [{ quantity: 200, food: foodRef("11111111-1111-4111-8111-111111111111", "flour") }], steps: [] }],
+  } as RecipeInput);
+
+  await callServerFn(addPlanEntry, { date: MONDAY, recipeId: tart.id, text: tart.name });
+  await callServerFn(addPlanEntry, { date: TUESDAY, recipeId: tart.id, text: tart.name });
+
+  const result = await callServerFn(addPlanWeekToShopping, { monday: MONDAY });
+  expect(result).toEqual({ added: 1 });
+
+  const list = await callServerFn(listShoppingItems);
+  expect(list).toHaveLength(1);
+  expect(list[0]).toMatchObject({ quantity: 400 });
+  expect(list[0]!.sources).toHaveLength(2);
+});
+
+test("addPlanWeekToShopping rejects a monday that is not a date", async () => {
+  await expect(callServerFn(addPlanWeekToShopping, { monday: "next week" } as never)).rejects.toThrow();
 });
