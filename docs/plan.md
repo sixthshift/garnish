@@ -100,7 +100,7 @@ Not in these stages, and not to be re-raised without a decisions row: nutrition 
 
 ## M35 Small parity items
 
-- [ ] **∥ M35.1 Step images.** `src/db/migrations/008_step_images.sql` adds `step.image TEXT?`; `POST /api/steps/:id/image` and `GET /api/images/steps/:file` as the recipe and timeline pairs are; the step row menu in the editor gains "Add image"; `StepCard` shows it above the text at both sizes. Check: route tests; a render test at both sizes.
+- [x] **∥ M35.1 Step images.** `src/db/migrations/008_step_images.sql` adds `step.image TEXT?`; `POST /api/steps/:id/image` and `GET /api/images/steps/:file` as the recipe and timeline pairs are; the step row menu in the editor gains "Add image"; `StepCard` shows it above the text at both sizes. Check: route tests; a render test at both sizes.
 - [ ] **∥ M35.2 Servings on a cook.** `009_cook_servings.sql` adds `timeline_event.servings REAL?`; the Made this sheet gains a servings stepper defaulting to the page's scale; the History row shows "serves 6" when set. Check: round-trip; render tests.
 - [ ] **∥ M35.3 Ingredients on the card.** From `md`, hovering a recipe card shows its first six ingredient lines in a `Tooltip`; the summary gains `ingredientPreview: string[]` from the repository. Check: repository test; render test.
 - [ ] **∥ M35.4 Past the bot wall.** `importFromUrl` sends a full browser header set (`Accept`, `Accept-Language`, `Sec-Fetch-*`, a current Chrome `User-Agent`) and, on a 403, retries once with a second profile; still blocked, the error names the site and suggests the paste box. Recorded 403 and 200 fixtures. Check: tests for the retry and the message. Note in the task's Log whether Serious Eats now passes; TLS fingerprinting is out of reach for `fetch` and stays deferred.
@@ -111,6 +111,7 @@ _(none)_
 
 ## Questions
 
+- M35.1: a step photo uploads only once the step exists in the database, so "Add image" on a brand-new step says "save the recipe first". Holding the file until save (as the recipe image does) needs per-step plumbing through RecipeForm; Jason may want that instead.
 - M34.4: a Tandoor nested recipe only gets `food.recipe_id` if the child is already in garnish, so the child must be imported first; parent-then-child leaves the food unlinked until "Make this a food" on the child. A bulk import of a whole export would resolve links in one pass (same open question as M34.3).
 - M34.3: a Mealie backup zip holding many recipes asks which one to import (one recipe per review pass) rather than importing the collection in bulk. Mealie's own restore is whole-collection; a bulk restore screen would be a separate task if Jason wants it.
 - M31.5 is the app's first queued write. The design in the task (local queue, optimistic apply, flush on reconnect, "N changes waiting") is the default; Jason may want a different one before it runs.
@@ -140,3 +141,4 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-09-13  M34.3  done   6a15aa8  opus   third source option takes a Mealie backup zip or recipe JSON, parsed purely in domain/importMealie.ts over a dependency-free zip reader (DecompressionStream deflate-raw); sections become parts, lands on the M17.5 review, duplicates warned by name; Tandoor refused until M34.4; POST /api/import/file; decisions row 73
 2026-09-13  M34.4  done   05b82f3  opus   domain/importTandoor.ts reads recipe.json, a recipe zip or a zip-of-zips; each step a part with rows linked to its own step; keywords/servings/times/source mapped; nested step is a food row linked via foodForRecipe when the child came too, else a text line; readExport dispatches Mealie vs Tandoor by shape
 2026-09-13  M34.5  done   72b9ad7  opus   paste box and AI rung under JSON-LD/OpenGraph gated on Bun.which(claude); src/server/aiImport.ts with an injectable runner (default Bun.spawn with 60 s timeout, not Bun.$ which has none), hand-written --json-schema held to the zod key set by a test; malformed answers raise a typed AiImportError; Settings note on claude setup-token; decisions row 74
+2026-09-13  M35.1  done   12522e1  opus   008_step_images.sql adds step.image, carried in the recipe document; POST /api/steps/:id/image and GET /api/images/steps/:file via server/stepImages.ts; step row menu Add/Replace/Remove image; StepCard shows the photo at both sizes
