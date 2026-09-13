@@ -2,10 +2,12 @@
 // the patch's "absent means leave alone".
 import { describe, expect, test } from "vitest";
 import { mergeIngredients } from "../../src/domain/merge";
-import { type Recipe, recipeSchema } from "../../src/domain/recipe";
+import { type Ingredient, type Recipe, recipeSchema } from "../../src/domain/recipe";
 import { scaleRecipe } from "../../src/domain/scale";
+import type { SubRecipe } from "../../src/domain/subRecipe";
 import {
   type ShoppingAddition,
+  type ShoppingAdditionSource,
   type ShoppingItem,
   TICKED_GROUP,
   UNASSIGNED_GROUP,
@@ -17,6 +19,7 @@ import {
   shoppingItemPatchSchema,
   shoppingItemSchema,
   shoppingItemSourceSchema,
+  subRecipeAdditions,
 } from "../../src/domain/shopping";
 
 const id = "11111111-1111-4111-8111-111111111111";
@@ -320,6 +323,78 @@ describe("mergeIntoList", () => {
     expect(plan.additions.find((a) => a.foodId === butter.id)).toMatchObject({ quantity: 40 });
     expect(plan.additions.find((a) => a.foodId === bayLeaf.id)).toMatchObject({ quantity: 1 });
     expect(plan.additions.some((a) => a.foodId === garlic.id)).toBe(false);
+  });
+});
+
+// --- subRecipeAdditions (M32.5) ----------------------------------------------
+
+const CHILD_ID = "12121212-1212-4212-8212-121212121212";
+
+/** A food made by the child recipe: "2 cups of pastry" links here. */
+const pastry = { id: "56565656-5656-4565-8565-565656565656", name: "pastry", pluralName: null, aliases: [], aisle: null, recipeId: CHILD_ID, skipShopping: false, conversions: [] };
+
+const sweetPastry: SubRecipe = { id: CHILD_ID, slug: "sweet-pastry", name: "Sweet pastry", recipeServings: 4, recipeYieldQuantity: 500, yieldUnit: gram };
+
+const parentSource: ShoppingAdditionSource = { recipeId: "recipe-tart", recipeName: "Lemon tart", partName: "Pastry", servings: 4 };
+
+/** The parent's row: 250 g of pastry, half of the child's 500 g yield — 2 of its 4 servings. */
+function pastryRow(overrides: Partial<Ingredient> = {}): Ingredient {
+  return { id: "ing-pastry", quantity: 250, unit: gram, food: pastry, note: "", originalText: "", fixed: false, ...overrides };
+}
+
+/** The child recipe already scaled to `recipeServings` (as `getRecipe({ servings })` would return it): flour to buy, salt on hand. */
+function childDoc(recipeServings: number): Recipe {
+  return recipeSchema.parse({
+    id: CHILD_ID,
+    slug: "sweet-pastry",
+    name: "Sweet pastry",
+    recipeServings,
+    parts: [
+      {
+        id: "90000000-0000-4000-8000-000000000000",
+        name: "",
+        ingredients: [
+          { id: "a0000000-0000-4000-8000-000000000000", quantity: 100, unit: gram, food: flour },
+          { id: "b0000000-0000-4000-8000-000000000000", quantity: 1, unit: null, food: garlic },
+        ],
+      },
+    ],
+    createdAt: stamp,
+    updatedAt: stamp,
+  }) as Recipe;
+}
+
+describe("subRecipeAdditions", () => {
+  test("a derivable scale returns the child's rows, scaled, with the child as source", () => {
+    // 250 g asks for half the child's 500 g yield: 2 of its 4 servings, so the
+    // fetched child document (already at 2 servings) carries 100 g of flour.
+    const additions = subRecipeAdditions(pastryRow(), sweetPastry, childDoc(2), parentSource);
+
+    expect(additions).toHaveLength(1); // salt is skipShopping: dropped
+    expect(additions[0]).toMatchObject({
+      quantity: 100,
+      unit: gram,
+      food: flour,
+      fixed: false,
+      source: { recipeId: CHILD_ID, recipeName: "Sweet pastry", partName: "", servings: 2 },
+    });
+  });
+
+  test("an underivable scale adds the food itself as a line, stamped with the parent", () => {
+    // No quantity on the row: nothing to relate to the child's yield.
+    const additions = subRecipeAdditions(pastryRow({ quantity: null }), sweetPastry, childDoc(2), parentSource);
+
+    expect(additions).toEqual([
+      { quantity: null, unit: gram, food: pastry, originalText: expect.any(String), fixed: false, source: parentSource },
+    ]);
+  });
+
+  test("a child not fetched yet also falls back to the food line, not an empty result", () => {
+    const additions = subRecipeAdditions(pastryRow(), sweetPastry, null, parentSource);
+
+    expect(additions).toHaveLength(1);
+    expect(additions[0]!.food).toBe(pastry);
+    expect(additions[0]!.source).toEqual(parentSource);
   });
 });
 

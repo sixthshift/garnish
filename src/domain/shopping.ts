@@ -17,9 +17,10 @@
 //     copied names so it survives the recipe being deleted (M31.1).
 import { z } from "zod";
 import { convert } from "./convert";
-import { formatAmount, formatFood, formatQuantity } from "./format";
-import type { Aisle, Food, Unit } from "./recipe";
+import { formatAmount, formatFood, formatIngredient, formatQuantity } from "./format";
+import type { Aisle, Food, Ingredient, Recipe, Unit } from "./recipe";
 import { foodSchema, unitSchema } from "./recipe";
+import { subRecipeScale, type SubRecipe } from "./subRecipe";
 
 const id = z.uuid();
 const timestamp = z.iso.datetime();
@@ -307,6 +308,86 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
   }
 
   return { merges: [...merges.values()], additions: plannedAdditions };
+}
+
+// --- Scaling through a sub-recipe ---------------------------------------------
+// "The list scales through it" (M32.5): the shopping sheet's per-row "Add
+// hollandaise's ingredients instead", offered on a row whose food is made by a
+// recipe (M32.3, src/domain/subRecipe.ts). Choosing it swaps that one row for
+// the child's own buyable ingredients, scaled to the servings `subRecipeScale`
+// derives from the row and the child, with the child stamped as source rather
+// than whatever recipe linked to it — the point of the option is that the
+// bought line remembers where the amount actually came from.
+//
+// `childRecipe` is the child's document already brought to that many servings
+// (`getRecipe({ slug: child.slug, servings })` scales server-side, same as any
+// other read at a servings count). The caller need not fetch it until it knows
+// there is a scale to fetch it at: `subRecipeAdditions` reads it only once
+// `subRecipeScale` says the two amounts relate, so passing null while nothing
+// has been fetched yet is always safe.
+
+/** The line's own text: the original wording, or the formatted line when there is none. Pure. */
+function displayText(ingredient: Ingredient): string {
+  return ingredient.originalText.trim() || formatIngredient(ingredient).trim();
+}
+
+/**
+ * The child's own rows as additions, already scaled: every part in order,
+ * an on-hand food dropped and a food-less row with nothing to say dropped,
+ * same as the sheet's own rows follow (`buyable` in
+ * src/components/AddToShoppingSheet.tsx) — every row stamped with the child
+ * recipe as source. Pure.
+ */
+function childIngredientAdditions(childRecipe: Recipe): ShoppingAddition[] {
+  const servings = childRecipe.recipeServings > 0 ? childRecipe.recipeServings : null;
+  const additions: ShoppingAddition[] = [];
+  for (const part of childRecipe.parts) {
+    const partName = part.name.trim();
+    for (const ingredient of part.ingredients) {
+      if (ingredient.food !== null && ingredient.food.skipShopping) continue;
+      const originalText = displayText(ingredient);
+      if (ingredient.food === null && originalText === "") continue;
+      additions.push({
+        quantity: ingredient.quantity,
+        unit: ingredient.unit,
+        food: ingredient.food,
+        originalText,
+        fixed: ingredient.fixed,
+        source: { recipeId: childRecipe.id, recipeName: childRecipe.name, partName, servings },
+      });
+    }
+  }
+  return additions;
+}
+
+/**
+ * What "Add hollandaise's ingredients instead" contributes: the child's own
+ * ingredients (`childIngredientAdditions`) at the servings `subRecipeScale`
+ * derives from `ingredient` and `child` — or, when the two amounts cannot be
+ * related (no derivable scale, or `childRecipe` not fetched yet), `ingredient`
+ * itself as the one line it would have contributed unexpanded, stamped with
+ * `parentSource`. Pure.
+ */
+export function subRecipeAdditions(
+  ingredient: Ingredient,
+  child: SubRecipe,
+  childRecipe: Recipe | null,
+  parentSource: ShoppingAdditionSource,
+): ShoppingAddition[] {
+  const servings = subRecipeScale(ingredient, child);
+  if (servings === null || childRecipe === null) {
+    return [
+      {
+        quantity: ingredient.quantity,
+        unit: ingredient.unit,
+        food: ingredient.food,
+        originalText: displayText(ingredient),
+        fixed: ingredient.fixed,
+        source: parentSource,
+      },
+    ];
+  }
+  return childIngredientAdditions(childRecipe);
 }
 
 // --- Reading the list --------------------------------------------------------

@@ -27,3 +27,13 @@ export function useSubRecipe(food: Food | null): SubRecipe | null {
   if (map === null || food === null || food.recipeId === null) return null;
   return map.get(food.recipeId) ?? null;
 }
+
+/**
+ * The whole map, for a caller that looks several rows' foods up while
+ * rendering one list — the shopping sheet's "Add hollandaise's ingredients
+ * instead" option (M32.5) — rather than one at a time through `useSubRecipe`,
+ * which would mean a hook call per row. Empty outside the provider.
+ */
+export function useSubRecipes(): ReadonlyMap<string, SubRecipe> {
+  return useContext(SubRecipesContext) ?? new Map();
+}

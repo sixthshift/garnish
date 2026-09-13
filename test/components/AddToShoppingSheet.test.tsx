@@ -2,16 +2,18 @@
 // AddToShoppingSheetContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { AddToShoppingSheetContent, additionsFor, ingredientText, shoppingGroups } from "../../src/components/AddToShoppingSheet";
+import { AddToShoppingSheetContent, additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../src/components/AddToShoppingSheet";
 import type { Food, Ingredient, Part, Recipe, Unit } from "../../src/domain/recipe";
+import type { SubRecipe } from "../../src/domain/subRecipe";
+import { SubRecipesProvider } from "../../src/components/SubRecipes";
 
-const food = (name: string, skipShopping = false): Food => ({
+const food = (name: string, skipShopping = false, recipeId: string | null = null): Food => ({
   id: `food-${name}`,
   name,
   pluralName: null,
   aliases: [],
   aisle: null,
-  recipeId: null,
+  recipeId,
   skipShopping,
   conversions: [],
 });
@@ -103,6 +105,44 @@ describe("additionsFor", () => {
   });
 });
 
+describe("additionsForWithSubRecipes", () => {
+  const CHILD_ID = "recipe-hollandaise";
+  const child: SubRecipe = { id: CHILD_ID, slug: "hollandaise", name: "Hollandaise", recipeServings: 2, recipeYieldQuantity: 200, yieldUnit: gram };
+  const subRecipes = new Map([[CHILD_ID, child]]);
+
+  const pastryRow = () => ingredient({ quantity: 100, unit: gram, food: food("hollandaise", false, CHILD_ID) });
+
+  test("a row not marked expanded is unaffected, same as additionsFor", () => {
+    const row = pastryRow();
+    const recipe = recipeWith([part("", [row])]);
+    expect(additionsForWithSubRecipes(recipe, new Set(), new Set(), subRecipes, {})).toEqual(additionsFor(recipe));
+  });
+
+  test("an expanded row with its child fetched contributes the child's rows instead, stamped with the child", () => {
+    const row = pastryRow();
+    const recipe = recipeWith([part("Filling", [row])]);
+    const childDoc = recipeWith([part("", [flour()])], 1);
+    const stampedChild: Recipe = { ...childDoc, id: CHILD_ID, name: "Hollandaise" };
+
+    const additions = additionsForWithSubRecipes(recipe, new Set(), new Set([row.id]), subRecipes, { [row.id]: stampedChild });
+
+    expect(additions).toHaveLength(1);
+    expect(additions[0]!.food?.name).toBe("flour");
+    expect(additions[0]!.source).toEqual({ recipeId: CHILD_ID, recipeName: "Hollandaise", partName: "", servings: 1 });
+  });
+
+  test("an expanded row with no scale to derive (or no child fetched yet) falls back to the row itself", () => {
+    const row = pastryRow();
+    const recipe = recipeWith([part("", [row])]);
+
+    const additions = additionsForWithSubRecipes(recipe, new Set(), new Set([row.id]), subRecipes, {});
+
+    expect(additions).toHaveLength(1);
+    expect(additions[0]!.food?.name).toBe("hollandaise");
+    expect(additions[0]!.source.recipeId).toBe(recipe.id);
+  });
+});
+
 describe("AddToShoppingSheetContent render", () => {
   const render = (recipe: Recipe, busy = false) => renderToString(<AddToShoppingSheetContent recipe={recipe} busy={busy} onAdd={() => {}} onCancel={() => {}} />);
 
@@ -144,5 +184,30 @@ describe("AddToShoppingSheetContent render", () => {
     const html = render(recipeWith([part("", [flour()])]), true);
     expect(html).toContain("Adding…");
     expect(html).toContain("disabled");
+  });
+});
+
+describe("AddToShoppingSheetContent render: sub-recipe rows (M32.5)", () => {
+  const CHILD_ID = "recipe-hollandaise";
+  const child: SubRecipe = { id: CHILD_ID, slug: "hollandaise", name: "Hollandaise", recipeServings: 2, recipeYieldQuantity: 200, yieldUnit: gram };
+
+  const renderWithChild = (recipe: Recipe) =>
+    renderToString(
+      <SubRecipesProvider subRecipes={[child]}>
+        <AddToShoppingSheetContent recipe={recipe} busy={false} onAdd={() => {}} onCancel={() => {}} />
+      </SubRecipesProvider>,
+    );
+
+  test("a row whose food is made by a known recipe offers the child's ingredients instead", () => {
+    const row = ingredient({ quantity: 100, unit: gram, food: food("hollandaise", false, CHILD_ID) });
+    const html = renderWithChild(recipeWith([part("", [row])]));
+    expect(html).toContain('data-testid="shopping-sheet-subrecipe-toggle"');
+    expect(html).toContain("Add Hollandaise");
+    expect(html).toContain("ingredients instead");
+  });
+
+  test("a plain row gets no such option", () => {
+    const html = renderWithChild(recipeWith([part("", [flour()])]));
+    expect(html).not.toContain('data-testid="shopping-sheet-subrecipe-toggle"');
   });
 });

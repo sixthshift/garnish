@@ -16,6 +16,17 @@
 // Add hands the included rows to `addToShoppingList` (src/lib/shopping.ts),
 // which is where M31.2's merge runs against the current list.
 //
+// A row whose food is made by a recipe (M32.3) gets a second option beside
+// its checkbox: "Add hollandaise's ingredients instead" (M32.5). Choosing it
+// swaps that one row for the child's own ingredients, scaled to the servings
+// `subRecipeScale` derives — `src/domain/shopping.ts`'s `subRecipeAdditions`
+// does the swap itself; this file only fetches the child's document once
+// there is a scale to fetch it at (`getRecipe({ servings })`, already scaled
+// server-side) and feeds it back in, exactly as `subRecipeAdditions` expects.
+// Without a derivable scale there is nothing to fetch, and the row's own food
+// is what `subRecipeAdditions` falls back to, same as if the option had never
+// been offered.
+//
 // Sheet only paints after mounting on the client, so the list lives in
 // `AddToShoppingSheetContent`, which renders anywhere and is what the tests
 // exercise.
@@ -28,9 +39,12 @@ import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { formatIngredient } from "../domain/format";
 import type { Ingredient, Recipe } from "../domain/recipe";
-import type { ShoppingAddition } from "../domain/shopping";
+import { subRecipeAdditions, type ShoppingAddition, type ShoppingAdditionSource } from "../domain/shopping";
+import { subRecipeScale, type SubRecipe } from "../domain/subRecipe";
 import { addToShoppingList, addedMessage } from "../lib/shopping";
 import { notify, notifyError } from "../lib/notify";
+import { getRecipe } from "../server/recipes";
+import { useSubRecipes } from "./SubRecipes";
 
 /** One part's buyable ingredients, in page order. `name` is '' for the unnamed part. */
 export type ShoppingGroup = { id: string; name: string; ingredients: Ingredient[] };
@@ -57,6 +71,18 @@ export function shoppingGroups(recipe: Pick<Recipe, "parts">): ShoppingGroup[] {
     .filter((group) => group.ingredients.length > 0);
 }
 
+/** One ingredient as an addition, unexpanded: its own amount, stamped with `source`. Pure. */
+function ingredientAddition(ingredient: Ingredient, source: ShoppingAdditionSource): ShoppingAddition {
+  return {
+    quantity: ingredient.quantity,
+    unit: ingredient.unit,
+    food: ingredient.food,
+    originalText: ingredientText(ingredient),
+    fixed: ingredient.fixed,
+    source,
+  };
+}
+
 /**
  * The included rows as additions for `mergeIntoList`, at whatever scale the
  * passed recipe is already at, each stamped with this recipe, its part and the
@@ -68,14 +94,36 @@ export function additionsFor(recipe: Recipe, excluded: ReadonlySet<string> = new
   return shoppingGroups(recipe).flatMap((group) =>
     group.ingredients
       .filter((ingredient) => !excluded.has(ingredient.id))
-      .map((ingredient) => ({
-        quantity: ingredient.quantity,
-        unit: ingredient.unit,
-        food: ingredient.food,
-        originalText: ingredientText(ingredient),
-        fixed: ingredient.fixed,
-        source: { recipeId: recipe.id, recipeName: recipe.name, partName: group.name, servings },
-      })),
+      .map((ingredient) => ingredientAddition(ingredient, { recipeId: recipe.id, recipeName: recipe.name, partName: group.name, servings })),
+  );
+}
+
+/**
+ * `additionsFor`, plus M32.5's swap: a row whose id is in `expanded` and whose
+ * food is made by a recipe in `subRecipes` contributes the child's own rows
+ * instead of its own (`subRecipeAdditions`, src/domain/shopping.ts), using
+ * `childRecipes[ingredient.id]` as the already-scaled child document when the
+ * caller has fetched one. A row not in `expanded`, or whose food is not a
+ * sub-recipe, is unaffected. Pure.
+ */
+export function additionsForWithSubRecipes(
+  recipe: Recipe,
+  excluded: ReadonlySet<string>,
+  expanded: ReadonlySet<string>,
+  subRecipes: ReadonlyMap<string, SubRecipe>,
+  childRecipes: Readonly<Record<string, Recipe>>,
+): ShoppingAddition[] {
+  const servings = recipe.recipeServings > 0 ? recipe.recipeServings : null;
+  return shoppingGroups(recipe).flatMap((group) =>
+    group.ingredients
+      .filter((ingredient) => !excluded.has(ingredient.id))
+      .flatMap((ingredient) => {
+        const source: ShoppingAdditionSource = { recipeId: recipe.id, recipeName: recipe.name, partName: group.name, servings };
+        if (!expanded.has(ingredient.id)) return [ingredientAddition(ingredient, source)];
+        const child = ingredient.food?.recipeId ? subRecipes.get(ingredient.food.recipeId) ?? null : null;
+        if (child === null) return [ingredientAddition(ingredient, source)];
+        return subRecipeAdditions(ingredient, child, childRecipes[ingredient.id] ?? null, source);
+      }),
   );
 }
 
@@ -92,8 +140,18 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
   // Excluded rather than included: every row starts ticked, so the empty set is
   // the default state and nothing has to be seeded from the recipe.
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
+  // Rows with "Add <child>'s ingredients instead" selected (M32.5), and the
+  // already-scaled child documents fetched for them, keyed by the row's own
+  // ingredient id (a child can be linked from more than one row, each at its
+  // own derived scale). `loadingChild` gates a second tap and the Add button
+  // while a fetch for that row is in flight.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const [childRecipes, setChildRecipes] = useState<Readonly<Record<string, Recipe>>>({});
+  const [loadingChild, setLoadingChild] = useState<ReadonlySet<string>>(new Set());
+  const subRecipes = useSubRecipes();
   const groups = shoppingGroups(recipe);
-  const included = additionsFor(recipe, excluded);
+  const included = additionsForWithSubRecipes(recipe, excluded, expanded, subRecipes, childRecipes);
+  const busyAdding = busy || loadingChild.size > 0;
 
   const toggle = (id: string) =>
     setExcluded((previous) => {
@@ -101,6 +159,37 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
       if (!next.delete(id)) next.add(id);
       return next;
     });
+
+  const toggleExpand = async (ingredient: Ingredient, child: SubRecipe) => {
+    const wasExpanded = expanded.has(ingredient.id);
+    setExpanded((previous) => {
+      const next = new Set(previous);
+      if (wasExpanded) next.delete(ingredient.id);
+      else next.add(ingredient.id);
+      return next;
+    });
+    if (wasExpanded || childRecipes[ingredient.id] !== undefined) return;
+    const servings = subRecipeScale(ingredient, child);
+    if (servings === null) return; // nothing to fetch: subRecipeAdditions falls back to the row itself
+    setLoadingChild((previous) => new Set(previous).add(ingredient.id));
+    try {
+      const doc = await getRecipe({ data: { slug: child.slug, servings } });
+      setChildRecipes((previous) => ({ ...previous, [ingredient.id]: doc }));
+    } catch (error) {
+      notifyError(`Couldn't load ${child.name}`, error);
+      setExpanded((previous) => {
+        const next = new Set(previous);
+        next.delete(ingredient.id);
+        return next;
+      });
+    } finally {
+      setLoadingChild((previous) => {
+        const next = new Set(previous);
+        next.delete(ingredient.id);
+        return next;
+      });
+    }
+  };
 
   return (
     <>
@@ -119,17 +208,35 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
                   {group.ingredients.map((ingredient) => {
                     const label = formatIngredient(ingredient).trim() || ingredientText(ingredient);
                     const on = !excluded.has(ingredient.id);
+                    const child = ingredient.food?.recipeId ? subRecipes.get(ingredient.food.recipeId) ?? null : null;
+                    const useChild = expanded.has(ingredient.id);
+                    const rowLoading = loadingChild.has(ingredient.id);
                     return (
                       <li
                         key={ingredient.id}
-                        className="flex items-start gap-2.5"
+                        className="flex flex-col gap-1"
                         data-testid="shopping-sheet-row"
                         data-included={on ? "true" : "false"}
+                        data-sub-recipe={child !== null ? "true" : undefined}
+                        data-sub-recipe-expanded={useChild ? "true" : undefined}
                       >
-                        <Checkbox checked={on} disabled={busy} className="mt-0.5" aria-label={label} onCheckedChange={() => toggle(ingredient.id)} />
-                        <button type="button" disabled={busy} className="flex-1 text-left" onClick={() => toggle(ingredient.id)}>
-                          {label}
-                        </button>
+                        <div className="flex items-start gap-2.5">
+                          <Checkbox checked={on} disabled={busyAdding} className="mt-0.5" aria-label={label} onCheckedChange={() => toggle(ingredient.id)} />
+                          <button type="button" disabled={busyAdding} className="flex-1 text-left" onClick={() => toggle(ingredient.id)}>
+                            {label}
+                          </button>
+                        </div>
+                        {child !== null && (
+                          <button
+                            type="button"
+                            disabled={busyAdding || !on}
+                            data-testid="shopping-sheet-subrecipe-toggle"
+                            className="ml-7 self-start text-xs font-medium text-fg-brand underline decoration-dotted underline-offset-2 disabled:opacity-50"
+                            onClick={() => void toggleExpand(ingredient, child)}
+                          >
+                            {rowLoading ? "Loading…" : useChild ? `Add ${label} instead` : `Add ${child.name}'s ingredients instead`}
+                          </button>
+                        )}
                       </li>
                     );
                   })}
@@ -140,14 +247,14 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
         )}
       </Sheet.Body>
       <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
+        <Button type="button" variant="ghost" intent="neutral" disabled={busyAdding} onClick={onCancel}>
           Cancel
         </Button>
         <Button
           type="button"
           variant="solid"
           intent="brand"
-          disabled={busy || included.length === 0}
+          disabled={busyAdding || included.length === 0}
           data-testid="shopping-sheet-add"
           onClick={() => onAdd(included)}
         >
