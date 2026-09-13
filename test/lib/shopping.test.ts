@@ -7,7 +7,7 @@ import { scaledForServings } from "../../src/domain/scale";
 import type { ShoppingItem, ShoppingItemInput, ShoppingListMerge } from "../../src/domain/shopping";
 import { addToShoppingList, addedCount, addedMessage, type ShoppingWriter } from "../../src/lib/shopping";
 
-const food = (name: string): Food => ({ id: `food-${name}`, name, pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false });
+const food = (name: string): Food => ({ id: `food-${name}`, name, pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] });
 
 const gram: Unit = { id: "unit-g", name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, standardQuantity: null, standardUnitId: null };
 

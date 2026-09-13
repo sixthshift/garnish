@@ -86,6 +86,7 @@ test("the migrations create every table in architecture.md", () => {
   expect(tables()).toEqual([
     "aisle",
     "food",
+    "food_conversion",
     "ingredient",
     "migration",
     "part",
@@ -314,4 +315,96 @@ test("deleting a recipe cascades to its timeline events", () => {
 
   db.run("DELETE FROM recipe WHERE id = ?", [ids.recipe]);
   expect(count("timeline_event")).toBe(0);
+});
+
+// --- 006_conversions --------------------------------------------------------
+
+test("food_conversion keeps one row per food and pair of units, and refuses the degenerate ones", () => {
+  seedRecipe();
+  const ml = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+  db.run("INSERT INTO unit (id, name, abbreviation) VALUES (?, ?, ?)", [ml, "millilitre", "ml"]);
+
+  db.run("INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES (?, ?, ?, ?, ?, ?)", [
+    "fc-1",
+    ids.butter,
+    ml,
+    1,
+    ids.g,
+    0.911,
+  ]);
+  expect(db.query<Record<string, unknown>, []>("SELECT * FROM food_conversion").get()).toEqual({
+    id: "fc-1",
+    food_id: ids.butter,
+    unit_id: ml,
+    quantity: 1,
+    to_unit_id: ids.g,
+    to_quantity: 0.911,
+  });
+
+  // Same food, same pair, again.
+  expect(() =>
+    db.run("INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES (?, ?, ?, ?, ?, ?)", [
+      "fc-2",
+      ids.butter,
+      ml,
+      100,
+      ids.g,
+      91.1,
+    ]),
+  ).toThrow(/UNIQUE/);
+
+  // The same pair for another food is a different row.
+  db.run("INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES (?, ?, ?, ?, ?, ?)", [
+    "fc-3",
+    ids.spaghetti,
+    ml,
+    1,
+    ids.g,
+    0.6,
+  ]);
+  expect(count("food_conversion")).toBe(2);
+
+  expect(() =>
+    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-4', '${ids.butter}', '${ids.g}', 1, '${ids.g}', 1)`),
+  ).toThrow(/CHECK/);
+  expect(() =>
+    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-5', '${ids.butter}', '${ml}', 0, '${ids.g}', 1)`),
+  ).toThrow(/CHECK/);
+  expect(() =>
+    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-6', '${ids.butter}', '${ml}', 1, '${ids.g}', -1)`),
+  ).toThrow(/CHECK/);
+  expect(() =>
+    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-7', 'missing', '${ml}', 1, '${ids.g}', 1)`),
+  ).toThrow(/FOREIGN KEY/);
+  expect(() => db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity) VALUES ('fc-8', '${ids.butter}', '${ml}', 1)`)).toThrow(/NOT NULL/);
+});
+
+test("deleting the food or either unit takes the conversion with it", () => {
+  seedRecipe();
+  const ml = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+  const seed = () => {
+    db.run("INSERT OR REPLACE INTO unit (id, name, abbreviation) VALUES (?, ?, ?)", [ml, "millilitre", "ml"]);
+    db.run("INSERT OR REPLACE INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES (?, ?, ?, ?, ?, ?)", [
+      "fc-1",
+      ids.butter,
+      ml,
+      1,
+      ids.g,
+      0.911,
+    ]);
+  };
+
+  seed();
+  db.run("DELETE FROM food WHERE id = ?", [ids.butter]);
+  expect(count("food_conversion")).toBe(0);
+
+  db.run("INSERT INTO food (id, name) VALUES (?, ?)", [ids.butter, "butter"]);
+  seed();
+  db.run("DELETE FROM unit WHERE id = ?", [ml]);
+  expect(count("food_conversion")).toBe(0);
+
+  db.run("INSERT INTO unit (id, name) VALUES (?, ?)", [ml, "millilitre"]);
+  seed();
+  db.run("DELETE FROM unit WHERE id = ?", [ids.g]);
+  expect(count("food_conversion")).toBe(0);
 });

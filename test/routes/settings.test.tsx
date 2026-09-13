@@ -32,7 +32,7 @@ function summary(id: string, name: string): RecipeSummary {
 }
 
 function food(id: string, name: string): FoodRow {
-  return { id, name, pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
+  return { id, name, pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
 }
 
 function unit(id: string, name: string): Unit {

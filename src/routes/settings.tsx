@@ -130,7 +130,7 @@ function mergeColumn<T>(onMerge: (item: T) => void): DataTableColumn<T> {
 /** Effect line for the Foods delete confirm, Mealie's own wording for the food side of the FK. */
 const FOOD_DELETE_EFFECT = "they will keep the ingredient without a food.";
 
-function FoodsTab({ foods, aisles }: { foods: readonly FoodRow[]; aisles: readonly Aisle[] }) {
+function FoodsTab({ foods, aisles, units }: { foods: readonly FoodRow[]; aisles: readonly Aisle[]; units: readonly Unit[] }) {
   const mutate = useMutate();
   const [editing, setEditing] = useState<FoodRow | null>(null);
   const [deleting, setDeleting] = useState<FoodRow[] | null>(null);
@@ -205,6 +205,7 @@ function FoodsTab({ foods, aisles }: { foods: readonly FoodRow[]; aisles: readon
           open
           food={editing}
           aisles={aisles}
+          units={units}
           busy={busy}
           onCancel={() => !busy && setEditing(null)}
           onSave={(patch) => void saveEdit(patch)}
@@ -568,7 +569,7 @@ function SettingsPage() {
   const { aisles, units, foods, tags } = Route.useLoaderData();
 
   const items: TabItem[] = [
-    { value: "foods", label: "Foods", badge: foods.length, content: <FoodsTab foods={foods} aisles={aisles} /> },
+    { value: "foods", label: "Foods", badge: foods.length, content: <FoodsTab foods={foods} aisles={aisles} units={units} /> },
     { value: "units", label: "Units", badge: units.length, content: <UnitsTab units={units} /> },
     { value: "aisles", label: "Aisles", badge: aisles.length, content: <AislesTab aisles={aisles} /> },
     { value: "tags", label: "Tags", badge: tags.length, content: <TagsTab tags={tags} /> },

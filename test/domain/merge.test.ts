@@ -24,9 +24,9 @@ const cup = {
   standardUnitId: null,
 };
 
-const flour = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
-const vanilla = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "vanilla pod", pluralName: "vanilla pods", aliases: [], aisle: null, recipeId: null, skipShopping: false };
-const salt = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", name: "salt", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
+const flour = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const vanilla = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "vanilla pod", pluralName: "vanilla pods", aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const salt = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", name: "salt", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 
 let nextId = 0;
 function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {

@@ -35,7 +35,7 @@ const gram = {
 const cup = { ...gram, id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "cup", pluralName: "cups", abbreviation: "", useAbbreviation: false, fraction: true };
 const units = [gram, cup];
 
-const flour = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
+const flour = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
 const foods = [flour];
 
 /** A mixed paste: a matched line, an unknown food, and a line with nothing left to resolve. */

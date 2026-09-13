@@ -135,13 +135,13 @@ describe("newIngredient, isTextOnly, textOnlyPatch", () => {
 
 describe("foodReference and unitReference", () => {
   test("a listFoods row becomes a document food with a null aisle", () => {
-    const ref = foodReference({ id: gram.id, name: "Flour", pluralName: null, aliases: ["plain flour"], aisleId: "aisle-1", recipeId: null, skipShopping: false });
-    expect(ref).toEqual({ id: gram.id, name: "Flour", pluralName: null, aliases: ["plain flour"], aisle: null, recipeId: null, skipShopping: false });
+    const ref = foodReference({ id: gram.id, name: "Flour", pluralName: null, aliases: ["plain flour"], aisleId: "aisle-1", recipeId: null, skipShopping: false, conversions: [] });
+    expect(ref).toEqual({ id: gram.id, name: "Flour", pluralName: null, aliases: ["plain flour"], aisle: null, recipeId: null, skipShopping: false, conversions: [] });
   });
 
   test("a name alone becomes a new reference with defaults and a client uuid", () => {
     const ref = foodReference({ name: "  yeast " });
-    expect(ref).toMatchObject({ name: "yeast", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false });
+    expect(ref).toMatchObject({ name: "yeast", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] });
     expect(ref.id).toMatch(UUID);
     const unit = unitReference(" handful ");
     expect(unit).toMatchObject({ name: "handful", pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null });
@@ -262,7 +262,7 @@ describe("moveIngredientTo", () => {
 // The bulk-add path after the review step (M17.5): a reviewed line only
 // commits a structured row when its food resolved, and a declined one falls
 // back to the text-only row bulk add used to produce for every line.
-const flourRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
+const flourRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
 
 function reviewOf(line: string): ReviewRow<typeof gram, typeof flourRow> {
   return reviewRows([line], { units, foods: [flourRow] })[0]!;

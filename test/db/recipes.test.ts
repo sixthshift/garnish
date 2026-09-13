@@ -59,8 +59,9 @@ const butter = {
   aisle: dairy,
   recipeId: null,
   skipShopping: false,
+  conversions: [],
 };
-const spaghetti = { id: ids.spaghetti, name: "spaghetti", pluralName: "spaghetti", aliases: [], aisle: null, recipeId: null, skipShopping: false };
+const spaghetti = { id: ids.spaghetti, name: "spaghetti", pluralName: "spaghetti", aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 const weeknight = { id: ids.weeknight, name: "Weeknight", slug: "weeknight" };
 const pastaTag = { id: ids.pasta_tag, name: "Pasta", slug: "pasta" };
 

@@ -29,8 +29,8 @@ vi.mock("../../src/server/recipes", () => ({
 vi.mock("../../src/server/units", () => ({ listUnits: () => Promise.resolve([]) }));
 vi.mock("../../src/server/foods", () => ({ listFoods: () => Promise.resolve([]) }));
 
-const flour = { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
-const sugar = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "sugar", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
+const flour = { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const sugar = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "sugar", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

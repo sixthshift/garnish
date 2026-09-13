@@ -25,6 +25,7 @@ const flour = {
   aisle: null,
   recipeId: null,
   skipShopping: false,
+  conversions: [],
 };
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";

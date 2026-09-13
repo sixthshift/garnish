@@ -25,6 +25,7 @@ const food = (name: string, pluralName: string | null = null): Food => ({
   aisle: null,
   recipeId: null,
   skipShopping: false,
+  conversions: [],
 });
 
 const ingredient = (quantity: number | null, f: Food): Ingredient => ({

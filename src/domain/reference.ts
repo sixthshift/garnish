@@ -17,17 +17,33 @@ export type NameInput = z.infer<typeof NameInput>;
 export const ListQuery = z.object({ q: z.string().optional() });
 export type ListQuery = z.infer<typeof ListQuery>;
 
+/** "1 cup of flour is 125 g" as it is written: no id, the food is the parent (decisions.md row 69). */
+export const FoodConversionInput = z
+  .object({
+    unitId: Id,
+    quantity: z.number().positive(),
+    toUnitId: Id,
+    toQuantity: z.number().positive(),
+  })
+  .refine((row) => row.unitId !== row.toUnitId, { message: "A conversion needs two different units." });
+export type FoodConversionInput = z.infer<typeof FoodConversionInput>;
+
 const FoodFields = z.object({
   pluralName: z.string().nullable(),
   aliases: z.array(z.string()),
   aisleId: Id.nullable(),
   recipeId: Id.nullable(),
   skipShopping: z.boolean(),
+  conversions: z.array(FoodConversionInput),
 });
 export const FoodCreate = FoodFields.partial().extend({ name: Name });
 export const FoodUpdate = FoodFields.extend({ name: Name }).partial().extend({ id: Id });
 export type FoodCreate = z.infer<typeof FoodCreate>;
 export type FoodUpdate = z.infer<typeof FoodUpdate>;
+
+/** This food's conversions, replaced wholesale. */
+export const FoodConversions = z.object({ id: Id, conversions: z.array(FoodConversionInput) });
+export type FoodConversions = z.infer<typeof FoodConversions>;
 
 /** Merge `sourceId` into `targetId`: the source is deleted, its ingredients repointed. */
 export const FoodMerge = z.object({ sourceId: Id, targetId: Id });

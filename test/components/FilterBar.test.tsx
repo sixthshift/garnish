@@ -9,8 +9,8 @@ import { FilterBar } from "../../src/components/FilterBar";
 
 const weeknight = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" };
 const pasta = { id: "d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2", name: "Pasta", slug: "pasta" };
-const flour = { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
-const butter = { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", name: "butter", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
+const flour = { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
+const butter = { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", name: "butter", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
 
 function noop() {}
 

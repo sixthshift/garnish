@@ -6,7 +6,7 @@ import { FoodMergeDialogContent, mergeTargets } from "../../src/components/FoodM
 import type { Food } from "../../src/db/models/food/repo";
 
 function food(id: string, name: string): Food {
-  return { id, name, pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
+  return { id, name, pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
 }
 
 const butter = food("f1", "Butter");

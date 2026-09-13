@@ -12,6 +12,7 @@ const food = (name: string, pluralName: string | null = null) => ({
   aisle: null,
   recipeId: null,
   skipShopping: false,
+  conversions: [],
 });
 
 const unit = (name: string, pluralName: string | null = null) => ({

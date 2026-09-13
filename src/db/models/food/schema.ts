@@ -1,9 +1,10 @@
 // Ingredient foods. `name` is COLLATE NOCASE in the SQL. A food may point at a
 // recipe (the sub-recipe hook); the behaviour is deferred, the column is not.
 import { sql } from "drizzle-orm";
-import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { check, index, integer, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { aisle } from "../aisle/schema";
 import { recipe } from "../recipe/schema";
+import { unit } from "../unit/schema";
 
 export const food = sqliteTable(
   "food",
@@ -22,5 +23,38 @@ export const food = sqliteTable(
     index("food_aisle_id").on(t.aisleId),
     index("food_recipe_id").on(t.recipeId),
     check("skip_shopping_flag", sql`${t.skipShopping} IN (0, 1)`),
+  ],
+);
+
+/**
+ * "1 cup of plain flour is 125 g" (decisions.md row 69). The conversion hangs
+ * off the food because the answer depends on the ingredient, not on the unit;
+ * `unit.standardQuantity` / `unit.standardUnitId` keep the unit-to-unit ones.
+ * Both units cascade: a conversion missing a side is not a conversion.
+ */
+export const foodConversion = sqliteTable(
+  "food_conversion",
+  {
+    id: text("id").primaryKey(),
+    foodId: text("food_id")
+      .notNull()
+      .references(() => food.id, { onDelete: "cascade" }),
+    unitId: text("unit_id")
+      .notNull()
+      .references(() => unit.id, { onDelete: "cascade" }),
+    quantity: real("quantity").notNull(),
+    toUnitId: text("to_unit_id")
+      .notNull()
+      .references(() => unit.id, { onDelete: "cascade" }),
+    toQuantity: real("to_quantity").notNull(),
+  },
+  (t) => [
+    index("food_conversion_food_id").on(t.foodId),
+    index("food_conversion_unit_id").on(t.unitId),
+    index("food_conversion_to_unit_id").on(t.toUnitId),
+    check("conversion_quantity_positive", sql`${t.quantity} > 0`),
+    check("conversion_to_quantity_positive", sql`${t.toQuantity} > 0`),
+    check("conversion_units_differ", sql`${t.unitId} <> ${t.toUnitId}`),
+    unique("food_conversion_food_id_unit_id_to_unit_id").on(t.foodId, t.unitId, t.toUnitId),
   ],
 );

@@ -38,7 +38,7 @@ function unit(name: string): Unit {
 }
 
 function food(name: string, pluralName: string | null = null): Food {
-  return { id: NEW, name, pluralName, aliases: [], aisle: null, recipeId: null, skipShopping: false };
+  return { id: NEW, name, pluralName, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 }
 
 function tag(name: string): Tag {

@@ -31,7 +31,7 @@ const gram: Unit = {
   standardUnitId: null,
 };
 const units = [gram];
-const flour: FoodRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false };
+const flour: FoodRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
 const foods = [flour];
 const vocabulary = { units, foods };
 

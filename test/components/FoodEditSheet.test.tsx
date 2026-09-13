@@ -2,8 +2,18 @@
 // FoodEditSheetContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { aliasesText, FoodEditSheetContent, parseAliases } from "../../src/components/FoodEditSheet";
+import {
+  aliasesText,
+  blankConversion,
+  conversionDraft,
+  FoodEditSheetContent,
+  isBlankConversion,
+  parseAliases,
+  parseConversions,
+  type ConversionDraft,
+} from "../../src/components/FoodEditSheet";
 import type { Food } from "../../src/db/models/food/repo";
+import type { Unit } from "../../src/db/models/unit/repo";
 import type { Aisle } from "../../src/domain/recipe";
 
 const dairy: Aisle = { id: "a1", name: "Dairy", position: 0 };
@@ -17,6 +27,7 @@ const butter: Food = {
   aisleId: dairy.id,
   recipeId: null,
   skipShopping: false,
+  conversions: [],
 };
 
 describe("parseAliases", () => {
@@ -35,9 +46,75 @@ describe("aliasesText", () => {
   });
 });
 
+const unit = (id: string, name: string): Unit => ({
+  id,
+  name,
+  pluralName: null,
+  abbreviation: "",
+  useAbbreviation: false,
+  fraction: true,
+  standardQuantity: null,
+  standardUnitId: null,
+});
+
+const cup = unit("u1", "cup");
+const gram = unit("u2", "gram");
+
+const draft = (patch: Partial<ConversionDraft> = {}): ConversionDraft => ({
+  key: "k1",
+  quantity: "1",
+  unitId: cup.id,
+  toQuantity: "125",
+  toUnitId: gram.id,
+  ...patch,
+});
+
+describe("parseConversions", () => {
+  test("a filled row becomes a conversion, amounts as numbers", () => {
+    expect(parseConversions([draft()])).toEqual({
+      conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }],
+      error: null,
+    });
+    expect(parseConversions([draft({ quantity: " 0.5 ", toQuantity: "62.5" })]).conversions).toEqual([
+      { unitId: cup.id, quantity: 0.5, toUnitId: gram.id, toQuantity: 62.5 },
+    ]);
+  });
+
+  test("a blank row is dropped, not refused", () => {
+    expect(isBlankConversion(blankConversion())).toBe(true);
+    expect(parseConversions([blankConversion(), draft()]).conversions).toHaveLength(1);
+    expect(parseConversions([blankConversion()])).toEqual({ conversions: [], error: null });
+    expect(parseConversions([])).toEqual({ conversions: [], error: null });
+  });
+
+  test("a half-filled row, a bad amount, one unit twice and a repeated pair are each refused", () => {
+    expect(parseConversions([draft({ toUnitId: "" })]).error).toMatch(/two amounts and two units/);
+    expect(parseConversions([draft({ quantity: "" })]).error).toMatch(/two amounts and two units/);
+    expect(parseConversions([draft({ toQuantity: "0" })]).error).toMatch(/above zero/);
+    expect(parseConversions([draft({ quantity: "-1" })]).error).toMatch(/above zero/);
+    expect(parseConversions([draft({ quantity: "heaps" })]).error).toMatch(/above zero/);
+    expect(parseConversions([draft({ toUnitId: cup.id })]).error).toMatch(/two different units/);
+    expect(parseConversions([draft(), draft({ key: "k2", toQuantity: "120" })]).error).toMatch(/more than one conversion/);
+    // The same units the other way round is a different conversion.
+    expect(parseConversions([draft(), draft({ key: "k2", unitId: gram.id, toUnitId: cup.id })]).conversions).toHaveLength(2);
+    // Nothing is saved from a bad set.
+    expect(parseConversions([draft(), draft({ key: "k2", quantity: "" })]).conversions).toEqual([]);
+  });
+
+  test("conversionDraft round-trips a stored conversion", () => {
+    const stored = { id: "c1", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 };
+    expect(conversionDraft(stored)).toEqual({ key: "c1", quantity: "1", unitId: cup.id, toQuantity: "125", toUnitId: gram.id });
+    expect(parseConversions([conversionDraft(stored)]).conversions).toEqual([
+      { unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 },
+    ]);
+  });
+});
+
 describe("FoodEditSheetContent render", () => {
-  const render = (food: Food, aisles: readonly Aisle[] = [dairy, bakery], busy = false) =>
-    renderToString(<FoodEditSheetContent food={food} aisles={aisles} busy={busy} onSave={() => {}} onCancel={() => {}} onCreateAisle={() => Promise.resolve(dairy)} />);
+  const render = (food: Food, aisles: readonly Aisle[] = [dairy, bakery], busy = false, units: readonly Unit[] = [cup, gram]) =>
+    renderToString(
+      <FoodEditSheetContent food={food} aisles={aisles} units={units} busy={busy} onSave={() => {}} onCancel={() => {}} onCreateAisle={() => Promise.resolve(dairy)} />,
+    );
 
   test("shows the food's current values: name, plural, aisle and aliases", () => {
     const html = render(butter);
@@ -59,5 +136,45 @@ describe("FoodEditSheetContent render", () => {
     const html = render(butter, [dairy, bakery], true);
     expect(html).toContain("Saving…");
     expect(html.match(/disabled/g)?.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the conversions editor", () => {
+  const render = (food: Food, units: readonly Unit[] = [cup, gram]) =>
+    renderToString(
+      <FoodEditSheetContent food={food} aisles={[dairy]} units={units} onSave={() => {}} onCancel={() => {}} onCreateAisle={() => Promise.resolve(dairy)} />,
+    );
+
+  const flour: Food = {
+    ...butter,
+    name: "Plain flour",
+    conversions: [{ id: "c1", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }],
+  };
+
+  test("a stored conversion renders as a row of amount, unit, equals, amount, unit", () => {
+    const html = render(flour);
+    expect(html).toContain("Conversions");
+    expect(html).toContain("1 cup of flour is 125 g");
+    expect(html).toContain('value="1"');
+    expect(html).toContain('value="125"');
+    expect(html).toContain("Conversion 1 amount");
+    expect(html).toContain("Conversion 1 unit");
+    expect(html).toContain("Conversion 1 equals amount");
+    expect(html).toContain("Conversion 1 equals unit");
+    expect(html).toContain("Remove conversion 1");
+    expect(html).toContain("Add conversion");
+  });
+
+  test("a food with none says so, and still offers Add conversion", () => {
+    const html = render(butter);
+    expect(html).toContain("No conversions.");
+    expect(html).not.toContain("Conversion 1 amount");
+    expect(html).toContain("Add conversion");
+  });
+
+  test("with no units there is nothing to convert between, so the editor asks for one", () => {
+    const html = render(flour, []);
+    expect(html).toContain("Add a unit first.");
+    expect(html).not.toContain("Add conversion");
   });
 });

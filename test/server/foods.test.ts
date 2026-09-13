@@ -3,7 +3,8 @@ import { expect, test } from "vitest";
 import { recipeInputSchema } from "../../src/domain/recipe";
 import type { NotFoundData } from "../../src/server/fn";
 import { createAisle } from "../../src/server/aisles";
-import { createFood, deleteFood, findOrCreateFood, listFoods, mergeFood, updateFood, usingFood } from "../../src/server/foods";
+import { findOrCreateUnit } from "../../src/server/units";
+import { createFood, deleteFood, findOrCreateFood, listFoods, mergeFood, setFoodConversions, updateFood, usingFood } from "../../src/server/foods";
 import { createRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -90,4 +91,52 @@ test("mergeFood is not-found when either id is unknown", async () => {
   const missingTarget = await callServerFn(mergeFood, { sourceId: butter.id, targetId: MISSING }).catch((e: unknown) => e);
   expect(isNotFound(missingTarget)).toBe(true);
   expect((missingTarget as { data: NotFoundData }).data).toMatchObject({ entity: "food", id: MISSING });
+});
+
+// --- Conversions (M32.1, decisions.md row 69) --------------------------------
+
+test("setFoodConversions replaces a food's conversions and they come back on every read", async () => {
+  const cup = await callServerFn(findOrCreateUnit, { name: "cup" });
+  const gram = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const flour = await callServerFn(createFood, { name: "plain flour" });
+  expect(flour.conversions).toEqual([]);
+
+  const written = await callServerFn(setFoodConversions, {
+    id: flour.id,
+    conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }],
+  });
+  expect(written.conversions).toEqual([{ id: expect.any(String), unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }]);
+  expect((await callServerFn(listFoods, { q: "plain flour" }))[0]!.conversions).toEqual(written.conversions);
+
+  expect((await callServerFn(setFoodConversions, { id: flour.id, conversions: [] })).conversions).toEqual([]);
+});
+
+test("updateFood carries conversions beside the other fields, and omitting them keeps them", async () => {
+  const cup = await callServerFn(findOrCreateUnit, { name: "cup" });
+  const gram = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const flour = await callServerFn(createFood, { name: "conversion flour", conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }] });
+  expect(flour.conversions).toHaveLength(1);
+
+  const renamed = await callServerFn(updateFood, { id: flour.id, name: "Conversion flour" });
+  expect(renamed.name).toBe("Conversion flour");
+  expect(renamed.conversions).toEqual(flour.conversions);
+
+  const changed = await callServerFn(updateFood, { id: flour.id, conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 120 }] });
+  expect(changed.conversions.map((c) => c.toQuantity)).toEqual([120]);
+});
+
+test("conversions validation: positive amounts, two different units, and a known food", async () => {
+  const cup = await callServerFn(findOrCreateUnit, { name: "cup" });
+  const gram = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const flour = await callServerFn(createFood, { name: "validation flour" });
+
+  await expect(
+    callServerFn(setFoodConversions, { id: flour.id, conversions: [{ unitId: cup.id, quantity: 0, toUnitId: gram.id, toQuantity: 125 }] }),
+  ).rejects.toThrow(/greater than 0|too_small/);
+  await expect(
+    callServerFn(setFoodConversions, { id: flour.id, conversions: [{ unitId: cup.id, quantity: 1, toUnitId: cup.id, toQuantity: 1 }] }),
+  ).rejects.toThrow(/two different units/);
+
+  const missing = await callServerFn(setFoodConversions, { id: MISSING, conversions: [] }).catch((e: unknown) => e);
+  expect(isNotFound(missing)).toBe(true);
 });

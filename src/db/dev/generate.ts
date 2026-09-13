@@ -79,6 +79,7 @@ function foodRef(entry: FoodEntry): Food {
     aisle: { id: NEW, name: entry.aisle, position: AISLES.indexOf(entry.aisle) },
     recipeId: null,
     skipShopping: false,
+    conversions: [],
   };
 }
 

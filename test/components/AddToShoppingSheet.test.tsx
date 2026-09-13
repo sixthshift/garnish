@@ -13,6 +13,7 @@ const food = (name: string, skipShopping = false): Food => ({
   aisle: null,
   recipeId: null,
   skipShopping,
+  conversions: [],
 });
 
 const gram: Unit = { id: "unit-g", name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, standardQuantity: null, standardUnitId: null };

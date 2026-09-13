@@ -80,6 +80,7 @@ ingredient    id, part_id, position, quantity?, unit_id?, food_id?,
 step          id, part_id, position, text
 step_ingredient step_id, ingredient_id, position
 food          id, name, plural_name, aliases, aisle_id?, recipe_id?, skip_shopping
+food_conversion id, food_id, unit_id, quantity, to_unit_id, to_quantity
 aisle         id, name, position
 unit          id, name, plural_name, abbreviation, use_abbreviation, fraction,
               standard_quantity?, standard_unit_id?
@@ -94,7 +95,7 @@ migration     id, name, applied_at
 
 Ids are UUID text; timestamps are ISO 8601 UTC text. `food`, `unit`, `aisle` and `tag` names are unique case-insensitively. Deleting a recipe cascades to its parts, ingredients, steps, notes, timeline events and tag links; deleting a part cascades to its ingredients and steps; a step link cascades from either side, so deleting a step or an ingredient takes the links naming it; deleting a food, unit or aisle sets the references null. `position` is unique within its parent.
 
-Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64); `005_shopping.sql` adds `shopping_item` and `shopping_item_source` (decisions.md row 67).
+Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64); `005_shopping.sql` adds `shopping_item` and `shopping_item_source` (decisions.md row 67); `006_conversions.sql` adds `food_conversion` (decisions.md row 69).
 
 The document the API reads and writes (`src/domain/recipe.ts`) mirrors these columns in camelCase, with Mealie's names where Mealie has the concept: `servings` → `recipeServings`, `yield_quantity` → `recipeYieldQuantity`, `yield_text` → `recipeYield`, `prep_minutes` → `prepTime`, `cook_minutes` → `performTime`. The two times are integer minutes, not Mealie's free-text strings (decisions.md row 35). Array order carries `position`, so the document has no position fields. Foreign keys come back as nested objects (`unit`, `food`, `yieldUnit`, `tags`); writes use only the nested `id`. Steps exist only inside `parts`; the document has no recipe-level `steps` array. A step carries `ingredientIds`: the ids of the ingredients it uses, in link order.
 
@@ -108,7 +109,8 @@ The document the API reads and writes (`src/domain/recipe.ts`) mirrors these col
 - Sub-recipes attach to the **food**, not the ingredient row: `food.recipe_id`. An ingredient line reads "150 g hollandaise" and does not care whether hollandaise has a recipe. Tandoor's shape. Scaling through it is deferred, see [scope.md](scope.md).
 - `favourite` is a 0/1 flag on the recipe, not a magic tag (decisions.md row 43). Tags are the only organiser; there are no categories or tools (row 42).
 - `timeline_event` is one logged cook: `occurred_on` is a calendar date (`YYYY-MM-DD`), `message` a comment, `image` an optional photo file name. `recipe.last_made` is derived, never written directly: creating or deleting an event recomputes it as the greatest `occurred_on`, falling back to null. Mealie's "Made this" shape (decisions.md row 41).
-- `food.skip_shopping` for water, salt, pepper. `aisle` is its own table. `unit.standard_*` is the hook for conversions later.
+- `food.skip_shopping` for water, salt, pepper. `aisle` is its own table.
+- Conversions are per food (decisions.md row 69): `food_conversion` reads "1 cup of plain flour is 125 g", one row per food per pair of units, both units cascading, and the food document carries them as `conversions`. `unit.standard_quantity` / `unit.standard_unit_id` keep the unit-to-unit conversions that hold whatever is being measured (1 l is 1000 ml). A cup of flour is 125 g and a cup of sugar is 220 g, so the food's rows are tried first and the unit's are the fallback.
 - Quantities are stored as decimals. `unit.fraction` says whether to render ½ or 0.5.
 - Images live on the disk volume: `DATA_DIR/images/<recipeId>.<ext>`, one per recipe, and `DATA_DIR/images/timeline/<eventId>.<ext>`, one per logged cook. `recipe.image` and `timeline_event.image` hold only the file name. Not in the DB.
 

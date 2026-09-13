@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { required } from "./errors";
 import { foods } from "../db/models/food/repo";
 import { recipes } from "../db/models/recipe/repo";
-import { FoodCreate, FoodMerge, FoodUpdate, IdInput, ListQuery, NameInput } from "../domain/reference";
+import { FoodConversions, FoodCreate, FoodMerge, FoodUpdate, IdInput, ListQuery, NameInput } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";
 
@@ -21,6 +21,15 @@ export const updateFood = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(FoodUpdate)
   .handler(async ({ data: { id, ...patch } }) => required(foods(await getDb()).update(id, patch), "food", id));
+
+/**
+ * This food's conversions, replaced wholesale (decisions.md row 69). `updateFood`
+ * carries them too; this is the call the conversions editor makes on its own.
+ */
+export const setFoodConversions = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(FoodConversions)
+  .handler(async ({ data: { id, conversions } }) => required(foods(await getDb()).setConversions(id, conversions), "food", id));
 
 /** Deletes and returns the row, as Mealie does. */
 export const deleteFood = createServerFn({ method: "POST" })

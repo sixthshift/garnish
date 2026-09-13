@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { aisles } from "../../src/db/models/aisle/repo";
+import { units } from "../../src/db/models/unit/repo";
 import { foods, type FoodRepository } from "../../src/db/models/food/repo";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
@@ -26,6 +27,7 @@ test("create applies defaults and list returns by name", () => {
     aisleId: null,
     recipeId: null,
     skipShopping: false,
+    conversions: [],
   });
 
   const dairy = aisles(db).create({ name: "Dairy" });
@@ -126,4 +128,80 @@ test("list with q filters by case-insensitive substring and escapes wildcards", 
   expect(repo.list("%").map((f) => f.name)).toEqual(["100% cocoa"]);
   expect(repo.list("  ").map((f) => f.name)).toHaveLength(4);
   expect(repo.list("nothing")).toEqual([]);
+});
+
+// --- Conversions (M32.1, decisions.md row 69) --------------------------------
+
+/** A cup, a gram and a millilitre to convert between. */
+function seedUnits() {
+  return { cup: units(db).create({ name: "cup" }), gram: units(db).create({ name: "gram" }), ml: units(db).create({ name: "millilitre" }) };
+}
+
+test("a food round-trips its conversions through create, get and list", () => {
+  const { cup, gram } = seedUnits();
+  const flour = repo.create({ name: "plain flour", conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }] });
+
+  expect(flour.conversions).toEqual([{ id: expect.stringMatching(UUID), unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }]);
+  expect(repo.get(flour.id)).toEqual(flour);
+  expect(repo.getByName("PLAIN FLOUR")).toEqual(flour);
+  expect(repo.list()).toEqual([flour]);
+
+  // A food without any reads back as an empty list, not undefined.
+  const salt = repo.create({ name: "salt" });
+  expect(salt.conversions).toEqual([]);
+  // By name: "plain flour" then "salt", and each keeps its own rows.
+  expect(repo.list().map((f) => [f.name, f.conversions.length])).toEqual([
+    ["plain flour", 1],
+    ["salt", 0],
+  ]);
+});
+
+test("update replaces the conversions wholesale and leaves them alone when the patch omits them", () => {
+  const { cup, gram, ml } = seedUnits();
+  const flour = repo.create({ name: "flour", conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }] });
+
+  const renamed = repo.update(flour.id, { name: "plain flour" })!;
+  expect(renamed.name).toBe("plain flour");
+  expect(renamed.conversions).toEqual(flour.conversions);
+
+  const replaced = repo.update(flour.id, {
+    conversions: [
+      { unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 120 },
+      { unitId: cup.id, quantity: 1, toUnitId: ml.id, toQuantity: 250 },
+    ],
+  })!;
+  expect(replaced.conversions.map((c) => [c.toUnitId, c.toQuantity])).toEqual([
+    [gram.id, 120],
+    [ml.id, 250],
+  ]);
+  // Replaced, so the old row's id is gone.
+  expect(replaced.conversions.map((c) => c.id)).not.toContain(flour.conversions[0]!.id);
+
+  expect(repo.update(flour.id, { conversions: [] })!.conversions).toEqual([]);
+});
+
+test("setConversions writes this food's rows only, and is null for an unknown food", () => {
+  const { cup, gram } = seedUnits();
+  const flour = repo.create({ name: "flour" });
+  const sugar = repo.create({ name: "sugar", conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 220 }] });
+
+  const written = repo.setConversions(flour.id, [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }])!;
+  expect(written.conversions[0]).toMatchObject({ toQuantity: 125 });
+  expect(repo.get(sugar.id)!.conversions).toEqual(sugar.conversions);
+  expect(repo.setConversions("missing", [])).toBeNull();
+});
+
+test("the table refuses a repeated pair of units, and a deleted food or unit takes its conversions", () => {
+  const { cup, gram } = seedUnits();
+  const flour = repo.create({ name: "flour", conversions: [{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }] });
+
+  expect(() =>
+    repo.setConversions(flour.id, [
+      { unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 },
+      { unitId: cup.id, quantity: 2, toUnitId: gram.id, toQuantity: 250 },
+    ]),
+  ).toThrow(/UNIQUE/);
+
+  units(db).remove(gram.id);
+  expect(repo.get(flour.id)!.conversions).toEqual([]);
 });

@@ -122,10 +122,10 @@ const cup = {
   standardUnitId: null,
 };
 
-const flour = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
-const butter = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "butter", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
-const garlic = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", name: "garlic", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: true };
-const bayLeaf = { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "bay leaf", pluralName: "bay leaves", aliases: [], aisle: null, recipeId: null, skipShopping: false };
+const flour = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const butter = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "butter", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const garlic = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", name: "garlic", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: true, conversions: [] };
+const bayLeaf = { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "bay leaf", pluralName: "bay leaves", aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 
 let nextItemId = 0;
 function existingItem(overrides: Partial<ShoppingItem> = {}): ShoppingItem {

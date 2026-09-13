@@ -166,9 +166,10 @@ export function foodReference(source: FoodRow | { name: string }): Food {
       aisle: null,
       recipeId: source.recipeId,
       skipShopping: source.skipShopping,
+      conversions: [],
     };
   }
-  return { id: randomUuid(), name: source.name.trim(), pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
+  return { id: randomUuid(), name: source.name.trim(), pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 }
 
 /** A new unit reference by name, defaults for the rest; the repository find-or-creates it on save. Pure apart from the random id. */

@@ -10,7 +10,7 @@ let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(seq++).padStart(12, "0")}`;
 
 function food(name: string, pluralName: string | null = null, aliases: string[] = []): Food {
-  return { id: uuid(), name, pluralName, aliases, aisle: null, recipeId: null, skipShopping: false };
+  return { id: uuid(), name, pluralName, aliases, aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 }
 
 function ingredient(f: Food | null, originalText = ""): Ingredient {
