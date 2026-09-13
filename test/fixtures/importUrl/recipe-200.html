@@ -1,0 +1,14 @@
+<!--
+  A recipe page shaped like the ones the schema.org rung already reads
+  (`test/server/recipeImport.test.ts`'s SCHEMA_PAGE), kept as its own fixture
+  file for M35.4's retry test: the second header profile is what gets this
+  one back, after the first is turned away with `blocked-403.html`.
+-->
+<html><head>
+<meta property="og:title" content="Ignored, the schema wins">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+  {"@type":"WebSite","name":"Site"},
+  {"@type":"Recipe","name":"Golden syrup dumplings","recipeYield":"6 dumplings","prepTime":"PT15M",
+   "recipeIngredient":["1 cup self-raising flour","60 g butter","1 cup golden syrup"],
+   "recipeInstructions":[{"@type":"HowToStep","text":"Rub butter into flour."},{"@type":"HowToStep","text":"Simmer in syrup."}]}
+]}</script></head><body></body></html>

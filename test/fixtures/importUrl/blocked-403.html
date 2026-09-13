@@ -1,0 +1,29 @@
+<!--
+  Trimmed from a real response: `curl` against a live Serious Eats recipe URL
+  with M35.4's Chrome header profile, recorded 2026-09-13 while checking the
+  task's Serious Eats note for docs/plan.md's Log. Real status 403, real
+  body ~680 KB of a Cloudflare "managed challenge" bundle; kept here is only
+  the head and the no-JS fallback text that identify it as a challenge page
+  rather than a recipe, with the inline challenge script's giant token
+  payload cut out. This is what headers alone cannot get past: the page asks
+  a browser to run JavaScript and prove a TLS fingerprint, neither of which
+  `fetch` has.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Page</title>
+</head>
+<body>
+    <div class="main-wrapper" role="main">
+        <div class="main-content">
+            <noscript>
+                <div class="h2"><span id="challenge-error-text">Enable JavaScript and cookies to continue</span></div>
+            </noscript>
+        </div>
+    </div>
+    <script>window._cf_chl_opt = { cType: 'managed', cZone: 'www.seriouseats.com' };</script>
+</body>
+</html>

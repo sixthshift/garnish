@@ -19,14 +19,19 @@
 // it, and falling through to the stub gets a better result than importing an
 // empty recipe that looks like a successful one.
 //
-// The fetch sends a browser `User-Agent` because a default one gets a 403 from
-// a good number of sites. That is as far as this goes: Mealie impersonates a
-// real browser's TLS fingerprint with curl_cffi to get past Cloudflare, and
-// Tandoor sidesteps the problem with a bookmarklet that captures the HTML the
-// browser already has. Both are worth revisiting if a site actually blocks us,
-// and neither is worth building first.
+// The fetch sends a full browser header set (M35.4) because a default one, or
+// even a bare `User-Agent`, gets a 403 from a good number of sites. A 403 gets
+// one retry under a second header profile before this gives up — see
+// `src/domain/fetchProfiles.ts` — and only then does the error say the site
+// is blocking automated requests and point at the paste box (M34.5). That is
+// as far as this goes: Mealie impersonates a real browser's TLS fingerprint
+// with curl_cffi to get past Cloudflare, and Tandoor sidesteps the problem
+// with a bookmarklet that captures the HTML the browser already has. Both are
+// worth revisiting if headers alone stop being enough — see docs/plan.md's
+// Log for M35.4 on Serious Eats, which they are not.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { fetchProfileForAttempt, FETCH_PROFILES } from "../domain/fetchProfiles";
 import { recipeNodeFromHtml } from "../domain/jsonLd";
 import { openGraphStub } from "../domain/openGraph";
 import { hasContent, type ScrapedRecipe, scrapedFromSchema } from "../domain/schemaRecipe";
@@ -36,10 +41,6 @@ export const MAX_PAGE_BYTES = 5_000_000;
 
 /** How long to wait on a page before giving up. */
 export const PAGE_TIMEOUT_MS = 15_000;
-
-/** What a browser sends, because a default agent gets a 403 from a good number of recipe sites. */
-export const IMPORT_USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
 /**
  * Which rung produced the result, so the review can say how much it actually
@@ -105,26 +106,46 @@ export function extractRecipe(html: string, url: string): ImportedRecipe | null 
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
 /**
+ * GET `url` with a browser header profile; on a 403, once more under the next
+ * profile before giving up. A single fixed header set is itself a
+ * fingerprint some sites already block on its own, so a retry under a
+ * different one is worth the extra round trip; a status other than 403 is
+ * returned straight away; there is nothing a different profile would change
+ * about a 404 or a 500.
+ */
+async function fetchPastBotWall(url: URL, fetcher: Fetcher): Promise<Response> {
+  for (let attempt = 0; attempt < FETCH_PROFILES.length; attempt++) {
+    let response: Response;
+    try {
+      response = await fetcher(url.href, {
+        redirect: "follow",
+        signal: AbortSignal.timeout(PAGE_TIMEOUT_MS),
+        headers: fetchProfileForAttempt(attempt).headers,
+      });
+    } catch {
+      throw new Error(`Could not reach ${url.hostname}`);
+    }
+    const isLastAttempt = attempt === FETCH_PROFILES.length - 1;
+    if (response.status !== 403 || isLastAttempt) return response;
+  }
+  // Unreachable: the loop above always returns on its last iteration.
+  throw new Error(`Could not reach ${url.hostname}`);
+}
+
+/**
  * GET the page and read a recipe out of it. Throws with a message meant for
  * the import screen when the URL is not http(s), unreachable, an error
  * response, too large, or carries neither structured data nor OpenGraph tags.
+ * A 403 that survives both header profiles gets its own message: this is a
+ * bot wall headers cannot pass, and the paste box (M34.5) is the way round it.
  */
 export async function importRecipeFromUrl(raw: string, fetcher: Fetcher = fetch): Promise<ImportedRecipe> {
   const url = parsePageUrl(raw);
   if (!url) throw new Error("Enter an http or https address");
 
-  let response: Response;
-  try {
-    response = await fetcher(url.href, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(PAGE_TIMEOUT_MS),
-      headers: {
-        "User-Agent": IMPORT_USER_AGENT,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    });
-  } catch {
-    throw new Error(`Could not reach ${url.hostname}`);
+  const response = await fetchPastBotWall(url, fetcher);
+  if (response.status === 403) {
+    throw new Error(`${url.hostname} is blocking automated requests. Try pasting the recipe text instead.`);
   }
   if (!response.ok) throw new Error(`${url.hostname} returned ${response.status}`);
 
