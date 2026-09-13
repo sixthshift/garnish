@@ -1,7 +1,7 @@
 // The Foods tab's editor sheet: alias text <-> array conversion, and the form
 // FoodEditSheetContent renders.
 import { renderToString } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import { describe, expect, expectTypeOf, test } from "vitest";
 import {
   aliasesText,
   blankConversion,
@@ -11,6 +11,7 @@ import {
   parseAliases,
   parseConversions,
   type ConversionDraft,
+  type FoodPatch,
 } from "../../src/components/FoodEditSheet";
 import type { Food } from "../../src/db/models/food/repo";
 import type { Unit } from "../../src/db/models/unit/repo";
@@ -176,5 +177,43 @@ describe("the conversions editor", () => {
     const html = render(flour, []);
     expect(html).toContain("Add a unit first.");
     expect(html).not.toContain("Add conversion");
+  });
+});
+
+describe("made by a recipe", () => {
+  const recipes = [
+    { id: "r1", name: "Sweet pastry" },
+    { id: "r2", name: "Hollandaise" },
+  ];
+  const render = (food: Food, list: readonly { id: string; name: string }[] = recipes) =>
+    renderToString(
+      <FoodEditSheetContent
+        food={food}
+        aisles={[dairy]}
+        recipes={list}
+        onSave={() => {}}
+        onCancel={() => {}}
+        onCreateAisle={() => Promise.resolve(dairy)}
+      />,
+    );
+
+  test("the field offers the recipes and starts blank for an ordinary food", () => {
+    const html = render(butter);
+    expect(html).toContain("Made by a recipe");
+    expect(html).toContain('aria-label="Made by a recipe"');
+    expect(html).not.toContain('value="Sweet pastry"');
+  });
+
+  test("a linked food shows its recipe's name", () => {
+    const html = render({ ...butter, name: "Pastry", recipeId: "r1" });
+    expect(html).toContain('value="Sweet pastry"');
+  });
+
+  test("with no recipes to pick from, the field is not offered", () => {
+    expect(render(butter, [])).not.toContain("Made by a recipe");
+  });
+
+  test("the patch carries recipeId", () => {
+    expectTypeOf<FoodPatch["recipeId"]>().toEqualTypeOf<string | null>();
   });
 });

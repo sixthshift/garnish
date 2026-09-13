@@ -4,7 +4,17 @@ import { recipeInputSchema } from "../../src/domain/recipe";
 import type { NotFoundData } from "../../src/server/fn";
 import { createAisle } from "../../src/server/aisles";
 import { findOrCreateUnit } from "../../src/server/units";
-import { createFood, deleteFood, findOrCreateFood, listFoods, mergeFood, setFoodConversions, updateFood, usingFood } from "../../src/server/foods";
+import {
+  createFood,
+  deleteFood,
+  findOrCreateFood,
+  foodForRecipe,
+  listFoods,
+  mergeFood,
+  setFoodConversions,
+  updateFood,
+  usingFood,
+} from "../../src/server/foods";
 import { createRecipe } from "../../src/server/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -139,4 +149,28 @@ test("conversions validation: positive amounts, two different units, and a known
 
   const missing = await callServerFn(setFoodConversions, { id: MISSING, conversions: [] }).catch((e: unknown) => e);
   expect(isNotFound(missing)).toBe(true);
+});
+
+test("foodForRecipe creates a food of the recipe's name linked back to it, and is idempotent", async () => {
+  const recipe = await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Sweet pastry", parts: [{ name: "" }] }));
+  const food = await callServerFn(foodForRecipe, { recipeId: recipe.id });
+  expect(food).toMatchObject({ name: "Sweet pastry", recipeId: recipe.id });
+
+  // Again: the same food, not a second one.
+  expect(await callServerFn(foodForRecipe, { recipeId: recipe.id })).toEqual(food);
+  expect((await callServerFn(listFoods, { q: "Sweet pastry" })).length).toBe(1);
+});
+
+test("foodForRecipe links an existing food of that name rather than creating another", async () => {
+  const recipe = await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Hollandaise", parts: [{ name: "" }] }));
+  const existing = await callServerFn(createFood, { name: "hollandaise" });
+  const linked = await callServerFn(foodForRecipe, { recipeId: recipe.id });
+  expect(linked.id).toBe(existing.id);
+  expect(linked.recipeId).toBe(recipe.id);
+});
+
+test("foodForRecipe on an unknown recipe is a not-found error", async () => {
+  const caught = await callServerFn(foodForRecipe, { recipeId: MISSING }).catch((e: unknown) => e);
+  expect(isNotFound(caught)).toBe(true);
+  expect((caught as { data: NotFoundData }).data).toMatchObject({ entity: "recipe", id: MISSING });
 });

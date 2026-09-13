@@ -4,10 +4,24 @@ import { isNotFound } from "@tanstack/react-router";
 import { describe, expect, test } from "vitest";
 import { recipeSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
 import type { NotFoundData } from "../../src/server/fn";
-import { createRecipe, deleteRecipe, getRecipe, listRecipes, recipeBySource, setFavourite, setRating, updateRecipe } from "../../src/server/recipes";
+import {
+  createRecipe,
+  deleteRecipe,
+  getRecipe,
+  listRecipes,
+  listSubRecipes,
+  recipeBySource,
+  setFavourite,
+  setRating,
+  updateRecipe,
+} from "../../src/server/recipes";
+import { findOrCreateUnit } from "../../src/server/units";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
+
+/** An id no row has, for the not-found and skipped-id cases. */
+const MISSING_ID = "00000000-0000-4000-8000-000000000000";
 
 const ids = {
   flour: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -227,4 +241,34 @@ describe("recipeBySource (M23.7)", () => {
     expect(await callServerFn(recipeBySource, { sourceUrl: "https://example.test/other" })).toBeNull();
     expect(await callServerFn(recipeBySource, { sourceUrl: `${url}?utm_source=x` })).toBeNull();
   });
+});
+
+test("listSubRecipes returns the slug and yield of each id, skipping unknown ones", async () => {
+  const gram = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const pastry = await callServerFn(createRecipe, {
+    name: "Sweet pastry",
+    recipeServings: 4,
+    recipeYieldQuantity: 500,
+    yieldUnit: gram,
+    parts: [{ name: "" }],
+  } as unknown as RecipeInput);
+  const sauce = await callServerFn(createRecipe, { name: "Hollandaise", parts: [{ name: "" }] } as unknown as RecipeInput);
+
+  const children = await callServerFn(listSubRecipes, { ids: [pastry.id, sauce.id, MISSING_ID] });
+  expect(children.map((child) => child.name)).toEqual(["Hollandaise", "Sweet pastry"]);
+  expect(children.find((child) => child.id === pastry.id)).toEqual({
+    id: pastry.id,
+    slug: "sweet-pastry",
+    name: "Sweet pastry",
+    recipeServings: 4,
+    recipeYieldQuantity: 500,
+    yieldUnit: expect.objectContaining({ id: gram.id, name: "gram" }),
+  });
+  expect(children.find((child) => child.id === sauce.id)?.yieldUnit).toBeNull();
+});
+
+test("listSubRecipes with no ids asks for nothing, and de-duplicates the ones it gets", async () => {
+  const pastry = await callServerFn(createRecipe, { name: "Shortcrust", parts: [{ name: "" }] } as unknown as RecipeInput);
+  expect(await callServerFn(listSubRecipes, { ids: [] })).toEqual([]);
+  expect(await callServerFn(listSubRecipes, { ids: [pastry.id, pastry.id] })).toHaveLength(1);
 });

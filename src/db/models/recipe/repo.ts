@@ -24,6 +24,7 @@ import type {
 } from "../../../domain/recipe";
 import { totalMinutes } from "../../../domain/format";
 import { resolveSort, seededOrder, type SortDir, type SortKey } from "../../../domain/sort";
+import type { SubRecipe } from "../../../domain/subRecipe";
 import { aisles as aisleRepository } from "../aisle/repo";
 import { type Executor, orm } from "../../connection/client";
 import { foods as foodRepository } from "../food/repo";
@@ -552,6 +553,32 @@ export function recipes(db: Database) {
         .where(eq(recipe.id, id))
         .returning({ id: recipe.id })
         .all().length > 0,
+
+    /**
+     * The link-and-scale facts an ingredient row needs about the recipes its
+     * foods point at (M32.3): the slug to link to, and the yield to derive a
+     * servings hint from. One query and its unit lookups, rather than a read
+     * per row; unknown ids are simply absent from the answer.
+     */
+    subRecipes(ids: readonly string[]): SubRecipe[] {
+      const wanted = [...new Set(ids)];
+      if (wanted.length === 0) return [];
+      const unitCache = new Map<string, Unit | null>();
+      return dz
+        .select({
+          id: recipe.id,
+          slug: recipe.slug,
+          name: recipe.name,
+          recipeServings: recipe.servings,
+          recipeYieldQuantity: recipe.yieldQuantity,
+          yieldUnitId: recipe.yieldUnitId,
+        })
+        .from(recipe)
+        .where(inArray(recipe.id, wanted))
+        .orderBy(byName)
+        .all()
+        .map(({ yieldUnitId, ...rest }) => ({ ...rest, yieldUnit: readUnit(yieldUnitId, unitCache) }));
+    },
 
     /** Summaries of the recipes with an ingredient of this food, by name. Empty when nothing uses it. */
     usingFood: (foodId: string): RecipeSummary[] =>

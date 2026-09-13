@@ -8,6 +8,12 @@
 // and is the one destructive item, kept at the bottom behind a separator.
 // Delete moved here from the edit page (M11.6), which is where Mealie has it,
 // and keeps the same `ConfirmDialog`.
+//
+// "Make this a food" (M32.3, decisions.md row 70) is the sub-recipe hook from
+// the recipe's own side: it finds or creates a food of the recipe's name with
+// `recipeId` set, so the next recipe that calls for it can pick it out of the
+// ingredient editor's food list and get a link back here. Idempotent — running
+// it twice lands on the same food — so it needs no confirmation.
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ingredientsText, recipeUrl } from "../domain/copy";
@@ -15,6 +21,7 @@ import type { Recipe } from "../domain/recipe";
 import { writeClipboard } from "../lib/clipboard";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
+import { foodForRecipe } from "../server/foods";
 import { deleteRecipe, duplicateRecipe } from "../server/recipes";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Menu } from "./ui/Menu";
@@ -53,6 +60,15 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
     }
   };
 
+  const makeFood = async () => {
+    try {
+      const food = await mutate(() => foodForRecipe({ data: { recipeId: recipe.id } }));
+      notify({ intent: "success", title: `${food.name} is now a food`, message: "Add it to another recipe's ingredients to link back here." });
+    } catch (error) {
+      notifyError("Could not make this a food", error);
+    }
+  };
+
   const remove = async () => {
     setDeleting(true);
     try {
@@ -69,6 +85,7 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
     <>
       <Menu label="Recipe actions" iconOnly>
         <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
+        <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>
         <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
         <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
         <Menu.Item onSelect={() => (globalThis as { print?: () => void }).print?.()}>Print</Menu.Item>

@@ -6,6 +6,14 @@
 // count other than the recipe's own, the amount gets a class so it reads as
 // "this number changed".
 //
+// A row whose food is made by a recipe (M32.3) renders that food as a link to
+// the child rather than bold text, with a quiet "Make N servings" hint under
+// it when the two amounts can be related — the parent never inlines the child
+// (decisions.md row 70). The link makes the row's body a plain element instead
+// of the tick toggle, because an anchor inside a button is not markup: the
+// checkbox still ticks, and a sub-recipe row is the one row you cannot tick by
+// tapping its text.
+//
 // "Scale to..." (M11.5) used to be a per-row link here; M25.2 moved it into
 // the servings popover in the ingredients heading (`ScaleControl`, the recipe
 // view route), which picks an ingredient from a `Select` rather than acting on
@@ -14,10 +22,13 @@
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
+import { Link } from "@tanstack/react-router";
 import { formatAmount, formatFood, formatIngredient } from "../domain/format";
 import type { Ingredient } from "../domain/recipe";
+import { subRecipeHint, subRecipeScale } from "../domain/subRecipe";
 import { useIngredientTick } from "../lib/ticks";
 import { useQuickEditIngredient } from "./QuickEdit";
+import { useSubRecipe } from "./SubRecipes";
 
 export type IngredientRowProps = {
   /** The owning recipe's id: ticks.ts keys session state by it. */
@@ -55,8 +66,42 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: 
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
   // The hover pencil (from `md`) and its sheet, or nothing outside the recipe page (M27.5, M29.4).
   const quickEdit = useQuickEditIngredient(partId, ingredient.id);
+  // The recipe this row's food is made by, when the page fetched one (M32.3).
+  const child = useSubRecipe(ingredient.food);
+  const scale = child === null ? null : subRecipeScale(ingredient, child);
   const { amount, food, raw } = ingredientLineParts(ingredient);
   const note = ingredient.note.trim();
+  const bodyClass = cn("flex flex-1 flex-col gap-0.5 text-left", done && "text-fg-subtle");
+
+  const line = (
+    <span className={cn(done && "line-through")}>
+      {amount !== "" && (
+        <span className={cn("tabular-nums", scaled && "font-semibold text-fg-brand")} data-testid="ingredient-amount">
+          {amount}{" "}
+        </span>
+      )}
+      {raw ? (
+        food
+      ) : child !== null ? (
+        <Link
+          to="/recipes/$slug"
+          params={{ slug: child.slug }}
+          className="font-semibold underline decoration-dotted underline-offset-2"
+          data-testid="sub-recipe-link"
+        >
+          {food}
+        </Link>
+      ) : (
+        <strong className="font-semibold">{food}</strong>
+      )}
+      {ingredient.fixed && (
+        <Muted as="span" className="ml-1.5 text-xs" title="Fixed amount, does not scale with servings">
+          fixed
+        </Muted>
+      )}
+    </span>
+  );
+  const noteLine = note !== "" && <Muted as="p" className={cn("text-sm", done && "line-through")}>{note}</Muted>;
 
   return (
     <li
@@ -65,24 +110,25 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: 
       data-ticked={done ? "true" : undefined}
       data-fixed={ingredient.fixed ? "true" : undefined}
       data-scaled={scaled ? "true" : undefined}
+      data-sub-recipe={child !== null ? "true" : undefined}
     >
       <Checkbox checked={done} onCheckedChange={toggle} className="mt-0.5" aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`} />
-      <button type="button" onClick={toggle} className={cn("flex flex-1 flex-col gap-0.5 text-left", done && "text-fg-subtle")}>
-        <span className={cn(done && "line-through")}>
-          {amount !== "" && (
-            <span className={cn("tabular-nums", scaled && "font-semibold text-fg-brand")} data-testid="ingredient-amount">
-              {amount}{" "}
-            </span>
-          )}
-          {raw ? food : <strong className="font-semibold">{food}</strong>}
-          {ingredient.fixed && (
-            <Muted as="span" className="ml-1.5 text-xs" title="Fixed amount, does not scale with servings">
-              fixed
+      {child !== null ? (
+        <div className={bodyClass}>
+          {line}
+          {noteLine}
+          {scale !== null && (
+            <Muted as="p" className="text-xs" data-testid="sub-recipe-hint">
+              {subRecipeHint(scale)}
             </Muted>
           )}
-        </span>
-        {note !== "" && <Muted as="p" className={cn("text-sm", done && "line-through")}>{note}</Muted>}
-      </button>
+        </div>
+      ) : (
+        <button type="button" onClick={toggle} className={bodyClass}>
+          {line}
+          {noteLine}
+        </button>
+      )}
       {quickEdit}
     </li>
   );

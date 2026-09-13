@@ -6,6 +6,7 @@ import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, crea
 import { renderToString } from "react-dom/server";
 import { describe, expect, expectTypeOf, test } from "vitest";
 import { RecipeActions, type RecipeActionsProps } from "../../src/components/RecipeActions";
+import { Menu } from "../../src/components/ui/Menu";
 import type { Recipe } from "../../src/domain/recipe";
 
 const base: Recipe = {
@@ -69,5 +70,22 @@ describe("RecipeActions render", () => {
     const html = await render(base);
     expect(html).not.toContain('aria-label="Delete recipe"');
     expect(html).not.toContain("This cannot be undone");
+  });
+});
+
+describe("the menu's items", () => {
+  test('"Make this a food" sits with the other non-destructive items', () => {
+    const html = renderToString(
+      <Menu label="Recipe actions" open>
+        <Menu.Item onSelect={() => {}}>Duplicate</Menu.Item>
+        <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
+      </Menu>,
+    );
+    expect(html).toContain("Make this a food");
+  });
+
+  test("the closed menu shows no items, including the new one", async () => {
+    const html = await render(base);
+    expect(html).not.toContain("Make this a food");
   });
 });

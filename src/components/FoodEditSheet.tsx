@@ -7,6 +7,11 @@
 // Aliases are edited as a textarea, one per line; converted to/from the
 // stored array by the pure helpers below.
 //
+// "Made by a recipe" (M32.3, decisions.md row 70) is the food's `recipeId`: a
+// Combobox over the recipe names the Settings loader already has, with no
+// "create" row — a recipe is written in the editor, not from here. Clearing
+// the field unlinks the food.
+//
 // Conversions (decisions.md row 69) are edited as rows of quantity, unit,
 // equals, quantity, unit — "1 cup of flour is 125 g". They are held as text
 // while typing, because a half-typed "12" is not a number anyone meant, and
@@ -30,6 +35,9 @@ import type { Unit } from "../db/models/unit/repo";
 import type { Aisle, FoodConversion } from "../domain/recipe";
 import type { FoodConversionInput } from "../domain/reference";
 import { Combobox } from "./ui/Combobox";
+
+/** A recipe as the "Made by a recipe" Combobox offers it. */
+export type RecipeOption = { id: string; name: string };
 
 /** Aliases as they are edited: one per line, blank lines dropped, each trimmed. Pure. */
 export function parseAliases(text: string): string[] {
@@ -104,6 +112,8 @@ export type FoodPatch = {
   pluralName: string | null;
   aliases: string[];
   aisleId: string | null;
+  /** The recipe this food is made by (M32.3), or null for an ordinary food. */
+  recipeId: string | null;
   skipShopping: boolean;
   /** Replaces the food's conversions wholesale (decisions.md row 69). */
   conversions: FoodConversionInput[];
@@ -114,6 +124,8 @@ export type FoodEditSheetContentProps = {
   aisles: readonly Aisle[];
   /** Every unit, for the conversions editor's two Selects. Empty hides the editor. */
   units?: readonly Unit[];
+  /** Every recipe, for "Made by a recipe". Empty hides the field. */
+  recipes?: readonly RecipeOption[];
   onSave: (patch: FoodPatch) => void;
   onCancel: () => void;
   /** Creates (or finds) an aisle by name, for the Combobox's "Create" row. */
@@ -121,7 +133,7 @@ export type FoodEditSheetContentProps = {
   busy?: boolean;
 };
 
-export function FoodEditSheetContent({ food, aisles, units = [], onSave, onCancel, onCreateAisle, busy = false }: FoodEditSheetContentProps) {
+export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], onSave, onCancel, onCreateAisle, busy = false }: FoodEditSheetContentProps) {
   const [name, setName] = useState(food.name);
   const [pluralName, setPluralName] = useState(food.pluralName ?? "");
   const [aliases, setAliases] = useState(() => aliasesText(food.aliases));
@@ -129,6 +141,8 @@ export function FoodEditSheetContent({ food, aisles, units = [], onSave, onCance
   const [aisleId, setAisleId] = useState(food.aisleId);
   const [conversions, setConversions] = useState<ConversionDraft[]>(() => food.conversions.map(conversionDraft));
   const [aisleText, setAisleText] = useState(() => aisles.find((aisle) => aisle.id === food.aisleId)?.name ?? "");
+  const [recipeId, setRecipeId] = useState(food.recipeId);
+  const [recipeText, setRecipeText] = useState(() => recipes.find((recipe) => recipe.id === food.recipeId)?.name ?? "");
   const [error, setError] = useState<string | null>(null);
 
   const unitOptions = units.map((unit) => ({ value: unit.id, label: unit.name }));
@@ -154,6 +168,7 @@ export function FoodEditSheetContent({ food, aisles, units = [], onSave, onCance
       pluralName: pluralName.trim() || null,
       aliases: parseAliases(aliases),
       aisleId,
+      recipeId,
       skipShopping,
       conversions: parsed.conversions,
     });
@@ -201,6 +216,25 @@ export function FoodEditSheetContent({ food, aisles, units = [], onSave, onCance
               }}
             />
           </FormField>
+          {recipes.length > 0 && (
+            <FormField label="Made by a recipe" description="This food is the result of another recipe; leave it blank for an ordinary ingredient.">
+              <Combobox
+                value={recipeText}
+                options={recipes.map((recipe) => ({ value: recipe.id, label: recipe.name }))}
+                disabled={busy}
+                aria-label="Made by a recipe"
+                placeholder="None"
+                onChange={(text) => {
+                  setRecipeText(text);
+                  if (text.trim() === "") setRecipeId(null);
+                }}
+                onSelect={(option) => {
+                  setRecipeId(option.value);
+                  setRecipeText(option.label);
+                }}
+              />
+            </FormField>
+          )}
           <FormField label="Aliases" description="One per line.">
             <Textarea value={aliases} disabled={busy} onChange={(event) => setAliases(event.target.value)} />
           </FormField>

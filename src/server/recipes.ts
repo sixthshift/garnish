@@ -51,6 +51,9 @@ export const DeleteRecipeInput = z.object({ id: recipeId });
 
 export const DuplicateRecipeInput = z.object({ id: recipeId });
 
+/** The recipe ids an ingredient row's food points at (M32.3). */
+export const SubRecipesInput = z.object({ ids: z.array(recipeId) });
+
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
 
 /** `rating` is 0 to 5; 0 means "no rating" and clears the column to null, as pressing the current star does. */
@@ -75,6 +78,17 @@ export const recipeBySource = createServerFn({ method: "GET" })
  * (Cooklang rules, see src/domain/scale.ts). A recipe whose stored servings is
  * 0 has no factor to scale by and is returned as stored.
  */
+/**
+ * The link-and-scale facts the view page needs about the recipes its
+ * ingredient foods point at (M32.3). One call for the whole page, so a
+ * sub-recipe row costs no fetch of its own; unknown ids come back absent
+ * rather than not-found.
+ */
+export const listSubRecipes = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .validator(SubRecipesInput)
+  .handler(async ({ data }) => recipes(await getDb()).subRecipes(data.ids));
+
 export const getRecipe = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(GetRecipeInput)

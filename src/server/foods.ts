@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { required } from "./errors";
 import { foods } from "../db/models/food/repo";
 import { recipes } from "../db/models/recipe/repo";
-import { FoodConversions, FoodCreate, FoodMerge, FoodUpdate, IdInput, ListQuery, NameInput } from "../domain/reference";
+import { FoodConversions, FoodCreate, FoodMerge, FoodUpdate, IdInput, ListQuery, NameInput, RecipeFoodInput } from "../domain/reference";
 import { getDb } from "./db";
 import { notFoundMiddleware } from "./fn";
 
@@ -47,6 +47,25 @@ export const findOrCreateFood = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(NameInput)
   .handler(async ({ data }) => foods(await getDb()).findOrCreate(data.name));
+
+/**
+ * The food this recipe is (M32.3, decisions.md row 70): the existing food of
+ * the recipe's name, or a new one, with `recipeId` pointing back at the
+ * recipe. Idempotent — running it twice on the same recipe returns the same
+ * food, which is what "create or link" means. Not-found when the recipe is
+ * unknown.
+ */
+export const foodForRecipe = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(RecipeFoodInput)
+  .handler(async ({ data }) => {
+    const db = await getDb();
+    const recipe = required(recipes(db).getById(data.recipeId), "recipe", data.recipeId);
+    const repo = foods(db);
+    const food = repo.findOrCreate(recipe.name);
+    if (food.recipeId === recipe.id) return food;
+    return required(repo.update(food.id, { recipeId: recipe.id }), "food", food.id);
+  });
 
 /** The recipes with an ingredient of this food, for the delete/merge confirm dialogs. */
 export const usingFood = createServerFn({ method: "GET" })

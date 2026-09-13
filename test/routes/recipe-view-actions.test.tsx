@@ -65,13 +65,14 @@ test("the edit page no longer hosts Delete", async () => {
   expect(html).not.toContain("This cannot be undone");
 });
 
-test("the open menu lists Duplicate, the two copy items and Print, with Delete last and destructive", async () => {
+test("the open menu lists Duplicate, Make this a food, the two copy items and Print, with Delete last and destructive", async () => {
   // Rendered outside the router: the menu's items are what is under test,
   // built from the same item set `RecipeActions` renders now that Edit and
   // Cook have left it (M25.5).
   const html = renderToString(
     <Menu label="Recipe actions" open>
       <Menu.Item onSelect={() => {}}>Duplicate</Menu.Item>
+      <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
       <Menu.Item onSelect={() => {}}>Copy link</Menu.Item>
       <Menu.Item onSelect={() => {}}>Copy ingredients</Menu.Item>
       <Menu.Item onSelect={() => {}}>Print</Menu.Item>
@@ -81,12 +82,12 @@ test("the open menu lists Duplicate, the two copy items and Print, with Delete l
       </Menu.Item>
     </Menu>,
   );
-  for (const label of ["Duplicate", "Copy link", "Copy ingredients", "Print", "Delete"]) {
+  for (const label of ["Duplicate", "Make this a food", "Copy link", "Copy ingredients", "Print", "Delete"]) {
     expect(html).toContain(label);
   }
   expect(html).not.toContain(">Edit<");
   expect(html).not.toContain(">Cook<");
-  expect(html.match(/role="menuitem"/g)).toHaveLength(5);
+  expect(html.match(/role="menuitem"/g)).toHaveLength(6);
   expect(html.indexOf("text-fg-danger")).toBeGreaterThan(-1);
 });
 

@@ -45,6 +45,10 @@ export type FoodUpdate = z.infer<typeof FoodUpdate>;
 export const FoodConversions = z.object({ id: Id, conversions: z.array(FoodConversionInput) });
 export type FoodConversions = z.infer<typeof FoodConversions>;
 
+/** The recipe a food is made by (M32.3); the food is found or created from the recipe's name. */
+export const RecipeFoodInput = z.object({ recipeId: Id });
+export type RecipeFoodInput = z.infer<typeof RecipeFoodInput>;
+
 /** Merge `sourceId` into `targetId`: the source is deleted, its ingredients repointed. */
 export const FoodMerge = z.object({ sourceId: Id, targetId: Id });
 export type FoodMerge = z.infer<typeof FoodMerge>;

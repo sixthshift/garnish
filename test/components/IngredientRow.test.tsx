@@ -1,9 +1,12 @@
 // IngredientRow: its pure line-splitting helper, and the rendered row for the
 // three cases the task calls out — ticked, scaled and fixed.
+import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { IngredientRow, ingredientLineParts } from "../../src/components/IngredientRow";
 import type { Ingredient } from "../../src/domain/recipe";
+import { SubRecipesProvider } from "../../src/components/SubRecipes";
+import type { SubRecipe } from "../../src/domain/subRecipe";
 import { setIngredientTicked, type StorageLike } from "../../src/lib/ticks";
 
 const gram = {
@@ -134,5 +137,80 @@ describe("IngredientRow", () => {
   test("M25.2: no row renders a 'Scale to...' trigger — that control moved into the servings popover", () => {
     const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient()} />);
     expect(html).not.toContain('data-testid="scale-to-trigger"');
+  });
+});
+
+// --- A food made by a recipe (M32.3) ---------------------------------------
+
+const PASTRY_RECIPE_ID = "33333333-3333-4333-8333-333333333333";
+
+const pastry = {
+  ...flour,
+  id: "44444444-4444-4444-8444-444444444444",
+  name: "pastry",
+  recipeId: PASTRY_RECIPE_ID,
+};
+
+const pastryRecipe: SubRecipe = {
+  id: PASTRY_RECIPE_ID,
+  slug: "sweet-pastry",
+  name: "Sweet pastry",
+  recipeServings: 4,
+  recipeYieldQuantity: 500,
+  yieldUnit: gram,
+};
+
+/** Render the row inside a throwaway router and the sub-recipes it knows about, so its `Link` resolves. */
+async function renderRow(row: Ingredient, subRecipes: SubRecipe[]): Promise<string> {
+  const rootRoute = createRootRoute({
+    component: () => (
+      <SubRecipesProvider subRecipes={subRecipes}>
+        <ul>
+          <IngredientRow recipeId={RECIPE_ID} ingredient={row} />
+        </ul>
+      </SubRecipesProvider>
+    ),
+  });
+  const slugRoute = createRoute({ getParentRoute: () => rootRoute, path: "/recipes/$slug", component: () => null });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([slugRoute]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+  await router.load();
+  return renderToString(<RouterProvider router={router} />);
+}
+
+describe("a food made by a recipe", () => {
+  test("the food is a link to the child, with the derived servings as a hint", async () => {
+    const html = await renderRow(ingredient({ quantity: 250, unit: gram, food: pastry }), [pastryRecipe]);
+    expect(html).toContain('data-sub-recipe="true"');
+    expect(html).toContain('data-testid="sub-recipe-link"');
+    expect(html).toContain('href="/recipes/sweet-pastry"');
+    expect(html).toMatch(/data-testid="sub-recipe-link"[^>]*>pastry</);
+    // 250 g of a child yielding 500 g at 4 servings: half a batch.
+    expect(html).toContain("Make 2 servings");
+    // The body is no longer the tick toggle: an anchor inside a button is not markup.
+    expect(html).not.toMatch(/<button[^>]*>\s*<span[^>]*>\s*<span[^>]*data-testid="ingredient-amount"/);
+  });
+
+  test("an amount that cannot be related to the child's yield gets the link and no hint", async () => {
+    const cup = { ...gram, id: "55555555-5555-4555-8555-555555555555", name: "cup", abbreviation: "cup", useAbbreviation: false };
+    const html = await renderRow(ingredient({ quantity: 1, unit: cup, food: pastry }), [pastryRecipe]);
+    expect(html).toContain('data-testid="sub-recipe-link"');
+    expect(html).not.toContain('data-testid="sub-recipe-hint"');
+    expect(html).not.toContain("Make ");
+  });
+
+  test("a food whose recipe the page did not fetch is an ordinary bold row", async () => {
+    const html = await renderRow(ingredient({ food: pastry }), []);
+    expect(html).not.toContain('data-sub-recipe="true"');
+    expect(html).not.toContain('data-testid="sub-recipe-link"');
+    expect(html).toMatch(/<strong[^>]*>pastry<\/strong>/);
+  });
+
+  test("an ordinary food is untouched inside the provider", async () => {
+    const html = await renderRow(ingredient(), [pastryRecipe]);
+    expect(html).not.toContain('data-sub-recipe="true"');
+    expect(html).toMatch(/<strong[^>]*>flour<\/strong>/);
   });
 });

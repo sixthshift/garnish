@@ -31,25 +31,37 @@ import { mergeIngredients } from "../../../domain/merge";
 import { scaledForServings } from "../../../domain/scale";
 import { MadeThisButton, TimelineList } from "../../../components/Timeline";
 import type { Part, Recipe, TimelineEvent } from "../../../domain/recipe";
+import { type SubRecipe, subRecipeIds } from "../../../domain/subRecipe";
+import { SubRecipesProvider } from "../../../components/SubRecipes";
 import { useIngredientMode } from "../../../lib/prefs";
 import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
 import { useMutate } from "../../../lib/mutate";
 import { notifyError } from "../../../lib/notify";
-import { getRecipe, setRating } from "../../../server/recipes";
+import { getRecipe, listSubRecipes, setRating } from "../../../server/recipes";
 import { listTimeline } from "../../../server/timeline";
 
 export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),
 });
 
-/** What the page reads: the stored document and its logged cooks. Scaling is applied in the component. */
-export type RecipeViewData = { recipe: Recipe; timeline: TimelineEvent[] };
+/**
+ * What the page reads: the stored document, its logged cooks, and the recipes
+ * its ingredient foods are made by (M32.3). The sub-recipes come in one call
+ * for the whole page rather than a fetch per row; a recipe with none costs no
+ * request at all.
+ */
+export type RecipeViewData = { recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[] };
 
 export const Route = createFileRoute("/recipes/$slug/")({
   validateSearch: RecipeViewSearch,
   loader: async ({ params }): Promise<RecipeViewData> => {
     const recipe = await getRecipe({ data: { slug: params.slug } });
-    return { recipe, timeline: await listTimeline({ data: { recipeId: recipe.id } }) };
+    const ids = subRecipeIds(recipe);
+    const [timeline, subRecipes] = await Promise.all([
+      listTimeline({ data: { recipeId: recipe.id } }),
+      ids.length === 0 ? Promise.resolve<SubRecipe[]>([]) : listSubRecipes({ data: { ids } }),
+    ]);
+    return { recipe, timeline, subRecipes };
   },
   component: RecipePage,
 });
@@ -74,7 +86,7 @@ export function nextServings(current: number, direction: -1 | 1): number {
 }
 
 function RecipePage() {
-  const { recipe: stored, timeline } = Route.useLoaderData();
+  const { recipe: stored, timeline, subRecipes } = Route.useLoaderData();
   const { servings: requested } = Route.useSearch();
   // The stored document, scaled here rather than on the server, so a tap on
   // plus or minus is a re-render and not a round trip. Everything below reads
@@ -106,112 +118,114 @@ function RecipePage() {
   // sheet writes back what was stored, whatever scale the page is showing.
   return (
     <QuickEditProvider recipe={stored}>
-      <article className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
-        <RecipeHeader
-          recipe={recipe}
-          madeCount={timeline.length}
-          onRate={(rating) => void rate(rating)}
-          actions={
-            <>
-              {/* Edit and Cook are both in the open (M25.5) rather than behind
-                  the menu; each carries the currently requested scale so it
-                  round-trips through the edit page and into cook mode. */}
-              <Button asChild variant="outline" intent="neutral" size="sm" iconOnly aria-label="Edit">
-                <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-                  <EditIcon />
-                </Link>
-              </Button>
-              <Button asChild variant="solid" intent="brand" size="sm">
-                <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-                  Cook
-                </Link>
-              </Button>
-              {/* M30.4 drew this button disabled; M31.3 wired it up. It takes
-                  the scaled document, so what the sheet offers is what the page
-                  is showing. */}
-              <AddToShoppingButton recipe={recipe} />
-              <RecipeActions recipe={recipe} />
-            </>
-          }
-        />
+      <SubRecipesProvider subRecipes={subRecipes}>
+        <article className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
+          <RecipeHeader
+            recipe={recipe}
+            madeCount={timeline.length}
+            onRate={(rating) => void rate(rating)}
+            actions={
+              <>
+                {/* Edit and Cook are both in the open (M25.5) rather than behind
+                    the menu; each carries the currently requested scale so it
+                    round-trips through the edit page and into cook mode. */}
+                <Button asChild variant="outline" intent="neutral" size="sm" iconOnly aria-label="Edit">
+                  <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                    <EditIcon />
+                  </Link>
+                </Button>
+                <Button asChild variant="solid" intent="brand" size="sm">
+                  <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                    Cook
+                  </Link>
+                </Button>
+                {/* M30.4 drew this button disabled; M31.3 wired it up. It takes
+                    the scaled document, so what the sheet offers is what the page
+                    is showing. */}
+                <AddToShoppingButton recipe={recipe} />
+                <RecipeActions recipe={recipe} />
+              </>
+            }
+          />
 
-        {/* Notes before the ingredients (M24.4): they are the household's
-            amendments, read before you start, so they sit directly under the
-            header rather than after the steps. */}
-        {recipe.notes.length > 0 && (
-          <section className="flex flex-col gap-3" aria-label="Notes">
-            <SectionTitle as="h2">Notes</SectionTitle>
-            {recipe.notes.map((note) => (
-              <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
-                <p className="whitespace-pre-line">{note.text}</p>
-              </Card>
-            ))}
-          </section>
-        )}
+          {/* Notes before the ingredients (M24.4): they are the household's
+              amendments, read before you start, so they sit directly under the
+              header rather than after the steps. */}
+          {recipe.notes.length > 0 && (
+            <section className="flex flex-col gap-3" aria-label="Notes">
+              <SectionTitle as="h2">Notes</SectionTitle>
+              {recipe.notes.map((note) => (
+                <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
+                  <p className="whitespace-pre-line">{note.text}</p>
+                </Card>
+              ))}
+            </section>
+          )}
 
-        {/* Two columns from `md` (M24.1): the ingredients stick beside the
-            method rather than scrolling away above it. A third for the list, two
-            thirds for the steps; the aside scrolls itself when it is taller than
-            the viewport. Below `md` the two stack, ingredients first. */}
-        <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:items-start md:gap-8" data-testid="recipe-columns">
-          <aside
-            data-testid="ingredients-column"
-            data-print="keep"
-            className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
-          >
-            {/* M24.2: the aside's own heading, as Mealie's ingredient list
-                header has both the title and the servings stepper together.
-                The loose row that used to sit between the page header and the
-                grid is gone; the scale control lives here instead. */}
-            <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
-              <SectionTitle as="h2">Ingredients</SectionTitle>
-              <div className="flex flex-wrap items-center gap-3">
-                <ScaleControl servings={recipe.recipeServings} />
-                {anyTicked && (
-                  <Button variant="link" intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
-                    Clear
-                  </Button>
-                )}
+          {/* Two columns from `md` (M24.1): the ingredients stick beside the
+              method rather than scrolling away above it. A third for the list, two
+              thirds for the steps; the aside scrolls itself when it is taller than
+              the viewport. Below `md` the two stack, ingredients first. */}
+          <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:items-start md:gap-8" data-testid="recipe-columns">
+            <aside
+              data-testid="ingredients-column"
+              data-print="keep"
+              className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
+            >
+              {/* M24.2: the aside's own heading, as Mealie's ingredient list
+                  header has both the title and the servings stepper together.
+                  The loose row that used to sit between the page header and the
+                  grid is gone; the scale control lives here instead. */}
+              <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
+                <SectionTitle as="h2">Ingredients</SectionTitle>
+                <div className="flex flex-wrap items-center gap-3">
+                  <ScaleControl servings={recipe.recipeServings} />
+                  {anyTicked && (
+                    <Button variant="link" intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
+                      Clear
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Structured vs. one merged list only means something once there is
-                more than one part to merge; a flat recipe has nothing to
-                toggle. */}
-            {recipe.parts.length > 1 && (
-              <div className="flex justify-end">
-                <IngredientModeToggle />
+              {/* Structured vs. one merged list only means something once there is
+                  more than one part to merge; a flat recipe has nothing to
+                  toggle. */}
+              {recipe.parts.length > 1 && (
+                <div className="flex justify-end">
+                  <IngredientModeToggle />
+                </div>
+              )}
+
+              {summary && hasIngredients && (
+                <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />
+              )}
+
+              {!summary &&
+                recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
+            </aside>
+
+            <div className="flex max-w-prose flex-col gap-6 md:col-span-2" data-testid="method-column">
+              {recipe.parts.map((part) => (
+                <PartSteps key={part.id} part={part} recipeId={recipe.id} />
+              ))}
+
+              {/* M30.2: under the last step card, not above the History
+                  disclosure — the button belongs to the method, not the log. */}
+              <div className="flex justify-end" data-testid="made-this-row" data-print="hide">
+                <MadeThisButton recipe={recipe} />
               </div>
-            )}
-
-            {summary && hasIngredients && (
-              <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />
-            )}
-
-            {!summary &&
-              recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
-          </aside>
-
-          <div className="flex max-w-prose flex-col gap-6 md:col-span-2" data-testid="method-column">
-            {recipe.parts.map((part) => (
-              <PartSteps key={part.id} part={part} recipeId={recipe.id} />
-            ))}
-
-            {/* M30.2: under the last step card, not above the History
-                disclosure — the button belongs to the method, not the log. */}
-            <div className="flex justify-end" data-testid="made-this-row" data-print="hide">
-              <MadeThisButton recipe={recipe} />
             </div>
           </div>
-        </div>
 
-        {/* Any timers started from a step, fixed above the phone tab bar. */}
-        <TimerStrip recipeId={recipe.id} fixed />
+          {/* Any timers started from a step, fixed above the phone tab bar. */}
+          <TimerStrip recipeId={recipe.id} fixed />
 
-        <TimelineList events={timeline} />
+          <TimelineList events={timeline} />
 
-        <RecipeMetaFooter recipe={recipe} />
-      </article>
+          <RecipeMetaFooter recipe={recipe} />
+        </article>
+      </SubRecipesProvider>
     </QuickEditProvider>
   );
 }
