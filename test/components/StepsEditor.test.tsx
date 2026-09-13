@@ -21,6 +21,7 @@ import {
   linkedIngredients,
   linkIngredient,
   removeStep,
+  setStepImage,
   splitAllSteps,
   splitStepByParagraph,
   StepsEditor,
@@ -271,7 +272,52 @@ describe("mergeStepWithNext", () => {
   });
 });
 
+describe("setStepImage (M35.1)", () => {
+  test("points one step at the stored file, leaving its text, links and siblings alone", () => {
+    const draft = linkIngredient(focaccia(), 0, 0, focaccia().parts[0]!.steps[0]!.id!);
+    const next = setStepImage(draft, 0, 1, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg");
+    expect(next.parts[0]!.steps[1]!.image).toBe("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg");
+    expect(next.parts[0]!.steps[1]!.text).toBe(draft.parts[0]!.steps[1]!.text);
+    expect(next.parts[0]!.steps[0]).toEqual(draft.parts[0]!.steps[0]);
+    expect(next.parts[0]!.steps[2]).toEqual(draft.parts[0]!.steps[2]);
+    expect(draft.parts[0]!.steps[1]!.image).toBeUndefined();
+  });
+
+  test("null drops the photo from the document", () => {
+    const withPhoto = setStepImage(focaccia(), 0, 0, "a.jpg");
+    expect(setStepImage(withPhoto, 0, 0, null).parts[0]!.steps[0]!.image).toBeNull();
+  });
+
+  test("an out-of-range index changes nothing", () => {
+    const draft = focaccia();
+    expect(setStepImage(draft, 0, 9, "a.jpg")).toEqual(draft);
+    expect(setStepImage(draft, 0, -1, "a.jpg")).toEqual(draft);
+    expect(setStepImage(draft, 9, 0, "a.jpg")).toEqual(draft);
+  });
+});
+
 describe("StepsEditor", () => {
+  // M35.1: the row menu's "Add image" opens a hidden file input per row. The
+  // menu itself is closed in a server render (the test above says so), so what
+  // is observable here is the input it clicks and the thumbnail of a stored one.
+  test("every step row carries a hidden image picker, and a stored photo shows as a thumbnail", () => {
+    const bare = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
+    expect(bare.match(/type="file"/g)).toHaveLength(3);
+    expect(bare).toContain('aria-label="Step 1 image"');
+    expect(bare).toContain('aria-label="Step 3 image"');
+    expect(bare).not.toContain("data-step-image");
+
+    const withPhoto = renderToString(<StepsEditor draft={setStepImage(focaccia(), 0, 1, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png")} pi={0} onChange={() => {}} />);
+    expect(withPhoto).toContain('data-step-image="1"');
+    expect(withPhoto).toContain('src="/api/images/steps/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png"');
+    expect(withPhoto).toContain('alt="Step 2"');
+  });
+
+  test("a disabled editor disables the image pickers too", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} disabled />);
+    expect(html).toMatch(/<input[^>]*type="file"[^>]*disabled=""/);
+  });
+
   test("has a Bulk add button beside Add step, and the sheet is closed by default", () => {
     const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
     expect(html).toContain(">Bulk add<");

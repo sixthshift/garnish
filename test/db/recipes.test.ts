@@ -90,15 +90,15 @@ const fullDoc: RecipeInput = {
         { id: ids.ing1, quantity: 200, unit: gram, food: spaghetti, note: "", originalText: "200 g spaghetti", fixed: false },
         { id: ids.ing2, quantity: null, unit: null, food: null, note: "to taste", originalText: "salt, to taste", fixed: false },
       ],
-      steps: [{ id: ids.step1, text: "Boil the pasta.", ingredientIds: [] }],
+      steps: [{ id: ids.step1, text: "Boil the pasta.", ingredientIds: [], image: null }],
     },
     {
       id: ids.sauce,
       name: "Sauce",
       ingredients: [{ id: ids.ing3, quantity: 50, unit: gram, food: butter, note: "cold", originalText: "50 g cold butter", fixed: true }],
-      steps: [{ id: ids.step2, text: "Melt the butter.", ingredientIds: [] }],
+      steps: [{ id: ids.step2, text: "Melt the butter.", ingredientIds: [], image: null }],
     },
-    { id: ids.finish, name: "", ingredients: [], steps: [{ id: ids.step3, text: "Toss together and serve.", ingredientIds: [] }] },
+    { id: ids.finish, name: "", ingredients: [], steps: [{ id: ids.step3, text: "Toss together and serve.", ingredientIds: [], image: null }] },
   ],
 };
 
@@ -206,7 +206,7 @@ test("update replaces components, steps, notes and tags in place and keeps id an
         {
           name: "",
           ingredients: [{ quantity: 1, unit: null, food: { ...butter, id: crypto.randomUUID(), name: "Parmesan" }, note: "", originalText: "a handful of parmesan", fixed: false }],
-          steps: [{ id: ids.step1, text: "Grate.", ingredientIds: [] }],
+          steps: [{ id: ids.step1, text: "Grate.", ingredientIds: [], image: null }],
         },
         { name: "", ingredients: [], steps: [{ text: "Serve." }, { text: "Eat." }] },
       ],
@@ -225,7 +225,7 @@ test("update replaces components, steps, notes and tags in place and keeps id an
   expect(updated.parts[0]!.name).toBe("");
   expect(updated.parts[0]!.ingredients).toHaveLength(1);
   expect(updated.parts[0]!.ingredients[0]!.food!.name).toBe("Parmesan");
-  expect(updated.parts[0]!.steps).toEqual([{ id: ids.step1, text: "Grate.", ingredientIds: [] }]);
+  expect(updated.parts[0]!.steps).toEqual([{ id: ids.step1, text: "Grate.", ingredientIds: [], image: null }]);
   expect(updated.parts[1]!.steps.map((s) => s.text)).toEqual(["Serve.", "Eat."]);
 
   // Old children are gone from the tables, not just from the document.
@@ -261,13 +261,13 @@ test("a failing write leaves the previous recipe intact", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
   const bad = recipeInputSchema.parse({ ...fullDoc, description: "broken" });
   // Duplicate child id inside one document violates the primary key mid-transaction.
-  bad.parts[0]!.steps = [{ id: ids.step1, text: "dup", ingredientIds: [] }, { id: ids.step1, text: "dup", ingredientIds: [] }];
+  bad.parts[0]!.steps = [{ id: ids.step1, text: "dup", ingredientIds: [], image: null }, { id: ids.step1, text: "dup", ingredientIds: [], image: null }];
 
   expect(() => repo.update(created.id, bad)).toThrow(/UNIQUE|PRIMARY/);
   expect(repo.get("butter-pasta")).toEqual(created);
   expect(count("recipe")).toBe(1);
 
-  expect(() => repo.create(recipeInputSchema.parse({ ...minimal("Broken"), parts: [{ name: "", ingredients: [], steps: [{ id: ids.step1, text: "dup", ingredientIds: [] }, { id: ids.step1, text: "dup", ingredientIds: [] }] }] }))).toThrow(/UNIQUE|PRIMARY/);
+  expect(() => repo.create(recipeInputSchema.parse({ ...minimal("Broken"), parts: [{ name: "", ingredients: [], steps: [{ id: ids.step1, text: "dup", ingredientIds: [], image: null }, { id: ids.step1, text: "dup", ingredientIds: [], image: null }] }] }))).toThrow(/UNIQUE|PRIMARY/);
   expect(count("recipe")).toBe(1);
   expect(count("part")).toBe(3);
 });

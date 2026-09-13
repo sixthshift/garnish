@@ -98,6 +98,12 @@ const stepFields = {
    * rows in the step's own part; a link naming anything else is dropped on save.
    */
   ingredientIds: z.array(id).default([]),
+  /**
+   * The step's photo as a stored file name, served from `/api/images/steps/`
+   * (M35.1). Null is no photo. It rides in the document so a save, which
+   * re-inserts every step from it, keeps the photo a step already had.
+   */
+  image: z.string().nullable().default(null),
 };
 
 const noteFields = {

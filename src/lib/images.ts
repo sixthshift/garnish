@@ -59,6 +59,32 @@ export async function uploadTimelineImage(eventId: string, file: File, fetcher: 
   return payload.image;
 }
 
+/** The URL that serves a step's photo, or null when the step has none (M35.1). Pure. */
+export function stepImageUrl(image: string | null | undefined): string | null {
+  if (!image) return null;
+  return `/api/images/steps/${encodeURIComponent(image)}`;
+}
+
+/** The photo upload endpoint for a step. Pure. */
+export function stepImageUploadUrl(stepId: string): string {
+  return `/api/steps/${encodeURIComponent(stepId)}/image`;
+}
+
+/**
+ * POST `file` as a step's photo. Resolves with the stored file name; rejects
+ * with the server's `error` text on a non-2xx — a step the recipe has never
+ * saved is a 404 there, so the editor asks for a save first.
+ */
+export async function uploadStepImage(stepId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
+  const body = new FormData();
+  body.append(IMAGE_FIELD, file);
+  const response = await fetcher(stepImageUploadUrl(stepId), { method: "POST", body });
+  const payload = (await response.json().catch(() => ({}))) as { image?: string; error?: string };
+  if (!response.ok) throw new Error(payload.error ?? `photo upload failed (${response.status})`);
+  if (typeof payload.image !== "string") throw new Error("photo upload returned no file name");
+  return payload.image;
+}
+
 /** What `fetchImage` (src/server/imageFetch.ts) answers with, as the client needs it. */
 export type FetchedImageData = { base64: string; contentType: string; name: string };
 

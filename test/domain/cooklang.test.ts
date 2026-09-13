@@ -115,7 +115,7 @@ describe("toCooklang", () => {
     sourceUrl: null,
     notes: [],
     tags: [],
-    parts: [{ id: "p1", name: "", ingredients: [], steps: [{ id: "s1", text: "Mix it.", ingredientIds: [] }] }],
+    parts: [{ id: "p1", name: "", ingredients: [], steps: [{ id: "s1", text: "Mix it.", ingredientIds: [], image: null }] }],
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
   };
@@ -133,8 +133,8 @@ describe("toCooklang", () => {
     const doc: Recipe = {
       ...base,
       parts: [
-        { id: "p1", name: "Pastry", ingredients: [], steps: [{ id: "s1", text: "Rub it together.", ingredientIds: [] }] },
-        { id: "p2", name: "", ingredients: [], steps: [{ id: "s2", text: "Serve.", ingredientIds: [] }] },
+        { id: "p1", name: "Pastry", ingredients: [], steps: [{ id: "s1", text: "Rub it together.", ingredientIds: [], image: null }] },
+        { id: "p2", name: "", ingredients: [], steps: [{ id: "s2", text: "Serve.", ingredientIds: [], image: null }] },
       ],
     };
     expect(toCooklang(doc)).toBe(">> servings: 4\n\n== Pastry ==\n\nRub it together.\n\nServe.\n");

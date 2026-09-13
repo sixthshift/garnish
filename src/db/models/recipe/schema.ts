@@ -136,6 +136,8 @@ export const step = sqliteTable(
       .references(() => part.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     text: text("text").notNull().default(""),
+    /** File name under `data/images/steps/`, or NULL for a step with no photo (M35.1). */
+    image: text("image"),
   },
   (t) => [unique().on(t.partId, t.position)],
 );

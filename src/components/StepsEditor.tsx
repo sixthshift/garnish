@@ -44,7 +44,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { paragraphs } from "../domain/bulkText";
 import { suggestLinks } from "../domain/stepIngredients";
 import { Markdown } from "./Markdown";
@@ -52,7 +52,8 @@ import { ingredientLine } from "./PartsEditor";
 import { randomUuid } from "../lib/ids";
 import { focusNamed, rowEnter, rowFieldName } from "../lib/rowKeys";
 import type { DraftIngredient, DraftPart, DraftStep, FieldErrors, RecipeDraft } from "./RecipeForm";
-import { notify } from "../lib/notify";
+import { notify, notifyError } from "../lib/notify";
+import { stepImageUrl, uploadStepImage } from "../lib/images";
 import { BulkAddSheet, BulkInlineAdd } from "./ui/BulkAddSheet";
 import { Combobox } from "./ui/Combobox";
 import { Menu } from "./ui/Menu";
@@ -91,6 +92,23 @@ export function updateStep(draft: RecipeDraft, pi: number, si: number, text: str
     draft,
     pi,
     steps.map((step, i) => (i === si ? { ...step, text } : step)),
+  );
+}
+
+/**
+ * The draft with step `si` of part `pi`'s step array pointing at `image` — the
+ * file name the upload route answered with, or null to drop the photo from the
+ * document (M35.1). The bytes are already on disk either way; this is what the
+ * next save writes back to `step.image`. Out-of-range indices return a copy
+ * unchanged. Pure.
+ */
+export function setStepImage(draft: RecipeDraft, pi: number, si: number, image: string | null): RecipeDraft {
+  const steps = stepsOf(draft, pi);
+  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
+  return withSteps(
+    draft,
+    pi,
+    steps.map((step, i) => (i === si ? { ...step, image } : step)),
   );
 }
 
@@ -319,9 +337,11 @@ export type StepsEditorProps = {
   disabled?: boolean;
   /** Step ids to open in preview rather than editing (M22.1). The row menu moves them after that; tests use it to render the state a click would reach. */
   previewSteps?: readonly string[];
+  /** POSTs a picked photo and resolves with the stored file name (M35.1). Injectable so a test never touches the network. */
+  uploadImage?: (stepId: string, file: File) => Promise<string>;
 };
 
-export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {}, disabled, previewSteps }: StepsEditorProps) {
+export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {}, disabled, previewSteps, uploadImage = uploadStepImage }: StepsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   // Step ids being previewed rather than edited (M22.1). Keyed by id, not
   // index, so inserting a step above does not move the preview to another one.
@@ -329,6 +349,9 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
   // What has been typed into each step's ingredient picker, keyed by step id:
   // the Combobox is a controlled text field and picking a row clears it.
   const [picker, setPicker] = useState<Record<string, string>>({});
+  // One hidden file input per row, keyed by step id, so "Add image" in the row
+  // menu opens the picker the way the recipe image's button does (M35.1).
+  const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const steps = stepsOf(draft, pi);
   const part = draft.parts[pi];
   if (!steps || !part) return null;
@@ -348,6 +371,23 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
       else next.add(id);
       return next;
     });
+  };
+
+  /**
+   * Store a picked photo against the *saved* step, then point the draft at the
+   * file name so the next save keeps it. A step that has never been saved is a
+   * 404 at the route — the file is named for the step id, and the id only
+   * exists in the database once the recipe has been written — so that reads as
+   * "save the recipe first" rather than as a failure of the upload.
+   */
+  const addImage = async (si: number, stepId: string, file: File) => {
+    try {
+      const image = await uploadImage(stepId, file);
+      onChange(setStepImage(draft, pi, si, image));
+      notify({ intent: "success", title: "Photo added", message: "It is saved with the step." });
+    } catch (error) {
+      notifyError("Could not add the photo", error);
+    }
   };
 
   const enterOnStep = (si: number) => {
@@ -504,9 +544,34 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                       }}
                     />
                   )}
+                  {step.image != null && step.image !== "" && (
+                    <img
+                      src={stepImageUrl(step.image) ?? ""}
+                      alt={`Step ${si + 1}`}
+                      className="max-h-32 w-full rounded-md object-cover"
+                      data-step-image={si}
+                    />
+                  )}
+                  <input
+                    ref={(node) => {
+                      fileInputs.current[step.id ?? ""] = node;
+                    }}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    aria-label={`Step ${si + 1} image`}
+                    disabled={disabled}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file && step.id !== undefined) void addImage(si, step.id, file);
+                    }}
+                  />
                 </div>
                 <Menu label={`Step ${si + 1} actions`} iconOnly>
                   <Menu.Item onSelect={() => togglePreview(step.id ?? "")}>{preview ? "Edit" : "Preview"}</Menu.Item>
+                  <Menu.Item onSelect={() => fileInputs.current[step.id ?? ""]?.click()}>{step.image ? "Replace image" : "Add image"}</Menu.Item>
+                  {step.image != null && step.image !== "" && <Menu.Item onSelect={() => onChange(setStepImage(draft, pi, si, null))}>Remove image</Menu.Item>}
                   <Menu.Item onSelect={() => onChange(insertStepAbove(draft, pi, si))}>Insert above</Menu.Item>
                   <Menu.Item onSelect={() => onChange(insertStepBelow(draft, pi, si))}>Insert below</Menu.Item>
                   <Menu.Item disabled={paragraphs(step.text ?? "").length < 2} onSelect={() => onChange(splitStepByParagraph(draft, pi, si))}>

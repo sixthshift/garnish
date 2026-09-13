@@ -22,6 +22,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { useMemo } from "react";
 import type { Ingredient, Step } from "../domain/recipe";
 import { durationsIn } from "../domain/timers";
+import { stepImageUrl } from "../lib/images";
 import { useStepTick } from "../lib/ticks";
 import { chipTimerId, useTimers } from "../lib/timers";
 import { IngredientRow } from "./IngredientRow";
@@ -32,9 +33,9 @@ import { TimerChip } from "./TimerChip";
 /** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
 export type StepCardSize = "page" | "cook";
 
-const SCALE: Record<StepCardSize, { bubble: string; text: string; ingredients: string }> = {
-  page: { bubble: "size-6 text-xs", text: "", ingredients: "text-sm" },
-  cook: { bubble: "size-8 text-sm", text: "text-3xl leading-snug", ingredients: "text-lg" },
+const SCALE: Record<StepCardSize, { bubble: string; text: string; ingredients: string; image: string }> = {
+  page: { bubble: "size-6 text-xs", text: "", ingredients: "text-sm", image: "max-h-48" },
+  cook: { bubble: "size-8 text-sm", text: "text-3xl leading-snug", ingredients: "text-lg", image: "max-h-80" },
 };
 
 /**
@@ -90,6 +91,9 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   const { start, find } = useTimers(recipeId);
   const rows = useMemo(() => linkedIngredients(step, ingredients), [step, ingredients]);
   const durations = useMemo(() => stepDurations(step.text), [step.text]);
+  // The step's photo, above its text at both sizes (M35.1). A ticked step
+  // collapses to one line, so its photo goes with the rest of the detail.
+  const photo = stepImageUrl(step.image);
   const scale = SCALE[size];
   // Two columns from `md` only when there is a list to put in the first one.
   const columns = rows.length > 0 && !done;
@@ -121,16 +125,27 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
                 ))}
               </ul>
             )}
-            <button
-              type="button"
-              onClick={toggle}
-              aria-pressed={done}
-              className={cn("text-left", columns && "md:col-span-2", done && "text-fg-subtle")}
-              data-testid="step-toggle"
-            >
-              <span className="sr-only">{`Step ${position}. ${done ? "Done. " : ""}`}</span>
-              <Markdown source={step.text} className={cn(scale.text, done && "line-clamp-1")} />
-            </button>
+            <div className={cn("flex flex-col gap-2", columns && "md:col-span-2")}>
+              {photo !== null && !done && (
+                <img
+                  src={photo}
+                  alt={`Step ${position}`}
+                  loading="lazy"
+                  className={cn("w-full rounded-lg object-cover", scale.image)}
+                  data-testid="step-image"
+                />
+              )}
+              <button
+                type="button"
+                onClick={toggle}
+                aria-pressed={done}
+                className={cn("text-left", done && "text-fg-subtle")}
+                data-testid="step-toggle"
+              >
+                <span className="sr-only">{`Step ${position}. ${done ? "Done. " : ""}`}</span>
+                <Markdown source={step.text} className={cn(scale.text, done && "line-clamp-1")} />
+              </button>
+            </div>
           </div>
           {durations.length > 0 && (
             <div className="flex flex-wrap gap-2" data-testid="step-timers">

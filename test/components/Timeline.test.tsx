@@ -56,7 +56,7 @@ const stored: Recipe = {
       id: "22222222-2222-4222-8222-222222222221",
       name: "",
       ingredients: [],
-      steps: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1", text: "Mix.", ingredientIds: [] }],
+      steps: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1", text: "Mix.", ingredientIds: [], image: null }],
     },
   ],
   createdAt: "2026-03-04T02:30:00.000Z",

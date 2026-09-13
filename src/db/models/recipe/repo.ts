@@ -221,7 +221,7 @@ export function recipes(db: Database) {
     }
 
     const stepRows = dz
-      .select({ id: step.id, partId: step.partId, text: step.text })
+      .select({ id: step.id, partId: step.partId, text: step.text, image: step.image })
       .from(step)
       .innerJoin(part, eq(part.id, step.partId))
       .where(eq(part.recipeId, row.id))
@@ -249,7 +249,7 @@ export function recipes(db: Database) {
     const stepsByPart = new Map<string, Step[]>();
     for (const s of stepRows) {
       const list = stepsByPart.get(s.partId) ?? [];
-      list.push({ id: s.id, text: s.text, ingredientIds: linksByStep.get(s.id) ?? [] });
+      list.push({ id: s.id, text: s.text, ingredientIds: linksByStep.get(s.id) ?? [], image: s.image });
       stepsByPart.set(s.partId, list);
     }
 
@@ -395,7 +395,7 @@ export function recipes(db: Database) {
       // row 64). A saved recipe is never rejected over a stale link.
       p.steps.forEach((s, i) => {
         const stepId = s.id ?? crypto.randomUUID();
-        tx.insert(step).values({ id: stepId, partId, position: i, text: s.text }).run();
+        tx.insert(step).values({ id: stepId, partId, position: i, text: s.text, image: s.image }).run();
         const seen = new Set<string>();
         for (const ingredientId of s.ingredientIds) {
           if (!linkable.has(ingredientId) || seen.has(ingredientId)) continue;
@@ -570,6 +570,23 @@ export function recipes(db: Database) {
         .where(eq(recipe.id, id))
         .returning({ id: recipe.id })
         .all().length > 0,
+
+    /**
+     * Set one step's image file name (null clears it), leaving the recipe's
+     * `updated_at` alone: the photo is stored beside the document, not by it,
+     * and the document keeps the name so the next save re-inserts it (M35.1).
+     * True when the step exists.
+     */
+    setStepImage: (stepId: string, image: string | null): boolean =>
+      dz
+        .update(step)
+        .set({ image })
+        .where(eq(step.id, stepId))
+        .returning({ id: step.id })
+        .all().length > 0,
+
+    /** Does a step row exist? What the upload route asks before writing a file. */
+    stepExists: (stepId: string): boolean => dz.select({ id: step.id }).from(step).where(eq(step.id, stepId)).all().length > 0,
 
     /**
      * The link-and-scale facts an ingredient row needs about the recipes its

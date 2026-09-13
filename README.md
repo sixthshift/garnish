@@ -73,7 +73,9 @@ The sample recipes also carry a favourite, a source URL and two logged cooks, so
 - **Cook** — one card at a time, full screen, with part pills, swipe or arrow keys, and the screen kept awake.
 - **Settings** (`/settings`) — tabs for Foods, Units, Aisles, Tags, Export and Appearance. The first four are editable tables with search, merge and a delete that lists the recipes it affects; Export downloads every recipe as JSON (images referenced by URL, not included); Appearance holds the light / dark / system theme toggle.
 
-Photos live on disk under `DATA_DIR/images/` (logged-cook photos under `images/timeline/`), not in the database — see [Backup](#backup).
+- **A step's photo** — the editor's ⋮ menu on a step row has "Add image": it uploads to `POST /api/steps/:id/image` and shows on the step's card on the recipe page and in cook mode. Save the recipe first if the step is new — a step that has never been saved has nothing to attach a photo to.
+
+Photos live on disk under `DATA_DIR/images/` (logged-cook photos under `images/timeline/`, step photos under `images/steps/`, served by `GET /api/images/steps/:file`), not in the database — see [Backup](#backup).
 
 ## Run
 

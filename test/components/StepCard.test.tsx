@@ -38,7 +38,7 @@ const ingredient = (quantity: number | null, f: Food): Ingredient => ({
   fixed: false,
 });
 
-const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, ingredientIds });
+const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, ingredientIds, image: null });
 
 /** An in-memory sessionStorage, so the tick hooks read what a test seeds. */
 function fakeStorage(): StorageLike {
@@ -199,6 +199,37 @@ describe("StepCard", () => {
       expect(html).toContain("Rest for 20 minutes.");
       expect(html).toContain('data-testid="timer-chip"');
     }
+  });
+
+  // M35.1: a step's photo, above its text at both sizes, bigger on the deck.
+  test("a step with a photo shows it above the text at both sizes", () => {
+    withStorage(fakeStorage());
+    const photographed = { ...step("Knead until smooth.", [flour.id]), image: "33333333-3333-4333-8333-333333333333.jpg" };
+    const props = { recipeId: RECIPE_ID, step: photographed, position: 3, ingredients: part };
+    const page = renderToString(<StepCard {...props} size="page" />);
+    const cook = renderToString(<StepCard {...props} size="cook" />);
+
+    for (const html of [page, cook]) {
+      expect(html).toContain('data-testid="step-image"');
+      expect(html).toContain('src="/api/images/steps/33333333-3333-4333-8333-333333333333.jpg"');
+      expect(html).toContain('alt="Step 3"');
+      // Above the text, not beside it or below it.
+      expect(html.indexOf('data-testid="step-image"')).toBeLessThan(html.indexOf('data-testid="step-toggle"'));
+    }
+    expect(page).toContain("max-h-48");
+    expect(cook).toContain("max-h-80");
+  });
+
+  test("a step with no photo renders no image, and a ticked one puts its photo away with the rest of the detail", () => {
+    withStorage(fakeStorage());
+    expect(renderToString(<StepCard recipeId={RECIPE_ID} step={step("Knead it.")} position={1} />)).not.toContain('data-testid="step-image"');
+
+    const storage = fakeStorage();
+    setStepTicked(storage, RECIPE_ID, STEP_ID, true);
+    withStorage(storage);
+    const ticked = renderToString(<StepCard recipeId={RECIPE_ID} step={{ ...step("Knead it."), image: "a.jpg" }} position={1} />);
+    expect(ticked).toContain('data-ticked="true"');
+    expect(ticked).not.toContain('data-testid="step-image"');
   });
 });
 
