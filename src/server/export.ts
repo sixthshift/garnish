@@ -1,5 +1,6 @@
-// Server-only. The two export endpoints (M34.1): one recipe's document, and
-// the whole database's recipes plus the reference tables they lean on.
+// Server-only. The export endpoints: one recipe's document and the whole
+// database's recipes plus the reference tables they lean on (M34.1), and one
+// recipe as a Cooklang file (M34.2).
 //
 // The database stays the master (decisions.md row 72) — this is a copy taken
 // for reading elsewhere, not a second home for the data. Images are named by
@@ -9,6 +10,7 @@ import { foods, type Food } from "../db/models/food/repo";
 import { recipes } from "../db/models/recipe/repo";
 import { tags } from "../db/models/tag/repo";
 import { units } from "../db/models/unit/repo";
+import { toCooklang } from "../domain/cooklang";
 import { EXPORT_VERSION, exportFileName, exportedRecipe } from "../domain/export";
 import type { Aisle, Recipe, Tag, Unit } from "../domain/recipe";
 import { getDb } from "./db";
@@ -77,4 +79,17 @@ export async function handleExportJson(at: Date = new Date()): Promise<Response>
   return Response.json(body, {
     headers: { "content-disposition": `attachment; filename="${exportFileName(at)}"` },
   });
+}
+
+/**
+ * GET /api/recipes/:slug.cook (M34.2) — the recipe as a `.cook` file
+ * (`src/domain/cooklang.ts`). 404 for an unknown slug, the same as the JSON
+ * twin.
+ */
+export async function handleRecipeCook(slug: string): Promise<Response> {
+  const wanted = slug.trim();
+  if (wanted === "") return notFound("recipe  not found");
+  const doc = recipes(await getDb()).get(wanted);
+  if (!doc) return notFound(`recipe ${wanted} not found`);
+  return new Response(toCooklang(doc), { headers: { "content-type": "text/plain; charset=utf-8" } });
 }

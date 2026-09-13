@@ -13,8 +13,9 @@ import { tags } from "../../../src/db/models/tag/repo";
 import { units } from "../../../src/db/models/unit/repo";
 import { recipeInputSchema, type Recipe } from "../../../src/domain/recipe";
 import { getDb } from "../../../src/server/db";
-import { buildExport, handleExportJson, handleRecipeJson, type GarnishExport } from "../../../src/server/export";
+import { buildExport, handleExportJson, handleRecipeCook, handleRecipeJson, type GarnishExport } from "../../../src/server/export";
 import { Route as ExportRoute } from "../../../src/routes/api/export[.]json";
+import { Route as RecipeCookRoute } from "../../../src/routes/api/recipes/{$slug}[.]cook";
 import { Route as RecipeJsonRoute } from "../../../src/routes/api/recipes/{$slug}[.]json";
 import { useTempDataDir } from "../../helpers/server";
 
@@ -172,6 +173,31 @@ test("a database with no recipes still exports a well-formed envelope", async ()
   expect(body.units.length).toBeGreaterThan(0); // seeded at boot, recipes or not
 });
 
+// --- GET /api/recipes/:slug.cook (M34.2) ------------------------------------
+
+test("one recipe comes back as a Cooklang file, plain text", async () => {
+  await seed();
+  const res = await handleRecipeCook("lemon-tart");
+  expect(res.status).toBe(200);
+  expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+  const body = await res.text();
+  expect(body).toContain(">> servings: 8");
+  expect(body).toContain(">> tags: Dessert");
+  // The linked ingredients come through as @ references.
+  expect(body).toContain("@Plain flour");
+  expect(body).toContain("@Sweet pastry");
+});
+
+test.each([["an unknown slug", "no-such-recipe"], ["an empty slug", ""], ["whitespace", "   "]])(
+  ".cook: %s is 404 with an error message",
+  async (_label, slug) => {
+    await seed();
+    const res = await handleRecipeCook(slug);
+    expect(res.status).toBe(404);
+    expect(typeof ((await res.json()) as { error: string }).error).toBe("string");
+  },
+);
+
 // --- The routes -------------------------------------------------------------
 
 test("the routes wire GET to the handlers, with the slug as a path param", async () => {
@@ -191,13 +217,23 @@ test("the routes wire GET to the handlers, with the slug as a path param", async
   expect(handlersOf(ExportRoute).POST).toBeUndefined();
   const all = await exportGet({ request: new Request("http://localhost/api/export.json"), params: {} });
   expect(((await all.json()) as GarnishExport).recipes).toHaveLength(2);
+
+  const cookGet = handlersOf(RecipeCookRoute).GET!;
+  expect(typeof cookGet).toBe("function");
+  expect(handlersOf(RecipeCookRoute).POST).toBeUndefined();
+  const cook = await cookGet({
+    request: new Request("http://localhost/api/recipes/lemon-tart.cook"),
+    params: { slug: "lemon-tart" },
+  });
+  expect(await cook.text()).toContain(">> servings: 8");
 });
 
-test("the generated route tree carries the .json suffix, with the slug still its own param", () => {
+test("the generated route tree carries the .json and .cook suffixes, with the slug still its own param", () => {
   // The file names escape the dot (`[.]`) and end the param (`{$slug}`); this
   // is the generator's answer, and the reason the fallback /json path was not
   // needed. Reading the generated tree is the only place that answer is visible.
   const tree = readFileSync(join(import.meta.dirname, "..", "..", "..", "src", "routeTree.gen.ts"), "utf8");
   expect(tree).toContain("path: '/api/recipes/{$slug}.json'");
   expect(tree).toContain("path: '/api/export.json'");
+  expect(tree).toContain("path: '/api/recipes/{$slug}.cook'");
 });

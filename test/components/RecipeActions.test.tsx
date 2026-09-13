@@ -90,6 +90,24 @@ describe("the menu's items", () => {
   });
 });
 
+describe("Copy as Cooklang (M34.2)", () => {
+  test('"Copy as Cooklang" sits with the other Copy items', () => {
+    const html = renderToString(
+      <Menu label="Recipe actions" open>
+        <Menu.Item onSelect={() => {}}>Copy link</Menu.Item>
+        <Menu.Item onSelect={() => {}}>Copy ingredients</Menu.Item>
+        <Menu.Item onSelect={() => {}}>Copy as Cooklang</Menu.Item>
+      </Menu>,
+    );
+    expect(html).toContain("Copy as Cooklang");
+  });
+
+  test("the closed menu shows no Copy as Cooklang item", async () => {
+    const html = await render(base);
+    expect(html).not.toContain("Copy as Cooklang");
+  });
+});
+
 describe("Plan (M33.4)", () => {
   test('"Plan" sits with the other non-destructive items', () => {
     const html = renderToString(

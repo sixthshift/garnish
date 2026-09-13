@@ -2,10 +2,12 @@
 // looking at except Edit and Cook, which sit beside it as their own buttons
 // in the header (M25.5) rather than living in here.
 //
-// Duplicate writes through `useMutate` and lands on the copy; the two Copy
-// items go through `src/lib/clipboard.ts`; Print asks the browser to print
-// the page (the print rules live in src/styles.css); Delete confirms first,
-// and is the one destructive item, kept at the bottom behind a separator.
+// Duplicate writes through `useMutate` and lands on the copy; the Copy items
+// (link, ingredients, Cooklang) go through `src/lib/clipboard.ts` — the
+// Cooklang one via `src/domain/cooklang.ts`'s `toCooklang` (M34.2), the same
+// function `GET /api/recipes/:slug.cook` serves; Print asks the browser to
+// print the page (the print rules live in src/styles.css); Delete confirms
+// first, and is the one destructive item, kept at the bottom behind a separator.
 // Delete moved here from the edit page (M11.6), which is where Mealie has it,
 // and keeps the same `ConfirmDialog`.
 //
@@ -21,6 +23,7 @@
 // outlives the menu item that opens it — see that file's header for why.
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { toCooklang } from "../domain/cooklang";
 import { ingredientsText, recipeUrl } from "../domain/copy";
 import { dayLabel } from "../domain/plan";
 import type { Recipe } from "../domain/recipe";
@@ -109,6 +112,7 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
           <Menu.Item onSelect={() => setPlanning(true)}>Plan</Menu.Item>
           <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
           <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
+          <Menu.Item onSelect={() => void copy(toCooklang(recipe), "Cooklang")}>Copy as Cooklang</Menu.Item>
           <Menu.Item onSelect={() => (globalThis as { print?: () => void }).print?.()}>Print</Menu.Item>
           <Menu.Separator />
           <Menu.Item intent="danger" onSelect={() => setConfirming(true)}>
