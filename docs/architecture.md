@@ -21,7 +21,7 @@ src/
   server/       server functions (createServerFn) grouped by resource, image upload/serve/fetch handlers, db handle, boot, errors.ts (NotFound, mapped to TanStack's notFound())
   db/connection/ open.ts (DB_FILE, databasePath, openDatabase — WAL and foreign keys), client.ts (the Drizzle handle)
   db/seed/      seed.ts inserts; units.ts, recipes.ts and timeline.ts are the data it inserts; cli.ts is `bun run seed [--sample]`
-  db/dev/       dev-only, never shipped: generate.ts builds a fifty-recipe dataset from vocabulary.ts with the seeded PRNG in random.ts and placeholder images from png.ts; apply.ts writes it; wipe.ts empties DATA_DIR first; cli.ts is `bun run dev:seed`
+  db/dev/       dev-only, never shipped: generate.ts builds a fifteen-recipe dataset from vocabulary.ts with the seeded PRNG in random.ts and placeholder images from png.ts; apply.ts writes it; wipe.ts empties DATA_DIR first; cli.ts is `bun run dev:seed`
   db/backup/    backup.ts is the VACUUM INTO copy, cli.ts is `bun run backup`
   db/models/    one folder per domain, each with schema.ts (its Drizzle tables) and repo.ts (its repository); columns.ts holds the shared column defaults and the conventions they all follow
   db/models/recipe/    schema.ts: recipe, part, ingredient, step, recipe_note, recipe_tag — one aggregate, written as one document. repo.ts: the recipe repository

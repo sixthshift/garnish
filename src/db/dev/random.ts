@@ -1,7 +1,7 @@
 // A tiny seeded PRNG so the dev dataset is byte-identical on every run.
 // Not cryptographic and not meant to be: the only requirement is that the same
 // seed yields the same sequence on every machine, so two developers comparing
-// screenshots are looking at the same fifty recipes.
+// screenshots are looking at the same fifteen recipes.
 //
 // mulberry32: 32-bit state, one multiply-xorshift round per draw.
 

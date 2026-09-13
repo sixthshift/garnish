@@ -25,7 +25,7 @@ Run the dev server (Vite via Nitro, on http://localhost:3000, bound to all inter
 bun run dev
 ```
 
-`bun run dev` runs `bun run dev:seed` before it starts Vite: it wipes `DATA_DIR`'s database and images, migrates, seeds the default units the server always seeds, then adds fifty generated recipes — the same fifty every time. Dev data is disposable by design, so every start is from a known state. Backups are not touched. To start without touching the database:
+`bun run dev` runs `bun run dev:seed` before it starts Vite: it wipes `DATA_DIR`'s database and images, migrates, seeds the default units the server always seeds, then adds fifteen generated recipes — the same fifteen every time. Dev data is disposable by design, so every start is from a known state. Backups are not touched. To start without touching the database:
 
 ```bash
 bun run dev:keep

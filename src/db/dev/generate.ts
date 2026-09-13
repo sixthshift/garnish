@@ -1,5 +1,5 @@
 // Builds the dev dataset. Pure: no database, no disk, no clock — everything is
-// derived from the seed, so the same seed always produces the same fifty
+// derived from the seed, so the same seed always produces the same fifteen
 // recipes with the same timestamps. ./apply.ts is what writes them.
 //
 // The point of the mix is coverage, not realism. Across the set there is
@@ -20,7 +20,7 @@ import { AISLES, DESCRIPTIONS, DOUBLE_STEPS, FOODS, type FoodEntry, NOTES, SHAPE
 export const DEV_SEED = "garnish-dev-data-v1";
 
 /** How many recipes `bun run dev:data` creates. */
-export const DEV_RECIPE_COUNT = 50;
+export const DEV_RECIPE_COUNT = 15;
 
 /** The clock the dataset is anchored to, so timestamps do not drift between runs. */
 export const DEV_EPOCH = Date.UTC(2026, 8, 1); // 2026-09-01

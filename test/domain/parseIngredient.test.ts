@@ -181,7 +181,7 @@ describe("parseIngredient", () => {
 
 // --- Round trip over the seed corpus ----------------------------------------
 // `formatIngredient` is this function's inverse, so every ingredient the
-// project ships — the three sample recipes and the fifty generated dev ones —
+// project ships — the three sample recipes and the fifteen generated dev ones —
 // must survive a trip out through the formatter and back. Only the rows that
 // have a food take part: a food-less row formats to its `originalText`
 // verbatim, which carries no structure to recover.

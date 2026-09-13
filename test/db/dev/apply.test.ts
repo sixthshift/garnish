@@ -97,7 +97,7 @@ test("the ids it owns are exactly the ones it removes", async () => {
 });
 
 test("flags parse, and a bad one throws rather than rebuilding with defaults", () => {
-  expect(parseDevSeedFlags([])).toEqual({ count: 50, seed: "garnish-dev-data-v1" });
+  expect(parseDevSeedFlags([])).toEqual({ count: 15, seed: "garnish-dev-data-v1" });
   expect(parseDevSeedFlags(["--count", "12"])).toMatchObject({ count: 12 });
   expect(parseDevSeedFlags(["--seed", "other"])).toMatchObject({ seed: "other" });
   expect(() => parseDevSeedFlags(["--count"])).toThrow(/positive whole number/);

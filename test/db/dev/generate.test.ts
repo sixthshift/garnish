@@ -18,7 +18,7 @@ test("every document is valid RecipeInput", () => {
   }
 });
 
-test("the default run is fifty recipes with distinct names, slugs and ids", () => {
+test("the default run is fifteen recipes with distinct names, slugs and ids", () => {
   const dataset = generateDevRecipes();
   expect(dataset).toHaveLength(DEV_RECIPE_COUNT);
   expect(new Set(dataset.map((r) => r.input.name)).size).toBe(DEV_RECIPE_COUNT);
