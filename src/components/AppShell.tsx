@@ -21,6 +21,7 @@ declare module "@tanstack/react-router" {
 // sibling of Recipes); the phone bar is one row, so it ignores the flag.
 export const navItems = [
   { to: "/", label: "Recipes", exact: true, footer: false },
+  { to: "/plan", label: "Plan", exact: false, footer: false },
   { to: "/shopping", label: "Shopping", exact: false, footer: false },
   { to: "/settings", label: "Settings", exact: false, footer: true },
 ] as const;

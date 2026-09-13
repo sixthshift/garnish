@@ -1,8 +1,16 @@
 // The meal plan document: its date arithmetic, the week layout, and what the
 // write schemas accept and refuse.
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
   addDays,
+  dayLabel,
+  entryLabel,
+  isToday,
+  reorderMove,
+  servingsLabel,
+  todayIso,
+  weekLabel,
+  weekMonday,
   groupByDay,
   isoDate,
   mondayOf,
@@ -137,4 +145,89 @@ test("a patch leaves absent fields alone and carries no date", () => {
   expect(planEntryPatchSchema.parse({ recipeId: null, text: "Out" })).toEqual({ recipeId: null, text: "Out" });
   expect(planEntryPatchSchema.safeParse({ date: "2026-09-15" }).success).toBe(true); // stripped, not rejected
   expect(planEntryPatchSchema.parse({ date: "2026-09-15" } as never)).toEqual({});
+});
+
+// --- Labels (M33.2) ----------------------------------------------------------
+
+test.each([
+  ["2026-09-14", "Mon 14 Sep"],
+  ["2026-09-20", "Sun 20 Sep"],
+  ["2027-01-01", "Fri 1 Jan"],
+])("dayLabel(%s) is %s", (date, expected) => {
+  expect(dayLabel(date)).toBe(expected);
+});
+
+test.each([
+  ["2026-09-14", "14 – 20 Sep 2026"], // inside one month
+  ["2026-09-28", "28 Sep – 4 Oct 2026"], // across two
+  ["2026-12-28", "28 Dec 2026 – 3 Jan 2027"], // across New Year
+])("weekLabel(%s) is %s", (monday, expected) => {
+  expect(weekLabel(monday)).toBe(expected);
+});
+
+test("todayIso reads the local calendar date, not the UTC one", () => {
+  // Built from local parts, so this holds wherever the container thinks it is.
+  const at = new Date(2026, 8, 14, 9, 30);
+  expect(todayIso(at)).toBe("2026-09-14");
+  expect(todayIso(new Date(2026, 0, 5))).toBe("2026-01-05");
+});
+
+test("isToday marks one day of the week and no other", () => {
+  const today = "2026-09-16";
+  expect(weekDates("2026-09-14").filter((date) => isToday(date, today))).toEqual([today]);
+});
+
+test.each([
+  ["2026-09-16", "2026-09-14"], // mid-week normalises to its Monday
+  ["2026-09-14", "2026-09-14"], // a Monday is left alone
+  [undefined, "2026-09-14"], // no param: the week containing today
+  ["nonsense", "2026-09-14"], // and so is a param that is not a date
+  ["2026-02-30", "2026-09-14"], // ... or is one that does not exist
+])("weekMonday(%s) is %s", (week, expected) => {
+  expect(weekMonday(week, "2026-09-16")).toBe(expected);
+});
+
+test("entryLabel prefers the live recipe and falls back to the copied name", () => {
+  const recipe = { id: ids.recipe, slug: "lemon-tart", name: "Lemon tart", image: null };
+  // A recipe entry copies its name into `text`; a rename shows through anyway.
+  expect(entryLabel({ recipe: { ...recipe, name: "Lemon tart (new)" }, text: "Lemon tart" })).toBe("Lemon tart (new)");
+  // The recipe is deleted, `recipe_id` goes null, and the day still reads.
+  expect(entryLabel({ recipe: null, text: "Lemon tart" })).toBe("Lemon tart");
+  expect(entryLabel({ recipe: null, text: "Leftovers" })).toBe("Leftovers");
+});
+
+test.each([
+  [null, ""],
+  [4, "serves 4"],
+  [2.5, "serves 2.5"],
+  [1, "serves 1"],
+])("servingsLabel(%s) is '%s'", (servings, expected) => {
+  expect(servingsLabel(servings)).toBe(expected);
+});
+
+describe("reorderMove", () => {
+  test("an unchanged order is not a move", () => {
+    expect(reorderMove(["a", "b", "c"], ["a", "b", "c"])).toBeNull();
+    expect(reorderMove([], [])).toBeNull();
+  });
+
+  test("a row dragged down reports itself and where it landed", () => {
+    expect(reorderMove(["a", "b", "c"], ["b", "c", "a"])).toEqual({ id: "a", position: 2 });
+    expect(reorderMove(["a", "b", "c"], ["b", "a", "c"])).toEqual({ id: "a", position: 1 });
+  });
+
+  test("a row dragged up reports itself and where it landed", () => {
+    expect(reorderMove(["a", "b", "c"], ["c", "a", "b"])).toEqual({ id: "c", position: 0 });
+    expect(reorderMove(["a", "b", "c", "d"], ["c", "a", "b", "d"])).toEqual({ id: "c", position: 0 });
+  });
+
+  test("a swap of two neighbours is read as the first one moving down", () => {
+    // Either reading produces the same order, so the ambiguity is harmless;
+    // this pins which one the page sends.
+    expect(reorderMove(["a", "b", "c", "d"], ["a", "c", "b", "d"])).toEqual({ id: "b", position: 2 });
+  });
+
+  test("arrays of different lengths are not a reorder", () => {
+    expect(reorderMove(["a", "b"], ["a"])).toBeNull();
+  });
 });

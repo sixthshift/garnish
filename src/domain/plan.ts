@@ -151,3 +151,96 @@ export function groupByDay(monday: string, entries: readonly PlanEntry[]): PlanD
   for (const entry of entries) byDate.get(entry.date)?.push(entry);
   return [...byDate].map(([date, dayEntries]) => ({ date, entries: dayEntries }));
 }
+
+// --- Labels ------------------------------------------------------------------
+// The week strip's own text. Written out rather than handed to `Intl` because
+// these are read from `YYYY-MM-DD` strings that mean a calendar day and nothing
+// else: `Intl` would want a zone for them, and its short month names move with
+// the ICU the container happens to ship ("Sep" became "Sept" in en-AU). Short
+// forms, en-AU, so a day fits a phone column.
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+/** A day's column heading: "Mon 14 Sep". */
+export function dayLabel(date: string): string {
+  const at = utc(date);
+  return `${WEEKDAYS[at.getUTCDay()]} ${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}`;
+}
+
+/**
+ * The week's span, as short as it can be said: "14 – 20 Sep 2026" inside one
+ * month, "28 Sep – 4 Oct 2026" across two, and both years across New Year.
+ */
+export function weekLabel(monday: string): string {
+  const from = utc(monday);
+  const to = utc(addDays(monday, 6));
+  const part = (at: Date) => `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}`;
+  if (from.getUTCFullYear() !== to.getUTCFullYear()) {
+    return `${part(from)} ${from.getUTCFullYear()} – ${part(to)} ${to.getUTCFullYear()}`;
+  }
+  if (from.getUTCMonth() !== to.getUTCMonth()) return `${part(from)} – ${part(to)} ${to.getUTCFullYear()}`;
+  return `${from.getUTCDate()} – ${part(to)} ${to.getUTCFullYear()}`;
+}
+
+/**
+ * Today as the household sees it, `YYYY-MM-DD`. Local rather than UTC: the
+ * arithmetic above is UTC because a date string has no zone, but "today" is a
+ * question about the wall clock in the kitchen, and in Melbourne the UTC date
+ * is yesterday for the first ten hours of every day.
+ */
+export function todayIso(at: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
+}
+
+/** Whether `date` is the day being lived. Pure; `today` is injectable so tests do not move. */
+export function isToday(date: string, today: string = todayIso()): boolean {
+  return date === today;
+}
+
+/**
+ * The Monday the page should show: the `?week=` param when it is a real date
+ * (normalised to its Monday, so a mid-week link still lands on a whole week),
+ * and the week containing `today` otherwise.
+ */
+export function weekMonday(week: string | undefined, today: string = todayIso()): string {
+  return mondayOf(week !== undefined && isoDate.safeParse(week).success ? week : today);
+}
+
+/**
+ * What an entry reads as. The recipe's name when it still has one, and the
+ * entry's own `text` otherwise — which is why adding a recipe copies its name
+ * into `text`: a recipe deleted a month later leaves a day that still says
+ * what was cooked.
+ */
+export function entryLabel(entry: Pick<PlanEntry, "recipe" | "text">): string {
+  const name = entry.recipe?.name ?? "";
+  return name !== "" ? name : entry.text;
+}
+
+/** "serves 4" under an entry, or nothing when the recipe's own servings stand. */
+export function servingsLabel(servings: number | null): string {
+  return servings === null ? "" : `serves ${Number(servings.toFixed(2))}`;
+}
+
+/**
+ * Which entry moved, given a day's ids before and after a reorder, and where
+ * it landed. Null when the two orders are the same. Pure.
+ *
+ * `ReorderList` hands back a whole rearranged array; the repository moves one
+ * row to one position. This is the translation between them: the first and
+ * last indices that differ bracket the move, and which end holds the moved id
+ * says which way it went.
+ */
+export function reorderMove(before: readonly string[], after: readonly string[]): { id: string; position: number } | null {
+  if (before.length !== after.length) return null;
+  let first = 0;
+  while (first < before.length && before[first] === after[first]) first += 1;
+  if (first === before.length) return null;
+  let last = before.length - 1;
+  while (last > first && before[last] === after[last]) last -= 1;
+  return before[first] === after[last]
+    ? { id: after[last] as string, position: last }
+    : { id: after[first] as string, position: first };
+}
