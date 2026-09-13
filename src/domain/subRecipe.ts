@@ -62,6 +62,16 @@ export function subRecipeHint(servings: number): string {
 }
 
 /**
+ * The scale as cook mode's link reads it: "Open <name> at 2 servings", the
+ * child's own name standing in for the bare food name the hint uses (M32.4).
+ * Rounded to two places, same as `subRecipeHint`. Pure.
+ */
+export function subRecipeCookLabel(servings: number, name: string): string {
+  const rounded = Number(servings.toFixed(2));
+  return `Open ${name} at ${rounded} ${rounded === 1 ? "serving" : "servings"}`;
+}
+
+/**
  * The ids of every recipe reached by an ingredient's food in this recipe, in
  * first-seen order and de-duplicated. The view loader fetches them in one call
  * rather than a read per row. Pure.

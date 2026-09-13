@@ -73,9 +73,15 @@ export type StepCardProps = {
   size?: StepCardSize;
   /** The owning part's id. Quick edit (M27.5) needs it to find the stored step; without it the card renders no pencil. */
   partId?: string;
+  /**
+   * The parent recipe's slug, cook mode only (M32.4): forwarded to each linked
+   * row so a sub-recipe ingredient offers a link into the child's own cook
+   * mode instead of the plain "Make N servings" hint. Absent on the recipe page.
+   */
+  cookFrom?: string;
 };
 
-export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId }: StepCardProps) {
+export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId, cookFrom }: StepCardProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
   // The corner "…" menu and its sheet, or nothing outside the recipe page (M27.5, M29.4).
   const quickEdit = useQuickEditStep(partId, step.id);
@@ -111,7 +117,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
             {columns && (
               <ul className={cn("flex flex-col gap-2 md:col-span-1", scale.ingredients)} aria-label="Ingredients for this step" data-testid="step-ingredients">
                 {rows.map((ingredient) => (
-                  <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} />
+                  <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} cookFrom={cookFrom} />
                 ))}
               </ul>
             )}

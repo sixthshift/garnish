@@ -129,7 +129,9 @@ describe("stepping servings makes no server call", () => {
   // which reloads every match on every `router.load()` whatever the deps.
   test("neither loader declares a servings dependency", () => {
     expect(ViewRoute.options.loaderDeps).toBeUndefined();
-    expect(CookRoute.options.loaderDeps).toBeUndefined();
+    // The cook loader does declare a dep now (M32.4's `from`, for the way
+    // back), but not `servings`: a step still leaves the deps untouched.
+    expect(CookRoute.options.loaderDeps?.({ search: { servings: 5, step: 2, from: undefined } })).toEqual({ from: undefined });
   });
 
   test("the view page's match is unchanged by a servings step, and the page rescales", async () => {

@@ -3,10 +3,10 @@
 // Stands in for the plan's phone-width manual check (no browser here): the
 // layout is a single column with no fixed widths, asserted below by class.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import type { Recipe } from "../../src/domain/recipe";
-import { Route as CookRoute, positionLabel, stepForKey } from "../../src/routes/recipes/$slug/cook";
+import { type CookRouteData, Route as CookRoute, positionLabel, stepForKey } from "../../src/routes/recipes/$slug/cook";
 import { createRecipe } from "../../src/server/recipes";
-import { listUnits } from "../../src/server/units";
+import { foodForRecipe } from "../../src/server/foods";
+import { findOrCreateUnit, listUnits } from "../../src/server/units";
 import { setIngredientTicked, type StorageLike } from "../../src/lib/ticks";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -17,6 +17,7 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
 });
 vi.mock("../../src/server/recipes", local);
 vi.mock("../../src/server/timeline", local);
+vi.mock("../../src/server/foods", local);
 vi.mock("../../src/server/units", local);
 vi.mock("../../src/server/tags", local);
 vi.mock("../../src/server/aisles", local);
@@ -356,8 +357,8 @@ describe("positionLabel", () => {
 
 describe("loader and search types", () => {
   test("compile-time only", () => {
-    const data: (typeof CookRoute)["types"]["loaderData"] = undefined as unknown as Recipe;
-    const search: (typeof CookRoute)["types"]["searchSchema"] = { step: 0 };
+    const data: (typeof CookRoute)["types"]["loaderData"] = undefined as unknown as CookRouteData;
+    const search: (typeof CookRoute)["types"]["searchSchema"] = { step: 0, from: "sweet-pastry" };
     void data;
     void search;
   });

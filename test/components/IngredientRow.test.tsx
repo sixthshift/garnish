@@ -160,20 +160,21 @@ const pastryRecipe: SubRecipe = {
   yieldUnit: gram,
 };
 
-/** Render the row inside a throwaway router and the sub-recipes it knows about, so its `Link` resolves. */
-async function renderRow(row: Ingredient, subRecipes: SubRecipe[]): Promise<string> {
+/** Render the row inside a throwaway router and the sub-recipes it knows about, so its `Link`s resolve — the view page's and, with `cookFrom`, cook mode's own (M32.4). */
+async function renderRow(row: Ingredient, subRecipes: SubRecipe[], cookFrom?: string): Promise<string> {
   const rootRoute = createRootRoute({
     component: () => (
       <SubRecipesProvider subRecipes={subRecipes}>
         <ul>
-          <IngredientRow recipeId={RECIPE_ID} ingredient={row} />
+          <IngredientRow recipeId={RECIPE_ID} ingredient={row} cookFrom={cookFrom} />
         </ul>
       </SubRecipesProvider>
     ),
   });
   const slugRoute = createRoute({ getParentRoute: () => rootRoute, path: "/recipes/$slug", component: () => null });
+  const cookRoute = createRoute({ getParentRoute: () => slugRoute, path: "/cook", component: () => null });
   const router = createRouter({
-    routeTree: rootRoute.addChildren([slugRoute]),
+    routeTree: rootRoute.addChildren([slugRoute.addChildren([cookRoute])]),
     history: createMemoryHistory({ initialEntries: ["/"] }),
   });
   await router.load();
@@ -199,6 +200,32 @@ describe("a food made by a recipe", () => {
     expect(html).toContain('data-testid="sub-recipe-link"');
     expect(html).not.toContain('data-testid="sub-recipe-hint"');
     expect(html).not.toContain("Make ");
+  });
+
+  // M32.4: cook mode passes `cookFrom`, so the hint becomes a link into the
+  // child's own cook mode instead of plain text.
+  test("cookFrom turns the hint into a link into the child's cook mode, carrying `from`", async () => {
+    const html = await renderRow(ingredient({ quantity: 250, unit: gram, food: pastry }), [pastryRecipe], "lemon-tart");
+    expect(html).toContain('data-testid="sub-recipe-link"');
+    expect(html).toContain('href="/recipes/sweet-pastry"');
+    expect(html).not.toContain('data-testid="sub-recipe-hint"');
+    expect(html).not.toContain("Make 2 servings");
+    expect(html).toContain('data-testid="sub-recipe-cook-link"');
+    expect(html).toMatch(/data-testid="sub-recipe-cook-link"[^>]*>Open Sweet pastry at 2 servings</);
+    const href = html.match(/href="(\/recipes\/sweet-pastry\/cook[^"]*)"/)?.[1];
+    expect(href).toBeDefined();
+    const url = new URL(href!.replace(/&amp;/g, "&"), "http://test");
+    expect(url.pathname).toBe("/recipes/sweet-pastry/cook");
+    expect(url.searchParams.get("servings")).toBe("2");
+    expect(url.searchParams.get("from")).toBe("lemon-tart");
+  });
+
+  test("cookFrom with an amount that cannot be related to the child's yield gets neither hint nor cook link", async () => {
+    const cup = { ...gram, id: "55555555-5555-4555-8555-555555555555", name: "cup", abbreviation: "cup", useAbbreviation: false };
+    const html = await renderRow(ingredient({ quantity: 1, unit: cup, food: pastry }), [pastryRecipe], "lemon-tart");
+    expect(html).toContain('data-testid="sub-recipe-link"');
+    expect(html).not.toContain('data-testid="sub-recipe-hint"');
+    expect(html).not.toContain('data-testid="sub-recipe-cook-link"');
   });
 
   test("a food whose recipe the page did not fetch is an ordinary bold row", async () => {

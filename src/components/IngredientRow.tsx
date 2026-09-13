@@ -14,6 +14,12 @@
 // checkbox still ticks, and a sub-recipe row is the one row you cannot tick by
 // tapping its text.
 //
+// In cook mode (`cookFrom` set, StepCard's `size="cook"`), the hint becomes a
+// link instead: "Open <child> at N servings", into the child's own cook mode
+// at that scale, carrying this recipe's slug as `?from=` so the child's finish
+// card can offer a way back (M32.4). The food name still links to the child's
+// view page either way — only the hint's destination changes.
+//
 // "Scale to..." (M11.5) used to be a per-row link here; M25.2 moved it into
 // the servings popover in the ingredients heading (`ScaleControl`, the recipe
 // view route), which picks an ingredient from a `Select` rather than acting on
@@ -25,7 +31,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { formatAmount, formatFood, formatIngredient } from "../domain/format";
 import type { Ingredient } from "../domain/recipe";
-import { subRecipeHint, subRecipeScale } from "../domain/subRecipe";
+import { subRecipeCookLabel, subRecipeHint, subRecipeScale } from "../domain/subRecipe";
 import { useIngredientTick } from "../lib/ticks";
 import { useQuickEditIngredient } from "./QuickEdit";
 import { useSubRecipe } from "./SubRecipes";
@@ -42,6 +48,12 @@ export type IngredientRowProps = {
    * two parts added together, so it has none and gets no pencil.
    */
   partId?: string;
+  /**
+   * The parent recipe's slug, set only in cook mode (M32.4). When present, a
+   * sub-recipe row's hint is a link into the child's cook mode at the derived
+   * servings instead of plain text, carrying this as `?from=`.
+   */
+  cookFrom?: string;
 };
 
 /** The line's visible parts: the amount, the food (bold unless `raw`), and whether `food` is really the untouched original text. Pure. */
@@ -62,7 +74,7 @@ export function ingredientLineParts(ingredient: Pick<Ingredient, "quantity" | "u
   return { amount: hasQuantity ? formatAmount(quantity, unit) : "", food: formatFood(quantity, food), raw: false };
 }
 
-export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: IngredientRowProps) {
+export function IngredientRow({ recipeId, ingredient, scaled = false, partId, cookFrom }: IngredientRowProps) {
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
   // The hover pencil (from `md`) and its sheet, or nothing outside the recipe page (M27.5, M29.4).
   const quickEdit = useQuickEditIngredient(partId, ingredient.id);
@@ -117,10 +129,21 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: 
         <div className={bodyClass}>
           {line}
           {noteLine}
-          {scale !== null && (
+          {scale !== null && cookFrom === undefined && (
             <Muted as="p" className="text-xs" data-testid="sub-recipe-hint">
               {subRecipeHint(scale)}
             </Muted>
+          )}
+          {scale !== null && cookFrom !== undefined && (
+            <Link
+              to="/recipes/$slug/cook"
+              params={{ slug: child.slug }}
+              search={{ servings: Number(scale.toFixed(2)), from: cookFrom }}
+              className="text-xs font-medium text-fg-brand underline decoration-dotted underline-offset-2"
+              data-testid="sub-recipe-cook-link"
+            >
+              {subRecipeCookLabel(scale, child.name)}
+            </Link>
           )}
         </div>
       ) : (

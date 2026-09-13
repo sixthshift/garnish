@@ -16,6 +16,15 @@
 // The page stays `max-w-3xl` (M24.7) while the view and editor routes widen:
 // one card of large type at roughly 35 characters a line is the right measure
 // for reading across a bench, so this is a deliberate exception, not a leftover.
+//
+// Cook through a sub-recipe (M32.4): the loader fetches the recipes this
+// recipe's ingredient foods are made by, the same call the view loader makes
+// (M32.3), so a step card's linked row can offer "Open <child> at N servings"
+// into the child's own cook mode. That link carries `?from=` this recipe's
+// slug; when the deck reaches Finished having been entered that way, the
+// card offers "Back to <parent>". `from` is resolved to a name in the loader
+// too — a stale or deleted slug just drops the way back rather than failing
+// the page.
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
@@ -45,10 +54,12 @@ import {
 import { formatIngredient } from "../../../domain/format";
 import { scaledForServings } from "../../../domain/scale";
 import type { Ingredient, Recipe } from "../../../domain/recipe";
+import { subRecipeIds, type SubRecipe } from "../../../domain/subRecipe";
+import { SubRecipesProvider } from "../../../components/SubRecipes";
 import { useIngredientTick } from "../../../lib/ticks";
 import { TimerStrip } from "../../../components/TimerStrip";
 import { useWakeLock } from "../../../lib/useWakeLock";
-import { getRecipe } from "../../../server/recipes";
+import { getRecipe, listSubRecipes } from "../../../server/recipes";
 
 export const CookSearch = z.object({
   servings: z.number().positive().finite().optional(),
@@ -58,12 +69,36 @@ export const CookSearch = z.object({
    * `/cook` to `/cook?step=0`). Out-of-range values are clamped at render time.
    */
   step: z.number().int().nonnegative().optional(),
+  /** The parent recipe's slug, when this cook session was opened from a sub-recipe link (M32.4). */
+  from: z.string().optional(),
 });
+
+/** What the loader reads: the stored document, the recipes its ingredient foods are made by, and the entering parent's name, if any. */
+export type CookRouteData = { recipe: Recipe; subRecipes: SubRecipe[]; parentName: string | null };
+
+/** The `from` slug's recipe name, or null when there is no `from` or it no longer resolves to one. Not pure: reads through the server function. */
+async function resolveParentName(from: string | undefined): Promise<string | null> {
+  if (from === undefined) return null;
+  try {
+    return (await getRecipe({ data: { slug: from } })).name;
+  } catch {
+    return null;
+  }
+}
 
 export const Route = createFileRoute("/recipes/$slug/cook")({
   validateSearch: CookSearch,
   staticData: { fullscreen: true },
-  loader: async ({ params }): Promise<Recipe> => getRecipe({ data: { slug: params.slug } }),
+  loaderDeps: ({ search: { from } }) => ({ from }),
+  loader: async ({ params, deps }): Promise<CookRouteData> => {
+    const recipe = await getRecipe({ data: { slug: params.slug } });
+    const ids = subRecipeIds(recipe);
+    const [subRecipes, parentName] = await Promise.all([
+      ids.length === 0 ? Promise.resolve<SubRecipe[]>([]) : listSubRecipes({ data: { ids } }),
+      resolveParentName(deps.from),
+    ]);
+    return { recipe, subRecipes, parentName };
+  },
   component: CookPage,
 });
 
@@ -102,8 +137,8 @@ function WakeLockIcon() {
 }
 
 function CookPage() {
-  const stored = Route.useLoaderData();
-  const { step, servings: requested } = Route.useSearch();
+  const { recipe: stored, subRecipes, parentName } = Route.useLoaderData();
+  const { step, servings: requested, from } = Route.useSearch();
   // Scaled on the client from the search param: the deck is rebuilt from the
   // scaled document, so the stepper is a re-render and not a round trip.
   const recipe = scaledForServings(stored, requested);
@@ -157,103 +192,127 @@ function CookPage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal">
-      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border-normal bg-bg-normal px-4 py-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <Button asChild variant="outline" intent="neutral" size="sm">
-            <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-              Exit
-            </Link>
-          </Button>
-          <span className="truncate font-semibold text-fg-strong">{recipe.name}</span>
-          {screenOn && (
-            <Tooltip>
-              <Tooltip.Trigger asChild>
-                <span
-                  className="shrink-0 text-fg-subtle"
-                  data-wake-lock
-                  aria-label="The screen stays on while you cook"
-                >
-                  <WakeLockIcon />
-                </span>
-              </Tooltip.Trigger>
-              <Tooltip.Body>The screen stays on while you cook</Tooltip.Body>
-            </Tooltip>
-          )}
-        </div>
-        {recipe.recipeServings > 0 && (
-          <NumberStepper label="Serves" value={Number(recipe.recipeServings.toFixed(2))} min={1} onChange={scaleTo} className="flex-row items-center gap-2" />
-        )}
-        {pills.length > 1 && (
-          <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1" aria-label="Parts">
-            {pills.map((pill) => {
-              const current = card !== undefined && card.part === pill.name;
-              return (
-                <Button
-                  key={pill.name}
-                  variant={current ? "solid" : "outline"}
-                  intent={current ? "brand" : "neutral"}
-                  size="sm"
-                  className="shrink-0 rounded-full"
-                  aria-current={current ? "true" : undefined}
-                  data-pill={pill.name}
-                  onClick={() => goTo(pill.index)}
-                >
-                  {pill.label}
-                </Button>
-              );
-            })}
-          </nav>
-        )}
-      </header>
-
-      {/* Politely spoken on every card change; the visible position line below is silent so it is not said twice. */}
-      <p className="sr-only" aria-live="polite" data-announce>
-        {finished ? "Finished" : card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
-      </p>
-
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => (swipe.current = null)}>
-        {finished ? (
-          <FinishedCard recipe={recipe} servings={requested} />
-        ) : (
-          <EmptyBoundary
-            isEmpty={card === undefined}
-            fallback={
-              <Muted as="p" className="text-center text-xl">
-                Nothing to cook yet: this recipe has no ingredients or steps.
-              </Muted>
-            }
-          >
-            {card !== undefined && (
-              <CookCardView card={card} recipeId={recipe.id} preview={nextPreview(cards, index)} onNext={() => goTo(index + 1)} />
+    <SubRecipesProvider subRecipes={subRecipes}>
+      <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal">
+        <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border-normal bg-bg-normal px-4 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Button asChild variant="outline" intent="neutral" size="sm">
+              <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                Exit
+              </Link>
+            </Button>
+            <span className="truncate font-semibold text-fg-strong">{recipe.name}</span>
+            {screenOn && (
+              <Tooltip>
+                <Tooltip.Trigger asChild>
+                  <span
+                    className="shrink-0 text-fg-subtle"
+                    data-wake-lock
+                    aria-label="The screen stays on while you cook"
+                  >
+                    <WakeLockIcon />
+                  </span>
+                </Tooltip.Trigger>
+                <Tooltip.Body>The screen stays on while you cook</Tooltip.Body>
+              </Tooltip>
             )}
-          </EmptyBoundary>
-        )}
-      </main>
+          </div>
+          {recipe.recipeServings > 0 && (
+            <NumberStepper label="Serves" value={Number(recipe.recipeServings.toFixed(2))} min={1} onChange={scaleTo} className="flex-row items-center gap-2" />
+          )}
+          {pills.length > 1 && (
+            <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1" aria-label="Parts">
+              {pills.map((pill) => {
+                const current = card !== undefined && card.part === pill.name;
+                return (
+                  <Button
+                    key={pill.name}
+                    variant={current ? "solid" : "outline"}
+                    intent={current ? "brand" : "neutral"}
+                    size="sm"
+                    className="shrink-0 rounded-full"
+                    aria-current={current ? "true" : undefined}
+                    data-pill={pill.name}
+                    onClick={() => goTo(pill.index)}
+                  >
+                    {pill.label}
+                  </Button>
+                );
+              })}
+            </nav>
+          )}
+        </header>
 
-      <footer className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        {/* Timers started from any card, above the progress bar: they outlive
-            the card they were started on, so they follow you through the deck. */}
-        <TimerStrip recipeId={recipe.id} />
-        <ProgressBar completed={index + 1} total={total} showFraction={false} label="Cook progress" />
-        <div className="flex items-center justify-between gap-3">
-          <Button variant="outline" intent="neutral" size="lg" disabled={index <= 0} onClick={() => goTo(index - 1)}>
-            Prev
-          </Button>
-          <span className="min-w-0 flex-1 truncate text-center text-sm text-fg-subtle" data-position>
-            {finished ? "Finished" : cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.part ?? "")}
-          </span>
-          <Button variant="solid" intent="brand" size="lg" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
-            Next
-          </Button>
-        </div>
-      </footer>
-    </div>
+        {/* Politely spoken on every card change; the visible position line below is silent so it is not said twice. */}
+        <p className="sr-only" aria-live="polite" data-announce>
+          {finished ? "Finished" : card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
+        </p>
+
+        <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => (swipe.current = null)}>
+          {finished ? (
+            <FinishedCard recipe={recipe} servings={requested} from={from} parentName={parentName} />
+          ) : (
+            <EmptyBoundary
+              isEmpty={card === undefined}
+              fallback={
+                <Muted as="p" className="text-center text-xl">
+                  Nothing to cook yet: this recipe has no ingredients or steps.
+                </Muted>
+              }
+            >
+              {card !== undefined && (
+                <CookCardView
+                  card={card}
+                  recipeId={recipe.id}
+                  preview={nextPreview(cards, index)}
+                  onNext={() => goTo(index + 1)}
+                  cookFrom={recipe.slug}
+                />
+              )}
+            </EmptyBoundary>
+          )}
+        </main>
+
+        <footer className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* Timers started from any card, above the progress bar: they outlive
+              the card they were started on, so they follow you through the deck. */}
+          <TimerStrip recipeId={recipe.id} />
+          <ProgressBar completed={index + 1} total={total} showFraction={false} label="Cook progress" />
+          <div className="flex items-center justify-between gap-3">
+            <Button variant="outline" intent="neutral" size="lg" disabled={index <= 0} onClick={() => goTo(index - 1)}>
+              Prev
+            </Button>
+            <span className="min-w-0 flex-1 truncate text-center text-sm text-fg-subtle" data-position>
+              {finished ? "Finished" : cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.part ?? "")}
+            </span>
+            <Button variant="solid" intent="brand" size="lg" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
+              Next
+            </Button>
+          </div>
+        </footer>
+      </div>
+    </SubRecipesProvider>
   );
 }
 
-/** The deck's last "card": logged the cook is done, with a shortcut to log it (M11.7's sheet, reused as-is) and a way out. */
-function FinishedCard({ recipe, servings }: { recipe: Recipe; servings: number | undefined }) {
+/**
+ * The deck's last "card": logged the cook is done, with a shortcut to log it
+ * (M11.7's sheet, reused as-is) and a way out. When this session was opened
+ * from a sub-recipe link (`from`), and that parent still resolves
+ * (`parentName`), a "Back to <parent>" button offers the way back into its
+ * own cook mode (M32.4). A stale `from` with no `parentName` shows nothing extra.
+ */
+function FinishedCard({
+  recipe,
+  servings,
+  from,
+  parentName,
+}: {
+  recipe: Recipe;
+  servings: number | undefined;
+  from: string | undefined;
+  parentName: string | null;
+}) {
   return (
     <Card title={<span className="text-xl">Finished</span>} data-card="finished">
       <div className="flex flex-col items-center gap-4 py-6 text-center">
@@ -264,6 +323,13 @@ function FinishedCard({ recipe, servings }: { recipe: Recipe; servings: number |
               document the deck was built from: what you just cooked is what
               you need to replace. */}
           <AddToShoppingButton recipe={recipe} />
+          {from !== undefined && parentName !== null && (
+            <Button asChild variant="outline" intent="neutral" size="sm">
+              <Link to="/recipes/$slug/cook" params={{ slug: from }} data-testid="back-to-parent">
+                Back to {parentName}
+              </Link>
+            </Button>
+          )}
           <Button asChild variant="outline" intent="neutral" size="sm">
             <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings }}>
               Exit
@@ -313,12 +379,15 @@ function CookCardView({
   recipeId,
   preview,
   onNext,
+  cookFrom,
 }: {
   card: CookCard;
   recipeId: string;
   /** The next card's preview line, or "Finished" past the last one (`nextPreview`). */
   preview: string;
   onNext: () => void;
+  /** This recipe's slug, forwarded to a step card's linked rows for the sub-recipe cook link (M32.4). */
+  cookFrom: string;
 }) {
   const heading = card.part === "" ? undefined : card.part;
   if (card.kind === "ingredients") {
@@ -342,7 +411,7 @@ function CookCardView({
       {/* Same card the recipe page deals, in the cook deck's bigger type: its
           own linked ingredients and timers come with it (M29.2). */}
       <ul>
-        <StepCard recipeId={recipeId} step={card.step} position={card.number} ingredients={card.ingredients} size="cook" />
+        <StepCard recipeId={recipeId} step={card.step} position={card.number} ingredients={card.ingredients} size="cook" cookFrom={cookFrom} />
       </ul>
       <NextPreview preview={preview} onNext={onNext} />
     </Card>
