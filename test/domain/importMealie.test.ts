@@ -8,7 +8,6 @@ import {
   imageDataUrl,
   imageForRecipe,
   looksLikeMealieRecipe,
-  looksLikeTandoor,
   matchFood,
   matchUnit,
   mealieIngredient,
@@ -21,7 +20,6 @@ import {
   reviewRowFromMealie,
   reviewRowsFromMealie,
   tagNames,
-  TANDOOR_MESSAGE,
   type MealieRecipe,
 } from "../../src/domain/importMealie";
 import type { Food } from "../../src/domain/recipe";
@@ -249,13 +247,10 @@ describe("readMealieExport", () => {
     expect(recipes[0]!.image).toMatch(/^data:image\/png;base64,/);
   });
 
-  test("a Tandoor export says so rather than half-reading it", async () => {
+  test("a Tandoor export is not read as a Mealie one (M34.4 reads it; `readExport` dispatches)", async () => {
     const tandoor = { name: "Flatbread", keywords: [{ name: "quick" }], working_time: 10, steps: [{ instruction: "Mix.", ingredients: [] }] };
-    await expect(readMealieExport({ name: "flatbread.json", bytes: utf8(JSON.stringify(tandoor)) })).rejects.toThrow(TANDOOR_MESSAGE);
-    const zip = await makeZip([{ name: "recipe.json", bytes: utf8(JSON.stringify(tandoor)) }]);
-    await expect(readMealieExport({ name: "export.zip", bytes: zip })).rejects.toThrow(TANDOOR_MESSAGE);
-    expect(looksLikeTandoor(tandoor)).toBe(true);
-    expect(looksLikeTandoor(fixture())).toBe(false);
+    await expect(readMealieExport({ name: "flatbread.json", bytes: utf8(JSON.stringify(tandoor)) })).rejects.toThrow("No Mealie recipe");
+    expect(mealieRecipesFrom(tandoor)).toEqual([]);
   });
 
   test("what it refuses", async () => {

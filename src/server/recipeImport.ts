@@ -43,10 +43,11 @@ export const IMPORT_USER_AGENT =
 
 /**
  * Which rung produced the result, so the review can say how much it actually
- * got. `mealie` is an uploaded export (M34.3) rather than a rung of the URL
- * import, and reads as well as `schema` does: Mealie has already parsed it.
+ * got. `mealie` and `tandoor` are uploaded exports (M34.3, M34.4) rather than
+ * rungs of the URL import, and read as well as `schema` does: both apps have
+ * already parsed the recipe.
  */
-export type ImportSource = "schema" | "stub" | "mealie";
+export type ImportSource = "schema" | "stub" | "mealie" | "tandoor";
 
 /** What the import found, and where it came from. */
 export type ImportedRecipe = {

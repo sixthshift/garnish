@@ -1,16 +1,19 @@
-// POST /api/import/file (M34.3): the upload route the source chooser posts a
-// Mealie export to. Nothing is written — the route parses and answers — so
-// there is no database here, only the route.
+// POST /api/import/file (M34.3, M34.4): the upload route the source chooser
+// posts a Mealie or Tandoor export to. Nothing is written — the route parses
+// and answers — so there is no database here, only the route.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { TANDOOR_MESSAGE, type MealieRecipe } from "../../../src/domain/importMealie";
+import type { MealieRecipe } from "../../../src/domain/importMealie";
+import type { ExportRecipe } from "../../../src/domain/importTandoor";
 import { Route } from "../../../src/routes/api/import/file";
 import { handleImportFile, IMPORT_FIELD } from "../../../src/server/importFile";
 import { makeZip, PNG_BYTES } from "../../helpers/zip";
 
 const FIXTURE = join(import.meta.dirname, "../../fixtures/mealie/lemon-tart.json");
 const fixtureText = (): string => readFileSync(FIXTURE, "utf8");
+const TANDOOR = join(import.meta.dirname, "../../fixtures/tandoor/lemon-tart.json");
+const tandoorText = (): string => readFileSync(TANDOOR, "utf8");
 
 type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
 const handlersOf = (route: { options: { server?: unknown } }) =>
@@ -51,11 +54,15 @@ test("the route is wired to the handler", async () => {
   expect(response.status).toBe(200);
 });
 
-test("a Tandoor file is refused with the message the screen shows", async () => {
-  const tandoor = JSON.stringify({ name: "Flatbread", keywords: [], working_time: 10, steps: [{ instruction: "Mix." }] });
-  const response = await handleImportFile(upload(tandoor, "flatbread.json"));
-  expect(response.status).toBe(400);
-  expect(await response.json()).toEqual({ error: TANDOOR_MESSAGE });
+test("a Tandoor recipe.json comes back parsed, its steps as parts (M34.4)", async () => {
+  const response = await handleImportFile(upload(tandoorText(), "recipe.json"));
+  expect(response.status).toBe(200);
+  const payload = (await response.json()) as { recipes: ExportRecipe[] };
+  expect(payload.recipes).toHaveLength(1);
+  const recipe = payload.recipes[0]!;
+  expect(recipe.source).toBe("tandoor");
+  expect(recipe.name).toBe("Lemon tart");
+  expect(recipe.parts.map((part) => part.name)).toEqual(["Pastry", "Filling", ""]);
 });
 
 test("a missing, empty or unreadable file is a 400 with a message", async () => {

@@ -1,6 +1,7 @@
-// The third source: an uploaded Mealie export (M34.3). Static render only (no
-// jsdom in this project's vitest config), so the markup is checked with
-// `renderToString` and the draft by calling `draftFromScraped` directly.
+// The third source: an uploaded Mealie (M34.3) or Tandoor (M34.4) export.
+// Static render only (no jsdom in this project's vitest config), so the markup
+// is checked with `renderToString` and the draft by calling `draftFromScraped`
+// directly.
 //
 // The task's Check that a `title` becomes a part is in
 // test/domain/importMealie.test.ts; this file follows that part through the
@@ -14,6 +15,7 @@ import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../src/db/models/food/repo";
 import { rowCommit } from "../../src/domain/bulkIngredients";
 import { mealieRecipe, reviewRowsFromMealie, type MealieRecipe } from "../../src/domain/importMealie";
+import { reviewRowsFromTandoor, tandoorRecipesFrom, type TandoorRecipe } from "../../src/domain/importTandoor";
 import type { Unit } from "../../src/domain/recipe";
 import {
   draftFromScraped,
@@ -96,11 +98,11 @@ describe("FileSource", () => {
 
   test("with no file chosen it says so, and an error is shown", () => {
     const html = renderToString(
-      <FileSource file={null} error="Tandoor import is not available yet" onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />,
+      <FileSource file={null} error="That file is not JSON or a zip" onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />,
     );
     expect(html).toContain("No file chosen");
     expect(html).toContain('data-testid="import-error"');
-    expect(html).toContain("Tandoor import is not available yet");
+    expect(html).toContain("That file is not JSON or a zip");
   });
 });
 
@@ -222,5 +224,75 @@ describe("the draft", () => {
     expect(draft.sourceUrl).toBeNull();
     expect(draft.parts[0]!.name).toBe("");
     expect(draft.parts[0]!.ingredients).toHaveLength(4);
+  });
+});
+
+describe("a Tandoor export (M34.4)", () => {
+  const TANDOOR = join(import.meta.dirname, "../fixtures/tandoor");
+  const read = (name: string): Record<string, unknown> => JSON.parse(readFileSync(join(TANDOOR, name), "utf8")) as Record<string, unknown>;
+  const tandoor = (): TandoorRecipe => tandoorRecipesFrom([read("lemon-tart.json"), read("lemon-curd.json")])[0]!;
+
+  test("it lands on the same review, saying which export it came from", () => {
+    const source = tandoor();
+    const { rows } = reviewRowsFromTandoor(source, { units, foods });
+    const html = renderToString(
+      <ImportReview
+        imported={{ from: "tandoor", url: source.sourceUrl, recipe: source }}
+        rows={rows}
+        units={units}
+        searchFoods={async () => []}
+        duplicateBy="name"
+        onRowsChange={() => {}}
+        onBack={() => {}}
+        onCreate={() => {}}
+      />,
+    );
+    expect(html).toContain('data-import-from="tandoor"');
+    expect(html).toContain("Read 6 ingredients and 4 steps");
+    expect(html).toContain('data-import-part="Pastry"');
+    expect(html).toContain('data-import-part="Filling"');
+    expect(html).toContain("200 g plain flour, sifted");
+  });
+
+  test("the draft keeps each step's own rows linked to it, not guessed", () => {
+    const source = tandoor();
+    const { rows, rowParts, rowSteps } = reviewRowsFromTandoor(source, { units, foods });
+    const draft = draftFromScraped({
+      scraped: source,
+      sourceUrl: source.sourceUrl,
+      commits: rows.map(rowCommit),
+      createdFoods: new Map(),
+      createdUnits: new Map(),
+      rowParts,
+      rowSteps,
+    });
+
+    expect(draft.parts.map((part) => part.name)).toEqual(["Pastry", "Filling", ""]);
+    expect(draft.name).toBe("Lemon tart");
+    expect(draft.recipeServings).toBe(8);
+    expect(draft.prepTime).toBe(30);
+    expect(draft.performTime).toBe(60);
+    expect(draft.sourceUrl).toBe("https://example.test/lemon-tart");
+    expect(draft.tags.map((tag) => tag.name)).toEqual(["Baking", "Dessert"]);
+
+    // The flour row was written under the pastry step, so that step links it.
+    const pastry = draft.parts[0]!;
+    expect(pastry.steps).toHaveLength(1);
+    expect(pastry.steps[0]!.ingredientIds).toEqual(pastry.ingredients.map((row) => row.id));
+
+    // The body's two steps take one row each — the nested recipes — rather
+    // than both taking both.
+    const body = draft.parts[2]!;
+    expect(body.steps).toHaveLength(2);
+    expect(body.steps[0]!.ingredientIds).toEqual([body.ingredients[0]!.id]);
+    expect(body.steps[1]!.ingredientIds).toEqual([body.ingredients[1]!.id]);
+  });
+
+  test("the nested child in the export is the row the food link is offered for", () => {
+    const { rows, subRecipeNames } = reviewRowsFromTandoor(tandoor(), { units, foods });
+    expect(subRecipeNames).toEqual(["Lemon curd"]);
+    // Still a proposal: nothing is created until the reviewer says so.
+    expect(rows[4]!.food).toEqual({ kind: "none" });
+    expect(rows[4]!.foodText).toBe("Lemon curd");
   });
 });

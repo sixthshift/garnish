@@ -24,8 +24,8 @@ test("the file is posted as multipart to the import route, and the recipes come 
 });
 
 test("the route's message is what the screen is told", async () => {
-  await expect(postImportFile(file(), async () => Response.json({ error: "Tandoor import is not available yet" }, { status: 400 }))).rejects.toThrow(
-    "Tandoor import is not available yet",
+  await expect(postImportFile(file(), async () => Response.json({ error: "That file is not JSON or a zip" }, { status: 400 }))).rejects.toThrow(
+    "That file is not JSON or a zip",
   );
   await expect(postImportFile(file(), async () => new Response("nope", { status: 500 }))).rejects.toThrow("(500)");
 });

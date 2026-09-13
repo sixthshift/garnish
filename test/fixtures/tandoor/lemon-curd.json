@@ -1,0 +1,47 @@
+{
+  "id": 42,
+  "name": "Lemon curd",
+  "description": "",
+  "keywords": [],
+  "steps": [
+    {
+      "name": "",
+      "instruction": "Cook the lemon juice, sugar and eggs over a low heat until thick.",
+      "ingredients": [
+        {
+          "food": { "name": "lemon", "plural_name": "lemons", "ignore_shopping": false, "supermarket_category": null },
+          "unit": null,
+          "amount": 3,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": ""
+        },
+        {
+          "food": { "name": "sugar", "plural_name": "sugar", "ignore_shopping": false, "supermarket_category": null },
+          "unit": { "name": "gram", "plural_name": "grams", "description": "" },
+          "amount": 150,
+          "note": "",
+          "order": 1,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": ""
+        }
+      ],
+      "time": 15,
+      "order": 0,
+      "show_as_header": false,
+      "show_ingredients_table": true,
+      "step_recipe": null,
+      "step_recipe_data": null
+    }
+  ],
+  "working_time": 15,
+  "waiting_time": 0,
+  "internal": true,
+  "nutrition": null,
+  "servings": 1,
+  "servings_text": "jar",
+  "source_url": ""
+}

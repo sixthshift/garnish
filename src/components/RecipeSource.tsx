@@ -13,10 +13,12 @@
 //            numbered list per part. Create builds the draft, fills
 //            `sourceUrl`, and creates only the foods and units approved here.
 //
-//   file     a Mealie export — a backup zip or one recipe's JSON — read by
-//            `importMealie` (M34.3). A zip holding several recipes asks which
-//            one first. It lands on the same review as a scraped page, with
-//            its parts already made from Mealie's section titles.
+//   file     a Mealie or Tandoor export — a backup zip or one recipe's JSON —
+//            read by `importMealie` (M34.3) or `importTandoor` (M34.4), told
+//            apart by shape. A file holding several recipes asks which one
+//            first. It lands on the same review as a scraped page, with its
+//            parts already made from Mealie's section titles or Tandoor's
+//            steps.
 //
 // "My own" is a navigation, not a stage: `?source=manual` renders the editor
 // directly, so the browser's Back leaves it the way it leaves any other
@@ -37,13 +39,15 @@ import { type FormEvent, useState } from "react";
 import type { Food as FoodRow } from "../db/models/food/repo";
 import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
 import { type MealieRecipe, reviewRowsFromMealie } from "../domain/importMealie";
+import { type ExportRecipe, isTandoorRecipe, reviewRowsFromTandoor } from "../domain/importTandoor";
 import type { Tag, Unit } from "../domain/recipe";
 import type { ScrapedRecipe } from "../domain/schemaRecipe";
 import { suggestLinks } from "../domain/stepIngredients";
 import { randomUuid } from "../lib/ids";
 import { postImportFile } from "../lib/importFile";
 import { messageFrom } from "../lib/notify";
-import { findOrCreateFood, listFoods } from "../server/foods";
+import { foodForRecipe, findOrCreateFood, listFoods } from "../server/foods";
+import { getRecipe, recipeByName } from "../server/recipes";
 import type { ImportedRecipe, ImportSource } from "../server/recipeImport";
 import { importFromUrl } from "../server/recipeImport";
 import { findOrCreateUnit } from "../server/units";
@@ -77,6 +81,28 @@ function withSuggestedLinks(part: DraftPart): DraftPart {
   return { ...part, ingredients, steps };
 }
 
+/**
+ * `part` with the links the source already knew (M34.4): `stepOfRow[i]` is the
+ * step that owns the part's i-th row, or -1 for a row no step claimed. Used
+ * instead of `suggestLinks` when the export says outright which step a row was
+ * written under — Tandoor's steps own their ingredients — because a stated
+ * answer beats a guessed one.
+ */
+function withStepRows(part: DraftPart, stepOfRow: readonly number[]): DraftPart {
+  const ingredients = part.ingredients.map((ingredient) => ({
+    ...ingredient,
+    id: ingredient.id ?? randomUuid(),
+    food: ingredient.food ?? null,
+  }));
+  const steps = part.steps.map((step, stepIndex) => ({
+    ...step,
+    id: step.id ?? randomUuid(),
+    text: step.text ?? "",
+    ingredientIds: ingredients.filter((_, row) => stepOfRow[row] === stepIndex).map((ingredient) => ingredient.id),
+  }));
+  return { ...part, ingredients, steps };
+}
+
 /** Which source the chooser is on. */
 export type SourceKind = "url" | "manual" | "file";
 
@@ -102,12 +128,18 @@ export function draftFromScraped(opts: {
    * page cannot, and leaves this out to put every row on the main body.
    */
   rowParts?: readonly number[];
+  /**
+   * Which step of its part each commit was written under, by index, -1 for
+   * none (M34.4). Given, the links are taken from it rather than guessed by
+   * `suggestLinks`; only Tandoor's steps know.
+   */
+  rowSteps?: readonly number[];
   /** Notes the source carried (Mealie's `notes`). */
   notes?: readonly { title: string; text: string }[];
   /** A rating the source carried, 1 to 5. */
   rating?: number | null;
 }): RecipeDraft {
-  const { scraped, sourceUrl, commits, createdFoods, createdUnits, knownTags = [], rowParts, notes = [], rating = null } = opts;
+  const { scraped, sourceUrl, commits, createdFoods, createdUnits, knownTags = [], rowParts, rowSteps, notes = [], rating = null } = opts;
   const rows = commits.map((commit) => reviewedIngredient(commit, createdFoods, createdUnits));
 
   const parts: DraftPart[] = scraped.parts.map((part) => ({
@@ -127,7 +159,13 @@ export function draftFromScraped(opts: {
     else if (rows.length > 0) parts.unshift({ id: randomUuid(), name: "", ingredients: rows, steps: [] });
   }
 
-  const linked = parts.map(withSuggestedLinks);
+  // The steps each part's rows were written under, in the order the rows were
+  // pushed onto that part, so `withStepRows` can read them off positionally.
+  const stepsPerPart: number[][] = parts.map(() => []);
+  if (rowParts !== undefined && rowSteps !== undefined) {
+    rows.forEach((_, index) => stepsPerPart[rowParts[index] ?? 0]?.push(rowSteps[index] ?? -1));
+  }
+  const linked = parts.map((part, index) => (rowSteps === undefined ? withSuggestedLinks(part) : withStepRows(part, stepsPerPart[index] ?? [])));
 
   return {
     ...emptyDraft(),
@@ -290,9 +328,9 @@ export type FileSourceProps = {
 };
 
 /**
- * The second stage for an export: one file. A Mealie backup zip, or one
- * recipe's JSON. Tandoor's own export is named on the button because it is the
- * other thing people arrive with; M34.4 is what reads it.
+ * The second stage for an export: one file. A Mealie backup zip or one
+ * recipe's JSON, or Tandoor's export zip — a `recipe.json` per recipe — told
+ * apart by what is in it rather than by its name.
  */
 export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: FileSourceProps) {
   const inputId = "import-file";
@@ -300,7 +338,8 @@ export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: 
     <div className="flex flex-col gap-4" data-source-stage="file">
       <SectionTitle as="h2">From a Mealie or Tandoor export</SectionTitle>
       <Muted as="p" className="text-sm">
-        A Mealie backup <code>.zip</code>, or a single recipe saved as JSON. Nothing is saved until you have looked at it.
+        A Mealie backup or a Tandoor export <code>.zip</code>, or a single recipe saved as JSON. Nothing is saved until you have looked
+        at it.
       </Muted>
       <div className="flex flex-wrap items-center gap-3">
         <label
@@ -314,7 +353,7 @@ export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: 
           name="file"
           type="file"
           accept=".zip,.json,application/zip,application/json"
-          aria-label="Mealie export"
+          aria-label="Mealie or Tandoor export"
           className="sr-only"
           disabled={busy}
           onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
@@ -341,7 +380,7 @@ export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: 
 }
 
 export type RecipePickerProps = {
-  recipes: readonly MealieRecipe[];
+  recipes: readonly ExportRecipe[];
   busy?: boolean;
   onPick: (index: number) => void;
   onBack: () => void;
@@ -389,7 +428,7 @@ export type ImportReviewProps = {
   searchFoods: (q: string) => Promise<FoodRow[]>;
   busy?: boolean;
   error?: string | null;
-  /** A recipe already here with the same source (M23.7) or the same name (M34.3). */
+  /** A recipe already here with the same source (M23.7) or the same name (M34.3, M34.4). */
   duplicate?: { name: string; slug: string } | null;
   /** Which of the two the duplicate was found by; the address, by default. */
   duplicateBy?: DuplicateBy;
@@ -520,18 +559,47 @@ export type RecipeSourceProps = {
   /** Override the fetch (tests). */
   load?: (url: string) => Promise<ImportedRecipe>;
   /** Override the upload (tests); otherwise `postImportFile` does it. */
-  loadFile?: (file: File) => Promise<MealieRecipe[]>;
+  loadFile?: (file: File) => Promise<ExportRecipe[]>;
+  /**
+   * The food standing for a recipe already here under `name` (M32.3), for a
+   * Tandoor export's nested recipes; null when no such recipe is here yet.
+   * Overridable for tests.
+   */
+  linkSubRecipeFood?: (name: string) => Promise<FoodRow | null>;
 };
 
+/**
+ * The food that is the recipe of this name (M32.3's "Make this a food"), when
+ * that recipe is already here. A Tandoor export's nested recipe names its
+ * child; if the child has been imported already, the row can point straight at
+ * it. If it has not — the usual case, since an export is imported one recipe
+ * at a time — this is null and the food is created plain, to be linked later.
+ * A failed lookup is "not here", never a failed import.
+ */
+async function foodForRecipeNamed(name: string): Promise<FoodRow | null> {
+  try {
+    const found = await recipeByName({ data: { name } });
+    if (found === null) return null;
+    const doc = await getRecipe({ data: { slug: found.slug } });
+    return await foodForRecipe({ data: { recipeId: doc.id } });
+  } catch {
+    return null;
+  }
+}
+
 export function RecipeSource(props: RecipeSourceProps) {
-  const { units, tags, source, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadFile } = props;
+  const { units, tags, source, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadFile, linkSubRecipeFood } = props;
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [choices, setChoices] = useState<MealieRecipe[] | null>(null);
+  const [choices, setChoices] = useState<ExportRecipe[] | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
   const [rows, setRows] = useState<IngredientReview[]>([]);
   // Which part each row belongs to; only an upload knows (M34.3).
   const [rowParts, setRowParts] = useState<number[] | null>(null);
+  // Which step of that part owns the row, and the nested recipes the rows
+  // stand for; only a Tandoor export knows either (M34.4).
+  const [rowSteps, setRowSteps] = useState<number[] | null>(null);
+  const [subRecipes, setSubRecipes] = useState<string[]>([]);
   const [duplicate, setDuplicate] = useState<{ name: string; slug: string } | null>(null);
   // The food vocabulary the upload already fetched, so picking a recipe out of
   // a backup does not fetch it again.
@@ -550,6 +618,8 @@ export function RecipeSource(props: RecipeSourceProps) {
       setImported(found);
       setRows(reviewRows(found.recipe.ingredients, { units, foods }));
       setRowParts(null);
+      setRowSteps(null);
+      setSubRecipes([]);
       setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
     } catch (cause) {
       setError(messageFrom(cause));
@@ -559,11 +629,15 @@ export function RecipeSource(props: RecipeSourceProps) {
   };
 
   /** One recipe out of an upload, onto the same review the URL import uses. */
-  const chooseMealie = async (recipe: MealieRecipe, foods: readonly FoodRow[]) => {
-    const reviewed = reviewRowsFromMealie(recipe, { units, foods });
-    setImported({ from: "mealie", url: recipe.sourceUrl, recipe });
+  const chooseUploaded = async (recipe: ExportRecipe, foods: readonly FoodRow[]) => {
+    const reviewed = isTandoorRecipe(recipe)
+      ? reviewRowsFromTandoor(recipe, { units, foods })
+      : { ...reviewRowsFromMealie(recipe, { units, foods }), rowSteps: null, subRecipeNames: [] as string[] };
+    setImported({ from: recipe.source, url: recipe.sourceUrl, recipe });
     setRows(reviewed.rows);
     setRowParts(reviewed.rowParts);
+    setRowSteps(reviewed.rowSteps);
+    setSubRecipes(reviewed.subRecipeNames);
     setDuplicate(findDuplicateByName ? await findDuplicateByName(recipe.name) : null);
   };
 
@@ -578,7 +652,7 @@ export function RecipeSource(props: RecipeSourceProps) {
       ]);
       if (found.length === 0) throw new Error("No recipe in that file");
       setVocabulary(foods);
-      if (found.length === 1) await chooseMealie(found[0]!, foods);
+      if (found.length === 1) await chooseUploaded(found[0]!, foods);
       else setChoices(found);
     } catch (cause) {
       setError(messageFrom(cause));
@@ -595,10 +669,18 @@ export function RecipeSource(props: RecipeSourceProps) {
     try {
       const pending = pendingCreations(rows);
       const createdFoods = new Map<string, FoodRow>();
-      for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
+      const nested = new Set(subRecipes.map((name) => name.toLowerCase()));
+      for (const name of pending.foods) {
+        // A row that stands for another recipe in the export gets that
+        // recipe's food when the recipe is already here (M32.3); otherwise a
+        // plain food, exactly as any other new name does.
+        const linked = nested.has(name.toLowerCase()) ? await (linkSubRecipeFood ?? foodForRecipeNamed)(name) : null;
+        createdFoods.set(name.toLowerCase(), linked ?? (await findOrCreateFood({ data: { name } })));
+      }
       const createdUnits = new Map<string, Unit>();
       for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
       const mealie = imported.from === "mealie" ? (imported.recipe as MealieRecipe) : null;
+
       const draft = draftFromScraped({
         scraped: imported.recipe,
         sourceUrl: imported.url,
@@ -607,6 +689,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         createdUnits,
         knownTags: tags,
         rowParts: rowParts ?? undefined,
+        rowSteps: rowSteps ?? undefined,
         notes: mealie?.notes,
         rating: mealie?.rating ?? null,
       });
@@ -629,11 +712,13 @@ export function RecipeSource(props: RecipeSourceProps) {
         busy={busy}
         error={error}
         duplicate={duplicate}
-        duplicateBy={imported.from === "mealie" ? "name" : "url"}
+        duplicateBy={imported.from === "mealie" || imported.from === "tandoor" ? "name" : "url"}
         onRowsChange={setRows}
         onBack={() => {
           setImported(null);
           setRowParts(null);
+          setRowSteps(null);
+          setSubRecipes([]);
           setDuplicate(null);
           setError(null);
         }}
@@ -649,7 +734,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         busy={busy}
         onPick={(index) => {
           const recipe = choices[index];
-          if (recipe) void chooseMealie(recipe, vocabulary);
+          if (recipe) void chooseUploaded(recipe, vocabulary);
         }}
         onBack={() => {
           setChoices(null);

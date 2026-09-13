@@ -24,7 +24,9 @@
 // no structured food (Mealie's `isFood: false`) are the one exception: those
 // are parsed, because a raw line is all there is.
 //
-// Tandoor is M34.4. A Tandoor file is recognised here only to say so.
+// Tandoor's export is read by its own module (`importTandoor`, M34.4), which
+// also holds the dispatcher that decides which of the two an upload is. This
+// file reads Mealie and nothing else.
 import type { FoodCandidate } from "./parseFood";
 import type { UnitCandidate } from "./parseUnit";
 import { parseIngredient } from "./parseIngredient";
@@ -54,6 +56,8 @@ export type MealiePart = { name: string; ingredients: MealieIngredient[]; steps:
  * source it carries — so it lands on the same review step a scraped page does.
  */
 export type MealieRecipe = Omit<ScrapedRecipe, "parts"> & {
+  /** Which export this came out of, so the review and the draft can tell (M34.4). */
+  source: "mealie";
   parts: MealiePart[];
   notes: { title: string; text: string }[];
   rating: number | null;
@@ -68,9 +72,6 @@ export type ImportFile = { name: string; bytes: Uint8Array };
 
 /** Multipart field an uploaded export arrives in, shared by the route and the client. */
 export const IMPORT_FIELD = "file";
-
-/** Said when a Tandoor file turns up before M34.4 has landed. */
-export const TANDOOR_MESSAGE = "Tandoor import is not available yet";
 
 // --- Reading values --------------------------------------------------------
 
@@ -220,6 +221,7 @@ export function mealieRecipe(node: Node): MealieRecipe {
     mealieTimeToMinutes(pick(node, "totalTime", "total_time"));
 
   return {
+    source: "mealie",
     name: text(pick(node, "name")).trim(),
     description: text(pick(node, "description")).trim(),
     image: null,
@@ -242,14 +244,6 @@ export function looksLikeMealieRecipe(value: unknown): value is Node {
   if (!isNode(value)) return false;
   if (text(pick(value, "name")).trim() === "") return false;
   return ["recipeIngredient", "recipe_ingredient", "recipeInstructions", "recipe_instructions"].some((key) => Array.isArray(value[key]));
-}
-
-/** Whether this is Tandoor's export rather than Mealie's (M34.4 reads it; this task only says so). Pure. */
-export function looksLikeTandoor(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(looksLikeTandoor);
-  if (!isNode(value)) return false;
-  if (!Array.isArray(value.steps)) return false;
-  return "keywords" in value || "working_time" in value || "waiting_time" in value;
 }
 
 // --- A whole file ----------------------------------------------------------
@@ -339,7 +333,6 @@ export function recipesFromDatabase(db: Node): Node[] {
 
 /** Every Mealie recipe in a parsed JSON value: one recipe, a list of them, or a backup's tables. Pure. */
 export function mealieRecipesFrom(value: unknown): MealieRecipe[] {
-  if (looksLikeTandoor(value)) throw new Error(TANDOOR_MESSAGE);
   if (Array.isArray(value)) return value.filter(looksLikeMealieRecipe).map(mealieRecipe);
   if (!isNode(value)) return [];
   if (looksLikeMealieRecipe(value)) return [mealieRecipe(value)];
@@ -396,11 +389,6 @@ export async function readMealieExport(file: ImportFile): Promise<MealieRecipe[]
   }
 
   const entries = await readZip(file.bytes);
-  if (entries.some((entry) => /(^|\/)recipe\.json$/i.test(entry.name))) {
-    const recipeJson = entries.find((entry) => /(^|\/)recipe\.json$/i.test(entry.name))!;
-    if (looksLikeTandoor(parseJsonBytes(recipeJson.bytes))) throw new Error(TANDOOR_MESSAGE);
-  }
-
   const jsonEntries = entries.filter((entry) => entry.name.toLowerCase().endsWith(".json"));
   // `database.json` first: a backup's other JSON files are settings and groups.
   jsonEntries.sort((a, b) => Number(b.name.toLowerCase().endsWith("database.json")) - Number(a.name.toLowerCase().endsWith("database.json")));
@@ -410,8 +398,7 @@ export async function readMealieExport(file: ImportFile): Promise<MealieRecipe[]
     let found: MealieRecipe[];
     try {
       found = mealieRecipesFrom(parseJsonBytes(entry.bytes));
-    } catch (cause) {
-      if (cause instanceof Error && cause.message === TANDOOR_MESSAGE) throw cause;
+    } catch {
       continue; // a JSON file in the backup that is not recipes
     }
     recipes.push(...found);

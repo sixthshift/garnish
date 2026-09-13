@@ -1,0 +1,105 @@
+{
+  "id": 41,
+  "name": "Lemon tart",
+  "description": "Sharp, set just enough to slice.",
+  "keywords": [
+    { "name": "Baking", "description": "", "created_at": "2024-03-01T10:00:00Z", "updated_at": "2024-03-01T10:00:00Z" },
+    { "name": "Dessert", "description": "", "created_at": "2024-03-01T10:00:00Z", "updated_at": "2024-03-01T10:00:00Z" },
+    { "name": "Baking", "description": "", "created_at": "2024-03-01T10:00:00Z", "updated_at": "2024-03-01T10:00:00Z" }
+  ],
+  "steps": [
+    {
+      "name": "Pastry",
+      "instruction": "Rub the butter into the flour, then chill for 30 minutes and blind bake.",
+      "ingredients": [
+        {
+          "food": { "name": "flour", "plural_name": "flour", "ignore_shopping": false, "supermarket_category": null },
+          "unit": { "name": "gram", "plural_name": "grams", "description": "" },
+          "amount": 200,
+          "note": "sifted",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "200 g plain flour, sifted"
+        },
+        {
+          "food": { "name": "butter", "plural_name": "butter", "ignore_shopping": false, "supermarket_category": null },
+          "unit": { "name": "gram", "plural_name": "grams", "description": "" },
+          "amount": 100,
+          "note": "cold, cubed",
+          "order": 1,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": ""
+        }
+      ],
+      "time": 40,
+      "order": 0,
+      "show_as_header": true,
+      "show_ingredients_table": true,
+      "step_recipe": null,
+      "step_recipe_data": null
+    },
+    {
+      "name": "Filling",
+      "instruction": "Whisk the eggs with the lemons and pour into the shell.",
+      "ingredients": [
+        {
+          "food": { "name": "lemon", "plural_name": "lemons", "ignore_shopping": false, "supermarket_category": null },
+          "unit": null,
+          "amount": 4,
+          "note": "juiced",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": ""
+        },
+        {
+          "food": { "name": "salt", "plural_name": "salt", "ignore_shopping": false, "supermarket_category": null },
+          "unit": null,
+          "amount": 0,
+          "note": "a pinch",
+          "order": 1,
+          "is_header": false,
+          "no_amount": true,
+          "original_text": ""
+        }
+      ],
+      "time": 20,
+      "order": 1,
+      "show_as_header": true,
+      "show_ingredients_table": true,
+      "step_recipe": null,
+      "step_recipe_data": null
+    },
+    {
+      "name": "",
+      "instruction": "Spoon the curd over the set filling.",
+      "ingredients": [],
+      "time": 0,
+      "order": 2,
+      "show_as_header": false,
+      "show_ingredients_table": true,
+      "step_recipe": 42,
+      "step_recipe_data": { "id": 42, "name": "Lemon curd", "url": "/recipe/42" }
+    },
+    {
+      "name": "",
+      "instruction": "Scatter the candied peel and serve.",
+      "ingredients": [],
+      "time": 0,
+      "order": 3,
+      "show_as_header": false,
+      "show_ingredients_table": true,
+      "step_recipe": 99,
+      "step_recipe_data": { "id": 99, "name": "Candied peel", "url": "/recipe/99" }
+    }
+  ],
+  "working_time": 30,
+  "waiting_time": 60,
+  "internal": true,
+  "nutrition": null,
+  "servings": 8,
+  "servings_text": "slices",
+  "source_url": "https://example.test/lemon-tart"
+}
