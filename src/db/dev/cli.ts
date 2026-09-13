@@ -1,6 +1,7 @@
 // `bun run dev:seed [--count N] [--seed TEXT]`. Dev only — this never ships;
 // `.dockerignore` keeps src/db/dev out of the image entirely, which is also why
-// it is wired into `bun run dev` rather than the server entry.
+// it is its own script rather than part of the server entry. Nothing runs it
+// automatically; `bun run dev` leaves the database alone.
 //
 // A clean slate in three steps:
 //
