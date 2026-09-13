@@ -56,7 +56,14 @@ export function timeline(db: Database) {
       const id = crypto.randomUUID();
       dz.transaction((tx) => {
         tx.insert(timelineEvent)
-          .values({ id, recipeId, occurredOn: input.occurredOn, message: input.message, image: input.image })
+          .values({
+            id,
+            recipeId,
+            occurredOn: input.occurredOn,
+            message: input.message,
+            image: input.image,
+            servings: input.servings,
+          })
           .run();
         recompute(recipeId, tx);
       });

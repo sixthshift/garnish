@@ -38,6 +38,22 @@ test("createTimelineEvent stores the cook and returns it", async () => {
   expect(event.image).toBeNull();
 });
 
+test("createTimelineEvent stores and returns servings, and defaults it to null (M35.2)", async () => {
+  const recipe = await seed();
+  const withServings = await callServerFn(createTimelineEvent, {
+    recipeId: recipe.id,
+    event: { occurredOn: "2026-09-11", message: "", image: null, servings: 6 },
+  });
+  expect(withServings.servings).toBe(6);
+  expect((await callServerFn(listTimeline, { recipeId: recipe.id }))[0]?.servings).toBe(6);
+
+  const withoutServings = await callServerFn(createTimelineEvent, {
+    recipeId: recipe.id,
+    event: { occurredOn: "2026-09-12", message: "", image: null },
+  });
+  expect(withoutServings.servings).toBeNull();
+});
+
 test("createTimelineEvent moves the recipe's last made date to the latest cook", async () => {
   const recipe = await seed();
   await callServerFn(createTimelineEvent, { recipeId: recipe.id, event: { occurredOn: "2026-03-04", message: "", image: null } });

@@ -179,6 +179,8 @@ export const timelineEventSchema = z.object({
   occurredOn: date,
   message: text,
   image: z.string().nullable().default(null),
+  /** Servings the cook was made at, or null when not recorded (M35.2). */
+  servings: z.number().positive().nullable().default(null),
   createdAt: timestamp,
 });
 
@@ -187,6 +189,7 @@ export const timelineEventInputSchema = z.object({
   occurredOn: date,
   message: text,
   image: z.string().nullable().default(null),
+  servings: z.number().positive().nullable().default(null),
 });
 
 // --- Write shape ------------------------------------------------------------

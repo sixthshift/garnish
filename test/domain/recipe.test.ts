@@ -194,6 +194,7 @@ describe("timelineEventSchema", () => {
     occurredOn: "2026-09-01",
     message: "Halved it.",
     image: "ev.webp",
+    servings: 6,
     createdAt: "2026-09-01T09:00:00.000Z",
   };
 
@@ -201,12 +202,19 @@ describe("timelineEventSchema", () => {
     expect(timelineEventSchema.parse(event)).toEqual(event);
   });
 
-  test("message and image default", () => {
+  test("message, image and servings default", () => {
     expect(timelineEventInputSchema.parse({ occurredOn: "2026-09-01" })).toEqual({
       occurredOn: "2026-09-01",
       message: "",
       image: null,
+      servings: null,
     });
+  });
+
+  test("servings must be positive", () => {
+    expect(timelineEventSchema.safeParse({ ...event, servings: 0 }).success).toBe(false);
+    expect(timelineEventSchema.safeParse({ ...event, servings: -1 }).success).toBe(false);
+    expect(timelineEventSchema.safeParse({ ...event, servings: null }).success).toBe(true);
   });
 
   test("occurredOn is a calendar date, not a timestamp", () => {

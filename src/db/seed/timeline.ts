@@ -9,7 +9,7 @@ import type { TimelineEventInput } from "../../domain/recipe";
  */
 export const SAMPLE_TIMELINE: Readonly<Record<string, readonly TimelineEventInput[]>> = {
   "Lemon Tart": [
-    { occurredOn: "2026-08-16", message: "Made for Dad's birthday. Chilled overnight and it sliced cleanly.", image: null },
-    { occurredOn: "2026-09-06", message: "Quick weeknight version with bottled lemon juice, still good.", image: null },
+    { occurredOn: "2026-08-16", message: "Made for Dad's birthday. Chilled overnight and it sliced cleanly.", image: null, servings: 8 },
+    { occurredOn: "2026-09-06", message: "Quick weeknight version with bottled lemon juice, still good.", image: null, servings: null },
   ],
 };

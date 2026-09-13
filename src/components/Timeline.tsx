@@ -19,6 +19,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
+import { servingsLabel } from "../domain/plan";
 import type { Recipe, TimelineEvent, TimelineEventInput } from "../domain/recipe";
 import { timelineImageUrl, uploadTimelineImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
@@ -33,7 +34,7 @@ import { Menu } from "./ui/Menu";
 import { MadeThisSheet } from "./MadeThisSheet";
 import { saveQuickEdit, useQuickEditContext } from "./QuickEdit";
 
-export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name"> };
+export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "recipeServings"> };
 
 /** What one logged cook writes: the event and an optional photo. */
 export type CookSave = { recipeId: string; event: TimelineEventInput; photo: File | null };
@@ -107,7 +108,13 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
       >
         Made this
       </Button>
-      <MadeThisSheet open={open} busy={saving} onCancel={() => setOpen(false)} onSave={(input, photo) => void save(input, photo)} />
+      <MadeThisSheet
+        open={open}
+        busy={saving}
+        onCancel={() => setOpen(false)}
+        onSave={(input, photo) => void save(input, photo)}
+        defaultServings={recipe.recipeServings > 0 ? Number(recipe.recipeServings.toFixed(2)) : 1}
+      />
     </>
   );
 }
@@ -159,10 +166,11 @@ export function TimelineList({ events }: TimelineListProps) {
 }
 
 /**
- * One compact row: the date, the comment beside it on the same line
- * (truncated, a tap expanding it to full text), a small square thumbnail when
- * there is a photo, and a row menu holding Delete. No confirm — the same
- * delete path stage 5 had.
+ * One compact row: the date, "serves N" beside it when the cook recorded a
+ * servings count (M35.2, `servingsLabel` from src/domain/plan.ts — nothing
+ * when it did not), the comment on the same line (truncated, a tap expanding
+ * it to full text), a small square thumbnail when there is a photo, and a row
+ * menu holding Delete. No confirm — the same delete path stage 5 had.
  */
 function TimelineRow({ event }: { event: TimelineEvent }) {
   const mutate = useMutate();
@@ -173,6 +181,7 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
   const photo = timelineImageUrl(event.image);
   const date = formatDateStamp(event.occurredOn);
   const hasComment = event.message.trim() !== "";
+  const servings = servingsLabel(event.servings);
 
   const remove = async () => {
     setDeleting(true);
@@ -208,6 +217,11 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
       <p className="shrink-0 font-medium text-fg-strong" data-testid="timeline-date">
         {date}
       </p>
+      {servings !== "" && (
+        <Muted as="span" className="shrink-0 text-xs" data-testid="timeline-servings">
+          {servings}
+        </Muted>
+      )}
       {hasComment ? (
         <button
           type="button"

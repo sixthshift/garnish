@@ -38,34 +38,43 @@ test("a new recipe has no events and no last made", () => {
 });
 
 test("create returns the stored event and matches the domain schema", () => {
-  const event = repo.create(recipeId, { occurredOn: "2026-09-01", message: "Halved it.", image: "ev.webp" });
+  const event = repo.create(recipeId, { occurredOn: "2026-09-01", message: "Halved it.", image: "ev.webp", servings: null });
 
   expect(event).toMatchObject({
     recipeId,
     occurredOn: "2026-09-01",
     message: "Halved it.",
     image: "ev.webp",
+    servings: null,
   });
   expect(timelineEventSchema.parse(event)).toEqual(event);
   expect(repo.get(event.id)).toEqual(event);
   expect(repo.get("11111111-1111-4111-8111-111111111111")).toBeNull();
 });
 
+test("servings on a cook round-trips through create and get (M35.2)", () => {
+  const event = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: 6 });
+
+  expect(event.servings).toBe(6);
+  expect(repo.get(event.id)?.servings).toBe(6);
+  expect(repo.list(recipeId)[0]?.servings).toBe(6);
+});
+
 test("create sets last made to the latest date, whichever order the events arrive in", () => {
-  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
+  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: null });
   expect(lastMade()).toBe("2026-09-01T00:00:00.000Z");
 
-  repo.create(recipeId, { occurredOn: "2026-09-10", message: "", image: null });
+  repo.create(recipeId, { occurredOn: "2026-09-10", message: "", image: null, servings: null });
   expect(lastMade()).toBe("2026-09-10T00:00:00.000Z");
 
   // An older cook logged after the fact does not pull last made backwards.
-  repo.create(recipeId, { occurredOn: "2026-08-20", message: "", image: null });
+  repo.create(recipeId, { occurredOn: "2026-08-20", message: "", image: null, servings: null });
   expect(lastMade()).toBe("2026-09-10T00:00:00.000Z");
 });
 
 test("removing the latest event falls last made back to the next one, then to null", () => {
-  const first = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
-  const later = repo.create(recipeId, { occurredOn: "2026-09-10", message: "", image: null });
+  const first = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: null });
+  const later = repo.create(recipeId, { occurredOn: "2026-09-10", message: "", image: null, servings: null });
   expect(lastMade()).toBe("2026-09-10T00:00:00.000Z");
 
   expect(repo.remove(later.id)).toBe(true);
@@ -78,15 +87,15 @@ test("removing the latest event falls last made back to the next one, then to nu
 });
 
 test("removing an event that is not the latest leaves last made alone", () => {
-  const older = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
-  repo.create(recipeId, { occurredOn: "2026-09-10", message: "", image: null });
+  const older = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: null });
+  repo.create(recipeId, { occurredOn: "2026-09-10", message: "", image: null, servings: null });
 
   expect(repo.remove(older.id)).toBe(true);
   expect(lastMade()).toBe("2026-09-10T00:00:00.000Z");
 });
 
 test("remove is false for an unknown id and changes nothing", () => {
-  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
+  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: null });
   expect(repo.remove("11111111-1111-4111-8111-111111111111")).toBe(false);
   expect(lastMade()).toBe("2026-09-01T00:00:00.000Z");
 });
@@ -94,10 +103,10 @@ test("remove is false for an unknown id and changes nothing", () => {
 test("list is newest first and scoped to one recipe", () => {
   const other = recipeRepo.create(recipeInputSchema.parse(minimal("Cheese toast"))).id;
 
-  const old = repo.create(recipeId, { occurredOn: "2026-08-01", message: "first", image: null });
-  const mid = repo.create(recipeId, { occurredOn: "2026-09-01", message: "second", image: null });
-  const recent = repo.create(recipeId, { occurredOn: "2026-09-10", message: "third", image: null });
-  const elsewhere = repo.create(other, { occurredOn: "2026-09-20", message: "not mine", image: null });
+  const old = repo.create(recipeId, { occurredOn: "2026-08-01", message: "first", image: null, servings: null });
+  const mid = repo.create(recipeId, { occurredOn: "2026-09-01", message: "second", image: null, servings: null });
+  const recent = repo.create(recipeId, { occurredOn: "2026-09-10", message: "third", image: null, servings: null });
+  const elsewhere = repo.create(other, { occurredOn: "2026-09-20", message: "not mine", image: null, servings: null });
 
   expect(repo.list(recipeId).map((e) => e.id)).toEqual([recent.id, mid.id, old.id]);
   expect(repo.list(other).map((e) => e.id)).toEqual([elsewhere.id]);
@@ -105,8 +114,8 @@ test("list is newest first and scoped to one recipe", () => {
 });
 
 test("two events on one day come back newest-created first", () => {
-  const first = repo.create(recipeId, { occurredOn: "2026-09-01", message: "lunch", image: null });
-  const second = repo.create(recipeId, { occurredOn: "2026-09-01", message: "dinner", image: null });
+  const first = repo.create(recipeId, { occurredOn: "2026-09-01", message: "lunch", image: null, servings: null });
+  const second = repo.create(recipeId, { occurredOn: "2026-09-01", message: "dinner", image: null, servings: null });
 
   const order = repo.list(recipeId).map((e) => e.id);
   expect(order).toHaveLength(2);
@@ -115,13 +124,13 @@ test("two events on one day come back newest-created first", () => {
 });
 
 test("deleting the recipe takes its events with it", () => {
-  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
+  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: null });
   expect(recipeRepo.remove(recipeId)).toBe(true);
   expect(repo.list(recipeId)).toEqual([]);
 });
 
 test("recompute repairs a last made that was set by hand", () => {
-  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
+  repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: null });
   db.run("UPDATE recipe SET last_made = ? WHERE id = ?", ["2020-01-01T00:00:00.000Z", recipeId]);
 
   repo.recompute(recipeId);
@@ -129,7 +138,7 @@ test("recompute repairs a last made that was set by hand", () => {
 });
 
 test("setImage points an event at a stored photo, and clears it again", () => {
-  const event = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null });
+  const event = repo.create(recipeId, { occurredOn: "2026-09-01", message: "", image: null, servings: null });
 
   expect(repo.setImage(event.id, `${event.id}.png`)).toBe(true);
   expect(repo.get(event.id)?.image).toBe(`${event.id}.png`);

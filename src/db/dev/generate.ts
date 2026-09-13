@@ -271,6 +271,7 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
             "",
           ]),
           image: null,
+          servings: null,
         }))
       : [];
 

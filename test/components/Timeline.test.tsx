@@ -28,6 +28,7 @@ const event = (overrides: Partial<TimelineEvent> = {}): TimelineEvent => ({
   occurredOn: "2026-09-11",
   message: "Crispier at 220.",
   image: null,
+  servings: null,
   createdAt: "2026-09-11T02:30:00.000Z",
   ...overrides,
 });
@@ -117,6 +118,15 @@ test("a compact row with a photo shows a small square thumbnail", async () => {
   expect(html).toMatch(/<img[^>]*src="\/api\/images\/timeline\/22222222-2222-4222-8222-222222222222\.png"[^>]*class="[^"]*size-12[^"]*object-cover[^"]*"/);
 });
 
+test("a cook logged with servings shows 'serves N'; one without shows nothing (M35.2)", async () => {
+  const withServings = await render([event({ servings: 6 })]);
+  expect(withServings).toContain('data-testid="timeline-servings"');
+  expect(withServings).toContain("serves 6");
+
+  const without = await render([event({ servings: null })]);
+  expect(without).not.toContain('data-testid="timeline-servings"');
+});
+
 test("an event with no comment says so instead of leaving a gap", async () => {
   const html = await render([event({ message: "   " })]);
   expect(html).toContain("No comment");
@@ -137,7 +147,7 @@ test("the row menu is chrome the print stylesheet drops", async () => {
 // touched. M29.4 removed the stars from the sheet (rating lives in the
 // header only), so saveCook is left with just the event and its photo.
 describe("saveCook", () => {
-  const input = { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null };
+  const input = { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null, servings: null };
   const writes = () => ({
     createEvent: vi.fn().mockResolvedValue(event()),
     uploadPhoto: vi.fn().mockResolvedValue(undefined),
@@ -160,7 +170,7 @@ describe("saveCook", () => {
 });
 
 describe("saveCookAndClearTicks (M25.6)", () => {
-  const input = { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null };
+  const input = { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null, servings: null };
   const writes = () => ({
     createEvent: vi.fn().mockResolvedValue(event()),
     uploadPhoto: vi.fn().mockResolvedValue(undefined),

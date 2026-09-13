@@ -36,16 +36,23 @@ describe("isValidDate", () => {
 describe("MadeThisSheetContent render", () => {
   const render = (busy = false) => renderToString(<MadeThisSheetContent today="2026-09-11" busy={busy} onSave={() => {}} onCancel={() => {}} />);
 
-  test("offers a date defaulting to today, a comment and a photo picker", () => {
+  test("offers a date defaulting to today, a servings stepper, a comment and a photo picker", () => {
     const html = render();
     expect(html).toContain("Made this");
     expect(html).toContain('type="date"');
     expect(html).toContain('value="2026-09-11"');
+    expect(html).toContain("Servings");
     expect(html).toContain("Comment");
     expect(html).toContain("Photo");
     expect(html).toContain("Choose image");
     expect(html).toContain(">Save<");
     expect(html).toContain(">Cancel<");
+  });
+
+  test("the servings stepper defaults to 1 with no default given, or to the page's scale when given", () => {
+    expect(render()).toContain('value="1"');
+    const html = renderToString(<MadeThisSheetContent today="2026-09-11" defaultServings={6} onSave={() => {}} onCancel={() => {}} />);
+    expect(html).toContain('value="6"');
   });
 
   test("carries no rating stars: rating lives in the header only", () => {
