@@ -4,40 +4,18 @@
 // moveStep and moveNote, updateRecipe stores the new orders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { addPart, renamePart } from "../../../../src/routes/recipes/components/PartsEditor";
-import { addNote, moveNote, updateNote } from "../../../../src/routes/recipes/components/NotesEditor";
-import { emptyDraft, type RecipeDraft, validateDraft } from "../../../../src/routes/recipes/components/RecipeForm";
-import {
-  addBulkSteps,
-  addStep,
-  canSplitAll,
-  insertStepAbove,
-  insertStepBelow,
-  mergeAllSteps,
-  mergeStepWithNext,
-  moveStep,
-  newStep,
-  linkableIngredients,
-  linkedIngredients,
-  linkIngredient,
-  removeStep,
-  setStepImage,
-  splitAllSteps,
-  splitStepByParagraph,
-  StepsEditor,
-  stepLinks,
-  stepsOf,
-  stepsPath,
-  suggestNotice,
-  suggestPartLinks,
-  unionLinks,
-  unlinkIngredient,
-  unlinkStepIngredient,
-  updateStep,
-  withSteps,
-} from "../../../../src/routes/recipes/components/StepsEditor";
-import { addIngredient, foodReference, updateIngredient } from "../../../../src/routes/recipes/components/IngredientsEditor";
-import { ingredientLine } from "../../../../src/routes/recipes/components/PartsEditor";
+import { addPart, renamePart } from "../../../../src/domain/recipe/draft/parts";
+import { addNote, moveNote, updateNote } from "../../../../src/domain/recipe/draft/notes";
+import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
+import { type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
+import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
+import { StepsEditor } from "../../../../src/routes/recipes/components/StepsEditor";
+import { addBulkSteps, addStep, canSplitAll, insertStepAbove, insertStepBelow, mergeAllSteps, mergeStepWithNext, moveStep, newStep, removeStep, setStepImage, splitAllSteps, splitStepByParagraph, stepsOf, stepsPath, updateStep, withSteps } from "../../../../src/domain/recipe/draft/steps";
+import { linkableIngredients, linkedIngredients, linkIngredient, stepLinks, suggestPartLinks, unionLinks, unlinkIngredient, unlinkStepIngredient } from "../../../../src/domain/recipe/draft/links";
+import { suggestNotice } from "../../../../src/routes/recipes/components/StepsEditor";
+import { addIngredient, updateIngredient } from "../../../../src/domain/recipe/draft/ingredients";
+import { foodReference } from "../../../../src/domain/recipe/draft/vocabulary";
+import { ingredientLine } from "../../../../src/domain/recipe/draft/parts";
 import { paragraphs } from "../../../../src/domain/ingredient/bulkText";
 import { createRecipe, getRecipe, updateRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";

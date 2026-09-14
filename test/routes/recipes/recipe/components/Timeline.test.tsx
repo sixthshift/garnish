@@ -5,7 +5,8 @@
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { offersSaveAsNote, TimelineList, saveCook, saveCookAndClearTicks, withNoteFromCook } from "../../../../../src/routes/recipes/recipe/components/Timeline";
+import { TimelineList, saveCook, saveCookAndClearTicks } from "../../../../../src/routes/recipes/recipe/components/Timeline";
+import { offersSaveAsNote, withNoteFromCook } from "../../../../../src/routes/recipes/recipe/components/Timeline";
 import { saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
 import type { Recipe, TimelineEvent } from "../../../../../src/domain/recipe/recipe";
 import { getTicks, setIngredientTicked, type StorageLike } from "../../../../../src/lib/ticks";

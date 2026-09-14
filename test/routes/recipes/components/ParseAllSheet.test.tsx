@@ -7,16 +7,13 @@
 // leaving declined rows text-only.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { IngredientsEditor, isTextOnly, newIngredient } from "../../../../src/routes/recipes/components/IngredientsEditor";
-import {
-  applyParsedRows,
-  needsParseAll,
-  ParseAllSheetContent,
-  parseAllRows,
-  parsedSummary,
-  unparsedIndices,
-} from "../../../../src/routes/recipes/components/ParseAllSheet";
-import { emptyDraft, type DraftIngredient, type RecipeDraft } from "../../../../src/routes/recipes/components/RecipeForm";
+import { IngredientsEditor } from "../../../../src/routes/recipes/components/IngredientsEditor";
+import { isTextOnly, newIngredient } from "../../../../src/domain/recipe/draft/ingredients";
+import { ParseAllSheetContent } from "../../../../src/routes/recipes/components/ParseAllSheet";
+import { applyParsedRows, needsParseAll, parseAllRows, unparsedIndices } from "../../../../src/domain/recipe/draft/review";
+import { parsedSummary } from "../../../../src/routes/recipes/components/ParseAllSheet";
+import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
+import { type DraftIngredient, type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
 import type { Food as FoodRow } from "../../../../src/db/models/food/repo";
 import type { Unit } from "../../../../src/domain/recipe/recipe";
 

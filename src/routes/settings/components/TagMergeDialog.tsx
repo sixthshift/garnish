@@ -8,7 +8,7 @@
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import type { Tag } from "../../../domain/recipe/recipe";
+import { type Tag } from "../../../domain/recipe/recipe";
 import { ConfirmDialogContent } from "../../../components/ui/ConfirmDialog";
 
 export type TagMergeDialogProps = {
@@ -21,11 +21,6 @@ export type TagMergeDialogProps = {
   /** Called with the chosen target's id. */
   onConfirm: (targetId: string) => void;
 };
-
-/** The target names offered, ie. every tag but the source. Pure. */
-export function mergeTargets(tags: readonly Tag[], sourceId: string): Tag[] {
-  return tags.filter((tag) => tag.id !== sourceId);
-}
 
 export function TagMergeDialogContent({ source, targets, busy = false, onCancel, onConfirm }: TagMergeDialogProps) {
   const [targetId, setTargetId] = useState(targets[0]?.id ?? "");

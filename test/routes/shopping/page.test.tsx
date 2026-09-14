@@ -8,7 +8,8 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { shoppingItemSchema, type ShoppingItem } from "../../../src/domain/shopping/shopping";
-import { ShoppingListView, sendOutboxEntry, setFoodAisle, toBuyLabel } from "../../../src/routes/shopping/components/ShoppingListView";
+import { ShoppingListView, sendOutboxEntry, setFoodAisle } from "../../../src/routes/shopping/components/ShoppingListView";
+import { toBuyLabel } from "../../../src/routes/shopping/components/ShoppingListView";
 import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../../src/lib/outbox";
 import { addShoppingItems, listShoppingItems } from "../../../src/server/fns/shopping";
 import { createFood, listFoods } from "../../../src/server/fns/foods";

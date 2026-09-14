@@ -6,6 +6,7 @@
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import { useEffect, useId, useRef, useState } from "react";
+
 import { recipeImageUrl } from "../../lib/images";
 
 export type ImageUploadProps = {
@@ -19,11 +20,6 @@ export type ImageUploadProps = {
   disabled?: boolean;
   className?: string;
 };
-
-/** The URL to show, most local first: a just-picked file, the stored image, then a remote one an import found. Null means placeholder. Pure. */
-export function imageSrc(preview: string | null, image: string | null | undefined, previewUrl?: string | null): string | null {
-  return preview ?? recipeImageUrl(image) ?? previewUrl ?? null;
-}
 
 export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, className }: ImageUploadProps) {
   const inputId = useId();
@@ -84,4 +80,9 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, c
       </div>
     </div>
   );
+}
+
+/** The URL to show, most local first: a just-picked file, the stored image, then a remote one an import found. Null means placeholder. Pure. */
+export function imageSrc(preview: string | null, image: string | null | undefined, previewUrl?: string | null): string | null {
+  return preview ?? recipeImageUrl(image) ?? previewUrl ?? null;
 }

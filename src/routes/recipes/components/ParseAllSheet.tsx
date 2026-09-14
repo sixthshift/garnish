@@ -17,68 +17,16 @@ import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useEffect, useRef, useState } from "react";
-import type { Food as FoodRow } from "../../../db/models/food/repo";
+import { type Food as FoodRow } from "../../../db/models/food/repo";
 import { pendingCreations } from "../../../domain/ingredient/bulkIngredients";
-import type { Unit } from "../../../domain/recipe/recipe";
+import { type Unit } from "../../../domain/recipe/recipe";
 import { messageFrom } from "../../../lib/notify";
 import { findOrCreateFood, listFoods } from "../../../server/fns/foods";
 import { findOrCreateUnit } from "../../../server/fns/units";
-import { IngredientReviewRow, type IngredientReview } from "./IngredientReviewRow";
-import { filterUnits, isTextOnly, parsedRowPatch, parseRowFor, updateIngredient } from "./IngredientsEditor";
-import type { DraftIngredient, DraftPart, RecipeDraft } from "./RecipeForm";
-
-/** The positions of the rows Parse all would read: text-only rows that have a raw line. Pure. */
-export function unparsedIndices(ingredients: readonly DraftIngredient[]): number[] {
-  return ingredients.flatMap((row, index) => (isTextOnly(row) && (row.originalText ?? "").trim() !== "" ? [index] : []));
-}
-
-/**
- * Should the part offer Parse all? Only when it has rows, none of them has
- * resolved to a food, and at least one has a raw line to read — the same
- * "nothing here is parsed" test Mealie's alert uses, narrowed to a part. A
- * part with one matched row has been looked at, so the banner goes away. Pure.
- */
-export function needsParseAll(part: DraftPart): boolean {
-  if (part.ingredients.length === 0) return false;
-  if (part.ingredients.some((row) => row.food)) return false;
-  return unparsedIndices(part.ingredients).length > 0;
-}
-
-/**
- * Every unparsed row of `ingredients` read against the vocabulary, as review
- * rows keyed by the row's position — which is what `applyParsedRows` patches
- * by, so the key has to stay the index and not the row's id. Pure.
- */
-export function parseAllRows(ingredients: readonly DraftIngredient[], vocabulary: { units: readonly Unit[]; foods: readonly FoodRow[] }): IngredientReview[] {
-  return unparsedIndices(ingredients).map((index) => parseRowFor(ingredients[index]!.originalText ?? "", vocabulary, String(index)));
-}
-
-/**
- * The draft with each reviewed row applied to the row it came from in part
- * `pi`. A row whose food is still undecided has nothing to apply and is left
- * exactly as it was, text-only and all. Pure.
- */
-export function applyParsedRows(
-  draft: RecipeDraft,
-  pi: number,
-  rows: readonly IngredientReview[],
-  createdFoods: ReadonlyMap<string, FoodRow>,
-  createdUnits: ReadonlyMap<string, Unit>,
-): RecipeDraft {
-  let next = draft;
-  for (const row of rows) {
-    const index = Number(row.key);
-    const patch = parsedRowPatch(row, createdFoods, createdUnits);
-    if (!Number.isInteger(index) || patch === null) continue;
-    next = updateIngredient(next, pi, index, patch);
-  }
-  return next;
-}
-
-/** "3 lines read", "1 line read". Pure. */
-export function parsedSummary(count: number): string {
-  return `${count} line${count === 1 ? "" : "s"} read. Nothing is created unless you ask for it below.`;
-}
+import { IngredientReviewRow } from "./IngredientReviewRow";
+import { type IngredientReview, parseAllRows, applyParsedRows } from "../../../domain/recipe/draft/review";
+import { filterUnits } from "../../../domain/recipe/draft/vocabulary";
+import { type DraftIngredient, type RecipeDraft } from "../../../domain/recipe/draft/types";
 
 export type ParseAllSheetContentProps = {
   rows: readonly IngredientReview[];
@@ -224,4 +172,9 @@ export function ParseAllSheet({ open, onOpenChange, draft, pi, units, disabled, 
       </Sheet.Body>
     </Sheet>
   );
+}
+
+/** "3 lines read", "1 line read". Pure. */
+export function parsedSummary(count: number): string {
+  return `${count} line${count === 1 ? "" : "s"} read. Nothing is created unless you ask for it below.`;
 }

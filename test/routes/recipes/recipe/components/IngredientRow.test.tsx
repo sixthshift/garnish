@@ -3,7 +3,8 @@
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { IngredientRow, ingredientLineParts } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
+import { IngredientRow } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
+import { ingredientLineParts } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
 import type { Ingredient } from "../../../../../src/domain/recipe/recipe";
 import { SubRecipesProvider } from "../../../../../src/components/recipe/SubRecipes";
 import type { SubRecipe } from "../../../../../src/domain/recipe/subRecipe";

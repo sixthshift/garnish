@@ -20,19 +20,21 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
 import { servingsLabel } from "../../../../domain/plan/plan";
-import type { Recipe, TimelineEvent, TimelineEventInput } from "../../../../domain/recipe/recipe";
+import { type Recipe, type TimelineEvent, type TimelineEventInput } from "../../../../domain/recipe/recipe";
 import { timelineImageUrl, uploadTimelineImage } from "../../../../lib/images";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";
 import { clearTicksNow } from "../../../../lib/ticks";
 import { createTimelineEvent, deleteTimelineEvent } from "../../../../server/fns/timeline";
-import { draftFromRecipe, type DraftNote, type RecipeDraft } from "../../components/RecipeForm";
-import { randomUuid } from "../../../../lib/ids";
-import { formatDateStamp } from "./RecipeHeader";
+import { formatDateStamp } from "../../../../lib/dates";
 import { Disclosure } from "../../../../components/ui/Disclosure";
 import { Menu } from "../../../../components/ui/Menu";
 import { MadeThisSheet } from "./MadeThisSheet";
 import { saveQuickEdit, useQuickEditContext } from "./QuickEdit";
+
+import { draftFromRecipe } from "../../../../domain/recipe/draft/draft";
+import { type DraftNote, type RecipeDraft } from "../../../../domain/recipe/draft/types";
+import { randomUuid } from "../../../../domain/ids";
 
 export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "recipeServings"> };
 
@@ -117,28 +119,6 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
       />
     </>
   );
-}
-
-/**
- * The stored recipe as a draft with one note appended: `{ title: "Made
- * <date>", text: event.message }`, a fresh id of its own. Every other note,
- * and every id already in the document, comes across untouched —
- * `draftFromRecipe` copies ids across and this adds nothing but the one row.
- * Pure apart from the note's id.
- */
-export function withNoteFromCook(recipe: Recipe, event: TimelineEvent): RecipeDraft {
-  const draft = draftFromRecipe(recipe);
-  const note: DraftNote = { id: randomUuid(), title: `Made ${formatDateStamp(event.occurredOn)}`, text: event.message.trim() };
-  return { ...draft, notes: [...draft.notes, note] };
-}
-
-/**
- * Whether a cook's row menu offers "Save as note": there has to be a comment
- * worth keeping, and a stored document to write it into (the recipe view's
- * `QuickEditProvider`; History renders nowhere else). Pure.
- */
-export function offersSaveAsNote(event: TimelineEvent, hasContext: boolean): boolean {
-  return hasContext && event.message.trim() !== "";
 }
 
 export type TimelineListProps = { events: readonly TimelineEvent[] };
@@ -252,4 +232,26 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
       </div>
     </li>
   );
+}
+
+/**
+ * The stored recipe as a draft with one note appended: `{ title: "Made
+ * <date>", text: event.message }`, a fresh id of its own. Every other note,
+ * and every id already in the document, comes across untouched —
+ * `draftFromRecipe` copies ids across and this adds nothing but the one row.
+ * Pure apart from the note's id.
+ */
+export function withNoteFromCook(recipe: Recipe, event: TimelineEvent): RecipeDraft {
+  const draft = draftFromRecipe(recipe);
+  const note: DraftNote = { id: randomUuid(), title: `Made ${formatDateStamp(event.occurredOn)}`, text: event.message.trim() };
+  return { ...draft, notes: [...draft.notes, note] };
+}
+
+/**
+ * Whether a cook's row menu offers "Save as note": there has to be a comment
+ * worth keeping, and a stored document to write it into (the recipe view's
+ * `QuickEditProvider`; History renders nowhere else). Pure.
+ */
+export function offersSaveAsNote(event: TimelineEvent, hasContext: boolean): boolean {
+  return hasContext && event.message.trim() !== "";
 }

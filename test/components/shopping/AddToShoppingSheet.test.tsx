@@ -2,7 +2,8 @@
 // AddToShoppingSheetContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { AddToShoppingSheetContent, additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/components/shopping/AddToShoppingSheet";
+import { AddToShoppingSheetContent } from "../../../src/components/shopping/AddToShoppingSheet";
+import { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/domain/shopping/shopping";
 import type { Food, Ingredient, Part, Recipe, Unit } from "../../../src/domain/recipe/recipe";
 import type { SubRecipe } from "../../../src/domain/recipe/subRecipe";
 import { SubRecipesProvider } from "../../../src/components/recipe/SubRecipes";

@@ -1,6 +1,8 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { dropIndex, rectContains, ReorderList, type Span, moveItem, TOUCH_DELAY_MS } from "../../../src/components/ui/ReorderList";
+import { ReorderList, TOUCH_DELAY_MS } from "../../../src/components/ui/ReorderList";
+import { dropIndex, rectContains, type Span } from "../../../src/lib/ui/reorder";
+import { moveItem } from "../../../src/domain/lists";
 
 /** The opening tag of the control carrying `label`. */
 function tagWithLabel(html: string, label: string): string {
@@ -71,7 +73,6 @@ describe("ReorderList", () => {
     expect(html.match(/aria-label="Remove step \d"/g)).toHaveLength(3);
   });
 });
-
 
 /** Rows of `height` stacked from `top`, the shape a list of equal rows has. */
 function stack(count: number, height = 40, top = 100): Span[] {

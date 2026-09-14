@@ -59,3 +59,27 @@ describe("domain modules", () => {
     });
   }
 });
+
+// Layers: domain/ is what is true of a recipe on any screen, lib/ is logic that
+// exists because a screen or a widget does, and routes/ and components/ render.
+// Each may import from the ones before it and never from the ones after.
+describe("layers", () => {
+  const files = walk(join(root, "src"));
+  const importsFrom = (dir: string, targets: string[]) =>
+    files
+      .filter((file) => relative(root, file).startsWith(dir))
+      .flatMap((file) =>
+        relativeSpecifiers(readFileSync(file, "utf8"))
+          .map((specifier) => relative(root, resolve(dirname(file), specifier)))
+          .filter((target) => targets.some((t) => target.startsWith(t)))
+          .map((target) => `${relative(root, file)} -> ${target}`),
+      );
+
+  test("domain/ imports nothing from lib/, routes/ or components/", () => {
+    expect(importsFrom("src/domain/", ["src/lib/", "src/routes/", "src/components/"])).toEqual([]);
+  });
+
+  test("lib/ imports nothing from routes/ or components/", () => {
+    expect(importsFrom("src/lib/", ["src/routes/", "src/components/"])).toEqual([]);
+  });
+});

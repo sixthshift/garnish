@@ -8,7 +8,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import type { Aisle } from "../../../domain/recipe/recipe";
+import { type Aisle } from "../../../domain/recipe/recipe";
 import { groupByAisle, shoppingItemLabel, sourceLabel, type ShoppingItem } from "../../../domain/shopping/shopping";
 import { pendingLabel, type OutboxEntry } from "../../../lib/outbox";
 import { updateFood } from "../../../server/fns/foods";
@@ -206,12 +206,6 @@ export type ShoppingListViewProps = {
   offline?: boolean;
 };
 
-/** "3 items" / "1 item", ticked ones excluded: what is still to buy. Pure. */
-export function toBuyLabel(items: readonly ShoppingItem[]): string {
-  const count = items.filter((item) => !item.ticked).length;
-  return `${count} ${count === 1 ? "item" : "items"} to buy`;
-}
-
 /** M31.6: the "Set aisle" Select writes straight through `updateFood`. One line so the route and the tests share it. */
 export function setFoodAisle(foodId: string, aisleId: string): Promise<unknown> {
   return updateFood({ data: { id: foodId, aisleId } });
@@ -221,4 +215,10 @@ export function setFoodAisle(foodId: string, aisleId: string): Promise<unknown> 
 export function sendOutboxEntry(entry: OutboxEntry): Promise<unknown> {
   if (entry.kind === "remove") return removeShoppingItem({ data: { id: entry.itemId } });
   return tickShoppingItem({ data: { id: entry.itemId, ticked: entry.kind === "tick" } });
+}
+
+/** "3 items" / "1 item", ticked ones excluded: what is still to buy. Pure. */
+export function toBuyLabel(items: readonly ShoppingItem[]): string {
+  const count = items.filter((item) => !item.ticked).length;
+  return `${count} ${count === 1 ? "item" : "items"} to buy`;
 }

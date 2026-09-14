@@ -2,17 +2,8 @@
 // FoodEditSheetContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, expectTypeOf, test } from "vitest";
-import {
-  aliasesText,
-  blankConversion,
-  conversionDraft,
-  FoodEditSheetContent,
-  isBlankConversion,
-  parseAliases,
-  parseConversions,
-  type ConversionDraft,
-  type FoodPatch,
-} from "../../../../src/routes/settings/components/FoodEditSheet";
+import { FoodEditSheetContent, type FoodPatch } from "../../../../src/routes/settings/components/FoodEditSheet";
+import { aliasesText, blankConversion, conversionDraft, isBlankConversion, parseAliases, parseConversions, type ConversionDraft } from "../../../../src/routes/settings/components/FoodEditSheet";
 import type { Food } from "../../../../src/db/models/food/repo";
 import type { Unit } from "../../../../src/db/models/unit/repo";
 import type { Aisle } from "../../../../src/domain/recipe/recipe";

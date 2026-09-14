@@ -20,18 +20,15 @@ import { Card } from "@sixthshift/design-system/card";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { formatDuration } from "../../domain/ingredient/format";
-import type { RecipeSummary, Tag } from "../../domain/recipe/recipe";
+import { type RecipeSummary, type Tag } from "../../domain/recipe/recipe";
 import { recipeImageUrl } from "../../lib/images";
-import type { ViewMode } from "../../lib/prefs";
+import { type ViewMode } from "../../lib/prefs";
 import { FavouriteButton } from "../ui/FavouriteButton";
 import { Rating } from "../ui/Rating";
 
 export type RecipeCardProps = { recipe: RecipeSummary; mode?: ViewMode };
-
-/** How many tags a card shows before folding the rest into "+N". */
-export const MAX_CARD_TAGS = 3;
 
 /**
  * The narrowest a grid card stays readable at: below this the image, the stat
@@ -45,11 +42,6 @@ export const MAX_CARD_TAGS = 3;
  * still gets exactly one column.
  */
 export const CARD_MIN_WIDTH = "22rem";
-
-/** The tags to render and how many more are hidden beyond `max`. Pure. */
-export function capTags(tags: readonly Tag[], max: number = MAX_CARD_TAGS): { shown: Tag[]; more: number } {
-  return { shown: tags.slice(0, max), more: Math.max(0, tags.length - max) };
-}
 
 function ImagePlaceholder({ className }: { className: string }) {
   return (
@@ -181,4 +173,12 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
       )}
     </div>
   );
+}
+
+/** How many tags a card shows before folding the rest into "+N". */
+export const MAX_CARD_TAGS = 3;
+
+/** The tags to render and how many more are hidden beyond `max`. Pure. */
+export function capTags(tags: readonly Tag[], max: number = MAX_CARD_TAGS): { shown: Tag[]; more: number } {
+  return { shown: tags.slice(0, max), more: Math.max(0, tags.length - max) };
 }

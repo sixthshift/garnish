@@ -9,16 +9,11 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import {
-  amountChip,
-  chipText,
-  IngredientReviewFields,
-  type IngredientReviewFieldsProps,
-  IngredientReviewRow,
-  type IngredientReview,
-} from "../../../../src/routes/recipes/components/IngredientReviewRow";
-import { reviewedIngredient } from "../../../../src/routes/recipes/components/IngredientsEditor";
-import { isTextOnly } from "../../../../src/routes/recipes/components/IngredientsEditor";
+import { IngredientReviewFields, type IngredientReviewFieldsProps, IngredientReviewRow } from "../../../../src/routes/recipes/components/IngredientReviewRow";
+import { type IngredientReview } from "../../../../src/domain/recipe/draft/review";
+import { amountChip, chipText } from "../../../../src/routes/recipes/components/IngredientReviewRow";
+import { reviewedIngredient } from "../../../../src/domain/recipe/draft/review";
+import { isTextOnly } from "../../../../src/domain/recipe/draft/ingredients";
 import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient/bulkIngredients";
 import { BulkReviewList } from "../../../../src/components/ui/BulkAddSheet";
 

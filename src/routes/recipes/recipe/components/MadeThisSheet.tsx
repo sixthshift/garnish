@@ -23,22 +23,11 @@ import { Input } from "@sixthshift/design-system/input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
-import type { TimelineEventInput } from "../../../../domain/recipe/recipe";
+import { type TimelineEventInput } from "../../../../domain/recipe/recipe";
 import { ImageUpload } from "../../../../components/ui/ImageUpload";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
-
-/** Today as the calendar date the form and `occurred_on` use (YYYY-MM-DD), in local time. Pure. */
-export function todayIso(now: Date = new Date()): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-/** True for a date the form will accept: a real calendar date in YYYY-MM-DD. Pure. */
-export function isValidDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const at = new Date(`${value}T00:00:00.000Z`);
-  return !Number.isNaN(at.getTime()) && at.toISOString().slice(0, 10) === value;
-}
+import { todayIso } from "../../../../domain/plan/plan";
+import { isValidDate } from "../../../../lib/dates";
 
 export type MadeThisSheetContentProps = {
   /** Called with the event and the chosen photo. */

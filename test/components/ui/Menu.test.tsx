@@ -3,7 +3,8 @@
 // controlled `open` is how the panel gets into the markup).
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { Menu, nextMenuIndex } from "../../../src/components/ui/Menu";
+import { Menu } from "../../../src/components/ui/Menu";
+import { nextMenuIndex } from "../../../src/lib/ui/menu";
 
 describe("nextMenuIndex", () => {
   test.each([

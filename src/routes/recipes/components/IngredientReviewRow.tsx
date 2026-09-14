@@ -19,35 +19,15 @@ import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { useEffect, useState } from "react";
-import type { Food as FoodRow } from "../../../db/models/food/repo";
-import { type Choice, type ReviewRow, rowStatus } from "../../../domain/ingredient/bulkIngredients";
-import type { Unit } from "../../../domain/recipe/recipe";
-import { Combobox, type ComboboxOption } from "../../../components/ui/Combobox";
-
-/** The review row type this component edits: units and foods as the editor knows them. */
-export type IngredientReview = ReviewRow<Unit, FoodRow>;
+import { type Food as FoodRow } from "../../../db/models/food/repo";
+import { rowStatus, type Choice } from "../../../domain/ingredient/bulkIngredients";
+import { type Unit } from "../../../domain/recipe/recipe";
+import { Combobox } from "../../../components/ui/Combobox";
+import { type ComboboxOption } from "../../../lib/ui/combobox";
+import { type IngredientReview } from "../../../domain/recipe/draft/review";
 
 /** How long the food picker waits after the last keystroke before querying. */
 export const REVIEW_FOOD_DEBOUNCE_MS = 200;
-
-/** The amount a row shows as a chip: "" for no amount, a leading `=` for a fixed one. Pure. */
-export function amountChip(row: IngredientReview): string {
-  if (row.quantity === null) return "";
-  return `${row.fixed ? "=" : ""}${row.quantity}`;
-}
-
-/** A chip's text: the chosen row's name, the name a create would use, or the fallback for a declined slot. Pure. */
-export function chipText(choice: Choice<{ name: string }>, declined: string): string {
-  if (choice.kind === "existing") return choice.row.name;
-  if (choice.kind === "create") return `create “${choice.name}”`;
-  return declined;
-}
-
-/** Chip colour by decision: a match is quiet, a pending create is brand, a declined slot is muted. Pure. */
-export function chipIntent(kind: Choice<unknown>["kind"]): "neutral" | "brand" | "muted" {
-  if (kind === "existing") return "neutral";
-  return kind === "create" ? "brand" : "muted";
-}
 
 export type IngredientReviewFieldsProps = {
   row: IngredientReview;
@@ -241,4 +221,23 @@ export function IngredientReviewRow({ row, label, unitMatches, searchFoods, disa
       onChange={onChange}
     />
   );
+}
+
+/** The amount a row shows as a chip: "" for no amount, a leading `=` for a fixed one. Pure. */
+export function amountChip(row: IngredientReview): string {
+  if (row.quantity === null) return "";
+  return `${row.fixed ? "=" : ""}${row.quantity}`;
+}
+
+/** A chip's text: the chosen row's name, the name a create would use, or the fallback for a declined slot. Pure. */
+export function chipText(choice: Choice<{ name: string }>, declined: string): string {
+  if (choice.kind === "existing") return choice.row.name;
+  if (choice.kind === "create") return `create “${choice.name}”`;
+  return declined;
+}
+
+/** Chip colour by decision: a match is quiet, a pending create is brand, a declined slot is muted. Pure. */
+export function chipIntent(kind: Choice<unknown>["kind"]): "neutral" | "brand" | "muted" {
+  if (kind === "existing") return "neutral";
+  return kind === "create" ? "brand" : "muted";
 }

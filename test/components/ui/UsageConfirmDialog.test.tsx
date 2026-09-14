@@ -1,7 +1,8 @@
 // The delete confirm that names the recipes a reference row is used by.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { usageListLimit, UsageConfirmDialogContent, usageNames, usageSummary } from "../../../src/components/ui/UsageConfirmDialog";
+import { UsageConfirmDialogContent } from "../../../src/components/ui/UsageConfirmDialog";
+import { usageListLimit, usageNames, usageSummary } from "../../../src/components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../src/domain/recipe/recipe";
 
 function summary(name: string): RecipeSummary {

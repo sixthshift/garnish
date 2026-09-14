@@ -24,21 +24,12 @@
 // not by a click on the trigger itself.
 import { Popover } from "@sixthshift/design-system/popover";
 import { useState } from "react";
-import { addDays, dayLabel, todayIso, type PlanEntryInput } from "../../../../domain/plan/plan";
-import type { Recipe } from "../../../../domain/recipe/recipe";
+import { dayLabel, todayIso, type PlanEntryInput } from "../../../../domain/plan/plan";
+import { type Recipe } from "../../../../domain/recipe/recipe";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
+import { nextSevenDays } from "../../../../lib/dates";
 
 export type PlanPopoverRecipe = Pick<Recipe, "id" | "name" | "recipeServings">;
-
-/**
- * What choosing `date` at `servings` sends to `addPlanEntry`: the recipe's id
- * and its name copied into `text`, the way the plan page's own add row does
- * (M33.2) so the entry still reads as what was planned after the recipe is
- * renamed or deleted. Pure.
- */
-export function planEntryFor(recipe: Pick<Recipe, "id" | "name">, date: string, servings: number): PlanEntryInput {
-  return { date, recipeId: recipe.id, text: recipe.name, servings };
-}
 
 export type PlanPopoverContentProps = {
   recipe: PlanPopoverRecipe;
@@ -48,11 +39,6 @@ export type PlanPopoverContentProps = {
   /** Injected so a render test does not move with the clock. */
   today?: string;
 };
-
-/** The next seven days, today first. Pure over `today`. */
-function nextSevenDays(today: string): string[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(today, i));
-}
 
 export function PlanPopoverContent({ recipe, onChoose, busy = false, today = todayIso() }: PlanPopoverContentProps) {
   // Defaults to the page's scale: `recipe` is the already-scaled document the
@@ -105,4 +91,14 @@ export function PlanPopover({ recipe, open, onOpenChange, onChoose, busy = false
       </Popover.Body>
     </Popover>
   );
+}
+
+/**
+ * What choosing `date` at `servings` sends to `addPlanEntry`: the recipe's id
+ * and its name copied into `text`, the way the plan page's own add row does
+ * (M33.2) so the entry still reads as what was planned after the recipe is
+ * renamed or deleted. Pure.
+ */
+export function planEntryFor(recipe: Pick<Recipe, "id" | "name">, date: string, servings: number): PlanEntryInput {
+  return { date, recipeId: recipe.id, text: recipe.name, servings };
 }

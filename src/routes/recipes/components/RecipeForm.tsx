@@ -71,17 +71,15 @@ import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useId, useState } from "react";
-import { slugify } from "../../../domain/names";
-import { type ParsedRecipeInput, type Recipe, type RecipeInput, recipeInputSchema, type Tag, type Unit } from "../../../domain/recipe/recipe";
+import { type Recipe, type Tag, type Unit } from "../../../domain/recipe/recipe";
 import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft, type StorageLike } from "../../../lib/drafts";
-import { randomUuid } from "../../../lib/ids";
 import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../../../lib/images";
 import { useMutate } from "../../../lib/mutate";
-import { messageFrom, type NoticeInput, notify, notifyError } from "../../../lib/notify";
+import { messageFrom, notify, notifyError, type NoticeInput } from "../../../lib/notify";
 import { useOnline } from "../../../lib/useOnline";
 import { fetchImage } from "../../../server/import/imageFetch";
 import { createRecipe, updateRecipe } from "../../../server/fns/recipes";
-import { newPart, PartsEditor } from "./PartsEditor";
+import { PartsEditor } from "./PartsEditor";
 import { NotesEditor } from "./NotesEditor";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { Disclosure } from "../../../components/ui/Disclosure";
@@ -90,235 +88,11 @@ import { ImageUpload } from "../../../components/ui/ImageUpload";
 import { Menu } from "../../../components/ui/Menu";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { SaveBar } from "../../../components/ui/SaveBar";
-
-type PartInput = RecipeInput["parts"][number];
-export type DraftIngredient = NonNullable<PartInput["ingredients"]>[number];
-export type DraftStep = NonNullable<PartInput["steps"]>[number];
-export type DraftNote = NonNullable<RecipeInput["notes"]>[number];
-
-/** A part input with both lists present, so the editor never has to default them. */
-export type DraftPart = Omit<PartInput, "ingredients" | "steps"> & { ingredients: DraftIngredient[]; steps: DraftStep[] };
-
-/** A `RecipeInput` with every field present, so each input has a value to control. */
-export type RecipeDraft = {
-  id?: string;
-  name: string;
-  description: string;
-  image: string | null;
-  rating: number | null;
-  lastMade: string | null;
-  recipeServings: number;
-  recipeYieldQuantity: number;
-  yieldUnit: Unit | null;
-  recipeYield: string;
-  prepTime: number | null;
-  performTime: number | null;
-  sourceUrl: string | null;
-  favourite: boolean;
-  notes: DraftNote[];
-  tags: Tag[];
-  parts: DraftPart[];
-};
-
-/** Field path ("name", "parts.0.name") to its first error message. */
-export type FieldErrors = Record<string, string>;
-
-export type ValidationResult = { ok: true; data: ParsedRecipeInput } | { ok: false; errors: FieldErrors };
-
-/** A blank recipe with one unnamed, empty component: the least document that validates. Pure apart from the component's random id. */
-export function emptyDraft(): RecipeDraft {
-  return {
-    name: "",
-    description: "",
-    image: null,
-    rating: null,
-    lastMade: null,
-    recipeServings: 0,
-    recipeYieldQuantity: 0,
-    yieldUnit: null,
-    recipeYield: "",
-    prepTime: null,
-    performTime: null,
-    sourceUrl: null,
-    favourite: false,
-    notes: [],
-    tags: [],
-    parts: [newPart()],
-  };
-}
-
-/**
- * The stored recipe as an editable draft: slug, timestamps and the restyle
- * stamp dropped (the server owns them), every id kept. `restyledAt` goes with
- * them because it is not in the write shape at all — only a restyle or a
- * restore moves it, so an edit must not carry it back (M37.5). Pure.
- */
-export function draftFromRecipe(recipe: Recipe): RecipeDraft {
-  const { slug: _slug, createdAt: _createdAt, updatedAt: _updatedAt, restyledAt: _restyledAt, ...rest } = recipe;
-  return {
-    ...rest,
-    notes: rest.notes.map((note) => ({ ...note })),
-    tags: rest.tags.map((tag) => ({ ...tag })),
-    parts: rest.parts.map((part) => ({
-      ...part,
-      ingredients: part.ingredients.map((ingredient) => ({ ...ingredient })),
-      steps: part.steps.map((step) => ({ ...step })),
-    })),
-  };
-}
-
-/** Structural equality over the JSON-shaped values a draft is made of. Key order is not a difference; array order is. */
-function same(a: unknown, b: unknown): boolean {
-  if (Object.is(a, b)) return true;
-  if (Array.isArray(a) || Array.isArray(b)) {
-    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
-    return a.every((item, index) => same(item, b[index]));
-  }
-  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-  const left = a as Record<string, unknown>;
-  const right = b as Record<string, unknown>;
-  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
-  for (const key of keys) if (!same(left[key], right[key])) return false;
-  return true;
-}
-
-/**
- * Has the draft moved away from the one the form opened on? Compared by value,
- * so retyping a field back to what it was is not dirty, and reordering a list
- * is. A picked image file lives outside the draft; the form ors it in. Pure.
- */
-export function isDirty(initial: RecipeDraft, draft: RecipeDraft): boolean {
-  return !same(initial, draft);
-}
-
-/** A friendlier line for the errors a person can actually cause here. */
-function messageFor(path: string, code: string, fallback: string): string {
-  if (path === "name" && code === "too_small") return "Name is required";
-  if ((path === "prepTime" || path === "performTime") && code === "invalid_type") return "Enter whole minutes";
-  if ((path === "prepTime" || path === "performTime") && code === "too_small") return "Minutes cannot be negative";
-  if ((path === "prepTime" || path === "performTime") && code === "invalid_format") return "Enter whole minutes";
-  if (path === "recipeYieldQuantity" && code === "too_small") return "Yield cannot be negative";
-  if (path === "recipeServings" && code === "too_small") return "Servings cannot be negative";
-  return fallback;
-}
-
-/** Parse the draft with `recipeInputSchema`; either the document to send or one message per failing field. Pure. */
-export function validateDraft(draft: RecipeDraft): ValidationResult {
-  const result = recipeInputSchema.safeParse(draft);
-  if (result.success) return { ok: true, data: result.data };
-  const errors: FieldErrors = {};
-  for (const issue of result.error.issues) {
-    const path = issue.path.map(String).join(".");
-    if (!(path in errors)) errors[path] = messageFor(path, issue.code, issue.message);
-  }
-  return { ok: false, errors };
-}
-
-/** The draft as the document text the JSON view shows: the write shape, indented, key order as written. Pure. */
-export function draftToJson(draft: RecipeDraft): string {
-  return `${JSON.stringify(draft, null, 2)}\n`;
-}
-
-/** A parsed document as a draft: every list present, every child given an id so the editor can key on it. Pure apart from the ids it fills in. */
-export function draftFromInput(input: ParsedRecipeInput): RecipeDraft {
-  return {
-    ...input,
-    notes: input.notes.map((note) => ({ ...note, id: note.id ?? randomUuid() })),
-    tags: input.tags.map((tag) => ({ ...tag })),
-    parts: input.parts.map((part) => ({
-      ...part,
-      id: part.id ?? randomUuid(),
-      ingredients: part.ingredients.map((ingredient) => ({ ...ingredient, id: ingredient.id ?? randomUuid() })),
-      steps: part.steps.map((step) => ({ ...step, id: step.id ?? randomUuid() })),
-    })),
-  };
-}
-
-export type JsonResult = { ok: true; draft: RecipeDraft } | { ok: false; error: string };
-
-/** Text from the JSON view back to a draft: a syntax error or the failing field paths come back as one message. Pure apart from any ids it fills in. */
-export function draftFromJson(text: string): JsonResult {
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch (error) {
-    return { ok: false, error: `That is not valid JSON: ${error instanceof Error ? error.message : String(error)}` };
-  }
-  const result = recipeInputSchema.safeParse(value);
-  if (!result.success) {
-    const lines = result.error.issues.slice(0, 5).map((issue) => `${issue.path.map(String).join(".") || "(root)"}: ${issue.message}`);
-    const extra = result.error.issues.length - lines.length;
-    return { ok: false, error: extra > 0 ? `${lines.join("; ")} (and ${extra} more)` : lines.join("; ") };
-  }
-  return { ok: true, draft: draftFromInput(result.data) };
-}
-
-/**
- * Tag references for the names in the tag input: an existing tag by name
- * (case-insensitive, from `known`), else a new reference the server will
- * find-or-create by name. Blank and duplicate names are dropped. Pure apart
- * from the random id on a new tag.
- */
-export function tagsFromNames(names: readonly string[], known: readonly Tag[]): Tag[] {
-  const out: Tag[] = [];
-  const seen = new Set<string>();
-  for (const raw of names) {
-    const name = raw.trim();
-    const key = name.toLowerCase();
-    if (name === "" || seen.has(key)) continue;
-    seen.add(key);
-    out.push(known.find((tag) => tag.name.toLowerCase() === key) ?? { id: randomUuid(), name, slug: slugify(name) || name });
-  }
-  return out;
-}
-
-/** What to say once the document is stored: a failed image downgrades the success to a warning that names it. Pure. */
-export function saveNotice(opts: { existing: boolean; imageError: string | null }): NoticeInput {
-  const title = opts.existing ? "Changes saved" : "Recipe created";
-  if (opts.imageError !== null) return { intent: "warning", title, message: `The image did not upload: ${opts.imageError}` };
-  return { intent: "success", title };
-}
-
-/** A number field's text as a non-negative amount; blank or unparseable is 0. Pure. */
-export function parseAmount(text: string): number {
-  const value = Number(text);
-  return text.trim() === "" || !Number.isFinite(value) ? 0 : value;
-}
-
-/** A minutes field's text: blank is null (not recorded); otherwise the number as typed, so zod can reject fractions. Pure. */
-export function parseMinutes(text: string): number | null {
-  if (text.trim() === "") return null;
-  const value = Number(text);
-  return Number.isFinite(value) ? value : null;
-}
-
-/**
- * Does the draft have anything in the Details section — yield, times, tags or
- * a source? A new recipe has none of it, which is why the section opens
- * folded; an existing one usually has some, and a field you cannot see is a
- * field you will forget to change. Pure.
- */
-export function hasDetails(draft: RecipeDraft): boolean {
-  return (
-    draft.recipeYieldQuantity > 0 ||
-    draft.yieldUnit !== null ||
-    draft.recipeYield.trim() !== "" ||
-    draft.prepTime !== null ||
-    draft.performTime !== null ||
-    draft.tags.length > 0 ||
-    (draft.sourceUrl ?? "").trim() !== ""
-  );
-}
-
-/** The quiet line beside "Details": what is in there, or what is not. Pure. */
-export function detailsHint(draft: RecipeDraft): string {
-  const parts: string[] = [];
-  if (draft.recipeYieldQuantity > 0 || draft.recipeYield.trim() !== "") parts.push("yield");
-  if (draft.prepTime !== null || draft.performTime !== null) parts.push("times");
-  if (draft.tags.length > 0) parts.push(`${draft.tags.length} tag${draft.tags.length === 1 ? "" : "s"}`);
-  if ((draft.sourceUrl ?? "").trim() !== "") parts.push("source");
-  return parts.length === 0 ? "Yield, times, tags, source" : parts.join(", ");
-}
+import { type RecipeDraft } from "../../../domain/recipe/draft/types";
+import { type FieldErrors, validateDraft } from "../../../domain/recipe/draft/validate";
+import { isDirty, draftFromInput, hasDetails } from "../../../domain/recipe/draft/draft";
+import { draftToJson, draftFromJson } from "../../../domain/recipe/draft/json";
+import { tagsFromNames } from "../../../domain/recipe/draft/vocabulary";
 
 function feedback(errors: FieldErrors, path: string): FormFieldFeedback | undefined {
   const message = errors[path];
@@ -726,4 +500,34 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
       )}
     </form>
   );
+}
+
+/** What to say once the document is stored: a failed image downgrades the success to a warning that names it. Pure. */
+export function saveNotice(opts: { existing: boolean; imageError: string | null }): NoticeInput {
+  const title = opts.existing ? "Changes saved" : "Recipe created";
+  if (opts.imageError !== null) return { intent: "warning", title, message: `The image did not upload: ${opts.imageError}` };
+  return { intent: "success", title };
+}
+
+/** A number field's text as a non-negative amount; blank or unparseable is 0. Pure. */
+export function parseAmount(text: string): number {
+  const value = Number(text);
+  return text.trim() === "" || !Number.isFinite(value) ? 0 : value;
+}
+
+/** A minutes field's text: blank is null (not recorded); otherwise the number as typed, so zod can reject fractions. Pure. */
+export function parseMinutes(text: string): number | null {
+  if (text.trim() === "") return null;
+  const value = Number(text);
+  return Number.isFinite(value) ? value : null;
+}
+
+/** The quiet line beside "Details": what is in there, or what is not. Pure. */
+export function detailsHint(draft: RecipeDraft): string {
+  const parts: string[] = [];
+  if (draft.recipeYieldQuantity > 0 || draft.recipeYield.trim() !== "") parts.push("yield");
+  if (draft.prepTime !== null || draft.performTime !== null) parts.push("times");
+  if (draft.tags.length > 0) parts.push(`${draft.tags.length} tag${draft.tags.length === 1 ? "" : "s"}`);
+  if ((draft.sourceUrl ?? "").trim() !== "") parts.push("source");
+  return parts.length === 0 ? "Yield, times, tags, source" : parts.join(", ");
 }

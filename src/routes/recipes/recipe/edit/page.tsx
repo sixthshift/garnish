@@ -9,7 +9,8 @@
 // always edits the recipe's own stored servings — it only rides along so
 // Cancel can hand the view page back the scale it was showing.
 import { Heading } from "@sixthshift/design-system/heading";
-import { draftFromRecipe, RecipeForm } from "../../components/RecipeForm";
+import { RecipeForm } from "../../components/RecipeForm";
+import { draftFromRecipe } from "../../../../domain/recipe/draft/draft";
 import { Route } from "./route";
 
 export function EditRecipePage() {

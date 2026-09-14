@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { Rating, filledStars, nextRating, ratingLabel } from "../../../src/components/ui/Rating";
+import { Rating } from "../../../src/components/ui/Rating";
+import { filledStars, nextRating, ratingLabel } from "../../../src/lib/ui/rating";
 
 describe("filledStars", () => {
   test.each([

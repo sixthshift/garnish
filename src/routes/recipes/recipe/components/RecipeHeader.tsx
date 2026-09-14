@@ -12,12 +12,14 @@ import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { formatDuration, formatYield, totalMinutes } from "../../../../domain/ingredient/format";
-import type { Recipe } from "../../../../domain/recipe/recipe";
+import { type ReactNode } from "react";
+import { formatYield, formatDuration, totalMinutes } from "../../../../domain/ingredient/format";
+import { type Recipe } from "../../../../domain/recipe/recipe";
 import { recipeImageUrl } from "../../../../lib/images";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
 import { Rating } from "../../../../components/ui/Rating";
+import { formatDateStamp } from "../../../../lib/dates";
+import { sourceLabel, isLinkable } from "../../../../lib/urls";
 
 export type RecipeHeaderProps = {
   recipe: Recipe;
@@ -37,58 +39,6 @@ export type RecipeHeaderProps = {
    */
   madeCount?: number;
 };
-
-/**
- * A timestamp as a date the way en-AU writes one: "11 Sep 2026". Empty for
- * null, blank or an unparseable value, so a missing date renders nothing
- * rather than "Invalid Date". Pure.
- */
-export function formatDateStamp(value: string | null): string {
-  if (value === null || value.trim() === "") return "";
-  const at = new Date(value);
-  if (Number.isNaN(at.getTime())) return "";
-  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(at);
-}
-
-/**
- * The text shown for a source URL: its host without a leading "www.", so a
- * long recipe URL stays one readable word. A value that is not a URL is shown
- * verbatim (it may be a book or a person). Empty for null or blank. Pure.
- */
-export function sourceLabel(url: string | null): string {
-  if (url === null || url.trim() === "") return "";
-  const trimmed = url.trim();
-  try {
-    const host = new URL(trimmed).hostname;
-    return host.startsWith("www.") ? host.slice(4) : host;
-  } catch {
-    return trimmed;
-  }
-}
-
-/** True when a source URL is something a browser can follow. Pure. */
-export function isLinkable(url: string | null): boolean {
-  if (url === null || url.trim() === "") return false;
-  try {
-    const { protocol } = new URL(url.trim());
-    return protocol === "http:" || protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-/** Prep / cook / total, dropping the ones with nothing recorded. Pure. */
-export function timeStats(recipe: Pick<Recipe, "prepTime" | "performTime">): Array<{ key: StatKey; label: string; value: string }> {
-  const total = totalMinutes(recipe.prepTime, recipe.performTime);
-  const rows: Array<{ key: StatKey; label: string; value: string }> = [
-    { key: "prep", label: "Prep", value: formatDuration(recipe.prepTime) },
-    { key: "cook", label: "Cook", value: formatDuration(recipe.performTime) },
-    { key: "total", label: "Total", value: formatDuration(total) },
-  ];
-  return rows.filter((row) => row.value !== "");
-}
-
-export type StatKey = "prep" | "cook" | "total";
 
 const ICON_PATHS: Record<StatKey, ReactNode> = {
   // Knife: preparation.
@@ -272,3 +222,16 @@ export function RecipeMetaFooter({ recipe }: { recipe: Recipe }) {
     </footer>
   );
 }
+
+/** Prep / cook / total, dropping the ones with nothing recorded. Pure. */
+export function timeStats(recipe: Pick<Recipe, "prepTime" | "performTime">): Array<{ key: StatKey; label: string; value: string }> {
+  const total = totalMinutes(recipe.prepTime, recipe.performTime);
+  const rows: Array<{ key: StatKey; label: string; value: string }> = [
+    { key: "prep", label: "Prep", value: formatDuration(recipe.prepTime) },
+    { key: "cook", label: "Cook", value: formatDuration(recipe.performTime) },
+    { key: "total", label: "Total", value: formatDuration(total) },
+  ];
+  return rows.filter((row) => row.value !== "");
+}
+
+export type StatKey = "prep" | "cook" | "total";

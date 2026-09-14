@@ -69,7 +69,6 @@ function scaleIngredient(ingredient: Ingredient, factor: number): Ingredient {
   return { ...ingredient, quantity: ingredient.quantity * factor };
 }
 
-
 /**
  * The servings the scale control moves to: whole steps of one, never below 1.
  * A fractional current value (2.5) first snaps to the whole number on the side

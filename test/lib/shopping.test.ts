@@ -1,7 +1,7 @@
 // One "Add to shopping list" tap (M31.3), driven through a fake writer: what
 // the sheet's Add actually sends, and what the toast counts.
 import { describe, expect, test } from "vitest";
-import { additionsFor } from "../../src/components/shopping/AddToShoppingSheet";
+import { additionsFor } from "../../src/domain/shopping/shopping";
 import type { Food, Part, Recipe, Unit } from "../../src/domain/recipe/recipe";
 import { scaledForServings } from "../../src/domain/recipe/scale";
 import type { ShoppingItem, ShoppingItemInput, ShoppingListMerge } from "../../src/domain/shopping/shopping";

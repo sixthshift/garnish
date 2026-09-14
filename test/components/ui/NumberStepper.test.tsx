@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { NumberStepper, clamp, parseDecimal, stepPrecision, stepValue } from "../../../src/components/ui/NumberStepper";
+import { NumberStepper } from "../../../src/components/ui/NumberStepper";
+import { clamp, parseDecimal, stepPrecision, stepValue } from "../../../src/lib/numbers";
 
 /** The opening tag of the control carrying `label`. */
 function tagWithLabel(html: string, label: string): string {

@@ -16,14 +16,9 @@ import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
 import { rowCommit } from "../../../../../src/domain/ingredient/bulkIngredients";
 import { type ImportedRecipe, Importer, type MealieRecipe, type TandoorRecipe, review } from "../../../../../src/domain/import";
 import type { Unit } from "../../../../../src/domain/recipe/recipe";
-import {
-  draftFromScraped,
-  duplicateMessage,
-  FileSource,
-  ImportReview,
-  RecipePicker,
-  SourceChooser,
-} from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { FileSource, ImportReview, RecipePicker, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { draftFromScraped } from "../../../../../src/domain/recipe/draft/scraped";
+import { duplicateMessage } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 
 const FIXTURE = join(import.meta.dirname, "../../../../fixtures/mealie/lemon-tart.json");
 // Read through the importer, as the upload route does, and cloned per test. Neither port is reached by a file.

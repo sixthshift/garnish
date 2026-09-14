@@ -3,20 +3,12 @@
 // and a move followed by an update reloads in the new order.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import {
-  addPart,
-  partLabel,
-  PartsEditor,
-  contentSummary,
-  hasContent,
-  ingredientLine,
-  isBare,
-  movePart,
-  newPart,
-  removePart,
-  renamePart,
-} from "../../../../src/routes/recipes/components/PartsEditor";
-import { type DraftPart, emptyDraft, type RecipeDraft, validateDraft } from "../../../../src/routes/recipes/components/RecipeForm";
+import { PartsEditor } from "../../../../src/routes/recipes/components/PartsEditor";
+import { addPart, hasContent, ingredientLine, isBare, movePart, newPart, removePart, renamePart } from "../../../../src/domain/recipe/draft/parts";
+import { partLabel, contentSummary } from "../../../../src/routes/recipes/components/PartsEditor";
+import { type DraftPart, type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
+import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
+import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
 import { createRecipe, getRecipe, updateRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 

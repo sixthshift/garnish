@@ -6,9 +6,12 @@ import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, crea
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { RecipeHeader, RecipeMetaFooter, formatDateStamp, isLinkable, sourceLabel, timeStats } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
+import { RecipeHeader, RecipeMetaFooter } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
+import { formatDateStamp } from "../../../../../src/lib/dates";
+import { isLinkable, sourceLabel } from "../../../../../src/lib/urls";
+import { timeStats } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
 import type { Recipe } from "../../../../../src/domain/recipe/recipe";
-import { nextRating } from "../../../../../src/components/ui/Rating";
+import { nextRating } from "../../../../../src/lib/ui/rating";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

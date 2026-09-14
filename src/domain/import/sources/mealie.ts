@@ -77,7 +77,6 @@ export type MealieRecipe = Omit<ScrapedRecipe, "parts"> & {
 /** The uploaded file, as the parser needs it. */
 export type ImportFile = { name: string; bytes: Uint8Array };
 
-
 // --- Reading values --------------------------------------------------------
 
 type Node = Record<string, unknown>;

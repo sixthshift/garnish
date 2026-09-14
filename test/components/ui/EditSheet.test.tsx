@@ -1,7 +1,8 @@
 // The field-spec editor: the pure value helpers, and the form the sheet holds.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { EditSheetContent, type FieldSpec, fieldValues, initialValue, initialValues, validateValues } from "../../../src/components/ui/EditSheet";
+import { EditSheetContent } from "../../../src/components/ui/EditSheet";
+import { type FieldSpec, fieldValues, initialValue, initialValues, validateValues } from "../../../src/lib/ui/editSheet";
 
 const fields: FieldSpec[] = [
   { name: "name", label: "Name", kind: "text", required: true },

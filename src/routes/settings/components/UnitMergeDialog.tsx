@@ -8,7 +8,7 @@
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import type { Unit } from "../../../db/models/unit/repo";
+import { type Unit } from "../../../db/models/unit/repo";
 import { ConfirmDialogContent } from "../../../components/ui/ConfirmDialog";
 
 export type UnitMergeDialogProps = {
@@ -21,11 +21,6 @@ export type UnitMergeDialogProps = {
   /** Called with the chosen target's id. */
   onConfirm: (targetId: string) => void;
 };
-
-/** The target names offered, ie. every unit but the source. Pure. */
-export function mergeTargets(units: readonly Unit[], sourceId: string): Unit[] {
-  return units.filter((unit) => unit.id !== sourceId);
-}
 
 export function UnitMergeDialogContent({ source, targets, busy = false, onCancel, onConfirm }: UnitMergeDialogProps) {
   const [targetId, setTargetId] = useState(targets[0]?.id ?? "");

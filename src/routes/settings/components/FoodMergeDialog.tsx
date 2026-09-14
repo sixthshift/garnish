@@ -8,7 +8,7 @@
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import type { Food } from "../../../db/models/food/repo";
+import { type Food } from "../../../db/models/food/repo";
 import { ConfirmDialogContent } from "../../../components/ui/ConfirmDialog";
 
 export type FoodMergeDialogProps = {
@@ -21,11 +21,6 @@ export type FoodMergeDialogProps = {
   /** Called with the chosen target's id. */
   onConfirm: (targetId: string) => void;
 };
-
-/** The target names offered, ie. every food but the source. Pure. */
-export function mergeTargets(foods: readonly Food[], sourceId: string): Food[] {
-  return foods.filter((food) => food.id !== sourceId);
-}
 
 export function FoodMergeDialogContent({ source, targets, busy = false, onCancel, onConfirm }: FoodMergeDialogProps) {
   const [targetId, setTargetId] = useState(targets[0]?.id ?? "");

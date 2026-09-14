@@ -2,7 +2,8 @@
 // content FoodMergeDialogContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { FoodMergeDialogContent, mergeTargets } from "../../../../src/routes/settings/components/FoodMergeDialog";
+import { FoodMergeDialogContent } from "../../../../src/routes/settings/components/FoodMergeDialog";
+import { mergeTargets } from "../../../../src/domain/lists";
 import type { Food } from "../../../../src/db/models/food/repo";
 
 function food(id: string, name: string): Food {

@@ -29,8 +29,8 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
-import { formatAmount, formatFood, formatIngredient } from "../../../../domain/ingredient/format";
-import type { Ingredient } from "../../../../domain/recipe/recipe";
+import { formatIngredient, formatAmount, formatFood } from "../../../../domain/ingredient/format";
+import { type Ingredient } from "../../../../domain/recipe/recipe";
 import { subRecipeCookLabel, subRecipeHint, subRecipeScale } from "../../../../domain/recipe/subRecipe";
 import { useIngredientTick } from "../../../../lib/ticks";
 import { useQuickEditIngredient } from "./QuickEdit";
@@ -55,24 +55,6 @@ export type IngredientRowProps = {
    */
   cookFrom?: string;
 };
-
-/** The line's visible parts: the amount, the food (bold unless `raw`), and whether `food` is really the untouched original text. Pure. */
-export type IngredientLineParts = { amount: string; food: string; raw: boolean };
-
-/**
- * Splits an ingredient into what `IngredientRow` renders with its own markup:
- * the amount (quantity + unit) and the food, kept separate so the food can be
- * bold and the amount can carry the "scaled" class. Mirrors formatIngredient's
- * fallback: a null food with an originalText renders that text verbatim
- * (`raw: true`), unstyled. Pure.
- */
-export function ingredientLineParts(ingredient: Pick<Ingredient, "quantity" | "unit" | "food" | "originalText">): IngredientLineParts {
-  const { quantity, unit, food, originalText } = ingredient;
-  if (food === null && originalText.trim() !== "") return { amount: "", food: originalText.trim(), raw: true };
-
-  const hasQuantity = quantity !== null && quantity !== 0;
-  return { amount: hasQuantity ? formatAmount(quantity, unit) : "", food: formatFood(quantity, food), raw: false };
-}
 
 export function IngredientRow({ recipeId, ingredient, scaled = false, partId, cookFrom }: IngredientRowProps) {
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
@@ -155,4 +137,22 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
       {quickEdit}
     </li>
   );
+}
+
+/** The line's visible parts: the amount, the food (bold unless `raw`), and whether `food` is really the untouched original text. Pure. */
+export type IngredientLineParts = { amount: string; food: string; raw: boolean };
+
+/**
+ * Splits an ingredient into what `IngredientRow` renders with its own markup:
+ * the amount (quantity + unit) and the food, kept separate so the food can be
+ * bold and the amount can carry the "scaled" class. Mirrors formatIngredient's
+ * fallback: a null food with an originalText renders that text verbatim
+ * (`raw: true`), unstyled. Pure.
+ */
+export function ingredientLineParts(ingredient: Pick<Ingredient, "quantity" | "unit" | "food" | "originalText">): IngredientLineParts {
+  const { quantity, unit, food, originalText } = ingredient;
+  if (food === null && originalText.trim() !== "") return { amount: "", food: originalText.trim(), raw: true };
+
+  const hasQuantity = quantity !== null && quantity !== 0;
+  return { amount: hasQuantity ? formatAmount(quantity, unit) : "", food: formatFood(quantity, food), raw: false };
 }

@@ -47,8 +47,9 @@ src/
   db/models/style/     schema.ts, repo.ts — the house style guide
   db/models/migration/ schema.ts only: the applied-migrations table, written by migrate.ts rather than a repository
   db/migrations/ 001_init.sql, 002_stage2.sql, 003_parts.sql — what actually builds the database — and migrate.ts, the runner that applies them
-  domain/       pure logic, no IO, importable by client; one folder per domain, and at the root only what several share: names.ts (names and slugs), image.ts (image types and sniffing), markdown.ts, ai.ts (reading a model's answer)
+  domain/       pure logic, no IO, importable by client; one folder per domain, and at the root only what several share: names.ts (names and slugs), ids.ts (random UUIDs), lists.ts (reorder, every item but one), image.ts (image types and sniffing), markdown.ts, ai.ts (reading a model's answer)
   domain/recipe/    recipe.ts (the zod document), scale.ts, duplicate.ts, copy.ts, subRecipe.ts, stepIngredients.ts
+  domain/recipe/draft/ the editor's model — a recipe as it is being edited, before it is a document: types.ts (RecipeDraft and its parts), draft.ts (from nothing, a recipe or parsed input), validate.ts, json.ts, parts.ts, ingredients.ts, steps.ts, links.ts (step ↔ ingredient links), notes.ts, vocabulary.ts (quantities, units, foods, tags as the editor reads them), review.ts (parsed rows under review), scraped.ts (a draft from an import)
   domain/ingredient/ parseIngredient.ts, parseQuantity.ts, parseUnit.ts, parseFood.ts, format.ts, bulkIngredients.ts and bulkText.ts (bulk-add text cleanup)
   domain/list/      recipeFilters.ts, search.ts, sort.ts — the recipe list's helpers
   domain/cook/      cook.ts (cook-mode cards), timers.ts
@@ -63,7 +64,8 @@ src/
   components/shopping/      AddToShoppingSheet (the recipe page, cook mode and the plan)
   components/shell/         AppShell, GlobalSearch, Logo, Toaster, RouteStates
   components/ui/            local primitives the design system lacks, and Markdown
-  lib/          client-side helpers: mutate, ids, image URLs, clipboard, service worker registration, hooks, and the client stores (prefs, ticks, notices)
+  lib/          client-side helpers (mutate, ids, image URLs, clipboard, service worker registration, hooks, the client stores: prefs, ticks, notices) and the few truly generic utilities: numbers.ts (clamp, step, read a decimal), dates.ts, urls.ts, errors.ts (network or not, and the words to show). A utility earns a place here only if it knows nothing about recipes or this app's screens; logic that belongs to one component stays in that component
+  lib/ui/       the logic behind the generic primitives in components/ui, one file per primitive: dataTable, combobox, editSheet, reorder, rating, menu
   sw/           service worker source (worker.ts, entry.ts) and the Vite plugin that emits it
   styles/       theme.css: the Garnish theme, re-pointing the design system's semantic tokens
   styles.css    Tailwind entry: the design system's theme, @source, the Garnish theme, print rules

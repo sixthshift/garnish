@@ -137,7 +137,6 @@ describe("checkRestyle", () => {
   });
 });
 
-
 test("a mixed number is one fact, written with a glyph or a fraction", () => {
   expect(factsOf(["Slow cook 2 - 2 1/2 hrs"])).toEqual(["2h", "2 1/2h"]);
   expect(factsOf(["Slow cook for 2 to 2½ hours"])).toEqual(["2h", "2 1/2h"]);

@@ -7,16 +7,10 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import {
-  draftFromScraped,
-  ImportReview,
-  importSummary,
-  SourceChooser,
-  stepCount,
-  UrlSource,
-  yieldLabel,
-} from "../../../../../src/routes/recipes/new/components/RecipeSource";
-import { isTextOnly } from "../../../../../src/routes/recipes/components/IngredientsEditor";
+import { ImportReview, SourceChooser, UrlSource } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { draftFromScraped } from "../../../../../src/domain/recipe/draft/scraped";
+import { importSummary, stepCount, yieldLabel } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { isTextOnly } from "../../../../../src/domain/recipe/draft/ingredients";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../../../src/domain/recipe/recipe";

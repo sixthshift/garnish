@@ -5,39 +5,18 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { addPart, renamePart } from "../../../../src/routes/recipes/components/PartsEditor";
-import {
-  addIngredient,
-  addReviewedIngredients,
-  confirmReviewedIngredients,
-  EMPTY_INGREDIENT_SUMMARY,
-  filterUnits,
-  foodReference,
-  IngredientFields,
-  type IngredientFieldsProps,
-  ingredientReview,
-  ingredientSummary,
-  IngredientsEditor,
-  isTextOnly,
-  matchUnit,
-  moveIngredient,
-  moveIngredientTo,
-  INGREDIENT_DRAG_GROUP,
-  newIngredient,
-  parsedRowPatch,
-  parseQuantity,
-  parseRowFor,
-  quantityText,
-  removeIngredient,
-  reviewedIngredient,
-  textOnlyPatch,
-  unitReference,
-  updateIngredient,
-} from "../../../../src/routes/recipes/components/IngredientsEditor";
-import { addStep, linkIngredient } from "../../../../src/routes/recipes/components/StepsEditor";
-import type { IngredientReview } from "../../../../src/routes/recipes/components/IngredientReviewRow";
+import { addPart, renamePart } from "../../../../src/domain/recipe/draft/parts";
+import { confirmReviewedIngredients, EMPTY_INGREDIENT_SUMMARY, IngredientFields, type IngredientFieldsProps, ingredientReview, IngredientsEditor, INGREDIENT_DRAG_GROUP } from "../../../../src/routes/recipes/components/IngredientsEditor";
+import { addIngredient, ingredientSummary, isTextOnly, moveIngredient, moveIngredientTo, newIngredient, removeIngredient, textOnlyPatch, updateIngredient } from "../../../../src/domain/recipe/draft/ingredients";
+import { addReviewedIngredients, parsedRowPatch, parseRowFor, reviewedIngredient } from "../../../../src/domain/recipe/draft/review";
+import { filterUnits, foodReference, matchUnit, parseQuantity, quantityText, unitReference } from "../../../../src/domain/recipe/draft/vocabulary";
+import { addStep } from "../../../../src/domain/recipe/draft/steps";
+import { linkIngredient } from "../../../../src/domain/recipe/draft/links";
+import { type IngredientReview } from "../../../../src/domain/recipe/draft/review";
 import { BulkInlinePanel } from "../../../../src/components/ui/BulkAddSheet";
-import { type DraftPart, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../../../src/routes/recipes/components/RecipeForm";
+import { type DraftPart, type DraftIngredient, type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
+import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
+import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
 import { pendingCreations, type ReviewRow, rowCommit, reviewRows } from "../../../../src/domain/ingredient/bulkIngredients";
 import { findOrCreateFood, listFoods } from "../../../../src/server/fns/foods";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";
@@ -356,7 +335,6 @@ describe("IngredientsEditor", () => {
     expect(html).toContain("Move to…");
   });
 
-
   test("renders the row inputs for a part: quantity, unit, food, note, fixed, text toggle, move-to", () => {
     const draft = tart();
     const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
@@ -417,7 +395,6 @@ describe("IngredientsEditor", () => {
     expect(renderToString(<IngredientsEditor draft={emptyDraft()} pi={3} units={units} onChange={() => {}} />)).toBe("");
   });
 });
-
 
 // M27.2: entry is text first. An empty list is a textarea, Add runs the same
 // review the sheet runs but in place, and Confirm lands the rows through the
@@ -546,7 +523,6 @@ describe("Check: null quantity and text-only rows save", () => {
     expect(fetched.parts[1]!.ingredients[0]!.food).toMatchObject({ name: "onion" });
   });
 });
-
 
 // --- M13.2 phone rows -------------------------------------------------------
 

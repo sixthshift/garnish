@@ -5,14 +5,10 @@
 // the session's ticks survive.
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import {
-  QuickEditIngredientBody,
-  QuickEditStepBody,
-  saveQuickEdit,
-  withIngredientReplaced,
-  withStepReplaced,
-} from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
-import type { DraftIngredient } from "../../../../../src/routes/recipes/components/RecipeForm";
+import { QuickEditIngredientBody, QuickEditStepBody, saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
+import { withIngredientReplaced } from "../../../../../src/domain/recipe/draft/ingredients";
+import { withStepReplaced } from "../../../../../src/domain/recipe/draft/steps";
+import { type DraftIngredient } from "../../../../../src/domain/recipe/draft/types";
 import type { Ingredient, Recipe, Unit } from "../../../../../src/domain/recipe/recipe";
 import { getTicks, setIngredientTicked, setStepTicked, type StorageLike } from "../../../../../src/lib/ticks";
 

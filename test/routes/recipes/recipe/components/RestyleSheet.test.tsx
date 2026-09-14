@@ -5,16 +5,8 @@
 // hand, the way the other sheet tests do it.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import {
-  applyPayload,
-  type ApplyPart,
-  enabledRuleIds,
-  initialTicked,
-  missingLine,
-  partHeading,
-  RestyleSheetContent,
-  type RestyleAnswer,
-} from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
+import { RestyleSheetContent, type RestyleAnswer } from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
+import { applyPayload, type ApplyPart, enabledRuleIds, initialTicked, missingLine, partHeading } from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
 import type { Part, Recipe, Step } from "../../../../../src/domain/recipe/recipe";
 import { checkRestyle } from "../../../../../src/domain/style/restyleCheck";
 import type { StyleRule } from "../../../../../src/domain/style/style";

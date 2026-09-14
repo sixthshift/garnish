@@ -9,7 +9,9 @@
 // units too: they are the parser's unit vocabulary.
 import { Heading } from "@sixthshift/design-system/heading";
 import { useState } from "react";
-import { emptyDraft, type RecipeDraft, RecipeForm } from "../components/RecipeForm";
+import { RecipeForm } from "../components/RecipeForm";
+import { emptyDraft } from "../../../domain/recipe/draft/draft";
+import { type RecipeDraft } from "../../../domain/recipe/draft/types";
 import { RecipeSource, type SourceKind } from "./components/RecipeSource";
 import { recipeByName, recipeBySource } from "../../../server/fns/recipes";
 import { Route } from "./route";

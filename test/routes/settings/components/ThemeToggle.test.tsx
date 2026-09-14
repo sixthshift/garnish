@@ -2,7 +2,8 @@
 // server snapshot), and the guard that keeps a stray string out of prefs.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { isTheme, ThemeToggle, themeOptions } from "../../../../src/routes/settings/components/ThemeToggle";
+import { ThemeToggle } from "../../../../src/routes/settings/components/ThemeToggle";
+import { isTheme, themeOptions } from "../../../../src/routes/settings/components/ThemeToggle";
 import { getTheme, setTheme, type StorageLike } from "../../../../src/lib/prefs";
 
 describe("isTheme", () => {

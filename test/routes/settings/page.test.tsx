@@ -15,7 +15,8 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Aisle, RecipeSummary, Tag, Unit } from "../../../src/domain/recipe/recipe";
 import type { StyleRule } from "../../../src/domain/style/style";
-import { AislesTab, dedupeSummaries, ExportTab, foodsLabel, groupTagsAZ, StyleTab, TagsTab, unitsLabel } from "../../../src/routes/settings/components/SettingsTabs";
+import { AislesTab, ExportTab, StyleTab, TagsTab } from "../../../src/routes/settings/components/SettingsTabs";
+import { dedupeSummaries, foodsLabel, groupTagsAZ, unitsLabel } from "../../../src/routes/settings/components/SettingsTabs";
 import { type FoodRow } from "../../../src/routes/settings/route";
 
 function summary(id: string, name: string): RecipeSummary {

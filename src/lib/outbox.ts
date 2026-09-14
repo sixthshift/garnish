@@ -18,7 +18,7 @@
 // never touches a DOM, a clock it was not given, or the network.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ShoppingItem } from "../domain/shopping/shopping";
-import { randomUuid } from "./ids";
+import { randomUuid } from "../domain/ids";
 
 /** What a queued write does to one line. A `remove` supersedes anything queued before it. */
 export type OutboxKind = "tick" | "untick" | "remove";

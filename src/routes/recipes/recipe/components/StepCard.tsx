@@ -20,8 +20,7 @@
 // is running has to be reachable after its step is done.
 import { cn } from "@sixthshift/design-system/utils";
 import { useMemo } from "react";
-import type { Ingredient, Step } from "../../../../domain/recipe/recipe";
-import { durationsIn } from "../../../../domain/cook/timers";
+import { type Ingredient, type Step } from "../../../../domain/recipe/recipe";
 import { stepImageUrl } from "../../../../lib/images";
 import { useStepTick } from "../../../../lib/ticks";
 import { chipTimerId, useTimers } from "../../../../lib/timers";
@@ -30,6 +29,8 @@ import { Markdown } from "../../../../components/ui/Markdown";
 import { useQuickEditStep } from "./QuickEdit";
 import { TimerChip } from "./TimerChip";
 
+import { durationsIn } from "../../../../domain/cook/timers";
+
 /** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
 export type StepCardSize = "page" | "cook";
 
@@ -37,30 +38,6 @@ const SCALE: Record<StepCardSize, { bubble: string; text: string; ingredients: s
   page: { bubble: "size-6 text-xs", text: "", ingredients: "text-sm", image: "max-h-48" },
   cook: { bubble: "size-8 text-sm", text: "text-3xl leading-snug", ingredients: "text-lg", image: "max-h-80" },
 };
-
-/**
- * The rows a step links, in link order, resolved against the part it belongs
- * to. An id with no row in the part — a stale link, or a part passed without
- * its rows — is skipped rather than rendered as a hole. Pure.
- */
-export function linkedIngredients(step: Pick<Step, "ingredientIds">, ingredients: Ingredient[]): Ingredient[] {
-  if (step.ingredientIds.length === 0 || ingredients.length === 0) return [];
-  const byId = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient]));
-  return step.ingredientIds.flatMap((id) => {
-    const row = byId.get(id);
-    return row === undefined ? [] : [row];
-  });
-}
-
-/** What the footer shows: every duration in `text`, first occurrence only per length. Pure. */
-export function stepDurations(text: string): ReturnType<typeof durationsIn> {
-  const seen = new Set<number>();
-  return durationsIn(text).filter((duration) => {
-    if (seen.has(duration.seconds)) return false;
-    seen.add(duration.seconds);
-    return true;
-  });
-}
 
 export type StepCardProps = {
   /** The owning recipe's id: ticks.ts and timers.ts key session state by it. */
@@ -170,4 +147,28 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
       </div>
     </li>
   );
+}
+
+/**
+ * The rows a step links, in link order, resolved against the part it belongs
+ * to. An id with no row in the part — a stale link, or a part passed without
+ * its rows — is skipped rather than rendered as a hole. Pure.
+ */
+export function linkedIngredients(step: Pick<Step, "ingredientIds">, ingredients: Ingredient[]): Ingredient[] {
+  if (step.ingredientIds.length === 0 || ingredients.length === 0) return [];
+  const byId = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient]));
+  return step.ingredientIds.flatMap((id) => {
+    const row = byId.get(id);
+    return row === undefined ? [] : [row];
+  });
+}
+
+/** What the footer shows: every duration in `text`, first occurrence only per length. Pure. */
+export function stepDurations(text: string): ReturnType<typeof durationsIn> {
+  const seen = new Set<number>();
+  return durationsIn(text).filter((duration) => {
+    if (seen.has(duration.seconds)) return false;
+    seen.add(duration.seconds);
+    return true;
+  });
 }

@@ -13,11 +13,13 @@ import { ThemeToggle } from "./ThemeToggle";
 import { UnitEditSheet, type UnitPatch } from "./UnitEditSheet";
 import { UnitMergeDialog } from "./UnitMergeDialog";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
-import { DataTable, type DataTableColumn } from "../../../components/ui/DataTable";
-import { EditSheet, type SavedValues } from "../../../components/ui/EditSheet";
+import { DataTable } from "../../../components/ui/DataTable";
+import { type DataTableColumn } from "../../../lib/ui/dataTable";
+import { EditSheet } from "../../../components/ui/EditSheet";
+import { type SavedValues } from "../../../lib/ui/editSheet";
 import { ReorderList } from "../../../components/ui/ReorderList";
 import { UsageConfirmDialog } from "../../../components/ui/UsageConfirmDialog";
-import type { Aisle, RecipeSummary, Tag, Unit } from "../../../domain/recipe/recipe";
+import { type Aisle, type RecipeSummary, type Tag, type Unit } from "../../../domain/recipe/recipe";
 import { styleRuleNote, type StyleRule } from "../../../domain/style/style";
 import { useMutate } from "../../../lib/mutate";
 import { notify, notifyError } from "../../../lib/notify";
@@ -369,28 +371,6 @@ const TAG_DELETE_EFFECT = "they will lose this tag.";
 /** Field spec shared by the Aisles and Tags tabs' rename sheet: name only. */
 const NAME_FIELDS = [{ name: "name", label: "Name", kind: "text", required: true }] as const;
 
-/**
- * Tags grouped by the first letter of their name (upper-cased), each group's
- * tags sorted by name; a name starting with anything but A–Z falls in "#".
- * Groups come back A–Z with "#" last, as Mealie's tag page does. Pure.
- */
-export function groupTagsAZ(tags: readonly Tag[]): TagGroup[] {
-  const groups = new Map<string, Tag[]>();
-  for (const tag of tags) {
-    const first = tag.name.trim().charAt(0).toUpperCase();
-    const letter = first >= "A" && first <= "Z" ? first : "#";
-    const bucket = groups.get(letter);
-    if (bucket) bucket.push(tag);
-    else groups.set(letter, [tag]);
-  }
-  return [...groups.entries()]
-    .sort(([a], [b]) => (a === "#" ? 1 : b === "#" ? -1 : a.localeCompare(b)))
-    .map(([letter, group]) => ({ letter, tags: group.slice().sort((a, b) => a.name.localeCompare(b.name, "en-AU", { sensitivity: "base" })) }));
-}
-
-/** One letter's tags for the Tags tab's A–Z grouped list. */
-export type TagGroup = { letter: string; tags: Tag[] };
-
 export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
   const mutate = useMutate();
   const [order, setOrder] = useState<Aisle[]>(() => aisles.slice());
@@ -606,18 +586,6 @@ function mergeColumn<T>(onMerge: (item: T) => void): DataTableColumn<T> {
   };
 }
 
-/** The name shown for a delete or merge confirm: the row's name, or a count for several. Pure. */
-export function unitsLabel(units: readonly Unit[]): string {
-  return units.length === 1 ? units[0]!.name : `${units.length} units`;
-}
-
-/** Every recipe from any of the lists, once, in first-seen order. Pure. */
-export function dedupeSummaries(lists: readonly RecipeSummary[][]): RecipeSummary[] {
-  const seen = new Map<string, RecipeSummary>();
-  for (const list of lists) for (const recipe of list) if (!seen.has(recipe.id)) seen.set(recipe.id, recipe);
-  return [...seen.values()];
-}
-
 export function FoodsTab({
   foods,
   aisles,
@@ -738,11 +706,6 @@ export function FoodsTab({
 /** Effect line for the Foods delete confirm, Mealie's own wording for the food side of the FK. */
 const FOOD_DELETE_EFFECT = "they will keep the ingredient without a food.";
 
-/** The name shown for a delete or merge confirm: the row's name, or a count for several. Pure. */
-export function foodsLabel(foods: readonly FoodRow[]): string {
-  return foods.length === 1 ? foods[0]!.name : `${foods.length} foods`;
-}
-
 export const unitColumns: DataTableColumn<Unit>[] = [
   { key: "name", header: "Name", value: (unit) => unit.name },
   { key: "pluralName", header: "Plural", value: (unit) => unit.pluralName },
@@ -765,4 +728,43 @@ export function foodColumns(aisles: readonly Aisle[]): DataTableColumn<FoodRow>[
     { key: "skipShopping", header: "Skip shopping", value: (food) => food.skipShopping },
     { key: "aliases", header: "Aliases", value: (food) => food.aliases.length },
   ];
+}
+
+/**
+ * Tags grouped by the first letter of their name (upper-cased), each group's
+ * tags sorted by name; a name starting with anything but A–Z falls in "#".
+ * Groups come back A–Z with "#" last, as Mealie's tag page does. Pure.
+ */
+export function groupTagsAZ(tags: readonly Tag[]): TagGroup[] {
+  const groups = new Map<string, Tag[]>();
+  for (const tag of tags) {
+    const first = tag.name.trim().charAt(0).toUpperCase();
+    const letter = first >= "A" && first <= "Z" ? first : "#";
+    const bucket = groups.get(letter);
+    if (bucket) bucket.push(tag);
+    else groups.set(letter, [tag]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a === "#" ? 1 : b === "#" ? -1 : a.localeCompare(b)))
+    .map(([letter, group]) => ({ letter, tags: group.slice().sort((a, b) => a.name.localeCompare(b.name, "en-AU", { sensitivity: "base" })) }));
+}
+
+/** One letter's tags for the Tags tab's A–Z grouped list. */
+export type TagGroup = { letter: string; tags: Tag[] };
+
+/** The name shown for a delete or merge confirm: the row's name, or a count for several. Pure. */
+export function unitsLabel(units: readonly Unit[]): string {
+  return units.length === 1 ? units[0]!.name : `${units.length} units`;
+}
+
+/** Every recipe from any of the lists, once, in first-seen order. Pure. */
+export function dedupeSummaries(lists: readonly RecipeSummary[][]): RecipeSummary[] {
+  const seen = new Map<string, RecipeSummary>();
+  for (const list of lists) for (const recipe of list) if (!seen.has(recipe.id)) seen.set(recipe.id, recipe);
+  return [...seen.values()];
+}
+
+/** The name shown for a delete or merge confirm: the row's name, or a count for several. Pure. */
+export function foodsLabel(foods: readonly FoodRow[]): string {
+  return foods.length === 1 ? foods[0]!.name : `${foods.length} foods`;
 }

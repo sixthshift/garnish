@@ -46,64 +46,23 @@ import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
-import type { Food as FoodRow } from "../../../../db/models/food/repo";
-import type { Recipe, Unit } from "../../../../domain/recipe/recipe";
+import { type Food as FoodRow } from "../../../../db/models/food/repo";
+import { type Recipe, type Unit } from "../../../../domain/recipe/recipe";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";
 import { listFoods } from "../../../../server/fns/foods";
 import { updateRecipe } from "../../../../server/fns/recipes";
 import { listUnits } from "../../../../server/fns/units";
-import {
-  FOOD_SEARCH_DEBOUNCE_MS,
-  foodReference,
-  IngredientFields,
-  isTextOnly,
-  matchUnit,
-  textOnlyPatch,
-  unitReference,
-} from "../../components/IngredientsEditor";
+import { FOOD_SEARCH_DEBOUNCE_MS, IngredientFields } from "../../components/IngredientsEditor";
+import { foodReference, matchUnit, unitReference } from "../../../../domain/recipe/draft/vocabulary";
+import { isTextOnly, textOnlyPatch, withIngredientReplaced } from "../../../../domain/recipe/draft/ingredients";
 import { Markdown } from "../../../../components/ui/Markdown";
 import { Menu } from "../../../../components/ui/Menu";
-import { draftFromRecipe, type DraftIngredient, type RecipeDraft, validateDraft } from "../../components/RecipeForm";
+import { type DraftIngredient, type RecipeDraft } from "../../../../domain/recipe/draft/types";
+import { validateDraft } from "../../../../domain/recipe/draft/validate";
+import { withStepReplaced } from "../../../../domain/recipe/draft/steps";
 
 // --- Pure helpers -----------------------------------------------------------
-
-/**
- * The stored recipe as a draft with one ingredient replaced: part `partId`'s
- * `ingredientId` becomes `next`, keeping its place in the list. Every other
- * row, and every id in the document, comes across untouched — the ticks in
- * `sessionStorage` are keyed by those ids. An unknown part or ingredient
- * returns the document unchanged. Pure.
- */
-export function withIngredientReplaced(recipe: Recipe, partId: string, ingredientId: string, next: DraftIngredient): RecipeDraft {
-  const draft = draftFromRecipe(recipe);
-  return {
-    ...draft,
-    parts: draft.parts.map((part) =>
-      part.id !== partId
-        ? part
-        : {
-            ...part,
-            ingredients: part.ingredients.map((ingredient) => (ingredient.id === ingredientId ? { ...next, id: ingredient.id } : ingredient)),
-          },
-    ),
-  };
-}
-
-/**
- * The stored recipe as a draft with one step's text replaced: part `partId`'s
- * `stepId` keeps its id and its place and gets `text`. An unknown part or step
- * returns the document unchanged. Pure.
- */
-export function withStepReplaced(recipe: Recipe, partId: string, stepId: string, text: string): RecipeDraft {
-  const draft = draftFromRecipe(recipe);
-  return {
-    ...draft,
-    parts: draft.parts.map((part) =>
-      part.id !== partId ? part : { ...part, steps: part.steps.map((step) => (step.id === stepId ? { ...step, text } : step)) },
-    ),
-  };
-}
 
 /** Run a write and refresh the loaders: `useMutate`'s shape, taken as an argument so a test can stand in for it. */
 export type RunWrite = <T>(write: () => Promise<T>) => Promise<T>;

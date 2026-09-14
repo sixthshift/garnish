@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { Combobox, enterChoice, exactMatch, listItems, stepActive } from "../../../src/components/ui/Combobox";
+import { Combobox } from "../../../src/components/ui/Combobox";
+import { enterChoice, exactMatch, listItems, stepActive } from "../../../src/lib/ui/combobox";
 
 const options = [
   { value: "g", label: "gram", hint: "g" },

@@ -10,7 +10,8 @@ import { useState } from "react";
 import type { Food } from "../../../db/models/food/repo";
 import type { Tag } from "../../../domain/recipe/recipe";
 import { addUnique, type TagMatch, withoutId } from "../../../domain/list/recipeFilters";
-import { Combobox, type ComboboxOption } from "../../../components/ui/Combobox";
+import { Combobox } from "../../../components/ui/Combobox";
+import { type ComboboxOption } from "../../../lib/ui/combobox";
 
 export type FilterBarProps = {
   allTags: readonly Tag[];

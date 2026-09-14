@@ -8,22 +8,8 @@
 // sentence is always the true one.
 import { Modal } from "@sixthshift/design-system/modal";
 import { Muted } from "@sixthshift/design-system/muted";
-import type { RecipeSummary } from "../../domain/recipe/recipe";
+import { type RecipeSummary } from "../../domain/recipe/recipe";
 import { ConfirmDialogContent } from "./ConfirmDialog";
-
-/** How many recipes the list shows before it summarises the rest. */
-export const usageListLimit = 10;
-
-/** The sentence above the list: how many recipes lose this row, and what happens to them. Pure. */
-export function usageSummary(count: number, itemName: string, effect: string): string {
-  if (count === 0) return `No recipes use this ${itemName}.`;
-  return `${count} ${count === 1 ? "recipe uses" : "recipes use"} this ${itemName}; ${effect}`;
-}
-
-/** The names to show, and how many are left over. Pure. */
-export function usageNames(recipes: readonly RecipeSummary[], limit = usageListLimit): { names: string[]; rest: number } {
-  return { names: recipes.slice(0, limit).map((recipe) => recipe.name), rest: Math.max(recipes.length - limit, 0) };
-}
 
 export type UsageConfirmDialogProps = {
   /** What is being deleted, e.g. "butter". */
@@ -68,4 +54,18 @@ export function UsageConfirmDialog(props: UsageConfirmDialogProps) {
       <UsageConfirmDialogContent {...props} />
     </Modal>
   );
+}
+
+/** How many recipes the list shows before it summarises the rest. */
+export const usageListLimit = 10;
+
+/** The sentence above the list: how many recipes lose this row, and what happens to them. Pure. */
+export function usageSummary(count: number, itemName: string, effect: string): string {
+  if (count === 0) return `No recipes use this ${itemName}.`;
+  return `${count} ${count === 1 ? "recipe uses" : "recipes use"} this ${itemName}; ${effect}`;
+}
+
+/** The names to show, and how many are left over. Pure. */
+export function usageNames(recipes: readonly RecipeSummary[], limit = usageListLimit): { names: string[]; rest: number } {
+  return { names: recipes.slice(0, limit).map((recipe) => recipe.name), rest: Math.max(recipes.length - limit, 0) };
 }

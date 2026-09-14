@@ -46,283 +46,23 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useRef, useState } from "react";
 import { paragraphs } from "../../../domain/ingredient/bulkText";
-import { suggestLinks } from "../../../domain/recipe/stepIngredients";
 import { Markdown } from "../../../components/ui/Markdown";
-import { ingredientLine } from "./PartsEditor";
-import { randomUuid } from "../../../lib/ids";
+import { ingredientLine } from "../../../domain/recipe/draft/parts";
 import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
-import type { DraftIngredient, DraftPart, DraftStep, FieldErrors, RecipeDraft } from "./RecipeForm";
+import { type FieldErrors } from "../../../domain/recipe/draft/validate";
+import { type RecipeDraft } from "../../../domain/recipe/draft/types";
 import { notify, notifyError } from "../../../lib/notify";
 import { stepImageUrl, uploadStepImage } from "../../../lib/images";
 import { BulkAddSheet, BulkInlineAdd } from "../../../components/ui/BulkAddSheet";
 import { Combobox } from "../../../components/ui/Combobox";
 import { Menu } from "../../../components/ui/Menu";
-import { moveItem, ReorderList } from "../../../components/ui/ReorderList";
+import { ReorderList } from "../../../components/ui/ReorderList";
+import { stepsOf, withSteps, addStep, updateStep, setStepImage, removeStep, addBulkSteps, insertStepAbove, insertStepBelow, splitStepByParagraph, mergeStepWithNext, splitAllSteps, mergeAllSteps, canSplitAll, stepsPath } from "../../../domain/recipe/draft/steps";
+import { linkedIngredients, linkableIngredients, linkIngredient, unlinkStepIngredient, suggestPartLinks } from "../../../domain/recipe/draft/links";
 
 // --- Pure helpers -----------------------------------------------------------
 
-/** A blank step with a fresh id, so it has a stable row key before it is saved. */
-export function newStep(text = ""): DraftStep {
-  return { id: randomUuid(), text, ingredientIds: [] };
-}
-
-/** Part `pi`'s step array. Undefined for an out-of-range `pi`. Pure. */
-export function stepsOf(draft: RecipeDraft, pi: number): DraftStep[] | undefined {
-  return draft.parts[pi]?.steps;
-}
-
-/** The draft with part `pi`'s steps replaced by `steps`. An out-of-range `pi` returns a copy unchanged. Pure. */
-export function withSteps(draft: RecipeDraft, pi: number, steps: DraftStep[]): RecipeDraft {
-  if (pi < 0 || !draft.parts[pi]) return { ...draft, parts: draft.parts.slice() };
-  return { ...draft, parts: draft.parts.map((part, i) => (i === pi ? { ...part, steps } : part)) };
-}
-
-/** The draft with a blank step appended to part `pi`'s step array. Pure apart from the step's id. */
-export function addStep(draft: RecipeDraft, pi: number, text = ""): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps) return withSteps(draft, pi, []);
-  return withSteps(draft, pi, [...steps, newStep(text)]);
-}
-
-/** The draft with step `si` of part `pi`'s step array given `text`. Out-of-range indices return a copy unchanged. Pure. */
-export function updateStep(draft: RecipeDraft, pi: number, si: number, text: string): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(
-    draft,
-    pi,
-    steps.map((step, i) => (i === si ? { ...step, text } : step)),
-  );
-}
-
-/**
- * The draft with step `si` of part `pi`'s step array pointing at `image` — the
- * file name the upload route answered with, or null to drop the photo from the
- * document (M35.1). The bytes are already on disk either way; this is what the
- * next save writes back to `step.image`. Out-of-range indices return a copy
- * unchanged. Pure.
- */
-export function setStepImage(draft: RecipeDraft, pi: number, si: number, image: string | null): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(
-    draft,
-    pi,
-    steps.map((step, i) => (i === si ? { ...step, image } : step)),
-  );
-}
-
-/** The draft without step `si` of part `pi`'s step array. Out-of-range indices return a copy unchanged. Pure. */
-export function removeStep(draft: RecipeDraft, pi: number, si: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(
-    draft,
-    pi,
-    steps.filter((_, i) => i !== si),
-  );
-}
-
-/** The draft with step `from` of part `pi`'s step array moved to `to`. Same rules as `moveItem`. Pure. */
-export function moveStep(draft: RecipeDraft, pi: number, from: number, to: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps) return withSteps(draft, pi, []);
-  return withSteps(draft, pi, moveItem(steps, from, to));
-}
-
-/** The draft with one step appended per line in `lines`, in order, to part `pi`'s step array. What the bulk-add sheet's "Add" commits. No lines returns a copy unchanged. Pure apart from the new steps' ids. */
-export function addBulkSteps(draft: RecipeDraft, pi: number, lines: readonly string[]): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || lines.length === 0) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(draft, pi, [...steps, ...lines.map((text) => newStep(text))]);
-}
-
-/** The draft with a blank step inserted before step `si` of part `pi`'s step array. An out-of-range `si` returns a copy unchanged. Pure apart from the new step's id. */
-export function insertStepAbove(draft: RecipeDraft, pi: number, si: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(draft, pi, [...steps.slice(0, si), newStep(), ...steps.slice(si)]);
-}
-
-/** The draft with a blank step inserted after step `si` of part `pi`'s step array. An out-of-range `si` returns a copy unchanged. Pure apart from the new step's id. */
-export function insertStepBelow(draft: RecipeDraft, pi: number, si: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(draft, pi, [...steps.slice(0, si + 1), newStep(), ...steps.slice(si + 1)]);
-}
-
-/**
- * The draft with step `si` of part `pi`'s step array replaced by one step per
- * paragraph in its own text (blank-line separated). The first chunk keeps the
- * step's ingredient links and the rest start with none: the split cannot know
- * which half uses what, and the first chunk is the one that reads as the
- * original step. A step whose text is one paragraph, or none, comes back
- * unchanged — the same rule the button uses to
- * disable itself. An out-of-range `si` returns a copy unchanged. Pure apart
- * from the new steps' ids.
- */
-export function splitStepByParagraph(draft: RecipeDraft, pi: number, si: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  const chunks = paragraphs(steps[si]!.text ?? "");
-  if (chunks.length < 2) return withSteps(draft, pi, steps.slice());
-  const links = stepLinks(steps[si]!);
-  return withSteps(draft, pi, [
-    ...steps.slice(0, si),
-    ...chunks.map((text, i) => (i === 0 ? { ...newStep(text), ingredientIds: links } : newStep(text))),
-    ...steps.slice(si + 1),
-  ]);
-}
-
-/**
- * The draft with step `si` of part `pi`'s step array merged with the step after
- * it: their text joined by a blank line, kept at `si`'s id, and their
- * ingredient links unioned in order; the next step is dropped. The last step has nothing to merge with and comes back unchanged,
- * the same rule the button uses to disable itself. An out-of-range `si`
- * returns a copy unchanged. Pure.
- */
-export function mergeStepWithNext(draft: RecipeDraft, pi: number, si: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si + 1 >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  const merged: DraftStep = {
-    ...steps[si]!,
-    text: [steps[si]!.text ?? "", steps[si + 1]!.text ?? ""].filter((text) => text.trim() !== "").join("\n\n"),
-    ingredientIds: unionLinks([steps[si]!, steps[si + 1]!]),
-  };
-  return withSteps(draft, pi, [...steps.slice(0, si), merged, ...steps.slice(si + 2)]);
-}
-
-/**
- * The draft with every step of part `pi` replaced by one step per paragraph in
- * its own text — Tandoor's "Split" over the whole list rather than one row at
- * a time. The first chunk of each split keeps that step's ingredient links, as
- * in `splitStepByParagraph`. A list where no step has two paragraphs comes back unchanged, the
- * same rule the button uses to disable itself. Pure apart from the new steps'
- * ids.
- */
-export function splitAllSteps(draft: RecipeDraft, pi: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || !canSplitAll(steps)) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(
-    draft,
-    pi,
-    steps.flatMap((step) => {
-      const chunks = paragraphs(step.text ?? "");
-      return chunks.length < 2 ? [step] : chunks.map((text, i) => (i === 0 ? { ...step, text } : newStep(text)));
-    }),
-  );
-}
-
-/**
- * The draft with every step of part `pi` merged into one, their text joined by
- * blank lines, their ingredient links unioned in order, and the first step's id kept — Tandoor's "Merge" over the whole
- * list. Fewer than two steps comes back unchanged. Pure.
- */
-export function mergeAllSteps(draft: RecipeDraft, pi: number): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || steps.length < 2) return withSteps(draft, pi, steps?.slice() ?? []);
-  const text = steps
-    .map((step) => (step.text ?? "").trim())
-    .filter((part) => part !== "")
-    .join("\n\n");
-  return withSteps(draft, pi, [{ ...steps[0]!, text, ingredientIds: unionLinks(steps) }]);
-}
-
 // --- Ingredient links (M28.3) -----------------------------------------------
-
-/** A step's ingredient links. `DraftStep` comes from the write shape, where the field is optional, so undefined reads as none. Pure. */
-export function stepLinks(step: DraftStep): string[] {
-  return step.ingredientIds ?? [];
-}
-
-/** Every link of `steps`, in step order then link order, each id once. What a merge keeps. Pure. */
-export function unionLinks(steps: readonly DraftStep[]): string[] {
-  return [...new Set(steps.flatMap(stepLinks))];
-}
-
-/** The part's ingredient rows `step` links, in link order; a link naming no row of the part is skipped. Pure. */
-export function linkedIngredients(part: DraftPart, step: DraftStep): DraftIngredient[] {
-  return stepLinks(step)
-    .map((linked) => part.ingredients.find((row) => row.id === linked))
-    .filter((row): row is DraftIngredient => row !== undefined);
-}
-
-/** The part's ingredient rows `step` does not link, in list order — what the picker offers. Rows without an id yet cannot be linked and are left out. Pure. */
-export function linkableIngredients(part: DraftPart, step: DraftStep): DraftIngredient[] {
-  const linked = new Set(stepLinks(step));
-  return part.ingredients.filter((row) => row.id !== undefined && !linked.has(row.id));
-}
-
-/** The draft with `ingredientId` appended to step `si` of part `pi`'s links. An id already linked, or an out-of-range index, returns a copy unchanged. Pure. */
-export function linkIngredient(draft: RecipeDraft, pi: number, si: number, ingredientId: string): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length || stepLinks(steps[si]!).includes(ingredientId)) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(
-    draft,
-    pi,
-    steps.map((step, i) => (i === si ? { ...step, ingredientIds: [...stepLinks(step), ingredientId] } : step)),
-  );
-}
-
-/** The draft without `ingredientId` in step `si` of part `pi`'s links. What a chip's remove button does. Pure. */
-export function unlinkStepIngredient(draft: RecipeDraft, pi: number, si: number, ingredientId: string): RecipeDraft {
-  const steps = stepsOf(draft, pi);
-  if (!steps || si < 0 || si >= steps.length) return withSteps(draft, pi, steps?.slice() ?? []);
-  return withSteps(
-    draft,
-    pi,
-    steps.map((step, i) => (i === si ? { ...step, ingredientIds: stepLinks(step).filter((linked) => linked !== ingredientId) } : step)),
-  );
-}
-
-/**
- * `part` with `ingredientId` gone from every step's links. What a deleted row,
- * or a row moved to another part, leaves behind: a link never crosses a part,
- * so the part it left must forget it. A part that never linked it comes back
- * as-is. Pure.
- */
-export function unlinkIngredient<P extends { steps: DraftStep[] }>(part: P, ingredientId: string): P {
-  if (!part.steps.some((step) => stepLinks(step).includes(ingredientId))) return part;
-  return {
-    ...part,
-    steps: part.steps.map((step) => (stepLinks(step).includes(ingredientId) ? { ...step, ingredientIds: stepLinks(step).filter((linked) => linked !== ingredientId) } : step)),
-  };
-}
-
-/**
- * The draft with the M28.2 matcher run over part `pi`: every step with no
- * links gets the part's ingredients named in its text, and a step that already
- * links something is left alone. `filled` counts the steps that gained links,
- * which is what the button reports. Pure.
- */
-export function suggestPartLinks(draft: RecipeDraft, pi: number): { draft: RecipeDraft; filled: number } {
-  const part = draft.parts[pi];
-  if (!part) return { draft: { ...draft, parts: draft.parts.slice() }, filled: 0 };
-  // The matcher wants a saved shape: an id per row and a text and a link array
-  // per step. A draft row without an id has never been saved and cannot be
-  // named by a link, so it is not a candidate.
-  const ingredients = part.ingredients.flatMap((row) => (row.id === undefined ? [] : [{ id: row.id, food: row.food ?? null }]));
-  const steps = part.steps.map((step) => ({ id: step.id ?? "", text: step.text ?? "", ingredientIds: stepLinks(step) }));
-  const next = suggestLinks({ ingredients, steps });
-  const filled = next.filter((step, i) => step.ingredientIds.length > stepLinks(part.steps[i]!).length).length;
-  const merged = part.steps.map((step, i) => (next[i]!.ingredientIds.length > stepLinks(step).length ? { ...step, ingredientIds: next[i]!.ingredientIds } : step));
-  return { draft: withSteps(draft, pi, merged), filled };
-}
-
-/** What "Suggest links" says it did. Pure. */
-export function suggestNotice(filled: number): string {
-  return filled === 0 ? "Nothing to link" : `Linked ${filled} step${filled === 1 ? "" : "s"}`;
-}
-
-/** Would "Split all" change anything: does any step hold more than one paragraph? Pure. */
-export function canSplitAll(steps: readonly DraftStep[]): boolean {
-  return steps.some((step) => paragraphs(step.text ?? "").length > 1);
-}
-
-/** The field-name prefix for step rows: "parts.0.steps". Pure. */
-export function stepsPath(pi: number): string {
-  return `parts.${pi}.steps`;
-}
 
 // --- Component --------------------------------------------------------------
 
@@ -591,4 +331,9 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
       </EmptyBoundary>
     </div>
   );
+}
+
+/** What "Suggest links" says it did. Pure. */
+export function suggestNotice(filled: number): string {
+  return filled === 0 ? "Nothing to link" : `Linked ${filled} step${filled === 1 ? "" : "s"}`;
 }

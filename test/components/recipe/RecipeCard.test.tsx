@@ -5,7 +5,8 @@
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { capTags, RecipeCard } from "../../../src/components/recipe/RecipeCard";
+import { RecipeCard } from "../../../src/components/recipe/RecipeCard";
+import { capTags } from "../../../src/components/recipe/RecipeCard";
 import type { RecipeSummary, Tag } from "../../../src/domain/recipe/recipe";
 
 const tag = (n: number): Tag => ({ id: `dddddddd-dddd-4ddd-8ddd-dddddddddd0${n}`, name: `Tag ${n}`, slug: `tag-${n}` });

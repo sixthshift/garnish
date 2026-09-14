@@ -12,38 +12,12 @@ import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
-import { randomUuid } from "../../../lib/ids";
-import type { DraftNote, FieldErrors, RecipeDraft } from "./RecipeForm";
-import { moveItem, ReorderList } from "../../../components/ui/ReorderList";
+import { type FieldErrors } from "../../../domain/recipe/draft/validate";
+import { type RecipeDraft } from "../../../domain/recipe/draft/types";
+import { ReorderList } from "../../../components/ui/ReorderList";
+import { addNote, updateNote, removeNote } from "../../../domain/recipe/draft/notes";
 
 // --- Pure helpers -----------------------------------------------------------
-
-/** A blank note with a fresh id, so it has a stable row key before it is saved. */
-export function newNote(): DraftNote {
-  return { id: randomUuid(), title: "", text: "" };
-}
-
-/** The draft with a blank note appended. Pure apart from the note's id. */
-export function addNote(draft: RecipeDraft): RecipeDraft {
-  return { ...draft, notes: [...draft.notes, newNote()] };
-}
-
-/** The draft with `patch` merged into note `ni`. An out-of-range index returns a copy unchanged. Pure. */
-export function updateNote(draft: RecipeDraft, ni: number, patch: Partial<DraftNote>): RecipeDraft {
-  if (ni < 0 || ni >= draft.notes.length) return { ...draft, notes: draft.notes.slice() };
-  return { ...draft, notes: draft.notes.map((note, i) => (i === ni ? { ...note, ...patch } : note)) };
-}
-
-/** The draft without note `ni`. An out-of-range index returns a copy unchanged. Pure. */
-export function removeNote(draft: RecipeDraft, ni: number): RecipeDraft {
-  if (ni < 0 || ni >= draft.notes.length) return { ...draft, notes: draft.notes.slice() };
-  return { ...draft, notes: draft.notes.filter((_, i) => i !== ni) };
-}
-
-/** The draft with note `from` moved to `to`. Same rules as `moveItem`. Pure. */
-export function moveNote(draft: RecipeDraft, from: number, to: number): RecipeDraft {
-  return { ...draft, notes: moveItem(draft.notes, from, to) };
-}
 
 // --- Component --------------------------------------------------------------
 

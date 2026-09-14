@@ -7,7 +7,8 @@ import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } fr
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { QuickEditProvider } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
-import { linkedIngredients, StepCard, stepDurations } from "../../../../../src/routes/recipes/recipe/components/StepCard";
+import { StepCard } from "../../../../../src/routes/recipes/recipe/components/StepCard";
+import { linkedIngredients, stepDurations } from "../../../../../src/routes/recipes/recipe/components/StepCard";
 import type { Food, Ingredient, Recipe, Step } from "../../../../../src/domain/recipe/recipe";
 import { setIngredientTicked, setStepTicked, type StorageLike } from "../../../../../src/lib/ticks";
 

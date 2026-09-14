@@ -54,248 +54,24 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { type FormEvent, useState } from "react";
-import type { Food as FoodRow } from "../../../../db/models/food/repo";
-import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../../../../domain/ingredient/bulkIngredients";
-import { type FileRecipe, type ImportCheck, type ImportedRecipe, type ImportSource, type MealieRecipe, review, type ScrapedRecipe } from "../../../../domain/import";
-import type { Tag, Unit } from "../../../../domain/recipe/recipe";
-import { suggestLinks } from "../../../../domain/recipe/stepIngredients";
-import { randomUuid } from "../../../../lib/ids";
+import { type Food as FoodRow } from "../../../../db/models/food/repo";
+import { pendingCreations, reviewRows, rowCommit } from "../../../../domain/ingredient/bulkIngredients";
+import { type FileRecipe, type ImportedRecipe, type MealieRecipe, review, type ScrapedRecipe, type ImportCheck, type ImportSource } from "../../../../domain/import";
+import { type Tag, type Unit } from "../../../../domain/recipe/recipe";
 import { postImportFile } from "../../../../lib/importFile";
 import { messageFrom } from "../../../../lib/notify";
 import { foodForRecipe, findOrCreateFood, listFoods } from "../../../../server/fns/foods";
 import { getRecipe, recipeByName } from "../../../../server/fns/recipes";
-import { importFromUrl } from "../../../../server/fns/import";
+import { importFromUrl, importFromText } from "../../../../server/fns/import";
 import { findOrCreateUnit } from "../../../../server/fns/units";
-import { importFromText } from "../../../../server/fns/import";
-import { IngredientReviewRow, type IngredientReview } from "../../components/IngredientReviewRow";
-import { filterUnits, reviewedIngredient } from "../../components/IngredientsEditor";
-import { emptyDraft, type DraftPart, type RecipeDraft, tagsFromNames } from "../../components/RecipeForm";
-import { newStep } from "../../components/StepsEditor";
-
-/**
- * `part` with `suggestLinks` (M28.2) run over its steps, so an imported
- * recipe arrives with its links filled for review. `suggestLinks` needs an
- * id on every row to name it in a link; the scraper's rows already carry
- * one (`newStep`, `reviewedIngredient`), but a fresh id is given here too,
- * defensively, rather than trusting that.
- */
-function withSuggestedLinks(part: DraftPart): DraftPart {
-  const ingredients = part.ingredients.map((ingredient) => ({
-    ...ingredient,
-    id: ingredient.id ?? randomUuid(),
-    food: ingredient.food ?? null,
-  }));
-  const steps = suggestLinks({
-    ingredients,
-    steps: part.steps.map((step) => ({
-      ...step,
-      id: step.id ?? randomUuid(),
-      text: step.text ?? "",
-      ingredientIds: step.ingredientIds ?? [],
-    })),
-  });
-  return { ...part, ingredients, steps };
-}
-
-/**
- * `part` with the links the source already knew (M34.4): `stepOfRow[i]` is the
- * step that owns the part's i-th row, or -1 for a row no step claimed. Used
- * instead of `suggestLinks` when the export says outright which step a row was
- * written under — Tandoor's steps own their ingredients — because a stated
- * answer beats a guessed one.
- */
-function withStepRows(part: DraftPart, stepOfRow: readonly number[]): DraftPart {
-  const ingredients = part.ingredients.map((ingredient) => ({
-    ...ingredient,
-    id: ingredient.id ?? randomUuid(),
-    food: ingredient.food ?? null,
-  }));
-  const steps = part.steps.map((step, stepIndex) => ({
-    ...step,
-    id: step.id ?? randomUuid(),
-    text: step.text ?? "",
-    ingredientIds: ingredients.filter((_, row) => stepOfRow[row] === stepIndex).map((ingredient) => ingredient.id),
-  }));
-  return { ...part, ingredients, steps };
-}
+import { IngredientReviewRow } from "../../components/IngredientReviewRow";
+import { type IngredientReview } from "../../../../domain/recipe/draft/review";
+import { filterUnits } from "../../../../domain/recipe/draft/vocabulary";
+import { type RecipeDraft } from "../../../../domain/recipe/draft/types";
+import { draftFromScraped } from "../../../../domain/recipe/draft/scraped";
 
 /** Which source the chooser is on. `paste` is the AI rung (M34.5) and only appears when `claude` is installed. */
 export type SourceKind = "url" | "manual" | "file" | "paste";
-
-/**
- * A scraped recipe and its reviewed ingredient lines as a draft. The parts are
- * the source's own (decisions.md row 59), and each row goes back on the part
- * whose line it was parsed from: the review's rows are the parts' lines
- * flattened in part order (M36.2), so the parts' own counts are the allocation
- * and nothing has to carry it alongside. A schema.org page puts every line on
- * the unnamed body because that is all its markup can say; a Mealie or Tandoor
- * export, or a model that read the headings, says more, and this reads all of
- * them the same way. Each part then runs through `suggestLinks` (M28.2), so
- * the draft arrives with its step-ingredient links already filled for review.
- * Pure apart from the ids it fills in.
- */
-export function draftFromScraped(opts: {
-  scraped: ScrapedRecipe;
-  sourceUrl: string;
-  commits: readonly RowCommit<Unit, FoodRow>[];
-  createdFoods: ReadonlyMap<string, FoodRow>;
-  createdUnits: ReadonlyMap<string, Unit>;
-  knownTags?: readonly Tag[];
-  /**
-   * Which step of its part each commit was written under, by index, -1 for
-   * none (M34.4). Given, the links are taken from it rather than guessed by
-   * `suggestLinks`; only Tandoor's steps know.
-   */
-  rowSteps?: readonly number[];
-  /** Notes the source carried (Mealie's `notes`). */
-  notes?: readonly { title: string; text: string }[];
-  /** A rating the source carried, 1 to 5. */
-  rating?: number | null;
-}): RecipeDraft {
-  const { scraped, sourceUrl, commits, createdFoods, createdUnits, knownTags = [], rowSteps, notes = [], rating = null } = opts;
-  const rows = commits.map((commit) => reviewedIngredient(commit, createdFoods, createdUnits));
-
-  const parts: DraftPart[] = scraped.parts.map((part) => ({
-    id: randomUuid(),
-    name: part.name,
-    ingredients: [],
-    steps: part.steps.map((step) => newStep(step)),
-  }));
-  // A source with no parts at all still needs somewhere to put its rows.
-  if (parts.length === 0) parts.push({ id: randomUuid(), name: "", ingredients: [], steps: [] });
-  // The part each row came off, by index: part 0 owns its first
-  // `parts[0].ingredients.length` rows, and so on down the list. A row past the
-  // last line — nothing produces one today — falls to the first part rather
-  // than being dropped.
-  const rowParts = scraped.parts.flatMap((part, index) => part.ingredients.map(() => index));
-  rows.forEach((row, index) => (parts[rowParts[index] ?? 0] ?? parts[0]!).ingredients.push(row));
-
-  // The steps each part's rows were written under, in the order the rows were
-  // pushed onto that part, so `withStepRows` can read them off positionally.
-  const stepsPerPart: number[][] = parts.map(() => []);
-  if (rowSteps !== undefined) {
-    rows.forEach((_, index) => stepsPerPart[rowParts[index] ?? 0]?.push(rowSteps[index] ?? -1));
-  }
-  const linked = parts.map((part, index) => (rowSteps === undefined ? withSuggestedLinks(part) : withStepRows(part, stepsPerPart[index] ?? [])));
-
-  return {
-    ...emptyDraft(),
-    name: scraped.name,
-    description: scraped.description,
-    recipeServings: scraped.servings,
-    // A yield of "24 biscuits" is worth keeping whole; a bare "4" is servings
-    // and nothing more, so it would only read as "4" twice.
-    recipeYieldQuantity: scraped.yieldText === "" ? 0 : scraped.servings,
-    recipeYield: scraped.yieldText,
-    prepTime: scraped.prepMinutes,
-    performTime: scraped.cookMinutes,
-    sourceUrl: sourceUrl.trim() === "" ? null : sourceUrl.trim(),
-    rating,
-    notes: notes.filter((note) => note.text.trim() !== "" || note.title.trim() !== "").map((note) => ({ title: note.title, text: note.text })),
-    tags: tagsFromNames(scraped.tags, knownTags),
-    parts: linked.length > 0 ? linked : emptyDraft().parts,
-  };
-}
-
-/** "24 biscuits", "Serves 4", or "" when the page did not say. Pure. */
-export function yieldLabel(scraped: ScrapedRecipe): string {
-  if (scraped.servings > 0 && scraped.yieldText !== "") return `${scraped.servings} ${scraped.yieldText}`;
-  if (scraped.servings > 0) return `Serves ${scraped.servings}`;
-  return scraped.yieldText;
-}
-
-/** How many ingredient lines came back across every part. Pure. */
-export function ingredientCount(scraped: ScrapedRecipe): number {
-  return review.ingredientLines(scraped).length;
-}
-
-/** How many steps came back across every part. Pure. */
-export function stepCount(scraped: ScrapedRecipe): number {
-  return scraped.parts.reduce((total, part) => total + part.steps.length, 0);
-}
-
-/**
- * What the review says it got, and how. `sorted` is the model's part in it
- * (M36.6): true when the parts on the screen are the model's reading of the
- * page's headings, false when a `schema` page arrived with no model to sort
- * it, and null when the question does not arise — a paste, an upload, a read
- * still running. Pure.
- */
-export function importSummary(from: ImportSource, ingredients: number, steps: number, sorted: boolean | null = null): string {
-  if (from === "stub") return "That page has no recipe data, so this is just its title and picture. The rest is yours to type in.";
-  const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
-  const read = `Read ${count(ingredients, "ingredient")} and ${count(steps, "step")}.`;
-  const nothingSaved = "Nothing is saved yet, and no food or unit is created unless you ask for it below.";
-  // An anchored read changed nothing but the shape: the lines are the page's
-  // own, checked against it word for word, and the parts are what the model
-  // added. Saying so tells the household what is worth checking.
-  if (sorted === true) {
-    return `The page's ${count(ingredients, "ingredient")} and ${count(steps, "step")} sorted into parts by the model. The words are the page's own — check the parts. ${nothingSaved}`;
-  }
-  // An AI read is a reading, not a transcription, so the review is told to
-  // check it rather than merely approve it (M34.5).
-  if (from === "ai") return `Claude ${read.toLowerCase()} Check them against what you pasted — nothing is saved yet, and no food or unit is created unless you ask for it below.`;
-  // No model to read the page, so the headings it had are gone: schema.org
-  // cannot say which part a line belongs to, and nothing else was asked.
-  if (sorted === false) return `${read} No model is configured, so the page's sections were not sorted into parts and every line is on the main body. ${nothingSaved}`;
-  return `${read} ${nothingSaved}`;
-}
-
-/**
- * What the model's version did to the page's, as the review says it: "dropped
- * 1 line and reworded 2 steps". A line missing on one side and one added on
- * the other is one rewording rather than two changes, because that is what it
- * is and counting it twice would overstate the damage. Pure.
- */
-export function changeSummary(check: ImportCheck): string {
-  const clauses: string[] = [];
-  const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
-  for (const [missing, added, noun] of [
-    [check.missingLines, check.addedLines, "line"],
-    [check.missingSteps, check.addedSteps, "step"],
-  ] as const) {
-    const reworded = Math.min(missing.length, added.length);
-    if (missing.length - reworded > 0) clauses.push(`dropped ${count(missing.length - reworded, noun)}`);
-    if (added.length - reworded > 0) clauses.push(`added ${count(added.length - reworded, noun)}`);
-    if (reworded > 0) clauses.push(`reworded ${count(reworded, noun)}`);
-  }
-  if (clauses.length === 0) return "changed nothing";
-  if (clauses.length === 1) return clauses[0]!;
-  return `${clauses.slice(0, -1).join(", ")} and ${clauses[clauses.length - 1]}`;
-}
-
-/** The rejection notice in one sentence (M36.6). Pure. */
-export function rejectionMessage(check: ImportCheck): string {
-  return `The model's version ${changeSummary(check)}, so the page's version is shown.`;
-}
-
-/** Every line the check objected to, labelled for the list under the notice. Pure. */
-export function changedLines(check: ImportCheck): { label: string; text: string }[] {
-  return [
-    ...check.missingLines.map((text) => ({ label: "Dropped", text })),
-    ...check.addedLines.map((text) => ({ label: "Added", text })),
-    ...check.missingSteps.map((text) => ({ label: "Dropped step", text })),
-    ...check.addedSteps.map((text) => ({ label: "Added step", text })),
-  ];
-}
-
-/**
- * Whether this result is worth handing to the model on arrival (M36.6). Only
- * a page: an upload already states its parts and a paste has already been
- * read. A `schema` result goes anchored and a `stub` result goes bare, and
- * neither goes anywhere without the page's text to read.
- *
- * A result that already carries a `check` has been past the model on the
- * server (M36.7's pasted HTML, which runs the whole pipeline there), so it is
- * shown as it stands. Reading it again would only ask the same model the same
- * question twice.
- */
-export function shouldReadWithModel(imported: ImportedRecipe, aiAvailable: boolean): boolean {
-  if (!aiAvailable) return false;
-  if (imported.check !== undefined) return false;
-  if (imported.from !== "schema" && imported.from !== "stub") return false;
-  return imported.pageText.trim() !== "";
-}
 
 /** The AI read as the review needs it: the page's text, and the rules result as the anchor when it had one. */
 export type ModelReader = (text: string, anchor?: ScrapedRecipe) => Promise<ImportedRecipe>;
@@ -319,26 +95,6 @@ export async function modelPass(
     return { ok: false, error: messageFrom(cause) };
   }
 }
-
-/**
- * The rejected answer put in the accepted one's place (M36.6's "Use the
- * model's version anyway"). `check` stays so the summary still says the parts
- * are the model's; `rejected` goes, because it is now what is on the screen.
- */
-export function withRejectedAnswer(imported: ImportedRecipe): ImportedRecipe {
-  if (imported.rejected === undefined) return imported;
-  return { from: "ai", url: imported.url, recipe: imported.rejected, pageText: imported.pageText, check: imported.check };
-}
-
-/** The review's duplicate warning: the same recipe by address (M23.7) or by name (M34.3). Pure. */
-export function duplicateMessage(name: string, by: DuplicateBy): string {
-  return by === "name"
-    ? `“${name}” is already here under that name. Creating this makes a second copy.`
-    : `“${name}” was imported from the same address. Creating this makes a second copy.`;
-}
-
-/** How the review found the duplicate it is warning about. */
-export type DuplicateBy = "url" | "name";
 
 // --- Stages ----------------------------------------------------------------
 
@@ -1122,3 +878,123 @@ export function RecipeSource(props: RecipeSourceProps) {
     />
   );
 }
+
+/** "24 biscuits", "Serves 4", or "" when the page did not say. Pure. */
+export function yieldLabel(scraped: ScrapedRecipe): string {
+  if (scraped.servings > 0 && scraped.yieldText !== "") return `${scraped.servings} ${scraped.yieldText}`;
+  if (scraped.servings > 0) return `Serves ${scraped.servings}`;
+  return scraped.yieldText;
+}
+
+/** How many ingredient lines came back across every part. Pure. */
+export function ingredientCount(scraped: ScrapedRecipe): number {
+  return review.ingredientLines(scraped).length;
+}
+
+/** How many steps came back across every part. Pure. */
+export function stepCount(scraped: ScrapedRecipe): number {
+  return scraped.parts.reduce((total, part) => total + part.steps.length, 0);
+}
+
+/**
+ * What the review says it got, and how. `sorted` is the model's part in it
+ * (M36.6): true when the parts on the screen are the model's reading of the
+ * page's headings, false when a `schema` page arrived with no model to sort
+ * it, and null when the question does not arise — a paste, an upload, a read
+ * still running. Pure.
+ */
+export function importSummary(from: ImportSource, ingredients: number, steps: number, sorted: boolean | null = null): string {
+  if (from === "stub") return "That page has no recipe data, so this is just its title and picture. The rest is yours to type in.";
+  const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+  const read = `Read ${count(ingredients, "ingredient")} and ${count(steps, "step")}.`;
+  const nothingSaved = "Nothing is saved yet, and no food or unit is created unless you ask for it below.";
+  // An anchored read changed nothing but the shape: the lines are the page's
+  // own, checked against it word for word, and the parts are what the model
+  // added. Saying so tells the household what is worth checking.
+  if (sorted === true) {
+    return `The page's ${count(ingredients, "ingredient")} and ${count(steps, "step")} sorted into parts by the model. The words are the page's own — check the parts. ${nothingSaved}`;
+  }
+  // An AI read is a reading, not a transcription, so the review is told to
+  // check it rather than merely approve it (M34.5).
+  if (from === "ai") return `Claude ${read.toLowerCase()} Check them against what you pasted — nothing is saved yet, and no food or unit is created unless you ask for it below.`;
+  // No model to read the page, so the headings it had are gone: schema.org
+  // cannot say which part a line belongs to, and nothing else was asked.
+  if (sorted === false) return `${read} No model is configured, so the page's sections were not sorted into parts and every line is on the main body. ${nothingSaved}`;
+  return `${read} ${nothingSaved}`;
+}
+
+/**
+ * What the model's version did to the page's, as the review says it: "dropped
+ * 1 line and reworded 2 steps". A line missing on one side and one added on
+ * the other is one rewording rather than two changes, because that is what it
+ * is and counting it twice would overstate the damage. Pure.
+ */
+export function changeSummary(check: ImportCheck): string {
+  const clauses: string[] = [];
+  const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+  for (const [missing, added, noun] of [
+    [check.missingLines, check.addedLines, "line"],
+    [check.missingSteps, check.addedSteps, "step"],
+  ] as const) {
+    const reworded = Math.min(missing.length, added.length);
+    if (missing.length - reworded > 0) clauses.push(`dropped ${count(missing.length - reworded, noun)}`);
+    if (added.length - reworded > 0) clauses.push(`added ${count(added.length - reworded, noun)}`);
+    if (reworded > 0) clauses.push(`reworded ${count(reworded, noun)}`);
+  }
+  if (clauses.length === 0) return "changed nothing";
+  if (clauses.length === 1) return clauses[0]!;
+  return `${clauses.slice(0, -1).join(", ")} and ${clauses[clauses.length - 1]}`;
+}
+
+/** The rejection notice in one sentence (M36.6). Pure. */
+export function rejectionMessage(check: ImportCheck): string {
+  return `The model's version ${changeSummary(check)}, so the page's version is shown.`;
+}
+
+/** Every line the check objected to, labelled for the list under the notice. Pure. */
+export function changedLines(check: ImportCheck): { label: string; text: string }[] {
+  return [
+    ...check.missingLines.map((text) => ({ label: "Dropped", text })),
+    ...check.addedLines.map((text) => ({ label: "Added", text })),
+    ...check.missingSteps.map((text) => ({ label: "Dropped step", text })),
+    ...check.addedSteps.map((text) => ({ label: "Added step", text })),
+  ];
+}
+
+/**
+ * Whether this result is worth handing to the model on arrival (M36.6). Only
+ * a page: an upload already states its parts and a paste has already been
+ * read. A `schema` result goes anchored and a `stub` result goes bare, and
+ * neither goes anywhere without the page's text to read.
+ *
+ * A result that already carries a `check` has been past the model on the
+ * server (M36.7's pasted HTML, which runs the whole pipeline there), so it is
+ * shown as it stands. Reading it again would only ask the same model the same
+ * question twice.
+ */
+export function shouldReadWithModel(imported: ImportedRecipe, aiAvailable: boolean): boolean {
+  if (!aiAvailable) return false;
+  if (imported.check !== undefined) return false;
+  if (imported.from !== "schema" && imported.from !== "stub") return false;
+  return imported.pageText.trim() !== "";
+}
+
+/**
+ * The rejected answer put in the accepted one's place (M36.6's "Use the
+ * model's version anyway"). `check` stays so the summary still says the parts
+ * are the model's; `rejected` goes, because it is now what is on the screen.
+ */
+export function withRejectedAnswer(imported: ImportedRecipe): ImportedRecipe {
+  if (imported.rejected === undefined) return imported;
+  return { from: "ai", url: imported.url, recipe: imported.rejected, pageText: imported.pageText, check: imported.check };
+}
+
+/** The review's duplicate warning: the same recipe by address (M23.7) or by name (M34.3). Pure. */
+export function duplicateMessage(name: string, by: DuplicateBy): string {
+  return by === "name"
+    ? `“${name}” is already here under that name. Creating this makes a second copy.`
+    : `“${name}” was imported from the same address. Creating this makes a second copy.`;
+}
+
+/** How the review found the duplicate it is warning about. */
+export type DuplicateBy = "url" | "name";

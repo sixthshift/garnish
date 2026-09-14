@@ -5,7 +5,9 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { draftFromScraped, importSummary, PasteSource, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { PasteSource, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { draftFromScraped } from "../../../../../src/domain/recipe/draft/scraped";
+import { importSummary } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../../../src/domain/recipe/recipe";

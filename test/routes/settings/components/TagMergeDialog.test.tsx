@@ -2,7 +2,8 @@
 // content TagMergeDialogContent renders. Mirrors FoodMergeDialog/UnitMergeDialog.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { mergeTargets, TagMergeDialogContent } from "../../../../src/routes/settings/components/TagMergeDialog";
+import { TagMergeDialogContent } from "../../../../src/routes/settings/components/TagMergeDialog";
+import { mergeTargets } from "../../../../src/domain/lists";
 import type { Tag } from "../../../../src/domain/recipe/recipe";
 
 function tag(id: string, name: string): Tag {

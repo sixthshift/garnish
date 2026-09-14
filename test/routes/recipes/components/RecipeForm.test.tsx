@@ -6,20 +6,12 @@
 import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
-import {
-  detailsHint,
-  draftFromRecipe,
-  emptyDraft,
-  hasDetails,
-  isDirty,
-  parseAmount,
-  parseMinutes,
-  RecipeForm,
-  type RecipeFormProps,
-  saveNotice,
-  tagsFromNames,
-  validateDraft,
-} from "../../../../src/routes/recipes/components/RecipeForm";
+import { RecipeForm, type RecipeFormProps } from "../../../../src/routes/recipes/components/RecipeForm";
+import { draftFromRecipe, emptyDraft, hasDetails, isDirty } from "../../../../src/domain/recipe/draft/draft";
+import { detailsHint } from "../../../../src/routes/recipes/components/RecipeForm";
+import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
+import { parseAmount, parseMinutes, saveNotice } from "../../../../src/routes/recipes/components/RecipeForm";
+import { tagsFromNames } from "../../../../src/domain/recipe/draft/vocabulary";
 import { clearDraft, putDraft } from "../../../../src/lib/drafts";
 import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipe/recipe";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";

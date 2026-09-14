@@ -7,18 +7,9 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import {
-  changedLines,
-  changeSummary,
-  draftFromScraped,
-  ImportReview,
-  importSummary,
-  type ModelReader,
-  modelPass,
-  rejectionMessage,
-  shouldReadWithModel,
-  withRejectedAnswer,
-} from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { ImportReview, type ModelReader, modelPass } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { changedLines, changeSummary, importSummary, rejectionMessage, shouldReadWithModel, withRejectedAnswer } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { draftFromScraped } from "../../../../../src/domain/recipe/draft/scraped";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../../../src/domain/recipe/recipe";
