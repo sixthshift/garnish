@@ -135,3 +135,16 @@ describe("checkRestyle", () => {
     expect(() => checkRestyle([ORIGINAL], [])).toThrow(/1 original parts against 0/);
   });
 });
+
+
+test("a mixed number is one fact, written with a glyph or a fraction", () => {
+  expect(factsOf(["Slow cook 2 - 2 1/2 hrs"])).toEqual(["2h", "2 1/2h"]);
+  expect(factsOf(["Slow cook for 2 to 2½ hours"])).toEqual(["2h", "2 1/2h"]);
+  expect(factsOf(["Add 1 1/4 cups of stock"])).toEqual(["1 1/4cup"]);
+});
+
+test("note and step references are pointers, not facts", () => {
+  expect(factsOf(["Add 1/2 tsp sugar if sour (Note 6)."])).toEqual(["1/2tsp"]);
+  expect(factsOf(["Return the beef (see Note 7) and simmer 30 min, as in Step 5 above."])).toEqual(["30min"]);
+  expect(factsOf(["Repeat steps 2 to 4 for the second batch of 6 pieces"])).toEqual(["6"]);
+});

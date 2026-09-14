@@ -142,16 +142,35 @@ const GLYPHS = [...GLYPH_FRACTIONS.keys()].join("");
  * whole number or a glyph; the range separator is a dash or "to"; the unit is a
  * degree sign, a word, or both, and is only kept when `UNIT_WORDS` knows it.
  */
-const NUMBER = String.raw`\d+\s*/\s*\d+|\d+(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|[${GLYPHS}]`;
+// A mixed number ("2 1/2", "2½") is one fact, so it is tried before its whole
+// and fractional halves could be taken separately; a rewrite that turns
+// "2 1/2 hrs" into "2½ hours" has kept the fact, not dropped one and added one.
+const NUMBER = String.raw`\d+\s+\d+\s*/\s*\d+|\d+\s*[${GLYPHS}]|\d+\s*/\s*\d+|\d+(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|[${GLYPHS}]`;
 const FACT = new RegExp(
   String.raw`(${NUMBER})(?:\s*(?:-|–|—|to)\s*(${NUMBER}))?\s*(?:°\s*)?([a-z]+\.?)?`,
   "giu",
 );
 
+/**
+ * A number that is a pointer, not a fact: "(Note 4)", "see note 2", "step 5",
+ * "Step 3 above". The house style's no-chatter statement removes these on
+ * purpose, and the check must not then report the recipe as having lost a
+ * quantity. Matched before the facts are read and blanked out of the text.
+ */
+const REFERENCE = /\b(?:note|notes|step|steps)\s+\d+(?:\s*(?:-|–|—|to|and|&)\s*\d+)*\b/giu;
+
 /** A number as it is written in a fact: glyphs spelled out, thousands separators and spaces gone. */
 function normaliseNumber(raw: string): string {
   const glyph = GLYPH_FRACTIONS.get(raw);
   if (glyph !== undefined) return glyph;
+  // A mixed number's glyph half is spelled out too, so "2½" and "2 1/2" agree.
+  const mixedGlyph = /^(\d+)\s*([^\d\s])$/u.exec(raw);
+  if (mixedGlyph !== null) {
+    const fraction = GLYPH_FRACTIONS.get(mixedGlyph[2]!);
+    if (fraction !== undefined) return `${mixedGlyph[1]} ${fraction}`;
+  }
+  const mixed = /^(\d+)\s+(\d+)\s*\/\s*(\d+)$/.exec(raw);
+  if (mixed !== null) return `${mixed[1]} ${mixed[2]}/${mixed[3]}`;
   return raw.replace(/[,\s]/g, "");
 }
 
@@ -169,7 +188,8 @@ function normaliseUnit(raw: string | undefined): string | null {
 export function factsOf(steps: readonly string[]): string[] {
   const facts: string[] = [];
   for (const step of steps) {
-    for (const match of step.matchAll(FACT)) {
+    const withoutReferences = step.replace(REFERENCE, " ");
+    for (const match of withoutReferences.matchAll(FACT)) {
       const unit = normaliseUnit(match[3]) ?? "";
       facts.push(normaliseNumber(match[1]!) + unit);
       if (match[2] !== undefined) facts.push(normaliseNumber(match[2]) + unit);
