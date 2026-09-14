@@ -18,6 +18,7 @@ services:
       AI_API_KEY: ${AI_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
+      AI_RESTYLE_MODEL: ${AI_RESTYLE_MODEL:-}
     restart: unless-stopped
 
 volumes:

@@ -222,12 +222,23 @@ export type AiRunner = (prompt: string, timeoutMs: number) => Promise<string>;
 /** The same shape `recipeImport.ts` injects, so a test can drive the HTTP path with a fake `fetch`. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
-/** The request body, in one place: one user turn, the schema as structured output, and no creativity at all. Pure. */
-export function chatRequestBody(prompt: string, model: string): Record<string, unknown> {
+/**
+ * The request body, in one place: one user turn, the schema as structured
+ * output, and no creativity at all. The schema is a parameter because the
+ * restyle pass (M37.4) asks the same provider a different question with a
+ * different answer shape; it defaults to the import's, so a caller that only
+ * reads recipes never mentions it. Pure.
+ */
+export function chatRequestBody(
+  prompt: string,
+  model: string,
+  schema: object = SCRAPED_JSON_SCHEMA,
+  schemaName = "recipe",
+): Record<string, unknown> {
   return {
     model,
     messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_schema", json_schema: { name: "recipe", schema: SCRAPED_JSON_SCHEMA, strict: true } },
+    response_format: { type: "json_schema", json_schema: { name: schemaName, schema, strict: true } },
     temperature: 0,
   };
 }
@@ -245,13 +256,21 @@ export function httpFailureMessage(status: number): string {
 type ChatCompletion = { choices?: { message?: { content?: unknown } }[] };
 
 /**
+ * What a runner asks for beyond the prompt: which answer shape and which
+ * model. Both default to the import's, so the restyle pass (M37.4) is the only
+ * caller that has to say anything.
+ */
+export type RunnerOptions = { schema?: object; schemaName?: string; model?: string };
+
+/**
  * The default runner: one POST to `${AI_BASE_URL}/chat/completions`, with the
  * deadline enforced by `AbortSignal.timeout` rather than by hope. The fetch is
  * a parameter so the error mapping can be tested without a provider.
  */
-export function createFetchRunner(fetcher: Fetcher = fetch): AiRunner {
+export function createFetchRunner(fetcher: Fetcher = fetch, options: RunnerOptions = {}): AiRunner {
   return async (prompt, timeoutMs) => {
-    const { apiKey, baseUrl, model } = aiSettings();
+    const { apiKey, baseUrl, model: defaultModel } = aiSettings();
+    const model = options.model ?? defaultModel;
     if (apiKey === "") throw new AiImportError("unavailable", "No model is configured here. Set AI_API_KEY to use this.");
 
     let response: Response;
@@ -259,7 +278,7 @@ export function createFetchRunner(fetcher: Fetcher = fetch): AiRunner {
       response = await fetcher(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify(chatRequestBody(prompt, model)),
+        body: JSON.stringify(chatRequestBody(prompt, model, options.schema, options.schemaName)),
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (cause) {

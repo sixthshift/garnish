@@ -105,13 +105,14 @@ DATA_DIR=/srv/garnish PORT=8080 bun run start
 
 Pasted text — a photo's text, an email, a page that gave nothing up — can be read into a recipe by a hosted model. It is off until a key is set, and the paste option is hidden until then; every other import path works without it.
 
-Three environment variables, on the host or in the container:
+Four environment variables, on the host or in the container:
 
 | Variable | Default | What it is |
 |---|---|---|
 | `AI_API_KEY` | _(unset)_ | The provider's API key. Setting it is the whole of the setup; unset, the option is hidden |
 | `AI_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta/openai` | Any OpenAI-compatible endpoint, without the `/chat/completions` |
 | `AI_MODEL` | `gemini-flash-lite-latest` | The model to ask. The default is Google's rolling alias, so it follows releases without a change here |
+| `AI_RESTYLE_MODEL` | _(`AI_MODEL`)_ | The model the house style pass asks (M37.4). Rewriting steps is harder than reading a page, so the restyle can run a bigger model while the import stays on the default |
 
 The defaults are Google's Gemini free tier, so a key from [AI Studio](https://aistudio.google.com/apikey) is all that is needed. Any OpenAI-compatible provider works instead — Mistral, Groq, OpenRouter, or an Ollama on the LAN (`AI_BASE_URL=http://ollama.lan:11434/v1`, any non-empty key):
 
@@ -119,7 +120,7 @@ The defaults are Google's Gemini free tier, so a key from [AI Studio](https://ai
 AI_API_KEY=sk-... AI_BASE_URL=https://api.groq.com/openai/v1 AI_MODEL=llama-3.3-70b-versatile bun run start
 ```
 
-`docker-compose.yml` passes all three through from the host, so `AI_API_KEY=... docker compose up -d` is enough.
+`docker-compose.yml` passes all four through from the host, so `AI_API_KEY=... docker compose up -d` is enough.
 
 Note that Gemini's free tier may train on what is sent to it. What is sent is the recipe text you pasted, which for a public recipe page costs nothing; use a paid tier or a local model for anything you would not publish.
 
