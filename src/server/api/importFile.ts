@@ -5,16 +5,15 @@
 //
 // Nothing is written here. The route parses and answers; the review step
 // (M17.5's rows) is what decides, and the editor's Save is what writes.
-import { IMPORT_FIELD } from "../../domain/import/sources/importMealie";
-import { type ExportRecipe, readExport } from "../../domain/import/sources/importTandoor";
+import { type FileRecipe, IMPORT_FIELD, readExport } from "../../domain/import";
 
-export { IMPORT_FIELD } from "../../domain/import/sources/importMealie";
+export { IMPORT_FIELD } from "../../domain/import";
 
 /** Largest export accepted. A household's whole Mealie or Tandoor backup is far under this. */
 export const MAX_IMPORT_BYTES = 100 * 1024 * 1024;
 
 /** What the route answers with. */
-export type ImportFileResult = { recipes: ExportRecipe[] };
+export type ImportFileResult = { recipes: FileRecipe[] };
 
 const badRequest = (error: string): Response => Response.json({ error }, { status: 400 });
 

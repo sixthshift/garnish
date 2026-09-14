@@ -43,12 +43,12 @@ import {
   readMealieExport,
   reviewRowFromMealie,
   tagNames,
-} from "./importMealie";
+} from "./mealie";
 import type { FoodCandidate } from "../../ingredient/parseFood";
 import type { UnitCandidate } from "../../ingredient/parseUnit";
 import type { ReviewRow } from "../../ingredient/bulkIngredients";
-import { text } from "../schemaRecipe";
-import { isZip, readZip, type ZipEntry } from "../zip";
+import { text } from "../scraped";
+import { isZip, readZip, type ZipEntry } from "./zip";
 
 /** One of Tandoor's ingredient rows, already parsed by Tandoor. */
 export type TandoorIngredient = MealieIngredient & {
@@ -72,10 +72,10 @@ export type TandoorPart = Omit<MealiePart, "rows"> & { rows: TandoorIngredient[]
 export type TandoorRecipe = Omit<MealieRecipe, "parts" | "source"> & { source: "tandoor"; parts: TandoorPart[] };
 
 /** Either export's recipe: what the upload route answers with and the chooser reads. */
-export type ExportRecipe = MealieRecipe | TandoorRecipe;
+export type FileRecipe = MealieRecipe | TandoorRecipe;
 
 /** Which export a recipe came out of. Pure. */
-export function isTandoorRecipe(recipe: ExportRecipe): recipe is TandoorRecipe {
+export function isTandoorRecipe(recipe: FileRecipe): recipe is TandoorRecipe {
   return recipe.source === "tandoor";
 }
 
@@ -347,7 +347,7 @@ export async function readTandoorExport(file: ImportFile): Promise<TandoorRecipe
  * shape rather than by file name: both arrive as `.zip` or `.json`, and a
  * Tandoor recipe is the one with `steps`.
  */
-export async function readExport(file: ImportFile): Promise<ExportRecipe[]> {
+export async function readExport(file: ImportFile): Promise<FileRecipe[]> {
   if (file.bytes.length === 0) throw new Error("That file is empty");
 
   if (!isZip(file.bytes)) {

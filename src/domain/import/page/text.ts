@@ -18,7 +18,7 @@
 // `aiPrompt`'s "a named section is a part" reads better with a line it can
 // point at than with the heading's text sitting flush with the paragraph
 // after it.
-import { decodeEntities } from "./schemaRecipe";
+import { decodeEntities } from "../scraped";
 
 /** The most text worth handing to a model. `aiImport.ts`'s `MAX_AI_TEXT` is this number: one cap, defined once. */
 export const MAX_PAGE_TEXT = 40_000;

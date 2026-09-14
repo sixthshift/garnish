@@ -17,7 +17,7 @@ import { AI_TIMEOUT_MS, AiError, type AiRunner, type Fetcher } from "../../../sr
 import { aiImportAvailable, importFromText } from "../../../src/server/ai/import";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ingredientLines, type ScrapedRecipe, ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import/schemaRecipe";
+import { ingredientLines, type ScrapedRecipe, ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();

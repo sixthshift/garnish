@@ -1,86 +1,33 @@
 // Fetching a recipe from a URL (M23.5, decisions.md row 58). The browser
 // cannot read most recipe sites itself (CORS), so the server does it, exactly
-// as `imageFetch` already does for a pasted image URL.
-//
-// Two rungs, tried in order, and the caller is told which one answered:
-//
-//   schema  the page carried a schema.org Recipe in its `ld+json`. This is
-//           what `recipe_scrapers`' "wild mode" reads, and it is the half of
-//           what Mealie and Tandoor do that does not rot per site.
-//   stub    it did not, but it has OpenGraph tags. A named, illustrated,
-//           linked shell with empty lists — Mealie's last non-AI rung.
-//
-// Neither, and it is an error naming what was missing. Tandoor stops one rung
-// earlier than this and says "No usable data could be found"; Mealie has two
-// AI rungs in between, which v1 does not.
-//
-// A page that carries a Recipe node with no ingredients and no steps counts as
-// a miss, not a hit: some sites emit a Recipe shell for SEO with nothing in
-// it, and falling through to the stub gets a better result than importing an
-// empty recipe that looks like a successful one.
+// as `imageFetch` does for an imported recipe's image. This file is only the
+// fetch: what happens to the page once it is in hand — the schema.org and
+// OpenGraph rungs, the readable text — is the import module's `extractRecipe`
+// (`src/domain/import`), which is pure and takes a pasted page as readily as a
+// fetched one.
 //
 // The fetch sends a full browser header set (M35.4) because a default one, or
 // even a bare `User-Agent`, gets a 403 from a good number of sites. A 403 gets
 // one retry under a second header profile before this gives up — see
-// `src/domain/import/fetchProfiles.ts` — and only then does the error say the site
+// `fetchProfiles.ts` beside this file — and only then does the error say the site
 // is blocking automated requests and point at the paste box (M34.5), which
 // since M36.7 takes the page's HTML as well as its prose: a paste that looks
-// like a page's source goes through `importFromHtml` below, the same half of
-// this file a fetched page goes through. That is as far as this goes: Mealie impersonates a real browser's TLS fingerprint
+// like a page's source goes through the same `extractRecipe` a fetched page
+// goes through. That is as far as this goes: Mealie impersonates a real browser's TLS fingerprint
 // with curl_cffi to get past Cloudflare, and Tandoor sidesteps the problem
 // with a bookmarklet that captures the HTML the browser already has. Both are
 // worth revisiting if headers alone stop being enough — see docs/plan.md's
 // Log for M35.4 on Serious Eats, which they are not.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { fetchProfileForAttempt, FETCH_PROFILES } from "../../domain/import/fetchProfiles";
-import type { ImportCheck } from "../../domain/import/importCheck";
-import { recipeNodeFromHtml } from "../../domain/import/jsonLd";
-import { openGraphStub } from "../../domain/import/openGraph";
-import { readableText } from "../../domain/import/pageText";
-import { hasContent, type ScrapedRecipe, scrapedFromSchema } from "../../domain/import/schemaRecipe";
+import { fetchProfileForAttempt, FETCH_PROFILES } from "./fetchProfiles";
+import { extractRecipe, type ImportedRecipe } from "../../domain/import";
 
 /** How much of a page is worth reading. Structured data is near the top; a page this big is not a recipe. */
 export const MAX_PAGE_BYTES = 5_000_000;
 
 /** How long to wait on a page before giving up. */
 export const PAGE_TIMEOUT_MS = 15_000;
-
-/**
- * Which rung produced the result, so the review can say how much it actually
- * got. `mealie` and `tandoor` are uploaded exports (M34.3, M34.4) rather than
- * rungs of the URL import, and read as well as `schema` does: both apps have
- * already parsed the recipe. `ai` is the rung under both of the URL
- * import's (M34.5): `claude -p` reading prose that carries no structure.
- */
-export type ImportSource = "schema" | "stub" | "mealie" | "tandoor" | "ai";
-
-/** What the import found, and where it came from. */
-export type ImportedRecipe = {
-  from: ImportSource;
-  /** The page as it was asked for, after redirects. Becomes the recipe's `sourceUrl`. */
-  url: string;
-  recipe: ScrapedRecipe;
-  /**
-   * The page's readable text (M36.3), for a future AI rung over a fetched
-   * page to read alongside the rules' result. Empty for every source that
-   * never held a page's HTML: the file imports, and the AI rung itself,
-   * which is handed text rather than producing it.
-   */
-  pageText: string;
-  /**
-   * The anchored read's verdict (M36.5), present only when the AI rung ran
-   * with a JSON-LD anchor to check against. Undefined everywhere else: the
-   * rules-based rungs have nothing to check themselves against.
-   */
-  check?: ImportCheck;
-  /**
-   * The model's answer when the check rejected it. `recipe` is the anchor in
-   * that case and this is what was discarded, kept so the review can show the
-   * difference and offer it anyway.
-   */
-  rejected?: ScrapedRecipe;
-};
 
 /** The pasted text as an http(s) URL, or null for anything else. Pure. */
 export function parsePageUrl(raw: string): URL | null {
@@ -91,52 +38,6 @@ export function parsePageUrl(raw: string): URL | null {
     return null;
   }
   return url.protocol === "http:" || url.protocol === "https:" ? url : null;
-}
-
-/** An OpenGraph stub as a `ScrapedRecipe`: what it knows, and empty lists for what it does not. Pure. */
-export function scrapedFromStub(stub: { name: string; description: string; image: string | null }): ScrapedRecipe {
-  return {
-    name: stub.name,
-    description: stub.description,
-    image: stub.image,
-    servings: 0,
-    yieldText: "",
-    prepMinutes: null,
-    cookMinutes: null,
-    tags: [],
-    parts: [{ name: "", ingredients: [], steps: [] }],
-  };
-}
-
-/**
- * The recipe in a page's HTML: the schema.org Recipe if it has a usable one,
- * else an OpenGraph stub, else null. Pure — the fetch is the caller's. Kept
- * separate so the whole decision can be tested without a network.
- */
-export function extractRecipe(html: string, url: string): ImportedRecipe | null {
-  const pageText = readableText(html);
-  const node = recipeNodeFromHtml(html);
-  if (node !== null) {
-    const recipe = scrapedFromSchema(node);
-    // A Recipe node with nothing in it is an SEO shell, not a recipe.
-    if (hasContent(recipe)) return { from: "schema", url, recipe, pageText };
-  }
-  const stub = openGraphStub(html);
-  return stub === null ? null : { from: "stub", url, recipe: scrapedFromStub(stub), pageText };
-}
-
-/**
- * The post-fetch half of the URL import (M36.7): everything that happens once
- * the page's HTML is in hand, with no network in it. `importRecipeFromUrl`
- * calls it with what it fetched, and the paste box calls it with what was
- * pasted when the paste looks like a page's source (`looksLikeHtml`), so
- * view-source-and-paste gets exactly what a successful fetch would have got —
- * the same rungs, the same `pageText` for the model to read, the same result
- * shape. Null when the page carries neither structured data nor OpenGraph
- * tags; the callers differ on what to do about that. Pure.
- */
-export function importFromHtml(html: string, url: string): ImportedRecipe | null {
-  return extractRecipe(html, url);
 }
 
 /** The slice of `fetch` used here; injectable for tests. Matches `imageFetch`. */
@@ -192,7 +93,7 @@ export async function importRecipeFromUrl(raw: string, fetcher: Fetcher = fetch)
   if (bytes.length === 0) throw new Error(`${url.hostname} returned an empty page`);
   if (bytes.length > MAX_PAGE_BYTES) throw new Error("That page is too large to read");
 
-  const found = importFromHtml(new TextDecoder().decode(bytes), response.url || url.href);
+  const found = extractRecipe(new TextDecoder().decode(bytes), response.url || url.href);
   if (found === null) throw new Error("No recipe data on that page. You can still start a blank recipe and type it in.");
   return found;
 }

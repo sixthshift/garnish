@@ -34,7 +34,7 @@
 // treated as absent rather than throwing, because this input comes off the
 // public web and the alternative to a missing field is a failed import.
 import { z } from "zod";
-import type { JsonLdNode } from "./jsonLd";
+import type { JsonLdNode } from "./page/jsonLd";
 
 /** One part of a scraped recipe: a name (empty for the main body), its raw ingredient lines and its steps. */
 export type ScrapedPart = { name: string; ingredients: string[]; steps: string[] };

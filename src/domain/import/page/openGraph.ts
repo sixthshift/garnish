@@ -20,7 +20,7 @@
 // number of sites emit instead, so both are accepted — but only for `og:`
 // keys, never `twitter:`, whose `twitter:title` would otherwise win on a page
 // that has both.
-import { decodeEntities } from "./schemaRecipe";
+import { decodeEntities } from "../scraped";
 
 /** What a page gives up when it has no structured recipe data. */
 export type OpenGraphStub = {

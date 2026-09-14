@@ -9,7 +9,7 @@ import { draftFromScraped, importSummary, PasteSource, SourceChooser } from "../
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../src/domain/recipe/recipe";
-import { ingredientLines } from "../../../src/domain/import/schemaRecipe";
+import { ingredientLines } from "../../../src/domain/import";
 import { parseAiAnswer } from "../../../src/server/ai/import";
 
 const gram: Unit = {

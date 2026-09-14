@@ -14,8 +14,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
-import { mealieRecipe, reviewRowsFromMealie, type MealieRecipe } from "../../../src/domain/import/sources/importMealie";
-import { reviewRowsFromTandoor, tandoorRecipesFrom, type TandoorRecipe } from "../../../src/domain/import/sources/importTandoor";
+import { type ImportedRecipe, type MealieRecipe, readExport, reviewRowsFromMealie, reviewRowsFromTandoor, type TandoorRecipe } from "../../../src/domain/import";
 import type { Unit } from "../../../src/domain/recipe/recipe";
 import {
   draftFromScraped,
@@ -25,10 +24,20 @@ import {
   RecipePicker,
   SourceChooser,
 } from "../../../src/components/import/RecipeSource";
-import type { ImportedRecipe } from "../../../src/server/import/fromUrl";
 
 const FIXTURE = join(import.meta.dirname, "../../fixtures/mealie/lemon-tart.json");
-const recipe = (): MealieRecipe => mealieRecipe(JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>);
+// Read through the module's surface, as the upload route does, and cloned per test.
+const MEALIE = (await readExport({ name: "lemon-tart.json", bytes: new Uint8Array(readFileSync(FIXTURE)) }))[0] as MealieRecipe;
+const recipe = (): MealieRecipe => structuredClone(MEALIE);
+
+const TANDOOR_DIR = join(import.meta.dirname, "../../fixtures/tandoor");
+const readTandoor = (name: string): Record<string, unknown> => JSON.parse(readFileSync(join(TANDOOR_DIR, name), "utf8")) as Record<string, unknown>;
+const TANDOOR = (
+  await readExport({
+    name: "tandoor.json",
+    bytes: new TextEncoder().encode(JSON.stringify([readTandoor("lemon-tart.json"), readTandoor("lemon-curd.json")])),
+  })
+)[0] as TandoorRecipe;
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -231,9 +240,7 @@ describe("the draft", () => {
 });
 
 describe("a Tandoor export (M34.4)", () => {
-  const TANDOOR = join(import.meta.dirname, "../../fixtures/tandoor");
-  const read = (name: string): Record<string, unknown> => JSON.parse(readFileSync(join(TANDOOR, name), "utf8")) as Record<string, unknown>;
-  const tandoor = (): TandoorRecipe => tandoorRecipesFrom([read("lemon-tart.json"), read("lemon-curd.json")])[0]!;
+  const tandoor = (): TandoorRecipe => structuredClone(TANDOOR);
 
   test("it lands on the same review, saying which export it came from", () => {
     const source = tandoor();

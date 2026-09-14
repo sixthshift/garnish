@@ -31,9 +31,9 @@ import type { FoodCandidate } from "../../ingredient/parseFood";
 import type { UnitCandidate } from "../../ingredient/parseUnit";
 import { parseIngredient } from "../../ingredient/parseIngredient";
 import { reviewRow, type ReviewRow } from "../../ingredient/bulkIngredients";
-import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "../schemaRecipe";
+import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "../scraped";
 import { IMAGE_TYPES, sniffImage } from "../../image";
-import { isZip, readZip, type ZipEntry } from "../zip";
+import { isZip, readZip, type ZipEntry } from "./zip";
 
 /** One of Mealie's ingredient rows, already parsed by Mealie. */
 export type MealieIngredient = {

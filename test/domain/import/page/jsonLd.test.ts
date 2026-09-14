@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { findRecipeNode, isRecipeNode, jsonLdNodes, recipeNodeFromHtml, typesOf, unwrapScriptBody } from "../../../src/domain/import/jsonLd";
+import { findRecipeNode, isRecipeNode, jsonLdNodes, recipeNodeFromHtml, typesOf, unwrapScriptBody } from "../../../../src/domain/import/page/jsonLd";
 
 /** A page carrying `blocks` as ld+json scripts, with ordinary markup around them. */
 function page(...blocks: string[]): string {

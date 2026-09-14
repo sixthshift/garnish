@@ -26,7 +26,7 @@
 // replaced by a model. The caller keeps the anchor as the result and carries
 // the rejected answer alongside it, so the review can still offer it to a
 // household that can see the model was right.
-import { decodeEntities, type ScrapedPart } from "./schemaRecipe";
+import { decodeEntities, type ScrapedPart } from "./scraped";
 
 /** What the comparison found. `ok` is the gate; the four lists are what a review, or a test, reads. */
 export type ImportCheck = {

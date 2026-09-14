@@ -20,8 +20,7 @@ import { isTextOnly } from "../../../src/components/recipe/editor/IngredientsEdi
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../src/domain/recipe/recipe";
-import { ingredientLines, type ScrapedRecipe } from "../../../src/domain/import/schemaRecipe";
-import type { ImportedRecipe } from "../../../src/server/import/fromUrl";
+import { type ImportedRecipe, ingredientLines, type ScrapedRecipe } from "../../../src/domain/import";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

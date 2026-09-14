@@ -5,10 +5,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { MAX_AI_TEXT } from "../../../src/server/ai/import";
-import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../../src/domain/import/pageText";
+import { MAX_AI_TEXT } from "../../../../src/server/ai/import";
+import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../../../src/domain/import/page/text";
 
-const FIXTURES = join(import.meta.dirname, "../../fixtures/importUrl");
+const FIXTURES = join(import.meta.dirname, "../../../fixtures/importUrl");
 const SECTIONED_PAGE = readFileSync(join(FIXTURES, "sectioned-page.html"), "utf8");
 const RECIPE_200 = readFileSync(join(FIXTURES, "recipe-200.html"), "utf8");
 

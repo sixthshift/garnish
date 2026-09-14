@@ -1,6 +1,6 @@
 // Building a zip in memory, so the Mealie import's tests (M34.3) have an
 // archive to read without a fixture binary in the repo. The mirror of
-// src/domain/import/zip.ts: central directory, local headers, stored or deflated
+// src/domain/import/sources/zip.ts: central directory, local headers, stored or deflated
 // entries through the platform's `CompressionStream("deflate-raw")`.
 
 export type ZipInput = { name: string; bytes: Uint8Array; deflate?: boolean };

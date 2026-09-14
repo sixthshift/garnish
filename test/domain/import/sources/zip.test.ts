@@ -3,8 +3,8 @@
 // walk. Archives are built in memory by test/helpers/zip.ts, so there is no
 // binary fixture to trust.
 import { describe, expect, test } from "vitest";
-import { findEndOfCentralDirectory, inflate, isZip, readZip } from "../../../src/domain/import/zip";
-import { makeZip, PNG_BYTES } from "../../helpers/zip";
+import { findEndOfCentralDirectory, inflate, isZip, readZip } from "../../../../src/domain/import/sources/zip";
+import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 
 const utf8 = (text: string) => new TextEncoder().encode(text);
 const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes);

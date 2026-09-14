@@ -16,6 +16,7 @@ Keep the argument in `docs/`; keep operating constraints here.
 
 - **Store:** SQLite via `bun:sqlite` is the only store. No file export in v1. Recipes are mastered in the DB.
 - **Queries:** Drizzle ORM over that same `bun:sqlite` handle (decisions.md row 46). `src/db/models/` is one folder per domain: `schema.ts` declares that domain's tables, `repo.ts` is its repository. No barrel — repositories import the tables they touch directly. Repositories use the query builder, not SQL strings. `migrations/*.sql` applied by `src/db/migrations/migrate.ts` still build the database — drizzle-kit only *generates* SQL to review (`bun run db:generate`), it never applies it.
+- **Modules:** a folder under `src/domain/` with an `index.ts` is a module. The index is its only entry: it exports a chosen surface, not everything the folder has, and nothing outside the folder imports a deeper path (`test/modules.test.ts` enforces it). This is not a barrel, and the no-barrel rule for `src/db/models/` stands. `import` is the first; give a domain an index only when its surface is clear.
 - **Schema:** Mealie's shapes outside recipe internals, minus users and groups. `https://demo.mealie.io/openapi.json` is the reference.
 - **Tie-breaker:** when unsure about any product or schema question, do what Mealie does.
 - **Recipe internals:** a recipe is an ordered list of named parts; each owns its ingredients and its steps, and the unnamed part (`name = ''`) is the recipe's main body. Sub-recipes hang off `food.recipe_id`; the column exists, the behaviour is deferred.

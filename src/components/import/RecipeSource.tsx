@@ -56,18 +56,25 @@ import { Textarea } from "@sixthshift/design-system/textarea";
 import { type FormEvent, useState } from "react";
 import type { Food as FoodRow } from "../../db/models/food/repo";
 import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../../domain/ingredient/bulkIngredients";
-import type { ImportCheck } from "../../domain/import/importCheck";
-import { type MealieRecipe, reviewRowsFromMealie } from "../../domain/import/sources/importMealie";
-import { type ExportRecipe, isTandoorRecipe, reviewRowsFromTandoor } from "../../domain/import/sources/importTandoor";
+import {
+  type FileRecipe,
+  type ImportCheck,
+  type ImportedRecipe,
+  type ImportSource,
+  ingredientLines,
+  isTandoorRecipe,
+  type MealieRecipe,
+  reviewRowsFromMealie,
+  reviewRowsFromTandoor,
+  type ScrapedRecipe,
+} from "../../domain/import";
 import type { Tag, Unit } from "../../domain/recipe/recipe";
-import { ingredientLines, type ScrapedRecipe } from "../../domain/import/schemaRecipe";
 import { suggestLinks } from "../../domain/recipe/stepIngredients";
 import { randomUuid } from "../../lib/ids";
 import { postImportFile } from "../../lib/importFile";
 import { messageFrom } from "../../lib/notify";
 import { foodForRecipe, findOrCreateFood, listFoods } from "../../server/fns/foods";
 import { getRecipe, recipeByName } from "../../server/fns/recipes";
-import type { ImportedRecipe, ImportSource } from "../../server/import/fromUrl";
 import { importFromUrl } from "../../server/import/fromUrl";
 import { findOrCreateUnit } from "../../server/fns/units";
 import { importFromText } from "../../server/ai/import";
@@ -580,7 +587,7 @@ export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: 
 }
 
 export type RecipePickerProps = {
-  recipes: readonly ExportRecipe[];
+  recipes: readonly FileRecipe[];
   busy?: boolean;
   onPick: (index: number) => void;
   onBack: () => void;
@@ -816,7 +823,7 @@ export type RecipeSourceProps = {
   /** Override the fetch (tests). */
   load?: (url: string) => Promise<ImportedRecipe>;
   /** Override the upload (tests); otherwise `postImportFile` does it. */
-  loadFile?: (file: File) => Promise<ExportRecipe[]>;
+  loadFile?: (file: File) => Promise<FileRecipe[]>;
   /** Whether a model is configured on the server (M34.5, M36.1); false hides the paste option and leaves every page unsorted. */
   aiAvailable?: boolean;
   /**
@@ -858,7 +865,7 @@ export function RecipeSource(props: RecipeSourceProps) {
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [choices, setChoices] = useState<ExportRecipe[] | null>(null);
+  const [choices, setChoices] = useState<FileRecipe[] | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
   const [rows, setRows] = useState<IngredientReview[]>([]);
   // Which step of the row's part owns the row, and the nested recipes the rows
@@ -951,7 +958,7 @@ export function RecipeSource(props: RecipeSourceProps) {
   };
 
   /** One recipe out of an upload, onto the same review the URL import uses. */
-  const chooseUploaded = async (recipe: ExportRecipe, foods: readonly FoodRow[]) => {
+  const chooseUploaded = async (recipe: FileRecipe, foods: readonly FoodRow[]) => {
     const reviewed = isTandoorRecipe(recipe)
       ? reviewRowsFromTandoor(recipe, { units, foods })
       : { ...reviewRowsFromMealie(recipe, { units, foods }), rowSteps: null, subRecipeNames: [] as string[] };

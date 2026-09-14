@@ -13,7 +13,7 @@ import {
   ScrapedRecipeSchema,
   scrapedFromSchema,
   text,
-} from "../../../src/domain/import/schemaRecipe";
+} from "../../../src/domain/import/scraped";
 
 describe("decodeEntities and text", () => {
   test("named and numeric entities decode", () => {

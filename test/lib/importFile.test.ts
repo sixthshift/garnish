@@ -2,7 +2,7 @@
 // came back from it as a data URL (M34.3). The fetch is injected, so neither
 // needs a server.
 import { expect, test } from "vitest";
-import { imageDataUrl, IMPORT_FIELD, type MealieRecipe } from "../../src/domain/import/sources/importMealie";
+import { IMPORT_FIELD, type MealieRecipe } from "../../src/domain/import";
 import { IMPORT_FILE_URL, postImportFile } from "../../src/lib/importFile";
 import { dataUrlFile } from "../../src/lib/images";
 import { PNG_BYTES } from "../helpers/zip";
@@ -35,7 +35,7 @@ test("an answer with no recipes is no recipes, not a crash", async () => {
 });
 
 test("dataUrlFile rebuilds an image the parser read out of a zip", () => {
-  const url = imageDataUrl(PNG_BYTES)!;
+  const url = `data:image/png;base64,${Buffer.from(PNG_BYTES).toString("base64")}`;
   const rebuilt = dataUrlFile(url, "lemon-tart");
   expect(rebuilt.name).toBe("lemon-tart.png");
   expect(rebuilt.type).toBe("image/png");

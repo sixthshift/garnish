@@ -4,8 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import type { MealieRecipe } from "../../../src/domain/import/sources/importMealie";
-import type { ExportRecipe } from "../../../src/domain/import/sources/importTandoor";
+import { type FileRecipe, type MealieRecipe } from "../../../src/domain/import";
 import { Route } from "../../../src/routes/api/import/file";
 import { handleImportFile, IMPORT_FIELD } from "../../../src/server/api/importFile";
 import { makeZip, PNG_BYTES } from "../../helpers/zip";
@@ -57,7 +56,7 @@ test("the route is wired to the handler", async () => {
 test("a Tandoor recipe.json comes back parsed, its steps as parts (M34.4)", async () => {
   const response = await handleImportFile(upload(tandoorText(), "recipe.json"));
   expect(response.status).toBe(200);
-  const payload = (await response.json()) as { recipes: ExportRecipe[] };
+  const payload = (await response.json()) as { recipes: FileRecipe[] };
   expect(payload.recipes).toHaveLength(1);
   const recipe = payload.recipes[0]!;
   expect(recipe.source).toBe("tandoor");

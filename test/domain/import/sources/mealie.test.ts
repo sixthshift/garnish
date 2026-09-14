@@ -21,9 +21,9 @@ import {
   reviewRowsFromMealie,
   tagNames,
   type MealieRecipe,
-} from "../../../../src/domain/import/sources/importMealie";
+} from "../../../../src/domain/import/sources/mealie";
 import type { Food } from "../../../../src/domain/recipe/recipe";
-import { ingredientLines } from "../../../../src/domain/import/schemaRecipe";
+import { ingredientLines } from "../../../../src/domain/import/scraped";
 import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 
 const FIXTURE = join(import.meta.dirname, "../../../fixtures/mealie/lemon-tart.json");

@@ -3,8 +3,8 @@
 // (reordering, re-parting, entities, whitespace) and what it does not (a
 // dropped line, an added one, a reworded step).
 import { describe, expect, test } from "vitest";
-import { checkAgainstAnchor, normaliseForCheck } from "../../../src/domain/import/importCheck";
-import type { ScrapedPart } from "../../../src/domain/import/schemaRecipe";
+import { checkAgainstAnchor, normaliseForCheck } from "../../../src/domain/import/check";
+import type { ScrapedPart } from "../../../src/domain/import/scraped";
 
 const ANCHOR: { parts: ScrapedPart[] } = {
   parts: [

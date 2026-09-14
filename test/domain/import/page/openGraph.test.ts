@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { openGraphStub, openGraphTags } from "../../../src/domain/import/openGraph";
+import { openGraphStub, openGraphTags } from "../../../../src/domain/import/page/openGraph";
 
 const full = `<html><head>
   <meta property="og:title" content="Anzac biscuits">

@@ -3,14 +3,14 @@
 // of prose.
 //
 // Since M36.6 the model is the default reader of a page rather than a rung
-// under the rules: the rules in `../import/fromUrl.ts` say what the lines are and
+// under the rules: the rules in the import module's `extractRecipe` say what the lines are and
 // the model says which part each sits under, because schema.org has nowhere to
 // record that. What is left for the model alone is text that is not a page at
 // all — the block off a photograph, an email, a book you typed out — where
 // there is nothing structured to anchor it to.
 //
 // A paste that is a page's own source takes the same road as a fetched page
-// (M36.7): `runAiImport` hands it to `importFromHtml` first, and the model
+// (M36.7): `runAiImport` hands it to `extractRecipe` first, and the model
 // then reads the readable text with the JSON-LD as its anchor. Someone who
 // worked around a bot wall by copying view-source should not get a worse
 // result than the fetch would have given them.
@@ -34,11 +34,19 @@
 // them together.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { checkAgainstAnchor } from "../../domain/import/importCheck";
-import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../domain/import/pageText";
-import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../../domain/import/schemaRecipe";
+import {
+  checkAgainstAnchor,
+  extractRecipe,
+  type ImportedRecipe,
+  ingredientLines,
+  looksLikeHtml,
+  MAX_PAGE_TEXT,
+  normaliseScraped,
+  readableText,
+  type ScrapedRecipe,
+  ScrapedRecipeSchema,
+} from "../../domain/import";
 import { notFoundMiddleware } from "../core/fn";
-import { importFromHtml, type ImportedRecipe } from "../import/fromUrl";
 import { AI_TIMEOUT_MS, aiConfigured, AiError, type AiRunner, createFetchRunner, type Fetcher, stripFence } from "./client";
 
 /** The most text worth sending: `readableText`'s own cap (`pageText.ts`), so there is one number for it rather than two that can drift. */
@@ -244,7 +252,7 @@ async function modelRead(
  *
  * Prose goes straight to the model, as it always has. A paste that is a page's
  * source (M36.7) takes the rules first instead, through the very same
- * `importFromHtml` a fetched page goes through, so someone who got past a bot
+ * `extractRecipe` a fetched page goes through, so someone who got past a bot
  * wall by copying view-source lands on exactly the result the fetch would have
  * given: the JSON-LD as the anchor, the readable text as what the model sorts
  * into parts, the check over the answer. A model failure on that path is not
@@ -269,7 +277,7 @@ export async function runAiImport(
   // An anchor means the client has already run the rules over this page and is
   // handing back its `pageText` (M36.6); only a bare paste can be markup.
   if (anchor === null && looksLikeHtml(body)) {
-    const found = importFromHtml(body, sourceUrl);
+    const found = extractRecipe(body, sourceUrl);
     if (found !== null) {
       try {
         return await modelRead(found.pageText, {
