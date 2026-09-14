@@ -115,27 +115,71 @@ export const SCRAPED_JSON_SCHEMA = {
 } as const;
 
 /**
- * What the model is asked. The fields are described in the app's own terms
- * because the schema only gives their types: an empty string is "the text did
- * not say", ingredient lines are copied verbatim for `parseIngredient` to read
- * (row 47), and a named section is a part, as row 59 already has the URL
- * import treat a `HowToSection`. Pure.
+ * The anchor as the model sees it: the fields it is being asked to copy, and
+ * nothing else. `image` and `description` ride along so an accepted answer
+ * keeps them — the model is told to hand them back untouched — but everything
+ * the JSON-LD carried that has no bearing on the question is left out, because
+ * the anchor is sent on every structured page and every byte of it is text the
+ * model has to read past. Pure.
  */
-export function aiPrompt(text: string): string {
-  return [
-    "Read the recipe out of the text below and answer with JSON matching the schema. Rules:",
-    "- `parts`: a named section of the recipe (a sauce, a topping) is a part with that name, holding the ingredient lines written under that heading and the steps written under it. Anything under no heading at all — ingredients and steps both — goes in the part named \"\" (empty), which is the main body.",
-    "- Copy ingredient lines verbatim into their part's `ingredients`, one entry per line, quantity and unit and all. Do not convert, round or reword them, and do not repeat a line on a second part.",
-    "- `steps` are that part's method, one entry per step, without numbering.",
-    "- `servings` is a number and 0 when the text does not say. `yieldText` is what it makes without the count (\"biscuits\", \"loaf\"), empty when the yield was only a number.",
-    "- `prepMinutes` and `cookMinutes` are whole minutes or null. `image` is a URL found in the text or null.",
-    "- `tags` are short topic words the text itself gives. Do not invent any.",
-    "- Never invent an ingredient, a step, a time or a quantity. What is not in the text is empty, 0 or null.",
-    "- Answer with the JSON only.",
-    "",
-    "TEXT:",
-    text,
-  ].join("\n");
+export function anchorJson(anchor: ScrapedRecipe): string {
+  return JSON.stringify({
+    name: anchor.name,
+    description: anchor.description,
+    image: anchor.image,
+    servings: anchor.servings,
+    yieldText: anchor.yieldText,
+    prepMinutes: anchor.prepMinutes,
+    cookMinutes: anchor.cookMinutes,
+    tags: anchor.tags,
+    parts: anchor.parts.map((part) => ({ name: part.name, ingredients: part.ingredients, steps: part.steps })),
+  });
+}
+
+/** The rules for a page with no structured data: the text is all there is, so the model reads the recipe out of it. */
+const UNANCHORED_RULES = [
+  "Read the recipe out of the text below and answer with JSON matching the schema. Rules:",
+  "- `parts`: a named section of the recipe (a sauce, a topping) is a part with that name, holding the ingredient lines written under that heading and the steps written under it. Anything under no heading at all — ingredients and steps both — goes in the part named \"\" (empty), which is the main body.",
+  "- Copy ingredient lines verbatim into their part's `ingredients`, one entry per line, quantity and unit and all. Do not convert, round or reword them, and do not repeat a line on a second part.",
+  "- `steps` are that part's method, one entry per step, without numbering.",
+  "- `servings` is a number and 0 when the text does not say. `yieldText` is what it makes without the count (\"biscuits\", \"loaf\"), empty when the yield was only a number.",
+  "- `prepMinutes` and `cookMinutes` are whole minutes or null. `image` is a URL found in the text or null.",
+  "- `tags` are short topic words the text itself gives. Do not invent any.",
+  "- Never invent an ingredient, a step, a time or a quantity. What is not in the text is empty, 0 or null.",
+  "- Answer with the JSON only.",
+];
+
+/**
+ * The rules for a page that came with structured data, which since M36.6 is
+ * most pages. The question being asked is a narrow one and the prompt says so
+ * in as many ways as it can: the anchor's lines and steps *are* the recipe,
+ * and the only thing missing from them is which heading each one sat under,
+ * because schema.org has nowhere to put that. So the model is not reading a
+ * recipe here, it is sorting known lines into parts — and `checkAgainstAnchor`
+ * (M36.5) throws the answer away if it did anything else, which is the real
+ * reason these rules can be this blunt.
+ */
+const ANCHORED_RULES = [
+  "The JSON under ANCHOR below is the recipe, taken from the page's own structured data. Your job is only to sort its lines and steps into parts, using the text to see which heading each one sat under. Rules:",
+  "- Every ingredient line and every step in your answer must be copied from the anchor, byte for byte, exactly once between them all. The anchor's lines and steps are the recipe.",
+  "- Never add, drop, merge, split or reword a line or a step. Do not renumber, retitle, translate, correct spelling or punctuation, convert units, or tidy whitespace.",
+  "- The text is evidence for one thing only: which heading each of the anchor's lines and steps sits under, and what that part should be named. It is not a source of content.",
+  "- A line or a step that sits under no heading stays on the part named \"\" (empty), which is the main body. If the text shows no headings at all, answer with the anchor's parts unchanged.",
+  "- `name`, `description`, `image`, `servings`, `yieldText`, `prepMinutes`, `cookMinutes` and `tags`: copy them from the anchor exactly as given. Do not improve them.",
+  "- Answer with the JSON only.",
+];
+
+/**
+ * What the model is asked. Unanchored, the fields are described in the app's
+ * own terms because the schema only gives their types: an empty string is "the
+ * text did not say", ingredient lines are copied verbatim for `parseIngredient`
+ * to read (row 47), and a named section is a part, as row 59 already has the
+ * URL import treat a `HowToSection`. Anchored, the task is a different one
+ * altogether and the rules say so. Pure.
+ */
+export function aiPrompt({ text, anchor = null }: { text: string; anchor?: ScrapedRecipe | null }): string {
+  if (anchor === null) return [...UNANCHORED_RULES, "", "TEXT:", text].join("\n");
+  return [...ANCHORED_RULES, "", "TEXT:", text, "", "ANCHOR:", anchorJson(anchor)].join("\n");
 }
 
 /** How the model is asked. Injectable so a test can answer with a fixture, or with garbage. */
@@ -248,16 +292,21 @@ export function parseAiAnswer(content: string): ScrapedRecipe {
 /** What the paste screen sends and gets back: the same `ImportedRecipe` the URL import produces, from the `ai` rung. */
 export async function runAiImport(
   text: string,
-  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string } = {},
+  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string; anchor?: ScrapedRecipe | null } = {},
 ): Promise<ImportedRecipe> {
-  const { run = options.fetcher ? createFetchRunner(options.fetcher) : fetchRunner, sourceUrl = "" } = options;
+  const { run = options.fetcher ? createFetchRunner(options.fetcher) : fetchRunner, sourceUrl = "", anchor = null } = options;
   const body = text.trim();
   if (body === "") throw new AiImportError("failed", "Paste the recipe first.");
-  if (body.length > MAX_AI_TEXT) throw new AiImportError("failed", "That is too much text to read in one go. Paste one recipe at a time.");
+  // The cap is on what the request carries, not on the paste alone: an
+  // anchored read sends the page's text and the page's JSON-LD together, and
+  // it is the pair of them the model has to fit in.
+  if (body.length + (anchor === null ? 0 : anchorJson(anchor).length) > MAX_AI_TEXT) {
+    throw new AiImportError("failed", "That is too much text to read in one go. Paste one recipe at a time.");
+  }
 
   let content: string;
   try {
-    content = await run(aiPrompt(body), AI_IMPORT_TIMEOUT_MS);
+    content = await run(aiPrompt({ text: body, anchor }), AI_IMPORT_TIMEOUT_MS);
   } catch (cause) {
     if (cause instanceof AiImportError) throw cause;
     throw new AiImportError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
@@ -280,10 +329,21 @@ export const ImportFromTextInput = z.object({
   text: z.string().trim().min(1),
   /** The address the text came from, when it came from one; becomes the recipe's `sourceUrl`. */
   sourceUrl: z.string().trim().default(""),
+  /**
+   * The rules rung's own reading of the same page, when it had one. The client
+   * already holds it, so sending it back costs nothing and saves the server a
+   * second fetch of a page it has no address for.
+   */
+  anchor: ScrapedRecipeSchema.optional(),
 });
 
 /** Read a recipe out of pasted text with a hosted model. Nothing is written: the caller reviews it first. */
 export const importFromText = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(ImportFromTextInput)
-  .handler(async ({ data }) => runAiImport(data.text, { sourceUrl: data.sourceUrl }));
+  .handler(async ({ data }) =>
+    runAiImport(data.text, {
+      sourceUrl: data.sourceUrl,
+      anchor: data.anchor === undefined ? null : normaliseScraped(data.anchor),
+    }),
+  );

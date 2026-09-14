@@ -7,6 +7,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
   AI_IMPORT_TIMEOUT_MS,
   aiConfigured,
+  anchorJson,
   aiPrompt,
   aiSettings,
   AiImportError,
@@ -25,7 +26,7 @@ import {
   stripFence,
 } from "../../src/server/aiImport";
 import { aiImportAvailable, importFromText } from "../../src/server/aiImport";
-import { ingredientLines, ScrapedPartSchema, ScrapedRecipeSchema } from "../../src/domain/schemaRecipe";
+import { ingredientLines, type ScrapedRecipe, ScrapedPartSchema, ScrapedRecipeSchema } from "../../src/domain/schemaRecipe";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -105,9 +106,25 @@ describe("the configuration", () => {
   });
 });
 
+/** A schema rung result to anchor a read on: every line on the unnamed part, the steps split by a `HowToSection`. */
+const ANCHOR: ScrapedRecipe = {
+  name: "Anzac biscuits",
+  description: "A family recipe.",
+  image: null,
+  servings: 24,
+  yieldText: "biscuits",
+  prepMinutes: 20,
+  cookMinutes: 15,
+  tags: ["baking"],
+  parts: [
+    { name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: ["Rub the butter in."] },
+    { name: "To finish", ingredients: [], steps: ["Bake."] },
+  ],
+};
+
 describe("the request", () => {
   test("is one user turn, the schema as structured output, and no creativity", () => {
-    const body = chatRequestBody(aiPrompt("Anzac biscuits\n1 cup flour"), "gemini-x");
+    const body = chatRequestBody(aiPrompt({ text: "Anzac biscuits\n1 cup flour" }), "gemini-x");
     expect(body.model).toBe("gemini-x");
     expect(body.messages).toEqual([{ role: "user", content: expect.stringContaining("Anzac biscuits") }]);
     expect(body.response_format).toEqual({ type: "json_schema", json_schema: { name: "recipe", schema: SCRAPED_JSON_SCHEMA, strict: true } });
@@ -115,7 +132,7 @@ describe("the request", () => {
   });
 
   test("the prompt carries the text and the rules that keep the answer honest", () => {
-    const prompt = aiPrompt("some prose");
+    const prompt = aiPrompt({ text: "some prose" });
     expect(prompt).toContain("some prose");
     expect(prompt).toMatch(/verbatim/);
     expect(prompt).toMatch(/Never invent/);
@@ -123,6 +140,39 @@ describe("the request", () => {
     // unnamed body (M36.2).
     expect(prompt).toMatch(/ingredient lines written under that heading/);
     expect(prompt).toContain('the part named "" (empty)');
+  });
+
+  // M36.4. On a page with structured data the question is not "what is the
+  // recipe" but "which heading did each of these lines sit under", and the
+  // prompt has to be a different prompt for that to be true.
+  test("with an anchor the lines are handed over and the copy-exactly rules appear", () => {
+    const prompt = aiPrompt({ text: "# Pastry\n125 g butter", anchor: ANCHOR });
+    expect(prompt).toContain("# Pastry");
+    expect(prompt).toContain("ANCHOR:");
+    for (const line of ["125 g butter", "1 cup plain flour", "Rub the butter in.", "Bake."]) {
+      expect(prompt).toContain(line);
+    }
+    expect(prompt).toMatch(/byte for byte/);
+    expect(prompt).toMatch(/Never add, drop, merge, split or reword/);
+    expect(prompt).toMatch(/copy them from the anchor exactly as given/);
+  });
+
+  test("the anchored rules appear only with an anchor, and the unanchored ones only without", () => {
+    const anchored = aiPrompt({ text: "prose", anchor: ANCHOR });
+    const plain = aiPrompt({ text: "prose" });
+    expect(plain).not.toMatch(/byte for byte/);
+    expect(plain).not.toContain("ANCHOR:");
+    expect(anchored).not.toMatch(/Never invent an ingredient/);
+    expect(anchored).not.toMatch(/Read the recipe out of the text below/);
+  });
+
+  test("the anchor is serialised compactly: the fields being copied, and no more", () => {
+    const json = JSON.parse(anchorJson(ANCHOR)) as Record<string, unknown>;
+    expect(Object.keys(json).sort()).toEqual(
+      ["cookMinutes", "description", "image", "name", "parts", "prepMinutes", "servings", "tags", "yieldText"],
+    );
+    expect(json.parts).toEqual(ANCHOR.parts);
+    expect(json.servings).toBe(24);
   });
 
   test("the JSON Schema names exactly the fields the zod schema does, and requires all of them", () => {
@@ -331,6 +381,25 @@ describe("runAiImport", () => {
     await expect(runAiImport("x".repeat(MAX_AI_TEXT + 1), { run })).rejects.toThrow(/too much text/);
     expect(run.calls).toHaveLength(0);
   });
+
+  // M36.4: the anchor reaches the model, and it counts against the same cap
+  // the text does, because the request carries both.
+  test("an anchor is passed through to the runner as the anchored prompt", async () => {
+    const run = fakeRunner(answer);
+    await runAiImport("# To finish\nBake.", { run, anchor: ANCHOR });
+    const prompt = run.calls[0]!.prompt;
+    expect(prompt).toContain("ANCHOR:");
+    expect(prompt).toContain("125 g butter");
+    expect(prompt).toMatch(/byte for byte/);
+  });
+
+  test("text and anchor are measured against the cap together", async () => {
+    const run = fakeRunner(answer);
+    const text = "x".repeat(MAX_AI_TEXT - 10);
+    await expect(runAiImport(text, { run })).resolves.toBeTruthy();
+    await expect(runAiImport(text, { run, anchor: ANCHOR })).rejects.toThrow(/too much text/);
+    expect(run.calls).toHaveLength(1);
+  });
 });
 
 describe("the server functions", () => {
@@ -344,5 +413,11 @@ describe("the server functions", () => {
   test("a blank paste is refused by the validator, before any request is made", async () => {
     await expect(callServerFn(importFromText, { text: "   " } as never)).rejects.toThrow(/too_small|at least 1/);
     expect(ImportFromTextInput.parse({ text: " hi " })).toEqual({ text: "hi", sourceUrl: "" });
+  });
+
+  test("the anchor is optional, and validated through the scraped schema when it is there", () => {
+    const parsed = ImportFromTextInput.parse({ text: "hi", anchor: { name: "Anzac biscuits", parts: [{ ingredients: ["1 cup plain flour"] }] } });
+    expect(parsed.anchor?.parts[0]?.ingredients).toEqual(["1 cup plain flour"]);
+    expect(() => ImportFromTextInput.parse({ text: "hi", anchor: { parts: [] } })).toThrow();
   });
 });
