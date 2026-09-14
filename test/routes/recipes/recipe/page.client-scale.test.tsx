@@ -142,8 +142,12 @@ describe("stepping servings makes no server call", () => {
     expect(calls.getRecipe).toBe(1);
     expect(before).toContain("Serves 4");
 
-    // What plus does: a replace navigation with a new servings param.
-    await router.navigate({ to: "/recipes/$slug", params: { slug: "lemon-tart" }, search: { servings: 5 }, replace: true });
+    // What plus does: a replace navigation with a new servings param. In the
+    // browser that is `router.navigate`; on the server (which vitest is, to the
+    // router) navigate is a no-op since router-core 1.171.30, so the test does
+    // what navigate would have done to the history and loads.
+    router.history.replace(router.buildLocation({ to: "/recipes/$slug", params: { slug: "lemon-tart" }, search: { servings: 5 } }).href);
+    await router.load();
     const second = router.state.matches.at(-1);
 
     // Same match, same (empty) deps: nothing for the client router to refetch.
@@ -164,7 +168,8 @@ describe("stepping servings makes no server call", () => {
     await renderRouter(router);
     const first = router.state.matches.at(-1);
 
-    await router.navigate({ to: "/recipes/$slug/cook", params: { slug: "lemon-tart" }, search: { step: 0, servings: 8 }, replace: true });
+    router.history.replace(router.buildLocation({ to: "/recipes/$slug/cook", params: { slug: "lemon-tart" }, search: { step: 0, servings: 8 } }).href);
+    await router.load();
     const second = router.state.matches.at(-1);
 
     expect(second?.id).toBe(first?.id);
