@@ -1,30 +1,3 @@
-// The importer: one object that turns whatever a source hands over into an
-// `ImportedRecipe`. The caller says what it has — an address, a paste, a
-// file — and the importer chooses the sequence:
-//
-//   url   fetch the page, then `extractRecipe` over it: the schema.org rung,
-//         then the OpenGraph stub. The model is not run here, so the review
-//         can show the rules' result at once and ask for the read separately.
-//   text  prose goes to the model. A paste that is a page's own source
-//         (M36.7) takes the page road first, exactly as a fetched page does,
-//         and the model then reads the page's text with the JSON-LD as its
-//         anchor (M36.4) and the answer checked against it (M36.5). A page the
-//         review already holds comes back the same way: its text and its
-//         anchor, and the importer neither knows nor cares that it fetched
-//         that page a moment ago.
-//   file  another app's export, Mealie's or Tandoor's, told apart by shape.
-//
-// Three rules hold it in place:
-//
-//   nothing is written    the result lands on the same M17.5 review whatever
-//                         the source. The importer proposes; the household
-//                         approves.
-//   nothing is trusted    a model's answer is parsed through the recipe
-//                         schema like any other untrusted input. A malformed
-//                         answer is an `ImportError`, never a recipe.
-//   nothing is touched    the importer does no IO of its own. The page fetch
-//                         and the model call are ports it is given, so the
-//                         whole sequence runs in a test with two fakes.
 import { checkAgainstAnchor } from "./check";
 import { ImportError } from "./errors";
 import { extractRecipe } from "./extract";
