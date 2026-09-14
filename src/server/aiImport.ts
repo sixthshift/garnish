@@ -56,7 +56,7 @@ export const MAX_AI_TEXT = MAX_PAGE_TEXT;
 export const DEFAULT_AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 
 /** The model asked for when none is named. The cheap, fast one; this is the one line to change when it is superseded. */
-export const DEFAULT_AI_MODEL = "gemini-2.5-flash";
+export const DEFAULT_AI_MODEL = "gemini-3.6-flash";
 
 /** Why the AI rung did not produce a recipe. The screen shows `message`; the kind is what a test asserts on. */
 export type AiFailure = "unavailable" | "timeout" | "failed" | "malformed";
