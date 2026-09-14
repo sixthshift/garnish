@@ -22,7 +22,7 @@ import {
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../src/domain/recipe/recipe";
-import { type ImportCheck, type ImportedRecipe, ingredientLines, type ScrapedRecipe } from "../../../src/domain/import";
+import { type ImportCheck, type ImportedRecipe, type ScrapedRecipe, review } from "../../../src/domain/import";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -97,7 +97,7 @@ const reviewProps = {
   onCreate: () => {},
 };
 
-const rows = (recipe: ScrapedRecipe) => reviewRows(ingredientLines(recipe), { units, foods });
+const rows = (recipe: ScrapedRecipe) => reviewRows(review.ingredientLines(recipe), { units, foods });
 
 /** The first element in `node` whose `children` prop is exactly `text`. */
 function elementWithChildren(node: ReactNode, text: string): ReactElement<Record<string, any>> | null {

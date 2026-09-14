@@ -9,8 +9,7 @@ import { draftFromScraped, importSummary, PasteSource, SourceChooser } from "../
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../src/domain/recipe/recipe";
-import { ingredientLines } from "../../../src/domain/import";
-import { normaliseScraped, ScrapedRecipeSchema } from "../../../src/domain/import";
+import { review, type ScrapedRecipe } from "../../../src/domain/import";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -104,17 +103,21 @@ describe("PasteSource", () => {
 });
 
 describe("an AI answer through the review", () => {
-  const recipe = normaliseScraped(
-    ScrapedRecipeSchema.parse({
-      name: "Anzac biscuits",
-      servings: 24,
-      yieldText: "biscuits",
-      parts: [
-        { name: "", ingredients: ["125 g flour"], steps: ["Mix."] },
-        { name: "Syrup", ingredients: [], steps: ["Melt."] },
-      ],
-    }),
-  );
+  // A model's answer as the importer hands it on: every field filled, the main body first.
+  const recipe: ScrapedRecipe = {
+    name: "Anzac biscuits",
+    description: "",
+    image: null,
+    servings: 24,
+    yieldText: "biscuits",
+    prepMinutes: null,
+    cookMinutes: null,
+    tags: [],
+    parts: [
+      { name: "", ingredients: ["125 g flour"], steps: ["Mix."] },
+      { name: "Syrup", ingredients: [], steps: ["Melt."] },
+    ],
+  };
 
   test("the review says Claude read it and asks for it to be checked", () => {
     const summary = importSummary("ai", 1, 2);
@@ -124,7 +127,7 @@ describe("an AI answer through the review", () => {
   });
 
   test("it becomes a draft the same way a scraped page does, with no source URL", () => {
-    const rows = reviewRows(ingredientLines(recipe), { units: [gram], foods: [flour] });
+    const rows = reviewRows(review.ingredientLines(recipe), { units: [gram], foods: [flour] });
     const draft = draftFromScraped({
       scraped: recipe,
       sourceUrl: "",

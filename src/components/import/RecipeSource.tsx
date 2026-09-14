@@ -56,18 +56,7 @@ import { Textarea } from "@sixthshift/design-system/textarea";
 import { type FormEvent, useState } from "react";
 import type { Food as FoodRow } from "../../db/models/food/repo";
 import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../../domain/ingredient/bulkIngredients";
-import {
-  type FileRecipe,
-  type ImportCheck,
-  type ImportedRecipe,
-  type ImportSource,
-  ingredientLines,
-  isTandoorRecipe,
-  type MealieRecipe,
-  reviewRowsFromMealie,
-  reviewRowsFromTandoor,
-  type ScrapedRecipe,
-} from "../../domain/import";
+import { type FileRecipe, type ImportCheck, type ImportedRecipe, type ImportSource, type MealieRecipe, review, type ScrapedRecipe } from "../../domain/import";
 import type { Tag, Unit } from "../../domain/recipe/recipe";
 import { suggestLinks } from "../../domain/recipe/stepIngredients";
 import { randomUuid } from "../../lib/ids";
@@ -217,7 +206,7 @@ export function yieldLabel(scraped: ScrapedRecipe): string {
 
 /** How many ingredient lines came back across every part. Pure. */
 export function ingredientCount(scraped: ScrapedRecipe): number {
-  return ingredientLines(scraped).length;
+  return review.ingredientLines(scraped).length;
 }
 
 /** How many steps came back across every part. Pure. */
@@ -904,7 +893,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         return;
       }
       setImported(outcome.result);
-      setRows(reviewRows(ingredientLines(outcome.result.recipe), { units, foods }));
+      setRows(reviewRows(review.ingredientLines(outcome.result.recipe), { units, foods }));
     });
   };
 
@@ -918,7 +907,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         (loadFoods ?? (() => listFoods({ data: {} })))(),
       ]);
       setImported(found);
-      setRows(reviewRows(ingredientLines(found.recipe), { units, foods }));
+      setRows(reviewRows(review.ingredientLines(found.recipe), { units, foods }));
       setRowSteps(null);
       setSubRecipes([]);
       setVocabulary(foods);
@@ -945,7 +934,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         (loadFoods ?? (() => listFoods({ data: {} })))(),
       ]);
       setImported(found);
-      setRows(reviewRows(ingredientLines(found.recipe), { units, foods }));
+      setRows(reviewRows(review.ingredientLines(found.recipe), { units, foods }));
       setRowSteps(null);
       setSubRecipes([]);
       setVocabulary(foods);
@@ -959,9 +948,9 @@ export function RecipeSource(props: RecipeSourceProps) {
 
   /** One recipe out of an upload, onto the same review the URL import uses. */
   const chooseUploaded = async (recipe: FileRecipe, foods: readonly FoodRow[]) => {
-    const reviewed = isTandoorRecipe(recipe)
-      ? reviewRowsFromTandoor(recipe, { units, foods })
-      : { ...reviewRowsFromMealie(recipe, { units, foods }), rowSteps: null, subRecipeNames: [] as string[] };
+    const reviewed = review.isTandoor(recipe)
+      ? review.rowsFromTandoor(recipe, { units, foods })
+      : { ...review.rowsFromMealie(recipe, { units, foods }), rowSteps: null, subRecipeNames: [] as string[] };
     setImported({ from: recipe.source, url: recipe.sourceUrl, recipe, pageText: "" });
     setRows(reviewed.rows);
     setRowSteps(reviewed.rowSteps);
@@ -1047,7 +1036,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         onUseRejected={() => {
           const taken = withRejectedAnswer(imported);
           setImported(taken);
-          setRows(reviewRows(ingredientLines(taken.recipe), { units, foods: vocabulary }));
+          setRows(reviewRows(review.ingredientLines(taken.recipe), { units, foods: vocabulary }));
         }}
         onRowsChange={setRows}
         onBack={() => {

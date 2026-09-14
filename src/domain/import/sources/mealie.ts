@@ -77,8 +77,6 @@ export type MealieRecipe = Omit<ScrapedRecipe, "parts"> & {
 /** The uploaded file, as the parser needs it. */
 export type ImportFile = { name: string; bytes: Uint8Array };
 
-/** Multipart field an uploaded export arrives in, shared by the route and the client. */
-export const IMPORT_FIELD = "file";
 
 // --- Reading values --------------------------------------------------------
 

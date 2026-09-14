@@ -20,7 +20,7 @@ import { isTextOnly } from "../../../src/components/recipe/editor/IngredientsEdi
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../src/domain/recipe/recipe";
-import { type ImportedRecipe, ingredientLines, type ScrapedRecipe } from "../../../src/domain/import";
+import { type ImportedRecipe, type ScrapedRecipe, review } from "../../../src/domain/import";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -67,7 +67,7 @@ const stub: ScrapedRecipe = {
 const imported = (recipe: ScrapedRecipe, from: ImportedRecipe["from"] = "schema"): ImportedRecipe => ({ from, url: SOURCE, recipe, pageText: "" });
 
 function rows() {
-  return reviewRows(ingredientLines(scraped), { units, foods });
+  return reviewRows(review.ingredientLines(scraped), { units, foods });
 }
 
 const reviewProps = {
@@ -239,7 +239,7 @@ describe("draftFromScraped", () => {
     draftFromScraped({
       scraped: recipe,
       sourceUrl: SOURCE,
-      commits: reviewRows(ingredientLines(recipe), { units, foods }).map(rowCommit),
+      commits: reviewRows(review.ingredientLines(recipe), { units, foods }).map(rowCommit),
       createdFoods: new Map(),
       createdUnits: new Map(),
     });

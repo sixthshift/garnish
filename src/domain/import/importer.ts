@@ -28,10 +28,11 @@
 import { checkAgainstAnchor } from "./check";
 import { ImportError } from "./errors";
 import { extractRecipe } from "./extract";
-import { aiPrompt, anchorJson, MAX_AI_TEXT, parseAiAnswer } from "./model";
+import { aiPrompt, anchorJson, MAX_AI_TEXT, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "./model";
 import { looksLikeHtml, readableText } from "./page/text";
 import type { ImportedRecipe } from "./result";
-import type { ScrapedRecipe } from "./scraped";
+import { normaliseScraped, type ScrapedRecipe, type ScrapedRecipeSchema } from "./scraped";
+import type { z } from "zod";
 import { type FileRecipe, readExport } from "./sources/tandoor";
 import type { ImportFile } from "./sources/mealie";
 
@@ -51,14 +52,22 @@ export type PageResponse = { status: number; url: string; bytes: Uint8Array };
  * when the host cannot be reached at all. How it gets past a bot wall is its
  * own business (`src/server/import/fetch.ts`).
  *
- * `model` asks a model for a recipe as JSON and answers with the message
- * content. A provider failure is an `ImportError` of the matching kind: no key
- * is `unavailable`, an abort is `timeout`, anything else is `failed`.
+ * `model` puts one prompt to a model, asking for an answer in the given JSON
+ * Schema, and answers with the message content. The importer says what to
+ * ask; the port says nothing about recipes. A provider failure is an
+ * `ImportError` of the matching kind: no key is `unavailable`, an abort is
+ * `timeout`, anything else is `failed`.
  */
 export type Ports = {
   fetchPage: (url: URL) => Promise<PageResponse>;
-  model: (prompt: string, timeoutMs: number) => Promise<string>;
+  model: (request: ModelRequest) => Promise<string>;
 };
+
+/** One question for the model: the prompt, the shape the answer must take, and how long to wait. */
+export type ModelRequest = { prompt: string; schema: object; schemaName: string; timeoutMs: number };
+
+/** An anchor as a caller may hold it: the rules' result, or the same shape freshly validated at a boundary. Normalised inside. */
+export type AnchorInput = z.output<typeof ScrapedRecipeSchema>;
 
 /** What a caller has. The importer chooses what to do with it. */
 export type Source =
@@ -69,7 +78,7 @@ export type Source =
       /** The address the text came from, when it came from one; becomes the recipe's `sourceUrl`. */
       sourceUrl?: string;
       /** The rules' own reading of the same page, when there was one: the lines the model may only sort, never change. */
-      anchor?: ScrapedRecipe | null;
+      anchor?: AnchorInput | null;
     }
   | { kind: "file"; file: ImportFile };
 
@@ -90,7 +99,7 @@ export class Importer {
   /** A recipe out of a web page: the rules' result, with the page's text for a later read. */
   import(source: { kind: "url"; url: string }): Promise<ImportedRecipe>;
   /** A recipe out of text: the model's read, anchored when the text is a page the rules already read. */
-  import(source: { kind: "text"; text: string; sourceUrl?: string; anchor?: ScrapedRecipe | null }): Promise<ImportedRecipe>;
+  import(source: { kind: "text"; text: string; sourceUrl?: string; anchor?: AnchorInput | null }): Promise<ImportedRecipe>;
   /** The recipes in another app's export file. Many, because a backup holds a collection; the review picks one. */
   import(source: { kind: "file"; file: ImportFile }): Promise<FileRecipe[]>;
   async import(source: Source): Promise<ImportedRecipe | FileRecipe[]> {
@@ -98,7 +107,7 @@ export class Importer {
       case "url":
         return this.fromUrl(source.url);
       case "text":
-        return this.read(source.text, { sourceUrl: source.sourceUrl ?? "", anchor: source.anchor ?? null });
+        return this.read(source.text, { sourceUrl: source.sourceUrl ?? "", anchor: source.anchor == null ? null : normaliseScraped(source.anchor) });
       case "file":
         return readExport(source.file);
     }
@@ -193,7 +202,7 @@ export class Importer {
 
     let content: string;
     try {
-      content = await this.ports.model(aiPrompt({ text, anchor }), READ_TIMEOUT_MS);
+      content = await this.ports.model({ prompt: aiPrompt({ text, anchor }), schema: SCRAPED_JSON_SCHEMA, schemaName: "recipe", timeoutMs: READ_TIMEOUT_MS });
     } catch (cause) {
       if (cause instanceof ImportError) throw cause;
       throw new ImportError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);

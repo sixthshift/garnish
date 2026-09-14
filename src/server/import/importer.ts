@@ -1,18 +1,17 @@
 // The one real importer: the domain's `Importer` given the server's two ports.
 // The page fetch is `fetch.ts` with its browser profiles; the model is the
-// shared OpenAI-compatible client asked for the recipe schema, its failures
+// shared OpenAI-compatible client asked whatever the importer asks, its failures
 // mapped onto the importer's own error kinds so the screen shows the import's
 // words rather than the provider's class.
 import { AiError, createFetchRunner, type Fetcher } from "../ai/client";
-import { ImportError, Importer, type Ports, SCRAPED_JSON_SCHEMA } from "../../domain/import";
+import { ImportError, Importer, type Ports } from "../../domain/import";
 import { createPageFetcher } from "./fetch";
 
-/** The model port over the shared client, asked for a recipe. */
+/** The model port over the shared client: whatever the importer asks, in whatever shape it asks for. */
 export function createModelPort(fetcher: Fetcher = fetch): Ports["model"] {
-  const run = createFetchRunner(fetcher, { schema: SCRAPED_JSON_SCHEMA, schemaName: "recipe" });
-  return async (prompt, timeoutMs) => {
+  return async ({ prompt, schema, schemaName, timeoutMs }) => {
     try {
-      return await run(prompt, timeoutMs);
+      return await createFetchRunner(fetcher, { schema, schemaName })(prompt, timeoutMs);
     } catch (cause) {
       if (cause instanceof AiError) throw new ImportError(cause.kind, cause.message);
       throw cause;

@@ -14,7 +14,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
-import { type ImportedRecipe, Importer, type MealieRecipe, reviewRowsFromMealie, reviewRowsFromTandoor, type TandoorRecipe } from "../../../src/domain/import";
+import { type ImportedRecipe, Importer, type MealieRecipe, type TandoorRecipe, review } from "../../../src/domain/import";
 import type { Unit } from "../../../src/domain/recipe/recipe";
 import {
   draftFromScraped,
@@ -138,7 +138,7 @@ describe("RecipePicker", () => {
 });
 
 describe("the review", () => {
-  const reviewed = () => reviewRowsFromMealie(recipe(), { units, foods });
+  const reviewed = () => review.rowsFromMealie(recipe(), { units, foods });
   const imported = (): ImportedRecipe => ({ from: "mealie", url: recipe().sourceUrl, recipe: recipe(), pageText: "" });
 
   test("the uploaded recipe lands on the same review, with its parts and steps", () => {
@@ -189,7 +189,7 @@ describe("the review", () => {
 describe("the draft", () => {
   test("each row lands on the part it came from, with the steps and the links", () => {
     const source = recipe();
-    const { rows } = reviewRowsFromMealie(source, { units, foods });
+    const { rows } = review.rowsFromMealie(source, { units, foods });
     const draft = draftFromScraped({
       scraped: source,
       sourceUrl: source.sourceUrl,
@@ -228,7 +228,7 @@ describe("the draft", () => {
       ["4 lemons, juiced", "A pinch of sea salt"],
       [],
     ]);
-    const { rows } = reviewRowsFromMealie(source, { units, foods });
+    const { rows } = review.rowsFromMealie(source, { units, foods });
     const draft = draftFromScraped({
       scraped: source,
       sourceUrl: "",
@@ -246,7 +246,7 @@ describe("a Tandoor export (M34.4)", () => {
 
   test("it lands on the same review, saying which export it came from", () => {
     const source = tandoor();
-    const { rows } = reviewRowsFromTandoor(source, { units, foods });
+    const { rows } = review.rowsFromTandoor(source, { units, foods });
     const html = renderToString(
       <ImportReview
         imported={{ from: "tandoor", url: source.sourceUrl, recipe: source, pageText: "" }}
@@ -268,7 +268,7 @@ describe("a Tandoor export (M34.4)", () => {
 
   test("the draft keeps each step's own rows linked to it, not guessed", () => {
     const source = tandoor();
-    const { rows, rowSteps } = reviewRowsFromTandoor(source, { units, foods });
+    const { rows, rowSteps } = review.rowsFromTandoor(source, { units, foods });
     const draft = draftFromScraped({
       scraped: source,
       sourceUrl: source.sourceUrl,
@@ -300,7 +300,7 @@ describe("a Tandoor export (M34.4)", () => {
   });
 
   test("the nested child in the export is the row the food link is offered for", () => {
-    const { rows, subRecipeNames } = reviewRowsFromTandoor(tandoor(), { units, foods });
+    const { rows, subRecipeNames } = review.rowsFromTandoor(tandoor(), { units, foods });
     expect(subRecipeNames).toEqual(["Lemon curd"]);
     // Still a proposal: nothing is created until the reviewer says so.
     expect(rows[4]!.food).toEqual({ kind: "none" });

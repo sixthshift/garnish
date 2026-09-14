@@ -5,7 +5,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { ImportError, Importer, type PageResponse, type Ports, type ScrapedRecipe } from "../../../src/domain/import";
-import { MAX_PAGE_BYTES, parsePageUrl, READ_TIMEOUT_MS } from "../../../src/domain/import/importer";
+import { MAX_PAGE_BYTES, type ModelRequest, parsePageUrl, READ_TIMEOUT_MS } from "../../../src/domain/import/importer";
+import { SCRAPED_JSON_SCHEMA } from "../../../src/domain/import/model";
 import { MAX_AI_TEXT } from "../../../src/domain/import/model";
 
 const URL_UNDER_TEST = "https://example.test/anzac-biscuits";
@@ -29,10 +30,10 @@ const FIXTURE = {
 const answer = JSON.stringify(FIXTURE);
 
 /** A model that answers with `content` and records what it was asked. */
-function fakeModel(content: string): Ports["model"] & { calls: { prompt: string; timeoutMs: number }[] } {
-  const calls: { prompt: string; timeoutMs: number }[] = [];
-  const run = (async (prompt: string, timeoutMs: number) => {
-    calls.push({ prompt, timeoutMs });
+function fakeModel(content: string): Ports["model"] & { calls: ModelRequest[] } {
+  const calls: ModelRequest[] = [];
+  const run = (async (request: ModelRequest) => {
+    calls.push(request);
     return content;
   }) as Ports["model"] & { calls: typeof calls };
   run.calls = calls;
@@ -179,6 +180,9 @@ describe('import({ kind: "text" })', () => {
     expect(run.calls).toHaveLength(1);
     expect(run.calls[0]!.timeoutMs).toBe(READ_TIMEOUT_MS);
     expect(run.calls[0]!.prompt).toContain("Anzac biscuits");
+    // The importer says what shape the answer must take; the port is told, not trusted to know.
+    expect(run.calls[0]!.schema).toBe(SCRAPED_JSON_SCHEMA);
+    expect(run.calls[0]!.schemaName).toBe("recipe");
   });
 
   test("a fenced answer is read the same way", async () => {

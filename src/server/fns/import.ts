@@ -3,7 +3,7 @@
 // written — the caller reviews the result first (M17.5).
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { normaliseScraped, ScrapedRecipeSchema } from "../../domain/import";
+import { ScrapedRecipeSchema } from "../../domain/import";
 import { aiConfigured } from "../ai/client";
 import { notFoundMiddleware } from "../core/fn";
 import { importer } from "../import/importer";
@@ -45,6 +45,6 @@ export const importFromText = createServerFn({ method: "POST" })
       kind: "text",
       text: data.text,
       sourceUrl: data.sourceUrl,
-      anchor: data.anchor === undefined ? null : normaliseScraped(data.anchor),
+      anchor: data.anchor ?? null,
     }),
   );

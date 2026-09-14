@@ -2,7 +2,8 @@
 // M36.4): the two prompts, the compact anchor, the JSON Schema held to its zod
 // twin, and the parser. Pure; no model is ever called.
 import { describe, expect, test } from "vitest";
-import { ingredientLines, type ScrapedRecipe, ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import";
+import type { ScrapedRecipe } from "../../../src/domain/import";
+import { ingredientLines, ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import/scraped";
 import { ImportError } from "../../../src/domain/import/errors";
 import { aiPrompt, anchorJson, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "../../../src/domain/import/model";
 

@@ -2,8 +2,8 @@
 // came back from it as a data URL (M34.3). The fetch is injected, so neither
 // needs a server.
 import { expect, test } from "vitest";
-import { IMPORT_FIELD, type MealieRecipe } from "../../src/domain/import";
-import { IMPORT_FILE_URL, postImportFile } from "../../src/lib/importFile";
+import { type MealieRecipe } from "../../src/domain/import";
+import { IMPORT_FIELD, IMPORT_FILE_URL, postImportFile } from "../../src/lib/importFile";
 import { dataUrlFile } from "../../src/lib/images";
 import { PNG_BYTES } from "../helpers/zip";
 
