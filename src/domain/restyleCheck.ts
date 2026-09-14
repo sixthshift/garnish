@@ -6,14 +6,17 @@
 // going into the pan is the chuck beef the ingredient list names. Words are the
 // household's; numbers and ingredients are the recipe's.
 //
-// So the check is a multiset of number tokens and a set of food mentions, both
+// So the check is a set of number tokens and a set of food mentions, both
 // gathered from the original steps and required to survive into the restyled
-// ones. A multiset for the numbers because a step that says "2 tbsp" twice is
-// saying something different from one that says it once, and one-directional
-// because the interesting rewrites add numbers rather than lose them: statement
-// (7) of the style guide asks for "Add 2 tbsp of the oil", which turns one
-// original "3 tbsp" into a "2" and a "3". An added number is listed so the diff
-// can show it, never failed.
+// ones. A set rather than a multiset for the numbers: the first live restyle
+// flagged a recipe whose step read "Slow cook 2 - 2 1/2 hrs - Cover the pot and
+// let it cook for 2 - 2 1/2 hours", because the rewrite had dropped the inline
+// title and said the range once. Authors repeat numbers for emphasis and in
+// headings; a rewrite that keeps each fact at least once has kept the recipe.
+// One-directional because the interesting rewrites add numbers rather than
+// lose them: statement (7) of the style guide asks for "Add 2 tbsp of the oil",
+// which turns one original "3 tbsp" into a "2" and a "3". An added number is
+// listed so the diff can show it, never failed.
 //
 // Merging and splitting steps is the point of statements (1) and (2), so the
 // comparison is per part rather than per step: where a fact sits inside the
@@ -45,7 +48,7 @@ export type RestyledPart = {
 export type PartRestyleCheck = {
   name: string;
   ok: boolean;
-  /** Original number facts the rewrite did not carry, with duplicates repeated. */
+  /** Original number facts the rewrite did not carry at all, each once. */
   missingFacts: string[];
   /** Foods the original steps named that the rewrite no longer names, by the food's own name. */
   missingFoods: string[];
@@ -181,7 +184,7 @@ function normaliseUnit(raw: string | undefined): string | null {
 }
 
 /**
- * Every number token in the steps, as a multiset in the order it was read.
+ * Every number token in the steps, in the order it was read (duplicates included; `factDiff` reduces them).
  * A range yields both of its ends, each carrying the unit that followed them
  * ("5-7 minutes" is "5min" and "7min"). Pure.
  */
@@ -226,26 +229,12 @@ export function foodsMentioned(
   return found;
 }
 
-/** The original facts the rewrite did not carry, and the numbers it has beyond them. Both multisets. */
+/** The original facts the rewrite does not carry at all, and the numbers it has that the original never did. Both as sets, each fact once. */
 function factDiff(original: readonly string[], restyled: readonly string[]): { missing: string[]; added: string[] } {
-  const counts = new Map<string, number>();
-  for (const fact of original) counts.set(fact, (counts.get(fact) ?? 0) + 1);
-
-  const added: string[] = [];
-  for (const fact of restyled) {
-    const remaining = counts.get(fact) ?? 0;
-    if (remaining > 0) counts.set(fact, remaining - 1);
-    else added.push(fact);
-  }
-
-  const missing: string[] = [];
-  for (const fact of original) {
-    const remaining = counts.get(fact) ?? 0;
-    if (remaining > 0) {
-      missing.push(fact);
-      counts.set(fact, remaining - 1);
-    }
-  }
+  const had = new Set(original);
+  const has = new Set(restyled);
+  const missing = [...had].filter((fact) => !has.has(fact));
+  const added = [...has].filter((fact) => !had.has(fact));
   return { missing, added };
 }
 

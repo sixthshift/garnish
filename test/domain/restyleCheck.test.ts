@@ -3,6 +3,7 @@
 // names — and about the normalisation that keeps "180C" and "180°C" one fact.
 import { describe, expect, test } from "vitest";
 import {
+  checkPart,
   checkRestyle,
   factsOf,
   foodsMentioned,
@@ -147,4 +148,10 @@ test("note and step references are pointers, not facts", () => {
   expect(factsOf(["Add 1/2 tsp sugar if sour (Note 6)."])).toEqual(["1/2tsp"]);
   expect(factsOf(["Return the beef (see Note 7) and simmer 30 min, as in Step 5 above."])).toEqual(["30min"]);
   expect(factsOf(["Repeat steps 2 to 4 for the second batch of 6 pieces"])).toEqual(["6"]);
+});
+
+test("a number the author repeated in a step's title and body survives being said once", () => {
+  const original: OriginalPart = { name: "", ingredients: [], steps: [{ text: "Slow cook 2 - 2 1/2 hrs - Cover the pot and let it cook for 2 - 2 1/2 hours, checking at 2 hours." }] };
+  const restyled = { name: "", steps: ["Cover the pot and cook for 2 - 2 1/2 hours, checking first at 2 hours."] };
+  expect(checkPart(original, restyled).ok).toBe(true);
 });
