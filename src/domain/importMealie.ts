@@ -31,7 +31,7 @@ import type { FoodCandidate } from "./parseFood";
 import type { UnitCandidate } from "./parseUnit";
 import { parseIngredient } from "./parseIngredient";
 import { reviewRow, type ReviewRow } from "./bulkIngredients";
-import { durationToMinutes, parseYield, type ScrapedRecipe, text } from "./schemaRecipe";
+import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "./schemaRecipe";
 import { IMAGE_TYPES, sniffImage } from "./image";
 import { isZip, readZip, type ZipEntry } from "./zip";
 
@@ -47,8 +47,15 @@ export type MealieIngredient = {
   note: string;
 };
 
-/** A part as this import builds it: Mealie's section, owning both its rows and its steps. */
-export type MealiePart = { name: string; ingredients: MealieIngredient[]; steps: string[] };
+/**
+ * A part as this import builds it: Mealie's section, owning both its
+ * ingredients and its steps. `ingredients` holds the lines, which is what a
+ * `ScrapedPart` is (M36.2), so a Mealie part is one; `rows` holds the same
+ * rows with the structure Mealie had already parsed out of them — the food,
+ * the unit, the quantity — which a line cannot carry and which the review
+ * would otherwise have to guess at a second time.
+ */
+export type MealiePart = ScrapedPart & { rows: MealieIngredient[] };
 
 /**
  * A Mealie recipe as this app's fields. A `ScrapedRecipe` with the structure
@@ -181,7 +188,7 @@ export function partsFromMealie(ingredients: readonly Node[], instructions: read
     const key = name.toLowerCase();
     const found = byName.get(key);
     if (found) return found;
-    const part: MealiePart = { name, ingredients: [], steps: [] };
+    const part: MealiePart = { name, ingredients: [], steps: [], rows: [] };
     byName.set(key, part);
     parts.push(part);
     return part;
@@ -191,7 +198,10 @@ export function partsFromMealie(ingredients: readonly Node[], instructions: read
   for (const row of ingredients) {
     const title = text(pick(row, "title")).trim();
     if (title !== "") current = title;
-    partFor(current).ingredients.push(mealieIngredient(row));
+    const parsed = mealieIngredient(row);
+    const part = partFor(current);
+    part.rows.push(parsed);
+    part.ingredients.push(parsed.originalText);
   }
 
   // Mealie sections its two lists separately, so untitled instructions belong
@@ -207,7 +217,7 @@ export function partsFromMealie(ingredients: readonly Node[], instructions: read
     partFor(current).steps.push(body);
   }
 
-  return parts.length > 0 ? parts : [{ name: "", ingredients: [], steps: [] }];
+  return parts.length > 0 ? parts : [{ name: "", ingredients: [], steps: [], rows: [] }];
 }
 
 /** One Mealie recipe node as this app's fields. Pure. */
@@ -230,7 +240,6 @@ export function mealieRecipe(node: Node): MealieRecipe {
     prepMinutes: mealieTimeToMinutes(pick(node, "prepTime", "prep_time")),
     cookMinutes: cook,
     tags: tagNames(pick(node, "tags"), pick(node, "recipeCategory", "recipe_category", "categories")),
-    ingredients: parts.flatMap((part) => part.ingredients.map((row) => row.originalText)),
     parts,
     notes: nodes(pick(node, "notes")).map((note) => ({ title: text(pick(note, "title")).trim(), text: text(pick(note, "text")).trim() })),
     rating: number(pick(node, "rating")),
@@ -448,21 +457,17 @@ export function matchUnit<U extends UnitCandidate>(name: string, units: readonly
 }
 
 /**
- * Every row of a Mealie recipe as a review row, in part order, with the part
- * each row belongs to beside it so the draft can put it back where it came
- * from. Pure.
+ * Every row of a Mealie recipe as a review row, in part order — the same order
+ * the parts' own lines are in, which is how the draft puts each row back on the
+ * part it came from. Pure.
  */
 export function reviewRowsFromMealie<U extends UnitCandidate, F extends FoodCandidate>(
   recipe: MealieRecipe,
   vocabulary: { units: readonly U[]; foods: readonly F[] },
-): { rows: ReviewRow<U, F>[]; rowParts: number[] } {
+): { rows: ReviewRow<U, F>[] } {
   const rows: ReviewRow<U, F>[] = [];
-  const rowParts: number[] = [];
-  recipe.parts.forEach((part, index) => {
-    for (const row of part.ingredients) {
-      rows.push(reviewRowFromMealie(row, String(rows.length), vocabulary));
-      rowParts.push(index);
-    }
-  });
-  return { rows, rowParts };
+  for (const part of recipe.parts) {
+    for (const row of part.rows) rows.push(reviewRowFromMealie(row, String(rows.length), vocabulary));
+  }
+  return { rows };
 }

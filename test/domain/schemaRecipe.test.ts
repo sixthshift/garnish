@@ -4,6 +4,7 @@ import {
   durationToMinutes,
   firstImage,
   hasContent,
+  ingredientLines,
   normaliseScraped,
   parseKeywords,
   parseYield,
@@ -145,19 +146,19 @@ describe("parseKeywords", () => {
 
 describe("partsFromInstructions", () => {
   test("a single string splits on its newlines", () => {
-    expect(partsFromInstructions("Mix.\nRest.\nBake.")).toEqual([{ name: "", steps: ["Mix.", "Rest.", "Bake."] }]);
+    expect(partsFromInstructions("Mix.\nRest.\nBake.")).toEqual([{ name: "", ingredients: [], steps: ["Mix.", "Rest.", "Bake."] }]);
   });
 
   test("a single string with no newlines is one step", () => {
-    expect(partsFromInstructions("Mix it all and bake.")).toEqual([{ name: "", steps: ["Mix it all and bake."] }]);
+    expect(partsFromInstructions("Mix it all and bake.")).toEqual([{ name: "", ingredients: [], steps: ["Mix it all and bake."] }]);
   });
 
   test("HTML inside a string becomes the line breaks it was drawn with", () => {
-    expect(partsFromInstructions("<p>Mix.</p><p>Bake.</p>")).toEqual([{ name: "", steps: ["Mix.", "Bake."] }]);
+    expect(partsFromInstructions("<p>Mix.</p><p>Bake.</p>")).toEqual([{ name: "", ingredients: [], steps: ["Mix.", "Bake."] }]);
   });
 
   test("a list of strings", () => {
-    expect(partsFromInstructions(["Mix.", "Bake."])).toEqual([{ name: "", steps: ["Mix.", "Bake."] }]);
+    expect(partsFromInstructions(["Mix.", "Bake."])).toEqual([{ name: "", ingredients: [], steps: ["Mix.", "Bake."] }]);
   });
 
   test("a list of HowToStep, reading text or falling back to name", () => {
@@ -165,7 +166,7 @@ describe("partsFromInstructions", () => {
       { "@type": "HowToStep", text: "Mix." },
       { "@type": "HowToStep", name: "Bake." },
     ];
-    expect(partsFromInstructions(value)).toEqual([{ name: "", steps: ["Mix.", "Bake."] }]);
+    expect(partsFromInstructions(value)).toEqual([{ name: "", ingredients: [], steps: ["Mix.", "Bake."] }]);
   });
 
   test("a list of HowToSection becomes one part each, named (decision 59)", () => {
@@ -174,8 +175,8 @@ describe("partsFromInstructions", () => {
       { "@type": "HowToSection", name: "Filling", itemListElement: [{ "@type": "HowToStep", text: "Whisk." }, { "@type": "HowToStep", text: "Pour." }] },
     ];
     expect(partsFromInstructions(value)).toEqual([
-      { name: "Pastry", steps: ["Rub in."] },
-      { name: "Filling", steps: ["Whisk.", "Pour."] },
+      { name: "Pastry", ingredients: [], steps: ["Rub in."] },
+      { name: "Filling", ingredients: [], steps: ["Whisk.", "Pour."] },
     ]);
   });
 
@@ -185,8 +186,8 @@ describe("partsFromInstructions", () => {
       { "@type": "HowToSection", name: "Pastry", itemListElement: [{ "@type": "HowToStep", text: "Rub in." }] },
     ];
     expect(partsFromInstructions(value)).toEqual([
-      { name: "", steps: ["Heat the oven."] },
-      { name: "Pastry", steps: ["Rub in."] },
+      { name: "", ingredients: [], steps: ["Heat the oven."] },
+      { name: "Pastry", ingredients: [], steps: ["Rub in."] },
     ]);
   });
 
@@ -195,17 +196,17 @@ describe("partsFromInstructions", () => {
       { "@type": "HowToSection", name: "Nothing", itemListElement: [] },
       { "@type": "HowToSection", name: "Pastry", itemListElement: [{ "@type": "HowToStep", text: "Rub in." }] },
     ];
-    expect(partsFromInstructions(value)).toEqual([{ name: "Pastry", steps: ["Rub in."] }]);
+    expect(partsFromInstructions(value)).toEqual([{ name: "Pastry", ingredients: [], steps: ["Rub in."] }]);
   });
 
   test("a step nesting its own itemListElement is read through", () => {
     const value = [{ "@type": "HowToStep", name: "Ignored", itemListElement: [{ "@type": "HowToDirection", text: "Mix." }] }];
-    expect(partsFromInstructions(value)).toEqual([{ name: "", steps: ["Mix."] }]);
+    expect(partsFromInstructions(value)).toEqual([{ name: "", ingredients: [], steps: ["Mix."] }]);
   });
 
   test("there is always at least one part, so the draft validates", () => {
-    expect(partsFromInstructions(undefined)).toEqual([{ name: "", steps: [] }]);
-    expect(partsFromInstructions([])).toEqual([{ name: "", steps: [] }]);
+    expect(partsFromInstructions(undefined)).toEqual([{ name: "", ingredients: [], steps: [] }]);
+    expect(partsFromInstructions([])).toEqual([{ name: "", ingredients: [], steps: [] }]);
   });
 });
 
@@ -236,9 +237,27 @@ describe("scrapedFromSchema", () => {
       prepMinutes: 20,
       cookMinutes: 15,
       tags: ["biscuits", "baking"],
-      ingredients: ["1 cup plain flour", "125 g butter"],
-      parts: [{ name: "", steps: ["Heat the oven to 180C.", "Mix and bake."] }],
+      parts: [{ name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: ["Heat the oven to 180C.", "Mix and bake."] }],
     });
+  });
+
+  test("every recipeIngredient line goes on the unnamed part, whatever sections the page has (M36.2)", () => {
+    const sectioned = scrapedFromSchema({
+      "@type": "Recipe",
+      name: "Lemon tart",
+      recipeIngredient: ["200 g plain flour", "4 lemons"],
+      recipeInstructions: [
+        { "@type": "HowToSection", name: "Pastry", itemListElement: [{ "@type": "HowToStep", text: "Rub in." }] },
+        { "@type": "HowToSection", name: "Filling", itemListElement: [{ "@type": "HowToStep", text: "Whisk." }] },
+      ],
+    });
+    // schema.org cannot say which section a line sits under, so the page's own
+    // sections keep their steps and an unnamed body is added to hold the lines.
+    expect(sectioned.parts).toEqual([
+      { name: "", ingredients: ["200 g plain flour", "4 lemons"], steps: [] },
+      { name: "Pastry", ingredients: [], steps: ["Rub in."] },
+      { name: "Filling", ingredients: [], steps: ["Whisk."] },
+    ]);
   });
 
   test("a node with nothing but a name comes back empty rather than missing", () => {
@@ -251,8 +270,7 @@ describe("scrapedFromSchema", () => {
       prepMinutes: null,
       cookMinutes: null,
       tags: [],
-      ingredients: [],
-      parts: [{ name: "", steps: [] }],
+      parts: [{ name: "", ingredients: [], steps: [] }],
     });
   });
 
@@ -265,7 +283,7 @@ describe("scrapedFromSchema", () => {
     const odd = scrapedFromSchema({ "@type": "Recipe", name: "x", prepTime: {}, recipeIngredient: "not a list", keywords: 7 });
     expect(odd.prepMinutes).toBeNull();
     // A lone string is still one ingredient, which is the charitable reading.
-    expect(odd.ingredients).toEqual(["not a list"]);
+    expect(ingredientLines(odd)).toEqual(["not a list"]);
     expect(odd.tags).toEqual(["7"]);
   });
 
@@ -281,7 +299,7 @@ describe("scrapedFromSchema", () => {
 
   test("older pages using `ingredients` and `performTime` still read", () => {
     const legacy = scrapedFromSchema({ "@type": "Recipe", ingredients: ["2 eggs"], performTime: "PT5M" });
-    expect(legacy.ingredients).toEqual(["2 eggs"]);
+    expect(ingredientLines(legacy)).toEqual(["2 eggs"]);
     expect(legacy.cookMinutes).toBe(5);
   });
 });
@@ -290,8 +308,8 @@ describe("hasContent", () => {
   test("is true with ingredients or steps, false with neither", () => {
     const blank = scrapedFromSchema({ "@type": "Recipe", name: "Toast" });
     expect(hasContent(blank)).toBe(false);
-    expect(hasContent({ ...blank, ingredients: ["2 eggs"] })).toBe(true);
-    expect(hasContent({ ...blank, parts: [{ name: "", steps: ["Mix."] }] })).toBe(true);
+    expect(hasContent({ ...blank, parts: [{ name: "", ingredients: ["2 eggs"], steps: [] }] })).toBe(true);
+    expect(hasContent({ ...blank, parts: [{ name: "", ingredients: [], steps: ["Mix."] }] })).toBe(true);
   });
 });
 
@@ -306,8 +324,7 @@ describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
       prepMinutes: 20,
       cookMinutes: 15,
       tags: ["biscuits"],
-      ingredients: ["125 g butter"],
-      parts: [{ name: "", steps: ["Mix."] }],
+      parts: [{ name: "", ingredients: ["125 g butter"], steps: ["Mix."] }],
     };
     expect(normaliseScraped(ScrapedRecipeSchema.parse(full))).toEqual(full);
   });
@@ -322,25 +339,34 @@ describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
       prepMinutes: null,
       cookMinutes: null,
       tags: [],
-      ingredients: [],
       parts: [],
     });
     expect(ScrapedRecipeSchema.safeParse({ description: "no name" }).success).toBe(false);
-    expect(ScrapedRecipeSchema.safeParse({ name: "Toast", ingredients: "bread" }).success).toBe(false);
+    expect(ScrapedRecipeSchema.safeParse({ name: "Toast", parts: [{ name: "", ingredients: "bread" }] }).success).toBe(false);
   });
 
-  test("normalising trims, drops blanks, and always leaves a main body to hold the ingredients", () => {
+  test("normalising trims, drops blanks, and always leaves a main body", () => {
     const parsed = ScrapedRecipeSchema.parse({
       name: "  Anzac biscuits  ",
-      ingredients: ["  125 g butter ", "   "],
       tags: [" biscuits ", ""],
-      parts: [{ name: " Syrup ", steps: [" Melt. ", ""] }, { name: "", steps: [] }],
+      parts: [
+        { name: " Syrup ", ingredients: ["  125 g butter ", "   "], steps: [" Melt. ", ""] },
+        { name: "", ingredients: [], steps: [] },
+      ],
     });
     const recipe = normaliseScraped(parsed);
     expect(recipe.name).toBe("Anzac biscuits");
-    expect(recipe.ingredients).toEqual(["125 g butter"]);
     expect(recipe.tags).toEqual(["biscuits"]);
-    expect(recipe.parts).toEqual([{ name: "", steps: [] }, { name: "Syrup", steps: ["Melt."] }]);
+    expect(recipe.parts).toEqual([
+      { name: "", ingredients: [], steps: [] },
+      { name: "Syrup", ingredients: ["125 g butter"], steps: ["Melt."] },
+    ]);
+    expect(ingredientLines(recipe)).toEqual(["125 g butter"]);
     expect(hasContent(recipe)).toBe(true);
+  });
+
+  test("a part with nothing at all on it is dropped, ingredients or no", () => {
+    const recipe = normaliseScraped(ScrapedRecipeSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }, { name: "", ingredients: [], steps: [] }] }));
+    expect(recipe.parts).toEqual([{ name: "", ingredients: [], steps: [] }]);
   });
 });

@@ -36,6 +36,7 @@ import {
   ingredientLine,
   type ImportFile,
   type MealieIngredient,
+  type MealiePart,
   type MealieRecipe,
   number,
   parseJsonBytes,
@@ -60,11 +61,12 @@ export type TandoorIngredient = MealieIngredient & {
 
 /**
  * A part as this import builds it: one or more of Tandoor's steps under one
- * name, owning their rows. `stepRows` says which rows belong to which step —
- * `stepRows[i]` holds indices into `ingredients` — so the draft can link them
- * without `suggestLinks` having to guess.
+ * name, owning their lines in `ingredients` (a `ScrapedPart`, M36.2) and the
+ * structure Tandoor had already parsed out of them in `rows`. `stepRows` says
+ * which rows belong to which step — `stepRows[i]` holds indices into `rows` —
+ * so the draft can link them without `suggestLinks` having to guess.
  */
-export type TandoorPart = { name: string; ingredients: TandoorIngredient[]; steps: string[]; stepRows: number[][] };
+export type TandoorPart = Omit<MealiePart, "rows"> & { rows: TandoorIngredient[]; stepRows: number[][] };
 
 /** A Tandoor recipe as this app's fields, landing on the same review a Mealie one does. */
 export type TandoorRecipe = Omit<MealieRecipe, "parts" | "source"> & { source: "tandoor"; parts: TandoorPart[] };
@@ -154,7 +156,7 @@ export function partsFromTandoor(steps: readonly Node[], known: ReadonlySet<stri
     const key = name.toLowerCase();
     const found = byName.get(key);
     if (found) return found;
-    const part: TandoorPart = { name, ingredients: [], steps: [], stepRows: [] };
+    const part: TandoorPart = { name, ingredients: [], steps: [], rows: [], stepRows: [] };
     byName.set(key, part);
     parts.push(part);
     return part;
@@ -165,8 +167,9 @@ export function partsFromTandoor(steps: readonly Node[], known: ReadonlySet<stri
     const mine: number[] = [];
     const add = (row: TandoorIngredient) => {
       if (row.originalText === "") return;
-      mine.push(part.ingredients.length);
-      part.ingredients.push(row);
+      mine.push(part.rows.length);
+      part.rows.push(row);
+      part.ingredients.push(row.originalText);
     };
     for (const row of nodes(pick(step, "ingredients"))) add(tandoorIngredient(row));
     const child = stepRecipeName(step);
@@ -180,7 +183,7 @@ export function partsFromTandoor(steps: readonly Node[], known: ReadonlySet<stri
     part.steps.push(instruction);
   }
 
-  return parts.length > 0 ? parts : [{ name: "", ingredients: [], steps: [], stepRows: [] }];
+  return parts.length > 0 ? parts : [{ name: "", ingredients: [], steps: [], rows: [], stepRows: [] }];
 }
 
 /** One Tandoor recipe node as this app's fields. Pure. */
@@ -204,7 +207,6 @@ export function tandoorRecipe(node: Node, known: ReadonlySet<string> = new Set()
     prepMinutes: number(pick(node, "working_time", "workingTime")),
     cookMinutes: number(pick(node, "waiting_time", "waitingTime")),
     tags: tagNames(pick(node, "keywords")),
-    ingredients: parts.flatMap((part) => part.ingredients.map((row) => row.originalText)),
     parts,
     notes: [],
     rating: null,
@@ -366,10 +368,9 @@ export async function readExport(file: ImportFile): Promise<ExportRecipe[]> {
 
 // --- On to the review ------------------------------------------------------
 
-/** Where a row sits: which part, and which of that part's steps it was written under. */
+/** Where a row sits: which of its part's steps it was written under, and what it stands for. */
 export type TandoorReview<U, F> = {
   rows: ReviewRow<U, F>[];
-  rowParts: number[];
   /** The step within the row's part that owns it, or -1 when no step does. */
   rowSteps: number[];
   /** The names of the nested recipes these rows stand for, for M32.3's link. */
@@ -377,33 +378,32 @@ export type TandoorReview<U, F> = {
 };
 
 /**
- * Every row of a Tandoor recipe as a review row, in part order, with the part
- * and the step each row belongs to beside it so the draft can put it back
- * where it came from and link it where Tandoor had it. Pure.
+ * Every row of a Tandoor recipe as a review row, in part order — the same order
+ * the parts' own lines are in, so the draft puts each row back on the part it
+ * came from — with the step each row belongs to beside it, so the draft links
+ * it where Tandoor had it rather than where `suggestLinks` guesses. Pure.
  */
 export function reviewRowsFromTandoor<U extends UnitCandidate, F extends FoodCandidate>(
   recipe: TandoorRecipe,
   vocabulary: { units: readonly U[]; foods: readonly F[] },
 ): TandoorReview<U, F> {
   const rows: ReviewRow<U, F>[] = [];
-  const rowParts: number[] = [];
   const rowSteps: number[] = [];
   const subRecipeNames: string[] = [];
 
-  recipe.parts.forEach((part, partIndex) => {
+  for (const part of recipe.parts) {
     const stepOf = new Map<number, number>();
     part.stepRows.forEach((indices, stepIndex) => {
       for (const index of indices) stepOf.set(index, stepIndex);
     });
-    part.ingredients.forEach((row, index) => {
+    part.rows.forEach((row, index) => {
       rows.push(reviewRowFromMealie(row, String(rows.length), vocabulary));
-      rowParts.push(partIndex);
       rowSteps.push(stepOf.get(index) ?? -1);
       if (row.recipeName !== "" && !subRecipeNames.some((name) => name.toLowerCase() === row.recipeName.toLowerCase())) {
         subRecipeNames.push(row.recipeName);
       }
     });
-  });
+  }
 
-  return { rows, rowParts, rowSteps, subRecipeNames };
+  return { rows, rowSteps, subRecipeNames };
 }

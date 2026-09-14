@@ -34,7 +34,7 @@
 // twelve lines and every provider worth using speaks this shape.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../domain/schemaRecipe";
+import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../domain/schemaRecipe";
 import { notFoundMiddleware } from "./fn";
 import type { ImportedRecipe } from "./recipeImport";
 
@@ -87,7 +87,7 @@ export function aiConfigured(): boolean {
 export const SCRAPED_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["name", "description", "image", "servings", "yieldText", "prepMinutes", "cookMinutes", "tags", "ingredients", "parts"],
+  required: ["name", "description", "image", "servings", "yieldText", "prepMinutes", "cookMinutes", "tags", "parts"],
   properties: {
     name: { type: "string" },
     description: { type: "string" },
@@ -97,14 +97,17 @@ export const SCRAPED_JSON_SCHEMA = {
     prepMinutes: { type: ["number", "null"] },
     cookMinutes: { type: ["number", "null"] },
     tags: { type: "array", items: { type: "string" } },
-    ingredients: { type: "array", items: { type: "string" } },
     parts: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "steps"],
-        properties: { name: { type: "string" }, steps: { type: "array", items: { type: "string" } } },
+        required: ["name", "ingredients", "steps"],
+        properties: {
+          name: { type: "string" },
+          ingredients: { type: "array", items: { type: "string" } },
+          steps: { type: "array", items: { type: "string" } },
+        },
       },
     },
   },
@@ -120,8 +123,9 @@ export const SCRAPED_JSON_SCHEMA = {
 export function aiPrompt(text: string): string {
   return [
     "Read the recipe out of the text below and answer with JSON matching the schema. Rules:",
-    "- Copy ingredient lines verbatim, one per line, quantity and unit and all. Do not convert, round or reword them.",
-    "- `parts`: a named section of the recipe (a sauce, a topping) is a part with that name; everything else goes in the part named \"\" (empty), which is the main body. Steps are that part's method, one entry per step, without numbering.",
+    "- `parts`: a named section of the recipe (a sauce, a topping) is a part with that name, holding the ingredient lines written under that heading and the steps written under it. Anything under no heading at all — ingredients and steps both — goes in the part named \"\" (empty), which is the main body.",
+    "- Copy ingredient lines verbatim into their part's `ingredients`, one entry per line, quantity and unit and all. Do not convert, round or reword them, and do not repeat a line on a second part.",
+    "- `steps` are that part's method, one entry per step, without numbering.",
     "- `servings` is a number and 0 when the text does not say. `yieldText` is what it makes without the count (\"biscuits\", \"loaf\"), empty when the yield was only a number.",
     "- `prepMinutes` and `cookMinutes` are whole minutes or null. `image` is a URL found in the text or null.",
     "- `tags` are short topic words the text itself gives. Do not invent any.",
@@ -234,7 +238,7 @@ export function parseAiAnswer(content: string): ScrapedRecipe {
     throw new AiImportError("malformed", `The model's answer was not in the expected shape${where}. Nothing was imported.`);
   }
   const recipe = normaliseScraped(parsed.data);
-  if (recipe.name === "" && recipe.ingredients.length === 0) {
+  if (recipe.name === "" && ingredientLines(recipe).length === 0) {
     throw new AiImportError("malformed", "The model found no recipe in that text.");
   }
   return recipe;

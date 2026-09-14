@@ -9,6 +9,7 @@ import { draftFromScraped, importSummary, PasteSource, SourceChooser } from "../
 import type { Food as FoodRow } from "../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../src/domain/bulkIngredients";
 import type { Unit } from "../../src/domain/recipe";
+import { ingredientLines } from "../../src/domain/schemaRecipe";
 import { parseAiAnswer } from "../../src/server/aiImport";
 
 const gram: Unit = {
@@ -108,10 +109,9 @@ describe("an AI answer through the review", () => {
       name: "Anzac biscuits",
       servings: 24,
       yieldText: "biscuits",
-      ingredients: ["125 g flour"],
       parts: [
-        { name: "", steps: ["Mix."] },
-        { name: "Syrup", steps: ["Melt."] },
+        { name: "", ingredients: ["125 g flour"], steps: ["Mix."] },
+        { name: "Syrup", ingredients: [], steps: ["Melt."] },
       ],
     }),
   );
@@ -124,7 +124,7 @@ describe("an AI answer through the review", () => {
   });
 
   test("it becomes a draft the same way a scraped page does, with no source URL", () => {
-    const rows = reviewRows(recipe.ingredients, { units: [gram], foods: [flour] });
+    const rows = reviewRows(ingredientLines(recipe), { units: [gram], foods: [flour] });
     const draft = draftFromScraped({
       scraped: recipe,
       sourceUrl: "",

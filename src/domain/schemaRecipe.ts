@@ -16,14 +16,19 @@
 // That last one is the only case worth arguing about, and row 59 settles it: a
 // `HowToSection` becomes a garnish **part**, named from the section. The
 // shapes already match — a section owns an ordered list of steps and has a
-// name, which is a part minus its ingredients. Mealie flattens sections into
-// one list because its recipe has nowhere to put them; this document does, and
-// throwing the structure away would be losing something the page took the
-// trouble to say.
+// name, which is a part minus the ingredient lines schema.org has no way to
+// hand it. Mealie flattens sections into one list because its recipe has
+// nowhere to put them; this document does, and throwing the structure away
+// would be losing something the page took the trouble to say.
 //
-// Ingredients stay on the unnamed part regardless. schema.org has no way to
-// say which section an ingredient belongs to, and guessing from the step text
-// is the step-to-ingredient linking that plan.md defers.
+// A part owns its ingredient lines as well as its steps (M36.2), which is the
+// shape the editor and every other importer already have. The schema rung
+// cannot fill it in: schema.org has no way to say which section an ingredient
+// belongs to, so every `recipeIngredient` line goes on the unnamed part and
+// stays there, and guessing from the step text is the step-to-ingredient
+// linking that plan.md defers. What reads a page as well as its markup — the
+// model of M36.4 — puts the lines where they belong; this reader says only
+// what the page said.
 //
 // Values are read defensively throughout: a field with the wrong type is
 // treated as absent rather than throwing, because this input comes off the
@@ -31,8 +36,8 @@
 import { z } from "zod";
 import type { JsonLdNode } from "./jsonLd";
 
-/** One part of a scraped recipe: a name (empty for the main body) and its steps. */
-export type ScrapedPart = { name: string; steps: string[] };
+/** One part of a scraped recipe: a name (empty for the main body), its raw ingredient lines and its steps. */
+export type ScrapedPart = { name: string; ingredients: string[]; steps: string[] };
 
 /** A schema.org Recipe as this app's fields. Text only — no ids, nothing resolved. */
 export type ScrapedRecipe = {
@@ -47,11 +52,14 @@ export type ScrapedRecipe = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   tags: string[];
-  /** Raw ingredient lines, for `parseIngredient`. */
-  ingredients: string[];
-  /** At least one part; the unnamed one is the main body. */
+  /** At least one part; the unnamed one is the main body. Each owns its ingredient lines, for `parseIngredient`, and its steps. */
   parts: ScrapedPart[];
 };
+
+/** Every ingredient line across the parts, in part order: what the review reads and what `reviewRows` parses. Pure. */
+export function ingredientLines(scraped: { parts: readonly ScrapedPart[] }): string[] {
+  return scraped.parts.flatMap((part) => part.ingredients);
+}
 
 // --- Text ------------------------------------------------------------------
 
@@ -242,7 +250,7 @@ function stepsOfEntry(value: unknown): string[] {
 export function partsFromInstructions(value: unknown): ScrapedPart[] {
   const entries = list(value);
   if (!entries.some(isSection)) {
-    return [{ name: "", steps: entries.flatMap(stepsOfEntry) }];
+    return [{ name: "", ingredients: [], steps: entries.flatMap(stepsOfEntry) }];
   }
   const parts: ScrapedPart[] = [];
   const loose: string[] = [];
@@ -254,10 +262,10 @@ export function partsFromInstructions(value: unknown): ScrapedPart[] {
     const node = entry as JsonLdNode;
     const steps = list(node.itemListElement).flatMap(stepsOfEntry);
     if (steps.length === 0) continue;
-    parts.push({ name: text(field(node, "name", "headline")), steps });
+    parts.push({ name: text(field(node, "name", "headline")), ingredients: [], steps });
   }
   // The main body goes first, as the view page prints it.
-  if (loose.length > 0 || parts.length === 0) parts.unshift({ name: "", steps: loose });
+  if (loose.length > 0 || parts.length === 0) parts.unshift({ name: "", ingredients: [], steps: loose });
   return parts;
 }
 
@@ -270,6 +278,15 @@ export function partsFromInstructions(value: unknown): ScrapedPart[] {
  */
 export function scrapedFromSchema(node: JsonLdNode): ScrapedRecipe {
   const { servings, yieldText } = parseYield(field(node, "recipeYield", "yield"));
+  const parts = partsFromInstructions(field(node, "recipeInstructions", "instructions"));
+  const lines = list(field(node, "recipeIngredient", "ingredients")).map(text).filter((line) => line !== "");
+  // Every line on the unnamed part, because that is the whole of what the page
+  // said: a `recipeIngredient` carries no section, whatever headings the page
+  // draws around it. A recipe of nothing but named sections gains an unnamed
+  // body to hold them rather than having them guessed onto one of the sections.
+  const main = parts.find((part) => part.name === "");
+  if (main !== undefined) main.ingredients = lines;
+  else if (lines.length > 0) parts.unshift({ name: "", ingredients: lines, steps: [] });
   return {
     name: text(field(node, "name", "headline")),
     description: text(node.description),
@@ -284,14 +301,13 @@ export function scrapedFromSchema(node: JsonLdNode): ScrapedRecipe {
     // as a fallback, so a page that states both is taken at its word.
     cookMinutes: durationToMinutes(field(node, "cookTime", "performTime")) ?? durationToMinutes(node.totalTime),
     tags: parseKeywords(field(node, "keywords", "recipeCategory")),
-    ingredients: list(field(node, "recipeIngredient", "ingredients")).map(text).filter((line) => line !== ""),
-    parts: partsFromInstructions(field(node, "recipeInstructions", "instructions")),
+    parts,
   };
 }
 
 /** Did the page actually give us a recipe, or only a name? What decides whether the OpenGraph rung is needed. Pure. */
 export function hasContent(scraped: ScrapedRecipe): boolean {
-  return scraped.ingredients.length > 0 || scraped.parts.some((part) => part.steps.length > 0);
+  return scraped.parts.some((part) => part.ingredients.length > 0 || part.steps.length > 0);
 }
 
 // --- The same shape, as a schema -------------------------------------------
@@ -309,6 +325,7 @@ export function hasContent(scraped: ScrapedRecipe): boolean {
  */
 export const ScrapedPartSchema = z.object({
   name: z.string().default(""),
+  ingredients: z.array(z.string()).default([]),
   steps: z.array(z.string()).default([]),
 });
 
@@ -321,7 +338,6 @@ export const ScrapedRecipeSchema = z.object({
   prepMinutes: z.number().nullable().default(null),
   cookMinutes: z.number().nullable().default(null),
   tags: z.array(z.string()).default([]),
-  ingredients: z.array(z.string()).default([]),
   parts: z.array(ScrapedPartSchema).default([]),
 });
 
@@ -332,13 +348,16 @@ export const ScrapedRecipeSchema = z.object({
  */
 export function normaliseScraped(parsed: z.output<typeof ScrapedRecipeSchema>): ScrapedRecipe {
   const parts: ScrapedPart[] = parsed.parts
-    .map((part) => ({ name: part.name.trim(), steps: part.steps.map((step) => step.trim()).filter((step) => step !== "") }))
-    .filter((part) => part.name !== "" || part.steps.length > 0);
-  if (!parts.some((part) => part.name === "")) parts.unshift({ name: "", steps: [] });
+    .map((part) => ({
+      name: part.name.trim(),
+      ingredients: part.ingredients.map((line) => line.trim()).filter((line) => line !== ""),
+      steps: part.steps.map((step) => step.trim()).filter((step) => step !== ""),
+    }))
+    .filter((part) => part.name !== "" || part.ingredients.length > 0 || part.steps.length > 0);
+  if (!parts.some((part) => part.name === "")) parts.unshift({ name: "", ingredients: [], steps: [] });
   return {
     ...parsed,
     name: parsed.name.trim(),
-    ingredients: parsed.ingredients.map((line) => line.trim()).filter((line) => line !== ""),
     tags: parsed.tags.map((tag) => tag.trim()).filter((tag) => tag !== ""),
     parts,
   };

@@ -47,7 +47,7 @@ import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../doma
 import { type MealieRecipe, reviewRowsFromMealie } from "../domain/importMealie";
 import { type ExportRecipe, isTandoorRecipe, reviewRowsFromTandoor } from "../domain/importTandoor";
 import type { Tag, Unit } from "../domain/recipe";
-import type { ScrapedRecipe } from "../domain/schemaRecipe";
+import { ingredientLines, type ScrapedRecipe } from "../domain/schemaRecipe";
 import { suggestLinks } from "../domain/stepIngredients";
 import { randomUuid } from "../lib/ids";
 import { postImportFile } from "../lib/importFile";
@@ -114,12 +114,15 @@ function withStepRows(part: DraftPart, stepOfRow: readonly number[]): DraftPart 
 export type SourceKind = "url" | "manual" | "file" | "paste";
 
 /**
- * A scraped recipe and its reviewed ingredient lines as a draft. Steps keep
- * the parts the page described (decisions.md row 59); the ingredients go on
- * the unnamed main body, one being added at the front when the page was all
- * named sections, because schema.org cannot say which section an ingredient
- * belongs to. Each part then runs through `suggestLinks` (M28.2), so the
- * draft arrives with its step-ingredient links already filled for review.
+ * A scraped recipe and its reviewed ingredient lines as a draft. The parts are
+ * the source's own (decisions.md row 59), and each row goes back on the part
+ * whose line it was parsed from: the review's rows are the parts' lines
+ * flattened in part order (M36.2), so the parts' own counts are the allocation
+ * and nothing has to carry it alongside. A schema.org page puts every line on
+ * the unnamed body because that is all its markup can say; a Mealie or Tandoor
+ * export, or a model that read the headings, says more, and this reads all of
+ * them the same way. Each part then runs through `suggestLinks` (M28.2), so
+ * the draft arrives with its step-ingredient links already filled for review.
  * Pure apart from the ids it fills in.
  */
 export function draftFromScraped(opts: {
@@ -129,12 +132,6 @@ export function draftFromScraped(opts: {
   createdFoods: ReadonlyMap<string, FoodRow>;
   createdUnits: ReadonlyMap<string, Unit>;
   knownTags?: readonly Tag[];
-  /**
-   * Which part each commit belongs to, by index into `scraped.parts` (M34.3).
-   * A source that knows — Mealie's ingredient sections — says so; a scraped
-   * page cannot, and leaves this out to put every row on the main body.
-   */
-  rowParts?: readonly number[];
   /**
    * Which step of its part each commit was written under, by index, -1 for
    * none (M34.4). Given, the links are taken from it rather than guessed by
@@ -146,7 +143,7 @@ export function draftFromScraped(opts: {
   /** A rating the source carried, 1 to 5. */
   rating?: number | null;
 }): RecipeDraft {
-  const { scraped, sourceUrl, commits, createdFoods, createdUnits, knownTags = [], rowParts, rowSteps, notes = [], rating = null } = opts;
+  const { scraped, sourceUrl, commits, createdFoods, createdUnits, knownTags = [], rowSteps, notes = [], rating = null } = opts;
   const rows = commits.map((commit) => reviewedIngredient(commit, createdFoods, createdUnits));
 
   const parts: DraftPart[] = scraped.parts.map((part) => ({
@@ -155,21 +152,19 @@ export function draftFromScraped(opts: {
     ingredients: [],
     steps: part.steps.map((step) => newStep(step)),
   }));
-  if (rowParts !== undefined) {
-    rows.forEach((row, index) => {
-      const part = parts[rowParts[index] ?? 0];
-      if (part) part.ingredients.push(row);
-    });
-  } else {
-    const main = parts.findIndex((part) => (part.name ?? "") === "");
-    if (main >= 0) parts[main]!.ingredients = rows;
-    else if (rows.length > 0) parts.unshift({ id: randomUuid(), name: "", ingredients: rows, steps: [] });
-  }
+  // A source with no parts at all still needs somewhere to put its rows.
+  if (parts.length === 0) parts.push({ id: randomUuid(), name: "", ingredients: [], steps: [] });
+  // The part each row came off, by index: part 0 owns its first
+  // `parts[0].ingredients.length` rows, and so on down the list. A row past the
+  // last line — nothing produces one today — falls to the first part rather
+  // than being dropped.
+  const rowParts = scraped.parts.flatMap((part, index) => part.ingredients.map(() => index));
+  rows.forEach((row, index) => (parts[rowParts[index] ?? 0] ?? parts[0]!).ingredients.push(row));
 
   // The steps each part's rows were written under, in the order the rows were
   // pushed onto that part, so `withStepRows` can read them off positionally.
   const stepsPerPart: number[][] = parts.map(() => []);
-  if (rowParts !== undefined && rowSteps !== undefined) {
+  if (rowSteps !== undefined) {
     rows.forEach((_, index) => stepsPerPart[rowParts[index] ?? 0]?.push(rowSteps[index] ?? -1));
   }
   const linked = parts.map((part, index) => (rowSteps === undefined ? withSuggestedLinks(part) : withStepRows(part, stepsPerPart[index] ?? [])));
@@ -198,6 +193,11 @@ export function yieldLabel(scraped: ScrapedRecipe): string {
   if (scraped.servings > 0 && scraped.yieldText !== "") return `${scraped.servings} ${scraped.yieldText}`;
   if (scraped.servings > 0) return `Serves ${scraped.servings}`;
   return scraped.yieldText;
+}
+
+/** How many ingredient lines came back across every part. Pure. */
+export function ingredientCount(scraped: ScrapedRecipe): number {
+  return ingredientLines(scraped).length;
 }
 
 /** How many steps came back across every part. Pure. */
@@ -486,7 +486,7 @@ export function RecipePicker({ recipes, busy, onPick, onBack }: RecipePickerProp
             >
               <span className="block font-medium">{recipe.name === "" ? "Untitled" : recipe.name}</span>
               <Muted as="span" className="mt-0.5 block text-xs">
-                {`${recipe.ingredients.length} ingredients, ${stepCount(recipe)} steps`}
+                {`${ingredientCount(recipe)} ingredients, ${stepCount(recipe)} steps`}
               </Muted>
             </button>
           </li>
@@ -531,7 +531,7 @@ export function ImportReview(props: ImportReviewProps) {
         </Message>
       ) : (
         <Muted as="p" className="text-sm">
-          {importSummary(from, recipe.ingredients.length, stepCount(recipe))}
+          {importSummary(from, ingredientCount(recipe), stepCount(recipe))}
         </Muted>
       )}
 
@@ -680,9 +680,7 @@ export function RecipeSource(props: RecipeSourceProps) {
   const [choices, setChoices] = useState<ExportRecipe[] | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
   const [rows, setRows] = useState<IngredientReview[]>([]);
-  // Which part each row belongs to; only an upload knows (M34.3).
-  const [rowParts, setRowParts] = useState<number[] | null>(null);
-  // Which step of that part owns the row, and the nested recipes the rows
+  // Which step of the row's part owns the row, and the nested recipes the rows
   // stand for; only a Tandoor export knows either (M34.4).
   const [rowSteps, setRowSteps] = useState<number[] | null>(null);
   const [subRecipes, setSubRecipes] = useState<string[]>([]);
@@ -702,8 +700,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         (loadFoods ?? (() => listFoods({ data: {} })))(),
       ]);
       setImported(found);
-      setRows(reviewRows(found.recipe.ingredients, { units, foods }));
-      setRowParts(null);
+      setRows(reviewRows(ingredientLines(found.recipe), { units, foods }));
       setRowSteps(null);
       setSubRecipes([]);
       setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
@@ -728,8 +725,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         (loadFoods ?? (() => listFoods({ data: {} })))(),
       ]);
       setImported(found);
-      setRows(reviewRows(found.recipe.ingredients, { units, foods }));
-      setRowParts(null);
+      setRows(reviewRows(ingredientLines(found.recipe), { units, foods }));
       setRowSteps(null);
       setSubRecipes([]);
       setDuplicate(findDuplicateByName ? await findDuplicateByName(found.recipe.name) : null);
@@ -747,7 +743,6 @@ export function RecipeSource(props: RecipeSourceProps) {
       : { ...reviewRowsFromMealie(recipe, { units, foods }), rowSteps: null, subRecipeNames: [] as string[] };
     setImported({ from: recipe.source, url: recipe.sourceUrl, recipe });
     setRows(reviewed.rows);
-    setRowParts(reviewed.rowParts);
     setRowSteps(reviewed.rowSteps);
     setSubRecipes(reviewed.subRecipeNames);
     setDuplicate(findDuplicateByName ? await findDuplicateByName(recipe.name) : null);
@@ -800,7 +795,6 @@ export function RecipeSource(props: RecipeSourceProps) {
         createdFoods,
         createdUnits,
         knownTags: tags,
-        rowParts: rowParts ?? undefined,
         rowSteps: rowSteps ?? undefined,
         notes: mealie?.notes,
         rating: mealie?.rating ?? null,
@@ -828,7 +822,6 @@ export function RecipeSource(props: RecipeSourceProps) {
         onRowsChange={setRows}
         onBack={() => {
           setImported(null);
-          setRowParts(null);
           setRowSteps(null);
           setSubRecipes([]);
           setDuplicate(null);

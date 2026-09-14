@@ -178,14 +178,13 @@ describe("the review", () => {
 describe("the draft", () => {
   test("each row lands on the part it came from, with the steps and the links", () => {
     const source = recipe();
-    const { rows, rowParts } = reviewRowsFromMealie(source, { units, foods });
+    const { rows } = reviewRowsFromMealie(source, { units, foods });
     const draft = draftFromScraped({
       scraped: source,
       sourceUrl: source.sourceUrl,
       commits: rows.map(rowCommit),
       createdFoods: new Map(),
       createdUnits: new Map(),
-      rowParts,
       notes: source.notes,
       rating: source.rating,
     });
@@ -211,8 +210,13 @@ describe("the draft", () => {
     expect(draft.parts[0]!.steps[0]!.ingredientIds).toContain(flourRow.id);
   });
 
-  test("without rowParts the rows still go on the main body, as a scraped page's do", () => {
+  test("the parts carry their own lines, so nothing beside them says where a row goes (M36.2)", () => {
     const source = recipe();
+    expect(source.parts.map((part) => part.ingredients)).toEqual([
+      ["200 g plain flour, sifted", "100 g cold butter, cubed"],
+      ["4 lemons, juiced", "A pinch of sea salt"],
+      [],
+    ]);
     const { rows } = reviewRowsFromMealie(source, { units, foods });
     const draft = draftFromScraped({
       scraped: source,
@@ -222,8 +226,7 @@ describe("the draft", () => {
       createdUnits: new Map(),
     });
     expect(draft.sourceUrl).toBeNull();
-    expect(draft.parts[0]!.name).toBe("");
-    expect(draft.parts[0]!.ingredients).toHaveLength(4);
+    expect(draft.parts.map((part) => part.ingredients.length)).toEqual([2, 2, 0]);
   });
 });
 
@@ -256,14 +259,13 @@ describe("a Tandoor export (M34.4)", () => {
 
   test("the draft keeps each step's own rows linked to it, not guessed", () => {
     const source = tandoor();
-    const { rows, rowParts, rowSteps } = reviewRowsFromTandoor(source, { units, foods });
+    const { rows, rowSteps } = reviewRowsFromTandoor(source, { units, foods });
     const draft = draftFromScraped({
       scraped: source,
       sourceUrl: source.sourceUrl,
       commits: rows.map(rowCommit),
       createdFoods: new Map(),
       createdUnits: new Map(),
-      rowParts,
       rowSteps,
     });
 

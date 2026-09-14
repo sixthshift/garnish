@@ -81,8 +81,7 @@ export function scrapedFromStub(stub: { name: string; description: string; image
     prepMinutes: null,
     cookMinutes: null,
     tags: [],
-    ingredients: [],
-    parts: [{ name: "", steps: [] }],
+    parts: [{ name: "", ingredients: [], steps: [] }],
   };
 }
 

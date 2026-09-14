@@ -23,6 +23,7 @@ import {
   type MealieRecipe,
 } from "../../src/domain/importMealie";
 import type { Food } from "../../src/domain/recipe";
+import { ingredientLines } from "../../src/domain/schemaRecipe";
 import { makeZip, PNG_BYTES } from "../helpers/zip";
 
 const FIXTURE = join(import.meta.dirname, "../fixtures/mealie/lemon-tart.json");
@@ -60,8 +61,10 @@ describe("a Mealie recipe JSON with sections", () => {
   test("a title becomes a part, and the rows before it stay on the main body", () => {
     const parts = recipe().parts;
     expect(parts.map((part) => part.name)).toEqual(["Pastry", "Filling", "To finish"]);
-    expect(parts[0]!.ingredients.map((row) => row.food)).toEqual(["flour", "butter"]);
-    expect(parts[1]!.ingredients.map((row) => row.food)).toEqual(["lemon", ""]);
+    expect(parts[0]!.rows.map((row) => row.food)).toEqual(["flour", "butter"]);
+    expect(parts[1]!.rows.map((row) => row.food)).toEqual(["lemon", ""]);
+    // The part owns the lines themselves too (M36.2), which is what the review reads.
+    expect(parts[0]!.ingredients).toEqual(["200 g plain flour, sifted", "100 g cold butter, cubed"]);
   });
 
   test("an instruction title joins the ingredient section of the same name", () => {
@@ -69,21 +72,21 @@ describe("a Mealie recipe JSON with sections", () => {
     expect(parts[0]!.steps).toEqual(["Rub the butter into the flour.", "Chill for 30 minutes, then blind bake."]);
     expect(parts[1]!.steps).toEqual(["Whisk the lemons with the eggs and sugar."]);
     // A section only the instructions name still becomes a part of its own.
-    expect(parts[2]).toEqual({ name: "To finish", ingredients: [], steps: ["Bake until barely set."] });
+    expect(parts[2]).toEqual({ name: "To finish", ingredients: [], steps: ["Bake until barely set."], rows: [] });
   });
 
   test("food, unit, quantity and note come across, and originalText is kept", () => {
-    const row = recipe().parts[0]!.ingredients[0]!;
+    const row = recipe().parts[0]!.rows[0]!;
     expect(row).toEqual({ originalText: "200 g plain flour, sifted", quantity: 200, unit: "gram", food: "flour", note: "sifted" });
   });
 
   test("a row Mealie never structured keeps its line and nothing else", () => {
-    const row = recipe().parts[1]!.ingredients[1]!;
+    const row = recipe().parts[1]!.rows[1]!;
     expect(row).toEqual({ originalText: "A pinch of sea salt", quantity: null, unit: "", food: "", note: "" });
   });
 
-  test("every row is listed flat for the review's count", () => {
-    expect(recipe().ingredients).toEqual([
+  test("every line is on its part, and flat across them for the review's count", () => {
+    expect(ingredientLines(recipe())).toEqual([
       "200 g plain flour, sifted",
       "100 g cold butter, cubed",
       "4 lemons, juiced",
@@ -121,7 +124,7 @@ test("ingredientLine spells out a row Mealie displayed nothing for", () => {
 });
 
 test("partsFromMealie always returns at least the unnamed body", () => {
-  expect(partsFromMealie([], [])).toEqual([{ name: "", ingredients: [], steps: [] }]);
+  expect(partsFromMealie([], [])).toEqual([{ name: "", ingredients: [], steps: [], rows: [] }]);
   const parts = partsFromMealie([{ food: { name: "flour" } }], [{ text: "Mix." }, { text: "   " }]);
   expect(parts).toHaveLength(1);
   expect(parts[0]!.name).toBe("");
@@ -165,10 +168,11 @@ describe("review rows", () => {
     expect(row.quantity).toBe(4);
   });
 
-  test("every row knows the part it came from", () => {
-    const { rows, rowParts } = reviewRowsFromMealie(mealieRecipe(fixture()), vocabulary);
+  test("the rows come out in part order, the same order the parts' own lines are in", () => {
+    const source = mealieRecipe(fixture());
+    const { rows } = reviewRowsFromMealie(source, vocabulary);
     expect(rows.map((row) => row.key)).toEqual(["0", "1", "2", "3"]);
-    expect(rowParts).toEqual([0, 0, 1, 1]);
+    expect(rows.map((row) => row.originalText)).toEqual(ingredientLines(source));
   });
 });
 
@@ -216,7 +220,7 @@ describe("mealieRecipesFrom", () => {
     // Ordered by `position`, with the food and unit joined in and the title as a part.
     expect(recipe!.parts).toHaveLength(1);
     expect(recipe!.parts[0]!.name).toBe("Dough");
-    expect(recipe!.parts[0]!.ingredients.map((row) => [row.food, row.unit])).toEqual([
+    expect(recipe!.parts[0]!.rows.map((row) => [row.food, row.unit])).toEqual([
       ["flour", "gram"],
       ["bay leaf", ""],
     ]);

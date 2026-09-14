@@ -25,7 +25,7 @@ import {
   stripFence,
 } from "../../src/server/aiImport";
 import { aiImportAvailable, importFromText } from "../../src/server/aiImport";
-import { ScrapedRecipeSchema } from "../../src/domain/schemaRecipe";
+import { ingredientLines, ScrapedPartSchema, ScrapedRecipeSchema } from "../../src/domain/schemaRecipe";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();
@@ -40,10 +40,9 @@ const FIXTURE = {
   prepMinutes: 20,
   cookMinutes: 15,
   tags: ["biscuits"],
-  ingredients: ["1 cup plain flour", "125 g butter"],
   parts: [
-    { name: "", steps: ["Mix the dry ingredients.", "Bake for 15 minutes."] },
-    { name: "Golden syrup mixture", steps: ["Melt the butter and syrup."] },
+    { name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: ["Mix the dry ingredients.", "Bake for 15 minutes."] },
+    { name: "Golden syrup mixture", ingredients: ["2 tbsp golden syrup"], steps: ["Melt the butter and syrup."] },
   ],
 };
 
@@ -120,6 +119,10 @@ describe("the request", () => {
     expect(prompt).toContain("some prose");
     expect(prompt).toMatch(/verbatim/);
     expect(prompt).toMatch(/Never invent/);
+    // Each part lists its own lines, and what sits under no heading is the
+    // unnamed body (M36.2).
+    expect(prompt).toMatch(/ingredient lines written under that heading/);
+    expect(prompt).toContain('the part named "" (empty)');
   });
 
   test("the JSON Schema names exactly the fields the zod schema does, and requires all of them", () => {
@@ -127,6 +130,11 @@ describe("the request", () => {
     expect(Object.keys(SCRAPED_JSON_SCHEMA.properties).sort()).toEqual(zodKeys);
     expect([...SCRAPED_JSON_SCHEMA.required].sort()).toEqual(zodKeys);
     expect(SCRAPED_JSON_SCHEMA.additionalProperties).toBe(false);
+
+    // And the part's schema names exactly the fields `ScrapedPartSchema` does.
+    const partKeys = Object.keys(ScrapedPartSchema.shape).sort();
+    expect(Object.keys(SCRAPED_JSON_SCHEMA.properties.parts.items.properties).sort()).toEqual(partKeys);
+    expect([...SCRAPED_JSON_SCHEMA.properties.parts.items.required].sort()).toEqual(partKeys);
   });
 
   test("the deadline is a minute", () => {
@@ -214,8 +222,10 @@ describe("parseAiAnswer", () => {
   test("reads the recipe out of the message content", () => {
     const recipe = parseAiAnswer(answer);
     expect(recipe.name).toBe("Anzac biscuits");
-    expect(recipe.ingredients).toEqual(["1 cup plain flour", "125 g butter"]);
+    expect(ingredientLines(recipe)).toEqual(["1 cup plain flour", "125 g butter", "2 tbsp golden syrup"]);
     expect(recipe.parts.map((part) => part.name)).toEqual(["", "Golden syrup mixture"]);
+    // Each line stays on the part the answer put it on.
+    expect(recipe.parts[1]!.ingredients).toEqual(["2 tbsp golden syrup"]);
   });
 
   test("reads a fenced answer from a model that fences anyway", () => {
@@ -223,7 +233,7 @@ describe("parseAiAnswer", () => {
   });
 
   test("fills what the answer left out, and always has a main body", () => {
-    const recipe = parseAiAnswer(JSON.stringify({ name: "Toast", ingredients: ["bread"] }));
+    const recipe = parseAiAnswer(JSON.stringify({ name: "Toast", parts: [{ name: "", ingredients: ["bread"] }] }));
     expect(recipe).toEqual({
       name: "Toast",
       description: "",
@@ -233,8 +243,7 @@ describe("parseAiAnswer", () => {
       prepMinutes: null,
       cookMinutes: null,
       tags: [],
-      ingredients: ["bread"],
-      parts: [{ name: "", steps: [] }],
+      parts: [{ name: "", ingredients: ["bread"], steps: [] }],
     });
   });
 
@@ -243,7 +252,7 @@ describe("parseAiAnswer", () => {
       "not json at all",
       "",
       "Sorry, I could not find a recipe.",
-      JSON.stringify({ name: 42, ingredients: "flour" }),
+      JSON.stringify({ name: 42, parts: "flour" }),
       JSON.stringify({ description: "no name" }),
     ]) {
       const caught = (() => {
@@ -259,7 +268,7 @@ describe("parseAiAnswer", () => {
   });
 
   test("an answer with nothing in it is a miss rather than an empty recipe", () => {
-    expect(() => parseAiAnswer(JSON.stringify({ name: "", ingredients: [], parts: [] }))).toThrow(/no recipe/i);
+    expect(() => parseAiAnswer(JSON.stringify({ name: "", parts: [] }))).toThrow(/no recipe/i);
   });
 });
 

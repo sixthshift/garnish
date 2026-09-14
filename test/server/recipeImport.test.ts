@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { FETCH_PROFILES } from "../../src/domain/fetchProfiles";
+import { ingredientLines } from "../../src/domain/schemaRecipe";
 import {
   extractRecipe,
   type Fetcher,
@@ -88,9 +89,8 @@ describe("scrapedFromStub", () => {
   test("keeps what it knows and leaves the lists empty", () => {
     const scraped = scrapedFromStub({ name: "Toast", description: "Hot bread.", image: "https://x.test/a.jpg" });
     expect(scraped).toMatchObject({ name: "Toast", description: "Hot bread.", image: "https://x.test/a.jpg", servings: 0 });
-    expect(scraped.ingredients).toEqual([]);
     // One empty part, so the draft it builds still validates.
-    expect(scraped.parts).toEqual([{ name: "", steps: [] }]);
+    expect(scraped.parts).toEqual([{ name: "", ingredients: [], steps: [] }]);
   });
 });
 
@@ -100,7 +100,7 @@ describe("extractRecipe", () => {
     expect(found?.from).toBe("schema");
     expect(found?.url).toBe(URL_UNDER_TEST);
     expect(found?.recipe.name).toBe("Anzac biscuits");
-    expect(found?.recipe.ingredients).toEqual(["1 cup plain flour", "125 g butter"]);
+    expect(ingredientLines(found!.recipe)).toEqual(["1 cup plain flour", "125 g butter"]);
     expect(found?.recipe.parts[0]!.steps).toEqual(["Mix.", "Bake."]);
     expect(found?.recipe.servings).toBe(24);
     expect(found?.recipe.prepMinutes).toBe(20);
@@ -112,7 +112,7 @@ describe("extractRecipe", () => {
     expect(found?.recipe.name).toBe("Nan's shortbread");
     expect(found?.recipe.description).toBe("A family recipe.");
     expect(found?.recipe.image).toBe("https://example.test/sb.jpg");
-    expect(found?.recipe.ingredients).toEqual([]);
+    expect(ingredientLines(found!.recipe)).toEqual([]);
   });
 
   test("an empty Recipe node falls through to the stub rather than importing a shell", () => {

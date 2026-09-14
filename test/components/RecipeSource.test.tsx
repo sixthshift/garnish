@@ -20,7 +20,7 @@ import { isTextOnly } from "../../src/components/IngredientsEditor";
 import type { Food as FoodRow } from "../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../src/domain/bulkIngredients";
 import type { Unit } from "../../src/domain/recipe";
-import type { ScrapedRecipe } from "../../src/domain/schemaRecipe";
+import { ingredientLines, type ScrapedRecipe } from "../../src/domain/schemaRecipe";
 import type { ImportedRecipe } from "../../src/server/recipeImport";
 
 const gram: Unit = {
@@ -48,8 +48,10 @@ const scraped: ScrapedRecipe = {
   prepMinutes: 20,
   cookMinutes: 15,
   tags: ["baking"],
-  ingredients: ["200 g flour", "100 g almond meal"],
-  parts: [{ name: "", steps: ["Heat the oven."] }, { name: "Icing", steps: ["Whisk.", "Pour."] }],
+  parts: [
+    { name: "", ingredients: ["200 g flour", "100 g almond meal"], steps: ["Heat the oven."] },
+    { name: "Icing", ingredients: [], steps: ["Whisk.", "Pour."] },
+  ],
 };
 
 const stub: ScrapedRecipe = {
@@ -60,14 +62,13 @@ const stub: ScrapedRecipe = {
   prepMinutes: null,
   cookMinutes: null,
   tags: [],
-  ingredients: [],
-  parts: [{ name: "", steps: [] }],
+  parts: [{ name: "", ingredients: [], steps: [] }],
 };
 
 const imported = (recipe: ScrapedRecipe, from: ImportedRecipe["from"] = "schema"): ImportedRecipe => ({ from, url: SOURCE, recipe });
 
 function rows() {
-  return reviewRows(scraped.ingredients, { units, foods });
+  return reviewRows(ingredientLines(scraped), { units, foods });
 }
 
 const reviewProps = {
@@ -239,7 +240,7 @@ describe("draftFromScraped", () => {
     draftFromScraped({
       scraped: recipe,
       sourceUrl: SOURCE,
-      commits: reviewRows(recipe.ingredients, { units, foods }).map(rowCommit),
+      commits: reviewRows(ingredientLines(recipe), { units, foods }).map(rowCommit),
       createdFoods: new Map(),
       createdUnits: new Map(),
     });
@@ -261,7 +262,7 @@ describe("draftFromScraped", () => {
     expect(build({ ...scraped, yieldText: "" }).recipeYieldQuantity).toBe(0);
   });
 
-  test("the page's sections become parts, ingredients on the unnamed body", () => {
+  test("the page's sections become parts, the schema rung's ingredients on the unnamed body", () => {
     const draft = build();
     expect(draft.parts.map((part) => part.name)).toEqual(["", "Icing"]);
     expect(draft.parts[0]!.steps.map((step) => step.text)).toEqual(["Heat the oven."]);
@@ -270,12 +271,23 @@ describe("draftFromScraped", () => {
     expect(draft.parts[1]!.ingredients).toEqual([]);
   });
 
-  test("an all-sections page gains an unnamed body to hold the ingredients", () => {
-    const sectionsOnly = { ...scraped, parts: [{ name: "Pastry", steps: ["Rub in."] }] };
+  test("a part's own lines land on that part (M36.2)", () => {
+    const sectioned = {
+      ...scraped,
+      parts: [
+        { name: "", ingredients: ["200 g flour"], steps: ["Heat the oven."] },
+        { name: "Icing", ingredients: ["100 g almond meal"], steps: ["Whisk."] },
+      ],
+    };
+    const draft = build(sectioned);
+    expect(draft.parts.map((part) => part.ingredients.map((row) => row.originalText))).toEqual([["200 g flour"], ["100 g almond meal"]]);
+  });
+
+  test("a recipe of nothing but named sections keeps its rows on them", () => {
+    const sectionsOnly = { ...scraped, parts: [{ name: "Pastry", ingredients: ["200 g flour", "100 g almond meal"], steps: ["Rub in."] }] };
     const draft = build(sectionsOnly);
-    expect(draft.parts.map((part) => part.name)).toEqual(["", "Pastry"]);
+    expect(draft.parts.map((part) => part.name)).toEqual(["Pastry"]);
     expect(draft.parts[0]!.ingredients).toHaveLength(2);
-    expect(draft.parts[0]!.steps).toEqual([]);
   });
 
   test("a matched line is structured and an unapproved one stays text", () => {
@@ -298,7 +310,10 @@ describe("draftFromScraped", () => {
   });
 
   test("the draft carries suggested step links (M28.2)", () => {
-    const withFlourStep = { ...scraped, parts: [{ name: "", steps: ["Heat the oven.", "Whisk in the flour."] }, scraped.parts[1]!] };
+    const withFlourStep = {
+      ...scraped,
+      parts: [{ ...scraped.parts[0]!, steps: ["Heat the oven.", "Whisk in the flour."] }, scraped.parts[1]!],
+    };
     const draft = build(withFlourStep);
     const [matched] = draft.parts[0]!.ingredients;
     expect(matched!.food?.name).toBe("flour");

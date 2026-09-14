@@ -23,6 +23,7 @@ import {
   tandoorRecipesFrom,
   type TandoorRecipe,
 } from "../../src/domain/importTandoor";
+import { ingredientLines } from "../../src/domain/schemaRecipe";
 import type { Food } from "../../src/domain/recipe";
 import { makeZip, PNG_BYTES } from "../helpers/zip";
 
@@ -89,11 +90,13 @@ describe("a Tandoor recipe.json", () => {
 
   test("a part's rows are the step's ingredients, linked to that step", () => {
     const [pastry, filling, body] = recipe().parts;
-    expect(pastry!.ingredients.map((row) => row.originalText)).toEqual(["200 g plain flour, sifted", "100 gram butter, cold, cubed"]);
+    expect(pastry!.rows.map((row) => row.originalText)).toEqual(["200 g plain flour, sifted", "100 gram butter, cold, cubed"]);
+    // The same lines are the part's own (M36.2), which is what the review reads.
+    expect(pastry!.ingredients).toEqual(["200 g plain flour, sifted", "100 gram butter, cold, cubed"]);
     expect(pastry!.steps).toEqual(["Rub the butter into the flour, then chill for 30 minutes and blind bake."]);
     expect(pastry!.stepRows).toEqual([[0, 1]]);
 
-    expect(filling!.ingredients.map((row) => row.food)).toEqual(["lemon", "salt"]);
+    expect(filling!.rows.map((row) => row.food)).toEqual(["lemon", "salt"]);
     expect(filling!.stepRows).toEqual([[0, 1]]);
 
     // The two blank-named steps fall together into the unnamed body, each
@@ -103,7 +106,7 @@ describe("a Tandoor recipe.json", () => {
   });
 
   test("a no_amount row keeps its note and drops the meaningless amount", () => {
-    const salt = recipe().parts[1]!.ingredients[1]!;
+    const salt = recipe().parts[1]!.rows[1]!;
     expect(salt.quantity).toBeNull();
     expect(salt.note).toBe("a pinch");
   });
@@ -113,7 +116,7 @@ describe("a nested recipe", () => {
   test("the child in the same export becomes a food row standing for it", () => {
     const [tart] = tandoorRecipesFrom([parent(), child()]);
     const body = tart!.parts[2]!;
-    const curd = body.ingredients[0]!;
+    const curd = body.rows[0]!;
     expect(curd.food).toBe("Lemon curd");
     expect(curd.recipeName).toBe("Lemon curd");
     expect(curd.originalText).toBe("Lemon curd");
@@ -121,14 +124,14 @@ describe("a nested recipe", () => {
 
   test("a child that did not come with it is a text line naming it", () => {
     const [tart] = tandoorRecipesFrom([parent(), child()]);
-    const peel = tart!.parts[2]!.ingredients[1]!;
+    const peel = tart!.parts[2]!.rows[1]!;
     expect(peel.food).toBe("");
     expect(peel.recipeName).toBe("");
     expect(peel.originalText).toBe("Candied peel");
   });
 
   test("on its own, neither child is in the export, so both are text lines", () => {
-    const rows = tandoorRecipe(parent()).parts[2]!.ingredients;
+    const rows = tandoorRecipe(parent()).parts[2]!.rows;
     expect(rows.map((row) => row.food)).toEqual(["", ""]);
   });
 
@@ -183,13 +186,14 @@ describe("partsFromTandoor", () => {
 
   test("a step with rows but nothing written keeps the rows and adds no step", () => {
     const parts = partsFromTandoor([{ name: "", instruction: "", ingredients: [{ food: { name: "flour" }, amount: 1 }] }]);
-    expect(parts[0]!.ingredients).toHaveLength(1);
+    expect(parts[0]!.rows).toHaveLength(1);
+    expect(parts[0]!.ingredients).toEqual(["1 flour"]);
     expect(parts[0]!.steps).toEqual([]);
     expect(parts[0]!.stepRows).toEqual([]);
   });
 
   test("no steps at all still gives the unnamed body", () => {
-    expect(partsFromTandoor([])).toEqual([{ name: "", ingredients: [], steps: [], stepRows: [] }]);
+    expect(partsFromTandoor([])).toEqual([{ name: "", ingredients: [], steps: [], rows: [], stepRows: [] }]);
   });
 });
 
@@ -246,7 +250,7 @@ describe("readTandoorExport", () => {
     expect(recipes[0]!.image).toMatch(/^data:image\/png;base64,/);
     expect(recipes[1]!.image).toBeNull();
     // The child came with it, so the parent's nested row stands for it.
-    expect(recipes[0]!.parts[2]!.ingredients[0]!.recipeName).toBe("Lemon curd");
+    expect(recipes[0]!.parts[2]!.rows[0]!.recipeName).toBe("Lemon curd");
   });
 
   test("what it refuses", async () => {
@@ -297,12 +301,14 @@ describe("readExport tells the two exports apart by shape", () => {
 // --- On to the review ------------------------------------------------------
 
 describe("reviewRowsFromTandoor", () => {
-  test("every row, with its part, its step and the nested recipes it named", () => {
+  test("every row, in part order, with its step and the nested recipes it named", () => {
     const [tart] = tandoorRecipesFrom([parent(), child()]);
-    const { rows, rowParts, rowSteps, subRecipeNames } = reviewRowsFromTandoor(tart!, vocabulary);
+    const { rows, rowSteps, subRecipeNames } = reviewRowsFromTandoor(tart!, vocabulary);
 
     expect(rows.map((row) => row.key)).toEqual(["0", "1", "2", "3", "4", "5"]);
-    expect(rowParts).toEqual([0, 0, 1, 1, 2, 2]);
+    // The rows come out in the order the parts' own lines are in, which is how
+    // the draft puts each one back on its part (M36.2).
+    expect(rows.map((row) => row.originalText)).toEqual(ingredientLines(tart!));
     // The two body rows sit under one step each, in step order.
     expect(rowSteps).toEqual([0, 0, 0, 0, 0, 1]);
     expect(subRecipeNames).toEqual(["Lemon curd"]);
