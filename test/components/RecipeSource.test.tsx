@@ -65,7 +65,7 @@ const stub: ScrapedRecipe = {
   parts: [{ name: "", ingredients: [], steps: [] }],
 };
 
-const imported = (recipe: ScrapedRecipe, from: ImportedRecipe["from"] = "schema"): ImportedRecipe => ({ from, url: SOURCE, recipe });
+const imported = (recipe: ScrapedRecipe, from: ImportedRecipe["from"] = "schema"): ImportedRecipe => ({ from, url: SOURCE, recipe, pageText: "" });
 
 function rows() {
   return reviewRows(ingredientLines(scraped), { units, foods });

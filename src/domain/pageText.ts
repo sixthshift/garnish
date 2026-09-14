@@ -1,0 +1,102 @@
+// Readable text out of a page's raw HTML (M36.3), for the AI import rung
+// (`aiImport.ts`) to read once a model is configured. A page is markup meant
+// for a browser, not for a model, and the model has no use for the chrome
+// around a recipe: the nav bar, the header, the cookie banner in the aside,
+// the footer, a `<script>`'s payload. Stripped down to the words a reader
+// would actually see, in roughly the order they read them, a page fits in far
+// fewer tokens and stops confusing the model with navigation text that reads
+// like a list of links.
+//
+// This is a small tag scanner, not a DOM: no parser dependency, and one that
+// runs the same on the server as it would in a test. It walks the markup once
+// with a regex over tag boundaries, keeping a stack of the tags being
+// dropped so their content — and any tags nested inside them — never reaches
+// the output, and turning every block element's boundary into a line break so
+// the shape of the page (one line of content per row, one heading per line)
+// survives even though the tags themselves do not. Headings come out prefixed
+// `# `, the closest a plain-text rendering gets to marking a heading, because
+// `aiPrompt`'s "a named section is a part" reads better with a line it can
+// point at than with the heading's text sitting flush with the paragraph
+// after it.
+import { decodeEntities } from "./schemaRecipe";
+
+/** The most text worth handing to a model. `aiImport.ts`'s `MAX_AI_TEXT` is this number: one cap, defined once. */
+export const MAX_PAGE_TEXT = 40_000;
+
+/** Tags whose content, and whatever markup is nested inside them, never reaches the output. */
+const DROP_TAGS = new Set(["script", "style", "noscript", "template", "svg", "iframe", "form", "nav", "header", "footer", "aside"]);
+
+/** Tags whose boundary ends a line: the common block-level elements, plus the void `br`/`hr`. */
+const BLOCK_TAGS = new Set([
+  "address", "article", "blockquote", "body", "br", "dd", "details", "dialog", "div", "dl", "dt",
+  "fieldset", "figcaption", "figure", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "html",
+  "li", "main", "ol", "p", "pre", "section", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "ul", "video",
+]);
+
+/** `h1` through `h6`: their own line, prefixed `# `. */
+const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
+
+/** A tag's name and whether it opens, closes, or (for a void element) opens and closes at once. */
+const TAG_PATTERN = /<\/?\s*([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
+
+/**
+ * The readable text of a page: `script`, `style`, `noscript`, `template`,
+ * `svg`, `iframe`, `form`, `nav`, `header`, `footer`, `aside` and comments
+ * dropped along with everything nested inside them; every other block
+ * element's boundary ends a line; a heading comes out on its own line
+ * prefixed `# `; entities decoded; runs of whitespace collapsed to one space
+ * within a line, and blank lines dropped; the result capped at
+ * `MAX_PAGE_TEXT`. Pure — regex and a small tag scanner, no DOM.
+ */
+export function readableText(html: string): string {
+  // Comments, then whatever `<!...>` markup declarations are left — chiefly
+  // `<!DOCTYPE html>`, which is not a tag `TAG_PATTERN` recognises and would
+  // otherwise leak into the output as literal angle brackets.
+  const withoutComments = html.replace(/<!--[\s\S]*?-->/g, "").replace(/<![^>]*>/g, "");
+
+  let out = "";
+  let lastIndex = 0;
+  const dropStack: string[] = [];
+  TAG_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = TAG_PATTERN.exec(withoutComments)) !== null) {
+    const segment = withoutComments.slice(lastIndex, match.index);
+    lastIndex = TAG_PATTERN.lastIndex;
+
+    if (dropStack.length === 0 && segment !== "") out += segment;
+
+    const whole = match[0];
+    const name = match[1]!.toLowerCase();
+    const isClosing = whole.startsWith("</");
+
+    if (isClosing) {
+      if (dropStack.length > 0) {
+        if (dropStack[dropStack.length - 1] === name) dropStack.pop();
+      } else if (BLOCK_TAGS.has(name)) {
+        out += "\n";
+      }
+      continue;
+    }
+
+    if (DROP_TAGS.has(name)) {
+      // A self-closed drop tag (rare — these tags are always written with a
+      // body in practice) has nothing to skip; only push when there is a
+      // closing tag out there to pop it again.
+      if (!/\/>\s*$/.test(whole)) dropStack.push(name);
+      continue;
+    }
+    if (dropStack.length > 0) continue;
+
+    if (HEADING_TAGS.has(name)) out += "\n# ";
+    else if (name === "li" || name === "br" || name === "hr") out += "\n";
+  }
+  if (dropStack.length === 0) out += withoutComments.slice(lastIndex);
+
+  const lines = decodeEntities(out)
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line !== "");
+
+  const text = lines.join("\n");
+  return text.length > MAX_PAGE_TEXT ? text.slice(0, MAX_PAGE_TEXT) : text;
+}

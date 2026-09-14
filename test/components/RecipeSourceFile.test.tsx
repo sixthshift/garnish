@@ -128,7 +128,7 @@ describe("RecipePicker", () => {
 
 describe("the review", () => {
   const reviewed = () => reviewRowsFromMealie(recipe(), { units, foods });
-  const imported = (): ImportedRecipe => ({ from: "mealie", url: recipe().sourceUrl, recipe: recipe() });
+  const imported = (): ImportedRecipe => ({ from: "mealie", url: recipe().sourceUrl, recipe: recipe(), pageText: "" });
 
   test("the uploaded recipe lands on the same review, with its parts and steps", () => {
     const html = renderToString(
@@ -240,7 +240,7 @@ describe("a Tandoor export (M34.4)", () => {
     const { rows } = reviewRowsFromTandoor(source, { units, foods });
     const html = renderToString(
       <ImportReview
-        imported={{ from: "tandoor", url: source.sourceUrl, recipe: source }}
+        imported={{ from: "tandoor", url: source.sourceUrl, recipe: source, pageText: "" }}
         rows={rows}
         units={units}
         searchFoods={async () => []}

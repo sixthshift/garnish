@@ -34,6 +34,7 @@ import { z } from "zod";
 import { fetchProfileForAttempt, FETCH_PROFILES } from "../domain/fetchProfiles";
 import { recipeNodeFromHtml } from "../domain/jsonLd";
 import { openGraphStub } from "../domain/openGraph";
+import { readableText } from "../domain/pageText";
 import { hasContent, type ScrapedRecipe, scrapedFromSchema } from "../domain/schemaRecipe";
 
 /** How much of a page is worth reading. Structured data is near the top; a page this big is not a recipe. */
@@ -57,6 +58,13 @@ export type ImportedRecipe = {
   /** The page as it was asked for, after redirects. Becomes the recipe's `sourceUrl`. */
   url: string;
   recipe: ScrapedRecipe;
+  /**
+   * The page's readable text (M36.3), for a future AI rung over a fetched
+   * page to read alongside the rules' result. Empty for every source that
+   * never held a page's HTML: the file imports, and the AI rung itself,
+   * which is handed text rather than producing it.
+   */
+  pageText: string;
 };
 
 /** The pasted text as an http(s) URL, or null for anything else. Pure. */
@@ -91,14 +99,15 @@ export function scrapedFromStub(stub: { name: string; description: string; image
  * separate so the whole decision can be tested without a network.
  */
 export function extractRecipe(html: string, url: string): ImportedRecipe | null {
+  const pageText = readableText(html);
   const node = recipeNodeFromHtml(html);
   if (node !== null) {
     const recipe = scrapedFromSchema(node);
     // A Recipe node with nothing in it is an SEO shell, not a recipe.
-    if (hasContent(recipe)) return { from: "schema", url, recipe };
+    if (hasContent(recipe)) return { from: "schema", url, recipe, pageText };
   }
   const stub = openGraphStub(html);
-  return stub === null ? null : { from: "stub", url, recipe: scrapedFromStub(stub) };
+  return stub === null ? null : { from: "stub", url, recipe: scrapedFromStub(stub), pageText };
 }
 
 /** The slice of `fetch` used here; injectable for tests. Matches `imageFetch`. */

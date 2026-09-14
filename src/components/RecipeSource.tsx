@@ -741,7 +741,7 @@ export function RecipeSource(props: RecipeSourceProps) {
     const reviewed = isTandoorRecipe(recipe)
       ? reviewRowsFromTandoor(recipe, { units, foods })
       : { ...reviewRowsFromMealie(recipe, { units, foods }), rowSteps: null, subRecipeNames: [] as string[] };
-    setImported({ from: recipe.source, url: recipe.sourceUrl, recipe });
+    setImported({ from: recipe.source, url: recipe.sourceUrl, recipe, pageText: "" });
     setRows(reviewed.rows);
     setRowSteps(reviewed.rowSteps);
     setSubRecipes(reviewed.subRecipeNames);

@@ -34,6 +34,7 @@
 // twelve lines and every provider worth using speaks this shape.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { MAX_PAGE_TEXT } from "../domain/pageText";
 import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../domain/schemaRecipe";
 import { notFoundMiddleware } from "./fn";
 import type { ImportedRecipe } from "./recipeImport";
@@ -41,8 +42,8 @@ import type { ImportedRecipe } from "./recipeImport";
 /** How long a read is given before the request is aborted. A recipe answers in seconds; a minute is the outer bound. */
 export const AI_IMPORT_TIMEOUT_MS = 60_000;
 
-/** The most text worth sending. A recipe is a page; anything past this is a book, and it would only cost tokens. */
-export const MAX_AI_TEXT = 40_000;
+/** The most text worth sending: `readableText`'s own cap (`pageText.ts`), so there is one number for it rather than two that can drift. */
+export const MAX_AI_TEXT = MAX_PAGE_TEXT;
 
 /** Gemini's OpenAI-compatible endpoint: the free tier, so one variable is the whole of the setup. */
 export const DEFAULT_AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
@@ -261,7 +262,7 @@ export async function runAiImport(
     if (cause instanceof AiImportError) throw cause;
     throw new AiImportError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
-  return { from: "ai", url: sourceUrl, recipe: parseAiAnswer(content) };
+  return { from: "ai", url: sourceUrl, recipe: parseAiAnswer(content), pageText: "" };
 }
 
 // --- Server functions ------------------------------------------------------

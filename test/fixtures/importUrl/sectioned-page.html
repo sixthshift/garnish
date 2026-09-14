@@ -1,0 +1,80 @@
+<!--
+  Synthetic fixture for M36.3's readableText check. Modelled on WordPress
+  Recipe Maker markup — the ingredient groups it renders as
+  `<h4 class="wprm-recipe-group-name">` followed by a `<ul>` of
+  `<li class="wprm-recipe-ingredient">` are exactly the case schema.org has no
+  slot for (see `schemaRecipe.ts`'s header on `HowToSection`), so a page
+  shaped like this is the reason `readableText` exists: give the AI rung the
+  sections the rules-based reader has to flatten away. Nothing here is copied
+  from a real site; it is invented for this test only.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fried Rice with Sauce &mdash; synthetic test page</title>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Recipe","name":"Fried Rice",
+ "recipeIngredient":["2 tbsp soy sauce","1 tbsp sesame oil","2 cups cooked rice","2 eggs","1 cup peas"],
+ "recipeInstructions":[
+   {"@type":"HowToStep","text":"Whisk the sauce ingredients together."},
+   {"@type":"HowToStep","text":"Fry the rice with the eggs and peas."}
+ ]}
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event: "pageview", page: "fried-rice" });
+</script>
+<style>
+  .wprm-recipe-container { font-family: sans-serif; color: #222; }
+  .wprm-recipe-group-name { font-weight: bold; }
+</style>
+</head>
+<body>
+<nav class="site-nav">
+  <ul><li><a href="/">Home</a></li><li><a href="/recipes">Recipes</a></li></ul>
+</nav>
+<header class="site-header">
+  <h1>Synthetic Test Blog</h1>
+  <p>Recipes for testing, nothing more.</p>
+</header>
+
+<article class="wprm-recipe-container">
+  <h2>Fried Rice with Sauce</h2>
+  <p>A quick weeknight fried rice, built to check that the section headings survive text extraction.</p>
+
+  <aside class="ad-slot">
+    <p>Advertisement: buy our cookware. Limited time offer, click here to save.</p>
+  </aside>
+
+  <div class="wprm-recipe-ingredients-container">
+    <h4 class="wprm-recipe-group-name">Sauce</h4>
+    <ul class="wprm-recipe-ingredients">
+      <li class="wprm-recipe-ingredient">2 tbsp soy sauce</li>
+      <li class="wprm-recipe-ingredient">1 tbsp sesame oil</li>
+    </ul>
+
+    <h4 class="wprm-recipe-group-name">Fried rice</h4>
+    <ul class="wprm-recipe-ingredients">
+      <li class="wprm-recipe-ingredient">2 cups cooked rice</li>
+      <li class="wprm-recipe-ingredient">2 eggs</li>
+      <li class="wprm-recipe-ingredient">1 cup peas</li>
+    </ul>
+  </div>
+
+  <div class="wprm-recipe-instructions-container">
+    <ol class="wprm-recipe-instructions">
+      <li class="wprm-recipe-instruction">Whisk the sauce ingredients together.</li>
+      <li class="wprm-recipe-instruction">Fry the rice with the eggs and peas.</li>
+    </ol>
+  </div>
+</article>
+
+<footer class="site-footer">
+  <p>&copy; 2026 Synthetic Test Blog. All rights reserved.</p>
+  <nav class="footer-nav"><ul><li><a href="/privacy">Privacy</a></li></ul></nav>
+</footer>
+
+<noscript>Enable JavaScript to see the full site, though not this test.</noscript>
+</body>
+</html>
