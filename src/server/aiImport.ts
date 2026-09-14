@@ -55,8 +55,18 @@ export const MAX_AI_TEXT = MAX_PAGE_TEXT;
 /** Gemini's OpenAI-compatible endpoint: the free tier, so one variable is the whole of the setup. */
 export const DEFAULT_AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 
-/** The model asked for when none is named. The cheap, fast one; this is the one line to change when it is superseded. */
-export const DEFAULT_AI_MODEL = "gemini-3.6-flash";
+/**
+ * The model asked for when none is named: Google's rolling alias for its
+ * current Flash-Lite, not a pinned version. A pinned name rots — the first
+ * live call here got a 404 because `gemini-2.5-flash` had been retired for new
+ * accounts — and the alias follows each release without a code change. Lite,
+ * because the anchored read is an easy task (the lines are given; only the
+ * grouping is asked for), and on the same page Lite answered identically in
+ * 3 s where the full Flash took 22 s. The full `gemini-flash-latest` alias
+ * answered 503 "high demand" on every try from a free-tier key, so it is not
+ * the default. `AI_MODEL` overrides all of this.
+ */
+export const DEFAULT_AI_MODEL = "gemini-flash-lite-latest";
 
 /** Why the AI rung did not produce a recipe. The screen shows `message`; the kind is what a test asserts on. */
 export type AiFailure = "unavailable" | "timeout" | "failed" | "malformed";
@@ -208,7 +218,9 @@ export function chatRequestBody(prompt: string, model: string): Record<string, u
 /** What a non-2xx means, in the words the import screen shows. Pure. */
 export function httpFailureMessage(status: number): string {
   if (status === 401 || status === 403) return "The model provider rejected the API key. Check AI_API_KEY.";
+  if (status === 404) return "The model provider does not know that model. Check AI_MODEL, or unset it for the default.";
   if (status === 429) return "The model provider is rate-limited right now. Try again in a minute.";
+  if (status === 503) return "The model provider is overloaded right now. Try again in a minute.";
   return `The model provider answered ${status}, so nothing was read.`;
 }
 

@@ -111,7 +111,7 @@ Three environment variables, on the host or in the container:
 |---|---|---|
 | `AI_API_KEY` | _(unset)_ | The provider's API key. Setting it is the whole of the setup; unset, the option is hidden |
 | `AI_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta/openai` | Any OpenAI-compatible endpoint, without the `/chat/completions` |
-| `AI_MODEL` | `gemini-3.6-flash` | The model to ask |
+| `AI_MODEL` | `gemini-flash-lite-latest` | The model to ask. The default is Google's rolling alias, so it follows releases without a change here |
 
 The defaults are Google's Gemini free tier, so a key from [AI Studio](https://aistudio.google.com/apikey) is all that is needed. Any OpenAI-compatible provider works instead — Mistral, Groq, OpenRouter, or an Ollama on the LAN (`AI_BASE_URL=http://ollama.lan:11434/v1`, any non-empty key):
 

@@ -225,6 +225,8 @@ describe("createFetchRunner", () => {
     for (const [status, pattern] of [
       [401, /rejected the API key/i],
       [403, /rejected the API key/i],
+      [404, /does not know that model/i],
+      [503, /overloaded/i],
       [429, /rate-limited.*try again in a minute/i],
       [500, /answered 500/],
     ] as const) {
