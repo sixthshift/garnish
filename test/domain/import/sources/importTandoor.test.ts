@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { imageDataUrl } from "../../../src/domain/import/importMealie";
+import { imageDataUrl } from "../../../../src/domain/import/sources/importMealie";
 import {
   isTandoorRecipe,
   looksLikeTandoor,
@@ -22,12 +22,12 @@ import {
   tandoorRecipe,
   tandoorRecipesFrom,
   type TandoorRecipe,
-} from "../../../src/domain/import/importTandoor";
-import { ingredientLines } from "../../../src/domain/import/schemaRecipe";
-import type { Food } from "../../../src/domain/recipe/recipe";
-import { makeZip, PNG_BYTES } from "../../helpers/zip";
+} from "../../../../src/domain/import/sources/importTandoor";
+import { ingredientLines } from "../../../../src/domain/import/schemaRecipe";
+import type { Food } from "../../../../src/domain/recipe/recipe";
+import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 
-const dir = join(import.meta.dirname, "../../fixtures/tandoor");
+const dir = join(import.meta.dirname, "../../../fixtures/tandoor");
 const parentPath = join(dir, "lemon-tart.json");
 const childPath = join(dir, "lemon-curd.json");
 const bytesOf = (path: string): Uint8Array => new Uint8Array(readFileSync(path));
@@ -202,7 +202,7 @@ describe("telling a Tandoor file apart", () => {
     expect(looksLikeTandoorRecipe(parent())).toBe(true);
     expect(looksLikeTandoor([parent()])).toBe(true);
     expect(looksLikeTandoor({ recipes: [parent()] })).toBe(true);
-    const mealie = jsonOf(join(import.meta.dirname, "../../fixtures/mealie/lemon-tart.json"));
+    const mealie = jsonOf(join(import.meta.dirname, "../../../fixtures/mealie/lemon-tart.json"));
     expect(looksLikeTandoorRecipe(mealie)).toBe(false);
     expect(looksLikeTandoor(mealie)).toBe(false);
   });
@@ -285,7 +285,7 @@ describe("readExport tells the two exports apart by shape", () => {
   });
 
   test("a Mealie file still goes to the Mealie parser", async () => {
-    const mealie = readFileSync(join(import.meta.dirname, "../../fixtures/mealie/lemon-tart.json"));
+    const mealie = readFileSync(join(import.meta.dirname, "../../../fixtures/mealie/lemon-tart.json"));
     const recipes = await readExport({ name: "lemon-tart.json", bytes: new Uint8Array(mealie) });
     expect(recipes[0]!.source).toBe("mealie");
     const zip = await makeZip([{ name: "database.json", bytes: new Uint8Array(mealie), deflate: true }]);

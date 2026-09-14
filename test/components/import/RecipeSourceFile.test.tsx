@@ -14,8 +14,8 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
-import { mealieRecipe, reviewRowsFromMealie, type MealieRecipe } from "../../../src/domain/import/importMealie";
-import { reviewRowsFromTandoor, tandoorRecipesFrom, type TandoorRecipe } from "../../../src/domain/import/importTandoor";
+import { mealieRecipe, reviewRowsFromMealie, type MealieRecipe } from "../../../src/domain/import/sources/importMealie";
+import { reviewRowsFromTandoor, tandoorRecipesFrom, type TandoorRecipe } from "../../../src/domain/import/sources/importTandoor";
 import type { Unit } from "../../../src/domain/recipe/recipe";
 import {
   draftFromScraped,

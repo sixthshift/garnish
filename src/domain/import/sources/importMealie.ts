@@ -27,13 +27,13 @@
 // Tandoor's export is read by its own module (`importTandoor`, M34.4), which
 // also holds the dispatcher that decides which of the two an upload is. This
 // file reads Mealie and nothing else.
-import type { FoodCandidate } from "../ingredient/parseFood";
-import type { UnitCandidate } from "../ingredient/parseUnit";
-import { parseIngredient } from "../ingredient/parseIngredient";
-import { reviewRow, type ReviewRow } from "../ingredient/bulkIngredients";
-import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "./schemaRecipe";
-import { IMAGE_TYPES, sniffImage } from "../image";
-import { isZip, readZip, type ZipEntry } from "./zip";
+import type { FoodCandidate } from "../../ingredient/parseFood";
+import type { UnitCandidate } from "../../ingredient/parseUnit";
+import { parseIngredient } from "../../ingredient/parseIngredient";
+import { reviewRow, type ReviewRow } from "../../ingredient/bulkIngredients";
+import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "../schemaRecipe";
+import { IMAGE_TYPES, sniffImage } from "../../image";
+import { isZip, readZip, type ZipEntry } from "../zip";
 
 /** One of Mealie's ingredient rows, already parsed by Mealie. */
 export type MealieIngredient = {

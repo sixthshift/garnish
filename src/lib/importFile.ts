@@ -1,8 +1,8 @@
 // Posting an uploaded Mealie or Tandoor export to the parser (M34.3, M34.4). The twin of
 // `uploadRecipeImage` in ./images: a multipart POST to a route under /api,
 // with the `fetch` injectable so a test can drive it without a server.
-import { IMPORT_FIELD } from "../domain/import/importMealie";
-import type { ExportRecipe } from "../domain/import/importTandoor";
+import { IMPORT_FIELD } from "../domain/import/sources/importMealie";
+import type { ExportRecipe } from "../domain/import/sources/importTandoor";
 
 /** Where the upload goes. */
 export const IMPORT_FILE_URL = "/api/import/file";

@@ -21,12 +21,12 @@ import {
   reviewRowsFromMealie,
   tagNames,
   type MealieRecipe,
-} from "../../../src/domain/import/importMealie";
-import type { Food } from "../../../src/domain/recipe/recipe";
-import { ingredientLines } from "../../../src/domain/import/schemaRecipe";
-import { makeZip, PNG_BYTES } from "../../helpers/zip";
+} from "../../../../src/domain/import/sources/importMealie";
+import type { Food } from "../../../../src/domain/recipe/recipe";
+import { ingredientLines } from "../../../../src/domain/import/schemaRecipe";
+import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 
-const FIXTURE = join(import.meta.dirname, "../../fixtures/mealie/lemon-tart.json");
+const FIXTURE = join(import.meta.dirname, "../../../fixtures/mealie/lemon-tart.json");
 const fixtureBytes = (): Uint8Array => new Uint8Array(readFileSync(FIXTURE));
 const fixture = (): Record<string, unknown> => JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
 const utf8 = (text: string) => new TextEncoder().encode(text);

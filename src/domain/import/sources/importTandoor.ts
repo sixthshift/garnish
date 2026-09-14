@@ -44,11 +44,11 @@ import {
   reviewRowFromMealie,
   tagNames,
 } from "./importMealie";
-import type { FoodCandidate } from "../ingredient/parseFood";
-import type { UnitCandidate } from "../ingredient/parseUnit";
-import type { ReviewRow } from "../ingredient/bulkIngredients";
-import { text } from "./schemaRecipe";
-import { isZip, readZip, type ZipEntry } from "./zip";
+import type { FoodCandidate } from "../../ingredient/parseFood";
+import type { UnitCandidate } from "../../ingredient/parseUnit";
+import type { ReviewRow } from "../../ingredient/bulkIngredients";
+import { text } from "../schemaRecipe";
+import { isZip, readZip, type ZipEntry } from "../zip";
 
 /** One of Tandoor's ingredient rows, already parsed by Tandoor. */
 export type TandoorIngredient = MealieIngredient & {

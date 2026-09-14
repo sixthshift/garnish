@@ -4,8 +4,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import type { MealieRecipe } from "../../../src/domain/import/importMealie";
-import type { ExportRecipe } from "../../../src/domain/import/importTandoor";
+import type { MealieRecipe } from "../../../src/domain/import/sources/importMealie";
+import type { ExportRecipe } from "../../../src/domain/import/sources/importTandoor";
 import { Route } from "../../../src/routes/api/import/file";
 import { handleImportFile, IMPORT_FIELD } from "../../../src/server/api/importFile";
 import { makeZip, PNG_BYTES } from "../../helpers/zip";
