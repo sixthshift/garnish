@@ -14,7 +14,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
-import { type ImportedRecipe, type MealieRecipe, readExport, reviewRowsFromMealie, reviewRowsFromTandoor, type TandoorRecipe } from "../../../src/domain/import";
+import { type ImportedRecipe, Importer, type MealieRecipe, reviewRowsFromMealie, reviewRowsFromTandoor, type TandoorRecipe } from "../../../src/domain/import";
 import type { Unit } from "../../../src/domain/recipe/recipe";
 import {
   draftFromScraped,
@@ -26,16 +26,18 @@ import {
 } from "../../../src/components/import/RecipeSource";
 
 const FIXTURE = join(import.meta.dirname, "../../fixtures/mealie/lemon-tart.json");
-// Read through the module's surface, as the upload route does, and cloned per test.
-const MEALIE = (await readExport({ name: "lemon-tart.json", bytes: new Uint8Array(readFileSync(FIXTURE)) }))[0] as MealieRecipe;
+// Read through the importer, as the upload route does, and cloned per test. Neither port is reached by a file.
+const unreachable = () => Promise.reject(new Error("not reached"));
+const files = new Importer({ fetchPage: unreachable, model: unreachable });
+const MEALIE = (await files.import({ kind: "file", file: { name: "lemon-tart.json", bytes: new Uint8Array(readFileSync(FIXTURE)) } }))[0] as MealieRecipe;
 const recipe = (): MealieRecipe => structuredClone(MEALIE);
 
 const TANDOOR_DIR = join(import.meta.dirname, "../../fixtures/tandoor");
 const readTandoor = (name: string): Record<string, unknown> => JSON.parse(readFileSync(join(TANDOOR_DIR, name), "utf8")) as Record<string, unknown>;
 const TANDOOR = (
-  await readExport({
-    name: "tandoor.json",
-    bytes: new TextEncoder().encode(JSON.stringify([readTandoor("lemon-tart.json"), readTandoor("lemon-curd.json")])),
+  await files.import({
+    kind: "file",
+    file: { name: "tandoor.json", bytes: new TextEncoder().encode(JSON.stringify([readTandoor("lemon-tart.json"), readTandoor("lemon-curd.json")])) },
   })
 )[0] as TandoorRecipe;
 

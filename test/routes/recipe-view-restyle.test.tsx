@@ -23,7 +23,7 @@ vi.mock("../../src/server/fns/style", local);
 
 /** Whether a model is configured, as the loader's `aiImportAvailable` answers it. */
 const ai = vi.hoisted(() => ({ available: false }));
-vi.mock("../../src/server/ai/import", async (importOriginal) => ({
+vi.mock("../../src/server/fns/import", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   aiImportAvailable: async () => ({ available: ai.available }),
 }));

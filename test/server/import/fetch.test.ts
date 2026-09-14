@@ -1,14 +1,13 @@
-// Fetching a recipe from a URL (M23.5) against an injected fetcher. M35.4 adds
-// the header profiles that stand in for a browser and the retry that tries a
-// second one on a 403. What happens to the page once fetched is the import
-// module's, tested in test/domain/import/extract.test.ts.
+// The importer's `fetchPage` port (M23.5, M35.4) against an injected `fetch`:
+// the browser header set, the retry under a second profile on a 403, and the
+// statuses that are handed straight back for the importer to name.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
+import { createPageFetcher, type Fetcher } from "../../../src/server/import/fetch";
 import { FETCH_PROFILES } from "../../../src/server/import/fetchProfiles";
-import { type Fetcher, importRecipeFromUrl, MAX_PAGE_BYTES, parsePageUrl } from "../../../src/server/import/fromUrl";
 
-const URL_UNDER_TEST = "https://example.test/anzac-biscuits";
+const URL_UNDER_TEST = new URL("https://example.test/anzac-biscuits");
 
 /** Recorded fixtures for the bot-wall retry (M35.4): a real Cloudflare challenge, trimmed, and a schema.org page. */
 const BLOCKED_403 = readFileSync(join(import.meta.dirname, "../../fixtures/importUrl/blocked-403.html"), "utf8");
@@ -58,30 +57,13 @@ function sequenceFetch(
   return fetcher;
 }
 
-describe("parsePageUrl", () => {
-  test.each(["https://example.com/r", "http://192.168.1.4:8080/r"])("accepts %s", (raw) => {
-    expect(parsePageUrl(raw)?.href).toBe(new URL(raw).href);
-  });
-
-  test("trims surrounding whitespace", () => {
-    expect(parsePageUrl("  https://example.com/r \n")?.pathname).toBe("/r");
-  });
-
-  test.each(["", "not a url", "/local/page", "file:///etc/passwd", "javascript:alert(1)", "data:text/html,x"])("rejects %j", (raw) => {
-    expect(parsePageUrl(raw)).toBeNull();
-  });
-});
-
-describe("importRecipeFromUrl", () => {
-  test("reads a schema page", async () => {
-    const found = await importRecipeFromUrl(URL_UNDER_TEST, stubFetch(SCHEMA_PAGE));
-    expect(found.from).toBe("schema");
-    expect(found.recipe.name).toBe("Anzac biscuits");
-  });
-
-  test("sends a full browser header set, because a bare one gets a 403", async () => {
+describe("createPageFetcher", () => {
+  test("GETs the page with a full browser header set, because a bare one gets a 403", async () => {
     const fetcher = stubFetch(SCHEMA_PAGE);
-    await importRecipeFromUrl(URL_UNDER_TEST, fetcher);
+    const page = await createPageFetcher(fetcher)(URL_UNDER_TEST);
+    expect(page.status).toBe(200);
+    expect(new TextDecoder().decode(page.bytes)).toBe(SCHEMA_PAGE);
+    expect(page.url).toBe(URL_UNDER_TEST.href);
     const headers = fetcher.calls[0]!.init?.headers as Record<string, string>;
     expect(headers["User-Agent"]).toBe(FETCH_PROFILES[0]!.headers["User-Agent"]);
     expect(headers.Accept).toContain("text/html");
@@ -90,18 +72,14 @@ describe("importRecipeFromUrl", () => {
     expect(fetcher.calls[0]!.init?.redirect).toBe("follow");
   });
 
-  test("falls back to the stub", async () => {
-    expect((await importRecipeFromUrl(URL_UNDER_TEST, stubFetch(STUB_PAGE))).from).toBe("stub");
-  });
-
-  test("a 403 retries once under a second header profile, and a page behind it comes back", async () => {
+  test("a 403 retries once under a second header profile, and the page behind it comes back", async () => {
     const fetcher = sequenceFetch([
       [BLOCKED_403, 403],
       [RECIPE_200, 200],
     ]);
-    const found = await importRecipeFromUrl(URL_UNDER_TEST, fetcher);
-    expect(found.from).toBe("schema");
-    expect(found.recipe.name).toBe("Golden syrup dumplings");
+    const page = await createPageFetcher(fetcher)(URL_UNDER_TEST);
+    expect(page.status).toBe(200);
+    expect(new TextDecoder().decode(page.bytes)).toContain("Golden syrup dumplings");
     expect(fetcher.calls).toHaveLength(2);
     const firstHeaders = fetcher.calls[0]!.init?.headers as Record<string, string>;
     const secondHeaders = fetcher.calls[1]!.init?.headers as Record<string, string>;
@@ -110,52 +88,25 @@ describe("importRecipeFromUrl", () => {
     expect(secondHeaders["User-Agent"]).not.toBe(firstHeaders["User-Agent"]);
   });
 
-  test("still blocked after both profiles, the error names the site and suggests the paste box", async () => {
+  test("still blocked after both profiles, the 403 is handed back and there is no third attempt", async () => {
     const fetcher = sequenceFetch([
       [BLOCKED_403, 403],
       [BLOCKED_403, 403],
     ]);
-    await expect(importRecipeFromUrl(URL_UNDER_TEST, fetcher)).rejects.toThrow(
-      /example\.test is blocking automated requests.*pasting the recipe text, or the page's HTML \(view source, select all, copy\)/,
-    );
-    // No third attempt: only as many profiles exist as were tried.
+    expect((await createPageFetcher(fetcher)(URL_UNDER_TEST)).status).toBe(403);
     expect(fetcher.calls).toHaveLength(FETCH_PROFILES.length);
   });
 
-  test("a 500 is reported without retrying under another profile", async () => {
+  test("a 500 is handed back without retrying under another profile", async () => {
     const fetcher = stubFetch("", 500);
-    await expect(importRecipeFromUrl(URL_UNDER_TEST, fetcher)).rejects.toThrow("example.test returned 500");
+    expect((await createPageFetcher(fetcher)(URL_UNDER_TEST)).status).toBe(500);
     expect(fetcher.calls).toHaveLength(1);
   });
 
-  test("a page with neither says so, and suggests the way forward", async () => {
-    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch(BARE_PAGE))).rejects.toThrow(/No recipe data on that page/);
-  });
-
-  test.each([
-    ["", /http or https/],
-    ["file:///etc/passwd", /http or https/],
-  ])("refuses %j", async (raw, message) => {
-    await expect(importRecipeFromUrl(raw, stubFetch(SCHEMA_PAGE))).rejects.toThrow(message);
-  });
-
-  test("an error response names the host and the status", async () => {
-    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch("", 404))).rejects.toThrow("example.test returned 404");
-  });
-
-  test("an unreachable host says so rather than leaking the cause", async () => {
+  test("a network failure is thrown as it came, for the importer to name", async () => {
     const failing: Fetcher = async () => {
       throw new Error("ECONNREFUSED 10.0.0.1:443");
     };
-    await expect(importRecipeFromUrl(URL_UNDER_TEST, failing)).rejects.toThrow("Could not reach example.test");
-  });
-
-  test("an empty page says so", async () => {
-    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch(""))).rejects.toThrow("empty page");
-  });
-
-  test("an oversized page is refused before it is parsed", async () => {
-    const huge = `<html>${"x".repeat(MAX_PAGE_BYTES + 1)}</html>`;
-    await expect(importRecipeFromUrl(URL_UNDER_TEST, stubFetch(huge))).rejects.toThrow("too large");
+    await expect(createPageFetcher(failing)(URL_UNDER_TEST)).rejects.toThrow("ECONNREFUSED");
   });
 });

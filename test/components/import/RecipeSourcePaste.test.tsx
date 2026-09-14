@@ -1,7 +1,7 @@
 // The fourth source: pasted text read by `claude -p` (M34.5). Static render
 // only (no jsdom in this project's vitest config), so the markup is checked
 // with `renderToString` and the decisions by calling the stage components
-// directly. The runner's own tests are in test/server/ai/import.test.ts.
+// directly. The importer's own tests are in test/domain/import.
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
@@ -10,7 +10,7 @@ import type { Food as FoodRow } from "../../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../../src/domain/ingredient/bulkIngredients";
 import type { Unit } from "../../../src/domain/recipe/recipe";
 import { ingredientLines } from "../../../src/domain/import";
-import { parseAiAnswer } from "../../../src/server/ai/import";
+import { normaliseScraped, ScrapedRecipeSchema } from "../../../src/domain/import";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -104,8 +104,8 @@ describe("PasteSource", () => {
 });
 
 describe("an AI answer through the review", () => {
-  const recipe = parseAiAnswer(
-    JSON.stringify({
+  const recipe = normaliseScraped(
+    ScrapedRecipeSchema.parse({
       name: "Anzac biscuits",
       servings: 24,
       yieldText: "biscuits",

@@ -1,8 +1,8 @@
 // The model behind every AI pass (decisions.md row 75): a hosted one behind a
 // single OpenAI-compatible HTTP call. Nothing in this file knows what is being
-// asked — the import (`./import.ts`) and the restyle (`./restyle.ts`) each
-// bring their own prompt, their own JSON Schema and their own parser, and
-// share what is here: which provider, which key, the one request shape, the
+// asked — the import (`src/domain/import`, wired in `src/server/import`) and
+// the restyle (`./restyle.ts`) each bring their own prompt, their own JSON
+// Schema and their own parser, and share what is here: which provider, which key, the one request shape, the
 // deadline and the four ways a call fails.
 //
 // It is plain `fetch` rather than an SDK because the request is twelve lines
@@ -139,9 +139,5 @@ export function createFetchRunner(fetcher: Fetcher = fetch, options: RunnerOptio
   };
 }
 
-/** A ```json fence off an answer that came back as prose despite the schema. Pure. */
-export function stripFence(text: string): string {
-  const trimmed = text.trim();
-  const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n?```$/.exec(trimmed);
-  return fenced === null ? trimmed : fenced[1]!.trim();
-}
+/** Re-exported for the restyle pass and the tests; the function itself is the domain's. */
+export { stripFence } from "../../domain/ai";

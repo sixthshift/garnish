@@ -5,7 +5,8 @@
 //
 // Nothing is written here. The route parses and answers; the review step
 // (M17.5's rows) is what decides, and the editor's Save is what writes.
-import { type FileRecipe, IMPORT_FIELD, readExport } from "../../domain/import";
+import { type FileRecipe, IMPORT_FIELD } from "../../domain/import";
+import { importer } from "../import/importer";
 
 export { IMPORT_FIELD } from "../../domain/import";
 
@@ -39,7 +40,7 @@ export async function handleImportFile(request: Request): Promise<Response> {
   const name = file instanceof File ? file.name : "";
   const bytes = new Uint8Array(await file.arrayBuffer());
   try {
-    const recipes = await readExport({ name, bytes });
+    const recipes = await importer.import({ kind: "file", file: { name, bytes } });
     return Response.json({ recipes } satisfies ImportFileResult);
   } catch (cause) {
     return badRequest(cause instanceof Error ? cause.message : "That file could not be read");

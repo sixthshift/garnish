@@ -3,8 +3,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { extractRecipe, ingredientLines } from "../../../src/domain/import";
-import { scrapedFromStub } from "../../../src/domain/import/extract";
+import { ingredientLines } from "../../../src/domain/import";
+import { extractRecipe, scrapedFromStub } from "../../../src/domain/import/extract";
 
 const URL_UNDER_TEST = "https://example.test/anzac-biscuits";
 

@@ -1,53 +1,18 @@
-// The AI import rung (M34.5, M36.1, decisions.md rows 74 and 75): hand the
-// text to a language model and let it do what no rule can — read a recipe out
-// of prose.
+// What the importer asks a model, and how it reads the answer (M34.5, M36.1,
+// M36.4, decisions.md rows 74 to 76). Pure: the request itself is the
+// `model` port the importer is given, so nothing here knows which provider
+// answers or how.
 //
 // Since M36.6 the model is the default reader of a page rather than a rung
-// under the rules: the rules in the import module's `extractRecipe` say what the lines are and
-// the model says which part each sits under, because schema.org has nowhere to
+// under the rules: the rules (`extract.ts`) say what the lines are and the
+// model says which part each sits under, because schema.org has nowhere to
 // record that. What is left for the model alone is text that is not a page at
 // all — the block off a photograph, an email, a book you typed out — where
 // there is nothing structured to anchor it to.
-//
-// A paste that is a page's own source takes the same road as a fetched page
-// (M36.7): `runAiImport` hands it to `extractRecipe` first, and the model
-// then reads the readable text with the JSON-LD as its anchor. Someone who
-// worked around a bot wall by copying view-source should not get a worse
-// result than the fetch would have given them.
-//
-// Three rules hold it in place:
-//
-//   nothing is written    the answer lands on the same M17.5 review the URL
-//                         import uses. The model proposes; the household
-//                         approves.
-//   nothing is trusted    the answer is parsed through `ScrapedRecipeSchema`
-//                         like any other untrusted input. A malformed answer
-//                         is reported on the import screen, never saved.
-//   nothing is assumed    the option only exists when a key is configured. In
-//                         a container with no `AI_API_KEY` the option is not
-//                         offered at all, and a button that always fails is
-//                         worse than no button.
-//
-// The model itself — provider, key, request shape, deadline and error kinds —
-// is `./client.ts`, shared with the restyle pass. This file is the question:
-// the recipe's JSON Schema, the prompt, the parser, and the read that puts
-// them together.
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
-import {
-  checkAgainstAnchor,
-  extractRecipe,
-  type ImportedRecipe,
-  ingredientLines,
-  looksLikeHtml,
-  MAX_PAGE_TEXT,
-  normaliseScraped,
-  readableText,
-  type ScrapedRecipe,
-  ScrapedRecipeSchema,
-} from "../../domain/import";
-import { notFoundMiddleware } from "../core/fn";
-import { AI_TIMEOUT_MS, aiConfigured, AiError, type AiRunner, createFetchRunner, type Fetcher, stripFence } from "./client";
+import { stripFence } from "../ai";
+import { ImportError } from "./errors";
+import { MAX_PAGE_TEXT } from "./page/text";
+import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "./scraped";
 
 /** The most text worth sending: `readableText`'s own cap (`pageText.ts`), so there is one number for it rather than two that can drift. */
 export const MAX_AI_TEXT = MAX_PAGE_TEXT;
@@ -57,7 +22,7 @@ export const MAX_AI_TEXT = MAX_PAGE_TEXT;
  * written out rather than generated: structured output wants every property
  * named, every one required, and no extras, and a generated schema carries
  * zod's defaults and optionality into a place that does not want them.
- * `test/server/ai/import.test.ts` holds it to the zod schema's shape so the two
+ * `test/domain/import/model.test.ts` holds it to the zod schema's shape so the two
  * cannot drift.
  */
 export const SCRAPED_JSON_SCHEMA = {
@@ -174,161 +139,31 @@ export function aiPrompt({ text, anchor = null }: { text: string; anchor?: Scrap
   return [...ANCHORED_RULES, "", "TEXT:", text, "", "ANCHOR:", anchorJson(anchor)].join("\n");
 }
 
-/** The client's runner, told to ask for a recipe. The fetch is injectable so the HTTP path can be driven without a provider. */
-export function createImportRunner(fetcher: Fetcher = fetch): AiRunner {
-  return createFetchRunner(fetcher, { schema: SCRAPED_JSON_SCHEMA, schemaName: "recipe" });
-}
-
 /**
  * The recipe out of the message content: JSON, because the request asked for
  * it, with the fence stripped for a model that fences anyway. Throws
- * `AiError` for anything that is not a recipe. Pure.
+ * `ImportError` for anything that is not a recipe. Pure.
  */
 export function parseAiAnswer(content: string): ScrapedRecipe {
   const raw = stripFence(content);
-  if (raw === "") throw new AiError("malformed", "The model answered with nothing.");
+  if (raw === "") throw new ImportError("malformed", "The model answered with nothing.");
 
   let answer: unknown;
   try {
     answer = JSON.parse(raw);
   } catch {
-    throw new AiError("malformed", "The model answered in prose rather than the recipe format, so nothing was imported.");
+    throw new ImportError("malformed", "The model answered in prose rather than the recipe format, so nothing was imported.");
   }
 
   const parsed = ScrapedRecipeSchema.safeParse(answer);
   if (!parsed.success) {
     const first = parsed.error.issues[0];
     const where = first && first.path.length > 0 ? ` (${first.path.join(".")}: ${first.message})` : "";
-    throw new AiError("malformed", `The model's answer was not in the expected shape${where}. Nothing was imported.`);
+    throw new ImportError("malformed", `The model's answer was not in the expected shape${where}. Nothing was imported.`);
   }
   const recipe = normaliseScraped(parsed.data);
   if (recipe.name === "" && ingredientLines(recipe).length === 0) {
-    throw new AiError("malformed", "The model found no recipe in that text.");
+    throw new ImportError("malformed", "The model found no recipe in that text.");
   }
   return recipe;
 }
-
-/**
- * The model's own half: one prompt, one answer, and — when the read was
- * anchored — the check over it. `runAiImport` below decides what to hand this;
- * everything from here down is the same whether the text came from a paste, a
- * page's readable text, or the client handing back the `pageText` it already
- * had.
- */
-async function modelRead(
-  text: string,
-  options: { run: AiRunner; sourceUrl: string; anchor: ScrapedRecipe | null; pageText: string },
-): Promise<ImportedRecipe> {
-  const { run, sourceUrl, anchor, pageText } = options;
-  // The cap is on what the request carries, not on the paste alone: an
-  // anchored read sends the page's text and the page's JSON-LD together, and
-  // it is the pair of them the model has to fit in.
-  if (text.length + (anchor === null ? 0 : anchorJson(anchor).length) > MAX_AI_TEXT) {
-    throw new AiError("failed", "That is too much text to read in one go. Paste one recipe at a time.");
-  }
-
-  let content: string;
-  try {
-    content = await run(aiPrompt({ text, anchor }), AI_TIMEOUT_MS);
-  } catch (cause) {
-    if (cause instanceof AiError) throw cause;
-    throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
-  }
-  const answer = parseAiAnswer(content);
-  if (anchor === null) return { from: "ai", url: sourceUrl, recipe: answer, pageText };
-
-  // The anchored read is the model sorting known lines into parts (M36.5), so
-  // the only question left is whether it did anything else. It did: the
-  // structure goes and the page's own content stays, as `from: "schema"`, with
-  // the answer kept under `rejected` so the review can still offer it.
-  const check = checkAgainstAnchor(answer, anchor);
-  if (check.ok) return { from: "ai", url: sourceUrl, recipe: answer, pageText, check };
-  return { from: "schema", url: sourceUrl, recipe: anchor, pageText, check, rejected: answer };
-}
-
-/**
- * What the paste screen sends and gets back: the same `ImportedRecipe` the URL
- * import produces.
- *
- * Prose goes straight to the model, as it always has. A paste that is a page's
- * source (M36.7) takes the rules first instead, through the very same
- * `extractRecipe` a fetched page goes through, so someone who got past a bot
- * wall by copying view-source lands on exactly the result the fetch would have
- * given: the JSON-LD as the anchor, the readable text as what the model sorts
- * into parts, the check over the answer. A model failure on that path is not
- * fatal — the rules already produced a usable recipe, so it is returned as it
- * stands rather than thrown away with the error. That is also what happens
- * when no model is configured at all, which is the same bargain the URL import
- * strikes.
- */
-export async function runAiImport(
-  text: string,
-  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string; anchor?: ScrapedRecipe | null; pageText?: string } = {},
-): Promise<ImportedRecipe> {
-  const {
-    run = createImportRunner(options.fetcher),
-    sourceUrl = "",
-    anchor = null,
-    pageText = "",
-  } = options;
-  const body = text.trim();
-  if (body === "") throw new AiError("failed", "Paste the recipe first.");
-
-  // An anchor means the client has already run the rules over this page and is
-  // handing back its `pageText` (M36.6); only a bare paste can be markup.
-  if (anchor === null && looksLikeHtml(body)) {
-    const found = extractRecipe(body, sourceUrl);
-    if (found !== null) {
-      try {
-        return await modelRead(found.pageText, {
-          run,
-          sourceUrl,
-          anchor: found.from === "schema" ? found.recipe : null,
-          pageText: found.pageText,
-        });
-      } catch (cause) {
-        if (cause instanceof AiError) return found;
-        throw cause;
-      }
-    }
-    // Markup the rules could make nothing of: the model still gets a fair go
-    // at it, over the readable text rather than the tags.
-    return await modelRead(readableText(body), { run, sourceUrl, anchor: null, pageText: "" });
-  }
-
-  return await modelRead(body, { run, sourceUrl, anchor, pageText });
-}
-
-// --- Server functions ------------------------------------------------------
-
-/**
- * Whether the AI rung can run at all, for the chooser and the Settings note.
- * Read on the server every time rather than cached: giving the container a key
- * should not need the app restarted.
- */
-export const aiImportAvailable = createServerFn({ method: "GET" })
-  .middleware([notFoundMiddleware])
-  .handler(() => ({ available: aiConfigured() }));
-
-export const ImportFromTextInput = z.object({
-  text: z.string().trim().min(1),
-  /** The address the text came from, when it came from one; becomes the recipe's `sourceUrl`. */
-  sourceUrl: z.string().trim().default(""),
-  /**
-   * The rules rung's own reading of the same page, when it had one. The client
-   * already holds it, so sending it back costs nothing and saves the server a
-   * second fetch of a page it has no address for.
-   */
-  anchor: ScrapedRecipeSchema.optional(),
-});
-
-/** Read a recipe out of pasted text with a hosted model. Nothing is written: the caller reviews it first. */
-export const importFromText = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(ImportFromTextInput)
-  .handler(async ({ data }) =>
-    runAiImport(data.text, {
-      sourceUrl: data.sourceUrl,
-      anchor: data.anchor === undefined ? null : normaliseScraped(data.anchor),
-    }),
-  );

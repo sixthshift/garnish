@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { MAX_AI_TEXT } from "../../../../src/server/ai/import";
+import { MAX_AI_TEXT } from "../../../../src/domain/import/model";
 import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../../../src/domain/import/page/text";
 
 const FIXTURES = join(import.meta.dirname, "../../../fixtures/importUrl");
@@ -75,7 +75,7 @@ describe("readableText", () => {
     expect(text).not.toContain("<");
   });
 
-  test("aiImport's MAX_AI_TEXT is this cap, so there is one number rather than two that can drift", () => {
+  test("the model read's MAX_AI_TEXT is this cap, so there is one number rather than two that can drift", () => {
     expect(MAX_AI_TEXT).toBe(MAX_PAGE_TEXT);
   });
 });

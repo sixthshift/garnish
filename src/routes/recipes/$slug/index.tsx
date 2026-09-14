@@ -37,7 +37,7 @@ import { useIngredientMode } from "../../../lib/prefs";
 import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
 import { useMutate } from "../../../lib/mutate";
 import { notifyError } from "../../../lib/notify";
-import { aiImportAvailable } from "../../../server/ai/import";
+import { aiImportAvailable } from "../../../server/fns/import";
 import { getRecipe, listSubRecipes, setRating } from "../../../server/fns/recipes";
 import { listTimeline } from "../../../server/fns/timeline";
 

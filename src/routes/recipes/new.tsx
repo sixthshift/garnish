@@ -14,7 +14,7 @@ import { z } from "zod";
 import { emptyDraft, type RecipeDraft, RecipeForm } from "../../components/recipe/editor/RecipeForm";
 import { RecipeSource, type SourceKind } from "../../components/import/RecipeSource";
 import type { Tag, Unit } from "../../domain/recipe/recipe";
-import { aiImportAvailable } from "../../server/ai/import";
+import { aiImportAvailable } from "../../server/fns/import";
 import { recipeByName, recipeBySource } from "../../server/fns/recipes";
 import { listTags } from "../../server/fns/tags";
 import { listUnits } from "../../server/fns/units";
