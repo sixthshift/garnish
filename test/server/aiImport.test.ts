@@ -393,6 +393,44 @@ describe("runAiImport", () => {
     expect(prompt).toMatch(/byte for byte/);
   });
 
+  // M36.5: the answer is checked against the anchor, and a check that fails
+  // discards the structure rather than the content.
+  test("an answer that kept the anchor's lines and steps is accepted as the AI result", async () => {
+    const sorted = {
+      ...FIXTURE,
+      parts: [
+        { name: "", ingredients: ["1 cup plain flour"], steps: [] },
+        { name: "To finish", ingredients: ["125 g butter"], steps: ["Rub the butter in.", "Bake."] },
+      ],
+    };
+    const imported = await runAiImport("# To finish\nBake.", { run: fakeRunner(JSON.stringify(sorted)), anchor: ANCHOR, pageText: "page" });
+    expect(imported.from).toBe("ai");
+    expect(imported.check?.ok).toBe(true);
+    expect(imported.rejected).toBeUndefined();
+    expect(imported.pageText).toBe("page");
+    expect(imported.recipe.parts.map((part) => part.name)).toEqual(["", "To finish"]);
+  });
+
+  test("an answer that changed the content is rejected: the anchor comes back as `schema`, the answer under `rejected`", async () => {
+    const invented = {
+      ...FIXTURE,
+      parts: [{ name: "", ingredients: ["1 cup plain flour", "125 g butter", "a pinch of salt"], steps: ["Rub the butter in.", "Bake."] }],
+    };
+    const imported = await runAiImport("prose", { run: fakeRunner(JSON.stringify(invented)), anchor: ANCHOR, sourceUrl: "https://example.test/x" });
+    expect(imported.from).toBe("schema");
+    expect(imported.recipe).toEqual(ANCHOR);
+    expect(imported.url).toBe("https://example.test/x");
+    expect(imported.check).toMatchObject({ ok: false, addedLines: ["a pinch of salt"] });
+    expect(imported.rejected?.parts[0]?.ingredients).toContain("a pinch of salt");
+  });
+
+  test("with no anchor there is nothing to check, and no check is attached", async () => {
+    const imported = await runAiImport("text", { run: fakeRunner(answer) });
+    expect(imported.from).toBe("ai");
+    expect(imported.check).toBeUndefined();
+    expect(imported.rejected).toBeUndefined();
+  });
+
   test("text and anchor are measured against the cap together", async () => {
     const run = fakeRunner(answer);
     const text = "x".repeat(MAX_AI_TEXT - 10);

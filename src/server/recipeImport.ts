@@ -32,6 +32,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { fetchProfileForAttempt, FETCH_PROFILES } from "../domain/fetchProfiles";
+import type { ImportCheck } from "../domain/importCheck";
 import { recipeNodeFromHtml } from "../domain/jsonLd";
 import { openGraphStub } from "../domain/openGraph";
 import { readableText } from "../domain/pageText";
@@ -65,6 +66,18 @@ export type ImportedRecipe = {
    * which is handed text rather than producing it.
    */
   pageText: string;
+  /**
+   * The anchored read's verdict (M36.5), present only when the AI rung ran
+   * with a JSON-LD anchor to check against. Undefined everywhere else: the
+   * rules-based rungs have nothing to check themselves against.
+   */
+  check?: ImportCheck;
+  /**
+   * The model's answer when the check rejected it. `recipe` is the anchor in
+   * that case and this is what was discarded, kept so the review can show the
+   * difference and offer it anyway.
+   */
+  rejected?: ScrapedRecipe;
 };
 
 /** The pasted text as an http(s) URL, or null for anything else. Pure. */

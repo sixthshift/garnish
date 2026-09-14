@@ -34,6 +34,7 @@
 // twelve lines and every provider worth using speaks this shape.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { checkAgainstAnchor } from "../domain/importCheck";
 import { MAX_PAGE_TEXT } from "../domain/pageText";
 import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../domain/schemaRecipe";
 import { notFoundMiddleware } from "./fn";
@@ -292,9 +293,14 @@ export function parseAiAnswer(content: string): ScrapedRecipe {
 /** What the paste screen sends and gets back: the same `ImportedRecipe` the URL import produces, from the `ai` rung. */
 export async function runAiImport(
   text: string,
-  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string; anchor?: ScrapedRecipe | null } = {},
+  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string; anchor?: ScrapedRecipe | null; pageText?: string } = {},
 ): Promise<ImportedRecipe> {
-  const { run = options.fetcher ? createFetchRunner(options.fetcher) : fetchRunner, sourceUrl = "", anchor = null } = options;
+  const {
+    run = options.fetcher ? createFetchRunner(options.fetcher) : fetchRunner,
+    sourceUrl = "",
+    anchor = null,
+    pageText = "",
+  } = options;
   const body = text.trim();
   if (body === "") throw new AiImportError("failed", "Paste the recipe first.");
   // The cap is on what the request carries, not on the paste alone: an
@@ -311,7 +317,16 @@ export async function runAiImport(
     if (cause instanceof AiImportError) throw cause;
     throw new AiImportError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
-  return { from: "ai", url: sourceUrl, recipe: parseAiAnswer(content), pageText: "" };
+  const answer = parseAiAnswer(content);
+  if (anchor === null) return { from: "ai", url: sourceUrl, recipe: answer, pageText };
+
+  // The anchored read is the model sorting known lines into parts (M36.5), so
+  // the only question left is whether it did anything else. It did: the
+  // structure goes and the page's own content stays, as `from: "schema"`, with
+  // the answer kept under `rejected` so the review can still offer it.
+  const check = checkAgainstAnchor(answer, anchor);
+  if (check.ok) return { from: "ai", url: sourceUrl, recipe: answer, pageText, check };
+  return { from: "schema", url: sourceUrl, recipe: anchor, pageText, check, rejected: answer };
 }
 
 // --- Server functions ------------------------------------------------------
