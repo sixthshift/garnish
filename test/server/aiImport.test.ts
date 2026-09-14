@@ -26,6 +26,8 @@ import {
   stripFence,
 } from "../../src/server/aiImport";
 import { aiImportAvailable, importFromText } from "../../src/server/aiImport";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ingredientLines, type ScrapedRecipe, ScrapedPartSchema, ScrapedRecipeSchema } from "../../src/domain/schemaRecipe";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -437,6 +439,85 @@ describe("runAiImport", () => {
     await expect(runAiImport(text, { run })).resolves.toBeTruthy();
     await expect(runAiImport(text, { run, anchor: ANCHOR })).rejects.toThrow(/too much text/);
     expect(run.calls).toHaveLength(1);
+  });
+});
+
+// M36.7: a paste that is a page's own source takes the rules first, exactly as
+// a fetched page does, so view-source-and-paste is not a worse import than the
+// fetch would have been.
+const RECIPE_200 = readFileSync(join(import.meta.dirname, "../fixtures/importUrl/recipe-200.html"), "utf8");
+
+/** The same page with its structured data cut out: OpenGraph and prose, nothing for the schema rung. */
+const RECIPE_200_NO_LD = RECIPE_200.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, "");
+
+describe("a pasted page's HTML", () => {
+  test("the recorded 200 fixture comes back from the schema rung with its page text filled", async () => {
+    delete process.env.AI_API_KEY;
+    const imported = await runAiImport(RECIPE_200, { sourceUrl: "https://example.test/x" });
+    expect(imported.from).toBe("schema");
+    expect(imported.recipe.name).toBe("Golden syrup dumplings");
+    expect(imported.pageText).not.toBe("");
+    expect(imported.pageText).not.toContain("ld+json");
+    expect(imported.url).toBe("https://example.test/x");
+  });
+
+  test("with a model configured, the schema rung is the anchor and the answer is checked against it", async () => {
+    const sorted = {
+      name: "Golden syrup dumplings",
+      description: "Golden syrup dumplings, a family favourite for a cold night.",
+      image: null,
+      servings: 6,
+      yieldText: "dumplings",
+      prepMinutes: 15,
+      cookMinutes: null,
+      tags: [],
+      parts: [
+        { name: "Dumplings", ingredients: ["1 cup self-raising flour", "60 g butter"], steps: ["Rub butter into flour."] },
+        { name: "Syrup", ingredients: ["1 cup golden syrup"], steps: ["Simmer in syrup."] },
+      ],
+    };
+    const run = fakeRunner(JSON.stringify(sorted));
+    const imported = await runAiImport(RECIPE_200, { run });
+    expect(run.calls[0]!.prompt).toContain("ANCHOR:");
+    expect(run.calls[0]!.prompt).not.toContain("<script");
+    expect(imported.from).toBe("ai");
+    expect(imported.check?.ok).toBe(true);
+    // `normaliseScraped` keeps the unnamed part in front of the named ones.
+    expect(imported.recipe.parts.map((part) => part.name)).toEqual(["", "Dumplings", "Syrup"]);
+  });
+
+  test("prose is untouched by the split and still goes straight to the model", async () => {
+    const run = fakeRunner(answer);
+    const imported = await runAiImport("Anzac biscuits\n1 cup plain flour\nMix and bake.", { run });
+    expect(imported.from).toBe("ai");
+    expect(run.calls[0]!.prompt).toContain("Anzac biscuits\n1 cup plain flour");
+    expect(run.calls[0]!.prompt).not.toContain("ANCHOR:");
+  });
+
+  test("the same page with its ld+json cut out is a stub, and the model then reads it unanchored", async () => {
+    const run = fakeRunner(answer);
+    const imported = await runAiImport(RECIPE_200_NO_LD, { run });
+    expect(run.calls).toHaveLength(1);
+    expect(run.calls[0]!.prompt).not.toContain("ANCHOR:");
+    expect(imported.from).toBe("ai");
+    expect(imported.recipe.name).toBe("Anzac biscuits");
+    expect(imported.check).toBeUndefined();
+  });
+
+  test("a stub whose read fails keeps the stub rather than losing the shell", async () => {
+    delete process.env.AI_API_KEY;
+    const imported = await runAiImport(RECIPE_200_NO_LD, { sourceUrl: "https://example.test/x" });
+    expect(imported.from).toBe("stub");
+    expect(imported.recipe.name).not.toBe("");
+    expect(imported.pageText).not.toBe("");
+  });
+
+  test("markup the rules can make nothing of still reaches the model, as readable text", async () => {
+    const run = fakeRunner(answer);
+    const imported = await runAiImport("<!doctype html><html><body><p>1 cup plain flour</p><script>var x = 1;</script></body></html>", { run });
+    expect(imported.from).toBe("ai");
+    expect(run.calls[0]!.prompt).toContain("1 cup plain flour");
+    expect(run.calls[0]!.prompt).not.toContain("var x");
   });
 });
 

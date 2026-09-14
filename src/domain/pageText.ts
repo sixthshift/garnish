@@ -100,3 +100,23 @@ export function readableText(html: string): string {
   const text = lines.join("\n");
   return text.length > MAX_PAGE_TEXT ? text.slice(0, MAX_PAGE_TEXT) : text;
 }
+
+/**
+ * Whether a paste is a page's source rather than prose (M36.7). Someone who
+ * hit a bot wall is told to view source, select all and copy, and what lands
+ * in the box is then the same markup a successful fetch would have returned —
+ * so it deserves the same treatment, rules first and the model over the
+ * readable text, instead of being handed to the model as a wall of tags.
+ *
+ * Three marks, any one of which settles it: a doctype, an `<html` tag, or an
+ * `ld+json` script. The last is the one that matters most, because a paste
+ * that carries structured data is exactly the paste the rules can read, even
+ * when the browser's view-source gave only a fragment with no doctype on it.
+ * Wide rather than narrow on purpose: the cost of taking prose for markup is
+ * one wasted rules pass that finds nothing and falls through to the model
+ * anyway, while the cost of taking markup for prose is sending the model a
+ * page of tags and losing the JSON-LD that was sitting right there. Pure.
+ */
+export function looksLikeHtml(text: string): boolean {
+  return /<!doctype\s+html/i.test(text) || /<html[\s>]/i.test(text) || /<script[^>]*\bld\+json\b/i.test(text);
+}

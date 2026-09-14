@@ -8,6 +8,7 @@ import { FETCH_PROFILES } from "../../src/domain/fetchProfiles";
 import { ingredientLines } from "../../src/domain/schemaRecipe";
 import {
   extractRecipe,
+  importFromHtml,
   type Fetcher,
   importRecipeFromUrl,
   MAX_PAGE_BYTES,
@@ -127,6 +128,21 @@ describe("extractRecipe", () => {
   });
 });
 
+// M36.7: the post-fetch half is its own export so a pasted page can take the
+// same road. It answers exactly as the fetch's own half does.
+describe("importFromHtml", () => {
+  test("a page's HTML gives the same result whether it was fetched or pasted", () => {
+    const found = importFromHtml(RECIPE_200, URL_UNDER_TEST);
+    expect(found).toEqual(extractRecipe(RECIPE_200, URL_UNDER_TEST));
+    expect(found?.from).toBe("schema");
+    expect(found?.pageText).not.toBe("");
+  });
+
+  test("markup with neither structured data nor OpenGraph tags is null, and the caller decides", () => {
+    expect(importFromHtml(BARE_PAGE, URL_UNDER_TEST)).toBeNull();
+  });
+});
+
 describe("importRecipeFromUrl", () => {
   test("reads a schema page", async () => {
     const found = await importRecipeFromUrl(URL_UNDER_TEST, stubFetch(SCHEMA_PAGE));
@@ -171,7 +187,7 @@ describe("importRecipeFromUrl", () => {
       [BLOCKED_403, 403],
     ]);
     await expect(importRecipeFromUrl(URL_UNDER_TEST, fetcher)).rejects.toThrow(
-      /example\.test is blocking automated requests.*pasting the recipe text/,
+      /example\.test is blocking automated requests.*pasting the recipe text, or the page's HTML \(view source, select all, copy\)/,
     );
     // No third attempt: only as many profiles exist as were tried.
     expect(fetcher.calls).toHaveLength(FETCH_PROFILES.length);

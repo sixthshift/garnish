@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { MAX_AI_TEXT } from "../../src/server/aiImport";
-import { MAX_PAGE_TEXT, readableText } from "../../src/domain/pageText";
+import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../src/domain/pageText";
 
 const FIXTURES = join(import.meta.dirname, "../fixtures/importUrl");
 const SECTIONED_PAGE = readFileSync(join(FIXTURES, "sectioned-page.html"), "utf8");
@@ -78,4 +78,26 @@ describe("readableText", () => {
   test("aiImport's MAX_AI_TEXT is this cap, so there is one number rather than two that can drift", () => {
     expect(MAX_AI_TEXT).toBe(MAX_PAGE_TEXT);
   });
+});
+
+// M36.7: which pastes take the rules first. Three marks settle it, and prose
+// that merely talks about a tag is not one of them.
+describe("looksLikeHtml", () => {
+  const cases: [string, string, boolean][] = [
+    ["a doctype", "<!DOCTYPE html>\n<html><body>hi</body></html>", true],
+    ["a doctype in any case", "<!doctype HTML><body>hi</body>", true],
+    ["an html tag with no doctype", "<html lang=\"en\"><body>hi</body></html>", true],
+    ["an ld+json script in a fragment", '<div><script type="application/ld+json">{"@type":"Recipe"}</script></div>', true],
+    ["the recorded 200 fixture", RECIPE_200, true],
+    ["the sectioned page", SECTIONED_PAGE, true],
+    ["a plain recipe paste", "Anzac biscuits\n\n1 cup plain flour\n125 g butter\n\nMix and bake.", false],
+    ["prose that mentions HTML in words", "Copied out of the HTML of an old blog post.", false],
+    ["prose with an angle bracket in it", "Heat to <180C> and rest 5 minutes.", false],
+    ["an empty paste", "", false],
+  ];
+  for (const [what, text, expected] of cases) {
+    test(`${what} is ${expected ? "" : "not "}HTML`, () => {
+      expect(looksLikeHtml(text)).toBe(expected);
+    });
+  }
 });

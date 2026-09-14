@@ -132,6 +132,14 @@ describe("shouldReadWithModel", () => {
     expect(shouldReadWithModel({ ...rulesResult, from: "ai" }, true)).toBe(false);
     expect(shouldReadWithModel({ ...rulesResult, pageText: "   " }, true)).toBe(false);
   });
+
+  // M36.7: pasted HTML runs the whole pipeline on the server, so what comes
+  // back already carries a check. Reading it again asks the same question twice.
+  test("a result the server already had the model read is shown as it stands", () => {
+    const checked = { ...rulesResult, check: { ok: true, missingLines: [], addedLines: [], missingSteps: [], addedSteps: [] } };
+    expect(shouldReadWithModel(checked, true)).toBe(false);
+    expect(shouldReadWithModel({ ...checked, check: { ...checked.check, ok: false, addedLines: ["a pinch of salt"] } }, true)).toBe(false);
+  });
 });
 
 describe("modelPass", () => {

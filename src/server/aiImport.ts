@@ -2,12 +2,18 @@
 // text to a language model and let it do what no rule can — read a recipe out
 // of prose.
 //
-// It sits under the two rules-based rungs in `recipeImport.ts`, not over them.
-// A page with `ld+json` is read by `schema`, a page with OpenGraph tags by
-// `stub`, and both are free, instant and deterministic. This one costs a
-// request and takes seconds, so it is what you reach for when the page had
-// nothing structured in it, or when what you have is not a page at all: the
-// block of text off a photograph, an email, a book you typed out.
+// Since M36.6 the model is the default reader of a page rather than a rung
+// under the rules: the rules in `recipeImport.ts` say what the lines are and
+// the model says which part each sits under, because schema.org has nowhere to
+// record that. What is left for the model alone is text that is not a page at
+// all — the block off a photograph, an email, a book you typed out — where
+// there is nothing structured to anchor it to.
+//
+// A paste that is a page's own source takes the same road as a fetched page
+// (M36.7): `runAiImport` hands it to `importFromHtml` first, and the model
+// then reads the readable text with the JSON-LD as its anchor. Someone who
+// worked around a bot wall by copying view-source should not get a worse
+// result than the fetch would have given them.
 //
 // Three rules hold it in place:
 //
@@ -35,10 +41,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { checkAgainstAnchor } from "../domain/importCheck";
-import { MAX_PAGE_TEXT } from "../domain/pageText";
+import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../domain/pageText";
 import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../domain/schemaRecipe";
 import { notFoundMiddleware } from "./fn";
-import type { ImportedRecipe } from "./recipeImport";
+import { importFromHtml, type ImportedRecipe } from "./recipeImport";
 
 /** How long a read is given before the request is aborted. A recipe answers in seconds; a minute is the outer bound. */
 export const AI_IMPORT_TIMEOUT_MS = 60_000;
@@ -290,29 +296,28 @@ export function parseAiAnswer(content: string): ScrapedRecipe {
   return recipe;
 }
 
-/** What the paste screen sends and gets back: the same `ImportedRecipe` the URL import produces, from the `ai` rung. */
-export async function runAiImport(
+/**
+ * The model's own half: one prompt, one answer, and — when the read was
+ * anchored — the check over it. `runAiImport` below decides what to hand this;
+ * everything from here down is the same whether the text came from a paste, a
+ * page's readable text, or the client handing back the `pageText` it already
+ * had.
+ */
+async function modelRead(
   text: string,
-  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string; anchor?: ScrapedRecipe | null; pageText?: string } = {},
+  options: { run: AiRunner; sourceUrl: string; anchor: ScrapedRecipe | null; pageText: string },
 ): Promise<ImportedRecipe> {
-  const {
-    run = options.fetcher ? createFetchRunner(options.fetcher) : fetchRunner,
-    sourceUrl = "",
-    anchor = null,
-    pageText = "",
-  } = options;
-  const body = text.trim();
-  if (body === "") throw new AiImportError("failed", "Paste the recipe first.");
+  const { run, sourceUrl, anchor, pageText } = options;
   // The cap is on what the request carries, not on the paste alone: an
   // anchored read sends the page's text and the page's JSON-LD together, and
   // it is the pair of them the model has to fit in.
-  if (body.length + (anchor === null ? 0 : anchorJson(anchor).length) > MAX_AI_TEXT) {
+  if (text.length + (anchor === null ? 0 : anchorJson(anchor).length) > MAX_AI_TEXT) {
     throw new AiImportError("failed", "That is too much text to read in one go. Paste one recipe at a time.");
   }
 
   let content: string;
   try {
-    content = await run(aiPrompt({ text: body, anchor }), AI_IMPORT_TIMEOUT_MS);
+    content = await run(aiPrompt({ text, anchor }), AI_IMPORT_TIMEOUT_MS);
   } catch (cause) {
     if (cause instanceof AiImportError) throw cause;
     throw new AiImportError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
@@ -327,6 +332,59 @@ export async function runAiImport(
   const check = checkAgainstAnchor(answer, anchor);
   if (check.ok) return { from: "ai", url: sourceUrl, recipe: answer, pageText, check };
   return { from: "schema", url: sourceUrl, recipe: anchor, pageText, check, rejected: answer };
+}
+
+/**
+ * What the paste screen sends and gets back: the same `ImportedRecipe` the URL
+ * import produces.
+ *
+ * Prose goes straight to the model, as it always has. A paste that is a page's
+ * source (M36.7) takes the rules first instead, through the very same
+ * `importFromHtml` a fetched page goes through, so someone who got past a bot
+ * wall by copying view-source lands on exactly the result the fetch would have
+ * given: the JSON-LD as the anchor, the readable text as what the model sorts
+ * into parts, the check over the answer. A model failure on that path is not
+ * fatal — the rules already produced a usable recipe, so it is returned as it
+ * stands rather than thrown away with the error. That is also what happens
+ * when no model is configured at all, which is the same bargain the URL import
+ * strikes.
+ */
+export async function runAiImport(
+  text: string,
+  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string; anchor?: ScrapedRecipe | null; pageText?: string } = {},
+): Promise<ImportedRecipe> {
+  const {
+    run = options.fetcher ? createFetchRunner(options.fetcher) : fetchRunner,
+    sourceUrl = "",
+    anchor = null,
+    pageText = "",
+  } = options;
+  const body = text.trim();
+  if (body === "") throw new AiImportError("failed", "Paste the recipe first.");
+
+  // An anchor means the client has already run the rules over this page and is
+  // handing back its `pageText` (M36.6); only a bare paste can be markup.
+  if (anchor === null && looksLikeHtml(body)) {
+    const found = importFromHtml(body, sourceUrl);
+    if (found !== null) {
+      try {
+        return await modelRead(found.pageText, {
+          run,
+          sourceUrl,
+          anchor: found.from === "schema" ? found.recipe : null,
+          pageText: found.pageText,
+        });
+      } catch (cause) {
+        if (cause instanceof AiImportError) return found;
+        throw cause;
+      }
+    }
+    // Markup the rules could make nothing of: the model still gets a fair go
+    // at it, over the readable text rather than the tags.
+    return await modelRead(readableText(body), { run, sourceUrl, anchor: null, pageText: "" });
+  }
+
+  return await modelRead(body, { run, sourceUrl, anchor, pageText });
 }
 
 // --- Server functions ------------------------------------------------------

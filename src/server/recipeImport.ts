@@ -23,8 +23,10 @@
 // even a bare `User-Agent`, gets a 403 from a good number of sites. A 403 gets
 // one retry under a second header profile before this gives up — see
 // `src/domain/fetchProfiles.ts` — and only then does the error say the site
-// is blocking automated requests and point at the paste box (M34.5). That is
-// as far as this goes: Mealie impersonates a real browser's TLS fingerprint
+// is blocking automated requests and point at the paste box (M34.5), which
+// since M36.7 takes the page's HTML as well as its prose: a paste that looks
+// like a page's source goes through `importFromHtml` below, the same half of
+// this file a fetched page goes through. That is as far as this goes: Mealie impersonates a real browser's TLS fingerprint
 // with curl_cffi to get past Cloudflare, and Tandoor sidesteps the problem
 // with a bookmarklet that captures the HTML the browser already has. Both are
 // worth revisiting if headers alone stop being enough — see docs/plan.md's
@@ -123,6 +125,20 @@ export function extractRecipe(html: string, url: string): ImportedRecipe | null 
   return stub === null ? null : { from: "stub", url, recipe: scrapedFromStub(stub), pageText };
 }
 
+/**
+ * The post-fetch half of the URL import (M36.7): everything that happens once
+ * the page's HTML is in hand, with no network in it. `importRecipeFromUrl`
+ * calls it with what it fetched, and the paste box calls it with what was
+ * pasted when the paste looks like a page's source (`looksLikeHtml`), so
+ * view-source-and-paste gets exactly what a successful fetch would have got —
+ * the same rungs, the same `pageText` for the model to read, the same result
+ * shape. Null when the page carries neither structured data nor OpenGraph
+ * tags; the callers differ on what to do about that. Pure.
+ */
+export function importFromHtml(html: string, url: string): ImportedRecipe | null {
+  return extractRecipe(html, url);
+}
+
 /** The slice of `fetch` used here; injectable for tests. Matches `imageFetch`. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
@@ -166,7 +182,9 @@ export async function importRecipeFromUrl(raw: string, fetcher: Fetcher = fetch)
 
   const response = await fetchPastBotWall(url, fetcher);
   if (response.status === 403) {
-    throw new Error(`${url.hostname} is blocking automated requests. Try pasting the recipe text instead.`);
+    throw new Error(
+      `${url.hostname} is blocking automated requests. Try pasting the recipe text, or the page's HTML (view source, select all, copy), instead.`,
+    );
   }
   if (!response.ok) throw new Error(`${url.hostname} returned ${response.status}`);
 
@@ -174,7 +192,7 @@ export async function importRecipeFromUrl(raw: string, fetcher: Fetcher = fetch)
   if (bytes.length === 0) throw new Error(`${url.hostname} returned an empty page`);
   if (bytes.length > MAX_PAGE_BYTES) throw new Error("That page is too large to read");
 
-  const found = extractRecipe(new TextDecoder().decode(bytes), response.url || url.href);
+  const found = importFromHtml(new TextDecoder().decode(bytes), response.url || url.href);
   if (found === null) throw new Error("No recipe data on that page. You can still start a blank recipe and type it in.");
   return found;
 }

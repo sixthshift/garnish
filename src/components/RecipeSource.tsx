@@ -288,9 +288,15 @@ export function changedLines(check: ImportCheck): { label: string; text: string 
  * a page: an upload already states its parts and a paste has already been
  * read. A `schema` result goes anchored and a `stub` result goes bare, and
  * neither goes anywhere without the page's text to read.
+ *
+ * A result that already carries a `check` has been past the model on the
+ * server (M36.7's pasted HTML, which runs the whole pipeline there), so it is
+ * shown as it stands. Reading it again would only ask the same model the same
+ * question twice.
  */
 export function shouldReadWithModel(imported: ImportedRecipe, aiAvailable: boolean): boolean {
   if (!aiAvailable) return false;
+  if (imported.check !== undefined) return false;
   if (imported.from !== "schema" && imported.from !== "stub") return false;
   return imported.pageText.trim() !== "";
 }
@@ -467,21 +473,23 @@ export type PasteSourceProps = {
 };
 
 /**
- * The second stage for pasted text (M34.5): one box. What is in it goes to
- * `claude -p` on the server and comes back as the same reviewable recipe a
- * scraped page does. Nothing here is saved, and the note says so, because
- * handing a recipe to a model is exactly the moment to be told what happens
- * next.
+ * The second stage for pasted text (M34.5): one box. What is in it goes to the
+ * model on the server and comes back as the same reviewable recipe a scraped
+ * page does — and if what was pasted is a page's own source (M36.7), through
+ * the page rungs first, which is why the label asks for either. Nothing here
+ * is saved, and the note says so, because handing a recipe to a model is
+ * exactly the moment to be told what happens next.
  */
 export function PasteSource({ text, busy, error, onTextChange, onRead, onBack }: PasteSourceProps) {
   return (
     <div className="flex flex-col gap-4" data-source-stage="paste">
       <SectionTitle as="h2">From pasted text</SectionTitle>
       <Muted as="p" className="text-sm">
-        Paste the whole recipe — ingredients and method together, in any order. Claude reads it into this app's fields and you check
-        every line before anything is saved.
+        Paste the whole recipe — ingredients and method together, in any order. If a site turned the address away, view its source,
+        select all and paste that instead: the page's own data is read first, exactly as a successful fetch would have read it. Either
+        way the model fills this app's fields and you check every line before anything is saved.
       </Muted>
-      <FormField label="The recipe">
+      <FormField label="The recipe, or the page's HTML (view source, select all, copy)">
         <Textarea
           name="text"
           rows={12}
