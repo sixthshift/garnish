@@ -37,11 +37,19 @@ import { useIngredientMode } from "../../../lib/prefs";
 import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
 import { useMutate } from "../../../lib/mutate";
 import { notifyError } from "../../../lib/notify";
+import { aiImportAvailable } from "../../../server/aiImport";
 import { getRecipe, listSubRecipes, setRating } from "../../../server/recipes";
 import { listTimeline } from "../../../server/timeline";
 
 export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),
+  /**
+   * Open the restyle sheet on arrival (M37.6). The new recipe page sets it
+   * after an import's Create when a model is configured, and the sheet clears
+   * it again on dismiss, so a reload does not re-offer a rewrite nobody asked
+   * for twice.
+   */
+  restyle: z.boolean().optional(),
 });
 
 /**
@@ -50,18 +58,22 @@ export const RecipeViewSearch = z.object({
  * for the whole page rather than a fetch per row; a recipe with none costs no
  * request at all.
  */
-export type RecipeViewData = { recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[] };
+export type RecipeViewData = { recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[]; aiAvailable: boolean };
 
 export const Route = createFileRoute("/recipes/$slug/")({
   validateSearch: RecipeViewSearch,
   loader: async ({ params }): Promise<RecipeViewData> => {
     const recipe = await getRecipe({ data: { slug: params.slug } });
     const ids = subRecipeIds(recipe);
-    const [timeline, subRecipes] = await Promise.all([
+    // Whether a model is configured is asked here rather than in the menu, so
+    // "Restyle steps" is either there or it is not (M37.6). A failed ask is
+    // "no model": everything else on the page still works.
+    const [timeline, subRecipes, ai] = await Promise.all([
       listTimeline({ data: { recipeId: recipe.id } }),
       ids.length === 0 ? Promise.resolve<SubRecipe[]>([]) : listSubRecipes({ data: { ids } }),
+      aiImportAvailable().catch(() => ({ available: false })),
     ]);
-    return { recipe, timeline, subRecipes };
+    return { recipe, timeline, subRecipes, aiAvailable: ai.available };
   },
   component: RecipePage,
 });
@@ -86,8 +98,9 @@ export function nextServings(current: number, direction: -1 | 1): number {
 }
 
 function RecipePage() {
-  const { recipe: stored, timeline, subRecipes } = Route.useLoaderData();
-  const { servings: requested } = Route.useSearch();
+  const { recipe: stored, timeline, subRecipes, aiAvailable } = Route.useLoaderData();
+  const { servings: requested, restyle } = Route.useSearch();
+  const navigate = Route.useNavigate();
   // The stored document, scaled here rather than on the server, so a tap on
   // plus or minus is a re-render and not a round trip. Everything below reads
   // `recipe`, never `stored`.
@@ -143,7 +156,12 @@ function RecipePage() {
                     the scaled document, so what the sheet offers is what the page
                     is showing. */}
                 <AddToShoppingButton recipe={recipe} />
-                <RecipeActions recipe={recipe} />
+                <RecipeActions
+                  recipe={recipe}
+                  aiAvailable={aiAvailable}
+                  restyleOpen={aiAvailable && restyle === true}
+                  onRestyleClose={() => void navigate({ search: (prev) => ({ ...prev, restyle: undefined }), replace: true })}
+                />
               </>
             }
           />

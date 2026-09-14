@@ -17,6 +17,13 @@
 // ingredient editor's food list and get a link back here. Idempotent — running
 // it twice lands on the same food — so it needs no confirmation.
 //
+// "Restyle steps" (M37.6) opens `RestyleSheet`, and is only offered when a
+// model is configured: without one there is nothing to rewrite with, and the
+// page's loader has already asked. The same flag and the page's `?restyle`
+// search param open the sheet on arrival, which is how a URL import's Create
+// lands straight on the offer — `onRestyleClose` is what clears the param
+// again, so dismissing it is the one tap the task asks for.
+//
 // "Plan" (M33.4) opens `PlanPopover` (src/components/PlanPopover.tsx): the
 // next seven days and a servings stepper. It sits in its own `relative` box
 // alongside the menu because the popover's trigger has to be an element that
@@ -34,19 +41,29 @@ import { foodForRecipe } from "../server/foods";
 import { addPlanEntry } from "../server/plan";
 import { deleteRecipe, duplicateRecipe } from "../server/recipes";
 import { PlanPopover, planEntryFor } from "./PlanPopover";
+import { RestyleSheet } from "./RestyleSheet";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Menu } from "./ui/Menu";
 
 export type RecipeActionsProps = {
   recipe: Recipe;
+  /** Whether a model is configured (M37.6). Without one, Restyle steps is not offered. */
+  aiAvailable?: boolean;
+  /** Open the restyle sheet on mount: the page's `?restyle` param, after an import's Create. */
+  restyleOpen?: boolean;
+  /** Called when the restyle sheet closes, so the page can drop `?restyle`. */
+  onRestyleClose?: () => void;
 };
 
-export function RecipeActions({ recipe }: RecipeActionsProps) {
+export function RecipeActions({ recipe, aiAvailable = false, restyleOpen = false, onRestyleClose }: RecipeActionsProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [planning, setPlanning] = useState(false);
+  // Seeded from the prop rather than driven by it: `?restyle` only ever
+  // arrives on the first render, and the sheet owns its life after that.
+  const [restyling, setRestyling] = useState(restyleOpen);
 
   const copy = async (text: string, what: string) => {
     if (text.trim() === "") {
@@ -110,6 +127,7 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
           <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
           <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>
           <Menu.Item onSelect={() => setPlanning(true)}>Plan</Menu.Item>
+          {aiAvailable && <Menu.Item onSelect={() => setRestyling(true)}>Restyle steps</Menu.Item>}
           <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
           <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
           <Menu.Item onSelect={() => void copy(toCooklang(recipe), "Cooklang")}>Copy as Cooklang</Menu.Item>
@@ -119,6 +137,14 @@ export function RecipeActions({ recipe }: RecipeActionsProps) {
             Delete
           </Menu.Item>
         </Menu>
+        <RestyleSheet
+          open={restyling}
+          recipe={recipe}
+          onClose={() => {
+            setRestyling(false);
+            onRestyleClose?.();
+          }}
+        />
         <PlanPopover recipe={recipe} open={planning} onOpenChange={setPlanning} onChoose={(date, servings) => void planTo(date, servings)} />
       </div>
       {confirming && (

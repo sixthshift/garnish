@@ -62,6 +62,12 @@ function NewRecipePage() {
           units={units}
           tags={tags}
           importedImageUrl={imported?.imageUrl ?? null}
+          /* An imported recipe lands on its page with the restyle sheet open
+             when there is a model to rewrite with (M37.6): the import keeps
+             the author's words on purpose, so the offer to put them in the
+             household's voice belongs at the end of the import and nowhere
+             else. "My own" skips it. */
+          afterSaveSearch={imported !== null && aiAvailable ? { restyle: true } : undefined}
         />
       </Page>
     );

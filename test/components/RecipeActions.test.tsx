@@ -34,8 +34,8 @@ const base: Recipe = {
 };
 
 /** Render inside a throwaway router, so `useNavigate` resolves. */
-async function render(recipe: Recipe): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <RecipeActions recipe={recipe} /> });
+async function render(recipe: Recipe, props: Partial<RecipeActionsProps> = {}): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeActions recipe={recipe} {...props} /> });
   const slugRoute = createRoute({ getParentRoute: () => rootRoute, path: "/recipes/$slug", component: () => null });
   const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: () => null });
   const router = createRouter({
@@ -46,8 +46,13 @@ async function render(recipe: Recipe): Promise<string> {
   return renderToString(<RouterProvider router={router} />);
 }
 
-test("takes only the recipe now: Edit and Cook's servings moved to the header buttons", () => {
-  expectTypeOf<RecipeActionsProps>().toEqualTypeOf<{ recipe: Recipe }>();
+test("takes the recipe, and M37.6's model flag and restyle-on-arrival pair", () => {
+  expectTypeOf<RecipeActionsProps>().toEqualTypeOf<{
+    recipe: Recipe;
+    aiAvailable?: boolean;
+    restyleOpen?: boolean;
+    onRestyleClose?: () => void;
+  }>();
 });
 
 describe("RecipeActions render", () => {
@@ -124,5 +129,30 @@ describe("Plan (M33.4)", () => {
     const html = await render(base);
     expect(html).not.toMatch(/>Plan</);
     expect(html).not.toContain('data-testid="plan-popover"');
+  });
+});
+
+describe("Restyle steps (M37.6)", () => {
+  test('"Restyle steps" sits with the other non-destructive items', () => {
+    const html = renderToString(
+      <Menu label="Recipe actions" open>
+        <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
+        <Menu.Item onSelect={() => {}}>Restyle steps</Menu.Item>
+      </Menu>,
+    );
+    expect(html).toContain("Restyle steps");
+  });
+
+  test("the closed menu shows no Restyle item, with a model or without one", async () => {
+    expect(await render(base)).not.toContain("Restyle steps");
+    expect(await render(base, { aiAvailable: true })).not.toContain("Restyle steps");
+  });
+
+  test("the sheet paints nothing until it is open on the client", async () => {
+    // `Sheet` mounts through a portal, so even `restyleOpen` renders nothing
+    // here; test/routes/recipe-view-restyle.test.tsx stubs it to check the
+    // `?restyle` wiring.
+    const html = await render(base, { aiAvailable: true, restyleOpen: true });
+    expect(html).not.toContain('data-testid="restyle-rules"');
   });
 });

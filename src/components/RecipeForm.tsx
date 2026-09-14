@@ -349,6 +349,14 @@ export type RecipeFormProps = {
    */
   importedImageUrl?: string | null;
   /**
+   * Search params the navigation after a successful Create carries (M37.6).
+   * The new recipe page sets `{ restyle: true }` after an import when a model
+   * is configured, so the recipe opens with the restyle sheet already up; a
+   * recipe typed in by hand gets nothing, because there is no imported voice
+   * to rewrite.
+   */
+  afterSaveSearch?: { restyle?: boolean };
+  /**
    * Forwarded to the JSON toggle's `Menu` (tests). The menu is closed by
    * default and opens on click, like every other `Menu` in the app; there is
    * no jsdom in this project's vitest config, so a render test cannot click
@@ -357,7 +365,7 @@ export type RecipeFormProps = {
   jsonMenuOpen?: boolean;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl, storage: storageProp, jsonMenuOpen }: RecipeFormProps) {
+export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl, storage: storageProp, afterSaveSearch, jsonMenuOpen }: RecipeFormProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const detectedOnline = useOnline();
@@ -472,7 +480,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
       });
       if (storage) clearDraft(storage, existing?.id);
       notify(saveNotice({ existing: existing !== undefined, imageError: image.error }));
-      await navigate({ to: "/recipes/$slug", params: { slug: saved.slug } });
+      await navigate({ to: "/recipes/$slug", params: { slug: saved.slug }, search: afterSaveSearch ?? {} });
     } catch (error) {
       notifyError(existing ? "Could not save changes" : "Could not create recipe", error);
       setSaving(false);
