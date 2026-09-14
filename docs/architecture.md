@@ -20,7 +20,7 @@ src/
   routes/       TanStack Start file routes: pages, and server routes under routes/api/
   server/       server functions (createServerFn) grouped by resource, image upload/serve/fetch handlers, db handle, boot, errors.ts (NotFound, mapped to TanStack's notFound())
   db/connection/ open.ts (DB_FILE, databasePath, openDatabase — WAL and foreign keys), client.ts (the Drizzle handle)
-  db/seed/      seed.ts inserts; units.ts, recipes.ts and timeline.ts are the data it inserts; cli.ts is `bun run seed [--sample]`
+  db/seed/      seed.ts inserts; units.ts, style.ts, recipes.ts and timeline.ts are the data it inserts; cli.ts is `bun run seed [--sample]`
   db/dev/       dev-only, never shipped: generate.ts builds a fifteen-recipe dataset from vocabulary.ts with the seeded PRNG in random.ts and placeholder images from png.ts; apply.ts writes it; wipe.ts empties DATA_DIR first; cli.ts is `bun run dev:seed`
   db/backup/    backup.ts is the VACUUM INTO copy, cli.ts is `bun run backup`
   db/models/    one folder per domain, each with schema.ts (its Drizzle tables) and repo.ts (its repository); columns.ts holds the shared column defaults and the conventions they all follow
@@ -30,6 +30,7 @@ src/
   db/models/aisle/     schema.ts, repo.ts
   db/models/tag/       schema.ts, repo.ts
   db/models/timeline/  schema.ts, repo.ts — the "made this" log
+  db/models/style/     schema.ts, repo.ts — the house style guide
   db/models/migration/ schema.ts only: the applied-migrations table, written by migrate.ts rather than a repository
   db/migrations/ 001_init.sql, 002_stage2.sql, 003_parts.sql — what actually builds the database — and migrate.ts, the runner that applies them
   domain/       zod schemas, scaling, formatting, cook-mode cards, ingredient merge, markdown, sort and filter helpers, bulk-add text cleanup, name and slug helpers (names.ts). Pure, no IO, importable by client
@@ -91,12 +92,13 @@ shopping_item id, position, food_id?, unit_id?, quantity?, text, ticked,
 shopping_item_source id, item_id, recipe_id?, recipe_name, part_name,
               servings?, quantity?
 meal_plan_entry id, date, position, recipe_id?, text, servings?
+style_rule    id, position, text, enabled, created_at, updated_at
 migration     id, name, applied_at
 ```
 
 Ids are UUID text; timestamps are ISO 8601 UTC text. `food`, `unit`, `aisle` and `tag` names are unique case-insensitively. Deleting a recipe cascades to its parts, ingredients, steps, notes, timeline events and tag links; deleting a part cascades to its ingredients and steps; a step link cascades from either side, so deleting a step or an ingredient takes the links naming it; deleting a food, unit or aisle sets the references null. `position` is unique within its parent.
 
-Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64); `005_shopping.sql` adds `shopping_item` and `shopping_item_source` (decisions.md row 67); `006_conversions.sql` adds `food_conversion` (decisions.md row 69); `007_plan.sql` adds `meal_plan_entry` (decisions.md row 71); `008_step_images.sql` adds `step.image` (M35.1); `009_cook_servings.sql` adds `timeline_event.servings` (M35.2).
+Migrations so far: `001_init.sql` is the first schema; `002_stage2.sql` adds `recipe.favourite` and `timeline_event` (decisions.md rows 41 and 43); `003_parts.sql` renames `component` to `part` and moves every step onto one, dropping `step.recipe_id` and rescoping `step.position` (decisions.md rows 48 and 49); `004_step_links.sql` adds `step_ingredient` (decisions.md row 64); `005_shopping.sql` adds `shopping_item` and `shopping_item_source` (decisions.md row 67); `006_conversions.sql` adds `food_conversion` (decisions.md row 69); `007_plan.sql` adds `meal_plan_entry` (decisions.md row 71); `008_step_images.sql` adds `step.image` (M35.1); `009_cook_servings.sql` adds `timeline_event.servings` (M35.2); `010_style.sql` adds `style_rule` (decisions.md row 78).
 
 The document the API reads and writes (`src/domain/recipe.ts`) mirrors these columns in camelCase, with Mealie's names where Mealie has the concept: `servings` → `recipeServings`, `yield_quantity` → `recipeYieldQuantity`, `yield_text` → `recipeYield`, `prep_minutes` → `prepTime`, `cook_minutes` → `performTime`. The two times are integer minutes, not Mealie's free-text strings (decisions.md row 35). Array order carries `position`, so the document has no position fields. Foreign keys come back as nested objects (`unit`, `food`, `yieldUnit`, `tags`); writes use only the nested `id`. Steps exist only inside `parts`; the document has no recipe-level `steps` array. A step carries `ingredientIds`: the ids of the ingredients it uses, in link order.
 
@@ -148,6 +150,17 @@ One plan for the household, with no owner and no plan table (decisions.md row 71
 - A week is the unit read: `week(monday)` answers seven `PlanDay`s, Monday first, **empty days included** — an empty Wednesday is part of the answer. Dates are arithmetic on strings in UTC (`addDays`, `mondayOf`, `weekDates`, `groupByDay` in `src/domain/plan.ts`, pure).
 - The document nests `recipe` with only what the week strip draws — id, slug, name, image — one select per week, not one per entry. An entry whose recipe has been deleted reads back with `recipe: null` and keeps its day. Writes send `recipeId`.
 - No copied recipe name, unlike a shopping source: a plan is read for the week it names, not asked weeks later where a line came from.
+
+## House style
+
+The household's own voice for the steps (decisions.md row 78), kept as a list of short statements rather than a paragraph of prose. `010_style.sql` builds it; the document is `src/domain/style.ts`, the repository `src/db/models/style/repo.ts`, the server functions `src/server/style.ts`, and Settings has a **Style** tab over it.
+
+- The import is faithful on purpose — stage 12's check rejects any changed word — so the restyle is a **second, separate pass**, run by hand from the recipe and never as part of an import.
+- It rewrites **steps only**. Ingredient lines, quantities, parts and metadata are frozen; what a restyle may not change is facts, so its check is on numbers and foods rather than on text.
+- A statement is its whole sentence ("One action per step: split a paragraph that does several things."), because the text is exactly what is read out to the model. Nothing in the code switches on a statement, so any of them may be reworded into the household's own terms.
+- `enabled` is the default tick for a run, not a lock: the restyle sheet starts from it and every statement can be turned on or off for one recipe. `position` is the order they are numbered in, and is not unique — a reorder rewrites every row in one transaction.
+- Seeded with fourteen statements, the first ten on and the last four off (`src/db/seed/style.ts`); the four that are off each move or drop content rather than reword it. Re-seeding matches an existing row by its whole text, case-insensitively, so an edited statement survives and is never duplicated — and a reworded one means the seeded original comes back at the foot, where it can be switched off.
+- "Temperatures, times and quantities are never changed" is **not** a statement. It is a fixed line in every restyle prompt and is enforced mechanically by the facts check, because it is not something anyone should be able to switch off.
 
 ## API
 

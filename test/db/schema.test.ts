@@ -98,6 +98,7 @@ test("the migrations create every table in architecture.md", () => {
     "shopping_item_source",
     "step",
     "step_ingredient",
+    "style_rule",
     "tag",
     "timeline_event",
     "unit",

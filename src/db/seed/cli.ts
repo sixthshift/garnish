@@ -1,5 +1,6 @@
 // `bun run seed [--sample]`. Opens DATA_DIR's database, migrates it, seeds the
-// reference units, and with --sample adds the demo recipes.
+// reference units and the house style guide, and with --sample adds the demo
+// recipes.
 import { ensureDataDir } from "../../server/boot";
 import { databasePath, openDatabase } from "../connection/open";
 import { migrate } from "../migrations/migrate";
@@ -24,10 +25,11 @@ if (import.meta.main) {
   const db = openDatabase(path);
   try {
     await migrate(db);
-    const { units: added } = seed(db);
+    const { units: added, styleRules: rules } = seed(db);
     console.log(
       added.length === 0 ? `${path}: units already seeded` : `${path}: seeded ${added.length} units (${added.map((u) => u.name).join(", ")})`,
     );
+    console.log(rules.length === 0 ? `${path}: house style already seeded` : `${path}: seeded ${rules.length} house style statements`);
     if (flags.sample) {
       const { recipes: created } = seedSample(db);
       console.log(

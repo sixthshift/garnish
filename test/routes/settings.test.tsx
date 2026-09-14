@@ -4,16 +4,18 @@
 // dialogs staying closed) lives in test/routes/loaders.test.tsx alongside the
 // other routes.
 //
-// Aisles and Tags are not the default tab, so their tabs are rendered
+// Aisles, Tags and Style are not the default tab, so their tabs are rendered
 // directly here instead: AislesTab's drag list and rename/delete triggers,
-// and TagsTab's A–Z grouping (pure `groupTagsAZ`) and its tag-chip links,
-// rename/merge/delete triggers, and closed-by-default dialogs.
+// TagsTab's A–Z grouping (pure `groupTagsAZ`) and its tag-chip links,
+// rename/merge/delete triggers, and closed-by-default dialogs, and StyleTab's
+// statement rows — switch, editable text, note, reorder and add (M37.2).
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Aisle, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
-import { AislesTab, dedupeSummaries, ExportTab, foodsLabel, groupTagsAZ, TagsTab, unitsLabel, type FoodRow } from "../../src/routes/settings";
+import type { StyleRule } from "../../src/domain/style";
+import { AislesTab, dedupeSummaries, ExportTab, foodsLabel, groupTagsAZ, StyleTab, TagsTab, unitsLabel, type FoodRow } from "../../src/routes/settings";
 
 function summary(id: string, name: string): RecipeSummary {
   return {
@@ -171,5 +173,49 @@ describe("ExportTab render", () => {
     expect(html).not.toContain("setup-token");
     expect(html).toMatch(/only appears when/);
     expect(html).toMatch(/may train on what is sent/);
+  });
+});
+
+function styleRule(id: string, text: string, enabled: boolean, position: number): StyleRule {
+  return { id, position, text, enabled, createdAt: "2026-09-14T00:00:00.000Z", updatedAt: "2026-09-14T00:00:00.000Z" };
+}
+
+describe("StyleTab render", () => {
+  const RULES = [
+    styleRule("s1", "One action per step: split a paragraph that does several things.", true, 0),
+    styleRule("s2", "Prefer metric: where a step gives both, keep only metric.", false, 1),
+  ];
+
+  test("lists the statements in order, each with a switch showing its default and its text in an editable field", () => {
+    const html = renderToString(<StyleTab rules={RULES} />);
+    expect(html).toContain("One action per step");
+    expect(html).toContain("Prefer metric");
+    expect(html).toContain('role="switch"');
+    expect(html.match(/role="switch"/g)?.length).toBe(2);
+    expect(html).toContain('aria-checked="true"');
+    expect(html).toContain('aria-checked="false"');
+    expect(html).toContain('aria-label="Statement: One action per step: split a paragraph that does several things."');
+  });
+
+  test("the metric statement prints the facts-check caveat and the others do not", () => {
+    const html = renderToString(<StyleTab rules={RULES} />);
+    expect(html).toContain("until it understands them");
+    expect(html.match(/until it understands them/g)?.length).toBe(1);
+  });
+
+  test("every row can be moved and removed, and there is an add box at the foot", () => {
+    const html = renderToString(<StyleTab rules={RULES} />);
+    expect(html).toContain('aria-label="Move statement 1 down"');
+    expect(html).toContain('aria-label="Move statement 2 up"');
+    expect(html).toContain('aria-label="Drag statement 1"');
+    expect(html).toContain('aria-label="Remove statement 2"');
+    expect(html).toContain('aria-label="New statement"');
+    expect(html).toContain(">Add<");
+  });
+
+  test("an empty guide says so instead of an empty list, and still offers the add box", () => {
+    const html = renderToString(<StyleTab rules={[]} />);
+    expect(html).toContain("No statements yet.");
+    expect(html).toContain('aria-label="New statement"');
   });
 });

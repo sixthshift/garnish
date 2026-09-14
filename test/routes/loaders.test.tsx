@@ -5,6 +5,7 @@
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import type { Aisle, Recipe, RecipeSummary, Tag, TimelineEvent, Unit } from "../../src/domain/recipe";
+import type { StyleRule } from "../../src/domain/style";
 import type { SubRecipe } from "../../src/domain/subRecipe";
 import { Route as IndexRoute, type RecipeListData, searchParam } from "../../src/routes/index";
 import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
@@ -30,6 +31,7 @@ vi.mock("../../src/server/units", local);
 vi.mock("../../src/server/tags", local);
 vi.mock("../../src/server/aisles", local);
 vi.mock("../../src/server/foods", local);
+vi.mock("../../src/server/style", local);
 
 useTempDataDir();
 
@@ -611,7 +613,7 @@ describe("/settings", () => {
     const foods = await callServerFn(listFoods, {});
     const html = await renderRoute("/settings");
     expect(html).toContain("Settings");
-    for (const label of ["Foods", "Units", "Aisles", "Tags", "Appearance"]) expect(html).toContain(`>${label}<`);
+    for (const label of ["Foods", "Units", "Aisles", "Tags", "Style", "Appearance"]) expect(html).toContain(`>${label}<`);
     // Foods is the default tab: its table, its search box, its column headers.
     expect(html).toContain('data-table="food"');
     expect(html).toContain('aria-label="Search foods"');
@@ -648,7 +650,14 @@ describe("loader data types match the domain schemas", () => {
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();
     expectTypeOf<(typeof NewRoute)["types"]["loaderData"]>().toEqualTypeOf<{ units: Unit[]; tags: Tag[]; aiAvailable: boolean }>();
     expectTypeOf<(typeof SettingsRoute)["types"]["loaderData"]>().toEqualTypeOf<SettingsData>();
-    expectTypeOf<SettingsData>().toEqualTypeOf<{ aisles: Aisle[]; units: Unit[]; foods: FoodRow[]; tags: Tag[]; recipes: RecipeSummary[] }>();
+    expectTypeOf<SettingsData>().toEqualTypeOf<{
+      aisles: Aisle[];
+      units: Unit[];
+      foods: FoodRow[];
+      tags: Tag[];
+      recipes: RecipeSummary[];
+      styleRules: StyleRule[];
+    }>();
     // Search params are typed from their zod schemas.
     expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{
       q?: string | undefined;
