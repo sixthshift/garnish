@@ -491,7 +491,7 @@ export function IngredientFields(props: IngredientFieldsProps) {
           name={`${path}.food`}
           aria-label={`${label} food`}
           placeholder="Food"
-          className="min-w-40 grow-[2]"
+          className="min-w-40 grow-2"
           value={foodText}
           options={foodRows.map((row) => ({ value: row.id, label: row.name }))}
           disabled={disabled}
