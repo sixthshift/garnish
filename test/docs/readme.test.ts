@@ -5,6 +5,8 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
+import { apiRoutes } from "../../src/routes/api/routes";
+import { testRouter } from "../helpers/routes";
 
 const root = join(import.meta.dirname, "..", "..");
 const readme = readFileSync(join(root, "README.md"), "utf8");
@@ -54,38 +56,17 @@ export function sourceDirectories(src: string): string[] {
 }
 
 /**
- * One file-route segment as the URL it serves: `[x]` escapes a character the
- * file convention would otherwise read (`export[.]json` is one segment, not
- * two), `{$name}` is a param with a prefix or suffix beside it, and a bare
- * `$name` is the whole segment. All three land in the `:param` form the docs
- * use. Pure.
+ * A route path in the `:param` form the docs use: `$name` is a param, and
+ * `{$name}` one with a prefix or suffix beside it (`{$slug}.json`). Pure.
  */
-export function routeSegmentToUrl(segment: string): string {
-  return segment
-    .replace(/\[(.)\]/g, "$1")
-    .replace(/\{\$(\w+)\}/g, ":$1")
-    .replace(/^\$/, ":");
+export function routePathToUrl(path: string): string {
+  return path.replace(/\{\$(\w+)\}/g, ":$1").replace(/\$(\w+)/g, ":$1");
 }
 
-/**
- * Server route URL paths under `src/routes/api/`, with `$param` segments in
- * the `:param` form the docs use. Not pure: reads the tree.
- */
-export function serverRoutePaths(routes: string): string[] {
-  const found: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walk(path);
-        continue;
-      }
-      const rel = relative(routes, path).split("\\").join("/").replace(/\.ts$/, "");
-      found.push(`/${rel.split("/").map(routeSegmentToUrl).join("/")}`);
-    }
-  };
-  walk(join(routes, "api"));
-  return found.sort();
+/** Server route URL paths, read from the code list in `src/routes/api/routes.ts`. A route learns its full path when a router builds the tree. */
+export function serverRoutePaths(): string[] {
+  testRouter("/");
+  return apiRoutes.map((route) => routePathToUrl(route.fullPath)).sort();
 }
 
 /** Table names created by the migrations, in file order. Not pure: reads the SQL. */
@@ -107,14 +88,13 @@ describe("bunRunScripts", () => {
   });
 });
 
-describe("routeSegmentToUrl", () => {
+describe("routePathToUrl", () => {
   test.each([
-    ["a plain segment", "health", "health"],
-    ["a whole-segment param", "$file", ":file"],
-    ["an escaped dot", "export[.]json", "export.json"],
-    ["a param with a suffix", "{$slug}[.]json", ":slug.json"],
-  ])("%s", (_label, segment, expected) => {
-    expect(routeSegmentToUrl(segment)).toBe(expected);
+    ["a plain path", "/api/health", "/api/health"],
+    ["a whole-segment param", "/api/images/$file", "/api/images/:file"],
+    ["a param with a suffix", "/api/recipes/{$slug}.json", "/api/recipes/:slug.json"],
+  ])("%s", (_label, path, expected) => {
+    expect(routePathToUrl(path)).toBe(expected);
   });
 });
 
@@ -168,6 +148,6 @@ describe("architecture.md", () => {
   });
 
   test("documents every server route under /api/", () => {
-    for (const path of serverRoutePaths(join(root, "src", "routes"))) expect(architecture, `route ${path}`).toContain(path);
+    for (const path of serverRoutePaths()) expect(architecture, `route ${path}`).toContain(path);
   });
 });

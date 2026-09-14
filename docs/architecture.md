@@ -17,11 +17,20 @@ browser (PWA) ──server fns / HTTP──▶ TanStack Start (Nitro, Bun) ─�
 
 ```
 src/
-  routes/       TanStack Start file routes: pages, and server routes under routes/api/
+  routes/       the app's routes, declared in code. root.tsx is the root route (createRootRoute: document, head, shell). Every page is a folder with three kinds of file: route.tsx — its createRoute, parented on root: the search schema, the loader and its data type, and the page loaded on demand with lazyRouteComponent — page.tsx, the page component and nothing else exported, and components/, the React components only that page uses (plan/components/PlanWeekView.tsx). Pure helpers live in domain/, not beside a page. routes.ts lists the routes and builds the tree with addChildren; src/router.tsx takes it from there. A component shared by pages under one route sits in that route's components/ (recipes/components/ is the editor); one shared by unrelated pages or the shell lives in src/components/. Adding a page means a folder with a route.tsx and a line in routes.ts
+  routes/home/             route.tsx (/), page.tsx; components/ FilterBar, SortMenu, ViewModeToggle
+  routes/plan/             route.tsx, page.tsx; components/ PlanWeekView (the week, its days, entry cards and the add row)
+  routes/shopping/         route.tsx, page.tsx; components/ ShoppingListView (the list, its rows and the add form)
+  routes/settings/         route.tsx, page.tsx; components/ SettingsTabs (the Foods, Units, Aisles, Tags, Style, Export and Appearance tabs), FoodEditSheet, FoodMergeDialog, UnitEditSheet, UnitMergeDialog, TagMergeDialog, ThemeToggle
+  routes/recipes/components/ the editor, shared by new, edit and the recipe page's QuickEdit: RecipeForm, PartsEditor, IngredientsEditor, StepsEditor, NotesEditor, ParseAllSheet, IngredientReviewRow
+  routes/recipes/new/      route.tsx, page.tsx; components/ RecipeSource
+  routes/recipes/recipe/   route.tsx (/recipes/$slug), page.tsx; components/, which cook/ reads too: RecipeHeader, RecipeActions, IngredientList, IngredientRow, IngredientModeToggle, StepList, StepCard, QuickEdit, TimerChip, TimerStrip, Timeline, MadeThisSheet, PlanPopover, RestyleSheet
+  routes/recipes/recipe/cook/  route.tsx (/recipes/$slug/cook), page.tsx        routes/recipes/recipe/edit/  route.tsx (/recipes/$slug/edit), page.tsx
+  routes/api/   the server routes (createRoute with `server.handlers`), one file per handler module — health.ts, export.ts (export.json, recipes/{$slug}.json, recipes/{$slug}.cook), images.ts, stepImages.ts, timelineImages.ts, importFile.ts — and routes.ts, the list. routes/routes.ts adds that list on the server only (`import.meta.env.SSR`): the handlers import the store, and the browser fetches /api/*, it never routes there, so the client bundle drops them
   server/       server-only code, one folder per kind of file
   server/core/  boot.ts (DATA_DIR), db.ts (the handle: open, migrate, seed), errors.ts (NotFound, mapped to TanStack's notFound()), fn.ts (notFoundMiddleware)
   server/fns/   server functions (createServerFn), one file per resource: recipes, foods, units, tags, aisles, timeline, shopping, plan, style, ping — and import.ts, one line each into the importer
-  server/api/   Request → Response handlers behind routes/api/: images.ts, stepImages.ts, timelineImages.ts, export.ts, importFile.ts
+  server/api/   Request → Response handlers the routes in routes/api/ call: images.ts, stepImages.ts, timelineImages.ts, export.ts, importFile.ts
   server/ai/    client.ts (the OpenAI-compatible call: settings, runner, AiError), restyle.ts (the house-style pass)
   server/import/ the importer's two ports and its wiring: fetch.ts (the fetchPage port: a browser header set, one retry under a second profile on a 403), fetchProfiles.ts (those header sets), importer.ts (the one real Importer over fetch.ts and the ai client, provider failures mapped to ImportError), imageFetch.ts (fetch an imported recipe's image server-side)
   db/connection/ open.ts (DB_FILE, databasePath, openDatabase — WAL and foreign keys), client.ts (the Drizzle handle)
@@ -49,25 +58,18 @@ src/
   domain/export/    export.ts, cooklang.ts
   domain/reference/ reference.ts (foods, units, tags, aisles), merge.ts, convert.ts
   domain/shopping/  shopping.ts        domain/plan/  plan.ts        domain/style/  style.ts, restyleCheck.ts
-  components/   React components, one folder per domain, named as in domain/ and db/models/; a component lives with the domain it writes to
-  components/recipe/        the app's core, split by screen rather than by kind
-  components/recipe/page/   RecipeHeader, RecipeActions, IngredientList, IngredientRow, IngredientModeToggle, StepList, StepCard, SubRecipes, QuickEdit
-  components/recipe/editor/ RecipeForm, PartsEditor, IngredientsEditor, StepsEditor, NotesEditor, ParseAllSheet
-  components/recipe/list/   RecipeCard, FilterBar, SortMenu, ViewModeToggle
-  components/recipe/cook/   TimerChip, TimerStrip
-  components/import/        RecipeSource, IngredientReviewRow
-  components/reference/     FoodEditSheet, FoodMergeDialog, UnitEditSheet, UnitMergeDialog, TagMergeDialog
-  components/timeline/      Timeline, MadeThisSheet
-  components/shopping/      AddToShoppingSheet        components/plan/  PlanPopover        components/style/  RestyleSheet
-  components/shell/         AppShell, GlobalSearch, Logo, ThemeToggle, Toaster, RouteStates
+  components/   React components that unrelated pages or the shell share, one folder per domain, named as in domain/ and db/models/. A component one page uses lives in that page's folder (see routes/)
+  components/recipe/        RecipeCard (the list and the global search), SubRecipes (the sub-recipe context the recipe page, cook mode and the shopping sheet read)
+  components/shopping/      AddToShoppingSheet (the recipe page, cook mode and the plan)
+  components/shell/         AppShell, GlobalSearch, Logo, Toaster, RouteStates
   components/ui/            local primitives the design system lacks, and Markdown
   lib/          client-side helpers: mutate, ids, image URLs, clipboard, service worker registration, hooks, and the client stores (prefs, ticks, notices)
   sw/           service worker source (worker.ts, entry.ts) and the Vite plugin that emits it
   styles/       theme.css: the Garnish theme, re-pointing the design system's semantic tokens
   styles.css    Tailwind entry: the design system's theme, @source, the Garnish theme, print rules
-  router.tsx    getRouter()
+  router.tsx    getRouter() over routes/routes.ts, and the Register declarations that type Link and the route hooks
   server.ts     custom server entry: boot, then the default Start handler
-vite.config.ts  tanstackStart({ spa }), nitro({ preset: 'bun' }), viteReact(), tailwindcss(), serviceWorkerPlugin()
+vite.config.ts  tanstackStart({ spa, router }), nitro({ preset: 'bun' }), viteReact(), tailwindcss(), serviceWorkerPlugin(). The `router` option hands Start's route generator the root alone and an output under .tanstack/ that nothing imports: Start needs the generator to run to build its asset manifest, even though routing is code
 public/         manifest.webmanifest, icons/, apple-touch-icon.png
 test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)

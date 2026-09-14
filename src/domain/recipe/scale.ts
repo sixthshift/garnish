@@ -69,3 +69,13 @@ function scaleIngredient(ingredient: Ingredient, factor: number): Ingredient {
   return { ...ingredient, quantity: ingredient.quantity * factor };
 }
 
+
+/**
+ * The servings the scale control moves to: whole steps of one, never below 1.
+ * A fractional current value (2.5) first snaps to the whole number on the side
+ * it is heading (down -> 2, up -> 3). Pure.
+ */
+export function nextServings(current: number, direction: -1 | 1): number {
+  const snapped = direction < 0 ? Math.ceil(current) - 1 : Math.floor(current) + 1;
+  return Math.max(1, snapped);
+}

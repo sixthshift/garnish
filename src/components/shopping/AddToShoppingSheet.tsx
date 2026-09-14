@@ -44,7 +44,7 @@ import { subRecipeScale, type SubRecipe } from "../../domain/recipe/subRecipe";
 import { addToShoppingList, addedMessage } from "../../lib/shopping";
 import { notify, notifyError } from "../../lib/notify";
 import { getRecipe } from "../../server/fns/recipes";
-import { useSubRecipes } from "../recipe/page/SubRecipes";
+import { useSubRecipes } from "../recipe/SubRecipes";
 
 /** One part's buyable ingredients, in page order. `name` is '' for the unnamed part. */
 export type ShoppingGroup = { id: string; name: string; ingredients: Ingredient[] };

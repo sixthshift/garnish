@@ -77,7 +77,7 @@ describe("manifest installability", () => {
 });
 
 describe("root document head", () => {
-  const source = readFileSync(resolve(root, "src/routes/__root.tsx"), "utf8");
+  const source = readFileSync(resolve(root, "src/routes/root.tsx"), "utf8");
 
   test("links the manifest and apple touch icon", () => {
     expect(source).toMatch(/rel:\s*"manifest",\s*href:\s*"\/manifest\.webmanifest"/);

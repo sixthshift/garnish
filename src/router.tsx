@@ -1,6 +1,6 @@
 import { createRouter } from "@tanstack/react-router";
 import { RouteError, RouteNotFound, RoutePending } from "./components/shell/RouteStates";
-import { routeTree } from "./routeTree.gen";
+import { routeTree } from "./routes/routes";
 
 export function getRouter() {
   return createRouter({
@@ -11,4 +11,19 @@ export function getRouter() {
     defaultErrorComponent: RouteError,
     defaultNotFoundComponent: RouteNotFound,
   });
+}
+
+// Type registration: what the route generator's footer used to declare.
+// Gives Link, useNavigate and the hooks the tree's paths and search types.
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+}
+
+declare module "@tanstack/react-start" {
+  interface Register {
+    ssr: true;
+    router: ReturnType<typeof getRouter>;
+  }
 }

@@ -11,8 +11,7 @@ import { recipeInputSchema, type TimelineEvent } from "../../../src/domain/recip
 import { getDb } from "../../../src/server/core/db";
 import { handleGetImage } from "../../../src/server/api/images";
 import { handleGetTimelineImage, handleUploadTimelineImage, timelineImagesDir } from "../../../src/server/api/timelineImages";
-import { Route as GetRoute } from "../../../src/routes/api/images/timeline/$file";
-import { Route as PostRoute } from "../../../src/routes/api/timeline/$id/image";
+import { getTimelineImageRoute as GetRoute, uploadTimelineImageRoute as PostRoute } from "../../../src/routes/api/timelineImages";
 import { useTempDataDir } from "../../helpers/server";
 
 const tmp = useTempDataDir();

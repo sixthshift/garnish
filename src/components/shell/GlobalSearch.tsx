@@ -23,7 +23,7 @@ import type { RecipeSummary } from "../../domain/recipe/recipe";
 import { clampSelection, nextSearchIndex, selectedResult, shouldOpenGlobalSearch, type SearchEventTarget } from "../../domain/list/search";
 import { listRecipes } from "../../server/fns/recipes";
 import { notifyError } from "../../lib/notify";
-import { RecipeCard } from "../recipe/list/RecipeCard";
+import { RecipeCard } from "../recipe/RecipeCard";
 
 /** How long typing pauses before the search runs. */
 export const GLOBAL_SEARCH_DEBOUNCE_MS = 200;
@@ -124,7 +124,7 @@ export function GlobalSearchContent({ query, onQueryChange, results, loading = f
   );
 }
 
-/** Mounted once, app-wide (`src/routes/__root.tsx`), alongside the Toaster. */
+/** Mounted once, app-wide (`src/routes/root.tsx`), alongside the Toaster. */
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");

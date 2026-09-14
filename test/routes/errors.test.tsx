@@ -9,7 +9,7 @@ import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { AppErrorFallback, describeError, ErrorView, isNetworkError } from "../../src/components/shell/RouteStates";
 import { Toaster } from "../../src/components/shell/Toaster";
-import { Route as RootRoute } from "../../src/routes/__root";
+import { Route as RootRoute } from "../../src/routes/root";
 import { renderRoute } from "../helpers/routes";
 
 // The error every mocked server function rejects with; tests swap it.

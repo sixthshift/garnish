@@ -173,3 +173,16 @@ export function swipeIntent({ dx, dy, ms }: Swipe): "next" | "prev" | null {
   if (Math.abs(dy) < Math.abs(dx) * SWIPE_RATIO) return null;
   return dy < 0 ? "next" : "prev";
 }
+
+/** The card index an arrow key moves to, or null when the key is not one of ours. Pure. */
+export function stepForKey(key: string, index: number, count: number): number | null {
+  if (key === "ArrowLeft") return index > 0 ? index - 1 : null;
+  if (key === "ArrowRight") return index < count - 1 ? index + 1 : null;
+  return null;
+}
+
+/** "3 of 12", with the part name when the card has one. Pure. */
+export function positionLabel(index: number, count: number, part: string): string {
+  const position = `${index + 1} of ${count}`;
+  return part === "" ? position : `${position} · ${part}`;
+}

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { handleHealth, Route } from "../../../src/routes/api/health";
+import { handleHealth, healthRoute } from "../../../src/routes/api/health";
 
 test("GET /api/health returns {ok:true} as JSON", async () => {
   const res = handleHealth(new Request("http://localhost/api/health"));
@@ -9,7 +9,7 @@ test("GET /api/health returns {ok:true} as JSON", async () => {
 });
 
 test("route wires a GET handler that delegates to handleHealth", async () => {
-  const handlers = Route.options.server?.handlers as
+  const handlers = healthRoute.options.server?.handlers as
     | Record<string, (ctx: { request: Request }) => Response | Promise<Response>>
     | undefined;
   expect(typeof handlers?.GET).toBe("function");

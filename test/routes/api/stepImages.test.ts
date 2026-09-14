@@ -12,8 +12,7 @@ import { getDb } from "../../../src/server/core/db";
 import { handleGetImage } from "../../../src/server/api/images";
 import { handleGetStepImage, handleUploadStepImage, stepImagesDir } from "../../../src/server/api/stepImages";
 import { handleGetTimelineImage } from "../../../src/server/api/timelineImages";
-import { Route as GetRoute } from "../../../src/routes/api/images/steps/$file";
-import { Route as PostRoute } from "../../../src/routes/api/steps/$id/image";
+import { getStepImageRoute as GetRoute, uploadStepImageRoute as PostRoute } from "../../../src/routes/api/stepImages";
 import { useTempDataDir } from "../../helpers/server";
 
 const tmp = useTempDataDir();

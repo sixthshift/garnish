@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 import { type FileRecipe, type MealieRecipe } from "../../../src/domain/import";
-import { Route } from "../../../src/routes/api/import/file";
+import { importFileRoute as Route } from "../../../src/routes/api/importFile";
 import { handleImportFile, IMPORT_FIELD } from "../../../src/server/api/importFile";
 import { makeZip, PNG_BYTES } from "../../helpers/zip";
 

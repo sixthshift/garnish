@@ -7,8 +7,7 @@ import { recipes } from "../../../src/db/models/recipe/repo";
 import { recipeInputSchema } from "../../../src/domain/recipe/recipe";
 import { getDb } from "../../../src/server/core/db";
 import { handleGetImage, handleUploadImage } from "../../../src/server/api/images";
-import { Route as GetRoute } from "../../../src/routes/api/images/$file";
-import { Route as PostRoute } from "../../../src/routes/api/recipes/$id/image";
+import { getImageRoute as GetRoute, uploadImageRoute as PostRoute } from "../../../src/routes/api/images";
 import { useTempDataDir } from "../../helpers/server";
 
 const tmp = useTempDataDir();

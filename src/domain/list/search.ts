@@ -61,3 +61,12 @@ export function clampSelection(index: number, count: number): number {
   if (count <= 0) return 0;
   return Math.min(Math.max(index, 0), count - 1);
 }
+
+/** How long typing pauses before the URL (and so the loader) follows it. */
+export const SEARCH_DEBOUNCE_MS = 300;
+
+/** An empty or whitespace-only value drops the param from the URL. Pure. */
+export function searchParam(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}

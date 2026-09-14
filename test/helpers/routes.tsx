@@ -5,7 +5,7 @@
 import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { RouteError, RouteNotFound, RoutePending } from "../../src/components/shell/RouteStates";
-import { routeTree } from "../../src/routeTree.gen";
+import { routeTree } from "../../src/routes/routes";
 
 export async function renderRoute(path: string): Promise<string> {
   const router = testRouter(path);

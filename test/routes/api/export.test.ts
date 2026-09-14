@@ -14,9 +14,8 @@ import { units } from "../../../src/db/models/unit/repo";
 import { recipeInputSchema, type Recipe } from "../../../src/domain/recipe/recipe";
 import { getDb } from "../../../src/server/core/db";
 import { buildExport, handleExportJson, handleRecipeCook, handleRecipeJson, type GarnishExport } from "../../../src/server/api/export";
-import { Route as ExportRoute } from "../../../src/routes/api/export[.]json";
-import { Route as RecipeCookRoute } from "../../../src/routes/api/recipes/{$slug}[.]cook";
-import { Route as RecipeJsonRoute } from "../../../src/routes/api/recipes/{$slug}[.]json";
+import { exportJsonRoute as ExportRoute, recipeCookRoute as RecipeCookRoute, recipeJsonRoute as RecipeJsonRoute } from "../../../src/routes/api/export";
+import { testRouter } from "../../helpers/routes";
 import { useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
@@ -228,12 +227,11 @@ test("the routes wire GET to the handlers, with the slug as a path param", async
   expect(await cook.text()).toContain(">> servings: 8");
 });
 
-test("the generated route tree carries the .json and .cook suffixes, with the slug still its own param", () => {
-  // The file names escape the dot (`[.]`) and end the param (`{$slug}`); this
-  // is the generator's answer, and the reason the fallback /json path was not
-  // needed. Reading the generated tree is the only place that answer is visible.
-  const tree = readFileSync(join(import.meta.dirname, "..", "..", "..", "src", "routeTree.gen.ts"), "utf8");
-  expect(tree).toContain("path: '/api/recipes/{$slug}.json'");
-  expect(tree).toContain("path: '/api/export.json'");
-  expect(tree).toContain("path: '/api/recipes/{$slug}.cook'");
+test("the route paths carry the .json and .cook suffixes, with the slug still its own param", () => {
+  testRouter("/"); // a route learns its full path when a router builds the tree
+  // `{$slug}` ends the param before the suffix, so `lemon-tart.json` is the
+  // slug `lemon-tart` — the reason a fallback /json path was not needed.
+  expect(RecipeJsonRoute.fullPath).toBe("/api/recipes/{$slug}.json");
+  expect(ExportRoute.fullPath).toBe("/api/export.json");
+  expect(RecipeCookRoute.fullPath).toBe("/api/recipes/{$slug}.cook");
 });

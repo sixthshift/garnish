@@ -1,5 +1,5 @@
 // Router-wide pending, error and not-found views, built from design system
-// pieces, plus the fallback for the app-wide ErrorBoundary in __root.tsx.
+// pieces, plus the fallback for the app-wide ErrorBoundary in root.tsx.
 //
 // Two ways a page can fail: a loader throws (the route's errorComponent, here
 // `RouteError`, renders in the outlet with the shell still up), or a render

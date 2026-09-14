@@ -1,4 +1,4 @@
-// The one place notices are rendered. Mounted once in `__root.tsx`; every
+// The one place notices are rendered. Mounted once in `root.tsx`; every
 // caller reaches it through `notify()` (src/lib/notify.ts), never by rendering
 // a toast itself.
 //

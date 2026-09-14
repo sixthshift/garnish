@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import { AddToShoppingSheetContent, additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/components/shopping/AddToShoppingSheet";
 import type { Food, Ingredient, Part, Recipe, Unit } from "../../../src/domain/recipe/recipe";
 import type { SubRecipe } from "../../../src/domain/recipe/subRecipe";
-import { SubRecipesProvider } from "../../../src/components/recipe/page/SubRecipes";
+import { SubRecipesProvider } from "../../../src/components/recipe/SubRecipes";
 
 const food = (name: string, skipShopping = false, recipeId: string | null = null): Food => ({
   id: `food-${name}`,
