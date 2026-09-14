@@ -28,6 +28,7 @@ const base: Recipe = {
   notes: [],
   tags: [],
   parts: [{ id: "22222222-2222-4222-8222-222222222222", name: "", ingredients: [], steps: [] }],
+  restyledAt: null,
   createdAt: "2026-03-04T02:30:00.000Z",
   updatedAt: "2026-09-11T02:30:00.000Z",
 };

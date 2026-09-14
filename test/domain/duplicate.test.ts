@@ -33,6 +33,7 @@ const tart: Recipe = {
     },
     { id: id(), name: "", ingredients: [], steps: [{ id: id(), text: "Serve cold.", ingredientIds: [], image: null }] },
   ],
+  restyledAt: null,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-02-01T00:00:00.000Z",
 };

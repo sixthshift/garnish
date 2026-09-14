@@ -60,6 +60,7 @@ const stored: Recipe = {
       steps: [{ id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1", text: "Mix.", ingredientIds: [], image: null }],
     },
   ],
+  restyledAt: null,
   createdAt: "2026-03-04T02:30:00.000Z",
   updatedAt: "2026-03-04T02:30:00.000Z",
 };

@@ -116,6 +116,7 @@ describe("toCooklang", () => {
     notes: [],
     tags: [],
     parts: [{ id: "p1", name: "", ingredients: [], steps: [{ id: "s1", text: "Mix it.", ingredientIds: [], image: null }] }],
+    restyledAt: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
   };

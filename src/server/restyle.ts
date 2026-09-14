@@ -309,3 +309,44 @@ export const restyleSteps = createServerFn({ method: "POST" })
       .map((rule) => rule.text);
     return runRestyle(recipe, rules);
   });
+
+export const ApplyRestyleInput = z.object({
+  /** The recipe's id, as `restyleSteps` takes it. */
+  id: z.string().min(1),
+  /**
+   * The parts as the household accepted them, in the recipe's own order: the
+   * answer of `restyleSteps`, possibly with steps edited in the diff (M37.6).
+   * Names ride along so a caller reads as the answer does; the pairing is by
+   * position, and a count that does not match the recipe's parts is refused.
+   */
+  parts: z.array(z.object({ name: z.string().default(""), steps: z.array(z.string()).default([]) })).default([]),
+});
+
+/**
+ * Write an accepted restyle (M37.5). The first restyle of a part copies its
+ * steps into `source_steps` before replacing them, so the author's words are
+ * kept whatever happens afterwards; the new steps are linked to the part's
+ * ingredients again, and the recipe is stamped as restyled.
+ */
+export const applyRestyle = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(ApplyRestyleInput)
+  .handler(async ({ data }): Promise<Recipe> => {
+    const db = await getDb();
+    return required(recipes(db).restyleParts(data.id, data.parts), "recipe", data.id);
+  });
+
+export const RestoreStepsInput = z.object({ id: z.string().min(1) });
+
+/**
+ * Undo a restyle (M37.5): every part that kept its original steps gets them
+ * back, the kept copy is dropped, and the stamp is cleared. A recipe that was
+ * never restyled comes back unchanged.
+ */
+export const restoreSteps = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(RestoreStepsInput)
+  .handler(async ({ data }): Promise<Recipe> => {
+    const db = await getDb();
+    return required(recipes(db).restoreParts(data.id), "recipe", data.id);
+  });

@@ -86,6 +86,7 @@ const stored: Recipe = {
       steps: [{ id: "66666666-6666-4666-8666-666666666666", text: "Bake.", ingredientIds: [], image: null }],
     },
   ],
+  restyledAt: null,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };

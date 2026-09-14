@@ -6,9 +6,10 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { isNotFound } from "@tanstack/react-router";
 import type { Recipe, RecipeInput } from "../../src/domain/recipe";
 import { AiImportError, type AiRunner } from "../../src/server/aiImport";
-import { createRecipe } from "../../src/server/recipes";
+import { createRecipe, getRecipe } from "../../src/server/recipes";
 import { listStyleRules } from "../../src/server/style";
 import {
+  applyRestyle,
   createRestyleRunner,
   FIXED_RESTYLE_LINE,
   matchParts,
@@ -17,6 +18,7 @@ import {
   RESTYLE_JSON_SCHEMA,
   RestyledPartSchema,
   restylePrompt,
+  restoreSteps,
   restyleSettings,
   restyleSteps,
   runRestyle,
@@ -304,6 +306,44 @@ describe("runRestyle", () => {
     };
     const caught = await runRestyle(recipe, [], { run: boom }).catch((cause: unknown) => cause);
     expect((caught as AiImportError).kind).toBe("timeout");
+  });
+});
+
+describe("applyRestyle and restoreSteps", () => {
+  test("writes the accepted steps, keeps the author's, links them again and stamps the recipe", async () => {
+    const recipe = await saved();
+
+    const after = await callServerFn(applyRestyle, { id: recipe.id, parts: GOOD.parts });
+
+    expect(after.parts.map((part) => part.steps.map((step) => step.text))).toEqual(GOOD.parts.map((part) => part.steps));
+    expect(after.restyledAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    // The step card's rows: the merged first step names the butter, so it links it.
+    const butter = after.parts[0]!.ingredients[0]!.id;
+    expect(after.parts[0]!.steps[0]!.ingredientIds).toEqual([butter]);
+    expect(after.parts[1]!.steps[0]!.ingredientIds).toEqual([after.parts[1]!.ingredients[0]!.id]);
+    // Everything but the steps is untouched.
+    expect(after.parts.map((part) => part.ingredients)).toEqual(recipe.parts.map((part) => part.ingredients));
+
+    // And the original comes back, stamp and all.
+    const restored = await callServerFn(restoreSteps, { id: recipe.id });
+    expect(restored.parts.map((part) => part.steps.map((step) => step.text))).toEqual(
+      recipe.parts.map((part) => part.steps.map((step) => step.text)),
+    );
+    expect(restored.restyledAt).toBeNull();
+  });
+
+  test("an answer with the wrong number of parts is refused", async () => {
+    const recipe = await saved();
+    const caught = await callServerFn(applyRestyle, { id: recipe.id, parts: [GOOD.parts[0]!] }).catch((cause: unknown) => cause);
+    expect(caught).toBeInstanceOf(Error);
+    expect(String(caught)).toContain("1 part where the recipe has 2");
+    expect((await callServerFn(getRecipe, { slug: recipe.slug }))!.restyledAt).toBeNull();
+  });
+
+  test("an unknown recipe is not found, either way", async () => {
+    const id = "00000000-0000-4000-8000-000000000000";
+    expect(isNotFound(await callServerFn(applyRestyle, { id, parts: [] }).catch((cause: unknown) => cause))).toBe(true);
+    expect(isNotFound(await callServerFn(restoreSteps, { id }).catch((cause: unknown) => cause))).toBe(true);
   });
 });
 

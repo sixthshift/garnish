@@ -112,6 +112,7 @@ const fullRead: Recipe = {
       ],
     },
   ],
+  restyledAt: null,
   createdAt: "2026-09-10T00:00:00.000Z",
   updatedAt: "2026-09-10T00:00:00.000Z",
 };
@@ -151,9 +152,12 @@ describe("recipeInputSchema (write)", () => {
   });
 
   test("accepts the full read document as a write", () => {
-    const { slug, createdAt, updatedAt, ...writable } = fullRead;
+    // `restyledAt` leaves with the server-owned fields: it is read-only, so a
+    // write never carries it (M37.5).
+    const { slug, createdAt, updatedAt, restyledAt, ...writable } = fullRead;
     const parsed = recipeInputSchema.parse(fullRead);
     expect(parsed).toEqual(writable);
+    expect("restyledAt" in parsed).toBe(false);
   });
 });
 

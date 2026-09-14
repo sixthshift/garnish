@@ -40,6 +40,7 @@ const base: Recipe = {
   notes: [],
   tags: [{ id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" }],
   parts: [{ id: "22222222-2222-4222-8222-222222222222", name: "", ingredients: [], steps: [] }],
+  restyledAt: null,
   createdAt: "2026-03-04T02:30:00.000Z",
   updatedAt: "2026-09-11T02:30:00.000Z",
 };
@@ -283,5 +284,25 @@ describe("RecipeMetaFooter", () => {
   test("nothing to show renders nothing", () => {
     const html = renderToString(<RecipeMetaFooter recipe={{ ...base, sourceUrl: null, createdAt: "", updatedAt: "" }} />);
     expect(html).toBe("");
+  });
+
+  test("a restyled recipe says so, quietly, beside the source (M37.5)", () => {
+    const html = renderToString(
+      <RecipeMetaFooter recipe={{ ...base, sourceUrl: "https://www.nytimes.com/recipes/1234", restyledAt: "2026-09-14T02:30:00.000Z" }} />,
+    );
+    expect(html).toContain('data-testid="restyled"');
+    expect(html).toContain(`Restyled ${formatDateStamp("2026-09-14T02:30:00.000Z")}`);
+    // Beside the source, not before it.
+    expect(html.indexOf('data-testid="source-url"')).toBeLessThan(html.indexOf('data-testid="restyled"'));
+  });
+
+  test("a recipe in its author's voice says nothing", () => {
+    expect(renderToString(<RecipeMetaFooter recipe={base} />)).not.toContain('data-testid="restyled"');
+  });
+
+  test("a stamp that will not parse still marks the recipe as restyled", () => {
+    const html = renderToString(<RecipeMetaFooter recipe={{ ...base, restyledAt: "not a date" }} />);
+    expect(html).toContain('data-testid="restyled"');
+    expect(html).toContain(">Restyled<");
   });
 });

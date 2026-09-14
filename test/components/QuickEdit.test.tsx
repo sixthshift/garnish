@@ -92,6 +92,7 @@ const stored: Recipe = {
       steps: [{ id: FILLING_STEP, text: "Whisk **well**", ingredientIds: [], image: null }],
     },
   ],
+  restyledAt: null,
   createdAt: "2026-03-04T02:30:00.000Z",
   updatedAt: "2026-03-04T02:30:00.000Z",
 };
@@ -174,7 +175,12 @@ describe("saveQuickEdit", () => {
     // the recipe's own fields all come back through untouched.
     const doc = sent[0]!.data.doc as Recipe;
     expect(doc.parts[0]!.ingredients[0]!.quantity).toBe(250);
-    expect({ ...doc, parts: undefined }).toEqual({ ...withIngredientReplaced(stored, PASTRY, PASTRY_FLOUR, next), parts: undefined });
+    // `restyledAt` is read-only, so the document sent does not carry it (M37.5).
+    expect({ ...doc, parts: undefined }).toEqual({
+      ...withIngredientReplaced(stored, PASTRY, PASTRY_FLOUR, next),
+      parts: undefined,
+      restyledAt: undefined,
+    });
     expect(idsOf(doc)).toEqual(idsOf(stored));
     expect(doc.parts[1]).toEqual(stored.parts[1]);
     expect(doc.parts[0]!.steps).toEqual(stored.parts[0]!.steps);

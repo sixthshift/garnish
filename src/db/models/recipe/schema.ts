@@ -45,6 +45,9 @@ export const recipe = sqliteTable(
     updatedAt: text("updated_at").notNull().default(nowUtc),
     // 002_stage2.sql
     favourite: integer("favourite", { mode: "boolean" }).notNull().default(false),
+    // 011_restyle.sql: when the steps were last rewritten in the house style,
+    // NULL while they are still the author's words (M37.5).
+    restyledAt: text("restyled_at"),
   },
   (t) => [
     index("recipe_yield_unit_id").on(t.yieldUnitId),
@@ -83,6 +86,13 @@ export const part = sqliteTable(
     position: integer("position").notNull(),
     /** '' is the unnamed part: the flat recipe, or the main body beside named parts. */
     name: text("name").notNull().default(""),
+    /**
+     * 011_restyle.sql: the step texts this part had before its first restyle,
+     * as a JSON array in position order; NULL until one happens. Written once
+     * and cleared by a restore, so it is always the author's words or nothing
+     * (M37.5). `{ mode: "json" }` parses and serialises it, as `food.aliases` does.
+     */
+    sourceSteps: text("source_steps", { mode: "json" }).$type<string[]>(),
   },
   (t) => [unique().on(t.recipeId, t.position)],
 );

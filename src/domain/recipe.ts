@@ -150,6 +150,14 @@ export const recipeSchema = z.object({
   slug: nonEmpty,
   ...recipeFields,
   parts: z.array(partSchema).min(1, "a recipe needs at least one part"),
+  /**
+   * When the steps were last rewritten in the house style, or null while they
+   * are still the author's words (M37.5). Read-only: it is not in
+   * `recipeFields`, so it is absent from the write shape — the editor never
+   * sends it and an ordinary save cannot set or clear it. Only `applyRestyle`
+   * and `restoreSteps` move it.
+   */
+  restyledAt: timestamp.nullable().default(null),
   createdAt: timestamp,
   updatedAt: timestamp,
 });

@@ -24,6 +24,7 @@ import type {
 } from "../../../domain/recipe";
 import { formatIngredient, totalMinutes } from "../../../domain/format";
 import { resolveSort, seededOrder, type SortDir, type SortKey } from "../../../domain/sort";
+import { suggestLinks } from "../../../domain/stepIngredients";
 import type { SubRecipe } from "../../../domain/subRecipe";
 import { aisles as aisleRepository } from "../aisle/repo";
 import { type Executor, orm } from "../../connection/client";
@@ -340,6 +341,7 @@ export function recipes(db: Database) {
       performTime: row.cookMinutes,
       sourceUrl: row.sourceUrl,
       favourite: row.favourite,
+      restyledAt: row.restyledAt,
       notes,
       tags: selectTags(row.id),
       parts,
@@ -404,6 +406,21 @@ export function recipes(db: Database) {
 
   /** Delete every child row and re-insert them from the document. */
   function writeChildren(tx: Executor, recipeId: string, doc: ParsedRecipeInput): void {
+    // A part's kept original steps (M37.5) are not in the document, and a save
+    // rewrites every part row, so they are carried across by part id: the
+    // editor sends back the ids of the parts it loaded, and a part that keeps
+    // its id keeps the author's words with it. A part the save invented has no
+    // id to match and starts with none, which is right — it has no original.
+    const keptSourceSteps = new Map(
+      tx
+        .select({ id: part.id, sourceSteps: part.sourceSteps })
+        .from(part)
+        .where(eq(part.recipeId, recipeId))
+        .all()
+        .filter((row): row is { id: string; sourceSteps: string[] } => row.sourceSteps !== null)
+        .map((row) => [row.id, row.sourceSteps] as const),
+    );
+
     // Steps and ingredients cascade from the part, and step links cascade from both.
     tx.delete(recipeTag).where(eq(recipeTag.recipeId, recipeId)).run();
     tx.delete(recipeNote).where(eq(recipeNote.recipeId, recipeId)).run();
@@ -421,7 +438,9 @@ export function recipes(db: Database) {
 
     doc.parts.forEach((p, position) => {
       const partId = p.id ?? crypto.randomUUID();
-      tx.insert(part).values({ id: partId, recipeId, position, name: p.name }).run();
+      tx.insert(part)
+        .values({ id: partId, recipeId, position, name: p.name, sourceSteps: keptSourceSteps.get(partId) ?? null })
+        .run();
       // Ingredients first: their ids are what the part's steps may link to.
       // A line the document gave no id gets a fresh one, which nothing can name.
       const linkable = new Set<string>();
@@ -454,6 +473,70 @@ export function recipes(db: Database) {
           seen.add(ingredientId);
           tx.insert(stepIngredient).values({ stepId, ingredientId, position: seen.size - 1 }).run();
         }
+      });
+    });
+  }
+
+  // --- Restyle -------------------------------------------------------------
+  // Replacing a part's steps with rewritten ones (M37.5). Not a document
+  // write: the restyle touches steps and nothing else, so it goes through
+  // these rather than through `update`, which would want a whole recipe and
+  // would rewrite ingredients, notes and tags on the way past.
+
+  /** A recipe's parts in position order, with whatever original steps they kept. */
+  const partRows = (recipeId: string) =>
+    dz
+      .select({ id: part.id, name: part.name, sourceSteps: part.sourceSteps })
+      .from(part)
+      .where(eq(part.recipeId, recipeId))
+      .orderBy(asc(part.position))
+      .all();
+
+  /** One part's step texts in position order: what `source_steps` is made of. */
+  const stepTexts = (partId: string): string[] =>
+    dz
+      .select({ text: step.text })
+      .from(step)
+      .where(eq(step.partId, partId))
+      .orderBy(asc(step.position))
+      .all()
+      .map((row) => row.text);
+
+  /**
+   * Swap a part's steps for `texts`, in order, with fresh ids.
+   *
+   * The links go with them: a step row is deleted, so its `step_ingredient`
+   * rows cascade away, and a new row has nothing pointing at it. The step card
+   * would lose its ingredient rows if nothing put them back, so `suggestLinks`
+   * runs over the part's ingredients and the new texts — the same matcher the
+   * editor and the importer use, which is the best available answer for a
+   * sentence nobody has linked by hand.
+   *
+   * A step photo (M35.1) belongs to the step row it was attached to, and a
+   * rewrite may merge two steps or split one, so there is no honest way to
+   * carry a photo across: photos on replaced steps are lost. That is accepted
+   * — the restyle is shown as a diff and approved before it runs.
+   */
+  function replaceSteps(tx: Executor, partId: string, texts: readonly string[]): void {
+    tx.delete(step).where(eq(step.partId, partId)).run(); // links cascade from the step
+
+    const ingredients = dz
+      .select({ id: ingredient.id, foodId: ingredient.foodId })
+      .from(ingredient)
+      .where(eq(ingredient.partId, partId))
+      .orderBy(asc(ingredient.position))
+      .all()
+      .map((row) => ({ id: row.id, food: row.foodId === null ? null : (foods.get(row.foodId) ?? null) }));
+
+    const linked = suggestLinks({
+      ingredients,
+      steps: texts.map((text) => ({ id: crypto.randomUUID(), text, ingredientIds: [] as string[] })),
+    });
+
+    linked.forEach((s, position) => {
+      tx.insert(step).values({ id: s.id, partId, position, text: s.text, image: null }).run();
+      s.ingredientIds.forEach((ingredientId, i) => {
+        tx.insert(stepIngredient).values({ stepId: s.id, ingredientId, position: i }).run();
       });
     });
   }
@@ -707,6 +790,59 @@ export function recipes(db: Database) {
         .orderBy(byName)
         .all()
         .map(summarise),
+
+    /**
+     * Replace every part's steps with the accepted restyle (M37.5), keeping
+     * the author's words. `parts` pairs with the recipe's parts by position,
+     * which is how the restyle read verified them (`matchParts`), so a count
+     * that does not match is a broken answer and throws rather than guessing
+     * which part was meant. Null when `id` is unknown.
+     *
+     * A part that has never been restyled has its current step texts copied
+     * into `source_steps` first; one that already has them keeps what is
+     * there, so "the original" stays the author's rather than becoming the
+     * last rewrite. Then the steps themselves are replaced.
+     */
+    restyleParts(id: string, parts: readonly { name: string; steps: readonly string[] }[]): Recipe | null {
+      const current = rowById(id);
+      if (!current) return null;
+      const rows = partRows(id);
+      if (rows.length !== parts.length) {
+        throw new Error(`Restyle answered with ${parts.length} part${parts.length === 1 ? "" : "s"} where the recipe has ${rows.length}`);
+      }
+      dz.transaction((tx) => {
+        rows.forEach((row, index) => {
+          if (row.sourceSteps === null) {
+            tx.update(part).set({ sourceSteps: stepTexts(row.id) }).where(eq(part.id, row.id)).run();
+          }
+          replaceSteps(tx, row.id, parts[index]!.steps);
+        });
+        tx.update(recipe).set({ restyledAt: nowUtc, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
+      });
+      return getById(id);
+    },
+
+    /**
+     * Put the author's words back (M37.5): every part that kept
+     * `source_steps` has them re-inserted as its steps, the column goes back
+     * to NULL, and the recipe's stamp is cleared, so the page stops saying
+     * "Restyled" and a later restyle starts from the original again. A part
+     * that was never restyled is left exactly as it is. Null when `id` is
+     * unknown; harmless when nothing was restyled.
+     */
+    restoreParts(id: string): Recipe | null {
+      const current = rowById(id);
+      if (!current) return null;
+      dz.transaction((tx) => {
+        for (const row of partRows(id)) {
+          if (row.sourceSteps === null) continue;
+          replaceSteps(tx, row.id, row.sourceSteps);
+          tx.update(part).set({ sourceSteps: null }).where(eq(part.id, row.id)).run();
+        }
+        tx.update(recipe).set({ restyledAt: null, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
+      });
+      return getById(id);
+    },
 
     /** True when a recipe was deleted. Children cascade; references stay. */
     remove: (id: string): boolean =>

@@ -24,6 +24,7 @@ const recipe: Recipe = {
   notes: [],
   tags: [],
   parts: [{ id: "22222222-2222-4222-8222-222222222222", name: "", ingredients: [], steps: [] }],
+  restyledAt: null,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
 };

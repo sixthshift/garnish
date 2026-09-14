@@ -259,6 +259,7 @@ describe("StepCard's quick-edit menu (M29.4)", () => {
     notes: [],
     tags: [],
     parts: [{ id: PART_ID, name: "", ingredients: [], steps: [step("Mix")] }],
+    restyledAt: null,
     createdAt: "2026-03-04T02:30:00.000Z",
     updatedAt: "2026-03-04T02:30:00.000Z",
   };

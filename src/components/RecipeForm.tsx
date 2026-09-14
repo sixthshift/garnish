@@ -146,9 +146,14 @@ export function emptyDraft(): RecipeDraft {
   };
 }
 
-/** The stored recipe as an editable draft: slug and timestamps dropped (the server owns them), every id kept. Pure. */
+/**
+ * The stored recipe as an editable draft: slug, timestamps and the restyle
+ * stamp dropped (the server owns them), every id kept. `restyledAt` goes with
+ * them because it is not in the write shape at all — only a restyle or a
+ * restore moves it, so an edit must not carry it back (M37.5). Pure.
+ */
 export function draftFromRecipe(recipe: Recipe): RecipeDraft {
-  const { slug: _slug, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = recipe;
+  const { slug: _slug, createdAt: _createdAt, updatedAt: _updatedAt, restyledAt: _restyledAt, ...rest } = recipe;
   return {
     ...rest,
     notes: rest.notes.map((note) => ({ ...note })),
