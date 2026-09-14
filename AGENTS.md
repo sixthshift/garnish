@@ -19,7 +19,7 @@ Keep the argument in `docs/`; keep operating constraints here.
 - **Tie-breaker:** when unsure about any product or schema question, do what Mealie does.
 - **Recipe internals:** a recipe is an ordered list of named parts; each owns its ingredients and its steps, and the unnamed part (`name = ''`) is the recipe's main body. Sub-recipes hang off `food.recipe_id`; the column exists, the behaviour is deferred.
 - **Auth:** none. No users table, no sessions.
-- **AI:** none in v1. Design the recipe document so a future `claude -p` import returns exactly what the editor saves.
+- **AI:** none in v1. Design the recipe document so a future import by a hosted model over an OpenAI-compatible endpoint returns exactly what the editor saves.
 - **Framework:** TanStack Start (React 19, file routes under `src/routes/`). Vite is its build tool, run via `bun --bun vite`. This overrides the generic Bun guidance below about HTML imports and avoiding Vite. Server functions for the app's own data calls; server routes only for `/api/*` endpoints that outside callers need (health, images, future import).
 - **Rendering:** SPA mode (`spa.enabled`). No SEO need; the PWA shell caches cleanly.
 - **Frontend:** React 19 + Tailwind 4 via `@tailwindcss/vite`. Phone-first PWA.

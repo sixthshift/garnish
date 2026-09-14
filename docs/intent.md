@@ -45,7 +45,7 @@ See [decisions.md](decisions.md). The load-bearing ones:
 
 - SQLite is the only store. Cooklang is a reference, not a format we write.
 - No auth, no users.
-- No AI in v1. When it comes, it runs as `claude -p` on subscription.
+- No AI in v1. When it comes, it runs as a hosted model over an OpenAI-compatible endpoint, configured by environment.
 - Docker, one container, one volume.
 
 ## Won't do

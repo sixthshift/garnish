@@ -1,42 +1,54 @@
-// The bottom rung of the import (M34.5, decisions.md row 74): hand the text to
-// `claude -p` and let it do what no rule can — read a recipe out of prose.
+// The AI import rung (M34.5, M36.1, decisions.md rows 74 and 75): hand the
+// text to a language model and let it do what no rule can — read a recipe out
+// of prose.
 //
 // It sits under the two rules-based rungs in `recipeImport.ts`, not over them.
 // A page with `ld+json` is read by `schema`, a page with OpenGraph tags by
 // `stub`, and both are free, instant and deterministic. This one costs a
-// subscription turn and takes seconds, so it is what you reach for when the
-// page had nothing structured in it, or when what you have is not a page at
-// all: the block of text off a photograph, an email, a book you typed out.
+// request and takes seconds, so it is what you reach for when the page had
+// nothing structured in it, or when what you have is not a page at all: the
+// block of text off a photograph, an email, a book you typed out.
 //
 // Three rules hold it in place:
 //
 //   nothing is written    the answer lands on the same M17.5 review the URL
-//                         import uses. Claude proposes; the household approves.
+//                         import uses. The model proposes; the household
+//                         approves.
 //   nothing is trusted    the answer is parsed through `ScrapedRecipeSchema`
 //                         like any other untrusted input. A malformed answer
 //                         is reported on the import screen, never saved.
-//   nothing is assumed    the option only exists when the `claude` binary is
-//                         on the path. In the container it is not, until a
-//                         `claude setup-token` is injected (decision 12), and
-//                         a button that always fails is worse than no button.
+//   nothing is assumed    the option only exists when a key is configured. In
+//                         a container with no `AI_API_KEY` the option is not
+//                         offered at all, and a button that always fails is
+//                         worse than no button.
 //
-// It runs on a subscription through the CLI rather than the Agent SDK, which
-// is API-key only (decision 11). The command shape lives in `claudeArgs` and
-// nowhere else, so the day a flag changes there is one line to change.
+// The model is a hosted one behind a single OpenAI-compatible HTTP call rather
+// than the `claude` CLI this rung shipped with: reading a recipe out of a page
+// does not need frontier capability, the CLI was a bespoke integration on a
+// moving target, and a container should not need a login step to be useful.
+// Three environment variables say which model, and they are read at call time
+// rather than at import so the container can be given a key without a rebuild:
+// `AI_API_KEY` alone gets Gemini's free tier, and Mistral, Groq, OpenRouter or
+// an Ollama on the LAN are `AI_BASE_URL` and `AI_MODEL` away (Ollama ignores
+// the key, but wants one to be there). Plain `fetch`, no SDK: the request is
+// twelve lines and every provider worth using speaks this shape.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../domain/schemaRecipe";
 import { notFoundMiddleware } from "./fn";
 import type { ImportedRecipe } from "./recipeImport";
 
-/** How long a read is given before the process is killed. A recipe answers in seconds; a minute is the outer bound. */
+/** How long a read is given before the request is aborted. A recipe answers in seconds; a minute is the outer bound. */
 export const AI_IMPORT_TIMEOUT_MS = 60_000;
 
 /** The most text worth sending. A recipe is a page; anything past this is a book, and it would only cost tokens. */
 export const MAX_AI_TEXT = 40_000;
 
-/** The binary this rung shells out to. */
-export const CLAUDE_BINARY = "claude";
+/** Gemini's OpenAI-compatible endpoint: the free tier, so one variable is the whole of the setup. */
+export const DEFAULT_AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+
+/** The model asked for when none is named. The cheap, fast one; this is the one line to change when it is superseded. */
+export const DEFAULT_AI_MODEL = "gemini-2.5-flash";
 
 /** Why the AI rung did not produce a recipe. The screen shows `message`; the kind is what a test asserts on. */
 export type AiFailure = "unavailable" | "timeout" | "failed" | "malformed";
@@ -51,11 +63,24 @@ export class AiImportError extends Error {
   }
 }
 
+/** Which model, where, and with what key. Read on every call so a key can be added without restarting the app. */
+export function aiSettings(): { apiKey: string; baseUrl: string; model: string } {
+  const apiKey = (process.env.AI_API_KEY ?? "").trim();
+  const baseUrl = (process.env.AI_BASE_URL ?? "").trim().replace(/\/+$/, "") || DEFAULT_AI_BASE_URL;
+  const model = (process.env.AI_MODEL ?? "").trim() || DEFAULT_AI_MODEL;
+  return { apiKey, baseUrl, model };
+}
+
+/** Whether a model is configured at all. A key is the whole of it: the base URL and the model both have defaults. */
+export function aiConfigured(): boolean {
+  return aiSettings().apiKey !== "";
+}
+
 /**
- * `ScrapedRecipe` as a JSON Schema for `--json-schema`, written out rather
- * than generated: the CLI hands it to structured output, which wants every
- * property named, every one required, and no extras, and a generated schema
- * carries zod's defaults and optionality into a place that does not want them.
+ * `ScrapedRecipe` as a JSON Schema for the request's `response_format`,
+ * written out rather than generated: structured output wants every property
+ * named, every one required, and no extras, and a generated schema carries
+ * zod's defaults and optionality into a place that does not want them.
  * `test/server/aiImport.test.ts` holds it to the zod schema's shape so the two
  * cannot drift.
  */
@@ -86,7 +111,7 @@ export const SCRAPED_JSON_SCHEMA = {
 } as const;
 
 /**
- * What Claude is asked. The fields are described in the app's own terms
+ * What the model is asked. The fields are described in the app's own terms
  * because the schema only gives their types: an empty string is "the text did
  * not say", ingredient lines are copied verbatim for `parseIngredient` to read
  * (row 47), and a named section is a part, as row 59 already has the URL
@@ -108,44 +133,76 @@ export function aiPrompt(text: string): string {
   ].join("\n");
 }
 
-/**
- * The whole command, in one place. `-p` prints and exits, `--output-format
- * json` wraps the answer in an envelope so a failure is legible instead of
- * being mistaken for prose, and `--json-schema` makes the answer structured
- * rather than hopefully-structured. Pure.
- */
-export function claudeArgs(text: string): string[] {
-  return ["-p", aiPrompt(text), "--output-format", "json", "--json-schema", JSON.stringify(SCRAPED_JSON_SCHEMA)];
+/** How the model is asked. Injectable so a test can answer with a fixture, or with garbage. */
+export type AiRunner = (prompt: string, timeoutMs: number) => Promise<string>;
+
+/** The same shape `recipeImport.ts` injects, so a test can drive the HTTP path with a fake `fetch`. */
+export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
+
+/** The request body, in one place: one user turn, the schema as structured output, and no creativity at all. Pure. */
+export function chatRequestBody(prompt: string, model: string): Record<string, unknown> {
+  return {
+    model,
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_schema", json_schema: { name: "recipe", schema: SCRAPED_JSON_SCHEMA, strict: true } },
+    temperature: 0,
+  };
 }
 
-/** What running the binary gave back. The shape a test fakes. */
-export type AiRunResult = { exitCode: number; stdout: string; stderr: string };
-
-/** How the binary is run. Injectable so a test can answer with a fixture, or with garbage. */
-export type AiRunner = (args: readonly string[], timeoutMs: number) => Promise<AiRunResult>;
-
-/** The path to the `claude` binary, or null when it is not installed. */
-export function claudePath(): string | null {
-  return Bun.which(CLAUDE_BINARY);
+/** What a non-2xx means, in the words the import screen shows. Pure. */
+export function httpFailureMessage(status: number): string {
+  if (status === 401 || status === 403) return "The model provider rejected the API key. Check AI_API_KEY.";
+  if (status === 429) return "The model provider is rate-limited right now. Try again in a minute.";
+  return `The model provider answered ${status}, so nothing was read.`;
 }
 
-/**
- * The default runner: the binary, with the deadline enforced by the kernel
- * rather than by hope. `Bun.$` has no timeout of its own — a hung read would
- * leave a `claude` process holding a session for as long as the app lives — so
- * this uses the spawn underneath it, which does (decisions.md row 74).
- */
-export const spawnRunner: AiRunner = async (args, timeoutMs) => {
-  const path = claudePath();
-  if (path === null) throw new AiImportError("unavailable", "The claude command is not installed here.");
-  const child = Bun.spawn([path, ...args], { stdout: "pipe", stderr: "pipe", timeout: timeoutMs, killSignal: "SIGKILL" });
-  const [stdout, stderr] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text()]);
-  const exitCode = await child.exited;
-  return { exitCode, stdout, stderr };
-};
+/** The chat completion envelope, read defensively: providers differ in everything but this path. */
+type ChatCompletion = { choices?: { message?: { content?: unknown } }[] };
 
-/** The envelope `--output-format json` prints, read defensively: it grows fields between versions. */
-type Envelope = { is_error?: unknown; subtype?: unknown; result?: unknown; structured_output?: unknown };
+/**
+ * The default runner: one POST to `${AI_BASE_URL}/chat/completions`, with the
+ * deadline enforced by `AbortSignal.timeout` rather than by hope. The fetch is
+ * a parameter so the error mapping can be tested without a provider.
+ */
+export function createFetchRunner(fetcher: Fetcher = fetch): AiRunner {
+  return async (prompt, timeoutMs) => {
+    const { apiKey, baseUrl, model } = aiSettings();
+    if (apiKey === "") throw new AiImportError("unavailable", "No model is configured here. Set AI_API_KEY to use this.");
+
+    let response: Response;
+    try {
+      response = await fetcher(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify(chatRequestBody(prompt, model)),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (cause) {
+      const name = cause instanceof Error ? cause.name : "";
+      if (name === "TimeoutError" || name === "AbortError") {
+        throw new AiImportError("timeout", "The model took too long to answer. Try a shorter paste.");
+      }
+      throw new AiImportError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
+    }
+
+    if (!response.ok) throw new AiImportError("failed", httpFailureMessage(response.status));
+
+    let envelope: ChatCompletion;
+    try {
+      envelope = (await response.json()) as ChatCompletion;
+    } catch {
+      throw new AiImportError("malformed", "The model's answer was not JSON, so nothing was imported.");
+    }
+    const content = envelope.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || content.trim() === "") {
+      throw new AiImportError("malformed", "The model answered with nothing.");
+    }
+    return content;
+  };
+}
+
+/** The runner used in anger: the platform's `fetch`. */
+export const fetchRunner: AiRunner = (prompt, timeoutMs) => createFetchRunner()(prompt, timeoutMs);
 
 /** A ```json fence off an answer that came back as prose despite the schema. Pure. */
 export function stripFence(text: string): string {
@@ -155,84 +212,64 @@ export function stripFence(text: string): string {
 }
 
 /**
- * The recipe out of the CLI's stdout: the envelope's `structured_output` when
- * the schema was honoured, else its `result` text, else the whole of stdout
- * for a version that prints the answer bare. Throws `AiImportError` for
- * anything that is not a recipe. Pure.
+ * The recipe out of the message content: JSON, because the request asked for
+ * it, with the fence stripped for a model that fences anyway. Throws
+ * `AiImportError` for anything that is not a recipe. Pure.
  */
-export function parseAiAnswer(stdout: string): ScrapedRecipe {
-  const raw = stripFence(stdout);
-  if (raw === "") throw new AiImportError("malformed", "Claude answered with nothing.");
+export function parseAiAnswer(content: string): ScrapedRecipe {
+  const raw = stripFence(content);
+  if (raw === "") throw new AiImportError("malformed", "The model answered with nothing.");
 
-  let envelope: unknown;
+  let answer: unknown;
   try {
-    envelope = JSON.parse(raw);
+    answer = JSON.parse(raw);
   } catch {
-    throw new AiImportError("malformed", "Claude's answer was not JSON, so nothing was imported.");
-  }
-
-  let answer: unknown = envelope;
-  if (typeof envelope === "object" && envelope !== null && ("result" in envelope || "structured_output" in envelope)) {
-    const wrapper = envelope as Envelope;
-    if (wrapper.is_error === true || (typeof wrapper.subtype === "string" && wrapper.subtype !== "success")) {
-      throw new AiImportError("failed", typeof wrapper.result === "string" && wrapper.result !== "" ? wrapper.result : "Claude could not read that.");
-    }
-    if (wrapper.structured_output !== undefined && wrapper.structured_output !== null) answer = wrapper.structured_output;
-    else if (typeof wrapper.result === "string") {
-      try {
-        answer = JSON.parse(stripFence(wrapper.result));
-      } catch {
-        throw new AiImportError("malformed", "Claude answered in prose rather than the recipe format, so nothing was imported.");
-      }
-    } else answer = wrapper.result;
+    throw new AiImportError("malformed", "The model answered in prose rather than the recipe format, so nothing was imported.");
   }
 
   const parsed = ScrapedRecipeSchema.safeParse(answer);
   if (!parsed.success) {
     const first = parsed.error.issues[0];
     const where = first && first.path.length > 0 ? ` (${first.path.join(".")}: ${first.message})` : "";
-    throw new AiImportError("malformed", `Claude's answer was not in the expected shape${where}. Nothing was imported.`);
+    throw new AiImportError("malformed", `The model's answer was not in the expected shape${where}. Nothing was imported.`);
   }
   const recipe = normaliseScraped(parsed.data);
   if (recipe.name === "" && recipe.ingredients.length === 0) {
-    throw new AiImportError("malformed", "Claude found no recipe in that text.");
+    throw new AiImportError("malformed", "The model found no recipe in that text.");
   }
   return recipe;
 }
 
 /** What the paste screen sends and gets back: the same `ImportedRecipe` the URL import produces, from the `ai` rung. */
-export async function runAiImport(text: string, options: { run?: AiRunner; sourceUrl?: string } = {}): Promise<ImportedRecipe> {
-  const { run = spawnRunner, sourceUrl = "" } = options;
+export async function runAiImport(
+  text: string,
+  options: { run?: AiRunner; fetcher?: Fetcher; sourceUrl?: string } = {},
+): Promise<ImportedRecipe> {
+  const { run = options.fetcher ? createFetchRunner(options.fetcher) : fetchRunner, sourceUrl = "" } = options;
   const body = text.trim();
   if (body === "") throw new AiImportError("failed", "Paste the recipe first.");
   if (body.length > MAX_AI_TEXT) throw new AiImportError("failed", "That is too much text to read in one go. Paste one recipe at a time.");
 
-  let result: AiRunResult;
+  let content: string;
   try {
-    result = await run(claudeArgs(body), AI_IMPORT_TIMEOUT_MS);
+    content = await run(aiPrompt(body), AI_IMPORT_TIMEOUT_MS);
   } catch (cause) {
     if (cause instanceof AiImportError) throw cause;
-    throw new AiImportError("failed", `The claude command could not be run: ${cause instanceof Error ? cause.message : String(cause)}`);
+    throw new AiImportError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
-  // A killed process is the deadline: SIGKILL exits 137 and prints nothing.
-  if (result.exitCode !== 0 && result.stdout.trim() === "") {
-    const detail = result.stderr.trim().split("\n").slice(-1)[0] ?? "";
-    if (result.exitCode === 137 || result.exitCode === 143) throw new AiImportError("timeout", "Claude took too long to answer. Try a shorter paste.");
-    throw new AiImportError("failed", detail === "" ? `The claude command failed (exit ${result.exitCode}).` : detail);
-  }
-  return { from: "ai", url: sourceUrl, recipe: parseAiAnswer(result.stdout) };
+  return { from: "ai", url: sourceUrl, recipe: parseAiAnswer(content) };
 }
 
 // --- Server functions ------------------------------------------------------
 
 /**
  * Whether the AI rung can run at all, for the chooser and the Settings note.
- * Read on the server every time rather than cached: installing the CLI in the
- * container should not need the app restarted.
+ * Read on the server every time rather than cached: giving the container a key
+ * should not need the app restarted.
  */
 export const aiImportAvailable = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
-  .handler(() => ({ available: claudePath() !== null }));
+  .handler(() => ({ available: aiConfigured() }));
 
 export const ImportFromTextInput = z.object({
   text: z.string().trim().min(1),
@@ -240,7 +277,7 @@ export const ImportFromTextInput = z.object({
   sourceUrl: z.string().trim().default(""),
 });
 
-/** Read a recipe out of pasted text with `claude -p`. Nothing is written: the caller reviews it first. */
+/** Read a recipe out of pasted text with a hosted model. Nothing is written: the caller reviews it first. */
 export const importFromText = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(ImportFromTextInput)

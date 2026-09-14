@@ -162,11 +162,14 @@ describe("ExportTab render", () => {
     expect(html).toContain("/api/recipes/");
   });
 
-  test("the AI import note explains what the paste option needs (M34.5)", async () => {
+  test("the AI import note names the three variables and the free tier's catch (M36.1)", async () => {
     const html = await renderWithRouter(() => <ExportTab />);
     expect(html).toContain('data-testid="ai-import-note"');
-    expect(html).toContain("claude setup-token");
-    expect(html).toContain("claude -p");
+    expect(html).toContain("AI_API_KEY");
+    expect(html).toContain("AI_BASE_URL");
+    expect(html).toContain("AI_MODEL");
+    expect(html).not.toContain("setup-token");
     expect(html).toMatch(/only appears when/);
+    expect(html).toMatch(/may train on what is sent/);
   });
 });

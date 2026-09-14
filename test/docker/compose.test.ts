@@ -1,7 +1,7 @@
 // docker-compose.yml and the README's Docker sections are text, so their
 // contract is asserted here: one `garnish` service on port 3000 with the
-// `garnish-data` volume at DATA_DIR=/data, and a README that documents run,
-// backup and restore. Docker itself is not run under vitest.
+// `garnish-data` volume at DATA_DIR=/data plus the three AI variables, and a
+// README that documents run, backup, restore and the AI import. Docker itself is not run under vitest.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -76,6 +76,12 @@ describe("compose file", () => {
     expect(envValue(garnish.environment, "DATA_DIR")).toBe("/data");
   });
 
+  test("passes the three AI variables through from the host, defaulting to empty", () => {
+    expect(envValue(garnish.environment, "AI_API_KEY")).toBe("${AI_API_KEY:-}");
+    expect(envValue(garnish.environment, "AI_BASE_URL")).toBe("${AI_BASE_URL:-}");
+    expect(envValue(garnish.environment, "AI_MODEL")).toBe("${AI_MODEL:-}");
+  });
+
   test("restarts unless stopped", () => {
     expect(garnish.restart).toBe("unless-stopped");
   });
@@ -108,6 +114,13 @@ describe("README", () => {
     const restore = readme.slice(readme.indexOf("## Restore"));
     expect(restore).toContain("garnish.db-wal");
     expect(restore).toContain("garnish.db-shm");
+  });
+
+  test("documents the AI import and its three variables", () => {
+    expect(sections).toContain("AI import");
+    expect(readme).toContain("AI_API_KEY");
+    expect(readme).toContain("AI_BASE_URL");
+    expect(readme).toContain("AI_MODEL");
   });
 
   test("dev instructions match package.json scripts and ports", () => {
