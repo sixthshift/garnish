@@ -20,7 +20,7 @@ import { SearchInput } from "@sixthshift/design-system/search-input";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import type { RecipeSummary } from "../../domain/recipe/recipe";
-import { clampSelection, nextSearchIndex, selectedResult, shouldOpenGlobalSearch, type SearchEventTarget } from "../../domain/list/search";
+import { clampSelection, nextSearchIndex, selectedResult, shouldOpenGlobalSearch, type SearchEventTarget } from "../../lib/search";
 import { listRecipes } from "../../server/fns/recipes";
 import { notifyError } from "../../lib/notify";
 import { RecipeCard } from "../recipe/RecipeCard";
@@ -62,7 +62,7 @@ export type SearchResultListProps = {
  * dialog (M12.5) and the meal plan's add row (M33.2), which differ only in
  * what a row draws and whether clicking one opens or picks it. The keyboard
  * itself stays with the caller, because the key handler belongs on whatever
- * input has focus (`nextSearchIndex` in src/domain/list/search.ts is the rule both
+ * input has focus (`nextSearchIndex` in src/lib/search.ts is the rule both
  * use).
  */
 export function SearchResultList({

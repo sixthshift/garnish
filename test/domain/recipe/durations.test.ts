@@ -2,7 +2,7 @@
 // length in seconds. A table over the shapes it recognises, plus the shapes
 // that look like a number but are not a duration.
 import { describe, expect, test } from "vitest";
-import { durationsIn } from "../../../src/domain/cook/timers";
+import { durationsIn } from "../../../src/domain/recipe/durations";
 
 describe("durationsIn", () => {
   const cases: Array<[label: string, text: string, expected: Array<{ text: string; seconds: number; upperSeconds?: number }>]> = [

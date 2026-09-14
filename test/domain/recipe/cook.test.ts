@@ -1,18 +1,6 @@
 import { describe, expect, test } from "vitest";
-import {
-  buildCookCards,
-  cardAnnouncement,
-  clampStep,
-  isFinishedIndex,
-  nextPreview,
-  partPills,
-  PREVIEW_MAX_CHARS,
-  SWIPE_MAX_MS,
-  SWIPE_MIN_PX,
-  SWIPE_RATIO,
-  swipeIntent,
-  totalWithFinish,
-} from "../../../src/domain/cook/cook";
+import { buildCookCards, cardAnnouncement, clampStep, isFinishedIndex, nextPreview, partPills, PREVIEW_MAX_CHARS, totalWithFinish } from "../../../src/domain/recipe/cook";
+import { SWIPE_MAX_MS, SWIPE_MIN_PX, SWIPE_RATIO, swipeIntent } from "../../../src/lib/swipe";
 import type { Ingredient, Part, Step } from "../../../src/domain/recipe/recipe";
 
 const uuid = () => crypto.randomUUID();

@@ -1,4 +1,4 @@
-// A duration named in a step (src/domain/cook/timers.ts), rendered in the step
+// A duration named in a step (src/domain/recipe/durations.ts), rendered in the step
 // card's footer as a tappable chip. Still presentational: it reports the tap upward and shows
 // whatever the caller says its timer is doing. The running-timer store
 // (src/lib/timers.ts) and the strip that lists them (TimerStrip.tsx) are

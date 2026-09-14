@@ -12,7 +12,7 @@ import { Menu } from "../../../components/ui/Menu";
 import { ReorderList } from "../../../components/ui/ReorderList";
 import { addDays, dayLabel, entryLabel, isToday, reorderMove, servingsLabel, todayIso, weekLabel, type PlanDay, type PlanEntry } from "../../../domain/plan/plan";
 import type { RecipeSummary } from "../../../domain/recipe/recipe";
-import { clampSelection, nextSearchIndex, selectedResult } from "../../../domain/list/search";
+import { clampSelection, nextSearchIndex, selectedResult } from "../../../lib/search";
 import { recipeImageUrl } from "../../../lib/images";
 import { addedMessage } from "../../../lib/shopping";
 import { notify, notifyError } from "../../../lib/notify";

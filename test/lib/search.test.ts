@@ -2,7 +2,7 @@
 // keydown should open the dialog, and how a selected index maps onto a
 // result list.
 import { describe, expect, test } from "vitest";
-import { clampSelection, isTypingTarget, nextSearchIndex, selectedResult, shouldOpenGlobalSearch } from "../../../src/domain/list/search";
+import { clampSelection, isTypingTarget, nextSearchIndex, selectedResult, shouldOpenGlobalSearch } from "../../src/lib/search";
 
 describe("isTypingTarget", () => {
   test("input, textarea and select all count as typing", () => {

@@ -29,7 +29,7 @@ import { Markdown } from "../../../../components/ui/Markdown";
 import { useQuickEditStep } from "./QuickEdit";
 import { TimerChip } from "./TimerChip";
 
-import { durationsIn } from "../../../../domain/cook/timers";
+import { durationsIn } from "../../../../domain/recipe/durations";
 
 /** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
 export type StepCardSize = "page" | "cook";

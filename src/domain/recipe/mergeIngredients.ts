@@ -17,7 +17,7 @@
 // picking one arbitrarily. A group's id is its first member's id, so a
 // singleton group (the common case — most food/unit pairs appear once) keeps
 // the same tick state (src/lib/ticks.ts) whichever view is showing.
-import type { Ingredient, Part } from "../recipe/recipe";
+import type { Ingredient, Part } from "./recipe";
 
 /** True for ingredients that fold into a summed group; false for lines kept on their own. */
 function isMergeable(ingredient: Ingredient): boolean {

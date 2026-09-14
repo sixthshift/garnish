@@ -13,7 +13,7 @@
 // Every pure function takes `now` as a parameter, so the store's tests need no
 // fake clock; only the hook reads `Date.now()`, and only it owns an interval.
 import { useCallback, useEffect, useState } from "react";
-import { formatRemaining } from "../domain/cook/timers";
+import { formatRemaining } from "./dates";
 import { notify } from "./notify";
 
 /** The slice of `Storage` the controller uses. */

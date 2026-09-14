@@ -1,7 +1,8 @@
 // Pure sort helpers (M12.4): default direction resolution, the seeded random
 // order and the dice button's pick.
 import { describe, expect, test } from "vitest";
-import { defaultDir, hash32, newSeed, pickRandom, resolveSort, seededOrder, SORT_OPTIONS } from "../../../src/domain/list/sort";
+import { defaultDir, resolveSort, SORT_OPTIONS } from "../../../src/domain/recipe/sort";
+import { hash32, newSeed, pickRandom, seededOrder } from "../../../src/domain/lists";
 
 describe("defaultDir", () => {
   test("name reads ascending; every other key defaults newest/highest first", () => {

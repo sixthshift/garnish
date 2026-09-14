@@ -7,7 +7,7 @@ import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import type { Aisle, Recipe, RecipeSummary, Tag, TimelineEvent, Unit } from "../../src/domain/recipe/recipe";
 import type { StyleRule } from "../../src/domain/style/style";
 import type { SubRecipe } from "../../src/domain/recipe/subRecipe";
-import { searchParam } from "../../src/domain/list/search";
+import { searchParam } from "../../src/lib/search";
 import { Route as IndexRoute, type RecipeListData } from "../../src/routes/home/route";
 import { Route as EditRoute } from "../../src/routes/recipes/recipe/edit/route";
 import { nextServings } from "../../src/domain/recipe/scale";

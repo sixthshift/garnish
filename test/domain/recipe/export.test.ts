@@ -2,7 +2,7 @@
 // serves it, everything else about the document is left alone, and the
 // download is named for the day it was taken.
 import { expect, test } from "vitest";
-import { EXPORT_VERSION, exportFileName, exportedRecipe, imageUrl } from "../../../src/domain/export/export";
+import { EXPORT_VERSION, exportFileName, exportedRecipe, imageUrl } from "../../../src/domain/recipe/export";
 import type { Recipe } from "../../../src/domain/recipe/recipe";
 
 const recipe: Recipe = {

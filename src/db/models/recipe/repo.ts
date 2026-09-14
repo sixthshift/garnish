@@ -23,7 +23,8 @@ import type {
   Unit,
 } from "../../../domain/recipe/recipe";
 import { formatIngredient, totalMinutes } from "../../../domain/ingredient/format";
-import { resolveSort, seededOrder, type SortDir, type SortKey } from "../../../domain/list/sort";
+import { resolveSort, type SortDir, type SortKey } from "../../../domain/recipe/sort";
+import { seededOrder } from "../../../domain/lists";
 import { suggestLinks } from "../../../domain/recipe/stepIngredients";
 import type { SubRecipe } from "../../../domain/recipe/subRecipe";
 import { aisles as aisleRepository } from "../aisle/repo";

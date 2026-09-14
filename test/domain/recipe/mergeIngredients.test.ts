@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mergeIngredients } from "../../../src/domain/reference/merge";
+import { mergeIngredients } from "../../../src/domain/recipe/mergeIngredients";
 import type { Ingredient, Part } from "../../../src/domain/recipe/recipe";
 
 const gram = {

@@ -4,7 +4,7 @@
 //
 // Duplicate writes through `useMutate` and lands on the copy; the Copy items
 // (link, ingredients, Cooklang) go through `src/lib/clipboard.ts` — the
-// Cooklang one via `src/domain/export/cooklang.ts`'s `toCooklang` (M34.2), the same
+// Cooklang one via `src/domain/recipe/cooklang.ts`'s `toCooklang` (M34.2), the same
 // function `GET /api/recipes/:slug.cook` serves; Print asks the browser to
 // print the page (the print rules live in src/styles.css); Delete confirms
 // first, and is the one destructive item, kept at the bottom behind a separator.
@@ -30,7 +30,7 @@
 // outlives the menu item that opens it — see that file's header for why.
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { toCooklang } from "../../../../domain/export/cooklang";
+import { toCooklang } from "../../../../domain/recipe/cooklang";
 import { ingredientsText, recipeUrl } from "../../../../domain/recipe/copy";
 import { dayLabel } from "../../../../domain/plan/plan";
 import type { Recipe } from "../../../../domain/recipe/recipe";

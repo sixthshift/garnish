@@ -26,7 +26,7 @@ import { RecipeHeader, RecipeMetaFooter } from "./components/RecipeHeader";
 import { QuickEditProvider } from "./components/QuickEdit";
 import { StepList } from "./components/StepList";
 import { TimerStrip } from "./components/TimerStrip";
-import { mergeIngredients } from "../../../domain/reference/merge";
+import { mergeIngredients } from "../../../domain/recipe/mergeIngredients";
 import { scaledForServings } from "../../../domain/recipe/scale";
 import { MadeThisButton, TimelineList } from "./components/Timeline";
 import type { Part } from "../../../domain/recipe/recipe";

@@ -3,7 +3,7 @@
 // life of a timer — start, tick, pause, resume, expire, dismiss, clear — is
 // tested with plain numbers and no fake clock.
 import { describe, expect, test } from "vitest";
-import { formatRemaining } from "../../src/domain/cook/timers";
+import { formatRemaining } from "../../src/lib/dates";
 import {
   chipTimerId,
   clearTimers,

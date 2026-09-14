@@ -6,7 +6,7 @@
 // somewhere else, so the file name becomes the URL that serves it. The bytes
 // themselves are not in the file (decisions.md row 72); the URL is the pointer
 // back to them.
-import type { Recipe } from "../recipe/recipe";
+import type { Recipe } from "./recipe";
 
 /** Bumped when the envelope's shape changes, not when a recipe field is added. */
 export const EXPORT_VERSION = 1;

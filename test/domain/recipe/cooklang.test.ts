@@ -9,7 +9,7 @@ import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { seedSample } from "../../../src/db/seed/seed";
-import { cooklangStepText, toCooklang } from "../../../src/domain/export/cooklang";
+import { cooklangStepText, toCooklang } from "../../../src/domain/recipe/cooklang";
 import type { Food, Ingredient, Recipe, Unit } from "../../../src/domain/recipe/recipe";
 
 const FIXTURES = join(import.meta.dirname, "..", "..", "fixtures", "cooklang");

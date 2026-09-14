@@ -1,7 +1,8 @@
 // Pure filter-bar helpers (M12.3): folding the legacy `tag` param into
 // `tags`, and the small array utilities the food picker uses.
 import { describe, expect, test } from "vitest";
-import { addUnique, arrayParam, selectedTags, withoutId } from "../../../src/domain/list/recipeFilters";
+import { selectedTags } from "../../../src/domain/recipe/filters";
+import { addUnique, arrayParam, withoutId } from "../../../src/domain/lists";
 
 describe("selectedTags", () => {
   test("folds the legacy singular tag into the array, de-duplicated", () => {

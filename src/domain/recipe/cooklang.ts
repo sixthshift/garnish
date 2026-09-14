@@ -21,9 +21,9 @@
 //
 // Pure: no IO, importable by the client — the same module the export route
 // and the recipe menu's "Copy as Cooklang" both call.
-import { durationsIn } from "../cook/timers";
-import type { Food, Ingredient, Part, Recipe, Step, Unit } from "../recipe/recipe";
-import { foodNames } from "../recipe/stepIngredients";
+import { durationsIn } from "./durations";
+import type { Food, Ingredient, Part, Recipe, Step, Unit } from "./recipe";
+import { foodNames } from "./stepIngredients";
 
 /** Letters and digits: anything else counts as a word boundary. Mirrors stepIngredients.ts's own. */
 const WORD = /[\p{L}\p{N}]/u;

@@ -10,8 +10,8 @@ import { foods, type Food } from "../../db/models/food/repo";
 import { recipes } from "../../db/models/recipe/repo";
 import { tags } from "../../db/models/tag/repo";
 import { units } from "../../db/models/unit/repo";
-import { toCooklang } from "../../domain/export/cooklang";
-import { EXPORT_VERSION, exportFileName, exportedRecipe } from "../../domain/export/export";
+import { toCooklang } from "../../domain/recipe/cooklang";
+import { EXPORT_VERSION, exportFileName, exportedRecipe } from "../../domain/recipe/export";
 import type { Aisle, Recipe, Tag, Unit } from "../../domain/recipe/recipe";
 import { getDb } from "../core/db";
 
@@ -83,7 +83,7 @@ export async function handleExportJson(at: Date = new Date()): Promise<Response>
 
 /**
  * GET /api/recipes/:slug.cook (M34.2) — the recipe as a `.cook` file
- * (`src/domain/export/cooklang.ts`). 404 for an unknown slug, the same as the JSON
+ * (`src/domain/recipe/cooklang.ts`). 404 for an unknown slug, the same as the JSON
  * twin.
  */
 export async function handleRecipeCook(slug: string): Promise<Response> {

@@ -104,7 +104,7 @@ export type ShoppingItemPatch = z.infer<typeof shoppingItemPatchSchema>;
 
 // --- Merging into the list ---------------------------------------------------
 // mergeIntoList(items, additions): where an "Add to shopping list" tap (M31.3)
-// or a week added from the plan (M33.3) lands. Reuses src/domain/reference/merge.ts's
+// or a week added from the plan (M33.3) lands. Reuses src/domain/recipe/mergeIngredients.ts's
 // rule that a `fixed` or null-quantity ingredient never merges (decisions.md
 // row 13), plus three rules of its own that mergeIngredients has no reason to
 // know about, because they are about the *list*, not a single recipe:
