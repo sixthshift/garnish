@@ -52,7 +52,17 @@ export function readableText(html: string): string {
   // Comments, then whatever `<!...>` markup declarations are left — chiefly
   // `<!DOCTYPE html>`, which is not a tag `TAG_PATTERN` recognises and would
   // otherwise leak into the output as literal angle brackets.
-  const withoutComments = html.replace(/<!--[\s\S]*?-->/g, "").replace(/<![^>]*>/g, "");
+  // `script` and `style` go first, as whole elements, because their bodies are
+  // raw text the tag scanner must never look inside: a JS string holding
+  // `'<svg …>'` for an icon, or a template literal of markup, would otherwise
+  // push a drop tag with no closing partner and swallow the rest of the page.
+  // Bare `</script>` is the only thing that ends a script body in a browser
+  // too, so this matches what the page actually renders.
+  const withoutComments = html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, "")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<![^>]*>/g, "");
 
   let out = "";
   let lastIndex = 0;
@@ -71,7 +81,12 @@ export function readableText(html: string): string {
 
     if (isClosing) {
       if (dropStack.length > 0) {
-        if (dropStack[dropStack.length - 1] === name) dropStack.pop();
+        // Pop back to the nearest matching open tag, not only the top: a
+        // `<footer>` a theme never closes would otherwise sit on the stack
+        // and drop everything after it. Anything above the match was left
+        // unclosed by the page and is closed along with it.
+        const open = dropStack.lastIndexOf(name);
+        if (open !== -1) dropStack.length = open;
       } else if (BLOCK_TAGS.has(name)) {
         out += "\n";
       }

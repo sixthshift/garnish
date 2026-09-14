@@ -101,3 +101,14 @@ describe("looksLikeHtml", () => {
     });
   }
 });
+
+test("a script body holding markup in a string does not swallow the page", () => {
+  const html = `<html><body><script>var icon = '<svg viewBox="0 0 1 1"><path d="M0"/></svg>';</script><p>Visible</p><style>.a{content:"<header>"}</style><h2>Method</h2></body></html>`;
+  expect(readableText(html)).toBe("Visible\n# Method");
+});
+
+test("an unclosed drop tag is closed by its ancestor's closing tag", () => {
+  // A theme that never closes its <footer> inside <header> must not take the rest of the page with it.
+  const html = `<html><body><header><footer>chrome</header><p>After</p></body></html>`;
+  expect(readableText(html)).toBe("After");
+});
