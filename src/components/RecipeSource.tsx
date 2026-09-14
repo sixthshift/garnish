@@ -20,10 +20,22 @@
 //            parts already made from Mealie's section titles or Tandoor's
 //            steps.
 //
-//   paste    a block of text, read by `claude -p` on the server (M34.5,
-//            decisions.md row 74). The rung under the two rules-based ones:
-//            what you have is prose, and no rule reads prose. Offered only
-//            when the binary is installed, and it lands on the same review.
+//   paste    a block of text, read by a hosted model on the server (M34.5,
+//            M36.1, decisions.md rows 74 and 75). What you have is prose, and
+//            no rule reads prose. Offered only when a key is configured, and
+//            it lands on the same review.
+//
+// With a model configured the read is no longer something you ask for on a
+// page: every URL result is handed to the model on arrival (M36.6,
+// decisions.md row 77). The rules result renders at once — it is the whole of
+// what you get when no model is configured, when the read fails, and when the
+// check rejects the answer — and the review re-renders from the model's
+// reading when it lands. A `schema` result is sent anchored, so the page's own
+// lines and steps are the content and the model only says which part each sits
+// under; a `stub` result is sent unanchored, since there is nothing to anchor
+// to. Create is never blocked on it: a recipe whose lines are one flat list is
+// already correct, and waiting for a second opinion on that would be waiting
+// for nothing.
 //
 // "My own" is a navigation, not a stage: `?source=manual` renders the editor
 // directly, so the browser's Back leaves it the way it leaves any other
@@ -44,6 +56,7 @@ import { Textarea } from "@sixthshift/design-system/textarea";
 import { type FormEvent, useState } from "react";
 import type { Food as FoodRow } from "../db/models/food/repo";
 import { pendingCreations, reviewRows, type RowCommit, rowCommit } from "../domain/bulkIngredients";
+import type { ImportCheck } from "../domain/importCheck";
 import { type MealieRecipe, reviewRowsFromMealie } from "../domain/importMealie";
 import { type ExportRecipe, isTandoorRecipe, reviewRowsFromTandoor } from "../domain/importTandoor";
 import type { Tag, Unit } from "../domain/recipe";
@@ -205,15 +218,114 @@ export function stepCount(scraped: ScrapedRecipe): number {
   return scraped.parts.reduce((total, part) => total + part.steps.length, 0);
 }
 
-/** What the review says it got, and how. Pure. */
-export function importSummary(from: ImportSource, ingredients: number, steps: number): string {
+/**
+ * What the review says it got, and how. `sorted` is the model's part in it
+ * (M36.6): true when the parts on the screen are the model's reading of the
+ * page's headings, false when a `schema` page arrived with no model to sort
+ * it, and null when the question does not arise — a paste, an upload, a read
+ * still running. Pure.
+ */
+export function importSummary(from: ImportSource, ingredients: number, steps: number, sorted: boolean | null = null): string {
   if (from === "stub") return "That page has no recipe data, so this is just its title and picture. The rest is yours to type in.";
   const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
   const read = `Read ${count(ingredients, "ingredient")} and ${count(steps, "step")}.`;
+  const nothingSaved = "Nothing is saved yet, and no food or unit is created unless you ask for it below.";
+  // An anchored read changed nothing but the shape: the lines are the page's
+  // own, checked against it word for word, and the parts are what the model
+  // added. Saying so tells the household what is worth checking.
+  if (sorted === true) {
+    return `The page's ${count(ingredients, "ingredient")} and ${count(steps, "step")} sorted into parts by the model. The words are the page's own — check the parts. ${nothingSaved}`;
+  }
   // An AI read is a reading, not a transcription, so the review is told to
   // check it rather than merely approve it (M34.5).
   if (from === "ai") return `Claude ${read.toLowerCase()} Check them against what you pasted — nothing is saved yet, and no food or unit is created unless you ask for it below.`;
-  return `${read} Nothing is saved yet, and no food or unit is created unless you ask for it below.`;
+  // No model to read the page, so the headings it had are gone: schema.org
+  // cannot say which part a line belongs to, and nothing else was asked.
+  if (sorted === false) return `${read} No model is configured, so the page's sections were not sorted into parts and every line is on the main body. ${nothingSaved}`;
+  return `${read} ${nothingSaved}`;
+}
+
+/**
+ * What the model's version did to the page's, as the review says it: "dropped
+ * 1 line and reworded 2 steps". A line missing on one side and one added on
+ * the other is one rewording rather than two changes, because that is what it
+ * is and counting it twice would overstate the damage. Pure.
+ */
+export function changeSummary(check: ImportCheck): string {
+  const clauses: string[] = [];
+  const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+  for (const [missing, added, noun] of [
+    [check.missingLines, check.addedLines, "line"],
+    [check.missingSteps, check.addedSteps, "step"],
+  ] as const) {
+    const reworded = Math.min(missing.length, added.length);
+    if (missing.length - reworded > 0) clauses.push(`dropped ${count(missing.length - reworded, noun)}`);
+    if (added.length - reworded > 0) clauses.push(`added ${count(added.length - reworded, noun)}`);
+    if (reworded > 0) clauses.push(`reworded ${count(reworded, noun)}`);
+  }
+  if (clauses.length === 0) return "changed nothing";
+  if (clauses.length === 1) return clauses[0]!;
+  return `${clauses.slice(0, -1).join(", ")} and ${clauses[clauses.length - 1]}`;
+}
+
+/** The rejection notice in one sentence (M36.6). Pure. */
+export function rejectionMessage(check: ImportCheck): string {
+  return `The model's version ${changeSummary(check)}, so the page's version is shown.`;
+}
+
+/** Every line the check objected to, labelled for the list under the notice. Pure. */
+export function changedLines(check: ImportCheck): { label: string; text: string }[] {
+  return [
+    ...check.missingLines.map((text) => ({ label: "Dropped", text })),
+    ...check.addedLines.map((text) => ({ label: "Added", text })),
+    ...check.missingSteps.map((text) => ({ label: "Dropped step", text })),
+    ...check.addedSteps.map((text) => ({ label: "Added step", text })),
+  ];
+}
+
+/**
+ * Whether this result is worth handing to the model on arrival (M36.6). Only
+ * a page: an upload already states its parts and a paste has already been
+ * read. A `schema` result goes anchored and a `stub` result goes bare, and
+ * neither goes anywhere without the page's text to read.
+ */
+export function shouldReadWithModel(imported: ImportedRecipe, aiAvailable: boolean): boolean {
+  if (!aiAvailable) return false;
+  if (imported.from !== "schema" && imported.from !== "stub") return false;
+  return imported.pageText.trim() !== "";
+}
+
+/** The AI read as the review needs it: the page's text, and the rules result as the anchor when it had one. */
+export type ModelReader = (text: string, anchor?: ScrapedRecipe) => Promise<ImportedRecipe>;
+
+/**
+ * The model's pass over a rules result. The address and the page's text are
+ * carried over from the rules result rather than taken from the answer, so a
+ * retry, or the swap to a rejected answer, still has everything the first read
+ * had. A failure is returned rather than thrown: the rules result stays on the
+ * screen and the message goes beside it.
+ */
+export async function modelPass(
+  imported: ImportedRecipe,
+  read: ModelReader,
+): Promise<{ ok: true; result: ImportedRecipe } | { ok: false; error: string }> {
+  try {
+    const anchor = imported.from === "schema" ? imported.recipe : undefined;
+    const result = await read(imported.pageText, anchor);
+    return { ok: true, result: { ...result, url: imported.url, pageText: imported.pageText } };
+  } catch (cause) {
+    return { ok: false, error: messageFrom(cause) };
+  }
+}
+
+/**
+ * The rejected answer put in the accepted one's place (M36.6's "Use the
+ * model's version anyway"). `check` stays so the summary still says the parts
+ * are the model's; `rejected` goes, because it is now what is on the screen.
+ */
+export function withRejectedAnswer(imported: ImportedRecipe): ImportedRecipe {
+  if (imported.rejected === undefined) return imported;
+  return { from: "ai", url: imported.url, recipe: imported.rejected, pageText: imported.pageText, check: imported.check };
 }
 
 /** The review's duplicate warning: the same recipe by address (M23.7) or by name (M34.3). Pure. */
@@ -512,6 +624,16 @@ export type ImportReviewProps = {
   duplicate?: { name: string; slug: string } | null;
   /** Which of the two the duplicate was found by; the address, by default. */
   duplicateBy?: DuplicateBy;
+  /** Whether a model is configured (M36.6); without one a `schema` page says its sections were not sorted. */
+  aiAvailable?: boolean;
+  /** Whether the model's read of this page is still running; the rows are the rules result meanwhile. */
+  reading?: boolean;
+  /** Why the model's read did not happen, shown beside the rules result with a retry. */
+  readError?: string | null;
+  /** Run the read again after a failure. */
+  onRetryRead?: () => void;
+  /** Take the rejected answer anyway (M36.6). */
+  onUseRejected?: () => void;
   onRowsChange: (rows: IngredientReview[]) => void;
   onBack: () => void;
   onCreate: () => void;
@@ -520,8 +642,16 @@ export type ImportReviewProps = {
 /** The third stage: what the page gave up, before any of it is written. */
 export function ImportReview(props: ImportReviewProps) {
   const { imported, rows, units, searchFoods, busy, error, duplicate, duplicateBy = "url", onRowsChange, onBack, onCreate } = props;
+  const { aiAvailable = false, reading = false, readError = null, onRetryRead, onUseRejected } = props;
   const { recipe, from } = imported;
   const label = yieldLabel(recipe);
+  // Whether the parts on the screen are the model's doing. An `ai` result that
+  // carries a check was sorted against an anchor; an `ai` result without one is
+  // a paste, which is a reading rather than a sorting. A `schema` result with
+  // no model configured is the one case worth admitting to: its lines are all
+  // on the main body because nothing was there to put them anywhere else.
+  const sorted = from === "ai" ? (imported.check === undefined ? null : true) : from === "schema" && !aiAvailable ? false : null;
+  const rejected = imported.rejected !== undefined && imported.check !== undefined ? imported.check : null;
 
   return (
     <div className="flex flex-col gap-6" data-source-stage="review" data-import-from={from}>
@@ -531,8 +661,47 @@ export function ImportReview(props: ImportReviewProps) {
         </Message>
       ) : (
         <Muted as="p" className="text-sm">
-          {importSummary(from, ingredientCount(recipe), stepCount(recipe))}
+          {importSummary(from, ingredientCount(recipe), stepCount(recipe), sorted)}
         </Muted>
+      )}
+
+      {reading && (
+        <Muted as="p" className="text-sm" data-testid="sorting-notice">
+          Sorting into parts…
+        </Muted>
+      )}
+
+      {readError !== null && (
+        <Message intent="warning" title="The model could not read this page" data-testid="read-error">
+          <div className="flex flex-col items-start gap-2">
+            <span>{`${readError} The page's own reading is below and can be saved as it is.`}</span>
+            {onRetryRead !== undefined && (
+              <Button type="button" variant="ghost" intent="neutral" disabled={busy || reading} onClick={onRetryRead}>
+                Try again
+              </Button>
+            )}
+          </div>
+        </Message>
+      )}
+
+      {rejected !== null && (
+        <Message intent="warning" title="The model changed more than the parts" data-testid="rejected-notice">
+          <div className="flex flex-col items-start gap-2">
+            <span>{rejectionMessage(rejected)}</span>
+            <ul className="flex list-disc flex-col gap-0.5 pl-5 text-sm">
+              {changedLines(rejected).map((line, index) => (
+                <li key={`${index}-${line.label}`} data-changed-line={line.label}>
+                  {`${line.label}: “${line.text}”`}
+                </li>
+              ))}
+            </ul>
+            {onUseRejected !== undefined && (
+              <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onUseRejected}>
+                Use the model's version anyway
+              </Button>
+            )}
+          </div>
+        </Message>
       )}
 
       {duplicate != null && (
@@ -640,10 +809,14 @@ export type RecipeSourceProps = {
   load?: (url: string) => Promise<ImportedRecipe>;
   /** Override the upload (tests); otherwise `postImportFile` does it. */
   loadFile?: (file: File) => Promise<ExportRecipe[]>;
-  /** Whether `claude` is installed on the server (M34.5); false hides the paste option entirely. */
+  /** Whether a model is configured on the server (M34.5, M36.1); false hides the paste option and leaves every page unsorted. */
   aiAvailable?: boolean;
-  /** Override the AI read (tests); otherwise `importFromText` does it. */
-  loadText?: (text: string) => Promise<ImportedRecipe>;
+  /**
+   * Override the AI read (tests); otherwise `importFromText` does it. The
+   * anchor is the rules rung's own reading of the same page (M36.4), given for
+   * a `schema` result and absent for a paste or a stub.
+   */
+  loadText?: ModelReader;
   /**
    * The food standing for a recipe already here under `name` (M32.3), for a
    * Tandoor export's nested recipes; null when no such recipe is here yet.
@@ -690,10 +863,40 @@ export function RecipeSource(props: RecipeSourceProps) {
   const [vocabulary, setVocabulary] = useState<readonly FoodRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The model's pass over a page (M36.6), which runs beside the review rather
+  // than in front of it: `busy` would lock Create, and Create is exactly what
+  // must stay available while it runs.
+  const [reading, setReading] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
+
+  const reader: ModelReader = (pageText, anchor) =>
+    loadText ? loadText(pageText, anchor) : importFromText({ data: { text: pageText, sourceUrl: url, anchor } });
+
+  /**
+   * Hand a page's rules result to the model and re-render the review from what
+   * comes back. The vocabulary is passed in rather than fetched again: the
+   * answer's lines are the same lines in a different order, so they are
+   * reviewed against the same foods the first pass used.
+   */
+  const readWithModel = (found: ImportedRecipe, foods: readonly FoodRow[]) => {
+    if (!shouldReadWithModel(found, aiAvailable)) return;
+    setReading(true);
+    setReadError(null);
+    void modelPass(found, reader).then((outcome) => {
+      setReading(false);
+      if (!outcome.ok) {
+        setReadError(outcome.error);
+        return;
+      }
+      setImported(outcome.result);
+      setRows(reviewRows(ingredientLines(outcome.result.recipe), { units, foods }));
+    });
+  };
 
   const read = async () => {
     setBusy(true);
     setError(null);
+    setReadError(null);
     try {
       const [found, foods] = await Promise.all([
         load ? load(url) : importFromUrl({ data: { url } }),
@@ -703,7 +906,9 @@ export function RecipeSource(props: RecipeSourceProps) {
       setRows(reviewRows(ingredientLines(found.recipe), { units, foods }));
       setRowSteps(null);
       setSubRecipes([]);
+      setVocabulary(foods);
       setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
+      readWithModel(found, foods);
     } catch (cause) {
       setError(messageFrom(cause));
     } finally {
@@ -728,6 +933,7 @@ export function RecipeSource(props: RecipeSourceProps) {
       setRows(reviewRows(ingredientLines(found.recipe), { units, foods }));
       setRowSteps(null);
       setSubRecipes([]);
+      setVocabulary(foods);
       setDuplicate(findDuplicateByName ? await findDuplicateByName(found.recipe.name) : null);
     } catch (cause) {
       setError(messageFrom(cause));
@@ -819,6 +1025,15 @@ export function RecipeSource(props: RecipeSourceProps) {
         error={error}
         duplicate={duplicate}
         duplicateBy={imported.from === "schema" || imported.from === "stub" ? "url" : "name"}
+        aiAvailable={aiAvailable}
+        reading={reading}
+        readError={readError}
+        onRetryRead={() => readWithModel(imported, vocabulary)}
+        onUseRejected={() => {
+          const taken = withRejectedAnswer(imported);
+          setImported(taken);
+          setRows(reviewRows(ingredientLines(taken.recipe), { units, foods: vocabulary }));
+        }}
         onRowsChange={setRows}
         onBack={() => {
           setImported(null);
@@ -826,6 +1041,8 @@ export function RecipeSource(props: RecipeSourceProps) {
           setSubRecipes([]);
           setDuplicate(null);
           setError(null);
+          setReading(false);
+          setReadError(null);
         }}
         onCreate={() => void create()}
       />

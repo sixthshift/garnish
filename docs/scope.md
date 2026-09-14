@@ -16,7 +16,7 @@
 
 - Shopping list. Merge rule decided: by food and unit, expandable, grouped by aisle. The recipe page already carries a disabled "Add to shopping list" button beside Cook (M30.4), so the list is built against a real button rather than adding one when the list ships.
 - Unit conversions per food, so 1 cup flour and 300 g flour merge.
-- Import via a hosted model over an OpenAI-compatible endpoint: pasted prose and pages with no structured data, reviewed before save. Adds a rung under the JSON-LD import; it does not replace it, and the review step is shared either way.
+- Import as one pipeline: fetch the page, extract what the rules can (JSON-LD, OpenGraph, readable text), read it with a hosted model over an OpenAI-compatible endpoint using the JSON-LD as an anchor, check the answer against that anchor word for word, review it before anything is saved. The model supplies the parts the markup cannot; the page keeps the words. With no key configured the rules result is the whole of it, and pasted prose goes through the same read.
 - Meal planning, feeding the shopping list.
 - File export, format undecided. Cooklang is the obvious candidate.
 - In-editor AI help: unit conversion, rewording, substitutions.
