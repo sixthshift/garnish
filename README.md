@@ -120,28 +120,38 @@ The defaults are Google's Gemini free tier, so a key from [AI Studio](https://ai
 AI_API_KEY=sk-... AI_BASE_URL=https://api.groq.com/openai/v1 AI_MODEL=llama-3.3-70b-versatile bun run start
 ```
 
-`docker-compose.yml` passes all four through from the host, so `AI_API_KEY=... docker compose up -d` is enough.
+`docker/docker-compose.yml` passes all four through from the host, so `AI_API_KEY=... docker compose up -d` from `docker/` is enough.
 
 Note that Gemini's free tier may train on what is sent to it. What is sent is the recipe text you pasted, which for a public recipe page costs nothing; use a paid tier or a local model for anything you would not publish.
 
 ## Run with Docker
 
-Build the image and start it in the background:
+Everything Docker lives in `docker/`: the `Dockerfile`, its ignore file, and the compose file, which is the canonical way to run garnish. The compose file pulls the image GitHub Actions publishes to `ghcr.io/sixthshift/garnish` on every push to `main` (`.github/workflows/docker.yml`: the tests gate the build, and the image is built for amd64 and arm64). Nothing is built on the machine that runs it:
 
 ```bash
-docker compose up -d --build
+cd docker
+docker compose up -d
 ```
 
-garnish is then on http://localhost:3000 (`docker-compose.yml` publishes port 3000). All state lives in the named volume `garnish-data`, mounted at `/data` inside the container: `garnish.db`, `images/` and `backups/`. Migrations run on every start, so a fresh volume is set up on first boot.
+garnish is then on http://localhost:3000 (the compose file publishes port 3000). All state lives in the named volume `garnish-data`, mounted at `/data` inside the container: `garnish.db`, `images/` and `backups/`. Migrations run on every start, so a fresh volume is set up on first boot.
 
-To update, pull the source and rebuild; the volume is untouched:
+To update, pull the new image and restart; the volume is untouched:
 
 ```bash
-git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 `docker compose down` stops and removes the container. The volume survives; only `docker compose down -v` deletes it.
+
+To run something other than the published image, say a local build, point `GARNISH_IMAGE` at it. The build context is the repo root:
+
+```bash
+docker build -f docker/Dockerfile -t garnish:local .
+GARNISH_IMAGE=garnish:local docker compose up -d
+```
+
+The commands in the next two sections are run from `docker/` too.
 
 ## Backup
 

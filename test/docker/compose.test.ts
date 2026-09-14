@@ -1,5 +1,5 @@
-// docker-compose.yml and the README's Docker sections are text, so their
-// contract is asserted here: one `garnish` service on port 3000 with the
+// docker/docker-compose.yml and the README's Docker sections are text, so their
+// contract is asserted here: one `garnish` service pulling the published image, on port 3000 with the
 // `garnish-data` volume at DATA_DIR=/data plus the three AI variables, and a
 // README that documents run, backup, restore and the AI import. Docker itself is not run under vitest.
 import { readFileSync } from "node:fs";
@@ -7,9 +7,9 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 const root = join(import.meta.dirname, "..", "..");
-const composeText = readFileSync(join(root, "docker-compose.yml"), "utf8");
+const composeText = readFileSync(join(root, "docker", "docker-compose.yml"), "utf8");
 const readme = readFileSync(join(root, "README.md"), "utf8");
-const dockerfile = readFileSync(join(root, "Dockerfile"), "utf8");
+const dockerfile = readFileSync(join(root, "docker", "Dockerfile"), "utf8");
 
 type Compose = {
   version?: unknown;
@@ -17,6 +17,7 @@ type Compose = {
     string,
     {
       build?: unknown;
+      image?: string;
       ports?: string[];
       volumes?: string[];
       environment?: Record<string, string> | string[];
@@ -58,8 +59,9 @@ describe("compose file", () => {
     expect(Object.keys(compose.services)).toEqual(["garnish"]);
   });
 
-  test("builds from the repo root", () => {
-    expect(garnish.build).toBe(".");
+  test("pulls the published image, overridable for a local build, and builds nothing", () => {
+    expect(garnish.image).toBe("${GARNISH_IMAGE:-ghcr.io/sixthshift/garnish:latest}");
+    expect(garnish.build).toBeUndefined();
   });
 
   test("publishes 3000, the Dockerfile's EXPOSE", () => {

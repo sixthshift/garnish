@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 const root = join(import.meta.dirname, "..", "..");
-const dockerfile = readFileSync(join(root, "Dockerfile"), "utf8");
+const dockerfile = readFileSync(join(root, "docker", "Dockerfile"), "utf8");
 const devcontainer = readFileSync(join(root, ".devcontainer", "Dockerfile"), "utf8");
 
 /** Instruction lines, comments and blank lines dropped, continuation lines joined. Pure. */

@@ -269,10 +269,12 @@ The household's own voice for the steps (decisions.md row 78), kept as a list of
 
 ## Deploy
 
-- Two-stage `Dockerfile` on `oven/bun:1.4.2` (install and `bun run build`) then `oven/bun:1.4.2-slim` with only `.output/`. `bun:sqlite` is built into Bun, so nothing else is installed at runtime.
+- Everything Docker is in `docker/`, and the compose file there is the canonical way to run and deploy: `cd docker && docker compose up -d`.
+- Two-stage `docker/Dockerfile` on `oven/bun:1.4.2` (install and `bun run build`) then `oven/bun:1.4.2-slim` with only `.output/`. `bun:sqlite` is built into Bun, so nothing else is installed at runtime. The build context is the repo root; `docker/Dockerfile.dockerignore` beside it trims the context (BuildKit reads the ignore file named after the Dockerfile).
 - `DATA_DIR=/data` is the volume; `PORT=3000`, `HOST=0.0.0.0`. Runs as root, like Mealie's default, so a bind-mounted host directory needs no ownership setup.
 - `HEALTHCHECK` fetches `/api/health` with Bun itself (the slim image has no curl).
-- `docker-compose.yml`: one service `garnish`, port 3000 published, named volume `garnish-data` at `/data`, `restart: unless-stopped`.
+- `.github/workflows/docker.yml` publishes the image to `ghcr.io/<owner>/<repo>` on every push to `main` (tagged `latest` and by commit sha) and every `v*` tag (tagged by version); pull requests build without pushing. A `test` job (`bun install --frozen-lockfile`, `bun run check`, `bun run test`, on the Bun the image is pinned to) gates the `image` job, which builds `linux/amd64` and `linux/arm64` under QEMU with the Actions cache. `test/docker/workflow.test.ts` holds the contract.
+- `docker/docker-compose.yml`: one service `garnish` on `image: ${GARNISH_IMAGE:-ghcr.io/sixthshift/garnish:latest}` — nothing is built on the running machine; set `GARNISH_IMAGE` to run a local build — port 3000 published, named volume `garnish-data` at `/data`, `restart: unless-stopped`.
 
 ## Non-goals
 

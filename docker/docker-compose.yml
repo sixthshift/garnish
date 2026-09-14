@@ -1,0 +1,29 @@
+# garnish — one service, one named volume, run from this folder:
+# `cd docker && docker compose up -d`. The image is the one GitHub Actions
+# publishes (.github/workflows/docker.yml); nothing is built here. Set
+# GARNISH_IMAGE to run another, e.g. one built locally with
+# `docker build -f docker/Dockerfile -t garnish:local .`. README.md "Run with
+# Docker" covers start, update, backup and restore. No `version` key: Compose
+# v2 ignores it. test/docker/compose.test.ts asserts the image, service name,
+# port, volume, DATA_DIR and the AI variables.
+services:
+  garnish:
+    image: ${GARNISH_IMAGE:-ghcr.io/sixthshift/garnish:latest}
+    ports:
+      - "3000:3000"
+    volumes:
+      # garnish.db, images/ and backups/ all live in the volume.
+      - garnish-data:/data
+    environment:
+      DATA_DIR: /data
+      # The AI import (M36.1). Passed through from the host, and empty when the
+      # host has not set them: with no AI_API_KEY the paste option is hidden and
+      # every other import path works as it always did.
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_RESTYLE_MODEL: ${AI_RESTYLE_MODEL:-}
+    restart: unless-stopped
+
+volumes:
+  garnish-data:

@@ -1,5 +1,10 @@
 # garnish — one container, SQLite on a volume. See docs/architecture.md.
 #
+# Built from the repo root: `docker build -f docker/Dockerfile .`. The build
+# context's ignore file is Dockerfile.dockerignore beside this file. GitHub
+# Actions (.github/workflows/docker.yml) builds and publishes it to ghcr.io on
+# every push to main; docker-compose.yml here pulls that image.
+#
 # Bun is pinned to the same version as .devcontainer/Dockerfile; the tag must
 # be Bun 1.4 or newer (docs/decisions.md row 32: 1.3.x cannot parse the built
 # server). test/docker/dockerfile.test.ts asserts the pin and the contract below.
