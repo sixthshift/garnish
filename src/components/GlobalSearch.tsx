@@ -21,7 +21,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import type { RecipeSummary } from "../domain/recipe";
 import { clampSelection, nextSearchIndex, selectedResult, shouldOpenGlobalSearch, type SearchEventTarget } from "../domain/search";
-import { listRecipes } from "../server/recipes";
+import { listRecipes } from "../server/fns/recipes";
 import { notifyError } from "../lib/notify";
 import { RecipeCard } from "./RecipeCard";
 

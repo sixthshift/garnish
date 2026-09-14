@@ -10,9 +10,9 @@ import { describe, expect, test, vi } from "vitest";
 import { shoppingItemSchema, type ShoppingItem } from "../../src/domain/shopping";
 import { ShoppingListView, sendOutboxEntry, setFoodAisle, toBuyLabel } from "../../src/routes/shopping";
 import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../src/lib/outbox";
-import { addShoppingItems, listShoppingItems } from "../../src/server/shopping";
-import { createFood, listFoods } from "../../src/server/foods";
-import { findOrCreateAisle } from "../../src/server/aisles";
+import { addShoppingItems, listShoppingItems } from "../../src/server/fns/shopping";
+import { createFood, listFoods } from "../../src/server/fns/foods";
+import { findOrCreateAisle } from "../../src/server/fns/aisles";
 import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -20,9 +20,9 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/shopping", local);
-vi.mock("../../src/server/foods", local);
-vi.mock("../../src/server/aisles", local);
+vi.mock("../../src/server/fns/shopping", local);
+vi.mock("../../src/server/fns/foods", local);
+vi.mock("../../src/server/fns/aisles", local);
 
 const stamp = "2026-09-13T00:00:00.000Z";
 const gram = { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, standardQuantity: null, standardUnitId: null };

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handleRecipeCook } from "../../../server/export";
+import { handleRecipeCook } from "../../../server/api/export";
 
 /**
  * GET /api/recipes/:slug.cook — one recipe as a Cooklang file (M34.2). The

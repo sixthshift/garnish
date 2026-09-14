@@ -61,8 +61,8 @@ import { recipeImageUrl } from "../lib/images";
 import { addedMessage } from "../lib/shopping";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
-import { addPlanEntry, addPlanWeekToShopping, listPlanWeek, movePlanEntry, removePlanEntry } from "../server/plan";
-import { listRecipes } from "../server/recipes";
+import { addPlanEntry, addPlanWeekToShopping, listPlanWeek, movePlanEntry, removePlanEntry } from "../server/fns/plan";
+import { listRecipes } from "../server/fns/recipes";
 
 /** `?week=` is the Monday's date; anything else falls back to this week. */
 export const PlanSearch = z.object({ week: z.string().optional() });

@@ -9,7 +9,7 @@
 // Same shape as the other lib/ modules: pure helpers plus a thin wrapper, with
 // the writes injectable so a test can drive the whole flow without a router.
 import { mergeIntoList, type ShoppingAddition, type ShoppingItem, type ShoppingItemInput, type ShoppingListMerge, type ShoppingMergePlan } from "../domain/shopping";
-import { addShoppingItems, listShoppingItems, mergeShoppingItems } from "../server/shopping";
+import { addShoppingItems, listShoppingItems, mergeShoppingItems } from "../server/fns/shopping";
 
 /**
  * How many lines of the list the tap touched: the ones it created plus the ones

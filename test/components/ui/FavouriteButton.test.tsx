@@ -6,7 +6,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { FavouriteButton, toggleFavourite } from "../../../src/components/ui/FavouriteButton";
 import { recipeInputSchema } from "../../../src/domain/recipe";
-import { createRecipe, getRecipe, setFavourite } from "../../../src/server/recipes";
+import { createRecipe, getRecipe, setFavourite } from "../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 const id = "11111111-1111-4111-8111-111111111111";

@@ -25,7 +25,7 @@ import { timelineImageUrl, uploadTimelineImage } from "../lib/images";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
 import { clearTicksNow } from "../lib/ticks";
-import { createTimelineEvent, deleteTimelineEvent } from "../server/timeline";
+import { createTimelineEvent, deleteTimelineEvent } from "../server/fns/timeline";
 import { draftFromRecipe, type DraftNote, type RecipeDraft } from "./RecipeForm";
 import { randomUuid } from "../lib/ids";
 import { formatDateStamp } from "./RecipeHeader";

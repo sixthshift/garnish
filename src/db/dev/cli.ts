@@ -13,7 +13,7 @@
 //
 // Step 2 is the production seed on purpose: dev should be looking at the
 // reference data a real install has, not a parallel set that only exists here.
-import { ensureDataDir } from "../../server/boot";
+import { ensureDataDir } from "../../server/core/boot";
 import { databasePath, openDatabase } from "../connection/open";
 import { migrate } from "../migrations/migrate";
 import { seed } from "../seed/seed";

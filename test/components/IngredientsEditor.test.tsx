@@ -39,8 +39,8 @@ import type { IngredientReview } from "../../src/components/IngredientReviewRow"
 import { BulkInlinePanel } from "../../src/components/ui/BulkAddSheet";
 import { type DraftPart, type DraftIngredient, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
 import { pendingCreations, type ReviewRow, rowCommit, reviewRows } from "../../src/domain/bulkIngredients";
-import { findOrCreateFood, listFoods } from "../../src/server/foods";
-import { createRecipe, getRecipe } from "../../src/server/recipes";
+import { findOrCreateFood, listFoods } from "../../src/server/fns/foods";
+import { createRecipe, getRecipe } from "../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();

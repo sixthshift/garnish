@@ -9,7 +9,7 @@
 // about; what the sheet itself renders is covered by
 // test/components/RestyleSheet.test.tsx.
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { createRecipe } from "../../src/server/recipes";
+import { createRecipe } from "../../src/server/fns/recipes";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -17,13 +17,13 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/timeline", local);
-vi.mock("../../src/server/style", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/timeline", local);
+vi.mock("../../src/server/fns/style", local);
 
 /** Whether a model is configured, as the loader's `aiImportAvailable` answers it. */
 const ai = vi.hoisted(() => ({ available: false }));
-vi.mock("../../src/server/aiImport", async (importOriginal) => ({
+vi.mock("../../src/server/ai/import", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   aiImportAvailable: async () => ({ available: ai.available }),
 }));

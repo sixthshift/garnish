@@ -14,10 +14,10 @@ import { z } from "zod";
 import { emptyDraft, type RecipeDraft, RecipeForm } from "../../components/RecipeForm";
 import { RecipeSource, type SourceKind } from "../../components/RecipeSource";
 import type { Tag, Unit } from "../../domain/recipe";
-import { aiImportAvailable } from "../../server/aiImport";
-import { recipeByName, recipeBySource } from "../../server/recipes";
-import { listTags } from "../../server/tags";
-import { listUnits } from "../../server/units";
+import { aiImportAvailable } from "../../server/ai/import";
+import { recipeByName, recipeBySource } from "../../server/fns/recipes";
+import { listTags } from "../../server/fns/tags";
+import { listUnits } from "../../server/fns/units";
 
 export const NewRecipeSearch = z.object({
   /** Where the recipe is from. Absent shows the chooser. */

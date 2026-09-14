@@ -13,9 +13,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { draftFromRecipe, RecipeForm } from "../../../components/RecipeForm";
 import type { Recipe, Tag, Unit } from "../../../domain/recipe";
-import { getRecipe } from "../../../server/recipes";
-import { listTags } from "../../../server/tags";
-import { listUnits } from "../../../server/units";
+import { getRecipe } from "../../../server/fns/recipes";
+import { listTags } from "../../../server/fns/tags";
+import { listUnits } from "../../../server/fns/units";
 
 export const EditRecipeSearch = z.object({
   servings: z.number().positive().finite().optional(),

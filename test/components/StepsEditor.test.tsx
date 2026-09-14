@@ -39,7 +39,7 @@ import {
 import { addIngredient, foodReference, updateIngredient } from "../../src/components/IngredientsEditor";
 import { ingredientLine } from "../../src/components/PartsEditor";
 import { paragraphs } from "../../src/domain/bulkText";
-import { createRecipe, getRecipe, updateRecipe } from "../../src/server/recipes";
+import { createRecipe, getRecipe, updateRecipe } from "../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();

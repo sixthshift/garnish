@@ -4,7 +4,7 @@ import type { Database } from "bun:sqlite";
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ensureDataDir } from "../../server/boot";
+import { ensureDataDir } from "../../server/core/boot";
 import { databasePath, openDatabase } from "../connection/open";
 
 // This file's own directory: the runner lives beside the SQL it runs.

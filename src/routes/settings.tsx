@@ -29,12 +29,12 @@ import type { Aisle, RecipeSummary, Tag, Unit } from "../domain/recipe";
 import { styleRuleNote, type StyleRule } from "../domain/style";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
-import { deleteAisle, findOrCreateAisle, listAisles, reorderAisles, updateAisle } from "../server/aisles";
-import { deleteFood, listFoods, mergeFood, updateFood, usingFood } from "../server/foods";
-import { listRecipes } from "../server/recipes";
-import { createStyleRule, deleteStyleRule, listStyleRules, reorderStyleRules, updateStyleRule } from "../server/style";
-import { deleteTag, listTags, mergeTag, updateTag, usingTag } from "../server/tags";
-import { deleteUnit, listUnits, mergeUnit, updateUnit, usingUnit } from "../server/units";
+import { deleteAisle, findOrCreateAisle, listAisles, reorderAisles, updateAisle } from "../server/fns/aisles";
+import { deleteFood, listFoods, mergeFood, updateFood, usingFood } from "../server/fns/foods";
+import { listRecipes } from "../server/fns/recipes";
+import { createStyleRule, deleteStyleRule, listStyleRules, reorderStyleRules, updateStyleRule } from "../server/fns/style";
+import { deleteTag, listTags, mergeTag, updateTag, usingTag } from "../server/fns/tags";
+import { deleteUnit, listUnits, mergeUnit, updateUnit, usingUnit } from "../server/fns/units";
 
 /** The repository's food row: a flat `aisleId`, not the recipe document's nested aisle. */
 export type FoodRow = Awaited<ReturnType<typeof listFoods>>[number];

@@ -8,7 +8,7 @@
 // what a default (closed) render can show: the chip and that no row or
 // popover carries the removed "Scale to..." controls.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { createRecipe } from "../../src/server/recipes";
+import { createRecipe } from "../../src/server/fns/recipes";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -16,8 +16,8 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/timeline", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/timeline", local);
 
 useTempDataDir();
 afterEach(() => {

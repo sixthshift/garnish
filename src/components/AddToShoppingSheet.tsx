@@ -43,7 +43,7 @@ import { subRecipeAdditions, type ShoppingAddition, type ShoppingAdditionSource 
 import { subRecipeScale, type SubRecipe } from "../domain/subRecipe";
 import { addToShoppingList, addedMessage } from "../lib/shopping";
 import { notify, notifyError } from "../lib/notify";
-import { getRecipe } from "../server/recipes";
+import { getRecipe } from "../server/fns/recipes";
 import { useSubRecipes } from "./SubRecipes";
 
 /** One part's buyable ingredients, in page order. `name` is '' for the unnamed part. */

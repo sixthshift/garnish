@@ -1,6 +1,6 @@
 // `bun run backup`: writes a compacted copy of DATA_DIR's database into
 // DATA_DIR/backups/.
-import { ensureDataDir } from "../../server/boot";
+import { ensureDataDir } from "../../server/core/boot";
 import { databasePath, openDatabase } from "../connection/open";
 import { backup, backupsDir } from "./backup";
 

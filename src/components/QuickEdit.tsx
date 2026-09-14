@@ -50,9 +50,9 @@ import type { Food as FoodRow } from "../db/models/food/repo";
 import type { Recipe, Unit } from "../domain/recipe";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
-import { listFoods } from "../server/foods";
-import { updateRecipe } from "../server/recipes";
-import { listUnits } from "../server/units";
+import { listFoods } from "../server/fns/foods";
+import { updateRecipe } from "../server/fns/recipes";
+import { listUnits } from "../server/fns/units";
 import {
   FOOD_SEARCH_DEBOUNCE_MS,
   foodReference,

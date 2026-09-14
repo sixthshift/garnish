@@ -7,7 +7,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { useEffect, useState, type MouseEvent } from "react";
 import { useMutate } from "../../lib/mutate";
 import { notifyError } from "../../lib/notify";
-import { setFavourite } from "../../server/recipes";
+import { setFavourite } from "../../server/fns/recipes";
 
 export type FavouriteToggleResult = { favourite: boolean; error?: unknown };
 

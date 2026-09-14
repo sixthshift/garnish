@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runWithStartContext, type StartStorageContext } from "@tanstack/start-storage-context";
 import { afterEach, beforeEach } from "vitest";
-import { closeDb } from "../../src/server/db";
+import { closeDb } from "../../src/server/core/db";
 
 /**
  * Point DATA_DIR at a fresh temp directory for every test in the file and
@@ -101,8 +101,8 @@ export async function callServerFn<F extends Fetcher>(fn: F, data?: DataOf<F>): 
  * `callServerFn`, keeping the stub's own properties so `callServerFn` still
  * works on the wrapper too. Non-function exports (zod inputs) pass through.
  *
- *   vi.mock("../../src/server/recipes", async (importOriginal) => {
- *     const { runLocally } = await import("../helpers/server");
+ *   vi.mock("../../src/server/fns/recipes", async (importOriginal) => {
+ *     const { runLocally } = await import("./server");
  *     return runLocally(await importOriginal());
  *   });
  */

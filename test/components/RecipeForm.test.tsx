@@ -22,7 +22,7 @@ import {
 } from "../../src/components/RecipeForm";
 import { clearDraft, putDraft } from "../../src/lib/drafts";
 import { type Recipe, recipeInputSchema } from "../../src/domain/recipe";
-import { createRecipe, getRecipe } from "../../src/server/recipes";
+import { createRecipe, getRecipe } from "../../src/server/fns/recipes";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -33,12 +33,12 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/units", local);
-vi.mock("../../src/server/tags", local);
-vi.mock("../../src/server/foods", local);
-vi.mock("../../src/server/aisles", local);
-vi.mock("../../src/server/timeline", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/units", local);
+vi.mock("../../src/server/fns/tags", local);
+vi.mock("../../src/server/fns/foods", local);
+vi.mock("../../src/server/fns/aisles", local);
+vi.mock("../../src/server/fns/timeline", local);
 
 useTempDataDir();
 

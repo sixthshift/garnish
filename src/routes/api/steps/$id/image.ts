@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handleUploadStepImage } from "../../../../server/stepImages";
+import { handleUploadStepImage } from "../../../../server/api/stepImages";
 
 /** POST /api/steps/:id/image — multipart upload replacing a step's photo. */
 export const Route = createFileRoute("/api/steps/$id/image")({

@@ -2,9 +2,9 @@
 // ingredient foods are made by, and the row renders the food as a link to the
 // child with the derived servings under it.
 import { afterEach, expect, test, vi } from "vitest";
-import { foodForRecipe } from "../../src/server/foods";
-import { createRecipe } from "../../src/server/recipes";
-import { findOrCreateUnit } from "../../src/server/units";
+import { foodForRecipe } from "../../src/server/fns/foods";
+import { createRecipe } from "../../src/server/fns/recipes";
+import { findOrCreateUnit } from "../../src/server/fns/units";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -12,10 +12,10 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/timeline", local);
-vi.mock("../../src/server/foods", local);
-vi.mock("../../src/server/units", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/timeline", local);
+vi.mock("../../src/server/fns/foods", local);
+vi.mock("../../src/server/fns/units", local);
 
 useTempDataDir();
 afterEach(() => {

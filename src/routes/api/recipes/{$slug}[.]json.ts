@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handleRecipeJson } from "../../../server/export";
+import { handleRecipeJson } from "../../../server/api/export";
 
 /**
  * GET /api/recipes/:slug.json — one recipe's document (M34.1).

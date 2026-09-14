@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handleGetStepImage } from "../../../../server/stepImages";
+import { handleGetStepImage } from "../../../../server/api/stepImages";
 
 /** GET /api/images/steps/:file — serves a stored step photo. */
 export const Route = createFileRoute("/api/images/steps/$file")({

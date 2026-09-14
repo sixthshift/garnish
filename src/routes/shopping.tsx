@@ -41,15 +41,15 @@ import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
 import { applyOutbox, pendingLabel, useOutbox, type OutboxEntry, type OutboxKind } from "../lib/outbox";
 import { useOnline } from "../lib/useOnline";
-import { listAisles } from "../server/aisles";
-import { updateFood } from "../server/foods";
+import { listAisles } from "../server/fns/aisles";
+import { updateFood } from "../server/fns/foods";
 import {
   addShoppingItems,
   clearTickedShoppingItems,
   listShoppingItems,
   removeShoppingItem,
   tickShoppingItem,
-} from "../server/shopping";
+} from "../server/fns/shopping";
 
 /** One queued write, sent. The list's two offline-able writes and nothing else. */
 export function sendOutboxEntry(entry: OutboxEntry): Promise<unknown> {

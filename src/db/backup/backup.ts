@@ -4,7 +4,7 @@
 import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { dataDir } from "../../server/boot";
+import { dataDir } from "../../server/core/boot";
 
 export const BACKUPS_SUBDIR = "backups";
 

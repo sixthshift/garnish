@@ -19,15 +19,15 @@ import { getTicks, setIngredientTicked, setStepTicked, type StorageLike } from "
 // `updateRecipe` is the only server call a save makes; the test keeps what it
 // was sent so it can be compared with the stored document.
 const sent = vi.hoisted(() => [] as Array<{ data: { id: string; doc: unknown } }>);
-vi.mock("../../src/server/recipes", () => ({
+vi.mock("../../src/server/fns/recipes", () => ({
   updateRecipe: (args: { data: { id: string; doc: unknown } }) => {
     sent.push(args);
     return Promise.resolve({});
   },
 }));
 // The sheets query these on open / while typing; nothing here opens one.
-vi.mock("../../src/server/units", () => ({ listUnits: () => Promise.resolve([]) }));
-vi.mock("../../src/server/foods", () => ({ listFoods: () => Promise.resolve([]) }));
+vi.mock("../../src/server/fns/units", () => ({ listUnits: () => Promise.resolve([]) }));
+vi.mock("../../src/server/fns/foods", () => ({ listFoods: () => Promise.resolve([]) }));
 
 const flour = { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
 const sugar = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "sugar", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };

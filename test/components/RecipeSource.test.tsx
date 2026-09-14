@@ -21,7 +21,7 @@ import type { Food as FoodRow } from "../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../src/domain/bulkIngredients";
 import type { Unit } from "../../src/domain/recipe";
 import { ingredientLines, type ScrapedRecipe } from "../../src/domain/schemaRecipe";
-import type { ImportedRecipe } from "../../src/server/recipeImport";
+import type { ImportedRecipe } from "../../src/server/import/fromUrl";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

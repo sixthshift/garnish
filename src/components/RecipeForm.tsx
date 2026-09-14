@@ -33,7 +33,7 @@
 // a save navigates away, so a message in this form would never be read. The
 // offline banner stays inline: it is a standing state, not an outcome.
 //
-// The image field also takes a pasted URL: `fetchImage` (src/server/imageFetch.ts)
+// The image field also takes a pasted URL: `fetchImage` (src/server/import/imageFetch.ts)
 // GETs it on the server — the browser cannot, for CORS — and the bytes come
 // back as a File that joins the same upload path as a picked one.
 //
@@ -78,8 +78,8 @@ import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../lib/images"
 import { useMutate } from "../lib/mutate";
 import { messageFrom, type NoticeInput, notify, notifyError } from "../lib/notify";
 import { useOnline } from "../lib/useOnline";
-import { fetchImage } from "../server/imageFetch";
-import { createRecipe, updateRecipe } from "../server/recipes";
+import { fetchImage } from "../server/import/imageFetch";
+import { createRecipe, updateRecipe } from "../server/fns/recipes";
 import { newPart, PartsEditor } from "./PartsEditor";
 import { NotesEditor } from "./NotesEditor";
 import { ConfirmDialog } from "./ui/ConfirmDialog";

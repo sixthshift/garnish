@@ -6,8 +6,8 @@
 // disclosure at the foot of the page, and the last made date the logged cook
 // moved.
 import { expect, test, vi } from "vitest";
-import { createRecipe } from "../../src/server/recipes";
-import { createTimelineEvent, deleteTimelineEvent } from "../../src/server/timeline";
+import { createRecipe } from "../../src/server/fns/recipes";
+import { createTimelineEvent, deleteTimelineEvent } from "../../src/server/fns/timeline";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -15,8 +15,8 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/timeline", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/timeline", local);
 
 useTempDataDir();
 

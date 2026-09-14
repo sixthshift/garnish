@@ -5,7 +5,7 @@
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { RouteError, RoutePending } from "../../src/components/RouteStates";
-import { createRecipe } from "../../src/server/recipes";
+import { createRecipe } from "../../src/server/fns/recipes";
 import { renderRoute as render } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -15,12 +15,12 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/timeline", local);
-vi.mock("../../src/server/units", local);
-vi.mock("../../src/server/tags", local);
-vi.mock("../../src/server/aisles", local);
-vi.mock("../../src/server/shopping", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/timeline", local);
+vi.mock("../../src/server/fns/units", local);
+vi.mock("../../src/server/fns/tags", local);
+vi.mock("../../src/server/fns/aisles", local);
+vi.mock("../../src/server/fns/shopping", local);
 
 useTempDataDir();
 beforeEach(async () => {

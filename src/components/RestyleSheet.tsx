@@ -45,8 +45,8 @@ import type { PartRestyleCheck, RestyleCheck, RestyledPart } from "../domain/res
 import type { StyleRule } from "../domain/style";
 import { useMutate } from "../lib/mutate";
 import { messageFrom, notify, notifyError } from "../lib/notify";
-import { applyRestyle, restoreSteps, restyleSteps } from "../server/restyle";
-import { listStyleRules } from "../server/style";
+import { applyRestyle, restoreSteps, restyleSteps } from "../server/ai/restyle";
+import { listStyleRules } from "../server/fns/style";
 
 /** What M37.4 answered, as the sheet holds it. */
 export type RestyleAnswer = { parts: RestyledPart[]; check: RestyleCheck };

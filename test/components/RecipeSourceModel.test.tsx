@@ -24,7 +24,7 @@ import { reviewRows, rowCommit } from "../../src/domain/bulkIngredients";
 import type { ImportCheck } from "../../src/domain/importCheck";
 import type { Unit } from "../../src/domain/recipe";
 import { ingredientLines, type ScrapedRecipe } from "../../src/domain/schemaRecipe";
-import type { ImportedRecipe } from "../../src/server/recipeImport";
+import type { ImportedRecipe } from "../../src/server/import/fromUrl";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

@@ -59,7 +59,7 @@ import { SubRecipesProvider } from "../../../components/SubRecipes";
 import { useIngredientTick } from "../../../lib/ticks";
 import { TimerStrip } from "../../../components/TimerStrip";
 import { useWakeLock } from "../../../lib/useWakeLock";
-import { getRecipe, listSubRecipes } from "../../../server/recipes";
+import { getRecipe, listSubRecipes } from "../../../server/fns/recipes";
 
 export const CookSearch = z.object({
   servings: z.number().positive().finite().optional(),

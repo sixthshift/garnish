@@ -25,7 +25,7 @@ import {
   RecipePicker,
   SourceChooser,
 } from "../../src/components/RecipeSource";
-import type { ImportedRecipe } from "../../src/server/recipeImport";
+import type { ImportedRecipe } from "../../src/server/import/fromUrl";
 
 const FIXTURE = join(import.meta.dirname, "../fixtures/mealie/lemon-tart.json");
 const recipe = (): MealieRecipe => mealieRecipe(JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>);

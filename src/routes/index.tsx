@@ -20,9 +20,9 @@ import type { RecipeSummary, Tag } from "../domain/recipe";
 import { arrayParam, selectedTags } from "../domain/recipeFilters";
 import { newSeed, pickRandom, resolveSort, type SortDir, type SortKey } from "../domain/sort";
 import { useViewMode } from "../lib/prefs";
-import { listFoods } from "../server/foods";
-import { listRecipes } from "../server/recipes";
-import { listTags } from "../server/tags";
+import { listFoods } from "../server/fns/foods";
+import { listRecipes } from "../server/fns/recipes";
+import { listTags } from "../server/fns/tags";
 
 export const RecipeListSearch = z.object({
   q: z.string().optional(),

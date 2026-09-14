@@ -13,7 +13,7 @@ import { getTicks, setIngredientTicked, type StorageLike } from "../../src/lib/t
 // `updateRecipe` is the only server call `saveQuickEdit` makes; kept here so
 // the "save as note" test can compare what was sent with the stored document.
 const sent = vi.hoisted(() => [] as Array<{ data: { id: string; doc: unknown } }>);
-vi.mock("../../src/server/recipes", () => ({
+vi.mock("../../src/server/fns/recipes", () => ({
   updateRecipe: (args: { data: { id: string; doc: unknown } }) => {
     sent.push(args);
     return Promise.resolve({});

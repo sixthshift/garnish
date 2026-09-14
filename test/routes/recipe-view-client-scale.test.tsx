@@ -11,7 +11,7 @@ import { formatIngredient } from "../../src/domain/format";
 import type { Recipe } from "../../src/domain/recipe";
 import { Route as CookRoute } from "../../src/routes/recipes/$slug/cook";
 import { Route as ViewRoute } from "../../src/routes/recipes/$slug/index";
-import { createRecipe, getRecipe } from "../../src/server/recipes";
+import { createRecipe, getRecipe } from "../../src/server/fns/recipes";
 import { renderRoute, renderRouter, testRouter } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -21,9 +21,9 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/timeline", local);
-vi.mock("../../src/server/units", local);
-vi.mock("../../src/server/recipes", async (importOriginal: () => Promise<Record<string, unknown>>) => {
+vi.mock("../../src/server/fns/timeline", local);
+vi.mock("../../src/server/fns/units", local);
+vi.mock("../../src/server/fns/recipes", async (importOriginal: () => Promise<Record<string, unknown>>) => {
   const { runLocally } = await import("../helpers/server");
   const mod = runLocally(await importOriginal());
   const original = mod.getRecipe as (opts?: unknown) => unknown;

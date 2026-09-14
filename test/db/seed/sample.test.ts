@@ -11,8 +11,8 @@ import { parseSeedFlags } from "../../../src/db/seed/cli";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { timeline } from "../../../src/db/models/timeline/repo";
 import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipe";
-import { listRecipes } from "../../../src/server/recipes";
-import { getDb } from "../../../src/server/db";
+import { listRecipes } from "../../../src/server/fns/recipes";
+import { getDb } from "../../../src/server/core/db";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();

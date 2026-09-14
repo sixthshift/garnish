@@ -12,8 +12,8 @@ import { describe, expect, test, vi } from "vitest";
 import { PlanAddRow, PlanSearchResult, PlanWeekView, searchPlanRecipes } from "../../src/routes/plan";
 import { groupByDay, planEntrySchema, weekDates, type PlanDay, type PlanEntry } from "../../src/domain/plan";
 import type { RecipeSummary } from "../../src/domain/recipe";
-import { addPlanEntry, listPlanWeek } from "../../src/server/plan";
-import { createRecipe } from "../../src/server/recipes";
+import { addPlanEntry, listPlanWeek } from "../../src/server/fns/plan";
+import { createRecipe } from "../../src/server/fns/recipes";
 import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -21,8 +21,8 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/plan", local);
-vi.mock("../../src/server/recipes", local);
+vi.mock("../../src/server/fns/plan", local);
+vi.mock("../../src/server/fns/recipes", local);
 
 const MONDAY = "2026-09-14"; // a Monday; the week runs to Sunday 2026-09-20
 const TODAY = "2026-09-16"; // ... and Wednesday is the day being lived

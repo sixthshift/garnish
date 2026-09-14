@@ -1,7 +1,7 @@
 // The fourth source: pasted text read by `claude -p` (M34.5). Static render
 // only (no jsdom in this project's vitest config), so the markup is checked
 // with `renderToString` and the decisions by calling the stage components
-// directly. The runner's own tests are in test/server/aiImport.test.ts.
+// directly. The runner's own tests are in test/server/ai/import.test.ts.
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
@@ -10,7 +10,7 @@ import type { Food as FoodRow } from "../../src/db/models/food/repo";
 import { reviewRows, rowCommit } from "../../src/domain/bulkIngredients";
 import type { Unit } from "../../src/domain/recipe";
 import { ingredientLines } from "../../src/domain/schemaRecipe";
-import { parseAiAnswer } from "../../src/server/aiImport";
+import { parseAiAnswer } from "../../src/server/ai/import";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

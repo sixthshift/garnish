@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { MAX_AI_TEXT } from "../../src/server/aiImport";
+import { MAX_AI_TEXT } from "../../src/server/ai/import";
 import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../src/domain/pageText";
 
 const FIXTURES = join(import.meta.dirname, "../fixtures/importUrl");

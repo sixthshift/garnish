@@ -6,7 +6,7 @@
 // upgrade.
 import { Database } from "bun:sqlite";
 import { join } from "node:path";
-import { dataDir } from "../../server/boot";
+import { dataDir } from "../../server/core/boot";
 
 export const DB_FILE = "garnish.db";
 

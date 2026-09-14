@@ -9,8 +9,8 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { PlanPopoverContent, planEntryFor } from "../../src/components/PlanPopover";
 import type { RecipeInput } from "../../src/domain/recipe";
-import { addPlanEntry, listPlanWeek } from "../../src/server/plan";
-import { createRecipe } from "../../src/server/recipes";
+import { addPlanEntry, listPlanWeek } from "../../src/server/fns/plan";
+import { createRecipe } from "../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 const TODAY = "2026-09-13"; // a Sunday

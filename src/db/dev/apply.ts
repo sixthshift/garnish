@@ -18,7 +18,7 @@ import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { imageFileName } from "../../domain/image";
 import { recipeInputSchema } from "../../domain/recipe";
-import { dataDir } from "../../server/boot";
+import { dataDir } from "../../server/core/boot";
 import { orm } from "../connection/client";
 import { recipe } from "../models/recipe/schema";
 import { recipes as recipeRepository } from "../models/recipe/repo";

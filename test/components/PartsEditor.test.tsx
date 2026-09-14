@@ -17,7 +17,7 @@ import {
   renamePart,
 } from "../../src/components/PartsEditor";
 import { type DraftPart, emptyDraft, type RecipeDraft, validateDraft } from "../../src/components/RecipeForm";
-import { createRecipe, getRecipe, updateRecipe } from "../../src/server/recipes";
+import { createRecipe, getRecipe, updateRecipe } from "../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 useTempDataDir();

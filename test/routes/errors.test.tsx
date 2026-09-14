@@ -22,11 +22,11 @@ const failing = vi.hoisted(() => async (importOriginal: () => Promise<Record<str
   }
   return out;
 });
-vi.mock("../../src/server/recipes", failing);
-vi.mock("../../src/server/units", failing);
-vi.mock("../../src/server/tags", failing);
-vi.mock("../../src/server/aisles", failing);
-vi.mock("../../src/server/foods", failing);
+vi.mock("../../src/server/fns/recipes", failing);
+vi.mock("../../src/server/fns/units", failing);
+vi.mock("../../src/server/fns/tags", failing);
+vi.mock("../../src/server/fns/aisles", failing);
+vi.mock("../../src/server/fns/foods", failing);
 
 beforeEach(() => {
   failure.error = new TypeError("fetch failed");

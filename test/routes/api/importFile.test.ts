@@ -7,7 +7,7 @@ import { expect, test } from "vitest";
 import type { MealieRecipe } from "../../../src/domain/importMealie";
 import type { ExportRecipe } from "../../../src/domain/importTandoor";
 import { Route } from "../../../src/routes/api/import/file";
-import { handleImportFile, IMPORT_FIELD } from "../../../src/server/importFile";
+import { handleImportFile, IMPORT_FIELD } from "../../../src/server/api/importFile";
 import { makeZip, PNG_BYTES } from "../../helpers/zip";
 
 const FIXTURE = join(import.meta.dirname, "../../fixtures/mealie/lemon-tart.json");

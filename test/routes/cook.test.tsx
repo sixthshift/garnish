@@ -4,9 +4,9 @@
 // layout is a single column with no fixed widths, asserted below by class.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { type CookRouteData, Route as CookRoute, positionLabel, stepForKey } from "../../src/routes/recipes/$slug/cook";
-import { createRecipe } from "../../src/server/recipes";
-import { foodForRecipe } from "../../src/server/foods";
-import { findOrCreateUnit, listUnits } from "../../src/server/units";
+import { createRecipe } from "../../src/server/fns/recipes";
+import { foodForRecipe } from "../../src/server/fns/foods";
+import { findOrCreateUnit, listUnits } from "../../src/server/fns/units";
 import { setIngredientTicked, type StorageLike } from "../../src/lib/ticks";
 import { renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -15,12 +15,12 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/timeline", local);
-vi.mock("../../src/server/foods", local);
-vi.mock("../../src/server/units", local);
-vi.mock("../../src/server/tags", local);
-vi.mock("../../src/server/aisles", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/timeline", local);
+vi.mock("../../src/server/fns/foods", local);
+vi.mock("../../src/server/fns/units", local);
+vi.mock("../../src/server/fns/tags", local);
+vi.mock("../../src/server/fns/aisles", local);
 // The wake lock only ever turns on from an effect that never fires in a
 // renderToString test, so the header's indicator is forced on here to render
 // and assert it (M26.4).

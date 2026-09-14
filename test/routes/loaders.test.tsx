@@ -12,10 +12,10 @@ import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
 import { Route as ViewRoute, type RecipeViewData, nextServings } from "../../src/routes/recipes/$slug/index";
 import { Route as NewRoute } from "../../src/routes/recipes/new";
 import { type FoodRow, Route as SettingsRoute, type SettingsData } from "../../src/routes/settings";
-import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/server/recipes";
-import { createFood, listFoods } from "../../src/server/foods";
-import { listTags } from "../../src/server/tags";
-import { listUnits } from "../../src/server/units";
+import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/server/fns/recipes";
+import { createFood, listFoods } from "../../src/server/fns/foods";
+import { listTags } from "../../src/server/fns/tags";
+import { listUnits } from "../../src/server/fns/units";
 import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -25,13 +25,13 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/recipes", local);
-vi.mock("../../src/server/timeline", local);
-vi.mock("../../src/server/units", local);
-vi.mock("../../src/server/tags", local);
-vi.mock("../../src/server/aisles", local);
-vi.mock("../../src/server/foods", local);
-vi.mock("../../src/server/style", local);
+vi.mock("../../src/server/fns/recipes", local);
+vi.mock("../../src/server/fns/timeline", local);
+vi.mock("../../src/server/fns/units", local);
+vi.mock("../../src/server/fns/tags", local);
+vi.mock("../../src/server/fns/aisles", local);
+vi.mock("../../src/server/fns/foods", local);
+vi.mock("../../src/server/fns/style", local);
 
 useTempDataDir();
 
