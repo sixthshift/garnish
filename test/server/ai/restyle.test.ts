@@ -4,7 +4,7 @@
 // `runRestyle` with a fake runner, or the fetch runner with a fake `fetch`.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { isNotFound } from "@tanstack/react-router";
-import type { Recipe, RecipeInput } from "../../../src/domain/recipe";
+import type { Recipe, RecipeInput } from "../../../src/domain/recipe/recipe";
 import { AiError, type AiRunner } from "../../../src/server/ai/client";
 import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
 import { listStyleRules } from "../../../src/server/fns/style";

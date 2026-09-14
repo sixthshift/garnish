@@ -37,8 +37,8 @@ src/
   routes/       TanStack Start file routes: pages, and server routes under routes/api/
   server/       server-only code by kind: core/ (boot, db, errors, fn), fns/ (createServerFn per resource), api/ (handlers behind routes/api/), ai/ (client, import, restyle), import/ (fromUrl, imageFetch); db access only here
   db/           migrations/*.sql, migrate.ts, seed.ts, repositories
-  domain/       zod schemas, scaling, formatting. Pure, no IO, importable by client
-  components/   React components; ui/ holds local primitives the design system lacks
+  domain/       pure, no IO, importable by client; one folder per domain (recipe, ingredient, list, cook, import, export, reference, shopping, plan, style), shared files at the root
+  components/   React components, one folder per domain; recipe/ is split by screen (page, editor, list, cook); shell/ is the frame, ui/ the local primitives
   lib/          client-side helpers (mutate + router.invalidate)
   styles.css    Tailwind entry with the design system's three lines
   router.tsx    getRouter()
@@ -133,6 +133,8 @@ Stage 12 made the import faithful; this makes the collection consistent. The two
 ## M38 Housekeeping
 
 - [x] **M38.1 `src/server` by kind.** The flat folder held four kinds of file and hid it. Now one folder per kind: `core/` (boot, db, errors, fn), `fns/` (one `createServerFn` file per resource), `api/` (Request → Response handlers behind `routes/api/`), `ai/` (client, import, restyle) and `import/` (fromUrl, imageFetch). The one real change is `ai/client.ts`: the OpenAI-compatible call — settings, runner, request body, error mapping, `stripFence` — split out of `aiImport.ts` so the restyle pass no longer imports the import for its provider; `AiImportError` becomes `AiError` and `AI_IMPORT_TIMEOUT_MS` becomes `AI_TIMEOUT_MS`, since both were always shared. `createFetchRunner` requires the schema, and `createImportRunner` is the import's own. `test/server/` mirrors the new tree and `client.test.ts` takes the client's cases. Behaviour unchanged; the three image handlers stay three files. Check: the gate.
+
+- [x] **M38.2 `src/domain` and `src/components` by domain.** The two remaining flat folders (38 and 39 files). One folder per domain, named as in `db/models/` and `server/fns/`: `domain/{recipe, ingredient, list, cook, import, export, reference, shopping, plan, style}/` with `names.ts`, `image.ts` and `markdown.ts` left at the root because several domains share them and none owns them; `components/{import, reference, timeline, shopping, plan, style, shell, ui}/` plus `components/recipe/` split by screen into `page/`, `editor/`, `list/` and `cook/`, since recipe is half the components and is used by screen. A component lives with the domain it writes to: `MadeThisSheet` is timeline's, `AddToShoppingSheet` shopping's. `Markdown` joins `ui/`. `lib/` stays flat. `test/` mirrors it. Pure move, no code change; layout blocks in `architecture.md` and `plan.md` and every path mention in the docs and source comments follow. Check: the gate, including `test/docs/readme.test.ts`'s every-directory check.
 
 ## Blocked
 

@@ -1,6 +1,6 @@
 // The safe markdown subset step text (and, later, note text) is written in.
 // Pure: text in, a small block/inline tree out. No IO, no HTML string, no
-// dependency — the tree is rendered by React (src/components/Markdown.tsx), so
+// dependency — the tree is rendered by React (src/components/ui/Markdown.tsx), so
 // every text node is escaped by React and there is no path by which raw HTML in
 // a recipe can become markup. `<script>alert(1)</script>` in a step is text.
 //

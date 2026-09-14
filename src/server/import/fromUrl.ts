@@ -22,7 +22,7 @@
 // The fetch sends a full browser header set (M35.4) because a default one, or
 // even a bare `User-Agent`, gets a 403 from a good number of sites. A 403 gets
 // one retry under a second header profile before this gives up — see
-// `src/domain/fetchProfiles.ts` — and only then does the error say the site
+// `src/domain/import/fetchProfiles.ts` — and only then does the error say the site
 // is blocking automated requests and point at the paste box (M34.5), which
 // since M36.7 takes the page's HTML as well as its prose: a paste that looks
 // like a page's source goes through `importFromHtml` below, the same half of
@@ -33,12 +33,12 @@
 // Log for M35.4 on Serious Eats, which they are not.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { fetchProfileForAttempt, FETCH_PROFILES } from "../../domain/fetchProfiles";
-import type { ImportCheck } from "../../domain/importCheck";
-import { recipeNodeFromHtml } from "../../domain/jsonLd";
-import { openGraphStub } from "../../domain/openGraph";
-import { readableText } from "../../domain/pageText";
-import { hasContent, type ScrapedRecipe, scrapedFromSchema } from "../../domain/schemaRecipe";
+import { fetchProfileForAttempt, FETCH_PROFILES } from "../../domain/import/fetchProfiles";
+import type { ImportCheck } from "../../domain/import/importCheck";
+import { recipeNodeFromHtml } from "../../domain/import/jsonLd";
+import { openGraphStub } from "../../domain/import/openGraph";
+import { readableText } from "../../domain/import/pageText";
+import { hasContent, type ScrapedRecipe, scrapedFromSchema } from "../../domain/import/schemaRecipe";
 
 /** How much of a page is worth reading. Structured data is near the top; a page this big is not a recipe. */
 export const MAX_PAGE_BYTES = 5_000_000;

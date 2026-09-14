@@ -13,7 +13,7 @@ import {
   type RecipeInput,
   type Tag,
   type Unit,
-} from "../../domain/recipe";
+} from "../../domain/recipe/recipe";
 import { slugify } from "../../domain/names";
 import { DEFAULT_UNITS } from "./units";
 

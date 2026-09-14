@@ -10,7 +10,7 @@ import { seed, seedSample } from "../../../src/db/seed/seed";
 import { parseSeedFlags } from "../../../src/db/seed/cli";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { timeline } from "../../../src/db/models/timeline/repo";
-import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipe";
+import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipe/recipe";
 import { listRecipes } from "../../../src/server/fns/recipes";
 import { getDb } from "../../../src/server/core/db";
 import { callServerFn, useTempDataDir } from "../../helpers/server";

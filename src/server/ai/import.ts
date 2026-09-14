@@ -34,9 +34,9 @@
 // them together.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { checkAgainstAnchor } from "../../domain/importCheck";
-import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../domain/pageText";
-import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../../domain/schemaRecipe";
+import { checkAgainstAnchor } from "../../domain/import/importCheck";
+import { looksLikeHtml, MAX_PAGE_TEXT, readableText } from "../../domain/import/pageText";
+import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "../../domain/import/schemaRecipe";
 import { notFoundMiddleware } from "../core/fn";
 import { importFromHtml, type ImportedRecipe } from "../import/fromUrl";
 import { AI_TIMEOUT_MS, aiConfigured, AiError, type AiRunner, createFetchRunner, type Fetcher, stripFence } from "./client";

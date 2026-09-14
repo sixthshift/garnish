@@ -7,8 +7,8 @@ import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
 import { plan, type PlanRepository } from "../../src/db/models/plan/repo";
 import { recipes } from "../../src/db/models/recipe/repo";
-import { planDaySchema, planEntryInputSchema, planEntrySchema, type PlanEntryInput } from "../../src/domain/plan";
-import { recipeInputSchema, type RecipeInput } from "../../src/domain/recipe";
+import { planDaySchema, planEntryInputSchema, planEntrySchema, type PlanEntryInput } from "../../src/domain/plan/plan";
+import { recipeInputSchema, type RecipeInput } from "../../src/domain/recipe/recipe";
 
 let db: Database;
 let repo: PlanRepository;

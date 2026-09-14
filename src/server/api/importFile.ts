@@ -5,10 +5,10 @@
 //
 // Nothing is written here. The route parses and answers; the review step
 // (M17.5's rows) is what decides, and the editor's Save is what writes.
-import { IMPORT_FIELD } from "../../domain/importMealie";
-import { type ExportRecipe, readExport } from "../../domain/importTandoor";
+import { IMPORT_FIELD } from "../../domain/import/importMealie";
+import { type ExportRecipe, readExport } from "../../domain/import/importTandoor";
 
-export { IMPORT_FIELD } from "../../domain/importMealie";
+export { IMPORT_FIELD } from "../../domain/import/importMealie";
 
 /** Largest export accepted. A household's whole Mealie or Tandoor backup is far under this. */
 export const MAX_IMPORT_BYTES = 100 * 1024 * 1024;

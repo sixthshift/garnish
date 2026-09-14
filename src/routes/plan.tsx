@@ -38,8 +38,8 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { SHOPPING_PATH } from "../components/AddToShoppingSheet";
-import { GLOBAL_SEARCH_DEBOUNCE_MS, SearchResultList } from "../components/GlobalSearch";
+import { SHOPPING_PATH } from "../components/shopping/AddToShoppingSheet";
+import { GLOBAL_SEARCH_DEBOUNCE_MS, SearchResultList } from "../components/shell/GlobalSearch";
 import { Menu } from "../components/ui/Menu";
 import { ReorderList } from "../components/ui/ReorderList";
 import {
@@ -54,9 +54,9 @@ import {
   weekMonday,
   type PlanDay,
   type PlanEntry,
-} from "../domain/plan";
-import type { RecipeSummary } from "../domain/recipe";
-import { clampSelection, nextSearchIndex, selectedResult } from "../domain/search";
+} from "../domain/plan/plan";
+import type { RecipeSummary } from "../domain/recipe/recipe";
+import { clampSelection, nextSearchIndex, selectedResult } from "../domain/list/search";
 import { recipeImageUrl } from "../lib/images";
 import { addedMessage } from "../lib/shopping";
 import { useMutate } from "../lib/mutate";
@@ -172,7 +172,7 @@ function WeekArrow({ monday, label, glyph }: { monday: string; label: string; gl
  * "Add this week to the shopping list" (M33.3): runs `addPlanWeekToShopping`
  * for `monday`'s week and toasts how many lines the list gained, with a way
  * to it — the same toast `AddToShoppingButton` raises for one recipe
- * (src/components/AddToShoppingSheet.tsx). Its own busy state, not the page's:
+ * (src/components/shopping/AddToShoppingSheet.tsx). Its own busy state, not the page's:
  * this is one self-contained write, not one of the entry writes the page
  * threads through `onAddText`/`onAddRecipe`/`onMove`/`onRemove`.
  */

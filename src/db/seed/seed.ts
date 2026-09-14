@@ -11,8 +11,8 @@
 // The data itself is in ./units.ts, ./style.ts, ./recipes.ts and ./timeline.ts;
 // the CLI that runs both is in ./cli.ts.
 import type { Database } from "bun:sqlite";
-import type { Recipe } from "../../domain/recipe";
-import { recipeInputSchema } from "../../domain/recipe";
+import type { Recipe } from "../../domain/recipe/recipe";
+import { recipeInputSchema } from "../../domain/recipe/recipe";
 import { slugify } from "../../domain/names";
 import { orm } from "../connection/client";
 import { recipes } from "../models/recipe/repo";

@@ -1,6 +1,6 @@
 // Timeline server functions: the "Made this" log for one recipe. Each is the
 // full `createServerFn` chain (see ./fn.ts for why), reads through getDb() and
-// hands back `TimelineEvent` documents from src/domain/recipe.ts.
+// hands back `TimelineEvent` documents from src/domain/recipe/recipe.ts.
 //
 // The photo is not part of these calls: a create returns the event, the client
 // then POSTs the file to /api/timeline/:id/image, which stores it and points
@@ -10,7 +10,7 @@ import { z } from "zod";
 import { NotFound } from "../core/errors";
 import { recipes } from "../../db/models/recipe/repo";
 import { timeline } from "../../db/models/timeline/repo";
-import { timelineEventInputSchema } from "../../domain/recipe";
+import { timelineEventInputSchema } from "../../domain/recipe/recipe";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 

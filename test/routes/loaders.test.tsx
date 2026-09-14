@@ -4,9 +4,9 @@
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
-import type { Aisle, Recipe, RecipeSummary, Tag, TimelineEvent, Unit } from "../../src/domain/recipe";
-import type { StyleRule } from "../../src/domain/style";
-import type { SubRecipe } from "../../src/domain/subRecipe";
+import type { Aisle, Recipe, RecipeSummary, Tag, TimelineEvent, Unit } from "../../src/domain/recipe/recipe";
+import type { StyleRule } from "../../src/domain/style/style";
+import type { SubRecipe } from "../../src/domain/recipe/subRecipe";
 import { Route as IndexRoute, type RecipeListData, searchParam } from "../../src/routes/index";
 import { Route as EditRoute } from "../../src/routes/recipes/$slug/edit";
 import { Route as ViewRoute, type RecipeViewData, nextServings } from "../../src/routes/recipes/$slug/index";

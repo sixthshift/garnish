@@ -1,5 +1,5 @@
 // Recipe repository. Server-only; pass the Database opened by openDatabase.
-// Reads and writes exactly the document in src/domain/recipe.ts.
+// Reads and writes exactly the document in src/domain/recipe/recipe.ts.
 //
 // Writes replace the whole recipe in one transaction: the recipe row is
 // inserted or updated, every child row (note, part, ingredient, step,
@@ -21,11 +21,11 @@ import type {
   Step,
   Tag,
   Unit,
-} from "../../../domain/recipe";
-import { formatIngredient, totalMinutes } from "../../../domain/format";
-import { resolveSort, seededOrder, type SortDir, type SortKey } from "../../../domain/sort";
-import { suggestLinks } from "../../../domain/stepIngredients";
-import type { SubRecipe } from "../../../domain/subRecipe";
+} from "../../../domain/recipe/recipe";
+import { formatIngredient, totalMinutes } from "../../../domain/ingredient/format";
+import { resolveSort, seededOrder, type SortDir, type SortKey } from "../../../domain/list/sort";
+import { suggestLinks } from "../../../domain/recipe/stepIngredients";
+import type { SubRecipe } from "../../../domain/recipe/subRecipe";
 import { aisles as aisleRepository } from "../aisle/repo";
 import { type Executor, orm } from "../../connection/client";
 import { food } from "../food/schema";
@@ -128,7 +128,7 @@ export function recipes(db: Database) {
   /**
    * The card's hover preview (M35.3): the recipe's first `INGREDIENT_PREVIEW_LIMIT`
    * ingredient lines, part order then row order, formatted the same way the
-   * recipe page's rows are (domain/format.ts's formatIngredient).
+   * recipe page's rows are (domain/ingredient/format.ts's formatIngredient).
    */
   const selectIngredientPreview = (recipeId: string): string[] =>
     dz

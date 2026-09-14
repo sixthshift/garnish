@@ -3,8 +3,8 @@
 // name a line by id.
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import type { RecipeInput } from "../../../src/domain/recipe";
-import { shoppingItemSchema } from "../../../src/domain/shopping";
+import type { RecipeInput } from "../../../src/domain/recipe/recipe";
+import { shoppingItemSchema } from "../../../src/domain/shopping/shopping";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { createAisle } from "../../../src/server/fns/aisles";
 import { createFood } from "../../../src/server/fns/foods";

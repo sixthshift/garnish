@@ -1,10 +1,10 @@
 import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
-import { AppShell } from "../components/AppShell";
-import { GlobalSearch } from "../components/GlobalSearch";
-import { AppErrorFallback } from "../components/RouteStates";
-import { Toaster } from "../components/Toaster";
+import { AppShell } from "../components/shell/AppShell";
+import { GlobalSearch } from "../components/shell/GlobalSearch";
+import { AppErrorFallback } from "../components/shell/RouteStates";
+import { Toaster } from "../components/shell/Toaster";
 import { registerServiceWorker } from "../lib/sw";
 import appCss from "../styles.css?url";
 

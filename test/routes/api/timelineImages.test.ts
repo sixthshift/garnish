@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { expect, test } from "vitest";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { timeline } from "../../../src/db/models/timeline/repo";
-import { recipeInputSchema, type TimelineEvent } from "../../../src/domain/recipe";
+import { recipeInputSchema, type TimelineEvent } from "../../../src/domain/recipe/recipe";
 import { getDb } from "../../../src/server/core/db";
 import { handleGetImage } from "../../../src/server/api/images";
 import { handleGetTimelineImage, handleUploadTimelineImage, timelineImagesDir } from "../../../src/server/api/timelineImages";

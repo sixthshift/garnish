@@ -16,7 +16,7 @@ export type StorageLike = {
   setItem: (key: string, value: string) => void;
 };
 
-/** Which ingredient and step ids (recipe-scoped, see src/domain/recipe.ts) are ticked for one recipe. */
+/** Which ingredient and step ids (recipe-scoped, see src/domain/recipe/recipe.ts) are ticked for one recipe. */
 export type TicksState = { ingredients: string[]; steps: string[] };
 
 const EMPTY: TicksState = { ingredients: [], steps: [] };

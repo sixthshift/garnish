@@ -13,8 +13,8 @@ import { createMemoryHistory, createRootRoute, createRoute, createRouter, Router
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import type { Aisle, RecipeSummary, Tag, Unit } from "../../src/domain/recipe";
-import type { StyleRule } from "../../src/domain/style";
+import type { Aisle, RecipeSummary, Tag, Unit } from "../../src/domain/recipe/recipe";
+import type { StyleRule } from "../../src/domain/style/style";
 import { AislesTab, dedupeSummaries, ExportTab, foodsLabel, groupTagsAZ, StyleTab, TagsTab, unitsLabel, type FoodRow } from "../../src/routes/settings";
 
 function summary(id: string, name: string): RecipeSummary {

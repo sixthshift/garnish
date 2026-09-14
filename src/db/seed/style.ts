@@ -15,7 +15,7 @@
 //
 // The last four are off because each of them moves or drops content rather than
 // rewording it, which is a bigger claim than the rest of the guide makes. The
-// metric one carries a note in `styleRuleNote` (src/domain/style.ts): until the
+// metric one carries a note in `styleRuleNote` (src/domain/style/style.ts): until the
 // facts check understands paired figures it will flag the imperial numbers the
 // statement asks to drop.
 import type { StyleRuleInput } from "../models/style/repo";

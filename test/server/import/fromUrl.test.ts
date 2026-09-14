@@ -4,8 +4,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { FETCH_PROFILES } from "../../../src/domain/fetchProfiles";
-import { ingredientLines } from "../../../src/domain/schemaRecipe";
+import { FETCH_PROFILES } from "../../../src/domain/import/fetchProfiles";
+import { ingredientLines } from "../../../src/domain/import/schemaRecipe";
 import {
   extractRecipe,
   importFromHtml,

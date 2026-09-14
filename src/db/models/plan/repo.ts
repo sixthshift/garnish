@@ -4,7 +4,7 @@
 // There is no plan id because there is no second plan, and no meal type because
 // a day is the slot. Every read is a week — the unit the page draws — assembled
 // as seven days, empty ones included, through `groupByDay` in
-// src/domain/plan.ts.
+// src/domain/plan/plan.ts.
 //
 // A recipe entry comes back with the recipe's summary fields nested (name, slug,
 // image), the way a shopping line comes back with its food: one extra select
@@ -12,8 +12,8 @@
 // reads back with `recipe: null` and keeps its day and its text.
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, gte, inArray, lte, max, ne } from "drizzle-orm";
-import type { ParsedPlanEntryInput, PlanDay, PlanEntry, PlanEntryPatch, PlanRecipe } from "../../../domain/plan";
-import { addDays, groupByDay } from "../../../domain/plan";
+import type { ParsedPlanEntryInput, PlanDay, PlanEntry, PlanEntryPatch, PlanRecipe } from "../../../domain/plan/plan";
+import { addDays, groupByDay } from "../../../domain/plan/plan";
 import { orm } from "../../connection/client";
 import { recipe } from "../recipe/schema";
 import { mealPlanEntry } from "./schema";

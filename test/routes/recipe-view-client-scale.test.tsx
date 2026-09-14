@@ -6,9 +6,9 @@
 // `getRecipe` is wrapped in the mock factory with a counter, so "makes no
 // server call" is a call count that does not move across a servings change.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { ingredientLineParts } from "../../src/components/IngredientRow";
-import { formatIngredient } from "../../src/domain/format";
-import type { Recipe } from "../../src/domain/recipe";
+import { ingredientLineParts } from "../../src/components/recipe/page/IngredientRow";
+import { formatIngredient } from "../../src/domain/ingredient/format";
+import type { Recipe } from "../../src/domain/recipe/recipe";
 import { Route as CookRoute } from "../../src/routes/recipes/$slug/cook";
 import { Route as ViewRoute } from "../../src/routes/recipes/$slug/index";
 import { createRecipe, getRecipe } from "../../src/server/fns/recipes";

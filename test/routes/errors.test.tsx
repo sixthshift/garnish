@@ -7,8 +7,8 @@ import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { AppErrorFallback, describeError, ErrorView, isNetworkError } from "../../src/components/RouteStates";
-import { Toaster } from "../../src/components/Toaster";
+import { AppErrorFallback, describeError, ErrorView, isNetworkError } from "../../src/components/shell/RouteStates";
+import { Toaster } from "../../src/components/shell/Toaster";
 import { Route as RootRoute } from "../../src/routes/__root";
 import { renderRoute } from "../helpers/routes";
 

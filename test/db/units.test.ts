@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { formatAmount } from "../../src/domain/format";
+import { formatAmount } from "../../src/domain/ingredient/format";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
 import { units, type UnitRepository } from "../../src/db/models/unit/repo";

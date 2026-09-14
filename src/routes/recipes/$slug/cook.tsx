@@ -36,10 +36,10 @@ import { cn } from "@sixthshift/design-system/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { z } from "zod";
-import { AddToShoppingButton } from "../../../components/AddToShoppingSheet";
-import { MadeThisButton } from "../../../components/Timeline";
+import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingSheet";
+import { MadeThisButton } from "../../../components/timeline/Timeline";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
-import { StepCard } from "../../../components/StepCard";
+import { StepCard } from "../../../components/recipe/page/StepCard";
 import {
   buildCookCards,
   cardAnnouncement,
@@ -50,14 +50,14 @@ import {
   swipeIntent,
   totalWithFinish,
   type CookCard,
-} from "../../../domain/cook";
-import { formatIngredient } from "../../../domain/format";
-import { scaledForServings } from "../../../domain/scale";
-import type { Ingredient, Recipe } from "../../../domain/recipe";
-import { subRecipeIds, type SubRecipe } from "../../../domain/subRecipe";
-import { SubRecipesProvider } from "../../../components/SubRecipes";
+} from "../../../domain/cook/cook";
+import { formatIngredient } from "../../../domain/ingredient/format";
+import { scaledForServings } from "../../../domain/recipe/scale";
+import type { Ingredient, Recipe } from "../../../domain/recipe/recipe";
+import { subRecipeIds, type SubRecipe } from "../../../domain/recipe/subRecipe";
+import { SubRecipesProvider } from "../../../components/recipe/page/SubRecipes";
 import { useIngredientTick } from "../../../lib/ticks";
-import { TimerStrip } from "../../../components/TimerStrip";
+import { TimerStrip } from "../../../components/recipe/cook/TimerStrip";
 import { useWakeLock } from "../../../lib/useWakeLock";
 import { getRecipe, listSubRecipes } from "../../../server/fns/recipes";
 

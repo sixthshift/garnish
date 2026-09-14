@@ -1,7 +1,7 @@
 // The shopping list (M31.4): one household list, one page, no owner.
 //
 // The read is the whole list in `position` order and the page draws
-// `groupByAisle` over it (src/domain/shopping.ts) — headings in
+// `groupByAisle` over it (src/domain/shopping/shopping.ts) — headings in
 // `aisle.position` order, the unaisled under "Other" at the foot of the
 // unticked lines, and every ticked line in a "Ticked" group below them with
 // **Clear ticked**. The grouping is a pure function so this file stays a
@@ -35,8 +35,8 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Select } from "@sixthshift/design-system/select";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import type { Aisle } from "../domain/recipe";
-import { groupByAisle, shoppingItemLabel, sourceLabel, type ShoppingItem } from "../domain/shopping";
+import type { Aisle } from "../domain/recipe/recipe";
+import { groupByAisle, shoppingItemLabel, sourceLabel, type ShoppingItem } from "../domain/shopping/shopping";
 import { useMutate } from "../lib/mutate";
 import { notify, notifyError } from "../lib/notify";
 import { applyOutbox, pendingLabel, useOutbox, type OutboxEntry, type OutboxKind } from "../lib/outbox";

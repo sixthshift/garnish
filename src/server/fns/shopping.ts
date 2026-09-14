@@ -1,14 +1,14 @@
 // Shopping list server functions: the one household list (decisions.md row 67).
 // Each is the full `createServerFn` chain (see ./fn.ts for why), reads through
-// getDb() and hands back `ShoppingItem` documents from src/domain/shopping.ts.
+// getDb() and hands back `ShoppingItem` documents from src/domain/shopping/shopping.ts.
 //
 // There is no list id in any signature because there is no second list.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { required } from "../core/errors";
 import { shopping } from "../../db/models/shopping/repo";
-import { Id, IdInput } from "../../domain/reference";
-import { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSourceInputSchema } from "../../domain/shopping";
+import { Id, IdInput } from "../../domain/reference/reference";
+import { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSourceInputSchema } from "../../domain/shopping/shopping";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 

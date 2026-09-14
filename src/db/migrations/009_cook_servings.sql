@@ -6,7 +6,7 @@
 -- (M33.4, `src/components/ui/NumberStepper.tsx`). NULL is "not recorded" --
 -- every event logged before this column existed, and any future one nobody
 -- bothers to adjust -- and the History row only prints "serves N" when a
--- number is actually there (`servingsLabel`, src/domain/plan.ts, reused
+-- number is actually there (`servingsLabel`, src/domain/plan/plan.ts, reused
 -- rather than duplicated). Same nullable REAL shape as
 -- `meal_plan_entry.servings` (007_plan.sql) and for the same reason: a
 -- stored number is a fact about that one cook, not a default standing in

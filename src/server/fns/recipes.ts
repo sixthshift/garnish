@@ -1,13 +1,13 @@
 // Recipe server functions: the app's own calls for the recipe resource.
 // Each one is the full `createServerFn` chain (see ./fn.ts for why), reads the
-// database through getDb(), and hands back the document from src/domain/recipe.ts.
+// database through getDb(), and hands back the document from src/domain/recipe/recipe.ts.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { NotFound, required } from "../core/errors";
 import { recipes } from "../../db/models/recipe/repo";
-import { duplicateInput } from "../../domain/duplicate";
-import { recipeInputSchema } from "../../domain/recipe";
-import { scaleRecipe } from "../../domain/scale";
+import { duplicateInput } from "../../domain/recipe/duplicate";
+import { recipeInputSchema } from "../../domain/recipe/recipe";
+import { scaleRecipe } from "../../domain/recipe/scale";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 
@@ -83,7 +83,7 @@ export const recipeByName = createServerFn({ method: "GET" })
 
 /**
  * One recipe by slug. With `servings`, the document is scaled to that many
- * (Cooklang rules, see src/domain/scale.ts). A recipe whose stored servings is
+ * (Cooklang rules, see src/domain/recipe/scale.ts). A recipe whose stored servings is
  * 0 has no factor to scale by and is returned as stored.
  */
 /**
@@ -145,7 +145,7 @@ export const setRating = createServerFn({ method: "POST" })
 /**
  * Copy the recipe `id` into a new one: the same document under a new name
  * ("... (copy)") with a fresh slug and fresh child ids, no last-made date and
- * not favourited (see src/domain/duplicate.ts). Returns the stored copy.
+ * not favourited (see src/domain/recipe/duplicate.ts). Returns the stored copy.
  */
 export const duplicateRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])

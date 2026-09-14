@@ -8,7 +8,7 @@
 // sentence is always the true one.
 import { Modal } from "@sixthshift/design-system/modal";
 import { Muted } from "@sixthshift/design-system/muted";
-import type { RecipeSummary } from "../../domain/recipe";
+import type { RecipeSummary } from "../../domain/recipe/recipe";
 import { ConfirmDialogContent } from "./ConfirmDialog";
 
 /** How many recipes the list shows before it summarises the rest. */

@@ -6,7 +6,7 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import { orm } from "../../connection/client";
 import { cleanName, likePattern } from "../../../domain/names";
 import { ingredient } from "../recipe/schema";
-import type { FoodConversion } from "../../../domain/recipe";
+import type { FoodConversion } from "../../../domain/recipe/recipe";
 import { food, foodConversion } from "./schema";
 
 export type Food = {

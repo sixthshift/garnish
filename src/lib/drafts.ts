@@ -21,7 +21,7 @@
 // The picked image file is not stored. It is a `File` handle, not JSON, and
 // nothing survives the reload it would need to survive; `hadImage` records
 // that there was one so the notice can say to pick it again.
-import { type ParsedRecipeInput, recipeInputSchema } from "../domain/recipe";
+import { type ParsedRecipeInput, recipeInputSchema } from "../domain/recipe/recipe";
 
 /** The slice of `Storage` the controller uses. */
 export type StorageLike = {

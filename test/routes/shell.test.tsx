@@ -4,7 +4,7 @@
 // functions they call are swapped for in-process wrappers (see helpers/server).
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { RouteError, RoutePending } from "../../src/components/RouteStates";
+import { RouteError, RoutePending } from "../../src/components/shell/RouteStates";
 import { createRecipe } from "../../src/server/fns/recipes";
 import { renderRoute as render } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";

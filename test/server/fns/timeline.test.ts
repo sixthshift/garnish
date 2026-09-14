@@ -2,7 +2,7 @@
 // the last-made bookkeeping they drive, validation failures and not-found.
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { timelineEventSchema, type RecipeInput } from "../../../src/domain/recipe";
+import { timelineEventSchema, type RecipeInput } from "../../../src/domain/recipe/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
 import { createTimelineEvent, deleteTimelineEvent, listTimeline } from "../../../src/server/fns/timeline";

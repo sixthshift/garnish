@@ -3,7 +3,7 @@
 // so navigating between two recipes' edit pages resets the draft.
 //
 // Delete is not here: it lives in the recipe view's action menu (M11.6,
-// src/components/RecipeActions.tsx), which is where Mealie keeps it.
+// src/components/recipe/page/RecipeActions.tsx), which is where Mealie keeps it.
 //
 // `servings` (M25.5) carries no meaning for the editor itself — the form
 // always edits the recipe's own stored servings — it only rides along so
@@ -11,8 +11,8 @@
 import { Heading } from "@sixthshift/design-system/heading";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { draftFromRecipe, RecipeForm } from "../../../components/RecipeForm";
-import type { Recipe, Tag, Unit } from "../../../domain/recipe";
+import { draftFromRecipe, RecipeForm } from "../../../components/recipe/editor/RecipeForm";
+import type { Recipe, Tag, Unit } from "../../../domain/recipe/recipe";
 import { getRecipe } from "../../../server/fns/recipes";
 import { listTags } from "../../../server/fns/tags";
 import { listUnits } from "../../../server/fns/units";

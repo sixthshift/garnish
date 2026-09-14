@@ -16,8 +16,8 @@ import { asc, eq, inArray, max, sql } from "drizzle-orm";
 import { aisles as aisleRepository } from "../aisle/repo";
 import { foods as foodRepository } from "../food/repo";
 import { units as unitRepository } from "../unit/repo";
-import type { Food, Unit } from "../../../domain/recipe";
-import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemPatch, ShoppingItemSourceInput } from "../../../domain/shopping";
+import type { Food, Unit } from "../../../domain/recipe/recipe";
+import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemPatch, ShoppingItemSourceInput } from "../../../domain/shopping/shopping";
 import { orm } from "../../connection/client";
 import { shoppingItem, shoppingItemSource } from "./schema";
 

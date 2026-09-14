@@ -37,7 +37,7 @@ It wipes `DATA_DIR`'s database and images, migrates, seeds the default units the
 
 In VS Code, the `dev` task (Terminal → Run Build Task, or `Cmd/Ctrl+Shift+B`) runs the same command in a dedicated panel.
 
-The app icons are generated, not drawn by hand. `src/components/Logo.tsx` is the only source for the mark; after changing it, regenerate every file in `public/icons/` and `public/apple-touch-icon.png`:
+The app icons are generated, not drawn by hand. `src/components/shell/Logo.tsx` is the only source for the mark; after changing it, regenerate every file in `public/icons/` and `public/apple-touch-icon.png`:
 
 ```bash
 bun run icons

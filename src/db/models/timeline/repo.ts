@@ -8,7 +8,7 @@
 // recipe has no events left.
 import type { Database } from "bun:sqlite";
 import { desc, eq, max } from "drizzle-orm";
-import type { TimelineEvent, TimelineEventInput } from "../../../domain/recipe";
+import type { TimelineEvent, TimelineEventInput } from "../../../domain/recipe/recipe";
 import { type Executor, orm } from "../../connection/client";
 import { recipe } from "../recipe/schema";
 import { timelineEvent } from "./schema";

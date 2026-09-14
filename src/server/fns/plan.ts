@@ -1,6 +1,6 @@
 // Meal plan server functions: the one household plan (decisions.md row 71).
 // Each is the full `createServerFn` chain (see ./fn.ts for why), reads through
-// getDb() and hands back the documents in src/domain/plan.ts.
+// getDb() and hands back the documents in src/domain/plan/plan.ts.
 //
 // There is no plan id in any signature because there is no second plan, and no
 // meal type because the day is the slot. A week is read whole: `listPlanWeek`
@@ -10,11 +10,11 @@ import { z } from "zod";
 import { plan } from "../../db/models/plan/repo";
 import { recipes } from "../../db/models/recipe/repo";
 import { shopping } from "../../db/models/shopping/repo";
-import { isoDate, planEntryInputSchema, planEntryPatchSchema, planWeekAdditions } from "../../domain/plan";
-import { Id, IdInput } from "../../domain/reference";
-import type { Recipe } from "../../domain/recipe";
-import { scaleRecipe } from "../../domain/scale";
-import { mergeIntoList, shoppingItemInputSchema } from "../../domain/shopping";
+import { isoDate, planEntryInputSchema, planEntryPatchSchema, planWeekAdditions } from "../../domain/plan/plan";
+import { Id, IdInput } from "../../domain/reference/reference";
+import type { Recipe } from "../../domain/recipe/recipe";
+import { scaleRecipe } from "../../domain/recipe/scale";
+import { mergeIntoList, shoppingItemInputSchema } from "../../domain/shopping/shopping";
 import { getDb } from "../core/db";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
@@ -73,7 +73,7 @@ export const AddPlanWeekToShoppingInput = z.object({ monday: isoDate });
  * "Add this week to the shopping list" (M33.3): every recipe entry's own
  * ingredients at the entry's servings (the recipe's own when unset), plus
  * every text entry as a free-text line, stamped with the entry's day rather
- * than the recipe's own part (`planWeekAdditions`, src/domain/plan.ts), merged
+ * than the recipe's own part (`planWeekAdditions`, src/domain/plan/plan.ts), merged
  * into the current list the same way the recipe page's own "Add to shopping
  * list" does (`mergeIntoList`, M31.2). The week's recipes are loaded and
  * scaled through the same path `getRecipe` takes, so the client need not
