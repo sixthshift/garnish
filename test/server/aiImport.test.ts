@@ -159,6 +159,20 @@ describe("the request", () => {
     expect(prompt).toMatch(/copy them from the anchor exactly as given/);
   });
 
+  // M37.1: the ragu page put its lines under "Ragu" and "To Serve" and the
+  // model left all eighteen on the unnamed part, because nothing in the prompt
+  // said the ingredient list had headings of its own.
+  test("the anchored rules make the ingredient headings place the lines", () => {
+    const prompt = aiPrompt({ text: "# To Serve\n50 g parmesan", anchor: ANCHOR });
+    expect(prompt).toMatch(/\*ingredient\* headings/);
+    expect(prompt).toMatch(/independently of the headings the steps sit under/);
+    expect(prompt).toMatch(/a new part named after an ingredient heading the anchor never mentions/);
+    expect(prompt).toMatch(/lines and no steps, or steps and no lines/);
+    expect(prompt).toMatch(/clearly refer to the same thing, they are one part/);
+    expect(prompt).toMatch(/is not a part/);
+    expect(prompt).toMatch(/leave out a trailing colon and a note marker/);
+  });
+
   test("the anchored rules appear only with an anchor, and the unanchored ones only without", () => {
     const anchored = aiPrompt({ text: "prose", anchor: ANCHOR });
     const plain = aiPrompt({ text: "prose" });
@@ -413,6 +427,38 @@ describe("runAiImport", () => {
     expect(imported.rejected).toBeUndefined();
     expect(imported.pageText).toBe("page");
     expect(imported.recipe.parts.map((part) => part.name)).toEqual(["", "To finish"]);
+  });
+
+  // M37.1: the anchor's parts came off the page's step sections and carry no
+  // ingredient lines at all. An answer that moves a line onto a part named
+  // from an ingredient heading is exactly what the prompt now asks for, and
+  // the check passes it because it never compares part names.
+  test("lines moved onto a heading-named part the anchor never mentioned pass the check", async () => {
+    const stepsOnly = {
+      ...ANCHOR,
+      parts: [
+        { name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: [] },
+        { name: "Ragu", ingredients: [], steps: ["Rub the butter in."] },
+        { name: "To finish", ingredients: [], steps: ["Bake."] },
+      ],
+    };
+    const placed = {
+      ...FIXTURE,
+      parts: [
+        { name: "", ingredients: [], steps: [] },
+        { name: "Ragu", ingredients: ["1 cup plain flour"], steps: ["Rub the butter in."] },
+        { name: "TO SERVE:", ingredients: ["125 g butter"], steps: [] },
+        { name: "To finish", ingredients: [], steps: ["Bake."] },
+      ],
+    };
+    const imported = await runAiImport("# Ragu\n1 cup plain flour\n# To serve\n125 g butter", {
+      run: fakeRunner(JSON.stringify(placed)),
+      anchor: stepsOnly,
+    });
+    expect(imported.from).toBe("ai");
+    expect(imported.check?.ok).toBe(true);
+    expect(imported.recipe.parts.map((part) => part.name)).toEqual(["", "Ragu", "To serve", "To finish"]);
+    expect(imported.recipe.parts[2]?.ingredients).toEqual(["125 g butter"]);
   });
 
   test("an answer that changed the content is rejected: the anchor comes back as `schema`, the answer under `rejected`", async () => {

@@ -56,6 +56,62 @@ export type ScrapedRecipe = {
   parts: ScrapedPart[];
 };
 
+// --- Part names ------------------------------------------------------------
+
+/**
+ * A parenthesised pointer at the page's notes — "(Note 4)", "(see notes)" —
+ * which sites hang off a heading because the heading is the only place the
+ * reader is looking. It belongs to the page, not to the part.
+ */
+const NOTE_MARKER = /\(\s*(?:see\s+)?notes?\b[^)]*\)/gi;
+
+/**
+ * A heading as a part name (M37.1). Headings are written for a page, not for
+ * this document: they carry the colon that introduces the list below them, the
+ * note marker that points at the page's footnotes, and often the shouting caps
+ * of a template's h3. None of that is part of the name — "SAUCE:" and "Sauce"
+ * are the same part — and the tidying happens here rather than in each rung so
+ * a name reads the same whether it came off a `HowToSection`, a model's answer
+ * or a paste.
+ *
+ * All-caps is softened to sentence case rather than title case: the app has no
+ * way to know which words a title would capitalise, and "Abbreviated recipe"
+ * is right where "Abbreviated Recipe" is a guess. Mixed-case names are left
+ * exactly as the page wrote them. Pure.
+ */
+export function tidyPartName(name: string): string {
+  const withoutNotes = name.replace(NOTE_MARKER, " ").replace(/\s+/g, " ").trim();
+  const withoutColon = withoutNotes.replace(/\s*:+\s*$/, "").trim();
+  const letters = withoutColon.replace(/[^\p{L}]/gu, "");
+  if (letters.length < 2 || letters !== letters.toUpperCase() || letters === letters.toLowerCase()) return withoutColon;
+  const lowered = withoutColon.toLowerCase();
+  return lowered.replace(/\p{L}/u, (first) => first.toUpperCase());
+}
+
+/**
+ * Parts with their names tidied and any that tidy to the same name folded
+ * together, keeping the order the first of them appeared in. Two headings that
+ * only differed in a colon are one part, and a recipe never ends up with the
+ * same part name twice. Pure.
+ */
+export function tidyParts(parts: readonly ScrapedPart[]): ScrapedPart[] {
+  const byName = new Map<string, ScrapedPart>();
+  const out: ScrapedPart[] = [];
+  for (const part of parts) {
+    const name = tidyPartName(part.name);
+    const existing = byName.get(name);
+    if (existing === undefined) {
+      const fresh = { name, ingredients: [...part.ingredients], steps: [...part.steps] };
+      byName.set(name, fresh);
+      out.push(fresh);
+      continue;
+    }
+    existing.ingredients.push(...part.ingredients);
+    existing.steps.push(...part.steps);
+  }
+  return out;
+}
+
 /** Every ingredient line across the parts, in part order: what the review reads and what `reviewRows` parses. Pure. */
 export function ingredientLines(scraped: { parts: readonly ScrapedPart[] }): string[] {
   return scraped.parts.flatMap((part) => part.ingredients);
@@ -266,7 +322,10 @@ export function partsFromInstructions(value: unknown): ScrapedPart[] {
   }
   // The main body goes first, as the view page prints it.
   if (loose.length > 0 || parts.length === 0) parts.unshift({ name: "", ingredients: [], steps: loose });
-  return parts;
+  // Tidied here as well as in `normaliseScraped` (M37.1), because a page's
+  // sections reach the draft through this function without passing through
+  // that one, and a part name should read the same whichever rung found it.
+  return tidyParts(parts);
 }
 
 // --- The whole node --------------------------------------------------------
@@ -342,18 +401,20 @@ export const ScrapedRecipeSchema = z.object({
 });
 
 /**
- * A parsed answer as a `ScrapedRecipe`: blank lines dropped, and at least one
- * part, because the main body is what every reader downstream expects to find.
- * Pure.
+ * A parsed answer as a `ScrapedRecipe`: blank lines dropped, part names tidied
+ * out of their headings' punctuation (M37.1), and at least one part, because
+ * the main body is what every reader downstream expects to find. Pure.
  */
 export function normaliseScraped(parsed: z.output<typeof ScrapedRecipeSchema>): ScrapedRecipe {
-  const parts: ScrapedPart[] = parsed.parts
-    .map((part) => ({
-      name: part.name.trim(),
-      ingredients: part.ingredients.map((line) => line.trim()).filter((line) => line !== ""),
-      steps: part.steps.map((step) => step.trim()).filter((step) => step !== ""),
-    }))
-    .filter((part) => part.name !== "" || part.ingredients.length > 0 || part.steps.length > 0);
+  const parts: ScrapedPart[] = tidyParts(
+    parsed.parts
+      .map((part) => ({
+        name: part.name.trim(),
+        ingredients: part.ingredients.map((line) => line.trim()).filter((line) => line !== ""),
+        steps: part.steps.map((step) => step.trim()).filter((step) => step !== ""),
+      }))
+      .filter((part) => part.name !== "" || part.ingredients.length > 0 || part.steps.length > 0),
+  );
   if (!parts.some((part) => part.name === "")) parts.unshift({ name: "", ingredients: [], steps: [] });
   return {
     ...parsed,

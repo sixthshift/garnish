@@ -6,6 +6,7 @@ import {
   hasContent,
   ingredientLines,
   normaliseScraped,
+  tidyPartName,
   parseKeywords,
   parseYield,
   partsFromInstructions,
@@ -204,6 +205,20 @@ describe("partsFromInstructions", () => {
     expect(partsFromInstructions(value)).toEqual([{ name: "", ingredients: [], steps: ["Mix."] }]);
   });
 
+  // M37.1: a section's name is tidied on the way in, so the schema rung and the
+  // model's answer name the same part the same way.
+  test("a section's name loses its colon and its shouting, and two that match become one", () => {
+    const value = [
+      { "@type": "HowToSection", name: "SAUCE:", itemListElement: [{ "@type": "HowToStep", text: "Simmer." }] },
+      { "@type": "HowToSection", name: "To Serve (Note 4):", itemListElement: [{ "@type": "HowToStep", text: "Toss." }] },
+      { "@type": "HowToSection", name: "Sauce", itemListElement: [{ "@type": "HowToStep", text: "Season." }] },
+    ];
+    expect(partsFromInstructions(value)).toEqual([
+      { name: "Sauce", ingredients: [], steps: ["Simmer.", "Season."] },
+      { name: "To Serve", ingredients: [], steps: ["Toss."] },
+    ]);
+  });
+
   test("there is always at least one part, so the draft validates", () => {
     expect(partsFromInstructions(undefined)).toEqual([{ name: "", ingredients: [], steps: [] }]);
     expect(partsFromInstructions([])).toEqual([{ name: "", ingredients: [], steps: [] }]);
@@ -363,6 +378,45 @@ describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
     ]);
     expect(ingredientLines(recipe)).toEqual(["125 g butter"]);
     expect(hasContent(recipe)).toBe(true);
+  });
+
+  // M37.1: a heading is written for a page, and the punctuation it carries for
+  // the page's sake is not part of the name.
+  test("tidyPartName drops the colon and the note marker, and softens shouting to sentence case", () => {
+    const cases: [string, string][] = [
+      ["", ""],
+      ["Sauce", "Sauce"],
+      ["SAUCE:", "Sauce"],
+      ["To Serve (Note 4):", "To Serve"],
+      ["To serve (see note 2)", "To serve"],
+      ["  Crumble topping  ", "Crumble topping"],
+      ["ABBREVIATED RECIPE:", "Abbreviated recipe"],
+      ["FULL RECIPE:", "Full recipe"],
+      ["For the ragù:", "For the ragù"],
+      ["Notes (see notes) sauce", "Notes sauce"],
+      ["Mushroom & Leek:", "Mushroom & Leek"],
+      ["A", "A"],
+      ["1.", "1."],
+    ];
+    for (const [given, want] of cases) expect(tidyPartName(given)).toBe(want);
+  });
+
+  test("two headings that tidy to the same name become one part, in the order they arrived", () => {
+    const recipe = normaliseScraped(
+      ScrapedRecipeSchema.parse({
+        name: "Ragu",
+        parts: [
+          { name: "SAUCE:", ingredients: ["2 onions"], steps: [] },
+          { name: "To Serve (Note 4):", ingredients: ["parmesan"], steps: ["Toss."] },
+          { name: "Sauce", ingredients: [], steps: ["Simmer."] },
+        ],
+      }),
+    );
+    expect(recipe.parts).toEqual([
+      { name: "", ingredients: [], steps: [] },
+      { name: "Sauce", ingredients: ["2 onions"], steps: ["Simmer."] },
+      { name: "To Serve", ingredients: ["parmesan"], steps: ["Toss."] },
+    ]);
   });
 
   test("a part with nothing at all on it is dropped, ingredients or no", () => {

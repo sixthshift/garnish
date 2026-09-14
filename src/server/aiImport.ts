@@ -175,12 +175,29 @@ const UNANCHORED_RULES = [
  * recipe here, it is sorting known lines into parts — and `checkAgainstAnchor`
  * (M36.5) throws the answer away if it did anything else, which is the real
  * reason these rules can be this blunt.
+ *
+ * The ingredient headings had to be spelled out separately (M37.1). On the
+ * ragu page the anchor already carried three parts off the page's
+ * `HowToSection`s, and the model read that as the question already answered:
+ * all eighteen ingredient lines stayed on the unnamed part although the page
+ * groups them under "Ragu" and "To Serve". So the rules now say that the
+ * ingredient list has headings of its own, that they decide where a line goes
+ * whatever the step sections say, and that a part is allowed to hold lines
+ * with no steps — the three things the model had to be told before it would
+ * move a line. `checkAgainstAnchor` does not compare part names, so a part
+ * named from a heading the anchor never saw passes the check as long as the
+ * lines themselves are untouched.
  */
 const ANCHORED_RULES = [
   "The JSON under ANCHOR below is the recipe, taken from the page's own structured data. Your job is only to sort its lines and steps into parts, using the text to see which heading each one sat under. Rules:",
   "- Every ingredient line and every step in your answer must be copied from the anchor, byte for byte, exactly once between them all. The anchor's lines and steps are the recipe.",
   "- Never add, drop, merge, split or reword a line or a step. Do not renumber, retitle, translate, correct spelling or punctuation, convert units, or tidy whitespace.",
   "- The text is evidence for one thing only: which heading each of the anchor's lines and steps sits under, and what that part should be named. It is not a source of content.",
+  "- The text's *ingredient* headings decide which part an ingredient line belongs to, and they decide it on their own, independently of the headings the steps sit under. Read the ingredient list's own headings and put each line under the one above it.",
+  "- A line's part may be one the anchor already names, or a new part named after an ingredient heading the anchor never mentions. A part may hold lines and no steps, or steps and no lines; both are fine.",
+  "- When an ingredient heading and a step section clearly refer to the same thing, they are one part: give them the same name and let it hold both the lines and the steps.",
+  "- A heading that is the recipe's own name, or a heading of the list itself such as \"Ingredients\", \"Instructions\" or \"Method\", is not a part.",
+  "- Name a part from its heading as written, but leave out a trailing colon and a note marker such as \"(Note 4)\".",
   "- A line or a step that sits under no heading stays on the part named \"\" (empty), which is the main body. If the text shows no headings at all, answer with the anchor's parts unchanged.",
   "- `name`, `description`, `image`, `servings`, `yieldText`, `prepMinutes`, `cookMinutes` and `tags`: copy them from the anchor exactly as given. Do not improve them.",
   "- Answer with the JSON only.",
