@@ -23,7 +23,7 @@ src/
   server/fns/   server functions (createServerFn), one file per resource: recipes, foods, units, tags, aisles, timeline, shopping, plan, style, ping
   server/api/   Request → Response handlers behind routes/api/: images.ts, stepImages.ts, timelineImages.ts, export.ts, importFile.ts
   server/ai/    client.ts (the OpenAI-compatible call: settings, runner, AiError), import.ts (the model's read of a page or a paste), restyle.ts (the house-style pass)
-  server/import/ fromUrl.ts (fetch a page and run the rules rungs), imageFetch.ts (fetch a recipe's image server-side)
+  server/import/ fromUrl.ts (fetch a page and run the rules rungs), imageFetch.ts (fetch an imported recipe's image server-side)
   db/connection/ open.ts (DB_FILE, databasePath, openDatabase — WAL and foreign keys), client.ts (the Drizzle handle)
   db/seed/      seed.ts inserts; units.ts, style.ts, recipes.ts and timeline.ts are the data it inserts; cli.ts is `bun run seed [--sample]`
   db/dev/       dev-only, never shipped: generate.ts builds a fifteen-recipe dataset from vocabulary.ts with the seeded PRNG in random.ts and placeholder images from png.ts; apply.ts writes it; wipe.ts empties DATA_DIR first; cli.ts is `bun run dev:seed`
@@ -201,7 +201,7 @@ The household's own voice for the steps (decisions.md row 78), kept as a list of
   - `foods`, `units`, `aisles`, `tags`: `list({ q? })`, `create`, `update`, `delete`, `findOrCreate({ name })` each, e.g. `listUnits`, `findOrCreateTag`. Input schemas in `src/domain/reference/reference.ts`.
     - `usingFood`, `usingUnit`, `usingTag` list the recipes a delete would touch; the confirm dialog shows them.
     - `mergeFood`, `mergeUnit`, `mergeTag` repoint references onto a target and delete the source in one transaction. `reorderAisles` writes a new `position` order.
-  - `fetchImage({ url })` pulls a pasted image URL server-side through the same sniffing and cap as the upload route, so the editor never fetches cross-origin from the browser.
+  - `fetchImage({ url })` pulls the image a URL import found server-side, through the same sniffing and cap as the upload route, so the editor never fetches cross-origin from the browser. The editor's own paste-an-image-URL field is gone (decisions.md row 79); the picker takes a file only.
   - Every chain carries `notFoundMiddleware` (`src/server/core/fn.ts`), which rethrows a repository `NotFound` as the router's `notFound()`; loaders render it through `notFoundComponent`. It is a middleware rather than a wrapper around `createServerFn` because Start's compiler must see the literal chain (decisions.md row 36).
   - Deletes return the removed row, as Mealie does.
 - **Server routes** under `/api/*` only for callers outside the app, and later import hooks. Field names follow Mealie where the concept exists.

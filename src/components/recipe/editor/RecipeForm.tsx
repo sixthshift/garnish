@@ -33,9 +33,10 @@
 // a save navigates away, so a message in this form would never be read. The
 // offline banner stays inline: it is a standing state, not an outcome.
 //
-// The image field also takes a pasted URL: `fetchImage` (src/server/import/imageFetch.ts)
-// GETs it on the server — the browser cannot, for CORS — and the bytes come
-// back as a File that joins the same upload path as a picked one.
+// An image a URL import found is fetched through `fetchImage`
+// (src/server/import/imageFetch.ts) — the browser cannot, for CORS — and the
+// bytes come back as a File that joins the same upload path as a picked one.
+// The field itself no longer takes a pasted address (decisions.md row 79).
 //
 // What is typed here survives the tab: every change while the form is dirty is
 // written to `localStorage` through src/lib/drafts.ts, keyed by the recipe id
@@ -598,7 +599,6 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
           image={draft.image}
           previewUrl={importedImageUrl}
           disabled={saving}
-          onUrl={fetchFromUrl}
           onSelect={(chosen) => setFile(chosen)}
           onRemove={() => {
             setFile(null);

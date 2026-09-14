@@ -3,18 +3,10 @@
 // never uploads: the parent gets the File from `onSelect` and decides when to
 // POST it (M5.2). The preview is an object URL, revoked when it is replaced or
 // the component unmounts.
-//
-// With `onUrl` it also takes a pasted address (M13.5). The fetch itself is the
-// parent's — this is a UI primitive and does not call the server — so `onUrl`
-// resolves with the File and rejects with a message this shows beside the
-// field.
 import { Button } from "@sixthshift/design-system/button";
-import { Input } from "@sixthshift/design-system/input";
-import { Message } from "@sixthshift/design-system/message";
 import { cn } from "@sixthshift/design-system/utils";
 import { useEffect, useId, useRef, useState } from "react";
 import { recipeImageUrl } from "../../lib/images";
-import { messageFrom } from "../../lib/notify";
 
 export type ImageUploadProps = {
   /** Stored image file name, as on the recipe row. */
@@ -24,8 +16,6 @@ export type ImageUploadProps = {
   onSelect: (file: File) => void;
   /** When given, a "Remove image" button shows while there is an image. */
   onRemove?: () => void;
-  /** When given, a URL field shows; it resolves with the fetched File, or rejects with a message to display. */
-  onUrl?: (url: string) => Promise<File>;
   disabled?: boolean;
   className?: string;
 };
@@ -35,14 +25,10 @@ export function imageSrc(preview: string | null, image: string | null | undefine
   return preview ?? recipeImageUrl(image) ?? previewUrl ?? null;
 }
 
-export function ImageUpload({ image, previewUrl, onSelect, onRemove, onUrl, disabled, className }: ImageUploadProps) {
+export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, className }: ImageUploadProps) {
   const inputId = useId();
-  const urlId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [url, setUrl] = useState("");
-  const [fetching, setFetching] = useState(false);
-  const [urlError, setUrlError] = useState<string | null>(null);
 
   useEffect(() => {
     if (preview === null) return;
@@ -56,21 +42,6 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, onUrl, disa
     if (!file) return;
     setPreview(URL.createObjectURL(file));
     onSelect(file);
-  };
-
-  const fetchUrl = async () => {
-    const address = url.trim();
-    if (onUrl === undefined || address === "" || fetching) return;
-    setFetching(true);
-    setUrlError(null);
-    try {
-      choose(await onUrl(address));
-      setUrl("");
-    } catch (error) {
-      setUrlError(messageFrom(error));
-    } finally {
-      setFetching(false);
-    }
   };
 
   const remove = () => {
@@ -111,38 +82,6 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, onUrl, disa
           </Button>
         )}
       </div>
-      {onUrl !== undefined && (
-        <div className="flex flex-col gap-2" data-testid="image-url">
-          <label htmlFor={urlId} className="text-sm font-medium">
-            Or paste an image URL
-          </label>
-          <div className="flex items-center gap-2">
-            <Input
-              id={urlId}
-              type="url"
-              inputMode="url"
-              placeholder="https://example.com/photo.jpg"
-              value={url}
-              autoComplete="off"
-              disabled={disabled || fetching}
-              onChange={(event) => setUrl(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter") return;
-                event.preventDefault();
-                void fetchUrl();
-              }}
-            />
-            <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled || fetching || url.trim() === ""} onClick={() => void fetchUrl()}>
-              {fetching ? "Fetching…" : "Fetch"}
-            </Button>
-          </div>
-          {urlError !== null && (
-            <Message intent="danger" data-testid="image-url-error">
-              {urlError}
-            </Message>
-          )}
-        </div>
-      )}
     </div>
   );
 }
