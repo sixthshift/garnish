@@ -30,10 +30,8 @@
 // outlives the menu item that opens it — see that file's header for why.
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { toCooklang } from "../../../../domain/recipe/cooklang";
-import { ingredientsText, recipeUrl } from "../../../../domain/recipe/copy";
-import { dayLabel } from "../../../../domain/plan/plan";
-import type { Recipe } from "../../../../domain/recipe/recipe";
+import { toCooklang, ingredientsText, recipeUrl, type Recipe } from "../../../../domain/recipe";
+import { dayLabel } from "../../../../domain/plan";
 import { writeClipboard } from "../../../../lib/clipboard";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";

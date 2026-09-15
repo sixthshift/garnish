@@ -3,10 +3,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { NotesEditor } from "../../../../src/routes/recipes/components/NotesEditor";
-import { addNote, moveNote, newNote, removeNote, updateNote } from "../../../../src/domain/recipe/draft/notes";
-import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
-import { type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
-import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
+import { addNote, moveNote, newNote, removeNote, updateNote, emptyDraft, type RecipeDraft, validateDraft } from "../../../../src/domain/draft";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 

@@ -7,7 +7,7 @@
 // route test below proves the loader and the wiring.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
-import { shoppingItemSchema, type ShoppingItem } from "../../../src/domain/shopping/shopping";
+import { shoppingItemSchema, type ShoppingItem } from "../../../src/domain/shopping";
 import { ShoppingListView, sendOutboxEntry, setFoodAisle } from "../../../src/routes/shopping/components/ShoppingListView";
 import { toBuyLabel } from "../../../src/routes/shopping/components/ShoppingListView";
 import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../../src/lib/outbox";

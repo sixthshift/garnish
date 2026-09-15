@@ -10,8 +10,7 @@
 import { Heading } from "@sixthshift/design-system/heading";
 import { useState } from "react";
 import { RecipeForm } from "../components/RecipeForm";
-import { emptyDraft } from "../../../domain/recipe/draft/draft";
-import { type RecipeDraft } from "../../../domain/recipe/draft/types";
+import { emptyDraft, type RecipeDraft } from "../../../domain/draft";
 import { RecipeSource, type SourceKind } from "./components/RecipeSource";
 import { recipeByName, recipeBySource } from "../../../server/fns/recipes";
 import { Route } from "./route";

@@ -4,8 +4,7 @@ import { Card } from "@sixthshift/design-system/card";
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { Route as rootRoute } from "../../../root";
 import { z } from "zod";
-import type { Recipe } from "../../../../domain/recipe/recipe";
-import { subRecipeIds, type SubRecipe } from "../../../../domain/recipe/subRecipe";
+import { type Recipe, subRecipeIds, type SubRecipe } from "../../../../domain/recipe";
 import { getRecipe, listSubRecipes } from "../../../../server/fns/recipes";
 
 export const CookSearch = z.object({

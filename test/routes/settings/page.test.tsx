@@ -13,8 +13,9 @@ import { createMemoryHistory, createRootRoute, createRoute, createRouter, Router
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import type { Aisle, RecipeSummary, Tag, Unit } from "../../../src/domain/recipe/recipe";
-import type { StyleRule } from "../../../src/domain/style/style";
+import type { RecipeSummary } from "../../../src/domain/recipe";
+import type { Aisle, Tag, Unit } from "../../../src/domain/reference";
+import type { StyleRule } from "../../../src/domain/style";
 import { AislesTab, ExportTab, StyleTab, TagsTab } from "../../../src/routes/settings/components/SettingsTabs";
 import { dedupeSummaries, foodsLabel, groupTagsAZ, unitsLabel } from "../../../src/routes/settings/components/SettingsTabs";
 import { type FoodRow } from "../../../src/routes/settings/route";

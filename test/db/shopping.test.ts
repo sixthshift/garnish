@@ -14,8 +14,8 @@ import { foods } from "../../src/db/models/food/repo";
 import { recipes } from "../../src/db/models/recipe/repo";
 import { shopping, type ShoppingRepository } from "../../src/db/models/shopping/repo";
 import { units } from "../../src/db/models/unit/repo";
-import { recipeInputSchema, type RecipeInput } from "../../src/domain/recipe/recipe";
-import { shoppingItemInputSchema, shoppingItemSchema, type ShoppingItemInput } from "../../src/domain/shopping/shopping";
+import { recipeInputSchema, type RecipeInput } from "../../src/domain/recipe";
+import { shoppingItemInputSchema, shoppingItemSchema, type ShoppingItemInput } from "../../src/domain/shopping";
 
 let db: Database;
 let repo: ShoppingRepository;

@@ -71,7 +71,8 @@ import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useId, useState } from "react";
-import { type Recipe, type Tag, type Unit } from "../../../domain/recipe/recipe";
+import { type Recipe } from "../../../domain/recipe";
+import { type Tag, type Unit } from "../../../domain/reference";
 import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft, type StorageLike } from "../../../lib/drafts";
 import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../../../lib/images";
 import { useMutate } from "../../../lib/mutate";
@@ -88,11 +89,7 @@ import { ImageUpload } from "../../../components/ui/ImageUpload";
 import { Menu } from "../../../components/ui/Menu";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { SaveBar } from "../../../components/ui/SaveBar";
-import { type RecipeDraft } from "../../../domain/recipe/draft/types";
-import { type FieldErrors, validateDraft } from "../../../domain/recipe/draft/validate";
-import { isDirty, draftFromInput, hasDetails } from "../../../domain/recipe/draft/draft";
-import { draftToJson, draftFromJson } from "../../../domain/recipe/draft/json";
-import { tagsFromNames } from "../../../domain/recipe/draft/vocabulary";
+import { type RecipeDraft, type FieldErrors, validateDraft, isDirty, draftFromInput, hasDetails, draftToJson, draftFromJson, tagsFromNames } from "../../../domain/draft";
 
 function feedback(errors: FieldErrors, path: string): FormFieldFeedback | undefined {
   const message = errors[path];

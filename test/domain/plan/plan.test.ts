@@ -23,7 +23,7 @@ import {
   type PlanDay,
   type PlanEntry,
 } from "../../../src/domain/plan/plan";
-import { recipeSchema, type Recipe } from "../../../src/domain/recipe/recipe";
+import { recipeSchema, type Recipe } from "../../../src/domain/recipe";
 
 const ids = {
   a: "11111111-1111-4111-8111-111111111111",

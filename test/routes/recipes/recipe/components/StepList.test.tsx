@@ -5,7 +5,8 @@
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { StepList } from "../../../../../src/routes/recipes/recipe/components/StepList";
-import type { Food, Ingredient, Step } from "../../../../../src/domain/recipe/recipe";
+import type { Ingredient, Step } from "../../../../../src/domain/recipe";
+import type { Food } from "../../../../../src/domain/reference";
 import type { StorageLike } from "../../../../../src/lib/ticks";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";

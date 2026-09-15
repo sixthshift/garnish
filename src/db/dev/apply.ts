@@ -17,7 +17,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { imageFileName } from "../../domain/image";
-import { recipeInputSchema } from "../../domain/recipe/recipe";
+import { recipeInputSchema } from "../../domain/recipe";
 import { dataDir } from "../../server/core/boot";
 import { orm } from "../connection/client";
 import { recipe } from "../models/recipe/schema";

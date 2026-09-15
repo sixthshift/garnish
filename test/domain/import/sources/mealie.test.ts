@@ -22,7 +22,7 @@ import {
   tagNames,
   type MealieRecipe,
 } from "../../../../src/domain/import/sources/mealie";
-import type { Food } from "../../../../src/domain/recipe/recipe";
+import type { Food } from "../../../../src/domain/reference";
 import { ingredientLines } from "../../../../src/domain/import/scraped";
 import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 

@@ -7,7 +7,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, expectTypeOf, test } from "vitest";
 import { RecipeActions, type RecipeActionsProps } from "../../../../../src/routes/recipes/recipe/components/RecipeActions";
 import { Menu } from "../../../../../src/components/ui/Menu";
-import type { Recipe } from "../../../../../src/domain/recipe/recipe";
+import type { Recipe } from "../../../../../src/domain/recipe";
 
 const base: Recipe = {
   id: "11111111-1111-4111-8111-111111111111",

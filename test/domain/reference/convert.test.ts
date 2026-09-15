@@ -2,7 +2,7 @@
 // link, chained one hop of each. See src/domain/reference/convert.ts.
 import { describe, expect, test } from "vitest";
 import { convert } from "../../../src/domain/reference/convert";
-import type { Food, Unit } from "../../../src/domain/recipe/recipe";
+import type { Food, Unit } from "../../../src/domain/reference/reference";
 
 const gram: Unit = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",

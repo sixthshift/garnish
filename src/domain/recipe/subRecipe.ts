@@ -14,8 +14,8 @@
 // Null whenever the two cannot be related — no amount, no yield, no servings
 // to scale, or no conversion path — and the row then shows the link alone.
 // Pure: no IO, importable by the client.
-import { convert } from "../reference/convert";
-import type { Food, Ingredient, Recipe, Unit } from "./recipe";
+import { convert, type Food, type Unit } from "../reference";
+import type { Ingredient, Recipe } from "./recipe";
 
 /** What the parent needs about a child recipe: enough to link to it and to scale it. */
 export type SubRecipe = Pick<Recipe, "id" | "slug" | "name" | "recipeServings" | "recipeYieldQuantity" | "yieldUnit">;

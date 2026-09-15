@@ -3,7 +3,7 @@ import { formatIngredient, type DisplayIngredient } from "../../../src/domain/in
 import { parseIngredient, type Vocabulary } from "../../../src/domain/ingredient/parseIngredient";
 import type { FoodCandidate } from "../../../src/domain/ingredient/parseFood";
 import type { UnitCandidate } from "../../../src/domain/ingredient/parseUnit";
-import type { Food, Unit } from "../../../src/domain/recipe/recipe";
+import type { Food, Unit } from "../../../src/domain/reference";
 import { generateDevRecipes } from "../../../src/db/dev/generate";
 import { SAMPLE_RECIPES } from "../../../src/db/seed/recipes";
 

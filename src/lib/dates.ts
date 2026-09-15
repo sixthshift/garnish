@@ -1,5 +1,5 @@
 
-import { addDays } from "../domain/plan/plan";
+import { addDays } from "../domain/plan";
 // Dates as the app shows and reads them.
 
 /**

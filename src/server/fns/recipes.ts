@@ -5,9 +5,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { NotFound, required } from "../core/errors";
 import { recipes } from "../../db/models/recipe/repo";
-import { duplicateInput } from "../../domain/recipe/duplicate";
-import { recipeInputSchema } from "../../domain/recipe/recipe";
-import { scaleRecipe } from "../../domain/recipe/scale";
+import { duplicateInput, recipeInputSchema, scaleRecipe } from "../../domain/recipe";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 

@@ -16,8 +16,8 @@
 // Days, not meals: there is no entry type, and a day holds as many entries as
 // it holds (decisions.md row 71).
 import { z } from "zod";
-import type { Recipe } from "../recipe/recipe";
-import { recipeAdditions, type ShoppingAddition } from "../shopping/shopping";
+import type { Recipe } from "../recipe";
+import { recipeAdditions, type ShoppingAddition } from "../shopping";
 
 /**
  * True when `date` is a real `YYYY-MM-DD` day. A round trip rather than

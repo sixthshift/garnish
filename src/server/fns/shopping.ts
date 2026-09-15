@@ -7,8 +7,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { required } from "../core/errors";
 import { shopping } from "../../db/models/shopping/repo";
-import { Id, IdInput } from "../../domain/reference/reference";
-import { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSourceInputSchema } from "../../domain/shopping/shopping";
+import { Id, IdInput } from "../../domain/reference";
+import { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSourceInputSchema } from "../../domain/shopping";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 

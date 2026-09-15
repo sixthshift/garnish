@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { required } from "../core/errors";
 import { recipes } from "../../db/models/recipe/repo";
 import { tags } from "../../db/models/tag/repo";
-import { IdInput, ListQuery, NameInput, TagCreate, TagMerge, TagUpdate } from "../../domain/reference/reference";
+import { IdInput, ListQuery, NameInput, TagCreate, TagMerge, TagUpdate } from "../../domain/reference";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 

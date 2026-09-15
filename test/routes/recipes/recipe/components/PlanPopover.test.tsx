@@ -9,7 +9,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { PlanPopoverContent } from "../../../../../src/routes/recipes/recipe/components/PlanPopover";
 import { planEntryFor } from "../../../../../src/routes/recipes/recipe/components/PlanPopover";
-import type { RecipeInput } from "../../../../../src/domain/recipe/recipe";
+import type { RecipeInput } from "../../../../../src/domain/recipe";
 import { addPlanEntry, listPlanWeek } from "../../../../../src/server/fns/plan";
 import { createRecipe } from "../../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../../helpers/server";

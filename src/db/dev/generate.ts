@@ -10,8 +10,8 @@
 // case to render.
 import type { z } from "zod";
 import { slugify } from "../../domain/names";
-import type { Food, ingredientInputSchema, RecipeInput, Tag, TimelineEventInput, Unit } from "../../domain/recipe/recipe";
-import { suggestLinks } from "../../domain/recipe/stepIngredients";
+import { type ingredientInputSchema, type RecipeInput, type TimelineEventInput, suggestLinks } from "../../domain/recipe";
+import type { Food, Tag, Unit } from "../../domain/reference";
 import { DEFAULT_UNITS } from "../seed/units";
 import { random, type Random } from "./random";
 import { AISLES, DESCRIPTIONS, DOUBLE_STEPS, FOODS, type FoodEntry, NOTES, SHAPES, SOURCES, STEPS, TAGS, UNITS } from "./vocabulary";

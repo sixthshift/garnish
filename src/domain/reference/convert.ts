@@ -11,7 +11,7 @@
 // a base unit, then that unit's own standard link, or the reverse), which is
 // what "chaining one hop each way" buys: cup -[food conversion]-> gram
 // -[unit standard]-> kilogram, without needing gram's own Unit object.
-import type { Food, Unit } from "../recipe/recipe";
+import type { Food, Unit } from "./reference";
 
 interface Edge {
   to: string;

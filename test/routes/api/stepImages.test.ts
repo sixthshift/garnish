@@ -7,7 +7,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 import { recipes } from "../../../src/db/models/recipe/repo";
-import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe/recipe";
+import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe";
 import { getDb } from "../../../src/server/core/db";
 import { handleGetImage } from "../../../src/server/api/images";
 import { handleGetStepImage, handleUploadStepImage, stepImagesDir } from "../../../src/server/api/stepImages";

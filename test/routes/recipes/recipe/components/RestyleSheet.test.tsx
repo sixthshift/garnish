@@ -7,9 +7,8 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { RestyleSheetContent, type RestyleAnswer } from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
 import { applyPayload, type ApplyPart, enabledRuleIds, initialTicked, missingLine, partHeading } from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
-import type { Part, Recipe, Step } from "../../../../../src/domain/recipe/recipe";
-import { checkRestyle } from "../../../../../src/domain/style/restyleCheck";
-import type { StyleRule } from "../../../../../src/domain/style/style";
+import type { Part, Recipe, Step } from "../../../../../src/domain/recipe";
+import { checkRestyle, type StyleRule } from "../../../../../src/domain/style";
 
 let n = 0;
 function step(text: string): Step {

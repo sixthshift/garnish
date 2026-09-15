@@ -1,5 +1,5 @@
 // The links between a part's steps and its ingredient rows.
-import { suggestLinks } from "../stepIngredients";
+import { suggestLinks } from "../recipe";
 import { type DraftIngredient, type DraftPart, type DraftStep, type RecipeDraft } from "./types";
 import { stepsOf, withSteps } from "./steps";
 

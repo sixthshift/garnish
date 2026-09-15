@@ -7,13 +7,8 @@
 // timeline events (see ./timeline.ts), so every stage 2 screen has something to
 // show without a person seeding it by hand.
 import type { z } from "zod";
-import {
-  type Food,
-  type ingredientInputSchema,
-  type RecipeInput,
-  type Tag,
-  type Unit,
-} from "../../domain/recipe/recipe";
+import { type ingredientInputSchema, type RecipeInput } from "../../domain/recipe";
+import { type Food, type Tag, type Unit } from "../../domain/reference";
 import { slugify } from "../../domain/names";
 import { DEFAULT_UNITS } from "./units";
 

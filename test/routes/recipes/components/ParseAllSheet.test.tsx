@@ -8,14 +8,11 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { IngredientsEditor } from "../../../../src/routes/recipes/components/IngredientsEditor";
-import { isTextOnly, newIngredient } from "../../../../src/domain/recipe/draft/ingredients";
+import { isTextOnly, newIngredient, applyParsedRows, needsParseAll, parseAllRows, unparsedIndices, emptyDraft, type DraftIngredient, type RecipeDraft } from "../../../../src/domain/draft";
 import { ParseAllSheetContent } from "../../../../src/routes/recipes/components/ParseAllSheet";
-import { applyParsedRows, needsParseAll, parseAllRows, unparsedIndices } from "../../../../src/domain/recipe/draft/review";
 import { parsedSummary } from "../../../../src/routes/recipes/components/ParseAllSheet";
-import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
-import { type DraftIngredient, type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
 import type { Food as FoodRow } from "../../../../src/db/models/food/repo";
-import type { Unit } from "../../../../src/domain/recipe/recipe";
+import type { Unit } from "../../../../src/domain/reference";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

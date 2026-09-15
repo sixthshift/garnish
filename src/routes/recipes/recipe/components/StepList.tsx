@@ -2,7 +2,7 @@
 // card is the whole of a step's presentation (src/routes/recipes/recipe/components/StepCard.tsx) and
 // cook mode deals the same one in bigger type, so this list is only the
 // ordering and the part's rows the cards resolve their links against.
-import type { Ingredient, Step } from "../../../../domain/recipe/recipe";
+import type { Ingredient, Step } from "../../../../domain/recipe";
 import { StepCard } from "./StepCard";
 
 export function StepList({

@@ -45,20 +45,16 @@ import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useRef, useState } from "react";
-import { paragraphs } from "../../../domain/ingredient/bulkText";
+import { paragraphs } from "../../../domain/ingredient";
 import { Markdown } from "../../../components/ui/Markdown";
-import { ingredientLine } from "../../../domain/recipe/draft/parts";
+import { ingredientLine, type FieldErrors, type RecipeDraft, stepsOf, withSteps, addStep, updateStep, setStepImage, removeStep, addBulkSteps, insertStepAbove, insertStepBelow, splitStepByParagraph, mergeStepWithNext, splitAllSteps, mergeAllSteps, canSplitAll, stepsPath, linkedIngredients, linkableIngredients, linkIngredient, unlinkStepIngredient, suggestPartLinks } from "../../../domain/draft";
 import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
-import { type FieldErrors } from "../../../domain/recipe/draft/validate";
-import { type RecipeDraft } from "../../../domain/recipe/draft/types";
 import { notify, notifyError } from "../../../lib/notify";
 import { stepImageUrl, uploadStepImage } from "../../../lib/images";
 import { BulkAddSheet, BulkInlineAdd } from "../../../components/ui/BulkAddSheet";
 import { Combobox } from "../../../components/ui/Combobox";
 import { Menu } from "../../../components/ui/Menu";
 import { ReorderList } from "../../../components/ui/ReorderList";
-import { stepsOf, withSteps, addStep, updateStep, setStepImage, removeStep, addBulkSteps, insertStepAbove, insertStepBelow, splitStepByParagraph, mergeStepWithNext, splitAllSteps, mergeAllSteps, canSplitAll, stepsPath } from "../../../domain/recipe/draft/steps";
-import { linkedIngredients, linkableIngredients, linkIngredient, unlinkStepIngredient, suggestPartLinks } from "../../../domain/recipe/draft/links";
 
 // --- Pure helpers -----------------------------------------------------------
 

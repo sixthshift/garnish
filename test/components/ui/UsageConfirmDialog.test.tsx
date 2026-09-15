@@ -3,7 +3,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { UsageConfirmDialogContent } from "../../../src/components/ui/UsageConfirmDialog";
 import { usageListLimit, usageNames, usageSummary } from "../../../src/components/ui/UsageConfirmDialog";
-import type { RecipeSummary } from "../../../src/domain/recipe/recipe";
+import type { RecipeSummary } from "../../../src/domain/recipe";
 
 function summary(name: string): RecipeSummary {
   return {

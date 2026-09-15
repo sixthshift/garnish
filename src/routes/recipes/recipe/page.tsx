@@ -26,10 +26,8 @@ import { RecipeHeader, RecipeMetaFooter } from "./components/RecipeHeader";
 import { QuickEditProvider } from "./components/QuickEdit";
 import { StepList } from "./components/StepList";
 import { TimerStrip } from "./components/TimerStrip";
-import { mergeIngredients } from "../../../domain/recipe/mergeIngredients";
-import { scaledForServings } from "../../../domain/recipe/scale";
+import { mergeIngredients, scaledForServings, type Part, nextServings } from "../../../domain/recipe";
 import { MadeThisButton, TimelineList } from "./components/Timeline";
-import type { Part } from "../../../domain/recipe/recipe";
 import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
 import { useIngredientMode } from "../../../lib/prefs";
 import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
@@ -37,7 +35,6 @@ import { useMutate } from "../../../lib/mutate";
 import { notifyError } from "../../../lib/notify";
 import { setRating } from "../../../server/fns/recipes";
 import { Route } from "./route";
-import { nextServings } from "../../../domain/recipe/scale";
 
 /** A pencil, drawn the way RecipeHeader.tsx draws its own icons. */
 function EditIcon() {

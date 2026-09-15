@@ -54,10 +54,9 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { type FormEvent, useState } from "react";
-import { type Food as FoodRow } from "../../../../db/models/food/repo";
-import { pendingCreations, reviewRows, rowCommit } from "../../../../domain/ingredient/bulkIngredients";
+import { type FoodRow, type Tag, type Unit } from "../../../../domain/reference";
+import { pendingCreations, reviewRows, rowCommit } from "../../../../domain/ingredient";
 import { type FileRecipe, type ImportedRecipe, type MealieRecipe, review, type ScrapedRecipe, type ImportCheck, type ImportSource } from "../../../../domain/import";
-import { type Tag, type Unit } from "../../../../domain/recipe/recipe";
 import { postImportFile } from "../../../../lib/importFile";
 import { messageFrom } from "../../../../lib/notify";
 import { foodForRecipe, findOrCreateFood, listFoods } from "../../../../server/fns/foods";
@@ -65,10 +64,7 @@ import { getRecipe, recipeByName } from "../../../../server/fns/recipes";
 import { importFromUrl, importFromText } from "../../../../server/fns/import";
 import { findOrCreateUnit } from "../../../../server/fns/units";
 import { IngredientReviewRow } from "../../components/IngredientReviewRow";
-import { type IngredientReview } from "../../../../domain/recipe/draft/review";
-import { filterUnits } from "../../../../domain/recipe/draft/vocabulary";
-import { type RecipeDraft } from "../../../../domain/recipe/draft/types";
-import { draftFromScraped } from "../../../../domain/recipe/draft/scraped";
+import { type IngredientReview, filterUnits, type RecipeDraft, draftFromScraped } from "../../../../domain/draft";
 
 /** Which source the chooser is on. `paste` is the AI rung (M34.5) and only appears when `claude` is installed. */
 export type SourceKind = "url" | "manual" | "file" | "paste";

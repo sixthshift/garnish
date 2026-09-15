@@ -1,6 +1,6 @@
 // A draft from nothing, from a recipe, or from parsed input; and what it has in it.
 import { type ParsedRecipeInput, type Recipe } from "../recipe";
-import { randomUuid } from "../../ids";
+import { randomUuid } from "../ids";
 import { newPart } from "./parts";
 import { type RecipeDraft } from "./types";
 

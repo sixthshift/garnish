@@ -7,7 +7,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { BulkAddFields, BulkAddSheet, BulkInlinePanel, BulkReviewList } from "../../../src/components/ui/BulkAddSheet";
-import { paragraphs, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/ingredient/bulkText";
+import { paragraphs, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/ingredient";
 
 /** The first element in `node` whose `children` prop is exactly `text`, without rendering it. */
 function elementWithChildren(node: ReactNode, text: string): ReactElement<Record<string, any>> {

@@ -10,7 +10,7 @@ import { z } from "zod";
 import { NotFound } from "../core/errors";
 import { recipes } from "../../db/models/recipe/repo";
 import { timeline } from "../../db/models/timeline/repo";
-import { timelineEventInputSchema } from "../../domain/recipe/recipe";
+import { timelineEventInputSchema } from "../../domain/recipe";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 

@@ -5,7 +5,7 @@ import { DEV_RECIPE_COUNT, devIds, generateDevRecipes } from "../../../src/db/de
 import { hslToRgb, placeholderPng } from "../../../src/db/dev/png";
 import { random, seedFrom } from "../../../src/db/dev/random";
 import { slugify } from "../../../src/domain/names";
-import { recipeInputSchema } from "../../../src/domain/recipe/recipe";
+import { recipeInputSchema } from "../../../src/domain/recipe";
 
 test("the same seed produces byte-identical data, a different seed does not", () => {
   expect(generateDevRecipes()).toEqual(generateDevRecipes());

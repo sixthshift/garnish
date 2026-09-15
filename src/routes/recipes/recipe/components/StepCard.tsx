@@ -20,7 +20,7 @@
 // is running has to be reachable after its step is done.
 import { cn } from "@sixthshift/design-system/utils";
 import { useMemo } from "react";
-import { type Ingredient, type Step } from "../../../../domain/recipe/recipe";
+import { type Ingredient, type Step, durationsIn } from "../../../../domain/recipe";
 import { stepImageUrl } from "../../../../lib/images";
 import { useStepTick } from "../../../../lib/ticks";
 import { chipTimerId, useTimers } from "../../../../lib/timers";
@@ -29,7 +29,6 @@ import { Markdown } from "../../../../components/ui/Markdown";
 import { useQuickEditStep } from "./QuickEdit";
 import { TimerChip } from "./TimerChip";
 
-import { durationsIn } from "../../../../domain/recipe/durations";
 
 /** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
 export type StepCardSize = "page" | "cook";

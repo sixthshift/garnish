@@ -3,7 +3,7 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { Route as rootRoute } from "../root";
 import { z } from "zod";
-import { weekMonday, type PlanDay } from "../../domain/plan/plan";
+import { weekMonday, type PlanDay } from "../../domain/plan";
 import { listPlanWeek } from "../../server/fns/plan";
 
 /** `?week=` is the Monday's date; anything else falls back to this week. */

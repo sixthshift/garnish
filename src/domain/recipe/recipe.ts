@@ -22,6 +22,7 @@
 //     rather than inventing a heading for it (decisions.md row 49).
 //   - Parent ids (recipe_id, part_id) are implied by nesting and omitted.
 import { z } from "zod";
+import { unitSchema, foodSchema, tagSchema } from "../reference";
 
 const id = z.uuid();
 const timestamp = z.iso.datetime();
@@ -30,55 +31,6 @@ const text = z.string().default("");
 const minutes = z.number().int().nonnegative().nullable().default(null);
 /** Calendar date, YYYY-MM-DD. A cook happened on a day, not at an instant. */
 const date = z.iso.date();
-
-// --- Reference tables -------------------------------------------------------
-
-export const aisleSchema = z.object({
-  id,
-  name: nonEmpty,
-  position: z.number().int().nonnegative().default(0),
-});
-
-export const unitSchema = z.object({
-  id,
-  name: nonEmpty,
-  pluralName: z.string().nullable().default(null),
-  abbreviation: text,
-  useAbbreviation: z.boolean().default(false),
-  fraction: z.boolean().default(true),
-  standardQuantity: z.number().nonnegative().nullable().default(null),
-  standardUnitId: id.nullable().default(null),
-});
-
-/**
- * "1 cup of plain flour is 125 g" (decisions.md row 69): `quantity` of `unitId`
- * of the owning food equals `toQuantity` of `toUnitId`. Units are ids, not
- * nested objects — the conversion is only ever read beside a units list.
- */
-export const foodConversionSchema = z.object({
-  id,
-  unitId: id,
-  quantity: z.number().positive(),
-  toUnitId: id,
-  toQuantity: z.number().positive(),
-});
-
-export const foodSchema = z.object({
-  id,
-  name: nonEmpty,
-  pluralName: z.string().nullable().default(null),
-  aliases: z.array(z.string()).default([]),
-  aisle: aisleSchema.nullable().default(null),
-  recipeId: id.nullable().default(null), // sub-recipe hook, behaviour deferred
-  skipShopping: z.boolean().default(false),
-  conversions: z.array(foodConversionSchema).default([]),
-});
-
-export const tagSchema = z.object({
-  id,
-  name: nonEmpty,
-  slug: nonEmpty,
-});
 
 // --- Recipe-owned rows ------------------------------------------------------
 
@@ -226,11 +178,6 @@ export const recipeInputSchema = z.object({
 
 // --- Types ------------------------------------------------------------------
 
-export type Aisle = z.infer<typeof aisleSchema>;
-export type Unit = z.infer<typeof unitSchema>;
-export type Food = z.infer<typeof foodSchema>;
-export type FoodConversion = z.infer<typeof foodConversionSchema>;
-export type Tag = z.infer<typeof tagSchema>;
 export type Ingredient = z.infer<typeof ingredientSchema>;
 export type Step = z.infer<typeof stepSchema>;
 export type RecipeNote = z.infer<typeof recipeNoteSchema>;

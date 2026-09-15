@@ -40,17 +40,14 @@ import { AddToShoppingButton } from "../../../../components/shopping/AddToShoppi
 import { MadeThisButton } from "../components/Timeline";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
 import { StepCard } from "../components/StepCard";
-import { buildCookCards, cardAnnouncement, clampStep, nextPreview, partPills, isFinishedIndex, totalWithFinish, type CookCard } from "../../../../domain/recipe/cook";
+import { buildCookCards, cardAnnouncement, clampStep, nextPreview, partPills, isFinishedIndex, totalWithFinish, type CookCard, scaledForServings, type Ingredient, type Recipe, stepForKey, positionLabel } from "../../../../domain/recipe";
 import { swipeIntent } from "../../../../lib/swipe";
-import { formatIngredient } from "../../../../domain/ingredient/format";
-import { scaledForServings } from "../../../../domain/recipe/scale";
-import type { Ingredient, Recipe } from "../../../../domain/recipe/recipe";
+import { formatIngredient } from "../../../../domain/ingredient";
 import { SubRecipesProvider } from "../../../../components/recipe/SubRecipes";
 import { useIngredientTick } from "../../../../lib/ticks";
 import { TimerStrip } from "../components/TimerStrip";
 import { useWakeLock } from "../../../../lib/useWakeLock";
 import { Route } from "./route";
-import { stepForKey, positionLabel } from "../../../../domain/recipe/cook";
 
 /** Eye: the screen is being watched, so it is being kept on. Same drawing style as RecipeHeader's stat icons. */
 function WakeLockIcon() {

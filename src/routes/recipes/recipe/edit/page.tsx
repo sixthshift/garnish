@@ -10,7 +10,7 @@
 // Cancel can hand the view page back the scale it was showing.
 import { Heading } from "@sixthshift/design-system/heading";
 import { RecipeForm } from "../../components/RecipeForm";
-import { draftFromRecipe } from "../../../../domain/recipe/draft/draft";
+import { draftFromRecipe } from "../../../../domain/draft";
 import { Route } from "./route";
 
 export function EditRecipePage() {

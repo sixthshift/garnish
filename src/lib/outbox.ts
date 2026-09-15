@@ -17,7 +17,7 @@
 // around it, and a hook around that. The pure core is what the tests drive; it
 // never touches a DOM, a clock it was not given, or the network.
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ShoppingItem } from "../domain/shopping/shopping";
+import type { ShoppingItem } from "../domain/shopping";
 import { randomUuid } from "../domain/ids";
 
 /** What a queued write does to one line. A `remove` supersedes anything queued before it. */

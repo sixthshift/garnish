@@ -10,7 +10,7 @@ import { RecipeHeader, RecipeMetaFooter } from "../../../../../src/routes/recipe
 import { formatDateStamp } from "../../../../../src/lib/dates";
 import { isLinkable, sourceLabel } from "../../../../../src/lib/urls";
 import { timeStats } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
-import type { Recipe } from "../../../../../src/domain/recipe/recipe";
+import type { Recipe } from "../../../../../src/domain/recipe";
 import { nextRating } from "../../../../../src/lib/ui/rating";
 
 const gram = {

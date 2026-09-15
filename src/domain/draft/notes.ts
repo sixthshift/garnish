@@ -1,7 +1,7 @@
 // Editing a draft's notes.
-import { randomUuid } from "../../ids";
+import { randomUuid } from "../ids";
 import { type DraftNote, type RecipeDraft } from "./types";
-import { moveItem } from "../../lists";
+import { moveItem } from "../lists";
 
 /** A blank note with a fresh id, so it has a stable row key before it is saved. */
 export function newNote(): DraftNote {

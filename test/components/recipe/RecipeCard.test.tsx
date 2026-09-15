@@ -7,7 +7,8 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { RecipeCard } from "../../../src/components/recipe/RecipeCard";
 import { capTags } from "../../../src/components/recipe/RecipeCard";
-import type { RecipeSummary, Tag } from "../../../src/domain/recipe/recipe";
+import type { RecipeSummary } from "../../../src/domain/recipe";
+import type { Tag } from "../../../src/domain/reference";
 
 const tag = (n: number): Tag => ({ id: `dddddddd-dddd-4ddd-8ddd-dddddddddd0${n}`, name: `Tag ${n}`, slug: `tag-${n}` });
 

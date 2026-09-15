@@ -4,7 +4,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 import { recipes } from "../../../src/db/models/recipe/repo";
-import { recipeInputSchema } from "../../../src/domain/recipe/recipe";
+import { recipeInputSchema } from "../../../src/domain/recipe";
 import { getDb } from "../../../src/server/core/db";
 import { handleGetImage, handleUploadImage } from "../../../src/server/api/images";
 import { getImageRoute as GetRoute, uploadImageRoute as PostRoute } from "../../../src/routes/api/images";

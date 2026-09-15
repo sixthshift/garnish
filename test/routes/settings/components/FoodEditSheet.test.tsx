@@ -6,7 +6,7 @@ import { FoodEditSheetContent, type FoodPatch } from "../../../../src/routes/set
 import { aliasesText, blankConversion, conversionDraft, isBlankConversion, parseAliases, parseConversions, type ConversionDraft } from "../../../../src/routes/settings/components/FoodEditSheet";
 import type { Food } from "../../../../src/db/models/food/repo";
 import type { Unit } from "../../../../src/db/models/unit/repo";
-import type { Aisle } from "../../../../src/domain/recipe/recipe";
+import type { Aisle } from "../../../../src/domain/reference";
 
 const dairy: Aisle = { id: "a1", name: "Dairy", position: 0 };
 const bakery: Aisle = { id: "a2", name: "Bakery", position: 1 };

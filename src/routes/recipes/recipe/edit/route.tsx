@@ -3,7 +3,8 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { Route as rootRoute } from "../../../root";
 import { z } from "zod";
-import type { Recipe, Tag, Unit } from "../../../../domain/recipe/recipe";
+import type { Recipe } from "../../../../domain/recipe";
+import type { Tag, Unit } from "../../../../domain/reference";
 import { getRecipe } from "../../../../server/fns/recipes";
 import { listTags } from "../../../../server/fns/tags";
 import { listUnits } from "../../../../server/fns/units";

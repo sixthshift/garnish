@@ -6,10 +6,9 @@
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { QuickEditIngredientBody, QuickEditStepBody, saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
-import { withIngredientReplaced } from "../../../../../src/domain/recipe/draft/ingredients";
-import { withStepReplaced } from "../../../../../src/domain/recipe/draft/steps";
-import { type DraftIngredient } from "../../../../../src/domain/recipe/draft/types";
-import type { Ingredient, Recipe, Unit } from "../../../../../src/domain/recipe/recipe";
+import { withIngredientReplaced, withStepReplaced, type DraftIngredient } from "../../../../../src/domain/draft";
+import type { Ingredient, Recipe } from "../../../../../src/domain/recipe";
+import type { Unit } from "../../../../../src/domain/reference";
 import { getTicks, setIngredientTicked, setStepTicked, type StorageLike } from "../../../../../src/lib/ticks";
 
 // `updateRecipe` is the only server call a save makes; the test keeps what it

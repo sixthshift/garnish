@@ -9,10 +9,10 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { ImportReview, type ModelReader, modelPass } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 import { changedLines, changeSummary, importSummary, rejectionMessage, shouldReadWithModel, withRejectedAnswer } from "../../../../../src/routes/recipes/new/components/RecipeSource";
-import { draftFromScraped } from "../../../../../src/domain/recipe/draft/scraped";
+import { draftFromScraped } from "../../../../../src/domain/draft";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
-import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient/bulkIngredients";
-import type { Unit } from "../../../../../src/domain/recipe/recipe";
+import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient";
+import type { Unit } from "../../../../../src/domain/reference";
 import { type ImportCheck, type ImportedRecipe, type ScrapedRecipe, review } from "../../../../../src/domain/import";
 
 const gram: Unit = {

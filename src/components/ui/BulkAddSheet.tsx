@@ -35,7 +35,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { type ReactNode, useState } from "react";
-import { bulkLines, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../domain/ingredient/bulkText";
+import { bulkLines, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../domain/ingredient";
 
 export type BulkAddFieldsProps = {
   /** Noun for labels and copy: "ingredient" or "step". */

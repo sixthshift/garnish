@@ -3,8 +3,7 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { Route as rootRoute } from "../../root";
 import { z } from "zod";
-import type { Recipe, TimelineEvent } from "../../../domain/recipe/recipe";
-import { type SubRecipe, subRecipeIds } from "../../../domain/recipe/subRecipe";
+import { type Recipe, type TimelineEvent, type SubRecipe, subRecipeIds } from "../../../domain/recipe";
 import { aiImportAvailable } from "../../../server/fns/import";
 import { getRecipe, listSubRecipes } from "../../../server/fns/recipes";
 import { listTimeline } from "../../../server/fns/timeline";

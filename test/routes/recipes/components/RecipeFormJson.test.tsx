@@ -1,10 +1,8 @@
 // The editor's JSON view (M13.5): the document round-trips through the
 // textarea, and bad text comes back as a message rather than a draft.
 import { describe, expect, test } from "vitest";
-import { draftFromInput, draftFromRecipe, emptyDraft } from "../../../../src/domain/recipe/draft/draft";
-import { draftFromJson, draftToJson } from "../../../../src/domain/recipe/draft/json";
-import { type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
-import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipe/recipe";
+import { draftFromInput, draftFromRecipe, emptyDraft, draftFromJson, draftToJson, type RecipeDraft } from "../../../../src/domain/draft";
+import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipe";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

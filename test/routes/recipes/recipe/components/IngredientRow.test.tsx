@@ -5,9 +5,8 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { IngredientRow } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
 import { ingredientLineParts } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
-import type { Ingredient } from "../../../../../src/domain/recipe/recipe";
+import type { Ingredient, SubRecipe } from "../../../../../src/domain/recipe";
 import { SubRecipesProvider } from "../../../../../src/components/recipe/SubRecipes";
-import type { SubRecipe } from "../../../../../src/domain/recipe/subRecipe";
 import { setIngredientTicked, type StorageLike } from "../../../../../src/lib/ticks";
 
 const gram = {

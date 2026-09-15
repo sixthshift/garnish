@@ -6,7 +6,7 @@
 // unnamed part has nothing to head) followed by its lines, so a pasted list of
 // a multi-part recipe still says which ingredients belong to what. Empty lines
 // and empty parts are dropped; a recipe with nothing to copy yields "".
-import { formatIngredient } from "../ingredient/format";
+import { formatIngredient } from "../ingredient";
 import type { Ingredient, Part } from "./recipe";
 
 export type CopyRecipe = { name: string; parts: ReadonlyArray<Pick<Part, "name" | "ingredients">> };

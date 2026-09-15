@@ -3,8 +3,8 @@
 // by id.
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { dayLabel, planDaySchema } from "../../../src/domain/plan/plan";
-import type { RecipeInput } from "../../../src/domain/recipe/recipe";
+import { dayLabel, planDaySchema } from "../../../src/domain/plan";
+import type { RecipeInput } from "../../../src/domain/recipe";
 import { addPlanEntry, addPlanWeekToShopping, listPlanWeek, movePlanEntry, removePlanEntry, updatePlanEntry } from "../../../src/server/fns/plan";
 import { createRecipe, deleteRecipe } from "../../../src/server/fns/recipes";
 import { listShoppingItems } from "../../../src/server/fns/shopping";

@@ -46,21 +46,17 @@ import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
-import { type Food as FoodRow } from "../../../../db/models/food/repo";
-import { type Recipe, type Unit } from "../../../../domain/recipe/recipe";
+import { type FoodRow, type Unit } from "../../../../domain/reference";
+import { type Recipe } from "../../../../domain/recipe";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";
 import { listFoods } from "../../../../server/fns/foods";
 import { updateRecipe } from "../../../../server/fns/recipes";
 import { listUnits } from "../../../../server/fns/units";
 import { FOOD_SEARCH_DEBOUNCE_MS, IngredientFields } from "../../components/IngredientsEditor";
-import { foodReference, matchUnit, unitReference } from "../../../../domain/recipe/draft/vocabulary";
-import { isTextOnly, textOnlyPatch, withIngredientReplaced } from "../../../../domain/recipe/draft/ingredients";
+import { foodReference, matchUnit, unitReference, isTextOnly, textOnlyPatch, withIngredientReplaced, type DraftIngredient, type RecipeDraft, validateDraft, withStepReplaced } from "../../../../domain/draft";
 import { Markdown } from "../../../../components/ui/Markdown";
 import { Menu } from "../../../../components/ui/Menu";
-import { type DraftIngredient, type RecipeDraft } from "../../../../domain/recipe/draft/types";
-import { validateDraft } from "../../../../domain/recipe/draft/validate";
-import { withStepReplaced } from "../../../../domain/recipe/draft/steps";
 
 // --- Pure helpers -----------------------------------------------------------
 

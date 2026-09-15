@@ -4,7 +4,7 @@
 // `IngredientRow`s, reading the same ticks — rather than a second copy of it.
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { IngredientRow } from "./IngredientRow";
-import type { Ingredient, Part } from "../../../../domain/recipe/recipe";
+import type { Ingredient, Part } from "../../../../domain/recipe";
 
 export type IngredientListProps = {
   ingredients: Ingredient[];

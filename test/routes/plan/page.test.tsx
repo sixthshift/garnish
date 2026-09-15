@@ -10,8 +10,8 @@ import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, crea
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { PlanAddRow, PlanSearchResult, PlanWeekView, searchPlanRecipes } from "../../../src/routes/plan/components/PlanWeekView";
-import { groupByDay, planEntrySchema, weekDates, type PlanDay, type PlanEntry } from "../../../src/domain/plan/plan";
-import type { RecipeSummary } from "../../../src/domain/recipe/recipe";
+import { groupByDay, planEntrySchema, weekDates, type PlanDay, type PlanEntry } from "../../../src/domain/plan";
+import type { RecipeSummary } from "../../../src/domain/recipe";
 import { addPlanEntry, listPlanWeek } from "../../../src/server/fns/plan";
 import { createRecipe } from "../../../src/server/fns/recipes";
 import { elementHtml, renderRoute } from "../../helpers/routes";

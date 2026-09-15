@@ -1,9 +1,9 @@
 // Editing a draft's parts.
-import { formatIngredient } from "../../ingredient/format";
+import { formatIngredient } from "../ingredient";
 import { ingredientInputSchema } from "../recipe";
-import { randomUuid } from "../../ids";
+import { randomUuid } from "../ids";
 import { type DraftIngredient, type DraftPart, type RecipeDraft } from "./types";
-import { moveItem } from "../../lists";
+import { moveItem } from "../lists";
 
 /** A blank part with a fresh id, so it has a stable row key before it is saved. */
 export function newPart(name = ""): DraftPart {

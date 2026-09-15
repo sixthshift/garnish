@@ -44,9 +44,7 @@ import {
   reviewRowFromMealie,
   tagNames,
 } from "./mealie";
-import type { FoodCandidate } from "../../ingredient/parseFood";
-import type { UnitCandidate } from "../../ingredient/parseUnit";
-import type { ReviewRow } from "../../ingredient/bulkIngredients";
+import type { FoodCandidate, UnitCandidate, ReviewRow } from "../../ingredient";
 import { text } from "../scraped";
 import { isZip, readZip, type ZipEntry } from "./zip";
 

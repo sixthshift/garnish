@@ -2,7 +2,7 @@
 // validation failures, not-found mapping, and servings scaling.
 import { isNotFound } from "@tanstack/react-router";
 import { describe, expect, test } from "vitest";
-import { recipeSchema, recipeSummarySchema, type RecipeInput } from "../../../src/domain/recipe/recipe";
+import { recipeSchema, recipeSummarySchema, type RecipeInput } from "../../../src/domain/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import {
   createRecipe,

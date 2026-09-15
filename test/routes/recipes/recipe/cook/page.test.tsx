@@ -3,7 +3,7 @@
 // Stands in for the plan's phone-width manual check (no browser here): the
 // layout is a single column with no fixed widths, asserted below by class.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { positionLabel, stepForKey } from "../../../../../src/domain/recipe/cook";
+import { positionLabel, stepForKey } from "../../../../../src/domain/recipe";
 import { type CookRouteData, Route as CookRoute } from "../../../../../src/routes/recipes/recipe/cook/route";
 import { createRecipe } from "../../../../../src/server/fns/recipes";
 import { foodForRecipe } from "../../../../../src/server/fns/foods";

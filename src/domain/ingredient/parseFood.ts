@@ -27,7 +27,7 @@
 // (rare — most real trailing detail lands after the comma instead) is kept
 // in `foodText` too, so a partial match never narrows the proposal; only a
 // match spanning the entire head leaves `foodText` empty.
-import type { Food } from "../recipe/recipe";
+import type { Food } from "../reference";
 
 /** The food fields matching needs. A full `Food` row satisfies it. */
 export type FoodCandidate = Pick<Food, "name" | "pluralName" | "aliases">;

@@ -18,7 +18,8 @@
 //
 // A text-only ingredient (`food === null`) has nothing to match on and is
 // skipped: its `originalText` is a whole line, not a food name.
-import type { Food, Step } from "./recipe";
+import type { Step } from "./recipe";
+import type { Food } from "../reference";
 
 /** Letters and digits: anything else counts as a word boundary. */
 const WORD = /[\p{L}\p{N}]/u;

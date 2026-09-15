@@ -4,11 +4,8 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { PartsEditor } from "../../../../src/routes/recipes/components/PartsEditor";
-import { addPart, hasContent, ingredientLine, isBare, movePart, newPart, removePart, renamePart } from "../../../../src/domain/recipe/draft/parts";
+import { addPart, hasContent, ingredientLine, isBare, movePart, newPart, removePart, renamePart, type DraftPart, type RecipeDraft, emptyDraft, validateDraft } from "../../../../src/domain/draft";
 import { partLabel, contentSummary } from "../../../../src/routes/recipes/components/PartsEditor";
-import { type DraftPart, type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
-import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
-import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
 import { createRecipe, getRecipe, updateRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 

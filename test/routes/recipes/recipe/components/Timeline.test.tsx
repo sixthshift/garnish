@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { TimelineList, saveCook, saveCookAndClearTicks } from "../../../../../src/routes/recipes/recipe/components/Timeline";
 import { offersSaveAsNote, withNoteFromCook } from "../../../../../src/routes/recipes/recipe/components/Timeline";
 import { saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
-import type { Recipe, TimelineEvent } from "../../../../../src/domain/recipe/recipe";
+import type { Recipe, TimelineEvent } from "../../../../../src/domain/recipe";
 import { getTicks, setIngredientTicked, type StorageLike } from "../../../../../src/lib/ticks";
 
 // `updateRecipe` is the only server call `saveQuickEdit` makes; kept here so

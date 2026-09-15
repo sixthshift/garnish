@@ -88,3 +88,81 @@ export type TagUpdate = z.infer<typeof TagUpdate>;
 /** Merge `sourceId` into `targetId`: the source is deleted, its recipes repointed to the target tag. */
 export const TagMerge = z.object({ sourceId: Id, targetId: Id });
 export type TagMerge = z.infer<typeof TagMerge>;
+
+// --- The four reference tables, as the recipe document nests them -----------
+// Mirrors 001_init.sql column for column in camelCase; the recipe document
+// (src/domain/recipe/recipe.ts) embeds these where a row points at one.
+
+const id = z.uuid();
+const nonEmpty = z.string().trim().min(1);
+const text = z.string().default("");
+
+export const aisleSchema = z.object({
+  id,
+  name: nonEmpty,
+  position: z.number().int().nonnegative().default(0),
+});
+
+export const unitSchema = z.object({
+  id,
+  name: nonEmpty,
+  pluralName: z.string().nullable().default(null),
+  abbreviation: text,
+  useAbbreviation: z.boolean().default(false),
+  fraction: z.boolean().default(true),
+  standardQuantity: z.number().nonnegative().nullable().default(null),
+  standardUnitId: id.nullable().default(null),
+});
+
+/**
+ * "1 cup of plain flour is 125 g" (decisions.md row 69): `quantity` of `unitId`
+ * of the owning food equals `toQuantity` of `toUnitId`. Units are ids, not
+ * nested objects — the conversion is only ever read beside a units list.
+ */
+export const foodConversionSchema = z.object({
+  id,
+  unitId: id,
+  quantity: z.number().positive(),
+  toUnitId: id,
+  toQuantity: z.number().positive(),
+});
+
+export const foodSchema = z.object({
+  id,
+  name: nonEmpty,
+  pluralName: z.string().nullable().default(null),
+  aliases: z.array(z.string()).default([]),
+  aisle: aisleSchema.nullable().default(null),
+  recipeId: id.nullable().default(null), // sub-recipe hook, behaviour deferred
+  skipShopping: z.boolean().default(false),
+  conversions: z.array(foodConversionSchema).default([]),
+});
+
+export const tagSchema = z.object({
+  id,
+  name: nonEmpty,
+  slug: nonEmpty,
+});
+
+export type Aisle = z.infer<typeof aisleSchema>;
+export type Unit = z.infer<typeof unitSchema>;
+export type Food = z.infer<typeof foodSchema>;
+export type FoodConversion = z.infer<typeof foodConversionSchema>;
+export type Tag = z.infer<typeof tagSchema>;
+
+/**
+ * A food as the foods list returns it: the row, with `aisleId` flat rather
+ * than the nested aisle the recipe document carries. The repository's own
+ * row type is this one.
+ */
+export type FoodRow = {
+  id: string;
+  name: string;
+  pluralName: string | null;
+  aliases: string[];
+  aisleId: string | null;
+  recipeId: string | null;
+  skipShopping: boolean;
+  /** "1 cup of flour is 125 g" (decisions.md row 69). Empty for most foods. */
+  conversions: FoodConversion[];
+};

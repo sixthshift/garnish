@@ -17,16 +17,13 @@ import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useEffect, useRef, useState } from "react";
-import { type Food as FoodRow } from "../../../db/models/food/repo";
-import { pendingCreations } from "../../../domain/ingredient/bulkIngredients";
-import { type Unit } from "../../../domain/recipe/recipe";
+import { type FoodRow, type Unit } from "../../../domain/reference";
+import { pendingCreations } from "../../../domain/ingredient";
 import { messageFrom } from "../../../lib/notify";
 import { findOrCreateFood, listFoods } from "../../../server/fns/foods";
 import { findOrCreateUnit } from "../../../server/fns/units";
 import { IngredientReviewRow } from "./IngredientReviewRow";
-import { type IngredientReview, parseAllRows, applyParsedRows } from "../../../domain/recipe/draft/review";
-import { filterUnits } from "../../../domain/recipe/draft/vocabulary";
-import { type DraftIngredient, type RecipeDraft } from "../../../domain/recipe/draft/types";
+import { type IngredientReview, parseAllRows, applyParsedRows, filterUnits, type DraftIngredient, type RecipeDraft } from "../../../domain/draft";
 
 export type ParseAllSheetContentProps = {
   rows: readonly IngredientReview[];

@@ -10,23 +10,10 @@
 // modified by a recipe write.
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, exists, inArray, ne, type SQL, sql } from "drizzle-orm";
-import type {
-  Food,
-  Ingredient,
-  ParsedRecipeInput,
-  Part,
-  Recipe,
-  RecipeNote,
-  RecipeSummary,
-  Step,
-  Tag,
-  Unit,
-} from "../../../domain/recipe/recipe";
-import { formatIngredient, totalMinutes } from "../../../domain/ingredient/format";
-import { resolveSort, type SortDir, type SortKey } from "../../../domain/recipe/sort";
+import { type Ingredient, type ParsedRecipeInput, type Part, type Recipe, type RecipeNote, type RecipeSummary, type Step, resolveSort, type SortDir, type SortKey, suggestLinks, type SubRecipe } from "../../../domain/recipe";
+import type { Food, Tag, Unit } from "../../../domain/reference";
+import { formatIngredient, totalMinutes } from "../../../domain/ingredient";
 import { seededOrder } from "../../../domain/lists";
-import { suggestLinks } from "../../../domain/recipe/stepIngredients";
-import type { SubRecipe } from "../../../domain/recipe/subRecipe";
 import { aisles as aisleRepository } from "../aisle/repo";
 import { type Executor, orm } from "../../connection/client";
 import { food } from "../food/schema";

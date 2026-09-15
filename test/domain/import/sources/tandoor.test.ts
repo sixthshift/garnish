@@ -24,7 +24,7 @@ import {
   type TandoorRecipe,
 } from "../../../../src/domain/import/sources/tandoor";
 import { ingredientLines } from "../../../../src/domain/import/scraped";
-import type { Food } from "../../../../src/domain/recipe/recipe";
+import type { Food } from "../../../../src/domain/reference";
 import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 
 const dir = join(import.meta.dirname, "../../../fixtures/tandoor");

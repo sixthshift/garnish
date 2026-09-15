@@ -4,7 +4,7 @@
 // Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
 import { styleRules } from "../../db/models/style/repo";
-import { StyleRuleCreate, StyleRuleId, StyleRuleReorder, StyleRuleUpdate } from "../../domain/style/style";
+import { StyleRuleCreate, StyleRuleId, StyleRuleReorder, StyleRuleUpdate } from "../../domain/style";
 import { getDb } from "../core/db";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";

@@ -3,7 +3,7 @@
 // (M11.6). Fully controlled, like FilterBar — the route owns the search
 // params and re-navigates on selection; this component only renders the
 // current choice and reports the next one upward.
-import { SORT_OPTIONS, type SortDir, type SortKey } from "../../../domain/recipe/sort";
+import { SORT_OPTIONS, type SortDir, type SortKey } from "../../../domain/recipe";
 import { Menu } from "../../../components/ui/Menu";
 
 export type SortMenuProps = {

@@ -2,7 +2,8 @@
 // an ingredient's amount, over matching units, convertible units and unrelated
 // ones. See src/domain/recipe/subRecipe.ts.
 import { describe, expect, test } from "vitest";
-import type { Food, Ingredient, Recipe, Unit } from "../../../src/domain/recipe/recipe";
+import type { Ingredient, Recipe } from "../../../src/domain/recipe/recipe";
+import type { Food, Unit } from "../../../src/domain/reference";
 import { type SubRecipe, subRecipeHint, subRecipeIds, subRecipeMap, subRecipeScale } from "../../../src/domain/recipe/subRecipe";
 
 const gram: Unit = {

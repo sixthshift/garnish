@@ -2,8 +2,8 @@
 // the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { Route as rootRoute } from "../root";
-import type { Aisle } from "../../domain/recipe/recipe";
-import { type ShoppingItem } from "../../domain/shopping/shopping";
+import type { Aisle } from "../../domain/reference";
+import { type ShoppingItem } from "../../domain/shopping";
 import { listAisles } from "../../server/fns/aisles";
 import { listShoppingItems } from "../../server/fns/shopping";
 

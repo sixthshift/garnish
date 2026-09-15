@@ -19,8 +19,8 @@ import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
-import { servingsLabel } from "../../../../domain/plan/plan";
-import { type Recipe, type TimelineEvent, type TimelineEventInput } from "../../../../domain/recipe/recipe";
+import { servingsLabel } from "../../../../domain/plan";
+import { type Recipe, type TimelineEvent, type TimelineEventInput } from "../../../../domain/recipe";
 import { timelineImageUrl, uploadTimelineImage } from "../../../../lib/images";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";
@@ -32,8 +32,7 @@ import { Menu } from "../../../../components/ui/Menu";
 import { MadeThisSheet } from "./MadeThisSheet";
 import { saveQuickEdit, useQuickEditContext } from "./QuickEdit";
 
-import { draftFromRecipe } from "../../../../domain/recipe/draft/draft";
-import { type DraftNote, type RecipeDraft } from "../../../../domain/recipe/draft/types";
+import { draftFromRecipe, type DraftNote, type RecipeDraft } from "../../../../domain/draft";
 import { randomUuid } from "../../../../domain/ids";
 
 export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "recipeServings"> };

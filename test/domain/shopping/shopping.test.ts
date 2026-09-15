@@ -1,10 +1,7 @@
 // The shopping list document: defaults, the one rule a line must satisfy, and
 // the patch's "absent means leave alone".
 import { describe, expect, test } from "vitest";
-import { mergeIngredients } from "../../../src/domain/recipe/mergeIngredients";
-import { type Ingredient, type Recipe, recipeSchema } from "../../../src/domain/recipe/recipe";
-import { scaleRecipe } from "../../../src/domain/recipe/scale";
-import type { SubRecipe } from "../../../src/domain/recipe/subRecipe";
+import { mergeIngredients, type Ingredient, type Recipe, recipeSchema, scaleRecipe, type SubRecipe } from "../../../src/domain/recipe";
 import {
   type ShoppingAddition,
   type ShoppingAdditionSource,

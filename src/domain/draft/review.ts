@@ -1,8 +1,6 @@
 // Parsed ingredient rows under review, and what confirming them writes into the draft.
-import { type Food as FoodRow } from "../../../db/models/food/repo";
-import { type ReviewRow, type CommitRef, reviewRow, type RowCommit, rowCommit } from "../../ingredient/bulkIngredients";
-import { type Unit, type Food } from "../recipe";
-import { parseIngredient } from "../../ingredient/parseIngredient";
+import { type FoodRow, type Unit, type Food } from "../reference";
+import { type ReviewRow, type CommitRef, reviewRow, type RowCommit, rowCommit, parseIngredient } from "../ingredient";
 import { type DraftIngredient, type RecipeDraft, type DraftPart } from "./types";
 import { newIngredient, withIngredients, inRange, isTextOnly, updateIngredient } from "./ingredients";
 import { foodReference } from "./vocabulary";

@@ -8,7 +8,7 @@
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import { type Tag } from "../../../domain/recipe/recipe";
+import { type Tag } from "../../../domain/reference";
 import { ConfirmDialogContent } from "../../../components/ui/ConfirmDialog";
 
 export type TagMergeDialogProps = {

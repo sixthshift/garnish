@@ -2,7 +2,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { aisles } from "../../db/models/aisle/repo";
 import { required } from "../core/errors";
-import { AisleCreate, AisleReorder, AisleUpdate, IdInput, ListQuery, NameInput } from "../../domain/reference/reference";
+import { AisleCreate, AisleReorder, AisleUpdate, IdInput, ListQuery, NameInput } from "../../domain/reference";
 import { getDb } from "../core/db";
 import { notFoundMiddleware } from "../core/fn";
 

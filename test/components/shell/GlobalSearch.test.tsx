@@ -7,7 +7,7 @@ import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, crea
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { GlobalSearchContent, type GlobalSearchContentProps } from "../../../src/components/shell/GlobalSearch";
-import type { RecipeSummary } from "../../../src/domain/recipe/recipe";
+import type { RecipeSummary } from "../../../src/domain/recipe";
 
 const lemonTart: RecipeSummary = {
   id: "11111111-1111-4111-8111-111111111111",

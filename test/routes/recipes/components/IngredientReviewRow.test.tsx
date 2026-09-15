@@ -10,11 +10,9 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { IngredientReviewFields, type IngredientReviewFieldsProps, IngredientReviewRow } from "../../../../src/routes/recipes/components/IngredientReviewRow";
-import { type IngredientReview } from "../../../../src/domain/recipe/draft/review";
+import { type IngredientReview, reviewedIngredient, isTextOnly } from "../../../../src/domain/draft";
 import { amountChip, chipText } from "../../../../src/routes/recipes/components/IngredientReviewRow";
-import { reviewedIngredient } from "../../../../src/domain/recipe/draft/review";
-import { isTextOnly } from "../../../../src/domain/recipe/draft/ingredients";
-import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient/bulkIngredients";
+import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
 import { BulkReviewList } from "../../../../src/components/ui/BulkAddSheet";
 
 const gram = {

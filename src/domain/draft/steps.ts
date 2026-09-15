@@ -1,8 +1,8 @@
 // Editing a part's steps: add, move, split, merge.
-import { paragraphs } from "../../ingredient/bulkText";
-import { randomUuid } from "../../ids";
+import { paragraphs } from "../ingredient";
+import { randomUuid } from "../ids";
 import { type DraftStep, type RecipeDraft } from "./types";
-import { moveItem } from "../../lists";
+import { moveItem } from "../lists";
 import { stepLinks, unionLinks } from "./links";
 import { type Recipe } from "../recipe";
 import { draftFromRecipe } from "./draft";

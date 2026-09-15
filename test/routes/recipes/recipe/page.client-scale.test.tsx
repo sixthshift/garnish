@@ -7,8 +7,8 @@
 // server call" is a call count that does not move across a servings change.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ingredientLineParts } from "../../../../src/routes/recipes/recipe/components/IngredientRow";
-import { formatIngredient } from "../../../../src/domain/ingredient/format";
-import type { Recipe } from "../../../../src/domain/recipe/recipe";
+import { formatIngredient } from "../../../../src/domain/ingredient";
+import type { Recipe } from "../../../../src/domain/recipe";
 import { Route as CookRoute } from "../../../../src/routes/recipes/recipe/cook/route";
 import { Route as ViewRoute } from "../../../../src/routes/recipes/recipe/route";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";

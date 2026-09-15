@@ -22,7 +22,8 @@
 // Pure: no IO, importable by the client — the same module the export route
 // and the recipe menu's "Copy as Cooklang" both call.
 import { durationsIn } from "./durations";
-import type { Food, Ingredient, Part, Recipe, Step, Unit } from "./recipe";
+import type { Ingredient, Part, Recipe, Step } from "./recipe";
+import type { Food, Unit } from "../reference";
 import { foodNames } from "./stepIngredients";
 
 /** Letters and digits: anything else counts as a word boundary. Mirrors stepIngredients.ts's own. */

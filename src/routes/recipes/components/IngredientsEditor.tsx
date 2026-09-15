@@ -57,25 +57,20 @@ import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { type KeyboardEvent, type ReactNode, useEffect, useState } from "react";
-import { pendingCreations, reviewRows, rowCommit } from "../../../domain/ingredient/bulkIngredients";
-import { type Food as FoodRow } from "../../../db/models/food/repo";
-import { type Food, type Unit } from "../../../domain/recipe/recipe";
+import { pendingCreations, reviewRows, rowCommit } from "../../../domain/ingredient";
+import { type FoodRow, type Food, type Unit } from "../../../domain/reference";
 import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
 import { findOrCreateFood, listFoods } from "../../../server/fns/foods";
 import { findOrCreateUnit } from "../../../server/fns/units";
-import { needsParseAll, type IngredientReview, parseRowFor, parsedRowPatch, addReviewedIngredients } from "../../../domain/recipe/draft/review";
+import { needsParseAll, type IngredientReview, parseRowFor, parsedRowPatch, addReviewedIngredients, type DraftIngredient, type RecipeDraft, type FieldErrors, parseQuantity, quantityText, foodReference, unitReference, matchUnit, filterUnits, isTextOnly, withIngredients, addIngredient, updateIngredient, removeIngredient, moveIngredientTo, moveIngredient, textOnlyPatch, ingredientSummary } from "../../../domain/draft";
 import { ParseAllSheet } from "./ParseAllSheet";
 import { partLabel } from "./PartsEditor";
 import { IngredientReviewRow } from "./IngredientReviewRow";
-import { type DraftIngredient, type RecipeDraft } from "../../../domain/recipe/draft/types";
-import { type FieldErrors } from "../../../domain/recipe/draft/validate";
 import { BulkAddSheet, BulkInlineAdd, type BulkReview } from "../../../components/ui/BulkAddSheet";
 import { Combobox } from "../../../components/ui/Combobox";
 import { type ComboboxOption } from "../../../lib/ui/combobox";
 import { Menu } from "../../../components/ui/Menu";
 import { ReorderList } from "../../../components/ui/ReorderList";
-import { parseQuantity, quantityText, foodReference, unitReference, matchUnit, filterUnits } from "../../../domain/recipe/draft/vocabulary";
-import { isTextOnly, withIngredients, addIngredient, updateIngredient, removeIngredient, moveIngredientTo, moveIngredient, textOnlyPatch, ingredientSummary } from "../../../domain/recipe/draft/ingredients";
 
 /** How long the food input waits after the last keystroke before querying. */
 export const FOOD_SEARCH_DEBOUNCE_MS = 200;

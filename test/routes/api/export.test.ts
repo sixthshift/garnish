@@ -11,7 +11,7 @@ import { foods } from "../../../src/db/models/food/repo";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { tags } from "../../../src/db/models/tag/repo";
 import { units } from "../../../src/db/models/unit/repo";
-import { recipeInputSchema, type Recipe } from "../../../src/domain/recipe/recipe";
+import { recipeInputSchema, type Recipe } from "../../../src/domain/recipe";
 import { getDb } from "../../../src/server/core/db";
 import { buildExport, handleExportJson, handleRecipeCook, handleRecipeJson, type GarnishExport } from "../../../src/server/api/export";
 import { exportJsonRoute as ExportRoute, recipeCookRoute as RecipeCookRoute, recipeJsonRoute as RecipeJsonRoute } from "../../../src/routes/api/export";

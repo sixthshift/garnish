@@ -4,19 +4,10 @@
 // moveStep and moveNote, updateRecipe stores the new orders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { addPart, renamePart } from "../../../../src/domain/recipe/draft/parts";
-import { addNote, moveNote, updateNote } from "../../../../src/domain/recipe/draft/notes";
-import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
-import { type RecipeDraft } from "../../../../src/domain/recipe/draft/types";
-import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
+import { addPart, renamePart, addNote, moveNote, updateNote, emptyDraft, type RecipeDraft, validateDraft, addBulkSteps, addStep, canSplitAll, insertStepAbove, insertStepBelow, mergeAllSteps, mergeStepWithNext, moveStep, newStep, removeStep, setStepImage, splitAllSteps, splitStepByParagraph, stepsOf, stepsPath, updateStep, withSteps, linkableIngredients, linkedIngredients, linkIngredient, stepLinks, suggestPartLinks, unionLinks, unlinkIngredient, unlinkStepIngredient, addIngredient, updateIngredient, foodReference, ingredientLine } from "../../../../src/domain/draft";
 import { StepsEditor } from "../../../../src/routes/recipes/components/StepsEditor";
-import { addBulkSteps, addStep, canSplitAll, insertStepAbove, insertStepBelow, mergeAllSteps, mergeStepWithNext, moveStep, newStep, removeStep, setStepImage, splitAllSteps, splitStepByParagraph, stepsOf, stepsPath, updateStep, withSteps } from "../../../../src/domain/recipe/draft/steps";
-import { linkableIngredients, linkedIngredients, linkIngredient, stepLinks, suggestPartLinks, unionLinks, unlinkIngredient, unlinkStepIngredient } from "../../../../src/domain/recipe/draft/links";
 import { suggestNotice } from "../../../../src/routes/recipes/components/StepsEditor";
-import { addIngredient, updateIngredient } from "../../../../src/domain/recipe/draft/ingredients";
-import { foodReference } from "../../../../src/domain/recipe/draft/vocabulary";
-import { ingredientLine } from "../../../../src/domain/recipe/draft/parts";
-import { paragraphs } from "../../../../src/domain/ingredient/bulkText";
+import { paragraphs } from "../../../../src/domain/ingredient";
 import { createRecipe, getRecipe, updateRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 

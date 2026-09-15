@@ -23,10 +23,10 @@ import { Input } from "@sixthshift/design-system/input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
-import { type TimelineEventInput } from "../../../../domain/recipe/recipe";
+import { type TimelineEventInput } from "../../../../domain/recipe";
 import { ImageUpload } from "../../../../components/ui/ImageUpload";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
-import { todayIso } from "../../../../domain/plan/plan";
+import { todayIso } from "../../../../domain/plan";
 import { isValidDate } from "../../../../lib/dates";
 
 export type MadeThisSheetContentProps = {

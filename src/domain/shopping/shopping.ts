@@ -16,11 +16,9 @@
 //   - `sources` is nested under its line: where the line came from, kept as
 //     copied names so it survives the recipe being deleted (M31.1).
 import { z } from "zod";
-import { convert } from "../reference/convert";
-import { formatAmount, formatFood, formatIngredient, formatQuantity } from "../ingredient/format";
-import type { Aisle, Food, Ingredient, Recipe, Unit } from "../recipe/recipe";
-import { foodSchema, unitSchema } from "../recipe/recipe";
-import { subRecipeScale, type SubRecipe } from "../recipe/subRecipe";
+import { convert, type Aisle, type Food, type Unit, foodSchema, unitSchema } from "../reference";
+import { formatAmount, formatFood, formatIngredient, formatQuantity } from "../ingredient";
+import { type Ingredient, type Recipe, subRecipeScale, type SubRecipe } from "../recipe";
 
 const id = z.uuid();
 const timestamp = z.iso.datetime();

@@ -3,7 +3,8 @@
 // ("brown sugar" must not also light up "sugar"), a step naming nothing, and a
 // food named twice.
 import { describe, expect, test } from "vitest";
-import type { Food, Ingredient, Step } from "../../../src/domain/recipe/recipe";
+import type { Ingredient, Step } from "../../../src/domain/recipe/recipe";
+import type { Food } from "../../../src/domain/reference";
 import { foodNames, ingredientsInStep, suggestLinks } from "../../../src/domain/recipe/stepIngredients";
 
 let seq = 0;

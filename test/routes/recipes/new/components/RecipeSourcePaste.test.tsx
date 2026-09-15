@@ -6,11 +6,11 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { PasteSource, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
-import { draftFromScraped } from "../../../../../src/domain/recipe/draft/scraped";
+import { draftFromScraped } from "../../../../../src/domain/draft";
 import { importSummary } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
-import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient/bulkIngredients";
-import type { Unit } from "../../../../../src/domain/recipe/recipe";
+import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient";
+import type { Unit } from "../../../../../src/domain/reference";
 import { review, type ScrapedRecipe } from "../../../../../src/domain/import";
 
 const gram: Unit = {

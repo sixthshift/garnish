@@ -19,7 +19,7 @@
 //
 // No match at all: null unit, the input returned unchanged so the token stays
 // in `rest` for `parseFood` to try.
-import type { Unit } from "../recipe/recipe";
+import type { Unit } from "../reference";
 
 /** The unit fields matching needs. A full `Unit` row satisfies it. */
 export type UnitCandidate = Pick<Unit, "name" | "pluralName" | "abbreviation">;

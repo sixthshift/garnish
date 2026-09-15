@@ -13,11 +13,11 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
-import { rowCommit } from "../../../../../src/domain/ingredient/bulkIngredients";
+import { rowCommit } from "../../../../../src/domain/ingredient";
 import { type ImportedRecipe, Importer, type MealieRecipe, type TandoorRecipe, review } from "../../../../../src/domain/import";
-import type { Unit } from "../../../../../src/domain/recipe/recipe";
+import type { Unit } from "../../../../../src/domain/reference";
 import { FileSource, ImportReview, RecipePicker, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
-import { draftFromScraped } from "../../../../../src/domain/recipe/draft/scraped";
+import { draftFromScraped } from "../../../../../src/domain/draft";
 import { duplicateMessage } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 
 const FIXTURE = join(import.meta.dirname, "../../../../fixtures/mealie/lemon-tart.json");

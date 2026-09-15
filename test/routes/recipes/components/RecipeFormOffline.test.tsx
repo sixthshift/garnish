@@ -6,7 +6,7 @@ import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } fr
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { RecipeForm, type RecipeFormProps } from "../../../../src/routes/recipes/components/RecipeForm";
-import { emptyDraft } from "../../../../src/domain/recipe/draft/draft";
+import { emptyDraft } from "../../../../src/domain/draft";
 
 async function render(props: Partial<RecipeFormProps>): Promise<string> {
   const rootRoute = createRootRoute({ component: () => <RecipeForm initial={emptyDraft()} units={[]} tags={[]} {...props} /> });

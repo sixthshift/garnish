@@ -7,13 +7,11 @@ import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } fr
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { RecipeForm, type RecipeFormProps } from "../../../../src/routes/recipes/components/RecipeForm";
-import { draftFromRecipe, emptyDraft, hasDetails, isDirty } from "../../../../src/domain/recipe/draft/draft";
+import { draftFromRecipe, emptyDraft, hasDetails, isDirty, validateDraft, tagsFromNames } from "../../../../src/domain/draft";
 import { detailsHint } from "../../../../src/routes/recipes/components/RecipeForm";
-import { validateDraft } from "../../../../src/domain/recipe/draft/validate";
 import { parseAmount, parseMinutes, saveNotice } from "../../../../src/routes/recipes/components/RecipeForm";
-import { tagsFromNames } from "../../../../src/domain/recipe/draft/vocabulary";
 import { clearDraft, putDraft } from "../../../../src/lib/drafts";
-import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipe/recipe";
+import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipe";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";
 import { renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";

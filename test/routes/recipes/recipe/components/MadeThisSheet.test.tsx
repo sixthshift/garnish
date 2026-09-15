@@ -6,7 +6,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { MadeThisSheetContent } from "../../../../../src/routes/recipes/recipe/components/MadeThisSheet";
 import { isValidDate } from "../../../../../src/lib/dates";
-import { todayIso } from "../../../../../src/domain/plan/plan";
+import { todayIso } from "../../../../../src/domain/plan";
 
 describe("todayIso", () => {
   test("writes the local calendar date as YYYY-MM-DD", () => {

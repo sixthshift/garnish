@@ -6,20 +6,10 @@ import { asc, eq, inArray, sql } from "drizzle-orm";
 import { orm } from "../../connection/client";
 import { cleanName, likePattern } from "../../../domain/names";
 import { ingredient } from "../recipe/schema";
-import type { FoodConversion } from "../../../domain/recipe/recipe";
+import type { FoodConversion, FoodRow } from "../../../domain/reference";
 import { food, foodConversion } from "./schema";
 
-export type Food = {
-  id: string;
-  name: string;
-  pluralName: string | null;
-  aliases: string[];
-  aisleId: string | null;
-  recipeId: string | null;
-  skipShopping: boolean;
-  /** "1 cup of flour is 125 g" (decisions.md row 69). Empty for most foods. */
-  conversions: FoodConversion[];
-};
+export type Food = FoodRow;
 
 export type FoodInput = Partial<Omit<Food, "id" | "conversions">> & { name: string; conversions?: readonly FoodConversionInput[] };
 

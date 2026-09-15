@@ -1,8 +1,7 @@
 // Quantities, units, foods and tags as the editor reads and writes them.
-import { type Food as FoodRow } from "../../../db/models/food/repo";
-import { type Food, type Unit, type Tag } from "../recipe";
-import { randomUuid } from "../../ids";
-import { slugify } from "../../names";
+import { type FoodRow, type Food, type Unit, type Tag } from "../reference";
+import { randomUuid } from "../ids";
+import { slugify } from "../names";
 
 export const VULGAR: Record<string, number> = {
   "½": 1 / 2,

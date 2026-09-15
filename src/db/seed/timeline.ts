@@ -1,5 +1,5 @@
 // "Made this" entries for the timeline demo. Data only — `seed.ts` applies them.
-import type { TimelineEventInput } from "../../domain/recipe/recipe";
+import type { TimelineEventInput } from "../../domain/recipe";
 
 /**
  * "Made this" entries for the timeline demo, keyed by recipe name. Applied

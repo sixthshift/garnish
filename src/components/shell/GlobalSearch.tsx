@@ -19,7 +19,7 @@ import { Modal, ModalBody, ModalHeader } from "@sixthshift/design-system/modal";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import type { RecipeSummary } from "../../domain/recipe/recipe";
+import type { RecipeSummary } from "../../domain/recipe";
 import { clampSelection, nextSearchIndex, selectedResult, shouldOpenGlobalSearch, type SearchEventTarget } from "../../lib/search";
 import { listRecipes } from "../../server/fns/recipes";
 import { notifyError } from "../../lib/notify";

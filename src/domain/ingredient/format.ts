@@ -24,7 +24,7 @@
 //     is one (Mealie never renders originalText; its disable-amounts path,
 //     which shows the raw line alone, is the closest analogue). The raw line
 //     already carries its own amount and note, so neither is prefixed.
-import type { Food, Unit } from "../recipe/recipe";
+import type { Food, Unit } from "../reference";
 
 /** The unit fields display needs. A full `Unit` satisfies it. */
 export type DisplayUnit = Pick<Unit, "name" | "pluralName" | "abbreviation" | "useAbbreviation" | "fraction">;

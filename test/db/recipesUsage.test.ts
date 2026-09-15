@@ -5,7 +5,7 @@ import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
 import { recipes, type RecipeRepository } from "../../src/db/models/recipe/repo";
-import { recipeInputSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe/recipe";
+import { recipeInputSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
 
 let db: Database;
 let repo: RecipeRepository;
