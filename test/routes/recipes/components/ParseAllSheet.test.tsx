@@ -7,12 +7,21 @@
 // leaving declined rows text-only.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { IngredientsEditor } from "../../../../src/routes/recipes/components/IngredientsEditor";
-import { isTextOnly, newIngredient, applyParsedRows, needsParseAll, parseAllRows, unparsedIndices, emptyDraft, type DraftIngredient, type RecipeDraft } from "../../../../src/domain/draft";
-import { ParseAllSheetContent } from "../../../../src/routes/recipes/components/ParseAllSheet";
-import { parsedSummary } from "../../../../src/routes/recipes/components/ParseAllSheet";
 import type { Food as FoodRow } from "../../../../src/db/models/food/repo";
+import {
+  applyParsedRows,
+  type DraftIngredient,
+  emptyDraft,
+  isTextOnly,
+  needsParseAll,
+  newIngredient,
+  parseAllRows,
+  type RecipeDraft,
+  unparsedIndices,
+} from "../../../../src/domain/draft";
 import type { Unit } from "../../../../src/domain/reference";
+import { IngredientsEditor } from "../../../../src/routes/recipes/components/IngredientsEditor";
+import { ParseAllSheetContent, parsedSummary } from "../../../../src/routes/recipes/components/ParseAllSheet";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -25,7 +34,16 @@ const gram: Unit = {
   standardUnitId: null,
 };
 const units = [gram];
-const flour: FoodRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
+const flour: FoodRow = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisleId: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 const foods = [flour];
 const vocabulary = { units, foods };
 
@@ -103,7 +121,7 @@ describe("applyParsedRows", () => {
     const almond: FoodRow = { ...flour, id: "22222222-2222-4222-8222-222222222222", name: "almond meal" };
     const draft = unparsed();
     const rows = parseAllRows(draft.parts[0]!.ingredients, vocabulary).map((row) =>
-      row.foodText === "almond meal" ? { ...row, food: { kind: "create" as const, name: row.foodText } } : row,
+      row.foodText === "almond meal" ? { ...row, food: { kind: "create" as const, name: row.foodText } } : row
     );
     const next = applyParsedRows(draft, 0, rows, new Map([["almond meal", almond]]), new Map());
     expect(next.parts[0]!.ingredients[1]!.food?.name).toBe("almond meal");

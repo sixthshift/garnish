@@ -33,8 +33,8 @@ import { useState } from "react";
 import { useMutate } from "../../lib/mutate";
 import { notifyError } from "../../lib/notify";
 import { addPlanEntry, movePlanEntry, removePlanEntry } from "../../server/fns/plan";
-import { Route } from "./route";
 import { PlanWeekView, searchPlanRecipes } from "./components/PlanWeekView";
+import { Route } from "./route";
 
 /** The route's wiring: the loader's week in, the server functions out. */
 export function PlanPage() {
@@ -62,9 +62,7 @@ export function PlanPage() {
       onAddText={(date, text) => void write("Couldn't add the line", () => addPlanEntry({ data: { date, text } }))}
       // The recipe's name travels with its id: the entry keeps reading as
       // something after the recipe is deleted and `recipe_id` goes null.
-      onAddRecipe={(date, recipe) =>
-        void write("Couldn't add the recipe", () => addPlanEntry({ data: { date, recipeId: recipe.id, text: recipe.name } }))
-      }
+      onAddRecipe={(date, recipe) => void write("Couldn't add the recipe", () => addPlanEntry({ data: { date, recipeId: recipe.id, text: recipe.name } }))}
       onMove={(entry, date, position) => void write("Couldn't move the entry", () => movePlanEntry({ data: { id: entry.id, date, position } }))}
       onRemove={(entry) => void write("Couldn't remove the entry", () => removePlanEntry({ data: { id: entry.id } }))}
     />

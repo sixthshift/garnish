@@ -2,9 +2,9 @@
 // content TagMergeDialogContent renders. Mirrors FoodMergeDialog/UnitMergeDialog.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { TagMergeDialogContent } from "../../../../src/routes/settings/components/TagMergeDialog";
-import { mergeTargets } from "../../../../src/lib/lists";
 import type { Tag } from "../../../../src/domain/reference";
+import { mergeTargets } from "../../../../src/lib/lists";
+import { TagMergeDialogContent } from "../../../../src/routes/settings/components/TagMergeDialog";
 
 function tag(id: string, name: string): Tag {
   return { id, name, slug: name.toLowerCase() };

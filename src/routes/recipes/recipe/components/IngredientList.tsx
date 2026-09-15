@@ -3,8 +3,8 @@
 // the phone's ingredients sheet renders exactly the same markup — the same
 // `IngredientRow`s, reading the same ticks — rather than a second copy of it.
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { IngredientRow } from "./IngredientRow";
 import type { Ingredient, Part } from "../../../../domain/recipe";
+import { IngredientRow } from "./IngredientRow";
 
 export type IngredientListProps = {
   ingredients: Ingredient[];

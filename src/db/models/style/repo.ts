@@ -29,13 +29,21 @@ export function styleRules(db: Database) {
   }
 
   function nextPosition(): number {
-    const row = dz.select({ n: max(styleRule.position) }).from(styleRule).get();
+    const row = dz
+      .select({ n: max(styleRule.position) })
+      .from(styleRule)
+      .get();
     return row?.n === null || row?.n === undefined ? 0 : row.n + 1;
   }
 
   return {
     /** The whole guide in reading order. */
-    list: (): StyleRule[] => dz.select().from(styleRule).orderBy(...order).all(),
+    list: (): StyleRule[] =>
+      dz
+        .select()
+        .from(styleRule)
+        .orderBy(...order)
+        .all(),
     get,
 
     /** New statements go to the foot of the list unless a position is given, and are on unless told otherwise. */
@@ -69,8 +77,7 @@ export function styleRules(db: Database) {
     },
 
     /** True when a row was deleted. Nothing references a statement, so it goes alone. */
-    remove: (id: string): boolean =>
-      dz.delete(styleRule).where(eq(styleRule.id, id)).returning({ id: styleRule.id }).all().length > 0,
+    remove: (id: string): boolean => dz.delete(styleRule).where(eq(styleRule.id, id)).returning({ id: styleRule.id }).all().length > 0,
 
     /**
      * Set every statement's position to its index in `ids`, in one transaction —
@@ -85,7 +92,11 @@ export function styleRules(db: Database) {
           tx.update(styleRule).set({ position: index }).where(eq(styleRule.id, id)).run();
         });
       });
-      return dz.select().from(styleRule).orderBy(...order).all();
+      return dz
+        .select()
+        .from(styleRule)
+        .orderBy(...order)
+        .all();
     },
   };
 }

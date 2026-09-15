@@ -9,12 +9,12 @@ import {
   getTicks,
   isIngredientTicked,
   isStepTicked,
+  type StorageLike,
   setIngredientTicked,
   setStepTicked,
   subscribeTicks,
   toggleIngredientTicked,
   toggleStepTicked,
-  type StorageLike,
 } from "../../src/lib/ticks";
 
 /** A plain in-memory Storage-like, for round-trip tests. */

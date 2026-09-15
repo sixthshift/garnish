@@ -3,8 +3,9 @@
 // shared OpenAI-compatible client asked whatever the importer asks, its failures
 // mapped onto the importer's own error kinds so the screen shows the import's
 // words rather than the provider's class.
-import { AiError, createFetchRunner, type Fetcher } from "../ai/client";
+
 import { ImportError, Importer, type Ports } from "../../domain/import";
+import { AiError, createFetchRunner, type Fetcher } from "../ai/client";
 import { createPageFetcher } from "./fetch";
 
 /** The model port over the shared client: whatever the importer asks, in whatever shape it asks for. */

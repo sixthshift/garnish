@@ -1,13 +1,12 @@
 // IngredientRow: its pure line-splitting helper, and the rendered row for the
 // three cases the task calls out — ticked, scaled and fixed.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { IngredientRow } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
-import { ingredientLineParts } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
-import type { Ingredient, SubRecipe } from "../../../../../src/domain/recipe";
 import { SubRecipesProvider } from "../../../../../src/components/recipe/SubRecipes";
-import { setIngredientTicked, type StorageLike } from "../../../../../src/lib/ticks";
+import type { Ingredient, SubRecipe } from "../../../../../src/domain/recipe";
+import { type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
+import { IngredientRow, ingredientLineParts } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

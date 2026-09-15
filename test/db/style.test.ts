@@ -4,7 +4,7 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { styleRules, type StyleRuleRepository } from "../../src/db/models/style/repo";
+import { type StyleRuleRepository, styleRules } from "../../src/db/models/style/repo";
 
 let db: Database;
 let repo: StyleRuleRepository;

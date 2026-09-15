@@ -7,13 +7,12 @@
 // route test below proves the loader and the wiring.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
-import { shoppingItemSchema, type ShoppingItem } from "../../../src/domain/shopping";
-import { ShoppingListView, sendOutboxEntry, setFoodAisle } from "../../../src/routes/shopping/components/ShoppingListView";
-import { toBuyLabel } from "../../../src/routes/shopping/components/ShoppingListView";
+import { type ShoppingItem, shoppingItemSchema } from "../../../src/domain/shopping";
 import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../../src/lib/outbox";
-import { addShoppingItems, listShoppingItems } from "../../../src/server/fns/shopping";
-import { createFood, listFoods } from "../../../src/server/fns/foods";
+import { ShoppingListView, sendOutboxEntry, setFoodAisle, toBuyLabel } from "../../../src/routes/shopping/components/ShoppingListView";
 import { findOrCreateAisle } from "../../../src/server/fns/aisles";
+import { createFood, listFoods } from "../../../src/server/fns/foods";
+import { addShoppingItems, listShoppingItems } from "../../../src/server/fns/shopping";
 import { elementHtml, renderRoute } from "../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
@@ -26,7 +25,16 @@ vi.mock("../../../src/server/fns/foods", local);
 vi.mock("../../../src/server/fns/aisles", local);
 
 const stamp = "2026-09-13T00:00:00.000Z";
-const gram = { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, standardQuantity: null, standardUnitId: null };
+const gram = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  name: "gram",
+  pluralName: "grams",
+  abbreviation: "g",
+  useAbbreviation: true,
+  fraction: false,
+  standardQuantity: null,
+  standardUnitId: null,
+};
 const produce = { id: "11111111-aaaa-4aaa-8aaa-111111111111", name: "Produce", position: 2 };
 const dairy = { id: "22222222-aaaa-4aaa-8aaa-222222222222", name: "Dairy", position: 0 };
 
@@ -56,11 +64,7 @@ function render(items: ShoppingItem[]) {
 
 describe("grouping", () => {
   test("a heading per aisle in position order, unassigned last", () => {
-    const html = render([
-      item({ quantity: 3, food: lemons }),
-      item({ text: "Batteries" }),
-      item({ quantity: 250, unit: gram, food: butter }),
-    ]);
+    const html = render([item({ quantity: 3, food: lemons }), item({ text: "Batteries" }), item({ quantity: 250, unit: gram, food: butter })]);
     const headings = [...html.matchAll(/data-testid="shopping-group"[^>]*>.*?<h2[^>]*>([^<]+)</g)].map((match) => match[1]);
     expect(headings).toEqual(["Dairy", "Produce", "Other"]);
     expect(html).toContain("250 g butter");
@@ -119,7 +123,7 @@ describe("Set aisle (M31.6)", () => {
         onTick={noop}
         onRemove={noop}
         onClearTicked={noop}
-      />,
+      />
     );
     expect(html.match(/data-testid="shopping-set-aisle"/g)).toHaveLength(1);
     expect(html).toContain("Set aisle");
@@ -129,10 +133,7 @@ describe("Set aisle (M31.6)", () => {
 
 describe("the ticked group", () => {
   test("ticked rows sink to a Ticked group at the foot with Clear ticked", () => {
-    const html = render([
-      item({ quantity: 3, food: lemons, ticked: true }),
-      item({ quantity: 250, unit: gram, food: butter }),
-    ]);
+    const html = render([item({ quantity: 3, food: lemons, ticked: true }), item({ quantity: 250, unit: gram, food: butter })]);
     const headings = [...html.matchAll(/data-testid="shopping-group"[^>]*>.*?<h2[^>]*>([^<]+)</g)].map((match) => match[1]);
     expect(headings).toEqual(["Dairy", "Ticked"]);
     expect(html).toContain("Clear ticked");
@@ -215,7 +216,7 @@ describe("an offline tick", () => {
 
     // Before the tap: nothing queued, nothing ticked, no badge.
     const before = renderToString(
-      <ShoppingListView items={applyOutbox([lemon], outbox.list())} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} offline />,
+      <ShoppingListView items={applyOutbox([lemon], outbox.list())} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} offline />
     );
     expect(before).toContain('data-ticked="false"');
     expect(before).not.toContain('data-testid="shopping-pending"');
@@ -231,7 +232,7 @@ describe("an offline tick", () => {
         onClearTicked={noop}
         pending={outbox.list().length}
         offline
-      />,
+      />
     );
     expect(after).toContain('data-ticked="true"');
     expect(after).toContain('aria-checked="true"');
@@ -242,14 +243,7 @@ describe("an offline tick", () => {
 
   test("offline, adding a line and clearing the ticked are refused: they are not tick writes", () => {
     const html = renderToString(
-      <ShoppingListView
-        items={[item({ quantity: 3, food: lemons, ticked: true })]}
-        onAdd={noop}
-        onTick={noop}
-        onRemove={noop}
-        onClearTicked={noop}
-        offline
-      />,
+      <ShoppingListView items={[item({ quantity: 3, food: lemons, ticked: true })]} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} offline />
     );
     expect(elementHtml(html, "shopping-add")).toMatch(/\sdisabled(=""|\s|>)/);
     const clear = html.match(/<button[^>]*>Clear ticked</)?.[0] ?? "";

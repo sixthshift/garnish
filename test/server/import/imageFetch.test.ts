@@ -2,7 +2,7 @@
 // against a local fixture server, and the server function itself (M13.5).
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { MAX_IMAGE_BYTES } from "../../../src/server/api/images";
-import { fetchImage, fetchImageBytes, fetchedImageName, parseImageUrl, toBase64 } from "../../../src/server/import/imageFetch";
+import { fetchedImageName, fetchImage, fetchImageBytes, parseImageUrl, toBase64 } from "../../../src/server/import/imageFetch";
 import { callServerFn } from "../../helpers/server";
 
 const ascii = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0));

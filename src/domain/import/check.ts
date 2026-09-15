@@ -89,18 +89,11 @@ function multisetDiff(expected: readonly string[], actual: readonly string[]): {
  * after normalisation; `ok` only when all four difference lists are empty.
  * Pure.
  */
-export function checkAgainstAnchor(
-  answer: { parts: readonly ScrapedPart[] },
-  anchor: { parts: readonly ScrapedPart[] },
-): ImportCheck {
+export function checkAgainstAnchor(answer: { parts: readonly ScrapedPart[] }, anchor: { parts: readonly ScrapedPart[] }): ImportCheck {
   const ingredients = multisetDiff(lines(anchor.parts), lines(answer.parts));
   const method = multisetDiff(steps(anchor.parts), steps(answer.parts));
   return {
-    ok:
-      ingredients.missing.length === 0 &&
-      ingredients.added.length === 0 &&
-      method.missing.length === 0 &&
-      method.added.length === 0,
+    ok: ingredients.missing.length === 0 && ingredients.added.length === 0 && method.missing.length === 0 && method.added.length === 0,
     missingLines: ingredients.missing,
     addedLines: ingredients.added,
     missingSteps: method.missing,

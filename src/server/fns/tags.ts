@@ -1,10 +1,10 @@
 // Tag server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
-import { required } from "../core/errors";
 import { recipes } from "../../db/models/recipe/repo";
 import { tags } from "../../db/models/tag/repo";
 import { IdInput, ListQuery, NameInput, TagCreate, TagMerge, TagUpdate } from "../../domain/reference";
 import { getDb } from "../core/db";
+import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
 export const listTags = createServerFn({ method: "GET" })

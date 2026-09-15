@@ -26,16 +26,14 @@ if (import.meta.main) {
   try {
     await migrate(db);
     const { units: added, styleRules: rules } = seed(db);
-    console.log(
-      added.length === 0 ? `${path}: units already seeded` : `${path}: seeded ${added.length} units (${added.map((u) => u.name).join(", ")})`,
-    );
+    console.log(added.length === 0 ? `${path}: units already seeded` : `${path}: seeded ${added.length} units (${added.map((u) => u.name).join(", ")})`);
     console.log(rules.length === 0 ? `${path}: house style already seeded` : `${path}: seeded ${rules.length} house style statements`);
     if (flags.sample) {
       const { recipes: created } = seedSample(db);
       console.log(
         created.length === 0
           ? `${path}: sample recipes already present`
-          : `${path}: seeded ${created.length} sample recipes (${created.map((r) => r.name).join(", ")})`,
+          : `${path}: seeded ${created.length} sample recipes (${created.map((r) => r.name).join(", ")})`
       );
     }
   } finally {

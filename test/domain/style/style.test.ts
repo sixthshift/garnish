@@ -2,7 +2,15 @@
 // Settings tab prints, and what a run would use.
 import { describe, expect, test } from "vitest";
 import { DEFAULT_STYLE_RULES } from "../../../src/db/seed/style";
-import { enabledRules, StyleRuleCreate, StyleRuleReorder, StyleRuleUpdate, styleRuleNote, styleRuleSchema, type StyleRule } from "../../../src/domain/style/style";
+import {
+  enabledRules,
+  type StyleRule,
+  StyleRuleCreate,
+  StyleRuleReorder,
+  StyleRuleUpdate,
+  styleRuleNote,
+  styleRuleSchema,
+} from "../../../src/domain/style/style";
 
 function rule(text: string, enabled: boolean, position = 0): StyleRule {
   return {

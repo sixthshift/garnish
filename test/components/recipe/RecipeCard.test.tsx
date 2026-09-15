@@ -2,11 +2,10 @@
 // the total-time chip, capped tags and that the favourite button (moved to
 // src/components/ui/FavouriteButton.tsx) still renders over the image. The
 // button's own toggle behaviour is tested there.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { RecipeCard } from "../../../src/components/recipe/RecipeCard";
-import { capTags } from "../../../src/components/recipe/RecipeCard";
+import { capTags, RecipeCard } from "../../../src/components/recipe/RecipeCard";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import type { Tag } from "../../../src/domain/reference";
 

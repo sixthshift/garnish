@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { checkAgainstAnchor } from "./check";
 import { ImportError } from "./errors";
 import { extractRecipe } from "./extract";
@@ -5,9 +6,8 @@ import { aiPrompt, anchorJson, MAX_AI_TEXT, parseAiAnswer, SCRAPED_JSON_SCHEMA }
 import { looksLikeHtml, readableText } from "./page/text";
 import type { ImportedRecipe } from "./result";
 import { normaliseScraped, type ScrapedRecipe, type ScrapedRecipeSchema } from "./scraped";
-import type { z } from "zod";
-import { type FileRecipe, readExport } from "./sources/tandoor";
 import type { ImportFile } from "./sources/mealie";
+import { type FileRecipe, readExport } from "./sources/tandoor";
 
 /** How much of a page is worth reading. Structured data is near the top; a page this big is not a recipe. */
 export const MAX_PAGE_BYTES = 5_000_000;
@@ -107,7 +107,7 @@ export class Importer {
     if (page.status === 403) {
       throw new ImportError(
         "failed",
-        `${url.hostname} is blocking automated requests. Try pasting the recipe text, or the page's HTML (view source, select all, copy), instead.`,
+        `${url.hostname} is blocking automated requests. Try pasting the recipe text, or the page's HTML (view source, select all, copy), instead.`
       );
     }
     if (page.status < 200 || page.status >= 300) throw new ImportError("failed", `${url.hostname} returned ${page.status}`);

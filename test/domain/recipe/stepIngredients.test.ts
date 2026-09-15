@@ -4,8 +4,8 @@
 // food named twice.
 import { describe, expect, test } from "vitest";
 import type { Ingredient, Step } from "../../../src/domain/recipe/recipe";
-import type { Food } from "../../../src/domain/reference";
 import { foodNames, ingredientsInStep, suggestLinks } from "../../../src/domain/recipe/stepIngredients";
+import type { Food } from "../../../src/domain/reference";
 
 let seq = 0;
 const uuid = () => `00000000-0000-4000-8000-${String(seq++).padStart(12, "0")}`;

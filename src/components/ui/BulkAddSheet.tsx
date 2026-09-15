@@ -199,24 +199,13 @@ export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, d
   const primaryDisabled = disabled === true || busy || !stage.canAdvance;
 
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(next) => (next ? onOpenChange(true) : close())}
-      size="md"
-      closable
-      aria-label={`Bulk add ${itemName}s`}
-    >
+    <Sheet open={open} onOpenChange={(next) => (next ? onOpenChange(true) : close())} size="md" closable aria-label={`Bulk add ${itemName}s`}>
       <Sheet.Header>
         <h2 className="text-base font-medium">{`Bulk add ${itemName}s`}</h2>
       </Sheet.Header>
       <Sheet.Body>
         {review !== undefined && rows !== null ? (
-          <BulkReviewList
-            itemName={itemName}
-            rows={rows}
-            review={review}
-            onRowsChange={setRows}
-          />
+          <BulkReviewList itemName={itemName} rows={rows} review={review} onRowsChange={setRows} />
         ) : (
           <BulkAddFields itemName={itemName} text={text} disabled={disabled} onTextChange={setText} />
         )}
@@ -304,7 +293,21 @@ export type BulkInlinePanelProps<R> = {
  * the textarea stage ever renders — the plain variant `BulkAddSheet` already
  * supports without a sheet around it.
  */
-export function BulkInlinePanel<R>({ itemName, review, text, rows, busy, error, disabled, placeholder, splitLines = bulkLines, onTextChange, onRowsChange, onAdvance, onBack }: BulkInlinePanelProps<R>) {
+export function BulkInlinePanel<R>({
+  itemName,
+  review,
+  text,
+  rows,
+  busy,
+  error,
+  disabled,
+  placeholder,
+  splitLines = bulkLines,
+  onTextChange,
+  onRowsChange,
+  onAdvance,
+  onBack,
+}: BulkInlinePanelProps<R>) {
   const off = disabled === true || busy === true;
   return (
     <div className="flex flex-col gap-3" data-bulk-inline="">

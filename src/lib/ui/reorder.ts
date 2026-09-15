@@ -1,5 +1,3 @@
-
-
 // The geometry behind components/ui/ReorderList: moving an item, and where a drop lands.
 
 /** The vertical span of one row, in client coordinates. */

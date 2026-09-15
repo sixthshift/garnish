@@ -26,11 +26,7 @@ export const shoppingItem = sqliteTable(
     createdAt: text("created_at").notNull().default(nowUtc),
     updatedAt: text("updated_at").notNull().default(nowUtc),
   },
-  (t) => [
-    index("shopping_item_food_id").on(t.foodId),
-    index("shopping_item_unit_id").on(t.unitId),
-    check("ticked_flag", sql`${t.ticked} IN (0, 1)`),
-  ],
+  (t) => [index("shopping_item_food_id").on(t.foodId), index("shopping_item_unit_id").on(t.unitId), check("ticked_flag", sql`${t.ticked} IN (0, 1)`)]
 );
 
 /**
@@ -54,8 +50,5 @@ export const shoppingItemSource = sqliteTable(
     /** What this source contributed to the line's quantity. */
     quantity: real("quantity"),
   },
-  (t) => [
-    index("shopping_item_source_item_id").on(t.itemId),
-    index("shopping_item_source_recipe_id").on(t.recipeId),
-  ],
+  (t) => [index("shopping_item_source_item_id").on(t.itemId), index("shopping_item_source_recipe_id").on(t.recipeId)]
 );

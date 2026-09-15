@@ -22,7 +22,7 @@
 //     rather than inventing a heading for it (decisions.md row 49).
 //   - Parent ids (recipe_id, part_id) are implied by nesting and omitted.
 import { z } from "zod";
-import { unitSchema, foodSchema, tagSchema } from "../reference";
+import { foodSchema, tagSchema, unitSchema } from "../reference";
 
 const id = z.uuid();
 const timestamp = z.iso.datetime();

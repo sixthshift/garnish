@@ -14,14 +14,14 @@
 // plan's kill-the-server check exercises, so it gets its own message, refined
 // by `useOnline` when the browser knows it is offline.
 import { Button } from "@sixthshift/design-system/button";
-import { type ErrorFallbackProps } from "@sixthshift/design-system/error-boundary";
+import type { ErrorFallbackProps } from "@sixthshift/design-system/error-boundary";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Spinner } from "@sixthshift/design-system/spinner";
-import { Link, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
-import { useOnline } from "../../lib/useOnline";
+import { type ErrorComponentProps, Link, useRouter } from "@tanstack/react-router";
 import { describeError } from "../../lib/errors";
+import { useOnline } from "../../lib/useOnline";
 
 export function RoutePending() {
   return (

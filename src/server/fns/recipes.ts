@@ -3,10 +3,10 @@
 // database through getDb(), and hands back the document from src/domain/recipe/recipe.ts.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { NotFound, required } from "../core/errors";
 import { recipes } from "../../db/models/recipe/repo";
 import { duplicateInput, recipeInputSchema, scaleRecipe } from "../../domain/recipe";
 import { getDb } from "../core/db";
+import { NotFound, required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
 const recipeId = z.uuid();

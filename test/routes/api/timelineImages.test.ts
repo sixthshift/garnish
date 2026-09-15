@@ -8,10 +8,10 @@ import { expect, test } from "vitest";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { timeline } from "../../../src/db/models/timeline/repo";
 import { recipeInputSchema, type TimelineEvent } from "../../../src/domain/recipe";
-import { getDb } from "../../../src/server/core/db";
+import { getTimelineImageRoute as GetRoute, uploadTimelineImageRoute as PostRoute } from "../../../src/routes/api/timelineImages";
 import { handleGetImage } from "../../../src/server/api/images";
 import { handleGetTimelineImage, handleUploadTimelineImage, timelineImagesDir } from "../../../src/server/api/timelineImages";
-import { getTimelineImageRoute as GetRoute, uploadTimelineImageRoute as PostRoute } from "../../../src/routes/api/timelineImages";
+import { getDb } from "../../../src/server/core/db";
 import { useTempDataDir } from "../../helpers/server";
 
 const tmp = useTempDataDir();
@@ -21,9 +21,7 @@ const handlersOf = (route: { options: { server?: unknown } }) => (route.options.
 
 const missing = "99999999-9999-4999-8999-999999999999";
 // A real 1x1 PNG, so the bytes are what a browser would send.
-const png = Uint8Array.from(
-  Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"),
-);
+const png = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
 const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0xff, 0xd9]);
 
 async function createEvent(): Promise<TimelineEvent> {
@@ -97,7 +95,7 @@ test.each([
     (id: string) =>
       handleUploadTimelineImage(
         new Request(`http://localhost/api/timeline/${id}/image`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
-        id,
+        id
       ),
   ],
 ])("bad upload is 400: %s", async (_label, send) => {
@@ -108,9 +106,12 @@ test.each([
   expect(timeline(await getDb()).get(event.id)?.image).toBeNull();
 });
 
-test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])("GET rejects a name that is not <uuid>.<ext>: %j", async (file) => {
-  expect((await handleGetTimelineImage(file)).status).toBe(400);
-});
+test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
+  "GET rejects a name that is not <uuid>.<ext>: %j",
+  async (file) => {
+    expect((await handleGetTimelineImage(file)).status).toBe(400);
+  }
+);
 
 test("GET of a well-formed but absent photo is 404", async () => {
   expect((await handleGetTimelineImage(`${missing}.png`)).status).toBe(404);
@@ -125,7 +126,10 @@ test("routes wire POST and GET to the handlers with their path params", async ()
 
   const form = new FormData();
   form.set("image", new Blob([png as unknown as ArrayBuffer], { type: "image/png" }), "photo.png");
-  const posted = await post({ request: new Request(`http://localhost/api/timeline/${event.id}/image`, { method: "POST", body: form }), params: { id: event.id } });
+  const posted = await post({
+    request: new Request(`http://localhost/api/timeline/${event.id}/image`, { method: "POST", body: form }),
+    params: { id: event.id },
+  });
   expect(await posted.json()).toEqual({ image: `${event.id}.png` });
 
   const got = await get({ request: new Request(`http://localhost/api/images/timeline/${event.id}.png`), params: { file: `${event.id}.png` } });

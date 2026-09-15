@@ -37,7 +37,7 @@ export function SaveBar({ label, busyLabel, busy = false, disabled = false, canc
       data-testid="save-bar"
       className={cn(
         "sticky bottom-20 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-border-normal bg-bg-normal px-4 py-3 md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0",
-        className,
+        className
       )}
     >
       <Button type="submit" variant="solid" intent="brand" disabled={busy || disabled}>

@@ -3,9 +3,9 @@
 // twin, and the parser. Pure; no model is ever called.
 import { describe, expect, test } from "vitest";
 import type { ScrapedRecipe } from "../../../src/domain/import";
-import { ingredientLines, ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import/scraped";
 import { ImportError } from "../../../src/domain/import/errors";
 import { aiPrompt, anchorJson, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "../../../src/domain/import/model";
+import { ingredientLines, ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import/scraped";
 
 /** What a good answer looks like: the recipe as JSON in the message content. */
 const FIXTURE = {
@@ -93,9 +93,7 @@ describe("the prompt", () => {
 
   test("the anchor is serialised compactly: the fields being copied, and no more", () => {
     const json = JSON.parse(anchorJson(ANCHOR)) as Record<string, unknown>;
-    expect(Object.keys(json).sort()).toEqual(
-      ["cookMinutes", "description", "image", "name", "parts", "prepMinutes", "servings", "tags", "yieldText"],
-    );
+    expect(Object.keys(json).sort()).toEqual(["cookMinutes", "description", "image", "name", "parts", "prepMinutes", "servings", "tags", "yieldText"]);
     expect(json.parts).toEqual(ANCHOR.parts);
     expect(json.servings).toBe(24);
   });

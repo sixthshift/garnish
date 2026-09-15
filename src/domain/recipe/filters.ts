@@ -1,5 +1,3 @@
-
-
 // Pure helpers for the recipe list's filter bar (M12.3): folding the legacy
 // single `tag` search param into the new multi-select `tags`, and small array
 // utilities for the tag chips and food picker. No IO; shared by the list
@@ -16,4 +14,3 @@ export function selectedTags(tag: string | undefined, tags: readonly string[] | 
   const all = [tag, ...(tags ?? [])].filter((t): t is string => Boolean(t?.trim()));
   return [...new Set(all)];
 }
-

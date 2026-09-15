@@ -43,7 +43,7 @@ export type WakeLockController = {
 export function createWakeLockController(
   navigatorLike: NavigatorLike,
   documentLike: DocumentLike,
-  onChange: (active: boolean) => void = () => {},
+  onChange: (active: boolean) => void = () => {}
 ): WakeLockController {
   let entered = false;
   let sentinel: WakeLockSentinelLike | null = null;

@@ -2,7 +2,7 @@
 // stored recipe. Pure.
 import { describe, expect, test } from "vitest";
 import { copyName, duplicateInput } from "../../../src/domain/recipe/duplicate";
-import { recipeInputSchema, type Recipe } from "../../../src/domain/recipe/recipe";
+import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe/recipe";
 
 const id = () => crypto.randomUUID();
 

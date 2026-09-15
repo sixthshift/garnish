@@ -18,7 +18,7 @@ import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
-import { type FieldSpec, type FieldValues, type SavedValues, type EditableItem, initialValues, fieldValues, validateValues } from "../../lib/ui/editSheet";
+import { type EditableItem, type FieldSpec, type FieldValues, fieldValues, initialValues, type SavedValues, validateValues } from "../../lib/ui/editSheet";
 
 export type EditSheetContentProps = {
   /** Header text, e.g. "Edit butter". */

@@ -31,7 +31,7 @@ test("mutate waits for invalidate to settle before resolving", async () => {
         setTimeout(() => {
           settled = true;
           resolve();
-        }, 5),
+        }, 5)
       ),
   };
   await mutate(router, async () => "ok");

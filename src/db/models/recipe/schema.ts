@@ -8,17 +8,7 @@
 // Mealie's field names where Mealie has the concept; the two times are integer
 // minutes rather than free text (decisions.md row 35).
 import { sql } from "drizzle-orm";
-import {
-  type AnySQLiteColumn,
-  check,
-  index,
-  integer,
-  primaryKey,
-  real,
-  sqliteTable,
-  text,
-  unique,
-} from "drizzle-orm/sqlite-core";
+import { type AnySQLiteColumn, check, index, integer, primaryKey, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { nowUtc } from "../columns";
 import { food } from "../food/schema";
 import { tag } from "../tag/schema";
@@ -53,7 +43,7 @@ export const recipe = sqliteTable(
     index("recipe_yield_unit_id").on(t.yieldUnitId),
     check("rating_range", sql`${t.rating} IS NULL OR (${t.rating} >= 0 AND ${t.rating} <= 5)`),
     check("favourite_flag", sql`${t.favourite} IN (0, 1)`),
-  ],
+  ]
 );
 
 /** Recipe notes, ordered within their recipe. */
@@ -68,7 +58,7 @@ export const recipeNote = sqliteTable(
     title: text("title").notNull().default(""),
     text: text("text").notNull().default(""),
   },
-  (t) => [unique().on(t.recipeId, t.position)],
+  (t) => [unique().on(t.recipeId, t.position)]
 );
 
 /**
@@ -94,7 +84,7 @@ export const part = sqliteTable(
      */
     sourceSteps: text("source_steps", { mode: "json" }).$type<string[]>(),
   },
-  (t) => [unique().on(t.recipeId, t.position)],
+  (t) => [unique().on(t.recipeId, t.position)]
 );
 
 /**
@@ -129,7 +119,7 @@ export const ingredient = sqliteTable(
     index("ingredient_unit_id").on(t.unitId),
     index("ingredient_food_id").on(t.foodId),
     check("fixed_flag", sql`${t.fixed} IN (0, 1)`),
-  ],
+  ]
 );
 
 /**
@@ -149,7 +139,7 @@ export const step = sqliteTable(
     /** File name under `data/images/steps/`, or NULL for a step with no photo (M35.1). */
     image: text("image"),
   },
-  (t) => [unique().on(t.partId, t.position)],
+  (t) => [unique().on(t.partId, t.position)]
 );
 
 /**
@@ -171,10 +161,7 @@ export const stepIngredient = sqliteTable(
       .references(() => ingredient.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
   },
-  (t) => [
-    primaryKey({ columns: [t.stepId, t.ingredientId] }),
-    index("step_ingredient_ingredient_id").on(t.ingredientId),
-  ],
+  (t) => [primaryKey({ columns: [t.stepId, t.ingredientId] }), index("step_ingredient_ingredient_id").on(t.ingredientId)]
 );
 
 /** Recipe-to-tag links. The primary key is the pair, so a recipe carries a tag at most once. */
@@ -188,5 +175,5 @@ export const recipeTag = sqliteTable(
       .notNull()
       .references(() => tag.id, { onDelete: "cascade" }),
   },
-  (t) => [primaryKey({ columns: [t.recipeId, t.tagId] }), index("recipe_tag_tag_id").on(t.tagId)],
+  (t) => [primaryKey({ columns: [t.recipeId, t.tagId] }), index("recipe_tag_tag_id").on(t.tagId)]
 );

@@ -2,7 +2,7 @@
 // database as its own recipe, with a fresh slug and fresh child ids.
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { recipeSchema, type RecipeInput } from "../../../src/domain/recipe";
+import { type RecipeInput, recipeSchema } from "../../../src/domain/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { createRecipe, duplicateRecipe, getRecipe, listRecipes, setFavourite } from "../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../helpers/server";

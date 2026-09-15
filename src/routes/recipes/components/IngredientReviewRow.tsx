@@ -19,11 +19,11 @@ import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { useEffect, useState } from "react";
-import { type FoodRow, type Unit } from "../../../domain/reference";
-import { rowStatus, type Choice } from "../../../domain/ingredient";
 import { Combobox } from "../../../components/ui/Combobox";
-import { type ComboboxOption } from "../../../lib/ui/combobox";
-import { type IngredientReview } from "../../../domain/draft";
+import type { IngredientReview } from "../../../domain/draft";
+import { type Choice, rowStatus } from "../../../domain/ingredient";
+import type { FoodRow, Unit } from "../../../domain/reference";
+import type { ComboboxOption } from "../../../lib/ui/combobox";
 
 /** How long the food picker waits after the last keystroke before querying. */
 export const REVIEW_FOOD_DEBOUNCE_MS = 200;

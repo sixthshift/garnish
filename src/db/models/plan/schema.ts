@@ -30,5 +30,5 @@ export const mealPlanEntry = sqliteTable(
     index("meal_plan_entry_date").on(t.date, t.position),
     index("meal_plan_entry_recipe_id").on(t.recipeId),
     check("date_is_a_date", sql`${t.date} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'`),
-  ],
+  ]
 );

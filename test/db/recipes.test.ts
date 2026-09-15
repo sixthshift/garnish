@@ -4,8 +4,8 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { recipes, type RecipeRepository } from "../../src/db/models/recipe/repo";
-import { recipeInputSchema, recipeSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
+import { type RecipeRepository, recipes } from "../../src/db/models/recipe/repo";
+import { type RecipeInput, recipeInputSchema, recipeSchema, recipeSummarySchema } from "../../src/domain/recipe";
 
 let db: Database;
 let repo: RecipeRepository;
@@ -61,7 +61,16 @@ const butter = {
   skipShopping: false,
   conversions: [],
 };
-const spaghetti = { id: ids.spaghetti, name: "spaghetti", pluralName: "spaghetti", aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const spaghetti = {
+  id: ids.spaghetti,
+  name: "spaghetti",
+  pluralName: "spaghetti",
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 const weeknight = { id: ids.weeknight, name: "Weeknight", slug: "weeknight" };
 const pastaTag = { id: ids.pasta_tag, name: "Pasta", slug: "pasta" };
 
@@ -122,7 +131,12 @@ test("create round-trips a full document and creates its references", () => {
   expect(count("aisle")).toBe(1);
   expect(count("tag")).toBe(2);
   const g = created.yieldUnit!;
-  const foodByName = Object.fromEntries(created.parts.flatMap((c) => c.ingredients).filter((i) => i.food).map((i) => [i.food!.name, i.food!]));
+  const foodByName = Object.fromEntries(
+    created.parts
+      .flatMap((c) => c.ingredients)
+      .filter((i) => i.food)
+      .map((i) => [i.food!.name, i.food!])
+  );
   const tagByName = Object.fromEntries(created.tags.map((t) => [t.name, t]));
   expect(g).toEqual({ ...gram, id: g.id });
   expect(foodByName.butter).toEqual({ ...butter, id: foodByName.butter!.id, aisle: { ...dairy, id: foodByName.butter!.aisle!.id } });
@@ -168,12 +182,21 @@ test("create resolves references by id, then by name case-insensitively, and nev
         parts: [
           {
             name: "",
-            ingredients: [{ quantity: 10, unit: { ...gram, id: crypto.randomUUID(), name: " Gram " }, food: { ...butter, id: crypto.randomUUID(), name: "Butter" }, note: "", originalText: "", fixed: false }],
+            ingredients: [
+              {
+                quantity: 10,
+                unit: { ...gram, id: crypto.randomUUID(), name: " Gram " },
+                food: { ...butter, id: crypto.randomUUID(), name: "Butter" },
+                note: "",
+                originalText: "",
+                fixed: false,
+              },
+            ],
             steps: [],
           },
         ],
-      }),
-    ),
+      })
+    )
   );
 
   expect(count("unit")).toBe(1);
@@ -206,12 +229,21 @@ test("update replaces components, steps, notes and tags in place and keeps id an
       parts: [
         {
           name: "",
-          ingredients: [{ quantity: 1, unit: null, food: { ...butter, id: crypto.randomUUID(), name: "Parmesan" }, note: "", originalText: "a handful of parmesan", fixed: false }],
+          ingredients: [
+            {
+              quantity: 1,
+              unit: null,
+              food: { ...butter, id: crypto.randomUUID(), name: "Parmesan" },
+              note: "",
+              originalText: "a handful of parmesan",
+              fixed: false,
+            },
+          ],
           steps: [{ id: ids.step1, text: "Grate.", ingredientIds: [], image: null }],
         },
         { name: "", ingredients: [], steps: [{ text: "Serve." }, { text: "Eat." }] },
       ],
-    }),
+    })
   )!;
 
   expect(updated.id).toBe(created.id);
@@ -262,13 +294,32 @@ test("a failing write leaves the previous recipe intact", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
   const bad = recipeInputSchema.parse({ ...fullDoc, description: "broken" });
   // Duplicate child id inside one document violates the primary key mid-transaction.
-  bad.parts[0]!.steps = [{ id: ids.step1, text: "dup", ingredientIds: [], image: null }, { id: ids.step1, text: "dup", ingredientIds: [], image: null }];
+  bad.parts[0]!.steps = [
+    { id: ids.step1, text: "dup", ingredientIds: [], image: null },
+    { id: ids.step1, text: "dup", ingredientIds: [], image: null },
+  ];
 
   expect(() => repo.update(created.id, bad)).toThrow(/UNIQUE|PRIMARY/);
   expect(repo.get("butter-pasta")).toEqual(created);
   expect(count("recipe")).toBe(1);
 
-  expect(() => repo.create(recipeInputSchema.parse({ ...minimal("Broken"), parts: [{ name: "", ingredients: [], steps: [{ id: ids.step1, text: "dup", ingredientIds: [], image: null }, { id: ids.step1, text: "dup", ingredientIds: [], image: null }] }] }))).toThrow(/UNIQUE|PRIMARY/);
+  expect(() =>
+    repo.create(
+      recipeInputSchema.parse({
+        ...minimal("Broken"),
+        parts: [
+          {
+            name: "",
+            ingredients: [],
+            steps: [
+              { id: ids.step1, text: "dup", ingredientIds: [], image: null },
+              { id: ids.step1, text: "dup", ingredientIds: [], image: null },
+            ],
+          },
+        ],
+      })
+    )
+  ).toThrow(/UNIQUE|PRIMARY/);
   expect(count("recipe")).toBe(1);
   expect(count("part")).toBe(3);
 });
@@ -334,11 +385,21 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
   expect(bySlug["pumpkin-soup"]!.tags).toEqual([]);
 
   expect(repo.list({ q: "PAST" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
-  expect(repo.list({ q: "s" }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast", "pumpkin-soup"]);
+  expect(
+    repo
+      .list({ q: "s" })
+      .map((r) => r.slug)
+      .sort()
+  ).toEqual(["butter-pasta", "cheese-toast", "pumpkin-soup"]);
   expect(repo.list({ q: "   " }).length).toBe(3);
   expect(repo.list({ q: "nothing" })).toEqual([]);
 
-  expect(repo.list({ tag: "weeknight" }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast"]);
+  expect(
+    repo
+      .list({ tag: "weeknight" })
+      .map((r) => r.slug)
+      .sort()
+  ).toEqual(["butter-pasta", "cheese-toast"]);
   expect(repo.list({ tag: "pasta" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
   expect(repo.list({ tag: "weeknight", q: "toast" }).map((r) => r.slug)).toEqual(["cheese-toast"]);
   expect(repo.list({ tag: "missing" })).toEqual([]);
@@ -372,14 +433,7 @@ test("a summary's ingredientPreview is the first six lines, part order then row 
   const created = repo.create(recipeInputSchema.parse(doc));
   const summary = repo.list().find((r) => r.id === created.id)!;
   // Seven lines across two parts; the seventh (part B's third row) is dropped.
-  expect(summary.ingredientPreview).toEqual([
-    "1 g food 1",
-    "2 g food 2",
-    "3 g food 3",
-    "4 g food 4",
-    "5 g food 5",
-    "6 g food 6",
-  ]);
+  expect(summary.ingredientPreview).toEqual(["1 g food 1", "2 g food 2", "3 g food 3", "4 g food 4", "5 g food 5", "6 g food 6"]);
 });
 
 test("list filters by tags[] with any (default) and all match", () => {
@@ -388,14 +442,29 @@ test("list filters by tags[] with any (default) and all match", () => {
   repo.create(recipeInputSchema.parse(minimal("Pumpkin soup")));
 
   // any: either tag.
-  expect(repo.list({ tags: ["pasta", "weeknight"] }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast"]);
-  expect(repo.list({ tags: ["pasta", "weeknight"], match: "any" }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast"]);
+  expect(
+    repo
+      .list({ tags: ["pasta", "weeknight"] })
+      .map((r) => r.slug)
+      .sort()
+  ).toEqual(["butter-pasta", "cheese-toast"]);
+  expect(
+    repo
+      .list({ tags: ["pasta", "weeknight"], match: "any" })
+      .map((r) => r.slug)
+      .sort()
+  ).toEqual(["butter-pasta", "cheese-toast"]);
   // all: only the recipe carrying every tag.
   expect(repo.list({ tags: ["pasta", "weeknight"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
   expect(repo.list({ tags: ["missing"] })).toEqual([]);
   // The legacy singular `tag` folds into the set alongside `tags`.
   expect(repo.list({ tag: "weeknight", tags: ["pasta"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
-  expect(repo.list({ tag: "weeknight", tags: ["weeknight"] }).map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast"]); // de-duplicated, not doubled
+  expect(
+    repo
+      .list({ tag: "weeknight", tags: ["weeknight"] })
+      .map((r) => r.slug)
+      .sort()
+  ).toEqual(["butter-pasta", "cheese-toast"]); // de-duplicated, not doubled
 });
 
 test("list filters by foods[]", () => {
@@ -415,8 +484,18 @@ test("list filters by favourite", () => {
   repo.create(recipeInputSchema.parse(minimal("Not fav")));
 
   expect(repo.list({ favourite: true }).map((r) => r.slug)).toEqual(["fav"]);
-  expect(repo.list({ favourite: false }).map((r) => r.slug).sort()).toEqual(["fav", "not-fav"]);
-  expect(repo.list().map((r) => r.slug).sort()).toEqual(["fav", "not-fav"]);
+  expect(
+    repo
+      .list({ favourite: false })
+      .map((r) => r.slug)
+      .sort()
+  ).toEqual(["fav", "not-fav"]);
+  expect(
+    repo
+      .list()
+      .map((r) => r.slug)
+      .sort()
+  ).toEqual(["fav", "not-fav"]);
 });
 
 test("list orders newest first", () => {
@@ -655,11 +734,7 @@ test("restoring puts the author's words back, re-links them and clears the stamp
 
   const restored = repo.restoreParts(created.id)!;
 
-  expect(restored.parts.map((p) => p.steps.map((s) => s.text))).toEqual([
-    ["Boil the pasta."],
-    ["Melt the butter."],
-    ["Toss together and serve."],
-  ]);
+  expect(restored.parts.map((p) => p.steps.map((s) => s.text))).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."]]);
   expect(restored.restyledAt).toBeNull();
   expect(sourceSteps()).toEqual([null, null, null]);
   // Links again, over the restored text this time.

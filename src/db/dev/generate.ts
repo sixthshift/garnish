@@ -9,11 +9,11 @@
 // one with many. The list, filter, sort and cook screens all have an awkward
 // case to render.
 import type { z } from "zod";
-import { slugify } from "../../lib/names";
-import { type ingredientInputSchema, type RecipeInput, type TimelineEventInput, suggestLinks } from "../../domain/recipe";
+import { type ingredientInputSchema, type RecipeInput, suggestLinks, type TimelineEventInput } from "../../domain/recipe";
 import type { Food, Tag, Unit } from "../../domain/reference";
+import { slugify } from "../../lib/names";
 import { DEFAULT_UNITS } from "../seed/units";
-import { random, type Random } from "./random";
+import { type Random, random } from "./random";
 import { AISLES, DESCRIPTIONS, DOUBLE_STEPS, FOODS, type FoodEntry, NOTES, SHAPES, SOURCES, STEPS, TAGS, UNITS } from "./vocabulary";
 
 /** The seed the dataset is built from. Changing it changes every recipe. */
@@ -215,9 +215,7 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
 
     // A deliberately long name, to test truncation on the cards and the header.
     const longName = i === 3;
-    const finalName = longName
-      ? `${name} with Charred Corn, Pickled Onion and a Whipped Fetta That Is Frankly the Best Part`
-      : name;
+    const finalName = longName ? `${name} with Charred Corn, Pickled Onion and a Whipped Fetta That Is Frankly the Best Part` : name;
 
     const pantry = rng.shuffle(FOODS);
     const partCount = shape.parts.length;

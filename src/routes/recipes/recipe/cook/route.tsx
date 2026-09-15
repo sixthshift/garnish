@@ -2,10 +2,10 @@
 // the page it renders, loaded on demand. The page itself is page.tsx.
 import { Card } from "@sixthshift/design-system/card";
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
-import { Route as rootRoute } from "../../../root";
 import { z } from "zod";
-import { type Recipe, subRecipeIds, type SubRecipe } from "../../../../domain/recipe";
+import { type Recipe, type SubRecipe, subRecipeIds } from "../../../../domain/recipe";
 import { getRecipe, listSubRecipes } from "../../../../server/fns/recipes";
+import { Route as rootRoute } from "../../../root";
 
 export const CookSearch = z.object({
   servings: z.number().positive().finite().optional(),

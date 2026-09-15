@@ -44,9 +44,7 @@ function stubFetch(body: string, status = 200): Fetcher & { calls: { url: string
 }
 
 /** A fetcher answering one `[body, status]` pair per call, in order; the last pair repeats past the end. */
-function sequenceFetch(
-  responses: readonly [body: string, status: number][],
-): Fetcher & { calls: { url: string; init?: RequestInit }[] } {
+function sequenceFetch(responses: readonly [body: string, status: number][]): Fetcher & { calls: { url: string; init?: RequestInit }[] } {
   const calls: { url: string; init?: RequestInit }[] = [];
   const fetcher = (async (url: string, init?: RequestInit) => {
     calls.push({ url, init });

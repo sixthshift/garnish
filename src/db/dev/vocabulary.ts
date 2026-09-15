@@ -8,16 +8,7 @@
 // filtering and the A-Z tag list are worth looking at.
 
 /** Aisles, in the order a supermarket walks them. Position follows this order. */
-export const AISLES: readonly string[] = [
-  "Fruit & veg",
-  "Butcher",
-  "Seafood",
-  "Dairy & eggs",
-  "Bakery",
-  "Pantry",
-  "Spices",
-  "Freezer",
-];
+export const AISLES: readonly string[] = ["Fruit & veg", "Butcher", "Seafood", "Dairy & eggs", "Bakery", "Pantry", "Spices", "Freezer"];
 
 export type FoodEntry = { name: string; plural?: string; aisle: string };
 

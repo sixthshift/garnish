@@ -3,7 +3,7 @@
 import type { Database } from "bun:sqlite";
 import { basename } from "node:path";
 import { databasePath, openDatabase } from "../../db/connection/open";
-import { migrate, type MigrationSources } from "../../db/migrations/migrate";
+import { type MigrationSources, migrate } from "../../db/migrations/migrate";
 import { seed } from "../../db/seed/seed";
 import { dataDir, ensureDataDir } from "./boot";
 

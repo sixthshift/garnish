@@ -12,7 +12,7 @@
 // reads back with `recipe: null` and keeps its day and its text.
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, gte, inArray, lte, max, ne } from "drizzle-orm";
-import { type ParsedPlanEntryInput, type PlanDay, type PlanEntry, type PlanEntryPatch, type PlanRecipe, addDays, groupByDay } from "../../../domain/plan";
+import { addDays, groupByDay, type ParsedPlanEntryInput, type PlanDay, type PlanEntry, type PlanEntryPatch, type PlanRecipe } from "../../../domain/plan";
 import { orm } from "../../connection/client";
 import { recipe } from "../recipe/schema";
 import { mealPlanEntry } from "./schema";
@@ -28,11 +28,7 @@ export function plan(db: Database) {
   function readRecipes(rows: (typeof mealPlanEntry.$inferSelect)[]): Map<string, PlanRecipe> {
     const ids = [...new Set(rows.map((r) => r.recipeId).filter((id): id is string => id !== null))];
     if (ids.length === 0) return new Map();
-    const found = dz
-      .select({ id: recipe.id, slug: recipe.slug, name: recipe.name, image: recipe.image })
-      .from(recipe)
-      .where(inArray(recipe.id, ids))
-      .all();
+    const found = dz.select({ id: recipe.id, slug: recipe.slug, name: recipe.name, image: recipe.image }).from(recipe).where(inArray(recipe.id, ids)).all();
     return new Map(found.map((r) => [r.id, r]));
   }
 
@@ -150,8 +146,7 @@ export function plan(db: Database) {
     },
 
     /** True when a row was deleted. */
-    remove: (id: string): boolean =>
-      dz.delete(mealPlanEntry).where(eq(mealPlanEntry.id, id)).returning({ id: mealPlanEntry.id }).all().length > 0,
+    remove: (id: string): boolean => dz.delete(mealPlanEntry).where(eq(mealPlanEntry.id, id)).returning({ id: mealPlanEntry.id }).all().length > 0,
   };
 }
 

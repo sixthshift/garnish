@@ -30,19 +30,18 @@
 // outlives the menu item that opens it — see that file's header for why.
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { toCooklang, ingredientsText, recipeUrl, type Recipe } from "../../../../domain/recipe";
+import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
+import { Menu } from "../../../../components/ui/Menu";
 import { dayLabel } from "../../../../domain/plan";
+import { ingredientsText, type Recipe, recipeUrl, toCooklang } from "../../../../domain/recipe";
 import { writeClipboard } from "../../../../lib/clipboard";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";
 import { foodForRecipe } from "../../../../server/fns/foods";
 import { addPlanEntry } from "../../../../server/fns/plan";
 import { deleteRecipe, duplicateRecipe } from "../../../../server/fns/recipes";
-import { PlanPopover } from "./PlanPopover";
-import { planEntryFor } from "./PlanPopover";
+import { PlanPopover, planEntryFor } from "./PlanPopover";
 import { RestyleSheet } from "./RestyleSheet";
-import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
-import { Menu } from "../../../../components/ui/Menu";
 
 export type RecipeActionsProps = {
   recipe: Recipe;

@@ -5,9 +5,9 @@
 // hook's interval calls once a second.
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { TimerStrip, TimerStripRows } from "../../../../../src/routes/recipes/recipe/components/TimerStrip";
 import { notices } from "../../../../../src/lib/notify";
-import { startTimer, tickTimersNow, timerDisplay, type RunningTimer, type StorageLike, type Timer } from "../../../../../src/lib/timers";
+import { type RunningTimer, type StorageLike, startTimer, type Timer, tickTimersNow, timerDisplay } from "../../../../../src/lib/timers";
+import { TimerStrip, TimerStripRows } from "../../../../../src/routes/recipes/recipe/components/TimerStrip";
 
 const RECIPE = "11111111-1111-4111-8111-111111111111";
 const STEP = "33333333-3333-4333-8333-333333333333";

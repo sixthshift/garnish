@@ -1,14 +1,13 @@
-
-import { type FoodRow, type Tag, type Unit } from "../reference";
-import { type RowCommit } from "../ingredient";
-import { type ScrapedRecipe } from "../import";
-import { suggestLinks } from "../recipe";
 import { randomUuid } from "../../lib/id";
-import { reviewedIngredient } from "./review";
+import type { ScrapedRecipe } from "../import";
+import type { RowCommit } from "../ingredient";
+import { suggestLinks } from "../recipe";
+import type { FoodRow, Tag, Unit } from "../reference";
 import { emptyDraft } from "./draft";
-import { type DraftPart, type RecipeDraft } from "./types";
-import { tagsFromNames } from "./vocabulary";
+import { reviewedIngredient } from "./review";
 import { newStep } from "./steps";
+import type { DraftPart, RecipeDraft } from "./types";
+import { tagsFromNames } from "./vocabulary";
 // A draft from a scraped or imported recipe: the import review's starting point.
 
 /**

@@ -43,41 +43,51 @@ function seedRecipe() {
 
   db.run(
     "INSERT INTO recipe (id, slug, name, servings, yield_quantity, yield_unit_id, yield_text, prep_minutes, cook_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [ids.recipe, "butter-pasta", "Butter pasta", 2, 600, ids.g, "600 g", 5, 15],
+    [ids.recipe, "butter-pasta", "Butter pasta", 2, 600, ids.g, "600 g", 5, 15]
   );
   db.run("INSERT INTO recipe_tag (recipe_id, tag_id) VALUES (?, ?)", [ids.recipe, ids.tag]);
-  db.run("INSERT INTO recipe_note (id, recipe_id, position, title, text) VALUES (?, ?, ?, ?, ?)", [
-    "note-1",
-    ids.recipe,
-    0,
-    "Tip",
-    "Salt the water well.",
-  ]);
+  db.run("INSERT INTO recipe_note (id, recipe_id, position, title, text) VALUES (?, ?, ?, ?, ?)", ["note-1", ids.recipe, 0, "Tip", "Salt the water well."]);
 
   // Second part inserted first.
   db.run("INSERT INTO part (id, recipe_id, position, name) VALUES (?, ?, ?, ?)", [ids.sauce, ids.recipe, 1, "Sauce"]);
   db.run("INSERT INTO part (id, recipe_id, position, name) VALUES (?, ?, ?, ?)", [ids.pasta, ids.recipe, 0, "Pasta"]);
 
-  db.run(
-    "INSERT INTO ingredient (id, part_id, position, quantity, unit_id, food_id, note, original_text, fixed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ["ing-pasta-1", ids.pasta, 1, null, null, null, "", "salt, to taste", 0],
-  );
-  db.run(
-    "INSERT INTO ingredient (id, part_id, position, quantity, unit_id, food_id, note, original_text, fixed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ["ing-pasta-0", ids.pasta, 0, 200, ids.g, ids.spaghetti, "", "200 g spaghetti", 0],
-  );
-  db.run(
-    "INSERT INTO ingredient (id, part_id, position, quantity, unit_id, food_id, note, original_text, fixed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    ["ing-sauce-0", ids.sauce, 0, 50, ids.g, ids.butter, "cold", "50 g cold butter", 1],
-  );
-
-  // Steps belong to a part, and position is scoped to it.
-  db.run("INSERT INTO step (id, part_id, position, text) VALUES (?, ?, ?, ?)", [
-    "step-pasta-1",
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, unit_id, food_id, note, original_text, fixed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+    "ing-pasta-1",
     ids.pasta,
     1,
-    "Toss together and serve.",
+    null,
+    null,
+    null,
+    "",
+    "salt, to taste",
+    0,
   ]);
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, unit_id, food_id, note, original_text, fixed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+    "ing-pasta-0",
+    ids.pasta,
+    0,
+    200,
+    ids.g,
+    ids.spaghetti,
+    "",
+    "200 g spaghetti",
+    0,
+  ]);
+  db.run("INSERT INTO ingredient (id, part_id, position, quantity, unit_id, food_id, note, original_text, fixed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+    "ing-sauce-0",
+    ids.sauce,
+    0,
+    50,
+    ids.g,
+    ids.butter,
+    "cold",
+    "50 g cold butter",
+    1,
+  ]);
+
+  // Steps belong to a part, and position is scoped to it.
+  db.run("INSERT INTO step (id, part_id, position, text) VALUES (?, ?, ?, ?)", ["step-pasta-1", ids.pasta, 1, "Toss together and serve."]);
   db.run("INSERT INTO step (id, part_id, position, text) VALUES (?, ?, ?, ?)", ["step-sauce-0", ids.sauce, 0, "Melt the butter."]);
   db.run("INSERT INTO step (id, part_id, position, text) VALUES (?, ?, ?, ?)", ["step-pasta-0", ids.pasta, 0, "Boil the pasta."]);
 }
@@ -109,9 +119,7 @@ test("the migrations create every table in architecture.md", () => {
 test("a recipe with two parts reads back in position order", () => {
   seedRecipe();
 
-  const recipe = db
-    .query<Record<string, unknown>, [string]>("SELECT * FROM recipe WHERE slug = ?")
-    .get("butter-pasta")!;
+  const recipe = db.query<Record<string, unknown>, [string]>("SELECT * FROM recipe WHERE slug = ?").get("butter-pasta")!;
   expect(recipe).toMatchObject({
     id: ids.recipe,
     name: "Butter pasta",
@@ -130,9 +138,7 @@ test("a recipe with two parts reads back in position order", () => {
   expect(recipe.updated_at).toBe(recipe.created_at);
 
   const parts = db
-    .query<{ id: string; position: number; name: string }, [string]>(
-      "SELECT id, position, name FROM part WHERE recipe_id = ? ORDER BY position",
-    )
+    .query<{ id: string; position: number; name: string }, [string]>("SELECT id, position, name FROM part WHERE recipe_id = ? ORDER BY position")
     .all(ids.recipe);
   expect(parts).toEqual([
     { id: ids.pasta, position: 0, name: "Pasta" },
@@ -142,7 +148,7 @@ test("a recipe with two parts reads back in position order", () => {
   const ingredients = (partId: string) =>
     db
       .query<Record<string, unknown>, [string]>(
-        "SELECT position, quantity, unit_id, food_id, note, original_text, fixed FROM ingredient WHERE part_id = ? ORDER BY position",
+        "SELECT position, quantity, unit_id, food_id, note, original_text, fixed FROM ingredient WHERE part_id = ? ORDER BY position"
       )
       .all(partId);
   expect(ingredients(ids.pasta)).toEqual([
@@ -155,7 +161,7 @@ test("a recipe with two parts reads back in position order", () => {
 
   const steps = db
     .query<{ position: number; part_id: string; text: string }, [string]>(
-      "SELECT s.position, s.part_id, s.text FROM step s JOIN part p ON p.id = s.part_id WHERE p.recipe_id = ? ORDER BY p.position, s.position",
+      "SELECT s.position, s.part_id, s.text FROM step s JOIN part p ON p.id = s.part_id WHERE p.recipe_id = ? ORDER BY p.position, s.position"
     )
     .all(ids.recipe);
   expect(steps).toEqual([
@@ -164,15 +170,13 @@ test("a recipe with two parts reads back in position order", () => {
     { position: 0, part_id: ids.sauce, text: "Melt the butter." },
   ]);
 
-  expect(db.query<{ title: string; text: string }, [string]>("SELECT title, text FROM recipe_note WHERE recipe_id = ? ORDER BY position").all(ids.recipe)).toEqual([
-    { title: "Tip", text: "Salt the water well." },
-  ]);
+  expect(
+    db.query<{ title: string; text: string }, [string]>("SELECT title, text FROM recipe_note WHERE recipe_id = ? ORDER BY position").all(ids.recipe)
+  ).toEqual([{ title: "Tip", text: "Salt the water well." }]);
   expect(
     db
-      .query<{ name: string; slug: string }, [string]>(
-        "SELECT t.name, t.slug FROM recipe_tag rt JOIN tag t ON t.id = rt.tag_id WHERE rt.recipe_id = ?",
-      )
-      .all(ids.recipe),
+      .query<{ name: string; slug: string }, [string]>("SELECT t.name, t.slug FROM recipe_tag rt JOIN tag t ON t.id = rt.tag_id WHERE rt.recipe_id = ?")
+      .all(ids.recipe)
   ).toEqual([{ name: "Weeknight", slug: "weeknight" }]);
 });
 
@@ -215,12 +219,17 @@ test("deleting a food, unit or aisle sets references null", () => {
 
   const sauce = db
     .query<{ quantity: number; unit_id: string | null; food_id: string | null; original_text: string }, [string]>(
-      "SELECT quantity, unit_id, food_id, original_text FROM ingredient WHERE id = ?",
+      "SELECT quantity, unit_id, food_id, original_text FROM ingredient WHERE id = ?"
     )
     .get("ing-sauce-0");
   expect(sauce).toEqual({ quantity: 50, unit_id: null, food_id: null, original_text: "50 g cold butter" });
   expect(db.query<{ yield_unit_id: string | null }, [string]>("SELECT yield_unit_id FROM recipe WHERE id = ?").get(ids.recipe)?.yield_unit_id).toBeNull();
-  expect(db.query<{ aisle_id: string | null }, []>("SELECT aisle_id FROM food").all().every((f) => f.aisle_id === null)).toBe(true);
+  expect(
+    db
+      .query<{ aisle_id: string | null }, []>("SELECT aisle_id FROM food")
+      .all()
+      .every((f) => f.aisle_id === null)
+  ).toBe(true);
 });
 
 test("deleting a tag removes its recipe links only", () => {
@@ -278,13 +287,15 @@ test("defaults: description, note, original_text, aliases and flags", () => {
     recipe_id: null,
     skip_shopping: 0,
   });
-  expect(db.query<Record<string, unknown>, []>("SELECT abbreviation, use_abbreviation, fraction, standard_quantity, standard_unit_id FROM unit").get()).toEqual({
-    abbreviation: "",
-    use_abbreviation: 0,
-    fraction: 1,
-    standard_quantity: null,
-    standard_unit_id: null,
-  });
+  expect(db.query<Record<string, unknown>, []>("SELECT abbreviation, use_abbreviation, fraction, standard_quantity, standard_unit_id FROM unit").get()).toEqual(
+    {
+      abbreviation: "",
+      use_abbreviation: 0,
+      fraction: 1,
+      standard_quantity: null,
+      standard_unit_id: null,
+    }
+  );
 });
 
 // --- 002_stage2 -------------------------------------------------------------
@@ -352,7 +363,7 @@ test("food_conversion keeps one row per food and pair of units, and refuses the 
       100,
       ids.g,
       91.1,
-    ]),
+    ])
   ).toThrow(/UNIQUE/);
 
   // The same pair for another food is a different row.
@@ -367,16 +378,18 @@ test("food_conversion keeps one row per food and pair of units, and refuses the 
   expect(count("food_conversion")).toBe(2);
 
   expect(() =>
-    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-4', '${ids.butter}', '${ids.g}', 1, '${ids.g}', 1)`),
+    db.run(
+      `INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-4', '${ids.butter}', '${ids.g}', 1, '${ids.g}', 1)`
+    )
   ).toThrow(/CHECK/);
   expect(() =>
-    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-5', '${ids.butter}', '${ml}', 0, '${ids.g}', 1)`),
+    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-5', '${ids.butter}', '${ml}', 0, '${ids.g}', 1)`)
   ).toThrow(/CHECK/);
   expect(() =>
-    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-6', '${ids.butter}', '${ml}', 1, '${ids.g}', -1)`),
+    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-6', '${ids.butter}', '${ml}', 1, '${ids.g}', -1)`)
   ).toThrow(/CHECK/);
   expect(() =>
-    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-7', 'missing', '${ml}', 1, '${ids.g}', 1)`),
+    db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity, to_unit_id, to_quantity) VALUES ('fc-7', 'missing', '${ml}', 1, '${ids.g}', 1)`)
   ).toThrow(/FOREIGN KEY/);
   expect(() => db.run(`INSERT INTO food_conversion (id, food_id, unit_id, quantity) VALUES ('fc-8', '${ids.butter}', '${ml}', 1)`)).toThrow(/NOT NULL/);
 });
@@ -416,13 +429,7 @@ test("deleting the food or either unit takes the conversion with it", () => {
 test("meal_plan_entry holds a recipe or a plain line on a calendar day", () => {
   seedRecipe();
 
-  db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id, servings) VALUES (?, ?, ?, ?, ?)", [
-    "mp-1",
-    "2026-09-14",
-    0,
-    ids.recipe,
-    6,
-  ]);
+  db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id, servings) VALUES (?, ?, ?, ?, ?)", ["mp-1", "2026-09-14", 0, ids.recipe, 6]);
   db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES (?, ?, ?, ?)", ["mp-2", "2026-09-14", 1, "Leftovers"]);
 
   expect(db.query<Record<string, unknown>, []>("SELECT * FROM meal_plan_entry ORDER BY position").all()).toEqual([
@@ -438,9 +445,7 @@ test("meal_plan_entry holds a recipe or a plain line on a calendar day", () => {
   expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES ('mp-4', '14 Sep 2026', 0, 'x')")).toThrow(/CHECK/);
   expect(() => db.run("INSERT INTO meal_plan_entry (id, position, text) VALUES ('mp-5', 0, 'x')")).toThrow(/NOT NULL/);
   expect(() => db.run("INSERT INTO meal_plan_entry (id, date, text) VALUES ('mp-6', '2026-09-14', 'x')")).toThrow(/NOT NULL/);
-  expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id) VALUES ('mp-7', '2026-09-14', 0, 'missing')")).toThrow(
-    /FOREIGN KEY/,
-  );
+  expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id) VALUES ('mp-7', '2026-09-14', 0, 'missing')")).toThrow(/FOREIGN KEY/);
 });
 
 test("deleting a planned recipe empties the entry's recipe, not the day", () => {
@@ -468,7 +473,7 @@ test("a part keeps its original steps as JSON, and a recipe carries the restyle 
 
   expect(db.query<{ source_steps: string }, [string]>("SELECT source_steps FROM part WHERE id = ?").get(ids.pasta)!.source_steps).toBe(original);
   expect(db.query<{ restyled_at: string }, [string]>("SELECT restyled_at FROM recipe WHERE id = ?").get(ids.recipe)!.restyled_at).toBe(
-    "2026-09-14T02:30:00.000Z",
+    "2026-09-14T02:30:00.000Z"
   );
 
   // Both go back to NULL: a restore is not a different state from never restyled.

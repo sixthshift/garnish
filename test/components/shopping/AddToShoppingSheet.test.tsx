@@ -2,11 +2,11 @@
 // AddToShoppingSheetContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
+import { SubRecipesProvider } from "../../../src/components/recipe/SubRecipes";
 import { AddToShoppingSheetContent } from "../../../src/components/shopping/AddToShoppingSheet";
-import { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/domain/shopping";
 import type { Ingredient, Part, Recipe, SubRecipe } from "../../../src/domain/recipe";
 import type { Food, Unit } from "../../../src/domain/reference";
-import { SubRecipesProvider } from "../../../src/components/recipe/SubRecipes";
+import { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/domain/shopping";
 
 const food = (name: string, skipShopping = false, recipeId: string | null = null): Food => ({
   id: `food-${name}`,
@@ -19,7 +19,16 @@ const food = (name: string, skipShopping = false, recipeId: string | null = null
   conversions: [],
 });
 
-const gram: Unit = { id: "unit-g", name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, standardQuantity: null, standardUnitId: null };
+const gram: Unit = {
+  id: "unit-g",
+  name: "gram",
+  pluralName: "grams",
+  abbreviation: "g",
+  useAbbreviation: true,
+  fraction: false,
+  standardQuantity: null,
+  standardUnitId: null,
+};
 
 let n = 0;
 function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {
@@ -146,7 +155,8 @@ describe("additionsForWithSubRecipes", () => {
 });
 
 describe("AddToShoppingSheetContent render", () => {
-  const render = (recipe: Recipe, busy = false) => renderToString(<AddToShoppingSheetContent recipe={recipe} busy={busy} onAdd={() => {}} onCancel={() => {}} />);
+  const render = (recipe: Recipe, busy = false) =>
+    renderToString(<AddToShoppingSheetContent recipe={recipe} busy={busy} onAdd={() => {}} onCancel={() => {}} />);
 
   test("lists every buyable ingredient, ticked to include", () => {
     const html = render(recipeWith([part("", [flour(), freeText(), salt()])]));
@@ -197,7 +207,7 @@ describe("AddToShoppingSheetContent render: sub-recipe rows (M32.5)", () => {
     renderToString(
       <SubRecipesProvider subRecipes={[child]}>
         <AddToShoppingSheetContent recipe={recipe} busy={false} onAdd={() => {}} onCancel={() => {}} />
-      </SubRecipesProvider>,
+      </SubRecipesProvider>
     );
 
   test("a row whose food is made by a known recipe offers the child's ingredients instead", () => {

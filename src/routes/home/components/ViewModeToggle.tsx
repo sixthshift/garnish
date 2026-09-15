@@ -7,7 +7,17 @@ import { useViewMode, type ViewMode } from "../../../lib/prefs";
 
 function GridIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="3" width="8" height="8" rx="1" />
       <rect x="13" y="3" width="8" height="8" rx="1" />
       <rect x="3" y="13" width="8" height="8" rx="1" />
@@ -18,7 +28,17 @@ function GridIcon() {
 
 function ListIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <line x1="8" y1="6" x2="21" y2="6" />
       <line x1="8" y1="12" x2="21" y2="12" />
       <line x1="8" y1="18" x2="21" y2="18" />

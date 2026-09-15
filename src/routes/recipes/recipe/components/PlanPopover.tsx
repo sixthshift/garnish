@@ -24,9 +24,9 @@
 // not by a click on the trigger itself.
 import { Popover } from "@sixthshift/design-system/popover";
 import { useState } from "react";
-import { dayLabel, todayIso, type PlanEntryInput } from "../../../../domain/plan";
-import { type Recipe } from "../../../../domain/recipe";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
+import { dayLabel, type PlanEntryInput, todayIso } from "../../../../domain/plan";
+import type { Recipe } from "../../../../domain/recipe";
 import { nextSevenDays } from "../../../../lib/dates";
 
 export type PlanPopoverRecipe = Pick<Recipe, "id" | "name" | "recipeServings">;

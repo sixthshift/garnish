@@ -32,8 +32,7 @@ export function timeline(db: Database) {
       .from(timelineEvent)
       .where(eq(timelineEvent.recipeId, recipeId))
       .get();
-    on
-      .update(recipe)
+    on.update(recipe)
       .set({ lastMade: lastMadeFrom(latest?.latest ?? null) })
       .where(eq(recipe.id, recipeId))
       .run();
@@ -42,12 +41,7 @@ export function timeline(db: Database) {
   return {
     /** A recipe's events, newest first; created_at breaks ties within a day. */
     list: (recipeId: string): TimelineEvent[] =>
-      dz
-        .select()
-        .from(timelineEvent)
-        .where(eq(timelineEvent.recipeId, recipeId))
-        .orderBy(desc(timelineEvent.occurredOn), desc(timelineEvent.createdAt))
-        .all(),
+      dz.select().from(timelineEvent).where(eq(timelineEvent.recipeId, recipeId)).orderBy(desc(timelineEvent.occurredOn), desc(timelineEvent.createdAt)).all(),
 
     get,
 
@@ -72,10 +66,7 @@ export function timeline(db: Database) {
 
     /** Point an event at a stored photo file name (or clear it). True when the event exists. */
     setImage(id: string, image: string | null): boolean {
-      return (
-        dz.update(timelineEvent).set({ image }).where(eq(timelineEvent.id, id)).returning({ id: timelineEvent.id })
-          .all().length > 0
-      );
+      return dz.update(timelineEvent).set({ image }).where(eq(timelineEvent.id, id)).returning({ id: timelineEvent.id }).all().length > 0;
     },
 
     /** Delete an event and recompute recipe.last_made. True when a row went. */

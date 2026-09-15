@@ -5,11 +5,11 @@
 // There is no list id in any signature because there is no second list.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { required } from "../core/errors";
 import { shopping } from "../../db/models/shopping/repo";
 import { Id, IdInput } from "../../domain/reference";
 import { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSourceInputSchema } from "../../domain/shopping";
 import { getDb } from "../core/db";
+import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
 export const AddShoppingItemsInput = z.object({ items: z.array(shoppingItemInputSchema) });
@@ -21,7 +21,7 @@ export const MergeShoppingItemsInput = z.object({
       id: Id,
       quantity: z.number().nonnegative().nullable(),
       sources: z.array(shoppingItemSourceInputSchema).default([]),
-    }),
+    })
   ),
 });
 
@@ -60,9 +60,7 @@ export const mergeShoppingItems = createServerFn({ method: "POST" })
 export const updateShoppingItem = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(UpdateShoppingItemInput)
-  .handler(async ({ data: { id, ...patch } }) =>
-    required(shopping(await getDb()).update(id, patch), "shopping item", id),
-  );
+  .handler(async ({ data: { id, ...patch } }) => required(shopping(await getDb()).update(id, patch), "shopping item", id));
 
 /** Tick or untick a line: the write the supermarket queues (M31.5). */
 export const tickShoppingItem = createServerFn({ method: "POST" })

@@ -5,7 +5,7 @@
 // package.json exports, not a hardcoded path) plus garnish's own
 // src/styles/theme.css, which re-points those tokens and may add new ones.
 // A guessed token now fails the gate instead of painting nothing.
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
 
@@ -82,9 +82,7 @@ describe("tokenNames", () => {
 
 describe("tokenClasses", () => {
   test("finds bg-bg-, text-fg- and border-border- classes and their token name", () => {
-    expect(
-      tokenClasses('className="bg-bg-base border-border-normal text-fg-subtle/80 hover:bg-bg-normal-hovered"'),
-    ).toEqual([
+    expect(tokenClasses('className="bg-bg-base border-border-normal text-fg-subtle/80 hover:bg-bg-normal-hovered"')).toEqual([
       { className: "bg-bg-base", token: "bg-base" },
       { className: "border-border-normal", token: "border-normal" },
       { className: "text-fg-subtle", token: "fg-subtle" },
@@ -104,10 +102,7 @@ describe("real tokens only", () => {
   };
   const themeCssPath = join(designSystemDir, designSystemPkg.exports["./theme.css"]!);
 
-  const tokens = new Set([
-    ...tokenNames(readFileSync(themeCssPath, "utf8")),
-    ...tokenNames(readFileSync(join(root, "src", "styles", "theme.css"), "utf8")),
-  ]);
+  const tokens = new Set([...tokenNames(readFileSync(themeCssPath, "utf8")), ...tokenNames(readFileSync(join(root, "src", "styles", "theme.css"), "utf8"))]);
 
   test("found at least one token, so an empty set can't fake a pass", () => {
     expect(tokens.size).toBeGreaterThan(0);

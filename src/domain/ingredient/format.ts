@@ -101,9 +101,7 @@ export function formatIngredient(ingredient: DisplayIngredient): string {
   if (food === null && originalText.trim() !== "") return originalText.trim();
 
   const hasQuantity = quantity !== null && quantity !== 0;
-  const head = [hasQuantity ? formatAmount(quantity, unit) : "", formatFood(quantity, food)]
-    .filter((part) => part !== "")
-    .join(" ");
+  const head = [hasQuantity ? formatAmount(quantity, unit) : "", formatFood(quantity, food)].filter((part) => part !== "").join(" ");
   return [head, note.trim()].filter((part) => part !== "").join(", ");
 }
 

@@ -2,8 +2,8 @@
 // the column's collation gives `eq` for free.
 import type { Database } from "bun:sqlite";
 import { asc, eq, sql } from "drizzle-orm";
-import { orm } from "../../connection/client";
 import { cleanName, likePattern } from "../../../lib/names";
+import { orm } from "../../connection/client";
 import { ingredient, recipe } from "../recipe/schema";
 import { unit } from "./schema";
 

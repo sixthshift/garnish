@@ -45,16 +45,40 @@ import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useRef, useState } from "react";
-import { paragraphs } from "../../../domain/ingredient";
-import { Markdown } from "../../../components/ui/Markdown";
-import { ingredientLine, type FieldErrors, type RecipeDraft, stepsOf, withSteps, addStep, updateStep, setStepImage, removeStep, addBulkSteps, insertStepAbove, insertStepBelow, splitStepByParagraph, mergeStepWithNext, splitAllSteps, mergeAllSteps, canSplitAll, stepsPath, linkedIngredients, linkableIngredients, linkIngredient, unlinkStepIngredient, suggestPartLinks } from "../../../domain/draft";
-import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
-import { notify, notifyError } from "../../../lib/notify";
-import { stepImageUrl, uploadStepImage } from "../../../lib/images";
 import { BulkAddSheet, BulkInlineAdd } from "../../../components/ui/BulkAddSheet";
 import { Combobox } from "../../../components/ui/Combobox";
+import { Markdown } from "../../../components/ui/Markdown";
 import { Menu } from "../../../components/ui/Menu";
 import { ReorderList } from "../../../components/ui/ReorderList";
+import {
+  addBulkSteps,
+  addStep,
+  canSplitAll,
+  type FieldErrors,
+  ingredientLine,
+  insertStepAbove,
+  insertStepBelow,
+  linkableIngredients,
+  linkedIngredients,
+  linkIngredient,
+  mergeAllSteps,
+  mergeStepWithNext,
+  type RecipeDraft,
+  removeStep,
+  setStepImage,
+  splitAllSteps,
+  splitStepByParagraph,
+  stepsOf,
+  stepsPath,
+  suggestPartLinks,
+  unlinkStepIngredient,
+  updateStep,
+  withSteps,
+} from "../../../domain/draft";
+import { paragraphs } from "../../../domain/ingredient";
+import { stepImageUrl, uploadStepImage } from "../../../lib/images";
+import { notify, notifyError } from "../../../lib/notify";
+import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
 
 // --- Pure helpers -----------------------------------------------------------
 
@@ -168,7 +192,14 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
           >
             Split all
           </Button>
-          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled || steps.length < 2} onClick={() => onChange(mergeAllSteps(draft, pi))}>
+          <Button
+            type="button"
+            variant="ghost"
+            intent="neutral"
+            size="sm"
+            disabled={disabled || steps.length < 2}
+            onClick={() => onChange(mergeAllSteps(draft, pi))}
+          >
             Merge all
           </Button>
           <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
@@ -225,21 +256,21 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                       )}
                     </div>
                   ) : (
-                  <Textarea
-                    name={`${path}.${si}.text`}
-                    aria-label={`Step ${si + 1}`}
-                    aria-invalid={error !== undefined || undefined}
-                    rows={2}
-                    placeholder="What to do"
-                    value={step.text ?? ""}
-                    disabled={disabled}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
-                      event.preventDefault();
-                      enterOnStep(si);
-                    }}
-                    onChange={(event) => onChange(updateStep(draft, pi, si, event.target.value))}
-                  />
+                    <Textarea
+                      name={`${path}.${si}.text`}
+                      aria-label={`Step ${si + 1}`}
+                      aria-invalid={error !== undefined || undefined}
+                      rows={2}
+                      placeholder="What to do"
+                      value={step.text ?? ""}
+                      disabled={disabled}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
+                        event.preventDefault();
+                        enterOnStep(si);
+                      }}
+                      onChange={(event) => onChange(updateStep(draft, pi, si, event.target.value))}
+                    />
                   )}
                   {error !== undefined && (
                     <p className="text-sm text-fg-danger" role="alert">
@@ -281,12 +312,7 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                     />
                   )}
                   {step.image != null && step.image !== "" && (
-                    <img
-                      src={stepImageUrl(step.image) ?? ""}
-                      alt={`Step ${si + 1}`}
-                      className="max-h-32 w-full rounded-md object-cover"
-                      data-step-image={si}
-                    />
+                    <img src={stepImageUrl(step.image) ?? ""} alt={`Step ${si + 1}`} className="max-h-32 w-full rounded-md object-cover" data-step-image={si} />
                   )}
                   <input
                     ref={(node) => {

@@ -57,9 +57,7 @@ const flour: Food = {
   aisle: null,
   recipeId: null,
   skipShopping: false,
-  conversions: [
-    { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 },
-  ],
+  conversions: [{ id: "ffffffff-ffff-4fff-8fff-ffffffffffff", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }],
 };
 
 describe("convert", () => {

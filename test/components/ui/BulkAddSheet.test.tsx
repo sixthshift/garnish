@@ -49,7 +49,13 @@ describe("BulkAddFields", () => {
   test("Trim whitespace calls onTextChange with trimLines(text)", () => {
     const text = "  Salt  \nPepper  ";
     let next: string | null = null;
-    const tree = BulkAddFields({ itemName: "ingredient", text, onTextChange: (t) => { next = t; } });
+    const tree = BulkAddFields({
+      itemName: "ingredient",
+      text,
+      onTextChange: (t) => {
+        next = t;
+      },
+    });
     elementWithChildren(tree, "Trim whitespace").props.onClick();
     expect(next).toBe(trimLines(text));
     expect(next).toBe("Salt\nPepper");
@@ -58,7 +64,13 @@ describe("BulkAddFields", () => {
   test("Strip leading numbers calls onTextChange with stripLeadingNumbers(text)", () => {
     const text = "1. Chop onions\n2) Dice garlic";
     let next: string | null = null;
-    const tree = BulkAddFields({ itemName: "step", text, onTextChange: (t) => { next = t; } });
+    const tree = BulkAddFields({
+      itemName: "step",
+      text,
+      onTextChange: (t) => {
+        next = t;
+      },
+    });
     elementWithChildren(tree, "Strip leading numbers").props.onClick();
     expect(next).toBe(stripLeadingNumbers(text));
     expect(next).toBe("Chop onions\nDice garlic");
@@ -67,7 +79,13 @@ describe("BulkAddFields", () => {
   test("Split on blank lines calls onTextChange with splitOnBlankLines(text)", () => {
     const text = "Chop onions.\n\nDice garlic and\nset aside.";
     let next: string | null = null;
-    const tree = BulkAddFields({ itemName: "step", text, onTextChange: (t) => { next = t; } });
+    const tree = BulkAddFields({
+      itemName: "step",
+      text,
+      onTextChange: (t) => {
+        next = t;
+      },
+    });
     elementWithChildren(tree, "Split on blank lines").props.onClick();
     expect(next).toBe(splitOnBlankLines(text));
     expect(next).toBe("Chop onions.\nDice garlic and set aside.");
@@ -102,7 +120,9 @@ describe("BulkReviewList", () => {
   });
 
   test("one row is singular", () => {
-    expect(renderToString(<BulkReviewList itemName="ingredient" rows={["Salt"]} review={review} onRowsChange={() => {}} />)).toContain("1 ingredient to review");
+    expect(renderToString(<BulkReviewList itemName="ingredient" rows={["Salt"]} review={review} onRowsChange={() => {}} />)).toContain(
+      "1 ingredient to review"
+    );
   });
 
   test("a row's onChange replaces that row and leaves the others alone", () => {
@@ -110,8 +130,15 @@ describe("BulkReviewList", () => {
     const tree = BulkReviewList({
       itemName: "ingredient",
       rows: ["Salt", "Pepper"],
-      review: { ...review, renderRow: (row: string, index: number, onChange: (n: string) => void) => <button type="button" onClick={() => onChange(`${row}!`)}>{`row ${index}`}</button> },
-      onRowsChange: (rows) => { next = rows; },
+      review: {
+        ...review,
+        renderRow: (row: string, index: number, onChange: (n: string) => void) => (
+          <button type="button" onClick={() => onChange(`${row}!`)}>{`row ${index}`}</button>
+        ),
+      },
+      onRowsChange: (rows) => {
+        next = rows;
+      },
     });
     elementWithChildren(tree, "row 1").props.onClick();
     expect(next).toEqual(["Salt", "Pepper!"]);
@@ -170,7 +197,15 @@ describe("BulkInlinePanel", () => {
   test("Add and Confirm both call onAdvance; Back calls onBack", () => {
     let advanced = 0;
     let backed = 0;
-    const wired = { ...props, onAdvance: () => { advanced += 1; }, onBack: () => { backed += 1; } };
+    const wired = {
+      ...props,
+      onAdvance: () => {
+        advanced += 1;
+      },
+      onBack: () => {
+        backed += 1;
+      },
+    };
     elementWithChildren(BulkInlinePanel({ ...wired, text: "Salt", rows: null }), "Add").props.onClick();
     const reviewing = BulkInlinePanel({ ...wired, text: "Salt", rows: ["Salt"] });
     elementWithChildren(reviewing, "Confirm").props.onClick();
@@ -215,7 +250,13 @@ describe("BulkInlinePanel with no review", () => {
 
   test("Add calls onAdvance, same as the reviewed case", () => {
     let advanced = 0;
-    const tree = BulkInlinePanel({ ...plainProps, text: "Mix.", onAdvance: () => { advanced += 1; } });
+    const tree = BulkInlinePanel({
+      ...plainProps,
+      text: "Mix.",
+      onAdvance: () => {
+        advanced += 1;
+      },
+    });
     elementWithChildren(tree, "Add").props.onClick();
     expect(advanced).toBe(1);
   });

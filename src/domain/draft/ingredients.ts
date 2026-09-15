@@ -1,10 +1,11 @@
 // Editing a part's ingredient rows.
-import { formatIngredient } from "../ingredient";
+
 import { randomUuid } from "../../lib/id";
-import { unlinkIngredient } from "./links";
-import { type DraftIngredient, type RecipeDraft } from "./types";
-import { type Recipe } from "../recipe";
+import { formatIngredient } from "../ingredient";
+import type { Recipe } from "../recipe";
 import { draftFromRecipe } from "./draft";
+import { unlinkIngredient } from "./links";
+import type { DraftIngredient, RecipeDraft } from "./types";
 
 /** A blank structured row with a fresh id, so it has a stable key before it is saved. */
 export function newIngredient(): DraftIngredient {
@@ -58,10 +59,10 @@ export function removeIngredient(draft: RecipeDraft, pi: number, ii: number): Re
     withIngredients(
       draft,
       pi,
-      draft.parts[pi]!.ingredients.filter((_, i) => i !== ii),
+      draft.parts[pi]!.ingredients.filter((_, i) => i !== ii)
     ),
     pi,
-    row.id,
+    row.id
   );
 }
 
@@ -141,7 +142,7 @@ export function withIngredientReplaced(recipe: Recipe, partId: string, ingredien
         : {
             ...part,
             ingredients: part.ingredients.map((ingredient) => (ingredient.id === ingredientId ? { ...next, id: ingredient.id } : ingredient)),
-          },
+          }
     ),
   };
 }

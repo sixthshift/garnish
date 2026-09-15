@@ -1,7 +1,6 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { ImageUpload } from "../../../src/components/ui/ImageUpload";
-import { imageSrc } from "../../../src/components/ui/ImageUpload";
+import { ImageUpload, imageSrc } from "../../../src/components/ui/ImageUpload";
 
 describe("imageSrc", () => {
   test("a local preview wins over the stored image", () => {

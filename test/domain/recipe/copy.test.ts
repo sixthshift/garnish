@@ -61,7 +61,10 @@ describe("ingredientsText", () => {
       parts: [
         {
           name: "",
-          ingredients: [ingredient({ quantity: 200, unit: unit("gram", "grams"), food: food("flour") }), ingredient({ quantity: 2, food: food("egg", "eggs") })],
+          ingredients: [
+            ingredient({ quantity: 200, unit: unit("gram", "grams"), food: food("flour") }),
+            ingredient({ quantity: 2, food: food("egg", "eggs") }),
+          ],
         },
       ],
     });

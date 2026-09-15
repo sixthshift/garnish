@@ -77,7 +77,10 @@ test("leave releases the sentinel, reports inactive, and stops listening", async
 test("the lock is requested again when the page becomes visible", async () => {
   const first = fakeSentinel();
   const second = fakeSentinel();
-  const request = vi.fn(async () => first).mockResolvedValueOnce(first).mockResolvedValueOnce(second);
+  const request = vi
+    .fn(async () => first)
+    .mockResolvedValueOnce(first)
+    .mockResolvedValueOnce(second);
   const { nav } = fakeNavigator(request);
   const doc = fakeDocument();
   const controller = createWakeLockController(nav, doc);

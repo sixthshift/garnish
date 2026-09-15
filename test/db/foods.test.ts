@@ -1,10 +1,10 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { aisles } from "../../src/db/models/aisle/repo";
-import { units } from "../../src/db/models/unit/repo";
-import { foods, type FoodRepository } from "../../src/db/models/food/repo";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
+import { aisles } from "../../src/db/models/aisle/repo";
+import { type FoodRepository, foods } from "../../src/db/models/food/repo";
+import { units } from "../../src/db/models/unit/repo";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -97,9 +97,7 @@ test("merge repoints ingredient rows to the target and deletes the source", () =
   expect(repo.get(unsalted.id)).toBeNull();
   expect(repo.list().map((f) => f.name)).toEqual(["butter"]);
 
-  const foodIds = db
-    .query<{ id: string; food_id: string | null }, []>("SELECT id, food_id FROM ingredient ORDER BY id")
-    .all();
+  const foodIds = db.query<{ id: string; food_id: string | null }, []>("SELECT id, food_id FROM ingredient ORDER BY id").all();
   expect(foodIds).toEqual([
     { id: "i1", food_id: butter.id },
     { id: "i2", food_id: butter.id },
@@ -199,7 +197,7 @@ test("the table refuses a repeated pair of units, and a deleted food or unit tak
     repo.setConversions(flour.id, [
       { unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 },
       { unitId: cup.id, quantity: 2, toUnitId: gram.id, toQuantity: 250 },
-    ]),
+    ])
   ).toThrow(/UNIQUE/);
 
   units(db).remove(gram.id);

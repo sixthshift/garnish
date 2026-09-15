@@ -40,8 +40,8 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useEffect, useState } from "react";
-import { type Recipe } from "../../../../domain/recipe";
-import { type RestyleCheck, type RestyledPart, type PartRestyleCheck, type StyleRule } from "../../../../domain/style";
+import type { Recipe } from "../../../../domain/recipe";
+import type { PartRestyleCheck, RestyleCheck, RestyledPart, StyleRule } from "../../../../domain/style";
 import { useMutate } from "../../../../lib/mutate";
 import { messageFrom, notify, notifyError } from "../../../../lib/notify";
 import { applyRestyle, restoreSteps, restyleSteps } from "../../../../server/ai/restyle";
@@ -99,13 +99,7 @@ export function RestyleSheetContent(props: RestyleSheetContentProps) {
                   const on = selected.has(rule.id);
                   return (
                     <li key={rule.id} className="flex items-start gap-2.5" data-testid="restyle-rule" data-on={on ? "true" : "false"}>
-                      <Checkbox
-                        checked={on}
-                        disabled={busy}
-                        className="mt-0.5"
-                        aria-label={rule.text}
-                        onCheckedChange={() => onToggleRule(rule.id)}
-                      />
+                      <Checkbox checked={on} disabled={busy} className="mt-0.5" aria-label={rule.text} onCheckedChange={() => onToggleRule(rule.id)} />
                       <button type="button" disabled={busy} className="flex-1 text-left text-sm" onClick={() => onToggleRule(rule.id)}>
                         {rule.text}
                       </button>
@@ -391,7 +385,7 @@ export function initialTicked(check: RestyleCheck): Set<number> {
 export function applyPayload(
   original: readonly { name: string; steps: readonly { text: string }[] }[],
   restyled: readonly RestyledPart[],
-  ticked: ReadonlySet<number>,
+  ticked: ReadonlySet<number>
 ): ApplyPart[] {
   return original.map((part, index) => {
     const rewrite = restyled[index];

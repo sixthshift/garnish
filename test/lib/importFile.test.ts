@@ -2,9 +2,9 @@
 // came back from it as a data URL (M34.3). The fetch is injected, so neither
 // needs a server.
 import { expect, test } from "vitest";
-import { type MealieRecipe } from "../../src/domain/import";
-import { IMPORT_FIELD, IMPORT_FILE_URL, postImportFile } from "../../src/lib/importFile";
+import type { MealieRecipe } from "../../src/domain/import";
 import { dataUrlFile } from "../../src/lib/images";
+import { IMPORT_FIELD, IMPORT_FILE_URL, postImportFile } from "../../src/lib/importFile";
 import { PNG_BYTES } from "../helpers/zip";
 
 const file = (): File => new File(["{}"], "backup.zip", { type: "application/zip" });
@@ -25,7 +25,7 @@ test("the file is posted as multipart to the import route, and the recipes come 
 
 test("the route's message is what the screen is told", async () => {
   await expect(postImportFile(file(), async () => Response.json({ error: "That file is not JSON or a zip" }, { status: 400 }))).rejects.toThrow(
-    "That file is not JSON or a zip",
+    "That file is not JSON or a zip"
   );
   await expect(postImportFile(file(), async () => new Response("nope", { status: 500 }))).rejects.toThrow("(500)");
 });

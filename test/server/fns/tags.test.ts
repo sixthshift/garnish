@@ -1,8 +1,8 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { recipeInputSchema } from "../../../src/domain/recipe";
-import { createRecipe } from "../../../src/server/fns/recipes";
 import type { NotFoundData } from "../../../src/server/core/fn";
+import { createRecipe } from "../../../src/server/fns/recipes";
 import { createTag, deleteTag, findOrCreateTag, listTags, mergeTag, updateTag, usingTag } from "../../../src/server/fns/tags";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
@@ -66,10 +66,7 @@ test("usingTag lists the recipes carrying that tag", async () => {
 test("mergeTag repoints recipes to the target tag, deletes the source, and drops it from the list", async () => {
   const weeknight = await callServerFn(createTag, { name: "Weeknight" });
   const quick = await callServerFn(createTag, { name: "Quick" });
-  await callServerFn(
-    createRecipe,
-    recipeInputSchema.parse({ name: "Shortbread", parts: [{ name: "", ingredients: [], steps: [] }], tags: [quick] }),
-  );
+  await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Shortbread", parts: [{ name: "", ingredients: [], steps: [] }], tags: [quick] }));
 
   const merged = await callServerFn(mergeTag, { sourceId: quick.id, targetId: weeknight.id });
   expect(merged).toEqual(weeknight);

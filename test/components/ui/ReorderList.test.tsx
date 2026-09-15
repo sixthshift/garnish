@@ -1,8 +1,8 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { ReorderList, TOUCH_DELAY_MS } from "../../../src/components/ui/ReorderList";
-import { dropIndex, rectContains, type Span } from "../../../src/lib/ui/reorder";
 import { moveItem } from "../../../src/lib/lists";
+import { dropIndex, rectContains, type Span } from "../../../src/lib/ui/reorder";
 
 /** The opening tag of the control carrying `label`. */
 function tagWithLabel(html: string, label: string): string {
@@ -44,7 +44,7 @@ const rows = [
 describe("ReorderList", () => {
   test("renders every row with up and down buttons, ends disabled", () => {
     const html = renderToString(
-      <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} renderItem={(r) => <span>{r.text}</span>} itemName="ingredient" />,
+      <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} renderItem={(r) => <span>{r.text}</span>} itemName="ingredient" />
     );
     expect(html).toContain("Flour");
     expect(html).toContain("Sugar");
@@ -68,7 +68,7 @@ describe("ReorderList", () => {
 
   test("renders a remove button per row only when onRemove is given", () => {
     const html = renderToString(
-      <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} onRemove={() => {}} renderItem={(r) => r.text} itemName="step" />,
+      <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} onRemove={() => {}} renderItem={(r) => r.text} itemName="step" />
     );
     expect(html.match(/aria-label="Remove step \d"/g)).toHaveLength(3);
   });
@@ -150,9 +150,7 @@ describe("rectContains", () => {
 
 describe("ReorderList drag handles", () => {
   test("every row grows a handle, kept out of the tab order", () => {
-    const html = renderToString(
-      <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} renderItem={(r) => r.text} itemName="ingredient" />,
-    );
+    const html = renderToString(<ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} renderItem={(r) => r.text} itemName="ingredient" />);
     expect(html.match(/aria-label="Drag ingredient \d"/g)).toHaveLength(3);
     expect(tagWithLabel(html, "Drag ingredient 2")).toContain('tabindex="-1"');
     // The handle must not eat a touch-scroll gesture by accident, so it owns its own touch-action.
@@ -164,7 +162,7 @@ describe("ReorderList drag handles", () => {
 
   test("the group id reaches the list element so sibling lists can find it", () => {
     const html = renderToString(
-      <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} renderItem={(r) => r.text} group="ingredients" listKey="0" onMoveOut={() => {}} />,
+      <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} renderItem={(r) => r.text} group="ingredients" listKey="0" onMoveOut={() => {}} />
     );
     expect(html).toContain('data-reorder-group="ingredients"');
     expect(html.match(/data-index="\d"/g)).toHaveLength(3);

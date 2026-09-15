@@ -9,8 +9,26 @@ import { FilterBar } from "../../../../src/routes/home/components/FilterBar";
 
 const weeknight = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" };
 const pasta = { id: "d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2", name: "Pasta", slug: "pasta" };
-const flour = { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
-const butter = { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", name: "butter", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
+const flour = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisleId: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
+const butter = {
+  id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  name: "butter",
+  pluralName: null,
+  aliases: [],
+  aisleId: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 
 function noop() {}
 
@@ -28,7 +46,7 @@ describe("FilterBar", () => {
         onMatchChange={noop}
         onFoodsChange={noop}
         onFavouriteChange={noop}
-      />,
+      />
     );
     expect(html).not.toContain('aria-label="Filter by tag"');
     expect(html).toContain("Favourites only");
@@ -48,7 +66,7 @@ describe("FilterBar", () => {
         onMatchChange={noop}
         onFoodsChange={noop}
         onFavouriteChange={noop}
-      />,
+      />
     );
     expect(html).toMatch(/data-state="off"[^>]*>Weeknight/);
     expect(html).toMatch(/data-state="off"[^>]*>Pasta/);
@@ -68,7 +86,7 @@ describe("FilterBar", () => {
         onMatchChange={noop}
         onFoodsChange={noop}
         onFavouriteChange={noop}
-      />,
+      />
     );
     expect(html).toMatch(/data-state="on"[^>]*>Weeknight/);
     expect(html).toMatch(/data-state="on"[^>]*>Pasta/);
@@ -88,7 +106,7 @@ describe("FilterBar", () => {
         onMatchChange={noop}
         onFoodsChange={noop}
         onFavouriteChange={noop}
-      />,
+      />
     );
     expect(html).toContain('aria-label="Remove flour"');
     expect(html).not.toContain(flour.id);
@@ -107,7 +125,7 @@ describe("FilterBar", () => {
         onMatchChange={noop}
         onFoodsChange={noop}
         onFavouriteChange={noop}
-      />,
+      />
     );
     expect(html).toMatch(/data-state="checked"[^>]*(?:\/>|>)/);
   });

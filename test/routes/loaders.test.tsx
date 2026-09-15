@@ -4,18 +4,18 @@
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
-import { type Recipe, type RecipeSummary, type TimelineEvent, type SubRecipe, nextServings } from "../../src/domain/recipe";
+import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../src/domain/reference";
 import type { StyleRule } from "../../src/domain/style";
 import { searchParam } from "../../src/lib/search";
-import { Route as IndexRoute, type RecipeListData } from "../../src/routes/home/route";
-import { Route as EditRoute } from "../../src/routes/recipes/recipe/edit/route";
-import { Route as ViewRoute, type RecipeViewData } from "../../src/routes/recipes/recipe/route";
-import { Route as NewRoute } from "../../src/routes/recipes/new/route";
-import { type FoodRow, Route as SettingsRoute, type SettingsData } from "../../src/routes/settings/route";
-import { createRecipe, deleteRecipe, getRecipe, listRecipes } from "../../src/server/fns/recipes";
+import type { Route as IndexRoute, RecipeListData } from "../../src/routes/home/route";
+import type { Route as NewRoute } from "../../src/routes/recipes/new/route";
+import type { Route as EditRoute } from "../../src/routes/recipes/recipe/edit/route";
+import type { RecipeViewData, Route as ViewRoute } from "../../src/routes/recipes/recipe/route";
+import type { FoodRow, SettingsData, Route as SettingsRoute } from "../../src/routes/settings/route";
 import { createFood, listFoods } from "../../src/server/fns/foods";
-import { listTags } from "../../src/server/fns/tags";
+import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/server/fns/recipes";
+import type { listTags } from "../../src/server/fns/tags";
 import { listUnits } from "../../src/server/fns/units";
 import { elementHtml, renderRoute } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
@@ -40,7 +40,7 @@ const weeknight = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight
 
 function seed(
   name: string,
-  opts: { servings?: number; tags?: Array<typeof weeknight>; image?: string; favourite?: boolean; food?: { id: string; name: string } } = {},
+  opts: { servings?: number; tags?: Array<typeof weeknight>; image?: string; favourite?: boolean; food?: { id: string; name: string } } = {}
 ) {
   return callServerFn(createRecipe, {
     name,
@@ -68,7 +68,11 @@ describe("/ (list)", () => {
     await seed("Lemon tart", { image: "lemon tart.webp" });
     const html = await renderRoute("/");
     expect(html).toContain("3 recipes");
-    for (const [name, slug] of [["Flatbread", "flatbread"], ["Pancakes", "pancakes"], ["Lemon tart", "lemon-tart"]]) {
+    for (const [name, slug] of [
+      ["Flatbread", "flatbread"],
+      ["Pancakes", "pancakes"],
+      ["Lemon tart", "lemon-tart"],
+    ]) {
       expect(html).toContain(name);
       expect(html).toContain(`href="/recipes/${slug}"`);
     }
@@ -299,7 +303,12 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain('aria-label="Rated 4 out of 5"');
     expect(html).toContain(">Weeknight</span>");
     expect(html).toContain('href="/?tag=weeknight"');
-    for (const [label, value] of [["Prep", "20 min"], ["Cook", "40 min"], ["Total", "1 hr"], ["Makes", "1 tart"]]) {
+    for (const [label, value] of [
+      ["Prep", "20 min"],
+      ["Cook", "40 min"],
+      ["Total", "1 hr"],
+      ["Makes", "1 tart"],
+    ]) {
       expect(html).toMatch(new RegExp(`<dt[^>]*>${label}</dt><dd[^>]*>${value}</dd>`));
     }
     expect(html).toContain("Serves 4");

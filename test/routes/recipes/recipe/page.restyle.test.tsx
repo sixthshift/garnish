@@ -32,10 +32,11 @@ vi.mock("@sixthshift/design-system/sheet", async () => {
   const { createElement } = await import("react");
   type Props = { open?: boolean; children?: unknown };
   const passthrough = ({ children }: Props) => createElement("div", null, children as never);
-  const Sheet = Object.assign(
-    ({ open, children }: Props) => (open === true ? createElement("div", { "data-testid": "sheet" }, children as never) : null),
-    { Header: passthrough, Body: passthrough, Footer: passthrough },
-  );
+  const Sheet = Object.assign(({ open, children }: Props) => (open === true ? createElement("div", { "data-testid": "sheet" }, children as never) : null), {
+    Header: passthrough,
+    Body: passthrough,
+    Footer: passthrough,
+  });
   return { Sheet };
 });
 

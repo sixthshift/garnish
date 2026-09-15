@@ -2,11 +2,11 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
+import { styleRules } from "../../../src/db/models/style/repo";
+import { units } from "../../../src/db/models/unit/repo";
 import { seed } from "../../../src/db/seed/seed";
 import { DEFAULT_STYLE_RULES } from "../../../src/db/seed/style";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
-import { styleRules } from "../../../src/db/models/style/repo";
-import { units } from "../../../src/db/models/unit/repo";
 
 let db: Database;
 beforeEach(async () => {
@@ -21,8 +21,12 @@ test("seeds the default units once", () => {
   const first = seed(db);
   expect(first.units).toHaveLength(DEFAULT_UNITS.length);
   expect(count()).toBe(DEFAULT_UNITS.length);
-  expect(units(db).list().map((u) => u.name)).toEqual(
-    expect.arrayContaining(["g", "kg", "ml", "l", "tsp", "tbsp", "cup", "oz", "lb", "pinch", "piece", "slice", "clove", "can", "bunch"].map(abbrevToName)),
+  expect(
+    units(db)
+      .list()
+      .map((u) => u.name)
+  ).toEqual(
+    expect.arrayContaining(["g", "kg", "ml", "l", "tsp", "tbsp", "cup", "oz", "lb", "pinch", "piece", "slice", "clove", "can", "bunch"].map(abbrevToName))
   );
 });
 

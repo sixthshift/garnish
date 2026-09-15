@@ -13,12 +13,12 @@
 // point of copying the names into `shopping_item_source`.
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, max, sql } from "drizzle-orm";
-import { aisles as aisleRepository } from "../aisle/repo";
-import { foods as foodRepository } from "../food/repo";
-import { units as unitRepository } from "../unit/repo";
 import type { Food, Unit } from "../../../domain/reference";
 import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemPatch, ShoppingItemSourceInput } from "../../../domain/shopping";
 import { orm } from "../../connection/client";
+import { aisles as aisleRepository } from "../aisle/repo";
+import { foods as foodRepository } from "../food/repo";
+import { units as unitRepository } from "../unit/repo";
 import { shoppingItem, shoppingItemSource } from "./schema";
 
 /** `strftime(...)`, matching the column defaults; an update stamps it by hand. */
@@ -67,8 +67,8 @@ export function shopping(db: Database) {
       .where(
         inArray(
           shoppingItemSource.itemId,
-          rows.map((r) => r.id),
-        ),
+          rows.map((r) => r.id)
+        )
       )
       .orderBy(sql`rowid`)
       .all();
@@ -108,13 +108,23 @@ export function shopping(db: Database) {
 
   /** The next free position: the end of the list, or 0 when it is empty. */
   function nextPosition(): number {
-    const row = dz.select({ n: max(shoppingItem.position) }).from(shoppingItem).get();
+    const row = dz
+      .select({ n: max(shoppingItem.position) })
+      .from(shoppingItem)
+      .get();
     return row?.n === null || row?.n === undefined ? 0 : row.n + 1;
   }
 
   return {
     /** The whole list in position order. */
-    list: (): ShoppingItem[] => assemble(dz.select().from(shoppingItem).orderBy(...order).all()),
+    list: (): ShoppingItem[] =>
+      assemble(
+        dz
+          .select()
+          .from(shoppingItem)
+          .orderBy(...order)
+          .all()
+      ),
 
     get,
 
@@ -197,22 +207,15 @@ export function shopping(db: Database) {
 
     /** Tick or untick a line — the supermarket's only write. Null when `id` is unknown. */
     tick(id: string, ticked: boolean): ShoppingItem | null {
-      const changed = dz
-        .update(shoppingItem)
-        .set({ ticked, updatedAt: nowUtc })
-        .where(eq(shoppingItem.id, id))
-        .returning({ id: shoppingItem.id })
-        .all();
+      const changed = dz.update(shoppingItem).set({ ticked, updatedAt: nowUtc }).where(eq(shoppingItem.id, id)).returning({ id: shoppingItem.id }).all();
       return changed.length > 0 ? get(id) : null;
     },
 
     /** True when a row was deleted. Its sources cascade with it. */
-    remove: (id: string): boolean =>
-      dz.delete(shoppingItem).where(eq(shoppingItem.id, id)).returning({ id: shoppingItem.id }).all().length > 0,
+    remove: (id: string): boolean => dz.delete(shoppingItem).where(eq(shoppingItem.id, id)).returning({ id: shoppingItem.id }).all().length > 0,
 
     /** Delete every ticked line. Returns how many went. */
-    clearTicked: (): number =>
-      dz.delete(shoppingItem).where(eq(shoppingItem.ticked, true)).returning({ id: shoppingItem.id }).all().length,
+    clearTicked: (): number => dz.delete(shoppingItem).where(eq(shoppingItem.ticked, true)).returning({ id: shoppingItem.id }).all().length,
 
     /**
      * Set every line's position to its index in `ids`, in one transaction — the
@@ -225,7 +228,13 @@ export function shopping(db: Database) {
           tx.update(shoppingItem).set({ position: index }).where(eq(shoppingItem.id, id)).run();
         });
       });
-      return assemble(dz.select().from(shoppingItem).orderBy(...order).all());
+      return assemble(
+        dz
+          .select()
+          .from(shoppingItem)
+          .orderBy(...order)
+          .all()
+      );
     },
   };
 }

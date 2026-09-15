@@ -15,11 +15,11 @@ import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { slugify } from "../../lib/names";
 import { orm } from "../connection/client";
 import { recipes } from "../models/recipe/repo";
+import { type StyleRule, styleRules } from "../models/style/repo";
 import { timeline } from "../models/timeline/repo";
-import { styleRules, type StyleRule } from "../models/style/repo";
-import { units, type Unit } from "../models/unit/repo";
-import { DEFAULT_STYLE_RULES } from "./style";
+import { type Unit, units } from "../models/unit/repo";
 import { SAMPLE_RECIPES } from "./recipes";
+import { DEFAULT_STYLE_RULES } from "./style";
 import { SAMPLE_TIMELINE } from "./timeline";
 import { DEFAULT_UNITS } from "./units";
 

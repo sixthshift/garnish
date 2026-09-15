@@ -24,5 +24,5 @@ export const timelineEvent = sqliteTable(
   (t) => [
     index("timeline_event_recipe_id").on(t.recipeId, desc(t.occurredOn)),
     check("occurred_on_is_a_date", sql`${t.occurredOn} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'`),
-  ],
+  ]
 );

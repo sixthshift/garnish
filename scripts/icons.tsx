@@ -18,15 +18,7 @@ const OUT = new URL("../public/", import.meta.url);
 
 /** One 512 drawing, as standalone SVG source. */
 function svg(cornerRadius: number, maskable = false): string {
-  return renderToStaticMarkup(
-    <LogoIcon
-      size={512}
-      ground={ICON_GROUND}
-      mark={ICON_MARK}
-      cornerRadius={cornerRadius}
-      maskable={maskable}
-    />,
-  );
+  return renderToStaticMarkup(<LogoIcon size={512} ground={ICON_GROUND} mark={ICON_MARK} cornerRadius={cornerRadius} maskable={maskable} />);
 }
 
 function png(source: string, width: number): Buffer {

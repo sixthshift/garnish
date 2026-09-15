@@ -6,8 +6,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { ImportError, Importer, type PageResponse, type Ports, type ScrapedRecipe } from "../../../src/domain/import";
 import { MAX_PAGE_BYTES, type ModelRequest, parsePageUrl, READ_TIMEOUT_MS } from "../../../src/domain/import/importer";
-import { SCRAPED_JSON_SCHEMA } from "../../../src/domain/import/model";
-import { MAX_AI_TEXT } from "../../../src/domain/import/model";
+import { MAX_AI_TEXT, SCRAPED_JSON_SCHEMA } from "../../../src/domain/import/model";
 
 const URL_UNDER_TEST = "https://example.test/anzac-biscuits";
 
@@ -61,8 +60,7 @@ function fakePage(html: string, status = 200): Ports["fetchPage"] & { calls: URL
 const reading = (model: Ports["model"]): Importer => new Importer({ fetchPage: noFetch, model });
 
 /** An importer over a page fetch, with a model that must not be reached. */
-const fetching = (fetchPage: Ports["fetchPage"]): Importer =>
-  new Importer({ fetchPage, model: () => Promise.reject(new Error("model was called")) });
+const fetching = (fetchPage: Ports["fetchPage"]): Importer => new Importer({ fetchPage, model: () => Promise.reject(new Error("model was called")) });
 
 /** A schema rung result to anchor a read on: every line on the unnamed part, the steps split by a `HowToSection`. */
 const ANCHOR: ScrapedRecipe = {
@@ -128,7 +126,7 @@ describe('import({ kind: "url" })', () => {
 
   test("a 403 the fetch could not get past names the site and suggests the paste box", async () => {
     await expect(fetching(fakePage("", 403)).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow(
-      /example\.test is blocking automated requests.*pasting the recipe text, or the page's HTML \(view source, select all, copy\)/,
+      /example\.test is blocking automated requests.*pasting the recipe text, or the page's HTML \(view source, select all, copy\)/
     );
   });
 
@@ -164,7 +162,9 @@ describe('import({ kind: "url" })', () => {
   });
 
   test("every failure is an ImportError the screen can show", async () => {
-    const caught = await fetching(fakePage("", 500)).import({ kind: "url", url: URL_UNDER_TEST }).catch((cause: unknown) => cause);
+    const caught = await fetching(fakePage("", 500))
+      .import({ kind: "url", url: URL_UNDER_TEST })
+      .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("failed");
   });
@@ -191,7 +191,9 @@ describe('import({ kind: "text" })', () => {
   });
 
   test("garbage is malformed, and nothing about it looks like a recipe", async () => {
-    const caught = await reading(fakeModel("here is your recipe!")).import({ kind: "text", text: "text" }).catch((cause: unknown) => cause);
+    const caught = await reading(fakeModel("here is your recipe!"))
+      .import({ kind: "text", text: "text" })
+      .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("malformed");
     expect((caught as Error).message).toMatch(/nothing was imported/i);
@@ -203,13 +205,17 @@ describe('import({ kind: "text" })', () => {
   });
 
   test("the model port's own errors keep their kind", async () => {
-    const caught = await reading(noModel).import({ kind: "text", text: "text" }).catch((cause: unknown) => cause);
+    const caught = await reading(noModel)
+      .import({ kind: "text", text: "text" })
+      .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("unavailable");
   });
 
   test("a model that throws something else is a plain failure", async () => {
-    const caught = await reading(() => Promise.reject(new Error("boom"))).import({ kind: "text", text: "text" }).catch((cause: unknown) => cause);
+    const caught = await reading(() => Promise.reject(new Error("boom")))
+      .import({ kind: "text", text: "text" })
+      .catch((cause: unknown) => cause);
     expect((caught as ImportError).kind).toBe("failed");
     expect((caught as Error).message).toMatch(/boom/);
   });

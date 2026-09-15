@@ -3,9 +3,21 @@
 // and a move followed by an update reloads in the new order.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { PartsEditor } from "../../../../src/routes/recipes/components/PartsEditor";
-import { addPart, hasContent, ingredientLine, isBare, movePart, newPart, removePart, renamePart, type DraftPart, type RecipeDraft, emptyDraft, validateDraft } from "../../../../src/domain/draft";
-import { partLabel, contentSummary } from "../../../../src/routes/recipes/components/PartsEditor";
+import {
+  addPart,
+  type DraftPart,
+  emptyDraft,
+  hasContent,
+  ingredientLine,
+  isBare,
+  movePart,
+  newPart,
+  type RecipeDraft,
+  removePart,
+  renamePart,
+  validateDraft,
+} from "../../../../src/domain/draft";
+import { contentSummary, PartsEditor, partLabel } from "../../../../src/routes/recipes/components/PartsEditor";
 import { createRecipe, getRecipe, updateRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 

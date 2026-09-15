@@ -5,10 +5,10 @@ import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { dayLabel, planDaySchema } from "../../../src/domain/plan";
 import type { RecipeInput } from "../../../src/domain/recipe";
+import type { NotFoundData } from "../../../src/server/core/fn";
 import { addPlanEntry, addPlanWeekToShopping, listPlanWeek, movePlanEntry, removePlanEntry, updatePlanEntry } from "../../../src/server/fns/plan";
 import { createRecipe, deleteRecipe } from "../../../src/server/fns/recipes";
 import { listShoppingItems } from "../../../src/server/fns/shopping";
-import type { NotFoundData } from "../../../src/server/core/fn";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
@@ -23,8 +23,7 @@ async function notFoundData(promise: Promise<unknown>): Promise<NotFoundData> {
   return (caught as { data: NotFoundData }).data;
 }
 
-const newRecipe = (name = "Lemon tart") =>
-  callServerFn(createRecipe, { name, parts: [{ name: "", ingredients: [], steps: [] }] } as RecipeInput);
+const newRecipe = (name = "Lemon tart") => callServerFn(createRecipe, { name, parts: [{ name: "", ingredients: [], steps: [] }] } as RecipeInput);
 
 /** The week's entry labels day by day. */
 async function labels(monday = MONDAY): Promise<string[][]> {

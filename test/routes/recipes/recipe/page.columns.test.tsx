@@ -4,9 +4,9 @@
 // `elementHtml` slices one column out of the markup so containment, not just
 // presence, can be asserted.
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { clearTicksNow, getTicks, type StorageLike, setIngredientTicked } from "../../../../src/lib/ticks";
 import { createRecipe } from "../../../../src/server/fns/recipes";
 import { createTimelineEvent } from "../../../../src/server/fns/timeline";
-import { clearTicksNow, getTicks, setIngredientTicked, type StorageLike } from "../../../../src/lib/ticks";
 import { elementHtml, renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 

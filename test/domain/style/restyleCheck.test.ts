@@ -2,14 +2,7 @@
 // about what it may not change — the numbers, and the ingredients the method
 // names — and about the normalisation that keeps "180C" and "180°C" one fact.
 import { describe, expect, test } from "vitest";
-import {
-  checkPart,
-  checkRestyle,
-  factsOf,
-  foodsMentioned,
-  type OriginalPart,
-  type RestyledPart,
-} from "../../../src/domain/style/restyleCheck";
+import { checkPart, checkRestyle, factsOf, foodsMentioned, type OriginalPart, type RestyledPart } from "../../../src/domain/style/restyleCheck";
 
 function food(name: string, pluralName: string | null = null) {
   return { food: { name, pluralName }, originalText: name };
@@ -18,11 +11,7 @@ function food(name: string, pluralName: string | null = null) {
 const ORIGINAL: OriginalPart = {
   name: "",
   ingredients: [food("butter"), food("golden syrup"), food("onion", "onions"), food("bay leaf", "bay leaves")],
-  steps: [
-    { text: "Heat the oven to 180°C." },
-    { text: "Melt 125 g of butter with 2 tbsp golden syrup." },
-    { text: "Add the onions and bake for 20 minutes." },
-  ],
+  steps: [{ text: "Heat the oven to 180°C." }, { text: "Melt 125 g of butter with 2 tbsp golden syrup." }, { text: "Add the onions and bake for 20 minutes." }],
 };
 
 /** The three steps as one: statement (2) of the style guide, and it must pass. */
@@ -150,7 +139,11 @@ test("note and step references are pointers, not facts", () => {
 });
 
 test("a number the author repeated in a step's title and body survives being said once", () => {
-  const original: OriginalPart = { name: "", ingredients: [], steps: [{ text: "Slow cook 2 - 2 1/2 hrs - Cover the pot and let it cook for 2 - 2 1/2 hours, checking at 2 hours." }] };
+  const original: OriginalPart = {
+    name: "",
+    ingredients: [],
+    steps: [{ text: "Slow cook 2 - 2 1/2 hrs - Cover the pot and let it cook for 2 - 2 1/2 hours, checking at 2 hours." }],
+  };
   const restyled = { name: "", steps: ["Cover the pot and cook for 2 - 2 1/2 hours, checking first at 2 hours."] };
   expect(checkPart(original, restyled).ok).toBe(true);
 });

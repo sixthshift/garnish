@@ -8,14 +8,14 @@ import {
   enqueue,
   flushOutbox,
   OUTBOX_KEY,
+  type OutboxEntry,
+  type OutboxKind,
   outboxEntry,
   parseOutbox,
   pendingLabel,
   readOutbox,
-  writeOutbox,
-  type OutboxEntry,
-  type OutboxKind,
   type StorageLike,
+  writeOutbox,
 } from "../../src/lib/outbox";
 
 const at = "2026-09-13T00:00:00.000Z";

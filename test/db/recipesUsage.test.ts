@@ -4,8 +4,8 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { recipes, type RecipeRepository } from "../../src/db/models/recipe/repo";
-import { recipeInputSchema, recipeSummarySchema, type RecipeInput } from "../../src/domain/recipe";
+import { type RecipeRepository, recipes } from "../../src/db/models/recipe/repo";
+import { type RecipeInput, recipeInputSchema, recipeSummarySchema } from "../../src/domain/recipe";
 
 let db: Database;
 let repo: RecipeRepository;
@@ -15,7 +15,16 @@ beforeEach(async () => {
   repo = recipes(db);
 });
 
-const gram = { id: crypto.randomUUID(), name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, standardQuantity: null, standardUnitId: null };
+const gram = {
+  id: crypto.randomUUID(),
+  name: "gram",
+  pluralName: "grams",
+  abbreviation: "g",
+  useAbbreviation: true,
+  fraction: false,
+  standardQuantity: null,
+  standardUnitId: null,
+};
 const millilitre = { ...gram, id: crypto.randomUUID(), name: "millilitre", pluralName: "millilitres", abbreviation: "ml" };
 const butter = { id: crypto.randomUUID(), name: "butter", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false };
 const flour = { ...butter, id: crypto.randomUUID(), name: "flour" };
@@ -30,7 +39,7 @@ function make(name: string, ingredients: Ingredients, extra: Partial<RecipeInput
       name,
       parts: [{ name: "", ingredients, steps: [] }],
       ...extra,
-    } satisfies RecipeInput),
+    } satisfies RecipeInput)
   );
 }
 
@@ -40,8 +49,14 @@ function idOf(table: "food" | "unit" | "tag", name: string): string {
 }
 
 test("usingFood lists every recipe with an ingredient of that food, once, by name", () => {
-  make("Shortbread", [{ quantity: 200, unit: gram, food: butter }, { quantity: 300, unit: gram, food: flour }]);
-  make("Buttered toast", [{ quantity: 10, unit: gram, food: butter }, { quantity: 10, unit: gram, food: butter }]);
+  make("Shortbread", [
+    { quantity: 200, unit: gram, food: butter },
+    { quantity: 300, unit: gram, food: flour },
+  ]);
+  make("Buttered toast", [
+    { quantity: 10, unit: gram, food: butter },
+    { quantity: 10, unit: gram, food: butter },
+  ]);
   make("Boiled water", [{ quantity: 500, unit: millilitre, food: null }]);
 
   const used = repo.usingFood(idOf("food", "butter"));

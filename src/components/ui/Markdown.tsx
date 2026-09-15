@@ -2,8 +2,9 @@
 // Deliberately not `dangerouslySetInnerHTML`: the parser never produces HTML,
 // and every text node goes through React, so anything HTML-shaped a cook typed
 // into a step renders as the characters they typed.
-import { Fragment } from "react";
+
 import { cn } from "@sixthshift/design-system/utils";
+import { Fragment } from "react";
 import type { Block, Inline } from "../../lib/markdown";
 import { parseMarkdown } from "../../lib/markdown";
 

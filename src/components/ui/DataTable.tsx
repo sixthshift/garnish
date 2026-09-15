@@ -16,7 +16,18 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { cn } from "@sixthshift/design-system/utils";
 import { type ReactNode, useMemo, useState } from "react";
-import { type DataTableColumn, type SortState, type SortDirection, cellText, filterItems, sortItems, nextSort, toggleKey, toggleAll, headerChecked } from "../../lib/ui/dataTable";
+import {
+  cellText,
+  type DataTableColumn,
+  filterItems,
+  headerChecked,
+  nextSort,
+  type SortDirection,
+  type SortState,
+  sortItems,
+  toggleAll,
+  toggleKey,
+} from "../../lib/ui/dataTable";
 
 export type DataTableProps<T> = {
   items: readonly T[];
@@ -75,23 +86,14 @@ export function DataTable<T>({
         />
         {actions}
         {onDelete !== undefined && (
-          <Button
-            type="button"
-            variant="outline"
-            intent="danger"
-            size="sm"
-            disabled={selectedItems.length === 0}
-            onClick={() => onDelete(selectedItems)}
-          >
+          <Button type="button" variant="outline" intent="danger" size="sm" disabled={selectedItems.length === 0} onClick={() => onDelete(selectedItems)}>
             Delete
           </Button>
         )}
       </div>
 
       <Muted as="p" className="text-sm" data-table-count>
-        {visible.length === items.length
-          ? `${items.length} ${items.length === 1 ? itemName : plural}`
-          : `${visible.length} of ${items.length} ${plural}`}
+        {visible.length === items.length ? `${items.length} ${items.length === 1 ? itemName : plural}` : `${visible.length} of ${items.length} ${plural}`}
         {selectedItems.length > 0 ? `, ${selectedItems.length} selected` : ""}
       </Muted>
 
@@ -188,7 +190,17 @@ export function DataTable<T>({
 function SortArrow({ direction }: { direction: SortDirection | null }) {
   if (direction === null) return null;
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d={direction === "asc" ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} />
     </svg>
   );

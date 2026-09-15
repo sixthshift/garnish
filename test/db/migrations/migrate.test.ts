@@ -1,10 +1,10 @@
-import { Database } from "bun:sqlite";
+import type { Database } from "bun:sqlite";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
 import { DB_FILE, databasePath, openDatabase } from "../../../src/db/connection/open";
-import { MIGRATIONS_DIR, appliedMigrations, listMigrations, listMigrationsFrom, migrate, parseMigrationFile } from "../../../src/db/migrations/migrate";
+import { appliedMigrations, listMigrations, listMigrationsFrom, MIGRATIONS_DIR, migrate, parseMigrationFile } from "../../../src/db/migrations/migrate";
 
 const scratch: string[] = [];
 afterEach(() => {

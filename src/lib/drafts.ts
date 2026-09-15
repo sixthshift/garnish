@@ -75,7 +75,7 @@ export function putDraft(
   recipeId: string | null | undefined,
   draft: unknown,
   hadImage: boolean,
-  savedAt: string = new Date().toISOString(),
+  savedAt: string = new Date().toISOString()
 ): void {
   try {
     storage.setItem(draftKey(recipeId), JSON.stringify({ ...(draft as object), savedAt, hadImage }));

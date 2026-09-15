@@ -3,8 +3,8 @@
 // listed in position order for the shopping list.
 import type { Database } from "bun:sqlite";
 import { asc, eq, max, sql } from "drizzle-orm";
-import { orm } from "../../connection/client";
 import { cleanName, likePattern } from "../../../lib/names";
+import { orm } from "../../connection/client";
 import { aisle } from "./schema";
 
 export type Aisle = {
@@ -25,7 +25,10 @@ export function aisles(db: Database) {
   }
 
   function nextPosition(): number {
-    const row = dz.select({ n: max(aisle.position) }).from(aisle).get();
+    const row = dz
+      .select({ n: max(aisle.position) })
+      .from(aisle)
+      .get();
     return row?.n === null || row?.n === undefined ? 0 : row.n + 1;
   }
 
@@ -64,8 +67,7 @@ export function aisles(db: Database) {
     },
 
     /** True when a row was deleted. Foods in the aisle keep existing with aisle_id null. */
-    remove: (id: string): boolean =>
-      dz.delete(aisle).where(eq(aisle.id, id)).returning({ id: aisle.id }).all().length > 0,
+    remove: (id: string): boolean => dz.delete(aisle).where(eq(aisle.id, id)).returning({ id: aisle.id }).all().length > 0,
 
     /** Existing aisle whose name matches case-insensitively, else a new one at the end. */
     findOrCreate(name: string): Aisle {
@@ -85,7 +87,11 @@ export function aisles(db: Database) {
           tx.update(aisle).set({ position: index }).where(eq(aisle.id, id)).run();
         });
       });
-      return dz.select().from(aisle).orderBy(...order).all();
+      return dz
+        .select()
+        .from(aisle)
+        .orderBy(...order)
+        .all();
     },
   };
 }

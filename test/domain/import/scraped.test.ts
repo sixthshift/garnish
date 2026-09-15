@@ -6,13 +6,13 @@ import {
   hasContent,
   ingredientLines,
   normaliseScraped,
-  tidyPartName,
   parseKeywords,
   parseYield,
   partsFromInstructions,
   ScrapedRecipeSchema,
   scrapedFromSchema,
   text,
+  tidyPartName,
 } from "../../../src/domain/import/scraped";
 
 describe("decodeEntities and text", () => {
@@ -173,7 +173,14 @@ describe("partsFromInstructions", () => {
   test("a list of HowToSection becomes one part each, named (decision 59)", () => {
     const value = [
       { "@type": "HowToSection", name: "Pastry", itemListElement: [{ "@type": "HowToStep", text: "Rub in." }] },
-      { "@type": "HowToSection", name: "Filling", itemListElement: [{ "@type": "HowToStep", text: "Whisk." }, { "@type": "HowToStep", text: "Pour." }] },
+      {
+        "@type": "HowToSection",
+        name: "Filling",
+        itemListElement: [
+          { "@type": "HowToStep", text: "Whisk." },
+          { "@type": "HowToStep", text: "Pour." },
+        ],
+      },
     ];
     expect(partsFromInstructions(value)).toEqual([
       { name: "Pastry", ingredients: [], steps: ["Rub in."] },
@@ -410,7 +417,7 @@ describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
           { name: "To Serve (Note 4):", ingredients: ["parmesan"], steps: ["Toss."] },
           { name: "Sauce", ingredients: [], steps: ["Simmer."] },
         ],
-      }),
+      })
     );
     expect(recipe.parts).toEqual([
       { name: "", ingredients: [], steps: [] },
@@ -420,7 +427,15 @@ describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
   });
 
   test("a part with nothing at all on it is dropped, ingredients or no", () => {
-    const recipe = normaliseScraped(ScrapedRecipeSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }, { name: "", ingredients: [], steps: [] }] }));
+    const recipe = normaliseScraped(
+      ScrapedRecipeSchema.parse({
+        name: "Toast",
+        parts: [
+          { name: "", ingredients: [], steps: [] },
+          { name: "", ingredients: [], steps: [] },
+        ],
+      })
+    );
     expect(recipe.parts).toEqual([{ name: "", ingredients: [], steps: [] }]);
   });
 });

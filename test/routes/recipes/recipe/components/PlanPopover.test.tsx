@@ -7,9 +7,8 @@
 // server functions.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { PlanPopoverContent } from "../../../../../src/routes/recipes/recipe/components/PlanPopover";
-import { planEntryFor } from "../../../../../src/routes/recipes/recipe/components/PlanPopover";
 import type { RecipeInput } from "../../../../../src/domain/recipe";
+import { PlanPopoverContent, planEntryFor } from "../../../../../src/routes/recipes/recipe/components/PlanPopover";
 import { addPlanEntry, listPlanWeek } from "../../../../../src/server/fns/plan";
 import { createRecipe } from "../../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../../helpers/server";
@@ -29,9 +28,7 @@ describe("planEntryFor", () => {
 
 describe("PlanPopoverContent render", () => {
   const render = (recipeServings = 4) =>
-    renderToString(
-      <PlanPopoverContent recipe={{ id: "recipe-1", name: "Lemon tart", recipeServings }} onChoose={() => {}} today={TODAY} />,
-    );
+    renderToString(<PlanPopoverContent recipe={{ id: "recipe-1", name: "Lemon tart", recipeServings }} onChoose={() => {}} today={TODAY} />);
 
   test("offers the next seven days, today first", () => {
     const html = render();

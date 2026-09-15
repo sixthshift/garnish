@@ -39,7 +39,7 @@ export function enterChoice(
   text: string,
   open: boolean,
   activeItem: ComboboxItem | undefined,
-  canCreate: boolean,
+  canCreate: boolean
 ): ComboboxEnter {
   const exact = exactMatch(options, text);
   if (open) {

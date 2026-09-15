@@ -3,19 +3,19 @@
 // two deletes that must not take a line with them — the food it names, and the
 // recipe it came from.
 import type { Database } from "bun:sqlite";
-import { mkdtempSync, readdirSync, copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
-import { migrate, MIGRATIONS_DIR } from "../../src/db/migrations/migrate";
+import { MIGRATIONS_DIR, migrate } from "../../src/db/migrations/migrate";
 import { aisles } from "../../src/db/models/aisle/repo";
 import { foods } from "../../src/db/models/food/repo";
 import { recipes } from "../../src/db/models/recipe/repo";
-import { shopping, type ShoppingRepository } from "../../src/db/models/shopping/repo";
+import { type ShoppingRepository, shopping } from "../../src/db/models/shopping/repo";
 import { units } from "../../src/db/models/unit/repo";
-import { recipeInputSchema, type RecipeInput } from "../../src/domain/recipe";
-import { shoppingItemInputSchema, shoppingItemSchema, type ShoppingItemInput } from "../../src/domain/shopping";
+import { type RecipeInput, recipeInputSchema } from "../../src/domain/recipe";
+import { type ShoppingItemInput, shoppingItemInputSchema, shoppingItemSchema } from "../../src/domain/shopping";
 
 let db: Database;
 let repo: ShoppingRepository;
@@ -65,9 +65,7 @@ test("a food line round-trips with its nested food, aisle, unit and sources", ()
   expect(item!.text).toBe("");
   expect(item!.ticked).toBe(false);
   expect(item!.position).toBe(0);
-  expect(item!.sources).toMatchObject([
-    { recipeId: recipe.id, recipeName: "Lemon tart", partName: "Pastry", servings: 4, quantity: 250 },
-  ]);
+  expect(item!.sources).toMatchObject([{ recipeId: recipe.id, recipeName: "Lemon tart", partName: "Pastry", servings: 4, quantity: 250 }]);
   expect(shoppingItemSchema.parse(item)).toEqual(item);
   expect(repo.get(item!.id)).toEqual(item);
   expect(repo.list()).toEqual([item]);
@@ -205,15 +203,15 @@ test("a line survives its food and unit being deleted, keeping its quantity", ()
 test("005 applies to an existing database migrated only as far as 004", async () => {
   const dir = mkdtempSync(join(tmpdir(), "garnish-migrations-"));
   mkdirSync(dir, { recursive: true });
-  const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
+  const files = readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
   const earlier = files.filter((f) => !f.startsWith("005_"));
   for (const file of earlier) copyFileSync(join(MIGRATIONS_DIR, file), join(dir, file));
 
   const existing = openDatabase(":memory:");
   await migrate(existing, { migrationsDir: dir });
-  const before = existing
-    .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'shopping%'")
-    .all();
+  const before = existing.query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'shopping%'").all();
   expect(before).toEqual([]);
 
   for (const file of files.filter((f) => f.startsWith("005_"))) {

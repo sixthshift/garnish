@@ -27,9 +27,10 @@
 // Tandoor's export is read by its own module (`importTandoor`, M34.4), which
 // also holds the dispatcher that decides which of the two an upload is. This
 // file reads Mealie and nothing else.
-import { type FoodCandidate, type UnitCandidate, parseIngredient, reviewRow, type ReviewRow } from "../../ingredient";
-import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "../scraped";
+
 import { IMAGE_TYPES, sniffImage } from "../../../lib/imageFile";
+import { type FoodCandidate, parseIngredient, type ReviewRow, reviewRow, type UnitCandidate } from "../../ingredient";
+import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "../scraped";
 import { isZip, readZip, type ZipEntry } from "./zip";
 
 /** One of Mealie's ingredient rows, already parsed by Mealie. */
@@ -218,7 +219,8 @@ export function partsFromMealie(ingredients: readonly Node[], instructions: read
 export function mealieRecipe(node: Node): MealieRecipe {
   const parts = partsFromMealie(nodes(pick(node, "recipeIngredient", "recipe_ingredient")), nodes(pick(node, "recipeInstructions", "recipe_instructions")));
   const yielded = parseYield(pick(node, "recipeYield", "recipe_yield"));
-  const servings = number(pick(node, "recipeServings", "recipe_servings")) ?? number(pick(node, "recipeYieldQuantity", "recipe_yield_quantity")) ?? yielded.servings;
+  const servings =
+    number(pick(node, "recipeServings", "recipe_servings")) ?? number(pick(node, "recipeYieldQuantity", "recipe_yield_quantity")) ?? yielded.servings;
   const cook =
     mealieTimeToMinutes(pick(node, "performTime", "perform_time")) ??
     mealieTimeToMinutes(pick(node, "cookTime", "cook_time")) ??
@@ -417,7 +419,7 @@ export async function readMealieExport(file: ImportFile): Promise<MealieRecipe[]
 export function reviewRowFromMealie<U extends UnitCandidate, F extends FoodCandidate>(
   row: MealieIngredient,
   key: string,
-  vocabulary: { units: readonly U[]; foods: readonly F[] },
+  vocabulary: { units: readonly U[]; foods: readonly F[] }
 ): ReviewRow<U, F> {
   // Nothing structured to carry across: the line is all Mealie had, so it is
   // parsed like any other pasted line.
@@ -457,7 +459,7 @@ export function matchUnit<U extends UnitCandidate>(name: string, units: readonly
  */
 export function reviewRowsFromMealie<U extends UnitCandidate, F extends FoodCandidate>(
   recipe: MealieRecipe,
-  vocabulary: { units: readonly U[]; foods: readonly F[] },
+  vocabulary: { units: readonly U[]; foods: readonly F[] }
 ): { rows: ReviewRow<U, F>[] } {
   const rows: ReviewRow<U, F>[] = [];
   for (const part of recipe.parts) {

@@ -23,9 +23,9 @@
 // and exported, because the drag itself needs a real pointer and these do not.
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
-import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { type Span, rectContains, dropIndex } from "../../lib/ui/reorder";
+import { type ReactNode, type PointerEvent as ReactPointerEvent, useEffect, useId, useRef, useState } from "react";
 import { moveItem } from "../../lib/lists";
+import { dropIndex, rectContains, type Span } from "../../lib/ui/reorder";
 
 /** Milliseconds a touch must rest on the handle before the drag starts. */
 export const TOUCH_DELAY_MS = 250;
@@ -296,7 +296,17 @@ function Grip() {
 
 function Chevron({ direction }: { direction: "up" | "down" }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d={direction === "up" ? "m6 15 6-6 6 6" : "m6 9 6 6 6-6"} />
     </svg>
   );
@@ -304,7 +314,17 @@ function Chevron({ direction }: { direction: "up" | "down" }) {
 
 function Cross() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   );

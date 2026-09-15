@@ -38,10 +38,10 @@ import { Sheet } from "@sixthshift/design-system/sheet";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { formatIngredient } from "../../domain/ingredient";
-import { type Ingredient, type Recipe, subRecipeScale, type SubRecipe } from "../../domain/recipe";
-import { type ShoppingAddition, ingredientText, shoppingGroups, additionsForWithSubRecipes } from "../../domain/shopping";
-import { addToShoppingList, addedMessage } from "../../lib/shopping";
+import { type Ingredient, type Recipe, type SubRecipe, subRecipeScale } from "../../domain/recipe";
+import { additionsForWithSubRecipes, ingredientText, type ShoppingAddition, shoppingGroups } from "../../domain/shopping";
 import { notify, notifyError } from "../../lib/notify";
+import { addedMessage, addToShoppingList } from "../../lib/shopping";
 import { getRecipe } from "../../server/fns/recipes";
 import { useSubRecipes } from "../recipe/SubRecipes";
 
@@ -126,7 +126,7 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
                   {group.ingredients.map((ingredient) => {
                     const label = formatIngredient(ingredient).trim() || ingredientText(ingredient);
                     const on = !excluded.has(ingredient.id);
-                    const child = ingredient.food?.recipeId ? subRecipes.get(ingredient.food.recipeId) ?? null : null;
+                    const child = ingredient.food?.recipeId ? (subRecipes.get(ingredient.food.recipeId) ?? null) : null;
                     const useChild = expanded.has(ingredient.id);
                     const rowLoading = loadingChild.has(ingredient.id);
                     return (
@@ -233,14 +233,7 @@ export function AddToShoppingButton({ recipe, size = "sm" }: AddToShoppingButton
 
   return (
     <>
-      <Button
-        variant="outline"
-        intent="neutral"
-        size={size}
-        data-testid="shopping-list-button"
-        data-print="hide"
-        onClick={() => setOpen(true)}
-      >
+      <Button variant="outline" intent="neutral" size={size} data-testid="shopping-list-button" data-print="hide" onClick={() => setOpen(true)}>
         Add to shopping list
       </Button>
       <AddToShoppingSheet open={open} recipe={recipe} busy={busy} onCancel={() => setOpen(false)} onAdd={(additions) => void add(additions)} />

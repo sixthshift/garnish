@@ -2,8 +2,8 @@
 // Check for notes lives with the steps in StepsEditor.test.tsx.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
+import { addNote, emptyDraft, moveNote, newNote, type RecipeDraft, removeNote, updateNote, validateDraft } from "../../../../src/domain/draft";
 import { NotesEditor } from "../../../../src/routes/recipes/components/NotesEditor";
-import { addNote, moveNote, newNote, removeNote, updateNote, emptyDraft, type RecipeDraft, validateDraft } from "../../../../src/domain/draft";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 

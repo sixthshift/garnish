@@ -45,7 +45,7 @@ export function paragraphs(text: string): string[] {
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line !== "")
-        .join(" "),
+        .join(" ")
     )
     .filter((paragraph) => paragraph !== "");
 }

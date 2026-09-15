@@ -12,7 +12,20 @@
 // any single element the caller supplies (a router `Link`, an `a`): the child
 // keeps its own props and gains the item's role, class and close-on-click.
 import { cn } from "@sixthshift/design-system/utils";
-import { Children, cloneElement, createContext, isValidElement, type KeyboardEvent, type MouseEvent, type ReactElement, type ReactNode, useContext, useId, useRef, useState } from "react";
+import {
+  Children,
+  cloneElement,
+  createContext,
+  isValidElement,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactElement,
+  type ReactNode,
+  useContext,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { nextMenuIndex } from "../../lib/ui/menu";
 
 type MenuContext = { close: () => void };
@@ -94,7 +107,7 @@ export function Menu({ label, iconOnly = false, open: openProp, defaultOpen = fa
             onKeyDown={onKeyDown}
             className={cn(
               "absolute top-full z-20 mt-1 flex min-w-48 flex-col rounded-lg border border-border-normal bg-bg-normal py-1 shadow-lg",
-              align === "end" ? "right-0" : "left-0",
+              align === "end" ? "right-0" : "left-0"
             )}
           >
             <menuContext.Provider value={{ close: () => setOpen(false) }}>{children}</menuContext.Provider>

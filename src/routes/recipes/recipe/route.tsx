@@ -1,12 +1,12 @@
 // recipe: the route. What the URL carries, what the loader reads, and
 // the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
-import { Route as rootRoute } from "../../root";
 import { z } from "zod";
-import { type Recipe, type TimelineEvent, type SubRecipe, subRecipeIds } from "../../../domain/recipe";
+import { type Recipe, type SubRecipe, subRecipeIds, type TimelineEvent } from "../../../domain/recipe";
 import { aiImportAvailable } from "../../../server/fns/import";
 import { getRecipe, listSubRecipes } from "../../../server/fns/recipes";
 import { listTimeline } from "../../../server/fns/timeline";
+import { Route as rootRoute } from "../../root";
 
 export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),

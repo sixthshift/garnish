@@ -21,12 +21,8 @@ describe("parseInline", () => {
   });
 
   test("italics nest inside bold and vice versa", () => {
-    expect(parseInline("**very *gently***")).toEqual([
-      { type: "strong", children: [text("very "), { type: "em", children: [text("gently")] }] },
-    ]);
-    expect(parseInline("*a **b** c*")).toEqual([
-      { type: "em", children: [text("a "), { type: "strong", children: [text("b")] }, text(" c")] },
-    ]);
+    expect(parseInline("**very *gently***")).toEqual([{ type: "strong", children: [text("very "), { type: "em", children: [text("gently")] }] }]);
+    expect(parseInline("*a **b** c*")).toEqual([{ type: "em", children: [text("a "), { type: "strong", children: [text("b")] }, text(" c")] }]);
   });
 
   test("an unpaired marker stays a literal character", () => {
@@ -54,9 +50,7 @@ describe("parseMarkdown", () => {
   });
 
   test("bullet lists with any of the three markers", () => {
-    expect(parseMarkdown("- a\n* b\n+ c")).toEqual([
-      { type: "list", ordered: false, start: 1, items: [[text("a")], [text("b")], [text("c")]] },
-    ]);
+    expect(parseMarkdown("- a\n* b\n+ c")).toEqual([{ type: "list", ordered: false, start: 1, items: [[text("a")], [text("b")], [text("c")]] }]);
   });
 
   test("ordered lists keep where they start", () => {

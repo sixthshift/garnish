@@ -1,8 +1,7 @@
 // The delete confirm that names the recipes a reference row is used by.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { UsageConfirmDialogContent } from "../../../src/components/ui/UsageConfirmDialog";
-import { usageListLimit, usageNames, usageSummary } from "../../../src/components/ui/UsageConfirmDialog";
+import { UsageConfirmDialogContent, usageListLimit, usageNames, usageSummary } from "../../../src/components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 
 function summary(name: string): RecipeSummary {
@@ -50,7 +49,7 @@ describe("usageNames", () => {
 describe("UsageConfirmDialogContent render", () => {
   const render = (recipes: RecipeSummary[], busy = false) =>
     renderToString(
-      <UsageConfirmDialogContent name="butter" itemName="food" effect={effect} recipes={recipes} busy={busy} onCancel={() => {}} onConfirm={() => {}} />,
+      <UsageConfirmDialogContent name="butter" itemName="food" effect={effect} recipes={recipes} busy={busy} onCancel={() => {}} onConfirm={() => {}} />
     );
 
   test("asks the question, counts the recipes and lists them", () => {

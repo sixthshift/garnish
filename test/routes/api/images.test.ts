@@ -5,22 +5,19 @@ import { join } from "node:path";
 import { expect, test } from "vitest";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { recipeInputSchema } from "../../../src/domain/recipe";
-import { getDb } from "../../../src/server/core/db";
-import { handleGetImage, handleUploadImage } from "../../../src/server/api/images";
 import { getImageRoute as GetRoute, uploadImageRoute as PostRoute } from "../../../src/routes/api/images";
+import { handleGetImage, handleUploadImage } from "../../../src/server/api/images";
+import { getDb } from "../../../src/server/core/db";
 import { useTempDataDir } from "../../helpers/server";
 
 const tmp = useTempDataDir();
 
 type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
-const handlersOf = (route: { options: { server?: unknown } }) =>
-  (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
+const handlersOf = (route: { options: { server?: unknown } }) => (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
 
 const missing = "99999999-9999-4999-8999-999999999999";
 // A real 1x1 PNG, so the bytes are what a browser would send.
-const png = Uint8Array.from(
-  Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"),
-);
+const png = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
 const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0xff, 0xd9]);
 
 async function createRecipe(name = "Flatbread"): Promise<string> {
@@ -101,7 +98,7 @@ test.each([
           headers: { "content-type": "application/json" },
           body: "{}",
         }),
-        id,
+        id
       ),
   ],
 ])("bad upload is 400: %s", async (_label, send) => {
@@ -117,7 +114,7 @@ test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${mi
   async (file) => {
     const res = await handleGetImage(file);
     expect(res.status).toBe(400);
-  },
+  }
 );
 
 test("GET of a well-formed but absent image is 404", async () => {

@@ -46,17 +46,28 @@ import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
-import { type FoodRow, type Unit } from "../../../../domain/reference";
-import { type Recipe } from "../../../../domain/recipe";
+import { Markdown } from "../../../../components/ui/Markdown";
+import { Menu } from "../../../../components/ui/Menu";
+import {
+  type DraftIngredient,
+  foodReference,
+  isTextOnly,
+  matchUnit,
+  type RecipeDraft,
+  textOnlyPatch,
+  unitReference,
+  validateDraft,
+  withIngredientReplaced,
+  withStepReplaced,
+} from "../../../../domain/draft";
+import type { Recipe } from "../../../../domain/recipe";
+import type { FoodRow, Unit } from "../../../../domain/reference";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";
 import { listFoods } from "../../../../server/fns/foods";
 import { updateRecipe } from "../../../../server/fns/recipes";
 import { listUnits } from "../../../../server/fns/units";
 import { FOOD_SEARCH_DEBOUNCE_MS, IngredientFields } from "../../components/IngredientsEditor";
-import { foodReference, matchUnit, unitReference, isTextOnly, textOnlyPatch, withIngredientReplaced, type DraftIngredient, type RecipeDraft, validateDraft, withStepReplaced } from "../../../../domain/draft";
-import { Markdown } from "../../../../components/ui/Markdown";
-import { Menu } from "../../../../components/ui/Menu";
 
 // --- Pure helpers -----------------------------------------------------------
 
@@ -352,7 +363,17 @@ export function QuickEditStepSheet({ open, ...props }: QuickEditStepSheetProps) 
 /** A pencil, drawn the way the recipe route draws its own. */
 function PencilIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <title>Edit</title>
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19 3 20l1-4Z" />
     </svg>

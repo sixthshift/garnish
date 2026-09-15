@@ -96,11 +96,7 @@ function extractParentheticals(text: string): { stripped: string; asides: string
  * across any run of whitespace. Null when `candidate` isn't a prefix.
  */
 function matchLength(text: string, candidate: string): number | null {
-  const words = candidate
-    .trim()
-    .split(/\s+/)
-    .map(escapeRegExp)
-    .join("\\s+");
+  const words = candidate.trim().split(/\s+/).map(escapeRegExp).join("\\s+");
   const pattern = new RegExp(`^(?:${words})(?=$|[^\\p{L}\\p{N}])`, "iu");
   const match = pattern.exec(text);
   return match === null ? null : match[0].length;

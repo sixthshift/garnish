@@ -8,8 +8,8 @@ import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { AppErrorFallback, ErrorView } from "../../src/components/shell/RouteStates";
-import { describeError, isNetworkError } from "../../src/lib/errors";
 import { Toaster } from "../../src/components/shell/Toaster";
+import { describeError, isNetworkError } from "../../src/lib/errors";
 import { Route as RootRoute } from "../../src/routes/root";
 import { renderRoute } from "../helpers/routes";
 

@@ -7,13 +7,12 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { ImportReview, SourceChooser, UrlSource } from "../../../../../src/routes/recipes/new/components/RecipeSource";
-import { draftFromScraped, isTextOnly } from "../../../../../src/domain/draft";
-import { importSummary, stepCount, yieldLabel } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
+import { draftFromScraped, isTextOnly } from "../../../../../src/domain/draft";
+import { type ImportedRecipe, review, type ScrapedRecipe } from "../../../../../src/domain/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient";
 import type { Unit } from "../../../../../src/domain/reference";
-import { type ImportedRecipe, type ScrapedRecipe, review } from "../../../../../src/domain/import";
+import { ImportReview, importSummary, SourceChooser, stepCount, UrlSource, yieldLabel } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -26,7 +25,16 @@ const gram: Unit = {
   standardUnitId: null,
 };
 const units = [gram];
-const flour: FoodRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
+const flour: FoodRow = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisleId: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 const foods = [flour];
 
 const SOURCE = "https://example.test/anzac-biscuits";
@@ -209,7 +217,7 @@ describe("ImportReview", () => {
 
   test("a duplicate source is a warning, not a refusal", () => {
     const html = renderToString(
-      <ImportReview {...reviewProps} imported={imported(scraped)} rows={rows()} duplicate={{ name: "Anzac biscuits", slug: "anzac-biscuits" }} />,
+      <ImportReview {...reviewProps} imported={imported(scraped)} rows={rows()} duplicate={{ name: "Anzac biscuits", slug: "anzac-biscuits" }} />
     );
     expect(html).toContain('data-testid="duplicate-notice"');
     expect(html).toContain("You already have this one");

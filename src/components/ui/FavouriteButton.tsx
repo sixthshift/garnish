@@ -4,7 +4,7 @@
 // `className`; `RecipeHeader` renders it inline beside the actions. Marked
 // `data-print="hide"`: a control, not content.
 import { Button } from "@sixthshift/design-system/button";
-import { useEffect, useState, type MouseEvent } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 import { useMutate } from "../../lib/mutate";
 import { notifyError } from "../../lib/notify";
 import { setFavourite } from "../../server/fns/recipes";
@@ -19,7 +19,7 @@ export type FavouriteToggleResult = { favourite: boolean; error?: unknown };
 export async function toggleFavourite(
   id: string,
   current: boolean,
-  write: (id: string, favourite: boolean) => Promise<unknown>,
+  write: (id: string, favourite: boolean) => Promise<unknown>
 ): Promise<FavouriteToggleResult> {
   const next = !current;
   try {
@@ -70,9 +70,7 @@ export function FavouriteButton({ id, favourite, className }: FavouriteButtonPro
     event.preventDefault();
     event.stopPropagation();
     setCurrent(!current);
-    const result = await toggleFavourite(id, current, (recipeId, next) =>
-      mutate(() => setFavourite({ data: { id: recipeId, favourite: next } })),
-    );
+    const result = await toggleFavourite(id, current, (recipeId, next) => mutate(() => setFavourite({ data: { id: recipeId, favourite: next } })));
     setCurrent(result.favourite);
     if (result.error !== undefined) notifyError("Couldn't update favourite", result.error);
   }

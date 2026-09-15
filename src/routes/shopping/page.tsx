@@ -28,11 +28,11 @@ import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutate } from "../../lib/mutate";
 import { notify, notifyError } from "../../lib/notify";
-import { applyOutbox, useOutbox, type OutboxKind } from "../../lib/outbox";
+import { applyOutbox, type OutboxKind, useOutbox } from "../../lib/outbox";
 import { useOnline } from "../../lib/useOnline";
 import { addShoppingItems, clearTickedShoppingItems, removeShoppingItem, tickShoppingItem } from "../../server/fns/shopping";
+import { ShoppingListView, sendOutboxEntry, setFoodAisle } from "./components/ShoppingListView";
 import { Route } from "./route";
-import { ShoppingListView, setFoodAisle, sendOutboxEntry } from "./components/ShoppingListView";
 
 /**
  * The route's own wiring. Reads are the loader's (the service worker's data

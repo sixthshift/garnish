@@ -2,9 +2,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 import { DB_FILE } from "../../../src/db/connection/open";
-import { MIGRATIONS_DIR, listMigrations } from "../../../src/db/migrations/migrate";
-import { DEFAULT_UNITS } from "../../../src/db/seed/units";
+import { listMigrations, MIGRATIONS_DIR } from "../../../src/db/migrations/migrate";
 import { units } from "../../../src/db/models/unit/repo";
+import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { bundledMigrations, closeDb, getDb } from "../../../src/server/core/db";
 import { useTempDataDir } from "../../helpers/server";
 
@@ -32,7 +32,11 @@ test("closeDb forgets the handle; the next getDb reopens the same file", async (
   await closeDb();
   const b = await getDb();
   expect(b).not.toBe(a);
-  expect(units(b).list().map((u) => u.name)).toContain("handful");
+  expect(
+    units(b)
+      .list()
+      .map((u) => u.name)
+  ).toContain("handful");
   expect(units(b).list()).toHaveLength(DEFAULT_UNITS.length + 1);
 });
 

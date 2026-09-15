@@ -16,9 +16,9 @@
 //   - `sources` is nested under its line: where the line came from, kept as
 //     copied names so it survives the recipe being deleted (M31.1).
 import { z } from "zod";
-import { convert, type Aisle, type Food, type Unit, foodSchema, unitSchema } from "../reference";
 import { formatAmount, formatFood, formatIngredient, formatQuantity } from "../ingredient";
-import { type Ingredient, type Recipe, subRecipeScale, type SubRecipe } from "../recipe";
+import { type Ingredient, type Recipe, type SubRecipe, subRecipeScale } from "../recipe";
+import { type Aisle, convert, type Food, foodSchema, type Unit, unitSchema } from "../reference";
 
 const id = z.uuid();
 const timestamp = z.iso.datetime();
@@ -216,9 +216,7 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
   const plannedAdditions: ShoppingItemInput[] = [];
 
   function existingTarget(food: Food, unit: Unit | null) {
-    return items.find(
-      (item) => !item.ticked && item.food !== null && item.food.id === food.id && unitsConvertible(item.unit, unit, food),
-    );
+    return items.find((item) => !item.ticked && item.food !== null && item.food.id === food.id && unitsConvertible(item.unit, unit, food));
   }
 
   for (const addition of additions) {
@@ -381,7 +379,7 @@ export function subRecipeAdditions(
   ingredient: Ingredient,
   child: SubRecipe,
   childRecipe: Recipe | null,
-  parentSource: ShoppingAdditionSource,
+  parentSource: ShoppingAdditionSource
 ): ShoppingAddition[] {
   const servings = subRecipeScale(ingredient, child);
   if (servings === null || childRecipe === null) {
@@ -535,7 +533,7 @@ export function additionsFor(recipe: Recipe, excluded: ReadonlySet<string> = new
   return shoppingGroups(recipe).flatMap((group) =>
     group.ingredients
       .filter((ingredient) => !excluded.has(ingredient.id))
-      .map((ingredient) => ingredientAddition(ingredient, { recipeId: recipe.id, recipeName: recipe.name, partName: group.name, servings })),
+      .map((ingredient) => ingredientAddition(ingredient, { recipeId: recipe.id, recipeName: recipe.name, partName: group.name, servings }))
   );
 }
 
@@ -552,7 +550,7 @@ export function additionsForWithSubRecipes(
   excluded: ReadonlySet<string>,
   expanded: ReadonlySet<string>,
   subRecipes: ReadonlyMap<string, SubRecipe>,
-  childRecipes: Readonly<Record<string, Recipe>>,
+  childRecipes: Readonly<Record<string, Recipe>>
 ): ShoppingAddition[] {
   const servings = recipe.recipeServings > 0 ? recipe.recipeServings : null;
   return shoppingGroups(recipe).flatMap((group) =>
@@ -561,9 +559,9 @@ export function additionsForWithSubRecipes(
       .flatMap((ingredient) => {
         const source: ShoppingAdditionSource = { recipeId: recipe.id, recipeName: recipe.name, partName: group.name, servings };
         if (!expanded.has(ingredient.id)) return [ingredientAddition(ingredient, source)];
-        const child = ingredient.food?.recipeId ? subRecipes.get(ingredient.food.recipeId) ?? null : null;
+        const child = ingredient.food?.recipeId ? (subRecipes.get(ingredient.food.recipeId) ?? null) : null;
         if (child === null) return [ingredientAddition(ingredient, source)];
         return subRecipeAdditions(ingredient, child, childRecipes[ingredient.id] ?? null, source);
-      }),
+      })
   );
 }

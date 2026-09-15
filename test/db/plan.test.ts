@@ -5,10 +5,10 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { plan, type PlanRepository } from "../../src/db/models/plan/repo";
+import { type PlanRepository, plan } from "../../src/db/models/plan/repo";
 import { recipes } from "../../src/db/models/recipe/repo";
-import { planDaySchema, planEntryInputSchema, planEntrySchema, type PlanEntryInput } from "../../src/domain/plan";
-import { recipeInputSchema, type RecipeInput } from "../../src/domain/recipe";
+import { type PlanEntryInput, planDaySchema, planEntryInputSchema, planEntrySchema } from "../../src/domain/plan";
+import { type RecipeInput, recipeInputSchema } from "../../src/domain/recipe";
 
 let db: Database;
 let repo: PlanRepository;
@@ -38,15 +38,7 @@ function labels(monday = MONDAY): string[][] {
 
 test("an empty plan reads as seven empty days", () => {
   const week = repo.week(MONDAY);
-  expect(week.map((d) => d.date)).toEqual([
-    MONDAY,
-    TUESDAY,
-    "2026-09-16",
-    "2026-09-17",
-    "2026-09-18",
-    "2026-09-19",
-    SUNDAY,
-  ]);
+  expect(week.map((d) => d.date)).toEqual([MONDAY, TUESDAY, "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", SUNDAY]);
   expect(week.every((d) => d.entries.length === 0)).toBe(true);
   expect(week.every((d) => planDaySchema.safeParse(d).success)).toBe(true);
   expect(repo.get("11111111-1111-4111-8111-111111111111")).toBeNull();

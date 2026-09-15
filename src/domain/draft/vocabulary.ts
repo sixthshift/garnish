@@ -1,7 +1,8 @@
 // Quantities, units, foods and tags as the editor reads and writes them.
-import { type FoodRow, type Food, type Unit, type Tag } from "../reference";
+
 import { randomUuid } from "../../lib/id";
 import { slugify } from "../../lib/names";
+import type { Food, FoodRow, Tag, Unit } from "../reference";
 
 export const VULGAR: Record<string, number> = {
   "½": 1 / 2,
@@ -86,7 +87,16 @@ export function foodReference(source: FoodRow | { name: string }): Food {
 
 /** A new unit reference by name, defaults for the rest; the repository find-or-creates it on save. Pure apart from the random id. */
 export function unitReference(name: string): Unit {
-  return { id: randomUuid(), name: name.trim(), pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null };
+  return {
+    id: randomUuid(),
+    name: name.trim(),
+    pluralName: null,
+    abbreviation: "",
+    useAbbreviation: false,
+    fraction: true,
+    standardQuantity: null,
+    standardUnitId: null,
+  };
 }
 
 /** The unit whose name, plural or abbreviation equals `text`, ignoring case. Pure. */
@@ -105,10 +115,7 @@ export function filterUnits(units: readonly Unit[], text: string): Unit[] {
   const key = text.trim().toLowerCase();
   if (key === "") return units.slice();
   return units.filter(
-    (unit) =>
-      unit.name.toLowerCase().includes(key) ||
-      unit.abbreviation.toLowerCase().includes(key) ||
-      (unit.pluralName ?? "").toLowerCase().includes(key),
+    (unit) => unit.name.toLowerCase().includes(key) || unit.abbreviation.toLowerCase().includes(key) || (unit.pluralName ?? "").toLowerCase().includes(key)
   );
 }
 

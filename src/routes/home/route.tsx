@@ -1,13 +1,13 @@
 // home: the route. What the URL carries, what the loader reads, and
 // the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
-import { Route as rootRoute } from "../root";
 import { z } from "zod";
 import type { RecipeSummary } from "../../domain/recipe";
 import type { Tag } from "../../domain/reference";
 import { listFoods } from "../../server/fns/foods";
 import { listRecipes } from "../../server/fns/recipes";
 import { listTags } from "../../server/fns/tags";
+import { Route as rootRoute } from "../root";
 
 export const RecipeListSearch = z.object({
   q: z.string().optional(),
@@ -42,11 +42,7 @@ export const Route = createRoute({
     seed,
   }),
   loader: async ({ deps }): Promise<RecipeListData> => {
-    const [recipes, tags, foods] = await Promise.all([
-      listRecipes({ data: deps }),
-      listTags({ data: {} }),
-      listFoods({ data: {} }),
-    ]);
+    const [recipes, tags, foods] = await Promise.all([listRecipes({ data: deps }), listTags({ data: {} }), listFoods({ data: {} })]);
     return { recipes, tags, foods };
   },
   component: lazyRouteComponent(() => import("./page"), "RecipesPage"),

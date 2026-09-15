@@ -11,18 +11,17 @@ import { foods } from "../../../src/db/models/food/repo";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { tags } from "../../../src/db/models/tag/repo";
 import { units } from "../../../src/db/models/unit/repo";
-import { recipeInputSchema, type Recipe } from "../../../src/domain/recipe";
-import { getDb } from "../../../src/server/core/db";
-import { buildExport, handleExportJson, handleRecipeCook, handleRecipeJson, type GarnishExport } from "../../../src/server/api/export";
+import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe";
 import { exportJsonRoute as ExportRoute, recipeCookRoute as RecipeCookRoute, recipeJsonRoute as RecipeJsonRoute } from "../../../src/routes/api/export";
+import { buildExport, type GarnishExport, handleExportJson, handleRecipeCook, handleRecipeJson } from "../../../src/server/api/export";
+import { getDb } from "../../../src/server/core/db";
 import { testRouter } from "../../helpers/routes";
 import { useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
 
 type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
-const handlersOf = (route: { options: { server?: unknown } }) =>
-  (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
+const handlersOf = (route: { options: { server?: unknown } }) => (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
 
 const PASTRY_INGREDIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
 const FLOUR_INGREDIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";
@@ -51,7 +50,7 @@ async function seed(): Promise<{ tart: Recipe; pastry: Recipe }> {
       recipeYieldQuantity: 500,
       yieldUnit: gram,
       parts: [{ name: "", steps: [{ text: "Rub it together." }] }],
-    }),
+    })
   );
   const pastryFood = foodRepo.create({ name: "Sweet pastry", recipeId: pastry.id });
   const flour = foodRepo.create({
@@ -75,7 +74,7 @@ async function seed(): Promise<{ tart: Recipe; pastry: Recipe }> {
           steps: [{ text: "Line the tin.", ingredientIds: [PASTRY_INGREDIENT, FLOUR_INGREDIENT] }],
         },
       ],
-    }),
+    })
   );
   recipeRepo.setImage(tart.id, `${tart.id}.jpg`);
   return { tart: recipeRepo.getById(tart.id)!, pastry };
@@ -117,15 +116,16 @@ test("a recipe with no image exports a null image", async () => {
   expect(doc.image).toBeNull();
 });
 
-test.each([["an unknown slug", "no-such-recipe"], ["an empty slug", ""], ["whitespace", "   "]])(
-  "%s is 404 with an error message",
-  async (_label, slug) => {
-    await seed();
-    const res = await handleRecipeJson(slug);
-    expect(res.status).toBe(404);
-    expect(typeof ((await res.json()) as { error: string }).error).toBe("string");
-  },
-);
+test.each([
+  ["an unknown slug", "no-such-recipe"],
+  ["an empty slug", ""],
+  ["whitespace", "   "],
+])("%s is 404 with an error message", async (_label, slug) => {
+  await seed();
+  const res = await handleRecipeJson(slug);
+  expect(res.status).toBe(404);
+  expect(typeof ((await res.json()) as { error: string }).error).toBe("string");
+});
 
 // --- GET /api/export.json ---------------------------------------------------
 
@@ -148,10 +148,7 @@ test("the whole export carries every recipe's document and the four reference li
   expect(pastryFood?.recipeId).toBe(pastry.id);
 
   // The step links come through the documents, not a separate list.
-  expect(body.recipes.find((r) => r.slug === "lemon-tart")?.parts[0]!.steps[0]!.ingredientIds).toEqual([
-    PASTRY_INGREDIENT,
-    FLOUR_INGREDIENT,
-  ]);
+  expect(body.recipes.find((r) => r.slug === "lemon-tart")?.parts[0]!.steps[0]!.ingredientIds).toEqual([PASTRY_INGREDIENT, FLOUR_INGREDIENT]);
 
   const flour = body.foods.find((f) => f.name === "Plain flour")!;
   expect(flour.conversions).toHaveLength(1);
@@ -187,15 +184,16 @@ test("one recipe comes back as a Cooklang file, plain text", async () => {
   expect(body).toContain("@Sweet pastry");
 });
 
-test.each([["an unknown slug", "no-such-recipe"], ["an empty slug", ""], ["whitespace", "   "]])(
-  ".cook: %s is 404 with an error message",
-  async (_label, slug) => {
-    await seed();
-    const res = await handleRecipeCook(slug);
-    expect(res.status).toBe(404);
-    expect(typeof ((await res.json()) as { error: string }).error).toBe("string");
-  },
-);
+test.each([
+  ["an unknown slug", "no-such-recipe"],
+  ["an empty slug", ""],
+  ["whitespace", "   "],
+])(".cook: %s is 404 with an error message", async (_label, slug) => {
+  await seed();
+  const res = await handleRecipeCook(slug);
+  expect(res.status).toBe(404);
+  expect(typeof ((await res.json()) as { error: string }).error).toBe("string");
+});
 
 // --- The routes -------------------------------------------------------------
 

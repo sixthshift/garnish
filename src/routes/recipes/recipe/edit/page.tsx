@@ -9,8 +9,8 @@
 // always edits the recipe's own stored servings — it only rides along so
 // Cancel can hand the view page back the scale it was showing.
 import { Heading } from "@sixthshift/design-system/heading";
-import { RecipeForm } from "../../components/RecipeForm";
 import { draftFromRecipe } from "../../../../domain/draft";
+import { RecipeForm } from "../../components/RecipeForm";
 import { Route } from "./route";
 
 export function EditRecipePage() {
@@ -19,13 +19,7 @@ export function EditRecipePage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-6">
       <Heading as="h1">Edit recipe</Heading>
-      <RecipeForm
-        key={recipe.id}
-        initial={draftFromRecipe(recipe)}
-        units={units}
-        tags={tags}
-        existing={{ id: recipe.id, slug: recipe.slug, servings }}
-      />
+      <RecipeForm key={recipe.id} initial={draftFromRecipe(recipe)} units={units} tags={tags} existing={{ id: recipe.id, slug: recipe.slug, servings }} />
     </div>
   );
 }

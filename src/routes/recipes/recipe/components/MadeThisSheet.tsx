@@ -23,10 +23,10 @@ import { Input } from "@sixthshift/design-system/input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
-import { type TimelineEventInput } from "../../../../domain/recipe";
 import { ImageUpload } from "../../../../components/ui/ImageUpload";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
 import { todayIso } from "../../../../domain/plan";
+import type { TimelineEventInput } from "../../../../domain/recipe";
 import { isValidDate } from "../../../../lib/dates";
 
 export type MadeThisSheetContentProps = {
@@ -40,13 +40,7 @@ export type MadeThisSheetContentProps = {
   defaultServings?: number;
 };
 
-export function MadeThisSheetContent({
-  onSave,
-  onCancel,
-  busy = false,
-  today = todayIso(),
-  defaultServings = 1,
-}: MadeThisSheetContentProps) {
+export function MadeThisSheetContent({ onSave, onCancel, busy = false, today = todayIso(), defaultServings = 1 }: MadeThisSheetContentProps) {
   const [occurredOn, setOccurredOn] = useState(today);
   const [servings, setServings] = useState(defaultServings);
   const [message, setMessage] = useState("");

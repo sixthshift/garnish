@@ -5,7 +5,7 @@
 // step card instead (M29.2, StepCard resolves the link) — so a part where
 // every row is linked gets no ingredients card, and one with nothing at all
 // contributes nothing: a blank card is a wasted tap.
-import { type Ingredient, type Recipe, type Step } from "./recipe";
+import type { Ingredient, Recipe, Step } from "./recipe";
 
 export type CookCard =
   | {
@@ -51,7 +51,7 @@ export function buildCookCards(recipe: Pick<Recipe, "parts">): CookCard[] {
         number: index + 1,
         total: part.steps.length,
         ingredients: part.ingredients,
-      }),
+      })
     );
   }
   return cards;

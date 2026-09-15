@@ -30,9 +30,7 @@ export function scaleRecipe(doc: Recipe, targetServings: number): Recipe {
     throw new ScaleError(`targetServings must be a finite number greater than 0, got ${String(targetServings)}`);
   }
   if (!Number.isFinite(doc.recipeServings) || doc.recipeServings <= 0) {
-    throw new ScaleError(
-      `recipe "${doc.name}" has no servings (recipeServings is ${String(doc.recipeServings)}) and cannot be scaled`,
-    );
+    throw new ScaleError(`recipe "${doc.name}" has no servings (recipeServings is ${String(doc.recipeServings)}) and cannot be scaled`);
   }
 
   const factor = targetServings / doc.recipeServings;

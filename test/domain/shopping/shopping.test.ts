@@ -1,22 +1,22 @@
 // The shopping list document: defaults, the one rule a line must satisfy, and
 // the patch's "absent means leave alone".
 import { describe, expect, test } from "vitest";
-import { mergeIngredients, type Ingredient, type Recipe, recipeSchema, scaleRecipe, type SubRecipe } from "../../../src/domain/recipe";
+import { type Ingredient, mergeIngredients, type Recipe, recipeSchema, type SubRecipe, scaleRecipe } from "../../../src/domain/recipe";
 import {
+  groupByAisle,
+  mergeIntoList,
   type ShoppingAddition,
   type ShoppingAdditionSource,
   type ShoppingItem,
-  TICKED_GROUP,
-  UNASSIGNED_GROUP,
-  groupByAisle,
-  mergeIntoList,
-  shoppingItemLabel,
-  sourceLabel,
   shoppingItemInputSchema,
+  shoppingItemLabel,
   shoppingItemPatchSchema,
   shoppingItemSchema,
   shoppingItemSourceSchema,
+  sourceLabel,
   subRecipeAdditions,
+  TICKED_GROUP,
+  UNASSIGNED_GROUP,
 } from "../../../src/domain/shopping/shopping";
 
 const id = "11111111-1111-4111-8111-111111111111";
@@ -83,12 +83,8 @@ test("a stored line parses with its nested food and unit null and no sources", (
 
 test("a stored line needs its position, id and timestamps", () => {
   expect(shoppingItemSchema.safeParse({ id, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(false);
-  expect(shoppingItemSchema.safeParse({ id, position: -1, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(
-    false,
-  );
-  expect(shoppingItemSchema.safeParse({ position: 0, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(
-    false,
-  );
+  expect(shoppingItemSchema.safeParse({ id, position: -1, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(false);
+  expect(shoppingItemSchema.safeParse({ position: 0, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(false);
 });
 
 test("an empty patch is valid and names nothing", () => {
@@ -122,10 +118,46 @@ const cup = {
   standardUnitId: null,
 };
 
-const flour = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
-const butter = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "butter", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
-const garlic = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", name: "garlic", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: true, conversions: [] };
-const bayLeaf = { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "bay leaf", pluralName: "bay leaves", aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const flour = {
+  id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
+const butter = {
+  id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  name: "butter",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
+const garlic = {
+  id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  name: "garlic",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: true,
+  conversions: [],
+};
+const bayLeaf = {
+  id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+  name: "bay leaf",
+  pluralName: "bay leaves",
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 
 let nextItemId = 0;
 function existingItem(overrides: Partial<ShoppingItem> = {}): ShoppingItem {
@@ -209,13 +241,7 @@ describe("mergeIntoList", () => {
 
   test("a fixed or null-quantity food addition never merges, even with a matching food and unit", () => {
     const existing = existingItem({ quantity: 1, unit: cup, food: bayLeaf });
-    const plan = mergeIntoList(
-      [existing],
-      [
-        addition({ quantity: 1, unit: cup, food: bayLeaf, fixed: true }),
-        addition({ quantity: null, food: flour }),
-      ],
-    );
+    const plan = mergeIntoList([existing], [addition({ quantity: 1, unit: cup, food: bayLeaf, fixed: true }), addition({ quantity: null, food: flour })]);
 
     expect(plan.merges).toEqual([]);
     expect(plan.additions).toHaveLength(2);
@@ -226,7 +252,10 @@ describe("mergeIntoList", () => {
   test("two additions with the same food and unit and no existing line merge into one new line", () => {
     const plan = mergeIntoList(
       [],
-      [addition({ quantity: 200, unit: gram, food: flour }), addition({ quantity: 50, unit: gram, food: flour, source: { recipeId: null, recipeName: "Scones", partName: "", servings: 8 } })],
+      [
+        addition({ quantity: 200, unit: gram, food: flour }),
+        addition({ quantity: 50, unit: gram, food: flour, source: { recipeId: null, recipeName: "Scones", partName: "", servings: 8 } }),
+      ]
     );
 
     expect(plan.additions).toHaveLength(1);
@@ -247,7 +276,7 @@ describe("mergeIntoList", () => {
       [
         addition({ quantity: 1, unit: cup, food: convertibleFlour }),
         addition({ quantity: 300, unit: gram, food: convertibleFlour, source: { recipeId: null, recipeName: "Scones", partName: "", servings: 8 } }),
-      ],
+      ]
     );
 
     expect(plan.additions).toHaveLength(1);
@@ -313,7 +342,9 @@ describe("mergeIntoList", () => {
 
     // flour: 100 (part 1, x2) + 50 (topping, x2) = 300 merged by mergeIngredients,
     // on top of the existing 100g line
-    expect(plan.merges).toEqual([{ id: existingFlour.id, quantity: 400, sources: [{ recipeId: recipe.id, recipeName: "Buttered toast", partName: "", servings: 8, quantity: 300 }] }]);
+    expect(plan.merges).toEqual([
+      { id: existingFlour.id, quantity: 400, sources: [{ recipeId: recipe.id, recipeName: "Buttered toast", partName: "", servings: 8, quantity: 300 }] },
+    ]);
 
     // butter is new, doubled
     expect(plan.additions).toHaveLength(2); // butter, bay leaf (fixed) — garlic dropped
@@ -328,7 +359,16 @@ describe("mergeIntoList", () => {
 const CHILD_ID = "12121212-1212-4212-8212-121212121212";
 
 /** A food made by the child recipe: "2 cups of pastry" links here. */
-const pastry = { id: "56565656-5656-4565-8565-565656565656", name: "pastry", pluralName: null, aliases: [], aisle: null, recipeId: CHILD_ID, skipShopping: false, conversions: [] };
+const pastry = {
+  id: "56565656-5656-4565-8565-565656565656",
+  name: "pastry",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: CHILD_ID,
+  skipShopping: false,
+  conversions: [],
+};
 
 const sweetPastry: SubRecipe = { id: CHILD_ID, slug: "sweet-pastry", name: "Sweet pastry", recipeServings: 4, recipeYieldQuantity: 500, yieldUnit: gram };
 
@@ -381,9 +421,7 @@ describe("subRecipeAdditions", () => {
     // No quantity on the row: nothing to relate to the child's yield.
     const additions = subRecipeAdditions(pastryRow({ quantity: null }), sweetPastry, childDoc(2), parentSource);
 
-    expect(additions).toEqual([
-      { quantity: null, unit: gram, food: pastry, originalText: expect.any(String), fixed: false, source: parentSource },
-    ]);
+    expect(additions).toEqual([{ quantity: null, unit: gram, food: pastry, originalText: expect.any(String), fixed: false, source: parentSource }]);
   });
 
   test("a child not fetched yet also falls back to the food line, not an empty result", () => {
@@ -419,10 +457,7 @@ describe("groupByAisle", () => {
   });
 
   test("two aisles at the same position read alphabetically", () => {
-    const groups = groupByAisle([
-      existingItem({ food: withAisle(flour, dairy) }),
-      existingItem({ food: withAisle(butter, bakery) }),
-    ]);
+    const groups = groupByAisle([existingItem({ food: withAisle(flour, dairy) }), existingItem({ food: withAisle(butter, bakery) })]);
     expect(groups.map((group) => group.name)).toEqual(["Bakery", "Dairy"]);
   });
 

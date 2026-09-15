@@ -1,16 +1,16 @@
 // settings: the route. What the URL carries, what the loader reads, and
 // the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
-import { Route as rootRoute } from "../root";
 import type { RecipeSummary } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
-import { type StyleRule } from "../../domain/style";
+import type { StyleRule } from "../../domain/style";
 import { listAisles } from "../../server/fns/aisles";
 import { listFoods } from "../../server/fns/foods";
 import { listRecipes } from "../../server/fns/recipes";
 import { listStyleRules } from "../../server/fns/style";
 import { listTags } from "../../server/fns/tags";
 import { listUnits } from "../../server/fns/units";
+import { Route as rootRoute } from "../root";
 
 /** The repository's food row: a flat `aisleId`, not the recipe document's nested aisle. */
 export type FoodRow = Awaited<ReturnType<typeof listFoods>>[number];

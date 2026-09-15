@@ -46,5 +46,5 @@ export const importFromText = createServerFn({ method: "POST" })
       text: data.text,
       sourceUrl: data.sourceUrl,
       anchor: data.anchor ?? null,
-    }),
+    })
   );

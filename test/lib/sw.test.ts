@@ -32,7 +32,7 @@ test("a rejected or throwing register never surfaces", async () => {
           },
         },
       },
-      true,
-    ),
+      true
+    )
   ).toBe(false);
 });

@@ -3,8 +3,8 @@
 // (Mealie) and de-duplicated with a numeric suffix.
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
-import { orm } from "../../connection/client";
 import { cleanName, likePattern, slugify, uniqueSlug } from "../../../lib/names";
+import { orm } from "../../connection/client";
 import { recipeTag } from "../recipe/schema";
 import { tag } from "./schema";
 
@@ -37,7 +37,9 @@ export function tags(db: Database) {
   function create(input: TagInput): Tag {
     const id = crypto.randomUUID();
     const name = cleanName(input.name);
-    dz.insert(tag).values({ id, name, slug: slugFor(name, id) }).run();
+    dz.insert(tag)
+      .values({ id, name, slug: slugFor(name, id) })
+      .run();
     return get(id)!;
   }
 
@@ -65,7 +67,10 @@ export function tags(db: Database) {
       const current = get(id);
       if (!current) return null;
       const name = cleanName(patch.name ?? current.name);
-      dz.update(tag).set({ name, slug: slugFor(name, id) }).where(eq(tag.id, id)).run();
+      dz.update(tag)
+        .set({ name, slug: slugFor(name, id) })
+        .where(eq(tag.id, id))
+        .run();
       return get(id);
     },
 
@@ -97,7 +102,7 @@ export function tags(db: Database) {
             tx
               .select({ recipeId: recipeTag.recipeId, tagId: sql`${targetId}`.as("tag_id") })
               .from(recipeTag)
-              .where(eq(recipeTag.tagId, sourceId)),
+              .where(eq(recipeTag.tagId, sourceId))
           )
           .onConflictDoNothing()
           .run();

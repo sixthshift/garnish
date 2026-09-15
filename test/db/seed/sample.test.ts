@@ -5,14 +5,14 @@ import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
 import { recipes } from "../../../src/db/models/recipe/repo";
+import { timeline } from "../../../src/db/models/timeline/repo";
+import { parseSeedFlags } from "../../../src/db/seed/cli";
 import { SAMPLE_RECIPES } from "../../../src/db/seed/recipes";
 import { seed, seedSample } from "../../../src/db/seed/seed";
-import { parseSeedFlags } from "../../../src/db/seed/cli";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
-import { timeline } from "../../../src/db/models/timeline/repo";
 import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipe";
-import { listRecipes } from "../../../src/server/fns/recipes";
 import { getDb } from "../../../src/server/core/db";
+import { listRecipes } from "../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
@@ -108,7 +108,9 @@ test("references resolve to the seeded units and shared foods and tags", () => {
   seedSample(db);
   expect(count("unit")).toBe(DEFAULT_UNITS.length);
   const seededGram = db.query<{ id: string }, []>("SELECT id FROM unit WHERE name = 'gram'").get()!.id;
-  const flour = recipes(db).get("anzac-biscuits")!.parts[0]!.ingredients.find((i) => i.food?.name === "brown sugar")!;
+  const flour = recipes(db)
+    .get("anzac-biscuits")!
+    .parts[0]!.ingredients.find((i) => i.food?.name === "brown sugar")!;
   expect(flour.unit?.id).toBe(seededGram);
 
   // "butter" appears in two recipes and "Baking" tags two: one row each.

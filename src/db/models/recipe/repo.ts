@@ -10,20 +10,33 @@
 // modified by a recipe write.
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, exists, inArray, ne, type SQL, sql } from "drizzle-orm";
-import { type Ingredient, type ParsedRecipeInput, type Part, type Recipe, type RecipeNote, type RecipeSummary, type Step, resolveSort, type SortDir, type SortKey, suggestLinks, type SubRecipe } from "../../../domain/recipe";
-import type { Food, Tag, Unit } from "../../../domain/reference";
 import { formatIngredient, totalMinutes } from "../../../domain/ingredient";
+import {
+  type Ingredient,
+  type ParsedRecipeInput,
+  type Part,
+  type Recipe,
+  type RecipeNote,
+  type RecipeSummary,
+  resolveSort,
+  type SortDir,
+  type SortKey,
+  type Step,
+  type SubRecipe,
+  suggestLinks,
+} from "../../../domain/recipe";
+import type { Food, Tag, Unit } from "../../../domain/reference";
 import { seededOrder } from "../../../lib/lists";
-import { aisles as aisleRepository } from "../aisle/repo";
-import { type Executor, orm } from "../../connection/client";
-import { food } from "../food/schema";
-import { foods as foodRepository } from "../food/repo";
 import { slugify, uniqueSlug } from "../../../lib/names";
-import { tag } from "../tag/schema";
-import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
+import { type Executor, orm } from "../../connection/client";
+import { aisles as aisleRepository } from "../aisle/repo";
+import { foods as foodRepository } from "../food/repo";
+import { food } from "../food/schema";
 import { tags as tagRepository } from "../tag/repo";
-import { unit } from "../unit/schema";
+import { tag } from "../tag/schema";
 import { units as unitRepository } from "../unit/repo";
+import { unit } from "../unit/schema";
+import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
 
 export type ListFilter = {
   /** Case-insensitive substring of the recipe name. */
@@ -59,10 +72,7 @@ const summaryColumns = {
   favourite: recipe.favourite,
 };
 
-type SummaryRow = Pick<
-  typeof recipe.$inferSelect,
-  "id" | "slug" | "name" | "image" | "rating" | "prepMinutes" | "cookMinutes" | "lastMade" | "favourite"
->;
+type SummaryRow = Pick<typeof recipe.$inferSelect, "id" | "slug" | "name" | "image" | "rating" | "prepMinutes" | "cookMinutes" | "lastMade" | "favourite">;
 
 /** Recipe name, compared the way the list page orders it. */
 const byName = sql`${recipe.name} COLLATE NOCASE`;
@@ -156,7 +166,7 @@ export function recipes(db: Database) {
           food: row.foodName === null ? null : { name: row.foodName, pluralName: row.foodPluralName },
           note: row.note,
           originalText: row.originalText,
-        }),
+        })
       );
 
   const rowById = (id: string) => dz.select().from(recipe).where(eq(recipe.id, id)).get();
@@ -406,7 +416,7 @@ export function recipes(db: Database) {
         .where(eq(part.recipeId, recipeId))
         .all()
         .filter((row): row is { id: string; sourceSteps: string[] } => row.sourceSteps !== null)
-        .map((row) => [row.id, row.sourceSteps] as const),
+        .map((row) => [row.id, row.sourceSteps] as const)
     );
 
     // Steps and ingredients cascade from the part, and step links cascade from both.
@@ -415,7 +425,10 @@ export function recipes(db: Database) {
     tx.delete(part).where(eq(part.recipeId, recipeId)).run(); // steps, ingredients and their links cascade
 
     for (const t of doc.tags) {
-      tx.insert(recipeTag).values({ recipeId, tagId: resolveTag(t) }).onConflictDoNothing().run();
+      tx.insert(recipeTag)
+        .values({ recipeId, tagId: resolveTag(t) })
+        .onConflictDoNothing()
+        .run();
     }
 
     doc.notes.forEach((note, position) => {
@@ -459,7 +472,9 @@ export function recipes(db: Database) {
         for (const ingredientId of s.ingredientIds) {
           if (!linkable.has(ingredientId) || seen.has(ingredientId)) continue;
           seen.add(ingredientId);
-          tx.insert(stepIngredient).values({ stepId, ingredientId, position: seen.size - 1 }).run();
+          tx.insert(stepIngredient)
+            .values({ stepId, ingredientId, position: seen.size - 1 })
+            .run();
         }
       });
     });
@@ -473,12 +488,7 @@ export function recipes(db: Database) {
 
   /** A recipe's parts in position order, with whatever original steps they kept. */
   const partRows = (recipeId: string) =>
-    dz
-      .select({ id: part.id, name: part.name, sourceSteps: part.sourceSteps })
-      .from(part)
-      .where(eq(part.recipeId, recipeId))
-      .orderBy(asc(part.position))
-      .all();
+    dz.select({ id: part.id, name: part.name, sourceSteps: part.sourceSteps }).from(part).where(eq(part.recipeId, recipeId)).orderBy(asc(part.position)).all();
 
   /** One part's step texts in position order: what `source_steps` is made of. */
   const stepTexts = (partId: string): string[] =>
@@ -570,11 +580,7 @@ export function recipes(db: Database) {
     byName(name: string): { name: string; slug: string } | null {
       const wanted = name.trim();
       if (wanted === "") return null;
-      const row = dz
-        .select({ name: recipe.name, slug: recipe.slug })
-        .from(recipe)
-        .where(sql`${recipe.name} = ${wanted} COLLATE NOCASE`)
-        .get();
+      const row = dz.select({ name: recipe.name, slug: recipe.slug }).from(recipe).where(sql`${recipe.name} = ${wanted} COLLATE NOCASE`).get();
       return row ?? null;
     },
 
@@ -588,9 +594,7 @@ export function recipes(db: Database) {
      */
     list(filter: ListFilter = {}): RecipeSummary[] {
       const q = filter.q?.trim() || null;
-      const tagSlugs = [
-        ...new Set([filter.tag, ...(filter.tags ?? [])].map((t) => t?.trim()).filter((t): t is string => Boolean(t))),
-      ];
+      const tagSlugs = [...new Set([filter.tag, ...(filter.tags ?? [])].map((t) => t?.trim()).filter((t): t is string => Boolean(t)))];
       const foodIds = [...new Set((filter.foods ?? []).map((f) => f.trim()).filter(Boolean))];
       const match = filter.match ?? "any";
 
@@ -601,7 +605,7 @@ export function recipes(db: Database) {
             .select({ one: sql`1` })
             .from(recipeTag)
             .innerJoin(tag, eq(tag.id, recipeTag.tagId))
-            .where(and(eq(recipeTag.recipeId, recipe.id), slugs)),
+            .where(and(eq(recipeTag.recipeId, recipe.id), slugs))
         );
 
       const clauses: (SQL | undefined)[] = [];
@@ -620,8 +624,8 @@ export function recipes(db: Database) {
               .select({ one: sql`1` })
               .from(part)
               .innerJoin(ingredient, eq(ingredient.partId, part.id))
-              .where(and(eq(part.recipeId, recipe.id), inArray(ingredient.foodId, foodIds))),
-          ),
+              .where(and(eq(part.recipeId, recipe.id), inArray(ingredient.foodId, foodIds)))
+          )
         );
       }
 
@@ -678,21 +682,11 @@ export function recipes(db: Database) {
      * else changes. True when `id` exists.
      */
     setRating: (id: string, rating: number | null): boolean =>
-      dz
-        .update(recipe)
-        .set({ rating, updatedAt: nowUtc })
-        .where(eq(recipe.id, id))
-        .returning({ id: recipe.id })
-        .all().length > 0,
+      dz.update(recipe).set({ rating, updatedAt: nowUtc }).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
 
     /** Set the image file name alone (null clears it). Nothing else changes. True when `id` exists. */
     setImage: (id: string, image: string | null): boolean =>
-      dz
-        .update(recipe)
-        .set({ image, updatedAt: nowUtc })
-        .where(eq(recipe.id, id))
-        .returning({ id: recipe.id })
-        .all().length > 0,
+      dz.update(recipe).set({ image, updatedAt: nowUtc }).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
 
     /**
      * Set one step's image file name (null clears it), leaving the recipe's
@@ -701,12 +695,7 @@ export function recipes(db: Database) {
      * True when the step exists.
      */
     setStepImage: (stepId: string, image: string | null): boolean =>
-      dz
-        .update(step)
-        .set({ image })
-        .where(eq(step.id, stepId))
-        .returning({ id: step.id })
-        .all().length > 0,
+      dz.update(step).set({ image }).where(eq(step.id, stepId)).returning({ id: step.id }).all().length > 0,
 
     /** Does a step row exist? What the upload route asks before writing a file. */
     stepExists: (stepId: string): boolean => dz.select({ id: step.id }).from(step).where(eq(step.id, stepId)).all().length > 0,
@@ -761,8 +750,8 @@ export function recipes(db: Database) {
               .select({ one: sql`1` })
               .from(part)
               .innerJoin(ingredient, eq(ingredient.partId, part.id))
-              .where(and(eq(part.recipeId, recipe.id), eq(ingredient.unitId, unitId))),
-          )}`,
+              .where(and(eq(part.recipeId, recipe.id), eq(ingredient.unitId, unitId)))
+          )}`
         )
         .orderBy(byName)
         .all()
@@ -801,7 +790,10 @@ export function recipes(db: Database) {
       dz.transaction((tx) => {
         rows.forEach((row, index) => {
           if (row.sourceSteps === null) {
-            tx.update(part).set({ sourceSteps: stepTexts(row.id) }).where(eq(part.id, row.id)).run();
+            tx.update(part)
+              .set({ sourceSteps: stepTexts(row.id) })
+              .where(eq(part.id, row.id))
+              .run();
           }
           replaceSteps(tx, row.id, parts[index]!.steps);
         });
@@ -833,8 +825,7 @@ export function recipes(db: Database) {
     },
 
     /** True when a recipe was deleted. Children cascade; references stay. */
-    remove: (id: string): boolean =>
-      dz.delete(recipe).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
+    remove: (id: string): boolean => dz.delete(recipe).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
   };
 }
 

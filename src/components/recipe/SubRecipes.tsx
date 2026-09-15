@@ -9,8 +9,8 @@
 // exactly what it was before, which is how the rest of the page's optional
 // behaviour is wired (see `QuickEditProvider`).
 import { createContext, type ReactNode, useContext, useMemo } from "react";
-import type { Food } from "../../domain/reference";
 import { type SubRecipe, subRecipeMap } from "../../domain/recipe";
+import type { Food } from "../../domain/reference";
 
 const SubRecipesContext = createContext<ReadonlyMap<string, SubRecipe> | null>(null);
 

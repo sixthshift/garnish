@@ -8,9 +8,9 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
-import { type Aisle } from "../../../domain/reference";
-import { groupByAisle, shoppingItemLabel, sourceLabel, type ShoppingItem } from "../../../domain/shopping";
-import { pendingLabel, type OutboxEntry } from "../../../lib/outbox";
+import type { Aisle } from "../../../domain/reference";
+import { groupByAisle, type ShoppingItem, shoppingItemLabel, sourceLabel } from "../../../domain/shopping";
+import { type OutboxEntry, pendingLabel } from "../../../lib/outbox";
 import { updateFood } from "../../../server/fns/foods";
 import { removeShoppingItem, tickShoppingItem } from "../../../server/fns/shopping";
 
@@ -67,15 +67,7 @@ export function ShoppingListView({
               </div>
               <ul className="flex flex-col divide-y divide-border-subtle">
                 {group.items.map((item) => (
-                  <ShoppingRow
-                    key={item.id}
-                    item={item}
-                    aisles={aisles}
-                    onTick={onTick}
-                    onRemove={onRemove}
-                    onSetAisle={onSetAisle}
-                    busy={busy}
-                  />
+                  <ShoppingRow key={item.id} item={item} aisles={aisles} onTick={onTick} onRemove={onRemove} onSetAisle={onSetAisle} busy={busy} />
                 ))}
               </ul>
             </section>
@@ -111,13 +103,7 @@ function ShoppingRow({
   const needsAisle = food !== null && food.aisle === null;
   return (
     <li className="flex items-start gap-3" data-testid="shopping-row" data-ticked={item.ticked ? "true" : "false"}>
-      <Checkbox
-        checked={item.ticked}
-        disabled={busy}
-        className="mt-3.5"
-        aria-label={label}
-        onCheckedChange={(next) => onTick(item.id, next)}
-      />
+      <Checkbox checked={item.ticked} disabled={busy} className="mt-3.5" aria-label={label} onCheckedChange={(next) => onTick(item.id, next)} />
       <details className="group min-w-0 flex-1">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 marker:hidden">
           <span className={item.ticked ? "min-w-0 text-fg-subtle line-through" : "min-w-0"}>{label}</span>

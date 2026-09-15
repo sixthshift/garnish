@@ -6,11 +6,11 @@
 // for reading elsewhere, not a second home for the data. Images are named by
 // their `/api/images/` URLs and their bytes are not in the file.
 import { aisles } from "../../db/models/aisle/repo";
-import { foods, type Food } from "../../db/models/food/repo";
+import { type Food, foods } from "../../db/models/food/repo";
 import { recipes } from "../../db/models/recipe/repo";
 import { tags } from "../../db/models/tag/repo";
 import { units } from "../../db/models/unit/repo";
-import { toCooklang, EXPORT_VERSION, exportFileName, exportedRecipe, type Recipe } from "../../domain/recipe";
+import { EXPORT_VERSION, exportedRecipe, exportFileName, type Recipe, toCooklang } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
 import { getDb } from "../core/db";
 

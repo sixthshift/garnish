@@ -37,7 +37,7 @@
 //   - `originalText` is the line as given, trimmed and otherwise untouched:
 //     the `=`, the note and the amount all stay in it, so a row can be stored
 //     verbatim whatever the parse made of it.
-import { parseFood, type FoodCandidate } from "./parseFood";
+import { type FoodCandidate, parseFood } from "./parseFood";
 import { parseQuantity } from "./parseQuantity";
 import { parseUnit, type UnitCandidate } from "./parseUnit";
 
@@ -64,10 +64,7 @@ export type ParsedIngredient<U extends UnitCandidate, F extends FoodCandidate> =
  * Pure and non-destructive — a slot that cannot be resolved reports its text
  * and leaves the decision to the caller.
  */
-export function parseIngredient<U extends UnitCandidate, F extends FoodCandidate>(
-  line: string,
-  vocabulary: Vocabulary<U, F>,
-): ParsedIngredient<U, F> {
+export function parseIngredient<U extends UnitCandidate, F extends FoodCandidate>(line: string, vocabulary: Vocabulary<U, F>): ParsedIngredient<U, F> {
   const originalText = line.trim();
   const { quantity, fixed, rest } = parseQuantity(originalText);
 

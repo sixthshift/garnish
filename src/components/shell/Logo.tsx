@@ -64,13 +64,7 @@ function leaf(length: number, radius: number): string {
 function Sprig({ scale }: { scale: number }) {
   return (
     <g transform={`translate(256,256) scale(${scale}) translate(-253,-259)`}>
-      <path
-        d="M262 384 C 250 330 250 278 256 188"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="18"
-        strokeLinecap="round"
-      />
+      <path d="M262 384 C 250 330 250 278 256 188" fill="none" stroke="currentColor" strokeWidth="18" strokeLinecap="round" />
       <path d={leaf(94, 61)} fill="currentColor" transform="translate(252,381) rotate(-39)" />
       <path d={leaf(90, 58)} fill="currentColor" transform="translate(264,345) rotate(-158)" />
       <path d={leaf(86, 55)} fill="currentColor" transform="translate(244,313) rotate(-30)" />
@@ -126,15 +120,7 @@ export type LogoIconProps = LogoMarkProps & {
 };
 
 /** The app-icon treatment: the sprig on a square ground. */
-export function LogoIcon({
-  size,
-  ground = ICON_GROUND,
-  mark,
-  cornerRadius = ICON_RADIUS,
-  maskable = false,
-  className,
-  style,
-}: LogoIconProps) {
+export function LogoIcon({ size, ground = ICON_GROUND, mark, cornerRadius = ICON_RADIUS, maskable = false, className, style }: LogoIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -164,10 +150,7 @@ export function Logo({ size, className, style }: LogoMarkProps) {
       {/* The sprig takes currentColor from the caller; the word is always
           fg-strong, so a caller can tint the mark without the name following
           it into a colour that fails contrast. */}
-      <span
-        className="font-display font-semibold tracking-tight text-fg-strong"
-        style={{ fontSize: size * 0.82, lineHeight: 1 }}
-      >
+      <span className="font-display font-semibold tracking-tight text-fg-strong" style={{ fontSize: size * 0.82, lineHeight: 1 }}>
         garnish
       </span>
     </span>

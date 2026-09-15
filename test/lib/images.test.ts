@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
-  type Fetcher,
   base64ToBytes,
+  type Fetcher,
   fetchedImageFile,
   IMAGE_FIELD,
   recipeImageUploadUrl,

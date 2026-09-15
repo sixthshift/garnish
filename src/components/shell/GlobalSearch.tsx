@@ -20,9 +20,9 @@ import { SearchInput } from "@sixthshift/design-system/search-input";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import type { RecipeSummary } from "../../domain/recipe";
-import { clampSelection, nextSearchIndex, selectedResult, shouldOpenGlobalSearch, type SearchEventTarget } from "../../lib/search";
-import { listRecipes } from "../../server/fns/recipes";
 import { notifyError } from "../../lib/notify";
+import { clampSelection, nextSearchIndex, type SearchEventTarget, selectedResult, shouldOpenGlobalSearch } from "../../lib/search";
+import { listRecipes } from "../../server/fns/recipes";
 import { RecipeCard } from "../recipe/RecipeCard";
 
 /** How long typing pauses before the search runs. */
@@ -199,7 +199,15 @@ export function GlobalSearch() {
 
   return (
     <Modal size="lg" aria-label="Search recipes" onOpenChange={(next) => !next && setOpen(false)}>
-      <GlobalSearchContent query={query} onQueryChange={setQuery} results={results} loading={loading} selected={selected} onSelect={setSelected} onOpen={openResult} />
+      <GlobalSearchContent
+        query={query}
+        onQueryChange={setQuery}
+        results={results}
+        loading={loading}
+        selected={selected}
+        onSelect={setSelected}
+        onOpen={openResult}
+      />
     </Modal>
   );
 }

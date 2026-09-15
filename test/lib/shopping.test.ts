@@ -1,14 +1,32 @@
 // One "Add to shopping list" tap (M31.3), driven through a fake writer: what
 // the sheet's Add actually sends, and what the toast counts.
 import { describe, expect, test } from "vitest";
-import { additionsFor, type ShoppingItem, type ShoppingItemInput, type ShoppingListMerge } from "../../src/domain/shopping";
 import { type Part, type Recipe, scaledForServings } from "../../src/domain/recipe";
 import type { Food, Unit } from "../../src/domain/reference";
-import { addToShoppingList, addedCount, addedMessage, type ShoppingWriter } from "../../src/lib/shopping";
+import { additionsFor, type ShoppingItem, type ShoppingItemInput, type ShoppingListMerge } from "../../src/domain/shopping";
+import { addedCount, addedMessage, addToShoppingList, type ShoppingWriter } from "../../src/lib/shopping";
 
-const food = (name: string): Food => ({ id: `food-${name}`, name, pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] });
+const food = (name: string): Food => ({
+  id: `food-${name}`,
+  name,
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+});
 
-const gram: Unit = { id: "unit-g", name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, standardQuantity: null, standardUnitId: null };
+const gram: Unit = {
+  id: "unit-g",
+  name: "gram",
+  pluralName: "grams",
+  abbreviation: "g",
+  useAbbreviation: true,
+  fraction: false,
+  standardQuantity: null,
+  standardUnitId: null,
+};
 
 const part = (name: string, ingredients: Part["ingredients"]): Part => ({ id: `part-${name || "main"}`, name, ingredients, steps: [] });
 
@@ -102,9 +120,7 @@ describe("addToShoppingList", () => {
     expect(line.foodId).toBe("food-flour");
     expect(line.unitId).toBe("unit-g");
     expect(line.quantity).toBe(400); // 200 g at 4 servings, doubled
-    expect(line.sources).toEqual([
-      { recipeId: "recipe-tart", recipeName: "Lemon tart", partName: "Pastry", servings: 8, quantity: 400 },
-    ]);
+    expect(line.sources).toEqual([{ recipeId: "recipe-tart", recipeName: "Lemon tart", partName: "Pastry", servings: 8, quantity: 400 }]);
   });
 
   test("an addition matching an unticked line tops that line up instead of adding one", async () => {

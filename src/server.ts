@@ -1,7 +1,8 @@
 // Custom server entry: the default TanStack Start handler plus boot-time setup.
-import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
-import type { RequestHandler } from "@tanstack/react-start/server";
+
 import type { Register } from "@tanstack/react-router";
+import type { RequestHandler } from "@tanstack/react-start/server";
+import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
 import { boot } from "./server/core/boot";
 import { getDb } from "./server/core/db";
 

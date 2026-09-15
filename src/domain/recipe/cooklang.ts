@@ -21,9 +21,10 @@
 //
 // Pure: no IO, importable by the client — the same module the export route
 // and the recipe menu's "Copy as Cooklang" both call.
+
+import type { Food, Unit } from "../reference";
 import { durationsIn } from "./durations";
 import type { Ingredient, Part, Recipe, Step } from "./recipe";
-import type { Food, Unit } from "../reference";
 import { foodNames } from "./stepIngredients";
 
 /** Letters and digits: anything else counts as a word boundary. Mirrors stepIngredients.ts's own. */
@@ -166,6 +167,9 @@ function cooklangMetadata(recipe: Pick<Recipe, "recipeServings" | "sourceUrl" | 
  */
 export function toCooklang(recipe: Recipe): string {
   const metadata = cooklangMetadata(recipe).join("\n");
-  const body = recipe.parts.map(cooklangPart).filter((section) => section !== "").join("\n\n");
+  const body = recipe.parts
+    .map(cooklangPart)
+    .filter((section) => section !== "")
+    .join("\n\n");
   return `${[metadata, body].filter((section) => section !== "").join("\n\n")}\n`;
 }

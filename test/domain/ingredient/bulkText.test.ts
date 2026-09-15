@@ -32,11 +32,7 @@ describe("stripLeadingNumbers", () => {
 
 describe("paragraphs", () => {
   test("splits on one or more blank lines, joining a wrapped paragraph's own lines with a space", () => {
-    expect(paragraphs("Chop the onion.\n\nMix flour and\nsugar together.\n\n\nBake.")).toEqual([
-      "Chop the onion.",
-      "Mix flour and sugar together.",
-      "Bake.",
-    ]);
+    expect(paragraphs("Chop the onion.\n\nMix flour and\nsugar together.\n\n\nBake.")).toEqual(["Chop the onion.", "Mix flour and sugar together.", "Bake."]);
   });
 
   test("drops leading, trailing and doubled separators rather than yielding empty paragraphs", () => {

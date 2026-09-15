@@ -3,7 +3,7 @@
 // keydown behaviour — the pure key-handling rules behind it live in
 // test/domain/search.test.ts. Results render through `RecipeCard`, which
 // needs a router for its `Link`, same as RecipeCard.test.tsx.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { GlobalSearchContent, type GlobalSearchContentProps } from "../../../src/components/shell/GlobalSearch";

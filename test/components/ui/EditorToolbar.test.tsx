@@ -43,9 +43,7 @@ describe("EditorToolbar", () => {
   });
 
   test("extra actions render between the title and the buttons", () => {
-    const html = renderToString(
-      <EditorToolbar title="x" label="Save" cancel={cancel} actions={<button type="button">Edit as JSON</button>} />,
-    );
+    const html = renderToString(<EditorToolbar title="x" label="Save" cancel={cancel} actions={<button type="button">Edit as JSON</button>} />);
     expect(html.indexOf("Edit as JSON")).toBeLessThan(html.indexOf(">Cancel<"));
   });
 });

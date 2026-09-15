@@ -7,7 +7,7 @@
 // N rates N, and pressing the star that is already the rating clears it to 0
 // (Mealie's behaviour), so a recipe can be un-rated without a separate control.
 import { cn } from "@sixthshift/design-system/utils";
-import { RATING_MAX, filledStars, ratingLabel, nextRating } from "../../lib/ui/rating";
+import { filledStars, nextRating, RATING_MAX, ratingLabel } from "../../lib/ui/rating";
 
 export type RatingProps = {
   /** 0 to 5. */

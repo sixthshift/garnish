@@ -11,7 +11,7 @@
 // animation starts, i.e. on the client).
 import { Toast } from "@sixthshift/design-system/toast";
 import { useEffect } from "react";
-import { type Notice, dismissNotice, useNotices } from "../../lib/notify";
+import { dismissNotice, type Notice, useNotices } from "../../lib/notify";
 
 export type NoticeToastProps = {
   notice: Notice;

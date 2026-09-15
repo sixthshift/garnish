@@ -31,10 +31,7 @@ describe("toggleFavourite against the real server function", () => {
   useTempDataDir();
 
   test("round-trips through setFavourite: the stored flag flips both ways", async () => {
-    const created = await callServerFn(
-      createRecipe,
-      recipeInputSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }] }),
-    );
+    const created = await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }] }));
 
     const write = (recipeId: string, favourite: boolean) => callServerFn(setFavourite, { id: recipeId, favourite });
 

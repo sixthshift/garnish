@@ -1,5 +1,3 @@
-
-
 // Every duration named in a step's text, with its offset in that text and its
 // length in seconds. Pure: no IO, importable by the client, run over the raw
 // step text before it goes anywhere near markdown (src/lib/markdown.ts) so
@@ -107,4 +105,3 @@ export function durationsIn(text: string): Duration[] {
 
   return results;
 }
-

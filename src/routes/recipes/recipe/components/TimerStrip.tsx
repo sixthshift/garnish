@@ -7,7 +7,7 @@
 // render on their own in a test.
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
-import { useTimers, type RunningTimer } from "../../../../lib/timers";
+import { type RunningTimer, useTimers } from "../../../../lib/timers";
 
 export type TimerStripRowsProps = {
   timers: RunningTimer[];
@@ -40,13 +40,7 @@ export function TimerStripRows({ timers, onPause, onResume, onDismiss, className
               {timer.label}
             </span>
             {!timer.done && (
-              <Button
-                variant="outline"
-                intent="neutral"
-                size="sm"
-                onClick={() => (paused ? onResume(timer.id) : onPause(timer.id))}
-                data-timer-toggle
-              >
+              <Button variant="outline" intent="neutral" size="sm" onClick={() => (paused ? onResume(timer.id) : onPause(timer.id))} data-timer-toggle>
                 {paused ? "Resume" : "Pause"}
               </Button>
             )}

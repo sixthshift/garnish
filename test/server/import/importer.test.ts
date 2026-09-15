@@ -56,7 +56,9 @@ describe("createImporter", () => {
 
   test("the provider's failures keep their kind as ImportErrors", async () => {
     process.env.AI_API_KEY = "k";
-    const caught = await createImporter(fakeFetch(["", 500], ["{}", 429])).import({ kind: "text", text: "text" }).catch((cause: unknown) => cause);
+    const caught = await createImporter(fakeFetch(["", 500], ["{}", 429]))
+      .import({ kind: "text", text: "text" })
+      .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("failed");
     expect((caught as Error).message).toMatch(/rate-limited/);
@@ -65,7 +67,9 @@ describe("createImporter", () => {
   test("no key configured is unavailable rather than a crash, and nothing is sent", async () => {
     delete process.env.AI_API_KEY;
     const fetcher = fakeFetch(["", 500], [completion(answer), 200]);
-    const caught = await createImporter(fetcher).import({ kind: "text", text: "text" }).catch((cause: unknown) => cause);
+    const caught = await createImporter(fetcher)
+      .import({ kind: "text", text: "text" })
+      .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("unavailable");
     expect(fetcher.calls).toHaveLength(0);

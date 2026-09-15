@@ -19,11 +19,7 @@ export const food = sqliteTable(
     recipeId: text("recipe_id").references(() => recipe.id, { onDelete: "set null" }),
     skipShopping: integer("skip_shopping", { mode: "boolean" }).notNull().default(false),
   },
-  (t) => [
-    index("food_aisle_id").on(t.aisleId),
-    index("food_recipe_id").on(t.recipeId),
-    check("skip_shopping_flag", sql`${t.skipShopping} IN (0, 1)`),
-  ],
+  (t) => [index("food_aisle_id").on(t.aisleId), index("food_recipe_id").on(t.recipeId), check("skip_shopping_flag", sql`${t.skipShopping} IN (0, 1)`)]
 );
 
 /**
@@ -56,5 +52,5 @@ export const foodConversion = sqliteTable(
     check("conversion_to_quantity_positive", sql`${t.toQuantity} > 0`),
     check("conversion_units_differ", sql`${t.unitId} <> ${t.toUnitId}`),
     unique("food_conversion_food_id_unit_id_to_unit_id").on(t.foodId, t.unitId, t.toUnitId),
-  ],
+  ]
 );

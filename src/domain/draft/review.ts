@@ -1,8 +1,9 @@
 // Parsed ingredient rows under review, and what confirming them writes into the draft.
-import { type FoodRow, type Unit, type Food } from "../reference";
-import { type ReviewRow, type CommitRef, reviewRow, type RowCommit, rowCommit, parseIngredient } from "../ingredient";
-import { type DraftIngredient, type RecipeDraft, type DraftPart } from "./types";
-import { newIngredient, withIngredients, inRange, isTextOnly, updateIngredient } from "./ingredients";
+
+import { type CommitRef, parseIngredient, type ReviewRow, type RowCommit, reviewRow, rowCommit } from "../ingredient";
+import type { Food, FoodRow, Unit } from "../reference";
+import { inRange, isTextOnly, newIngredient, updateIngredient, withIngredients } from "./ingredients";
+import type { DraftIngredient, DraftPart, RecipeDraft } from "./types";
 import { foodReference } from "./vocabulary";
 
 /** The review row type this component edits: units and foods as the editor knows them. */
@@ -23,7 +24,7 @@ export type IngredientReview = ReviewRow<Unit, FoodRow>;
 export function reviewedIngredient(
   commit: RowCommit<Unit, FoodRow>,
   createdFoods: ReadonlyMap<string, FoodRow>,
-  createdUnits: ReadonlyMap<string, Unit>,
+  createdUnits: ReadonlyMap<string, Unit>
 ): DraftIngredient {
   const base = { ...newIngredient(), originalText: commit.originalText };
   const food = resolveFood(commit.food, createdFoods);
@@ -66,7 +67,7 @@ export function parseRowFor(originalText: string, vocabulary: { units: readonly 
 export function parsedRowPatch(
   row: IngredientReview,
   createdFoods: ReadonlyMap<string, FoodRow>,
-  createdUnits: ReadonlyMap<string, Unit>,
+  createdUnits: ReadonlyMap<string, Unit>
 ): Partial<DraftIngredient> | null {
   const commit = rowCommit(row);
   const food = resolveFood(commit.food, createdFoods);
@@ -85,7 +86,7 @@ export function addReviewedIngredients(
   pi: number,
   commits: readonly RowCommit<Unit, FoodRow>[],
   createdFoods: ReadonlyMap<string, FoodRow>,
-  createdUnits: ReadonlyMap<string, Unit>,
+  createdUnits: ReadonlyMap<string, Unit>
 ): RecipeDraft {
   if (!inRange(draft, pi) || commits.length === 0) return { ...draft, parts: draft.parts.slice() };
   const rows = commits.map((commit) => reviewedIngredient(commit, createdFoods, createdUnits));
@@ -128,7 +129,7 @@ export function applyParsedRows(
   pi: number,
   rows: readonly IngredientReview[],
   createdFoods: ReadonlyMap<string, FoodRow>,
-  createdUnits: ReadonlyMap<string, Unit>,
+  createdUnits: ReadonlyMap<string, Unit>
 ): RecipeDraft {
   let next = draft;
   for (const row of rows) {
@@ -139,4 +140,3 @@ export function applyParsedRows(
   }
   return next;
 }
-

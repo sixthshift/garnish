@@ -9,11 +9,16 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { IngredientReviewFields, type IngredientReviewFieldsProps, IngredientReviewRow } from "../../../../src/routes/recipes/components/IngredientReviewRow";
-import { type IngredientReview, reviewedIngredient, isTextOnly } from "../../../../src/domain/draft";
-import { amountChip, chipText } from "../../../../src/routes/recipes/components/IngredientReviewRow";
-import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
 import { BulkReviewList } from "../../../../src/components/ui/BulkAddSheet";
+import { type IngredientReview, isTextOnly, reviewedIngredient } from "../../../../src/domain/draft";
+import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
+import {
+  amountChip,
+  chipText,
+  IngredientReviewFields,
+  type IngredientReviewFieldsProps,
+  IngredientReviewRow,
+} from "../../../../src/routes/recipes/components/IngredientReviewRow";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -28,7 +33,16 @@ const gram = {
 const cup = { ...gram, id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "cup", pluralName: "cups", abbreviation: "", useAbbreviation: false, fraction: true };
 const units = [gram, cup];
 
-const flour = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
+const flour = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisleId: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 const foods = [flour];
 
 /** A mixed paste: a matched line, an unknown food, and a line with nothing left to resolve. */
@@ -104,7 +118,7 @@ describe("a mixed paste in the review list", () => {
         ),
       }}
       onRowsChange={() => {}}
-    />,
+    />
   );
 
   test("every pasted line is listed, with its raw text and its state", () => {

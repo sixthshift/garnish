@@ -16,10 +16,14 @@ describe("durationsIn", () => {
     ["a 'to' range keeps both bounds", "Bake for 10 to 12 minutes.", [{ text: "10 to 12 minutes", seconds: 600, upperSeconds: 720 }]],
     ["a bare abbreviated hour", "Rest for 1 h.", [{ text: "1 h", seconds: 3600 }]],
     ["a bare abbreviated second", "Whisk for 5 s.", [{ text: "5 s", seconds: 5 }]],
-    ["two durations in one step, in order", "Sear for 2 minutes, then rest for 1 hour.", [
-      { text: "2 minutes", seconds: 120 },
-      { text: "1 hour", seconds: 3600 },
-    ]],
+    [
+      "two durations in one step, in order",
+      "Sear for 2 minutes, then rest for 1 hour.",
+      [
+        { text: "2 minutes", seconds: 120 },
+        { text: "1 hour", seconds: 3600 },
+      ],
+    ],
     ["a count of eggs is not a duration", "Add 2 eggs.", []],
     ["a step number is not a duration", "See step 3.", []],
     ["an oven temperature is not a duration", "Heat the oven to 350 degrees.", []],
@@ -30,7 +34,7 @@ describe("durationsIn", () => {
   for (const [label, text, expected] of cases) {
     test(label, () => {
       const matches = durationsIn(text).map(({ text: matchText, seconds, upperSeconds }) =>
-        upperSeconds === undefined ? { text: matchText, seconds } : { text: matchText, seconds, upperSeconds },
+        upperSeconds === undefined ? { text: matchText, seconds } : { text: matchText, seconds, upperSeconds }
       );
       expect(matches).toEqual(expected);
     });

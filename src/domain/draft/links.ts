@@ -1,7 +1,7 @@
 // The links between a part's steps and its ingredient rows.
 import { suggestLinks } from "../recipe";
-import { type DraftIngredient, type DraftPart, type DraftStep, type RecipeDraft } from "./types";
 import { stepsOf, withSteps } from "./steps";
+import type { DraftIngredient, DraftPart, DraftStep, RecipeDraft } from "./types";
 
 /** A step's ingredient links. `DraftStep` comes from the write shape, where the field is optional, so undefined reads as none. Pure. */
 export function stepLinks(step: DraftStep): string[] {
@@ -33,7 +33,7 @@ export function linkIngredient(draft: RecipeDraft, pi: number, si: number, ingre
   return withSteps(
     draft,
     pi,
-    steps.map((step, i) => (i === si ? { ...step, ingredientIds: [...stepLinks(step), ingredientId] } : step)),
+    steps.map((step, i) => (i === si ? { ...step, ingredientIds: [...stepLinks(step), ingredientId] } : step))
   );
 }
 
@@ -44,7 +44,7 @@ export function unlinkStepIngredient(draft: RecipeDraft, pi: number, si: number,
   return withSteps(
     draft,
     pi,
-    steps.map((step, i) => (i === si ? { ...step, ingredientIds: stepLinks(step).filter((linked) => linked !== ingredientId) } : step)),
+    steps.map((step, i) => (i === si ? { ...step, ingredientIds: stepLinks(step).filter((linked) => linked !== ingredientId) } : step))
   );
 }
 
@@ -58,7 +58,9 @@ export function unlinkIngredient<P extends { steps: DraftStep[] }>(part: P, ingr
   if (!part.steps.some((step) => stepLinks(step).includes(ingredientId))) return part;
   return {
     ...part,
-    steps: part.steps.map((step) => (stepLinks(step).includes(ingredientId) ? { ...step, ingredientIds: stepLinks(step).filter((linked) => linked !== ingredientId) } : step)),
+    steps: part.steps.map((step) =>
+      stepLinks(step).includes(ingredientId) ? { ...step, ingredientIds: stepLinks(step).filter((linked) => linked !== ingredientId) } : step
+    ),
   };
 }
 
@@ -78,7 +80,8 @@ export function suggestPartLinks(draft: RecipeDraft, pi: number): { draft: Recip
   const steps = part.steps.map((step) => ({ id: step.id ?? "", text: step.text ?? "", ingredientIds: stepLinks(step) }));
   const next = suggestLinks({ ingredients, steps });
   const filled = next.filter((step, i) => step.ingredientIds.length > stepLinks(part.steps[i]!).length).length;
-  const merged = part.steps.map((step, i) => (next[i]!.ingredientIds.length > stepLinks(step).length ? { ...step, ingredientIds: next[i]!.ingredientIds } : step));
+  const merged = part.steps.map((step, i) =>
+    next[i]!.ingredientIds.length > stepLinks(step).length ? { ...step, ingredientIds: next[i]!.ingredientIds } : step
+  );
   return { draft: withSteps(draft, pi, merged), filled };
 }
-

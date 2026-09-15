@@ -3,11 +3,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
+import { ingredientLines } from "../../../../src/domain/import/scraped";
 import {
-  ingredientLine,
   imageDataUrl,
   imageForRecipe,
+  ingredientLine,
   looksLikeMealieRecipe,
+  type MealieRecipe,
   matchFood,
   matchUnit,
   mealieIngredient,
@@ -20,10 +22,8 @@ import {
   reviewRowFromMealie,
   reviewRowsFromMealie,
   tagNames,
-  type MealieRecipe,
 } from "../../../../src/domain/import/sources/mealie";
 import type { Food } from "../../../../src/domain/reference";
-import { ingredientLines } from "../../../../src/domain/import/scraped";
 import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 
 const FIXTURE = join(import.meta.dirname, "../../../fixtures/mealie/lemon-tart.json");
@@ -86,12 +86,7 @@ describe("a Mealie recipe JSON with sections", () => {
   });
 
   test("every line is on its part, and flat across them for the review's count", () => {
-    expect(ingredientLines(recipe())).toEqual([
-      "200 g plain flour, sifted",
-      "100 g cold butter, cubed",
-      "4 lemons, juiced",
-      "A pinch of sea salt",
-    ]);
+    expect(ingredientLines(recipe())).toEqual(["200 g plain flour, sifted", "100 g cold butter, cubed", "4 lemons, juiced", "A pinch of sea salt"]);
   });
 });
 

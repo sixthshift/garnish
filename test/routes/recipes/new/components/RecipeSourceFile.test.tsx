@@ -13,12 +13,11 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
-import { rowCommit } from "../../../../../src/domain/ingredient";
-import { type ImportedRecipe, Importer, type MealieRecipe, type TandoorRecipe, review } from "../../../../../src/domain/import";
-import type { Unit } from "../../../../../src/domain/reference";
-import { FileSource, ImportReview, RecipePicker, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 import { draftFromScraped } from "../../../../../src/domain/draft";
-import { duplicateMessage } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { type ImportedRecipe, Importer, type MealieRecipe, review, type TandoorRecipe } from "../../../../../src/domain/import";
+import { rowCommit } from "../../../../../src/domain/ingredient";
+import type { Unit } from "../../../../../src/domain/reference";
+import { duplicateMessage, FileSource, ImportReview, RecipePicker, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
 
 const FIXTURE = join(import.meta.dirname, "../../../../fixtures/mealie/lemon-tart.json");
 // Read through the importer, as the upload route does, and cloned per test. Neither port is reached by a file.
@@ -93,9 +92,7 @@ describe("the chooser", () => {
 
 describe("FileSource", () => {
   test("renders the picker, the file's name and the read button", () => {
-    const html = renderToString(
-      <FileSource file={new File(["{}"], "backup.zip")} onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />,
-    );
+    const html = renderToString(<FileSource file={new File(["{}"], "backup.zip")} onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />);
     expect(html).toContain('data-source-stage="file"');
     expect(html).toContain("From a Mealie or Tandoor export");
     expect(html).toContain("backup.zip");
@@ -103,9 +100,7 @@ describe("FileSource", () => {
   });
 
   test("with no file chosen it says so, and an error is shown", () => {
-    const html = renderToString(
-      <FileSource file={null} error="That file is not JSON or a zip" onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />,
-    );
+    const html = renderToString(<FileSource file={null} error="That file is not JSON or a zip" onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />);
     expect(html).toContain("No file chosen");
     expect(html).toContain('data-testid="import-error"');
     expect(html).toContain("That file is not JSON or a zip");
@@ -146,7 +141,7 @@ describe("the review", () => {
         onRowsChange={() => {}}
         onBack={() => {}}
         onCreate={() => {}}
-      />,
+      />
     );
     expect(html).toContain('data-import-from="mealie"');
     expect(html).toContain("Read 4 ingredients and 4 steps");
@@ -169,7 +164,7 @@ describe("the review", () => {
         onRowsChange={() => {}}
         onBack={() => {}}
         onCreate={() => {}}
-      />,
+      />
     );
     expect(html).toContain('data-testid="duplicate-notice"');
     expect(html).toContain("already here under that name");
@@ -252,7 +247,7 @@ describe("a Tandoor export (M34.4)", () => {
         onRowsChange={() => {}}
         onBack={() => {}}
         onCreate={() => {}}
-      />,
+      />
     );
     expect(html).toContain('data-import-from="tandoor"');
     expect(html).toContain("Read 6 ingredients and 4 steps");

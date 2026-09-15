@@ -53,7 +53,7 @@ export function fieldValues(fields: readonly FieldSpec[], values: FieldValues): 
       }
       if (field.kind === "select") return [field.name, text === "" ? null : text];
       return [field.name, text];
-    }),
+    })
   );
 }
 

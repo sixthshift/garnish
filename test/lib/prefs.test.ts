@@ -9,12 +9,12 @@ import {
   getSort,
   getTheme,
   getViewMode,
+  type StorageLike,
   setIngredientMode,
   setScreenAwake,
   setSort,
   setTheme,
   setViewMode,
-  type StorageLike,
 } from "../../src/lib/prefs";
 
 /** A plain in-memory Storage-like, for round-trip tests. */

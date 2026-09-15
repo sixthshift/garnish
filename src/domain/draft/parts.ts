@@ -1,9 +1,10 @@
 // Editing a draft's parts.
+
+import { randomUuid } from "../../lib/id";
+import { moveItem } from "../../lib/lists";
 import { formatIngredient } from "../ingredient";
 import { ingredientInputSchema } from "../recipe";
-import { randomUuid } from "../../lib/id";
-import { type DraftIngredient, type DraftPart, type RecipeDraft } from "./types";
-import { moveItem } from "../../lib/lists";
+import type { DraftIngredient, DraftPart, RecipeDraft } from "./types";
 
 /** A blank part with a fresh id, so it has a stable row key before it is saved. */
 export function newPart(name = ""): DraftPart {
@@ -65,4 +66,3 @@ export function ingredientLine(ingredient: DraftIngredient): string {
 export function isBare(draft: RecipeDraft): boolean {
   return draft.parts.length === 1 && (draft.parts[0]!.name ?? "").trim() === "";
 }
-

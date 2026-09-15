@@ -126,9 +126,15 @@ describe("toCooklang", () => {
     expect(toCooklang(base)).toBe(">> servings: 4\n\nMix it.\n");
     expect(toCooklang({ ...base, recipeServings: 0 })).toBe("Mix it.\n");
     expect(toCooklang({ ...base, sourceUrl: "https://example.com/x" })).toBe(">> servings: 4\n>> source: https://example.com/x\n\nMix it.\n");
-    expect(toCooklang({ ...base, tags: [{ id: "t1", name: "Baking", slug: "baking" }, { id: "t2", name: "Dessert", slug: "dessert" }] })).toBe(
-      ">> servings: 4\n>> tags: Baking, Dessert\n\nMix it.\n",
-    );
+    expect(
+      toCooklang({
+        ...base,
+        tags: [
+          { id: "t1", name: "Baking", slug: "baking" },
+          { id: "t2", name: "Dessert", slug: "dessert" },
+        ],
+      })
+    ).toBe(">> servings: 4\n>> tags: Baking, Dessert\n\nMix it.\n");
   });
 
   test("a named part gets an == heading ==, the unnamed part does not", () => {
@@ -149,11 +155,7 @@ describe("toCooklang", () => {
 });
 
 describe("golden files: the three sample recipes", () => {
-  test.each([
-    ["anzac-biscuits"],
-    ["roast-pumpkin-soup-with-garlic-croutons"],
-    ["lemon-tart"],
-  ])("%s matches its fixture", async (slug) => {
+  test.each([["anzac-biscuits"], ["roast-pumpkin-soup-with-garlic-croutons"], ["lemon-tart"]])("%s matches its fixture", async (slug) => {
     const db = openDatabase(":memory:");
     await migrate(db);
     seedSample(db);

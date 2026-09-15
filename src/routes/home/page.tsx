@@ -11,29 +11,19 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FilterBar } from "./components/FilterBar";
 import { CARD_MIN_WIDTH, RecipeCard } from "../../components/recipe/RecipeCard";
+import { resolveSort, type SortDir, type SortKey, selectedTags } from "../../domain/recipe";
+import { arrayParam, newSeed, pickRandom } from "../../lib/lists";
+import { useViewMode } from "../../lib/prefs";
+import { SEARCH_DEBOUNCE_MS, searchParam } from "../../lib/search";
+import { FilterBar } from "./components/FilterBar";
 import { SortMenu } from "./components/SortMenu";
 import { ViewModeToggle } from "./components/ViewModeToggle";
-import { selectedTags, resolveSort, type SortDir, type SortKey } from "../../domain/recipe";
-import { arrayParam } from "../../lib/lists";
-import { newSeed, pickRandom } from "../../lib/lists";
-import { useViewMode } from "../../lib/prefs";
 import { Route } from "./route";
-import { SEARCH_DEBOUNCE_MS, searchParam } from "../../lib/search";
 
 export function RecipesPage() {
   const { recipes, tags, foods } = Route.useLoaderData();
-  const {
-    q = "",
-    tag,
-    tags: tagsParam,
-    match = "any",
-    foods: foodsParam = [],
-    favourite = false,
-    sort: sortParam,
-    dir: dirParam,
-  } = Route.useSearch();
+  const { q = "", tag, tags: tagsParam, match = "any", foods: foodsParam = [], favourite = false, sort: sortParam, dir: dirParam } = Route.useSearch();
   const navigate = Route.useNavigate();
   const selected = selectedTags(tag, tagsParam);
   const filtered = Boolean(q || selected.length > 0 || foodsParam.length > 0 || favourite);
@@ -102,11 +92,7 @@ export function RecipesPage() {
         </div>
         <ul
           className={viewMode === "list" ? "flex max-w-5xl flex-col gap-3" : "grid gap-4"}
-          style={
-            viewMode === "list"
-              ? undefined
-              : { gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN_WIDTH}, 1fr))` }
-          }
+          style={viewMode === "list" ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN_WIDTH}, 1fr))` }}
         >
           {recipes.map((recipe) => (
             <li key={recipe.id}>
@@ -122,7 +108,17 @@ export function RecipesPage() {
 /** A six-sided die, for the "open a random recipe" button. */
 function DiceIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <rect x="3" y="3" width="18" height="18" rx="3" />
       <circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none" />
       <circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none" />

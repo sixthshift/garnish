@@ -6,8 +6,8 @@
 import { afterEach, describe, expect, test } from "vitest";
 import {
   AI_TIMEOUT_MS,
-  aiConfigured,
   AiError,
+  aiConfigured,
   aiSettings,
   chatRequestBody,
   createFetchRunner,

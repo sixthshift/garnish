@@ -31,10 +31,13 @@
 // ingredient row whose food stands for the child, ready for M32.3's
 // `food.recipe_id` to be set once both are here; when it is not, the child's
 // name is all there is, so the row is a plain text line naming it.
+
+import type { FoodCandidate, ReviewRow, UnitCandidate } from "../../ingredient";
+import { text } from "../scraped";
 import {
+  type ImportFile,
   imageDataUrl,
   ingredientLine,
-  type ImportFile,
   type MealieIngredient,
   type MealiePart,
   type MealieRecipe,
@@ -44,8 +47,6 @@ import {
   reviewRowFromMealie,
   tagNames,
 } from "./mealie";
-import type { FoodCandidate, UnitCandidate, ReviewRow } from "../../ingredient";
-import { text } from "../scraped";
 import { isZip, readZip, type ZipEntry } from "./zip";
 
 /** One of Tandoor's ingredient rows, already parsed by Tandoor. */
@@ -111,7 +112,10 @@ export function tandoorIngredient(node: Node): TandoorIngredient {
   // list, not an ingredient. Its text is all there is, so it becomes a text
   // line rather than a food nobody meant to create.
   if (node.is_header === true) {
-    const line = [row.food, row.note].filter((piece) => piece !== "").join(" ").trim();
+    const line = [row.food, row.note]
+      .filter((piece) => piece !== "")
+      .join(" ")
+      .trim();
     return { ...row, quantity: null, unit: "", food: "", note: "", originalText: original === "" ? line : original };
   }
   if (row.food === "") return { ...row, originalText: original === "" ? note : original, note: "" };
@@ -383,7 +387,7 @@ export type TandoorReview<U, F> = {
  */
 export function reviewRowsFromTandoor<U extends UnitCandidate, F extends FoodCandidate>(
   recipe: TandoorRecipe,
-  vocabulary: { units: readonly U[]; foods: readonly F[] },
+  vocabulary: { units: readonly U[]; foods: readonly F[] }
 ): TandoorReview<U, F> {
   const rows: ReviewRow<U, F>[] = [];
   const rowSteps: number[] = [];

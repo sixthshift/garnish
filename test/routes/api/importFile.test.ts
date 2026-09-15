@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { type FileRecipe, type MealieRecipe } from "../../../src/domain/import";
+import type { FileRecipe, MealieRecipe } from "../../../src/domain/import";
 import { importFileRoute as Route } from "../../../src/routes/api/importFile";
 import { handleImportFile, IMPORT_FIELD } from "../../../src/server/api/importFile";
 import { makeZip, PNG_BYTES } from "../../helpers/zip";
@@ -15,8 +15,7 @@ const TANDOOR = join(import.meta.dirname, "../../fixtures/tandoor/lemon-tart.jso
 const tandoorText = (): string => readFileSync(TANDOOR, "utf8");
 
 type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
-const handlersOf = (route: { options: { server?: unknown } }) =>
-  (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
+const handlersOf = (route: { options: { server?: unknown } }) => (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
 
 function upload(body: BodyInit | null, name = "lemon-tart.json", type = "application/json"): Request {
   const form = new FormData();
@@ -36,7 +35,11 @@ test("a single recipe JSON comes back as one recipe", async () => {
 test("a backup zip comes back with every recipe and its image", async () => {
   const recipe = JSON.parse(fixtureText()) as { id: string; name: string };
   const zip = await makeZip([
-    { name: "database.json", bytes: new TextEncoder().encode(JSON.stringify({ recipes: [recipe, { ...recipe, id: "other", name: "Pancakes" }] })), deflate: true },
+    {
+      name: "database.json",
+      bytes: new TextEncoder().encode(JSON.stringify({ recipes: [recipe, { ...recipe, id: "other", name: "Pancakes" }] })),
+      deflate: true,
+    },
     { name: `data/recipes/${recipe.id}/images/original.png`, bytes: PNG_BYTES },
   ]);
   const response = await handleImportFile(upload(zip as BlobPart as BodyInit, "backup.zip", "application/zip"));

@@ -7,13 +7,22 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { ImportReview, type ModelReader, modelPass } from "../../../../../src/routes/recipes/new/components/RecipeSource";
-import { changedLines, changeSummary, importSummary, rejectionMessage, shouldReadWithModel, withRejectedAnswer } from "../../../../../src/routes/recipes/new/components/RecipeSource";
-import { draftFromScraped } from "../../../../../src/domain/draft";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
+import { draftFromScraped } from "../../../../../src/domain/draft";
+import { type ImportCheck, type ImportedRecipe, review, type ScrapedRecipe } from "../../../../../src/domain/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient";
 import type { Unit } from "../../../../../src/domain/reference";
-import { type ImportCheck, type ImportedRecipe, type ScrapedRecipe, review } from "../../../../../src/domain/import";
+import {
+  changedLines,
+  changeSummary,
+  ImportReview,
+  importSummary,
+  type ModelReader,
+  modelPass,
+  rejectionMessage,
+  shouldReadWithModel,
+  withRejectedAnswer,
+} from "../../../../../src/routes/recipes/new/components/RecipeSource";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -238,7 +247,7 @@ describe("a read that failed", () => {
         aiAvailable
         readError="The model is rate-limited. Try again in a minute."
         onRetryRead={() => {}}
-      />,
+      />
     );
     expect(html).toContain('data-testid="read-error"');
     expect(html).toContain("rate-limited");

@@ -2,12 +2,11 @@
 // and the whole pass against an injected runner. No provider is ever called —
 // a test that spends a request is not a test — so every case drives
 // `runRestyle` with a fake runner, or the fetch runner with a fake `fetch`.
-import { afterEach, describe, expect, test, vi } from "vitest";
+
 import { isNotFound } from "@tanstack/react-router";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipe";
 import { AiError, type AiRunner } from "../../../src/server/ai/client";
-import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
-import { listStyleRules } from "../../../src/server/fns/style";
 import {
   applyRestyle,
   createRestyleRunner,
@@ -17,12 +16,14 @@ import {
   promptParts,
   RESTYLE_JSON_SCHEMA,
   RestyledPartSchema,
-  restylePrompt,
   restoreSteps,
+  restylePrompt,
   restyleSettings,
   restyleSteps,
   runRestyle,
 } from "../../../src/server/ai/restyle";
+import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
+import { listStyleRules } from "../../../src/server/fns/style";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
@@ -54,11 +55,7 @@ function doc(): RecipeInput {
           { quantity: 125, food: food(ids.butter, "butter"), fixed: false },
           { quantity: null, note: "a pinch of salt" },
         ],
-        steps: [
-          { text: "Heat the oven to 180°C." },
-          { text: "Melt the butter." },
-          { text: "Bake for 15 minutes until golden." },
-        ],
+        steps: [{ text: "Heat the oven to 180°C." }, { text: "Melt the butter." }, { text: "Bake for 15 minutes until golden." }],
       },
       {
         name: "Golden syrup mixture",
@@ -326,9 +323,7 @@ describe("applyRestyle and restoreSteps", () => {
 
     // And the original comes back, stamp and all.
     const restored = await callServerFn(restoreSteps, { id: recipe.id });
-    expect(restored.parts.map((part) => part.steps.map((step) => step.text))).toEqual(
-      recipe.parts.map((part) => part.steps.map((step) => step.text)),
-    );
+    expect(restored.parts.map((part) => part.steps.map((step) => step.text))).toEqual(recipe.parts.map((part) => part.steps.map((step) => step.text)));
     expect(restored.restyledAt).toBeNull();
   });
 

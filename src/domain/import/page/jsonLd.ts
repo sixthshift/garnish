@@ -89,7 +89,13 @@ export function typesOf(node: JsonLdNode): string[] {
 
 /** Is this node a schema.org Recipe? Case-insensitive, and true for a node typed as several things. Pure. */
 export function isRecipeNode(node: JsonLdNode): boolean {
-  return typesOf(node).some((type) => type.trim().toLowerCase().replace(/^https?:\/\/schema\.org\//, "") === "recipe");
+  return typesOf(node).some(
+    (type) =>
+      type
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\/schema\.org\//, "") === "recipe"
+  );
 }
 
 /** The first Recipe among the nodes, or null when the page has none. Pure. */

@@ -3,15 +3,14 @@
 // real `IngredientRow`s on the shared session ticks, the step's text through
 // the safe subset, a footer of timer chips deduplicated by length, the tick
 // that dims and collapses it, and the two type scales.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { QuickEditProvider } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
-import { StepCard } from "../../../../../src/routes/recipes/recipe/components/StepCard";
-import { linkedIngredients, stepDurations } from "../../../../../src/routes/recipes/recipe/components/StepCard";
 import type { Ingredient, Recipe, Step } from "../../../../../src/domain/recipe";
 import type { Food } from "../../../../../src/domain/reference";
-import { setIngredientTicked, setStepTicked, type StorageLike } from "../../../../../src/lib/ticks";
+import { type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
+import { QuickEditProvider } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
+import { linkedIngredients, StepCard, stepDurations } from "../../../../../src/routes/recipes/recipe/components/StepCard";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const STEP_ID = "33333333-3333-4333-8333-333333333333";
@@ -88,7 +87,7 @@ describe("StepCard", () => {
   test("a card with two linked ingredients renders them as rows, in two columns from md", () => {
     withStorage(fakeStorage());
     const html = renderToString(
-      <StepCard recipeId={RECIPE_ID} step={step("Beat the **eggs** into the flour", [eggs.id, flour.id])} position={1} ingredients={part} />,
+      <StepCard recipeId={RECIPE_ID} step={step("Beat the **eggs** into the flour", [eggs.id, flour.id])} position={1} ingredients={part} />
     );
     expect(html).toContain('data-testid="step-card"');
     // A quiet card: a border, no shadow of its own (the checkbox brings one).
@@ -127,7 +126,7 @@ describe("StepCard", () => {
       <ol>
         <StepCard recipeId={RECIPE_ID} step={step("Melt the butter", [flour.id])} position={1} ingredients={part} />
         <StepCard recipeId={RECIPE_ID} step={step("And the rest", [flour.id], "44444444-4444-4444-8444-444444444444")} position={2} ingredients={part} />
-      </ol>,
+      </ol>
     );
     expect((html.match(/data-testid="ingredient-row"/g) ?? []).length).toBe(2);
   });

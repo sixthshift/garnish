@@ -21,7 +21,7 @@
 // `originalText` is the line as pasted either way, on a fully matched row as
 // much as on a declined one, so nothing a paste contained is ever lost.
 import type { FoodCandidate } from "./parseFood";
-import { parseIngredient, type ParsedIngredient } from "./parseIngredient";
+import { type ParsedIngredient, parseIngredient } from "./parseIngredient";
 import type { UnitCandidate } from "./parseUnit";
 
 /** What a reviewer decided about one slot: leave it unresolved, use an existing row, or create one by name. */
@@ -81,7 +81,7 @@ export function reviewRow<U extends UnitCandidate, F extends FoodCandidate>(pars
 /** Every pasted line parsed and turned into a review row, in order. Keys are positions, so they are stable while the list is. Pure. */
 export function reviewRows<U extends UnitCandidate, F extends FoodCandidate>(
   lines: readonly string[],
-  vocabulary: { units: readonly U[]; foods: readonly F[] },
+  vocabulary: { units: readonly U[]; foods: readonly F[] }
 ): ReviewRow<U, F>[] {
   return lines.map((line, index) => reviewRow(parseIngredient(line, vocabulary), String(index)));
 }

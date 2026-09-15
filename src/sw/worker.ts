@@ -103,7 +103,7 @@ export function installServiceWorker(scope: ServiceWorkerScopeLike, config: SwCo
       scope.caches
         .open(precacheCache)
         .then((cache) => cache.addAll([config.shell, ...config.precache]))
-        .then(() => scope.skipWaiting()),
+        .then(() => scope.skipWaiting())
     );
   });
 
@@ -112,7 +112,7 @@ export function installServiceWorker(scope: ServiceWorkerScopeLike, config: SwCo
       scope.caches
         .keys()
         .then((names) => Promise.all(names.filter((name) => name.startsWith(CACHE_PREFIX) && !keep.has(name)).map((name) => scope.caches.delete(name))))
-        .then(() => scope.clients.claim()),
+        .then(() => scope.clients.claim())
     );
   });
 

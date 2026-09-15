@@ -6,16 +6,16 @@ import { SearchInput } from "@sixthshift/design-system/search-input";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { SHOPPING_PATH } from "../../../components/shopping/AddToShoppingSheet";
 import { GLOBAL_SEARCH_DEBOUNCE_MS, SearchResultList } from "../../../components/shell/GlobalSearch";
+import { SHOPPING_PATH } from "../../../components/shopping/AddToShoppingSheet";
 import { Menu } from "../../../components/ui/Menu";
 import { ReorderList } from "../../../components/ui/ReorderList";
-import { addDays, dayLabel, entryLabel, isToday, reorderMove, servingsLabel, todayIso, weekLabel, type PlanDay, type PlanEntry } from "../../../domain/plan";
+import { addDays, dayLabel, entryLabel, isToday, type PlanDay, type PlanEntry, reorderMove, servingsLabel, todayIso, weekLabel } from "../../../domain/plan";
 import type { RecipeSummary } from "../../../domain/recipe";
-import { clampSelection, nextSearchIndex, selectedResult } from "../../../lib/search";
 import { recipeImageUrl } from "../../../lib/images";
-import { addedMessage } from "../../../lib/shopping";
 import { notify, notifyError } from "../../../lib/notify";
+import { clampSelection, nextSearchIndex, selectedResult } from "../../../lib/search";
+import { addedMessage } from "../../../lib/shopping";
 import { addPlanWeekToShopping } from "../../../server/fns/plan";
 import { listRecipes } from "../../../server/fns/recipes";
 
@@ -201,17 +201,7 @@ export function PlanEntryCard({
 }
 
 /** The week itself, writes injected. Rendered by the route and by the tests. */
-export function PlanWeekView({
-  monday,
-  days,
-  today = todayIso(),
-  onAddText,
-  onAddRecipe,
-  onMove,
-  onRemove,
-  searchRecipes,
-  busy = false,
-}: PlanWeekViewProps) {
+export function PlanWeekView({ monday, days, today = todayIso(), onAddText, onAddRecipe, onMove, onRemove, searchRecipes, busy = false }: PlanWeekViewProps) {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -305,16 +295,14 @@ function PlanDayColumn({
         onReorder={(next) => {
           const move = reorderMove(
             day.entries.map((entry) => entry.id),
-            next.map((entry) => entry.id),
+            next.map((entry) => entry.id)
           );
           if (move === null) return;
           const moved = day.entries.find((entry) => entry.id === move.id);
           if (moved !== undefined) onMove(moved, day.date, move.position);
         }}
         onMoveOut={(entry, _from, toList, toIndex) => onMove(entry, toList, toIndex)}
-        renderItem={(entry) => (
-          <PlanEntryCard entry={entry} days={days} busy={busy} onMove={onMove} onRemove={onRemove} />
-        )}
+        renderItem={(entry) => <PlanEntryCard entry={entry} days={days} busy={busy} onMove={onMove} onRemove={onRemove} />}
       />
 
       <PlanAddRow date={day.date} busy={busy} searchRecipes={searchRecipes} onAddText={onAddText} onAddRecipe={onAddRecipe} />
@@ -372,14 +360,7 @@ function AddWeekToShoppingButton({ monday }: { monday: string }) {
   };
 
   return (
-    <Button
-      variant="outline"
-      intent="neutral"
-      size="sm"
-      disabled={busy}
-      data-testid="plan-add-week"
-      onClick={() => void add()}
-    >
+    <Button variant="outline" intent="neutral" size="sm" disabled={busy} data-testid="plan-add-week" onClick={() => void add()}>
       {busy ? "Adding…" : "Add this week to the shopping list"}
     </Button>
   );

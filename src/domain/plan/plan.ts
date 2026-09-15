@@ -242,9 +242,7 @@ export function reorderMove(before: readonly string[], after: readonly string[])
   if (first === before.length) return null;
   let last = before.length - 1;
   while (last > first && before[last] === after[last]) last -= 1;
-  return before[first] === after[last]
-    ? { id: after[last] as string, position: last }
-    : { id: after[first] as string, position: first };
+  return before[first] === after[last] ? { id: after[last] as string, position: last } : { id: after[first] as string, position: first };
 }
 
 // --- Adding the week to the shopping list (M33.3) ---------------------------

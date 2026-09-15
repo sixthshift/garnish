@@ -3,8 +3,8 @@
 // check.
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
+import { type StorageLike, setViewMode } from "../../../../src/lib/prefs";
 import { ViewModeToggle } from "../../../../src/routes/home/components/ViewModeToggle";
-import { setViewMode, type StorageLike } from "../../../../src/lib/prefs";
 
 function fakeStorage(): StorageLike {
   const map = new Map<string, string>();

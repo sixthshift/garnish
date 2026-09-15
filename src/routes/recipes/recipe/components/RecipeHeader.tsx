@@ -12,14 +12,14 @@ import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode } from "react";
-import { formatYield, formatDuration, totalMinutes } from "../../../../domain/ingredient";
-import { type Recipe } from "../../../../domain/recipe";
-import { recipeImageUrl } from "../../../../lib/images";
+import type { ReactNode } from "react";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
 import { Rating } from "../../../../components/ui/Rating";
+import { formatDuration, formatYield, totalMinutes } from "../../../../domain/ingredient";
+import type { Recipe } from "../../../../domain/recipe";
 import { formatDateStamp } from "../../../../lib/dates";
-import { sourceLabel, isLinkable } from "../../../../lib/urls";
+import { recipeImageUrl } from "../../../../lib/images";
+import { isLinkable, sourceLabel } from "../../../../lib/urls";
 
 export type RecipeHeaderProps = {
   recipe: Recipe;
@@ -76,11 +76,7 @@ function StatIcon({ stat }: { stat: StatKey }) {
 
 function ImagePlaceholder() {
   return (
-    <div
-      data-placeholder="image"
-      aria-hidden="true"
-      className="flex aspect-video w-full items-center justify-center rounded-xl bg-bg-subtle text-fg-subtle"
-    >
+    <div data-placeholder="image" aria-hidden="true" className="flex aspect-video w-full items-center justify-center rounded-xl bg-bg-subtle text-fg-subtle">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <circle cx="8.5" cy="10" r="1.5" />

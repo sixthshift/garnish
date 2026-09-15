@@ -8,19 +8,16 @@
 // (`test/modules.test.ts` holds that line). Tests of internals live in
 // `test/domain/import` and may reach in.
 
-// The importer: build one with a page fetch and a model, hand it a source.
-export { Importer, type Ports, type PageResponse } from "./importer";
+export type { ImportCheck } from "./check";
 export { ImportError } from "./errors";
-
+// The importer: build one with a page fetch and a model, hand it a source.
+export { Importer, type PageResponse, type Ports } from "./importer";
 // What it produces.
 export type { ImportedRecipe, ImportSource } from "./result";
-export type { ScrapedRecipe } from "./scraped";
-export type { ImportCheck } from "./check";
-export type { FileRecipe, TandoorRecipe } from "./sources/tandoor";
-export type { MealieRecipe } from "./sources/mealie";
-
-// Validating an anchor at the server boundary before it is handed back to the importer.
-export { ScrapedRecipeSchema } from "./scraped";
-
 // The review screen's face of the module: reading a result and building its rows.
 export * as review from "./review";
+export type { ScrapedRecipe } from "./scraped";
+// Validating an anchor at the server boundary before it is handed back to the importer.
+export { ScrapedRecipeSchema } from "./scraped";
+export type { MealieRecipe } from "./sources/mealie";
+export type { FileRecipe, TandoorRecipe } from "./sources/tandoor";

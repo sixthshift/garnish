@@ -16,9 +16,17 @@ import { describe, expect, test } from "vitest";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../../src/domain/reference";
 import type { StyleRule } from "../../../src/domain/style";
-import { AislesTab, ExportTab, StyleTab, TagsTab } from "../../../src/routes/settings/components/SettingsTabs";
-import { dedupeSummaries, foodsLabel, groupTagsAZ, unitsLabel } from "../../../src/routes/settings/components/SettingsTabs";
-import { type FoodRow } from "../../../src/routes/settings/route";
+import {
+  AislesTab,
+  dedupeSummaries,
+  ExportTab,
+  foodsLabel,
+  groupTagsAZ,
+  StyleTab,
+  TagsTab,
+  unitsLabel,
+} from "../../../src/routes/settings/components/SettingsTabs";
+import type { FoodRow } from "../../../src/routes/settings/route";
 
 function summary(id: string, name: string): RecipeSummary {
   return {
@@ -118,9 +126,7 @@ describe("groupTagsAZ", () => {
 
 describe("AislesTab render", () => {
   test("lists aisles in order with a drag handle and rename/delete triggers, no dialog open", () => {
-    const html = renderToString(
-      <AislesTab aisles={[aisle("a1", "Frozen", 0), aisle("a2", "Dairy", 1)]} />,
-    );
+    const html = renderToString(<AislesTab aisles={[aisle("a1", "Frozen", 0), aisle("a2", "Dairy", 1)]} />);
     expect(html).toContain("Frozen");
     expect(html).toContain("Dairy");
     expect(html).toContain('aria-label="Drag aisle 1"');

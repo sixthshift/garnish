@@ -8,11 +8,11 @@ import { join } from "node:path";
 import { expect, test } from "vitest";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe";
-import { getDb } from "../../../src/server/core/db";
+import { getStepImageRoute as GetRoute, uploadStepImageRoute as PostRoute } from "../../../src/routes/api/stepImages";
 import { handleGetImage } from "../../../src/server/api/images";
 import { handleGetStepImage, handleUploadStepImage, stepImagesDir } from "../../../src/server/api/stepImages";
 import { handleGetTimelineImage } from "../../../src/server/api/timelineImages";
-import { getStepImageRoute as GetRoute, uploadStepImageRoute as PostRoute } from "../../../src/routes/api/stepImages";
+import { getDb } from "../../../src/server/core/db";
 import { useTempDataDir } from "../../helpers/server";
 
 const tmp = useTempDataDir();
@@ -22,17 +22,13 @@ const handlersOf = (route: { options: { server?: unknown } }) => (route.options.
 
 const missing = "99999999-9999-4999-8999-999999999999";
 // A real 1x1 PNG, so the bytes are what a browser would send.
-const png = Uint8Array.from(
-  Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"),
-);
+const png = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
 const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0xff, 0xd9]);
 
 /** A one-step recipe, and the id of that step. */
 async function createRecipe(): Promise<Recipe> {
   const db = await getDb();
-  return recipes(db).create(
-    recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [{ text: "Knead it." }] }] }),
-  );
+  return recipes(db).create(recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [{ text: "Knead it." }] }] }));
 }
 
 const stepIdOf = (recipe: Recipe) => recipe.parts[0]!.steps[0]!.id;
@@ -116,7 +112,10 @@ test.each([
   [
     "json body",
     (id: string) =>
-      handleUploadStepImage(new Request(`http://localhost/api/steps/${id}/image`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }), id),
+      handleUploadStepImage(
+        new Request(`http://localhost/api/steps/${id}/image`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
+        id
+      ),
   ],
 ])("bad upload is 400: %s", async (_label, send) => {
   const recipe = await createRecipe();
@@ -126,9 +125,12 @@ test.each([
   expect(recipes(await getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBeNull();
 });
 
-test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])("GET rejects a name that is not <uuid>.<ext>: %j", async (file) => {
-  expect((await handleGetStepImage(file)).status).toBe(400);
-});
+test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
+  "GET rejects a name that is not <uuid>.<ext>: %j",
+  async (file) => {
+    expect((await handleGetStepImage(file)).status).toBe(400);
+  }
+);
 
 test("GET of a well-formed but absent photo is 404", async () => {
   expect((await handleGetStepImage(`${missing}.png`)).status).toBe(404);

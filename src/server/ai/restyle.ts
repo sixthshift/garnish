@@ -40,10 +40,10 @@ import { styleRules } from "../../db/models/style/repo";
 import { formatIngredient } from "../../domain/ingredient";
 import type { Part, Recipe } from "../../domain/recipe";
 import { checkRestyle, type RestyleCheck, type RestyledPart } from "../../domain/style";
-import { AI_TIMEOUT_MS, AiError, aiSettings, type AiRunner, createFetchRunner, type Fetcher, stripFence } from "./client";
 import { getDb } from "../core/db";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
+import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher, stripFence } from "./client";
 
 export { AiError } from "./client";
 
@@ -121,8 +121,7 @@ export function promptParts(parts: readonly Part[]): PromptPart[] {
  * the recipe's, whatever the household's voice. It leads the prompt because a
  * model reads the top of it best, and M37.3 enforces it afterwards regardless.
  */
-export const FIXED_RESTYLE_LINE =
-  "Temperatures, times and quantities are copied exactly, never converted, rounded or dropped.";
+export const FIXED_RESTYLE_LINE = "Temperatures, times and quantities are copied exactly, never converted, rounded or dropped.";
 
 /** How a part is headed in the prompt. The unnamed part is the main body and says so. Pure. */
 function partHeading(name: string): string {
@@ -164,7 +163,7 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     "- Steps carry no numbering of their own: one entry per step, plain sentences.",
     "- Answer with the JSON only.",
     "",
-    "RECIPE:",
+    "RECIPE:"
   );
 
   for (const part of parts) {
@@ -181,10 +180,7 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
 
 /** The runner used in anger here: the client's runner, told to ask for this schema and this model. */
 export const restyleRunner: AiRunner = (prompt, timeoutMs) =>
-  createFetchRunner(fetch, { schema: RESTYLE_JSON_SCHEMA, schemaName: "restyle", model: restyleSettings().model })(
-    prompt,
-    timeoutMs,
-  );
+  createFetchRunner(fetch, { schema: RESTYLE_JSON_SCHEMA, schemaName: "restyle", model: restyleSettings().model })(prompt, timeoutMs);
 
 /** The same runner over an injected `fetch`, so the HTTP path can be driven without a provider. */
 export function createRestyleRunner(fetcher: Fetcher = fetch): AiRunner {
@@ -232,17 +228,14 @@ export function matchParts(original: readonly Part[], restyled: readonly Restyle
   if (original.length !== restyled.length) {
     throw new AiError(
       "malformed",
-      `The model answered with ${restyled.length} part${restyled.length === 1 ? "" : "s"} where the recipe has ${original.length}, so nothing was changed.`,
+      `The model answered with ${restyled.length} part${restyled.length === 1 ? "" : "s"} where the recipe has ${original.length}, so nothing was changed.`
     );
   }
   const fold = (name: string) => name.trim().toLowerCase();
   for (const [index, part] of original.entries()) {
     const answered = restyled[index]!;
     if (fold(part.name) !== fold(answered.name)) {
-      throw new AiError(
-        "malformed",
-        `The model renamed a part ("${part.name}" came back as "${answered.name}"), so nothing was changed.`,
-      );
+      throw new AiError("malformed", `The model renamed a part ("${part.name}" came back as "${answered.name}"), so nothing was changed.`);
     }
   }
 }
@@ -254,11 +247,7 @@ export function matchParts(original: readonly Part[], restyled: readonly Restyle
  * result is returned whether or not the check passed, because a failed check
  * is something the household is shown (M37.6), not an error.
  */
-export async function runRestyle(
-  recipe: Recipe,
-  rules: readonly string[],
-  options: { run?: AiRunner } = {},
-): Promise<RestyleResult> {
+export async function runRestyle(recipe: Recipe, rules: readonly string[], options: { run?: AiRunner } = {}): Promise<RestyleResult> {
   const { run = restyleRunner } = options;
   const prompt = restylePrompt({ rules, parts: promptParts(recipe.parts) });
 

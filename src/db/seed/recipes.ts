@@ -7,8 +7,8 @@
 // timeline events (see ./timeline.ts), so every stage 2 screen has something to
 // show without a person seeding it by hand.
 import type { z } from "zod";
-import { type ingredientInputSchema, type RecipeInput } from "../../domain/recipe";
-import { type Food, type Tag, type Unit } from "../../domain/reference";
+import type { ingredientInputSchema, RecipeInput } from "../../domain/recipe";
+import type { Food, Tag, Unit } from "../../domain/reference";
 import { slugify } from "../../lib/names";
 import { DEFAULT_UNITS } from "./units";
 
@@ -47,7 +47,7 @@ function ing(
   quantity: number | null,
   unitName: string | null,
   foodName: string,
-  opts: { plural?: string; note?: string; fixed?: boolean; id?: string } = {},
+  opts: { plural?: string; note?: string; fixed?: boolean; id?: string } = {}
 ): Ing {
   return {
     id: opts.id,
@@ -193,12 +193,10 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
           ing(null, null, "black pepper", { note: "freshly ground" }),
         ],
         steps: [
-          step("Preheat the oven to 200°C. Toss the pumpkin, onion and garlic with the oil on a large tray, season, and roast 35 minutes until soft and browned at the edges.", [
-            SOUP_PUMPKIN,
-            SOUP_ONION,
-            SOUP_GARLIC,
-            SOUP_OIL,
-          ]),
+          step(
+            "Preheat the oven to 200°C. Toss the pumpkin, onion and garlic with the oil on a large tray, season, and roast 35 minutes until soft and browned at the edges.",
+            [SOUP_PUMPKIN, SOUP_ONION, SOUP_GARLIC, SOUP_OIL]
+          ),
           step("Squeeze the garlic from its skins into a large saucepan with the roasted vegetables, bay leaf and stock. Simmer 10 minutes.", [
             SOUP_GARLIC,
             SOUP_BAY_LEAF,

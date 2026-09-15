@@ -90,7 +90,10 @@ describe("enterChoice (M21.5)", () => {
   });
 
   test("closed: an unknown name is offered as a new value, Mealie's press-enter-to-create", () => {
-    expect(enterChoice(items("almond meal"), options, "almond meal", false, undefined, true)).toEqual({ kind: "pick", item: { kind: "create", text: "almond meal" } });
+    expect(enterChoice(items("almond meal"), options, "almond meal", false, undefined, true)).toEqual({
+      kind: "pick",
+      item: { kind: "create", text: "almond meal" },
+    });
   });
 
   test("closed: nothing to make of it passes the key on", () => {

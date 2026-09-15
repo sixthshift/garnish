@@ -2,7 +2,7 @@
 // validation failures, not-found mapping, and servings scaling.
 import { isNotFound } from "@tanstack/react-router";
 import { describe, expect, test } from "vitest";
-import { recipeSchema, recipeSummarySchema, type RecipeInput } from "../../../src/domain/recipe";
+import { type RecipeInput, recipeSchema, recipeSummarySchema } from "../../../src/domain/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import {
   createRecipe,
@@ -100,7 +100,11 @@ test("listRecipes filters by tags[] with match, foods[] and favourite", async ()
   // A distinct food (doc()'s default ingredients would otherwise resolve to the same "flour" row by name).
   await callServerFn(
     createRecipe,
-    doc({ name: "Pancakes", tags: [], parts: [{ name: "", ingredients: [{ quantity: 2, food: food(ids.missing, "maple syrup") }], steps: [{ text: "Stack." }] }] }),
+    doc({
+      name: "Pancakes",
+      tags: [],
+      parts: [{ name: "", ingredients: [{ quantity: 2, food: food(ids.missing, "maple syrup") }], steps: [{ text: "Stack." }] }],
+    })
   );
 
   expect((await callServerFn(listRecipes, { tags: ["weeknight"] })).map((r) => r.slug)).toEqual(["flatbread"]);

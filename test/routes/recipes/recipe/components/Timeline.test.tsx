@@ -2,14 +2,19 @@
 // "History", one compact row per logged cook (M30.3, decisions.md row 64).
 // Rendered inside a throwaway router because the rows write through
 // `useMutate`.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { TimelineList, saveCook, saveCookAndClearTicks } from "../../../../../src/routes/recipes/recipe/components/Timeline";
-import { offersSaveAsNote, withNoteFromCook } from "../../../../../src/routes/recipes/recipe/components/Timeline";
-import { saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
 import type { Recipe, TimelineEvent } from "../../../../../src/domain/recipe";
-import { getTicks, setIngredientTicked, type StorageLike } from "../../../../../src/lib/ticks";
+import { getTicks, type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
+import { saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
+import {
+  offersSaveAsNote,
+  saveCook,
+  saveCookAndClearTicks,
+  TimelineList,
+  withNoteFromCook,
+} from "../../../../../src/routes/recipes/recipe/components/Timeline";
 
 // `updateRecipe` is the only server call `saveQuickEdit` makes; kept here so
 // the "save as note" test can compare what was sent with the stored document.

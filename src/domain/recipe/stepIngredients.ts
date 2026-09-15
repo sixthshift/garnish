@@ -18,8 +18,9 @@
 //
 // A text-only ingredient (`food === null`) has nothing to match on and is
 // skipped: its `originalText` is a whole line, not a food name.
-import type { Step } from "./recipe";
+
 import type { Food } from "../reference";
+import type { Step } from "./recipe";
 
 /** Letters and digits: anything else counts as a word boundary. */
 const WORD = /[\p{L}\p{N}]/u;
@@ -107,10 +108,7 @@ type StepLike = Pick<Step, "id" | "text" | "ingredientIds">;
  * saved `Part` and an editor `DraftPart` fit; the draft must give every row
  * an id before calling this, since a link needs one to name.
  */
-export function suggestLinks<I extends IngredientLike, S extends StepLike>(part: {
-  ingredients: readonly I[];
-  steps: readonly S[];
-}): S[] {
+export function suggestLinks<I extends IngredientLike, S extends StepLike>(part: { ingredients: readonly I[]; steps: readonly S[] }): S[] {
   return part.steps.map((step) => {
     if (step.ingredientIds.length > 0) return step;
     const matches = ingredientsInStep(step.text, part.ingredients);

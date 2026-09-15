@@ -1,11 +1,12 @@
 // Editing a part's steps: add, move, split, merge.
-import { paragraphs } from "../ingredient";
+
 import { randomUuid } from "../../lib/id";
-import { type DraftStep, type RecipeDraft } from "./types";
 import { moveItem } from "../../lib/lists";
-import { stepLinks, unionLinks } from "./links";
-import { type Recipe } from "../recipe";
+import { paragraphs } from "../ingredient";
+import type { Recipe } from "../recipe";
 import { draftFromRecipe } from "./draft";
+import { stepLinks, unionLinks } from "./links";
+import type { DraftStep, RecipeDraft } from "./types";
 
 /** A blank step with a fresh id, so it has a stable row key before it is saved. */
 export function newStep(text = ""): DraftStep {
@@ -37,7 +38,7 @@ export function updateStep(draft: RecipeDraft, pi: number, si: number, text: str
   return withSteps(
     draft,
     pi,
-    steps.map((step, i) => (i === si ? { ...step, text } : step)),
+    steps.map((step, i) => (i === si ? { ...step, text } : step))
   );
 }
 
@@ -54,7 +55,7 @@ export function setStepImage(draft: RecipeDraft, pi: number, si: number, image: 
   return withSteps(
     draft,
     pi,
-    steps.map((step, i) => (i === si ? { ...step, image } : step)),
+    steps.map((step, i) => (i === si ? { ...step, image } : step))
   );
 }
 
@@ -65,7 +66,7 @@ export function removeStep(draft: RecipeDraft, pi: number, si: number): RecipeDr
   return withSteps(
     draft,
     pi,
-    steps.filter((_, i) => i !== si),
+    steps.filter((_, i) => i !== si)
   );
 }
 
@@ -155,7 +156,7 @@ export function splitAllSteps(draft: RecipeDraft, pi: number): RecipeDraft {
     steps.flatMap((step) => {
       const chunks = paragraphs(step.text ?? "");
       return chunks.length < 2 ? [step] : chunks.map((text, i) => (i === 0 ? { ...step, text } : newStep(text)));
-    }),
+    })
   );
 }
 
@@ -194,7 +195,7 @@ export function withStepReplaced(recipe: Recipe, partId: string, stepId: string,
   return {
     ...draft,
     parts: draft.parts.map((part) =>
-      part.id !== partId ? part : { ...part, steps: part.steps.map((step) => (step.id === stepId ? { ...step, text } : step)) },
+      part.id !== partId ? part : { ...part, steps: part.steps.map((step) => (step.id === stepId ? { ...step, text } : step)) }
     ),
   };
 }

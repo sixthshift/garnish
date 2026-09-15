@@ -81,7 +81,7 @@ test("the open menu lists Duplicate, Make this a food, the two copy items and Pr
       <Menu.Item intent="danger" onSelect={() => {}}>
         Delete
       </Menu.Item>
-    </Menu>,
+    </Menu>
   );
   for (const label of ["Duplicate", "Make this a food", "Plan", "Copy link", "Copy ingredients", "Print", "Delete"]) {
     expect(html).toContain(label);

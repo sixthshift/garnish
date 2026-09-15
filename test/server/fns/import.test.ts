@@ -2,7 +2,7 @@
 // The importer behind them is tested in test/domain/import; the wiring in
 // test/server/import.
 import { afterEach, describe, expect, test } from "vitest";
-import { aiImportAvailable, importFromText, ImportFromTextInput, ImportFromUrlInput } from "../../../src/server/fns/import";
+import { aiImportAvailable, ImportFromTextInput, ImportFromUrlInput, importFromText } from "../../../src/server/fns/import";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();

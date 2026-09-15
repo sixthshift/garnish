@@ -38,13 +38,7 @@ function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTML
       {navItems.map((item) => {
         const base = cn(itemClass, stacked && item.footer && "mt-auto");
         return (
-          <Link
-            key={item.to}
-            to={item.to}
-            activeOptions={{ exact: item.exact }}
-            className={base}
-            activeProps={{ className: cn(base, activeClass) }}
-          >
+          <Link key={item.to} to={item.to} activeOptions={{ exact: item.exact }} className={base} activeProps={{ className: cn(base, activeClass) }}>
             {item.label}
           </Link>
         );

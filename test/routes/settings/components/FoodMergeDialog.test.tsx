@@ -2,9 +2,9 @@
 // content FoodMergeDialogContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { FoodMergeDialogContent } from "../../../../src/routes/settings/components/FoodMergeDialog";
-import { mergeTargets } from "../../../../src/lib/lists";
 import type { Food } from "../../../../src/db/models/food/repo";
+import { mergeTargets } from "../../../../src/lib/lists";
+import { FoodMergeDialogContent } from "../../../../src/routes/settings/components/FoodMergeDialog";
 
 function food(id: string, name: string): Food {
   return { id, name, pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
@@ -30,9 +30,7 @@ describe("mergeTargets", () => {
 
 describe("FoodMergeDialogContent render", () => {
   test("asks which food survives and lists the other foods as targets", () => {
-    const html = renderToString(
-      <FoodMergeDialogContent source={unsalted} targets={[butter, salt]} onCancel={() => {}} onConfirm={() => {}} />,
-    );
+    const html = renderToString(<FoodMergeDialogContent source={unsalted} targets={[butter, salt]} onCancel={() => {}} onConfirm={() => {}} />);
     expect(html).toContain("Merge Unsalted butter?");
     expect(html).toContain("Unsalted butter will be deleted");
     expect(html).toContain(">Merge<");

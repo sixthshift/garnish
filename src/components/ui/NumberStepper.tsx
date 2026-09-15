@@ -9,7 +9,7 @@ import { Input } from "@sixthshift/design-system/input";
 import { Label } from "@sixthshift/design-system/label";
 import { cn } from "@sixthshift/design-system/utils";
 import { useId, useState } from "react";
-import { clamp, stepValue, parseDecimal } from "../../lib/numbers";
+import { clamp, parseDecimal, stepValue } from "../../lib/numbers";
 
 export type NumberStepperProps = {
   value: number;

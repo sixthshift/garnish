@@ -23,5 +23,5 @@ export async function mutate<T>(router: Invalidator, write: () => Promise<T>): P
 /** `mutate` bound to the app router. */
 export function useMutate(): <T>(write: () => Promise<T>) => Promise<T> {
   const router = useRouter();
-  return useCallback(<T,>(write: () => Promise<T>) => mutate(router, write), [router]);
+  return useCallback(<T>(write: () => Promise<T>) => mutate(router, write), [router]);
 }

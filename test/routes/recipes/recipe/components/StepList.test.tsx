@@ -4,10 +4,10 @@
 // part's rows so a link resolves.
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { StepList } from "../../../../../src/routes/recipes/recipe/components/StepList";
 import type { Ingredient, Step } from "../../../../../src/domain/recipe";
 import type { Food } from "../../../../../src/domain/reference";
 import type { StorageLike } from "../../../../../src/lib/ticks";
+import { StepList } from "../../../../../src/routes/recipes/recipe/components/StepList";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const STEP_ID = "33333333-3333-4333-8333-333333333333";
@@ -55,7 +55,7 @@ describe("StepList", () => {
   test("numbers each step, in order, as cards", () => {
     withStorage(fakeStorage());
     const html = renderToString(
-      <StepList recipeId={RECIPE_ID} steps={[step("Mix the **dough**"), step("Rest it", [], "44444444-4444-4444-8444-444444444444")]} />,
+      <StepList recipeId={RECIPE_ID} steps={[step("Mix the **dough**"), step("Rest it", [], "44444444-4444-4444-8444-444444444444")]} />
     );
     expect(html).toContain('aria-label="Steps"');
     expect((html.match(/data-testid="step-card"/g) ?? []).length).toBe(2);

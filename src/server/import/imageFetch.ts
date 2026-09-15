@@ -9,7 +9,7 @@
 // an SVG or a PDF on disk than a file picker can.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { IMAGE_TYPES, MAX_IMAGE_BYTES, sniffImage, type ImageExtension } from "../../lib/imageFile";
+import { IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 
 /** What the server sends back for a fetched URL: enough to rebuild the file client-side. */
 export type FetchedImage = {
@@ -44,7 +44,10 @@ export function fetchedImageName(url: URL, ext: ImageExtension): string {
   } catch {
     // A malformed escape stays as it is; the sanitiser below handles it.
   }
-  const stem = last.replace(/\.[^.]*$/, "").replace(/[^\w.-]+/g, "-").slice(0, 64);
+  const stem = last
+    .replace(/\.[^.]*$/, "")
+    .replace(/[^\w.-]+/g, "-")
+    .slice(0, 64);
   return `${stem === "" ? "image" : stem}.${ext}`;
 }
 

@@ -27,12 +27,12 @@ import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
-import { type Unit } from "../../../domain/reference";
-import { IngredientsEditor } from "./IngredientsEditor";
-import { type FieldErrors, type RecipeDraft, type DraftPart, addPart, renamePart, removePart, hasContent, isBare } from "../../../domain/draft";
-import { StepsEditor } from "./StepsEditor";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { ReorderList } from "../../../components/ui/ReorderList";
+import { addPart, type DraftPart, type FieldErrors, hasContent, isBare, type RecipeDraft, removePart, renamePart } from "../../../domain/draft";
+import type { Unit } from "../../../domain/reference";
+import { IngredientsEditor } from "./IngredientsEditor";
+import { StepsEditor } from "./StepsEditor";
 
 export type PartsEditorProps = {
   draft: RecipeDraft;

@@ -6,12 +6,12 @@
 //
 // The view takes its writes as callbacks, so these render it directly; the
 // route test below proves the loader, the `?week=` param and the nav item.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
-import { PlanAddRow, PlanSearchResult, PlanWeekView, searchPlanRecipes } from "../../../src/routes/plan/components/PlanWeekView";
-import { groupByDay, planEntrySchema, weekDates, type PlanDay, type PlanEntry } from "../../../src/domain/plan";
+import { groupByDay, type PlanDay, type PlanEntry, planEntrySchema, weekDates } from "../../../src/domain/plan";
 import type { RecipeSummary } from "../../../src/domain/recipe";
+import { PlanAddRow, PlanSearchResult, PlanWeekView, searchPlanRecipes } from "../../../src/routes/plan/components/PlanWeekView";
 import { addPlanEntry, listPlanWeek } from "../../../src/server/fns/plan";
 import { createRecipe } from "../../../src/server/fns/recipes";
 import { elementHtml, renderRoute } from "../../helpers/routes";
@@ -45,9 +45,7 @@ const noop = () => {};
 /** Render the week inside a throwaway router, so its `Link`s resolve. */
 async function render(days: PlanDay[], props: Partial<Parameters<typeof PlanWeekView>[0]> = {}): Promise<string> {
   const rootRoute = createRootRoute({
-    component: () => (
-      <PlanWeekView monday={MONDAY} days={days} today={TODAY} onAddText={noop} onAddRecipe={noop} onMove={noop} onRemove={noop} {...props} />
-    ),
+    component: () => <PlanWeekView monday={MONDAY} days={days} today={TODAY} onAddText={noop} onAddRecipe={noop} onMove={noop} onRemove={noop} {...props} />,
   });
   const children = [
     createRoute({ getParentRoute: () => rootRoute, path: "/plan", component: () => null }),
@@ -144,7 +142,6 @@ describe("an entry of each kind", () => {
     // The row menu is the phone's path and the keyboard's.
     expect(elementHtml(html, "plan-entry")).toContain('aria-label="Actions for Lemon tart"');
   });
-
 });
 
 describe("the empty day", () => {

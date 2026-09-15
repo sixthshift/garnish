@@ -139,7 +139,7 @@ function usePref<T>(get: (storage: StorageLike) => T, set: (storage: StorageLike
       if (storage) set(storage, next);
       setValue(next);
     },
-    [set],
+    [set]
   );
   return [value, update];
 }

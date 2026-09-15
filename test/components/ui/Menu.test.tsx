@@ -53,7 +53,7 @@ describe("Menu", () => {
     const html = renderToString(
       <Menu label="Recipe actions" open>
         {items}
-      </Menu>,
+      </Menu>
     );
     expect(html).toContain('data-testid="menu-panel"');
     expect(html).toContain('role="menu"');
@@ -68,7 +68,7 @@ describe("Menu", () => {
     const html = renderToString(
       <Menu label="Recipe actions" iconOnly>
         {items}
-      </Menu>,
+      </Menu>
     );
     expect(html).toContain('aria-label="Recipe actions"');
     expect(html).toContain("⋯");
@@ -78,7 +78,7 @@ describe("Menu", () => {
     const html = renderToString(
       <Menu label="Recipe actions" open>
         {items}
-      </Menu>,
+      </Menu>
     );
     expect(html).toMatch(/text-fg-danger[^>]*>Delete|Delete/);
     expect(html).toContain("text-fg-danger");
@@ -90,7 +90,7 @@ describe("Menu", () => {
         <Menu.Item asChild>
           <a href="/recipes/lemon-tart/edit">Edit</a>
         </Menu.Item>
-      </Menu>,
+      </Menu>
     );
     expect(html).toMatch(/<a [^>]*href="\/recipes\/lemon-tart\/edit"[^>]*role="menuitem"|<a [^>]*role="menuitem"[^>]*href="\/recipes\/lemon-tart\/edit"/);
     expect(html).toContain("Edit");
@@ -102,7 +102,7 @@ describe("Menu", () => {
         <Menu.Item disabled onSelect={() => {}}>
           Duplicate
         </Menu.Item>
-      </Menu>,
+      </Menu>
     );
     expect(html).toContain("disabled");
   });

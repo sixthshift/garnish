@@ -71,17 +71,6 @@ import { TagInput } from "@sixthshift/design-system/tag-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useId, useState } from "react";
-import { type Recipe } from "../../../domain/recipe";
-import { type Tag, type Unit } from "../../../domain/reference";
-import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft, type StorageLike } from "../../../lib/drafts";
-import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../../../lib/images";
-import { useMutate } from "../../../lib/mutate";
-import { messageFrom, notify, notifyError, type NoticeInput } from "../../../lib/notify";
-import { useOnline } from "../../../lib/useOnline";
-import { fetchImage } from "../../../server/import/imageFetch";
-import { createRecipe, updateRecipe } from "../../../server/fns/recipes";
-import { PartsEditor } from "./PartsEditor";
-import { NotesEditor } from "./NotesEditor";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { Disclosure } from "../../../components/ui/Disclosure";
 import { EditorToolbar } from "../../../components/ui/EditorToolbar";
@@ -89,7 +78,28 @@ import { ImageUpload } from "../../../components/ui/ImageUpload";
 import { Menu } from "../../../components/ui/Menu";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { SaveBar } from "../../../components/ui/SaveBar";
-import { type RecipeDraft, type FieldErrors, validateDraft, isDirty, draftFromInput, hasDetails, draftToJson, draftFromJson, tagsFromNames } from "../../../domain/draft";
+import {
+  draftFromInput,
+  draftFromJson,
+  draftToJson,
+  type FieldErrors,
+  hasDetails,
+  isDirty,
+  type RecipeDraft,
+  tagsFromNames,
+  validateDraft,
+} from "../../../domain/draft";
+import type { Recipe } from "../../../domain/recipe";
+import type { Tag, Unit } from "../../../domain/reference";
+import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft, type StorageLike } from "../../../lib/drafts";
+import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../../../lib/images";
+import { useMutate } from "../../../lib/mutate";
+import { messageFrom, type NoticeInput, notify, notifyError } from "../../../lib/notify";
+import { useOnline } from "../../../lib/useOnline";
+import { createRecipe, updateRecipe } from "../../../server/fns/recipes";
+import { fetchImage } from "../../../server/import/imageFetch";
+import { NotesEditor } from "./NotesEditor";
+import { PartsEditor } from "./PartsEditor";
 
 function feedback(errors: FieldErrors, path: string): FormFieldFeedback | undefined {
   const message = errors[path];
@@ -137,7 +147,17 @@ export type RecipeFormProps = {
   jsonMenuOpen?: boolean;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing, online: onlineOverride, importedImageUrl, storage: storageProp, afterSaveSearch, jsonMenuOpen }: RecipeFormProps) {
+export function RecipeForm({
+  initial,
+  units,
+  tags: knownTags,
+  existing,
+  online: onlineOverride,
+  importedImageUrl,
+  storage: storageProp,
+  afterSaveSearch,
+  jsonMenuOpen,
+}: RecipeFormProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const detectedOnline = useOnline();
@@ -238,9 +258,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
     const image: { error: string | null } = { error: null };
     try {
       const saved = await mutate(async () => {
-        const recipe = existing
-          ? await updateRecipe({ data: { id: existing.id, doc: result.data } })
-          : await createRecipe({ data: result.data });
+        const recipe = existing ? await updateRecipe({ data: { id: existing.id, doc: result.data } }) : await createRecipe({ data: result.data });
         if (file) {
           try {
             await uploadRecipeImage(recipe.id, file);
@@ -335,7 +353,15 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
           <Muted as="p" className="text-sm">
             The recipe document. Apply parses it and puts it back in the form; Save then stores it.
           </Muted>
-          <Textarea aria-label="Recipe JSON" rows={24} spellCheck={false} className="font-mono text-xs" value={json} disabled={saving} onChange={(event) => setJson(event.target.value)} />
+          <Textarea
+            aria-label="Recipe JSON"
+            rows={24}
+            spellCheck={false}
+            className="font-mono text-xs"
+            value={json}
+            disabled={saving}
+            onChange={(event) => setJson(event.target.value)}
+          />
           {jsonError !== null && (
             <Message intent="danger" title="That document did not parse" data-testid="json-error">
               {jsonError}
@@ -349,124 +375,136 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online: 
         </div>
       ) : (
         <>
-      <FormField label="Name" required feedback={feedback(errors, "name")}>
-        <Input
-          name="name"
-          value={draft.name}
-          autoComplete="off"
-          autoFocus={existing === undefined}
-          disabled={saving}
-          onChange={(event) => patch({ name: event.target.value })}
-        />
-      </FormField>
-
-      <FormField label="Description" feedback={feedback(errors, "description")}>
-        <Textarea name="description" rows={3} value={draft.description} disabled={saving} onChange={(event) => patch({ description: event.target.value })} />
-      </FormField>
-
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Image</span>
-        <ImageUpload
-          image={draft.image}
-          previewUrl={importedImageUrl}
-          disabled={saving}
-          onSelect={(chosen) => setFile(chosen)}
-          onRemove={() => {
-            setFile(null);
-            patch({ image: null });
-          }}
-        />
-      </div>
-
-      <NumberStepper label="Servings" value={draft.recipeServings} min={0} disabled={saving} onChange={(recipeServings) => patch({ recipeServings })} />
-
-      <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
-
-      <PartsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
-
-      <Disclosure title="Details" hint={detailsHint(draft)} defaultOpen={detailsOpen}>
-        <fieldset className="grid gap-4 sm:grid-cols-3">
-          <legend className="mb-2 text-sm font-medium">Yield</legend>
-          <FormField label="Quantity" feedback={feedback(errors, "recipeYieldQuantity")}>
+          <FormField label="Name" required feedback={feedback(errors, "name")}>
             <Input
-              name="recipeYieldQuantity"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              value={draft.recipeYieldQuantity === 0 ? "" : String(draft.recipeYieldQuantity)}
+              name="name"
+              value={draft.name}
+              autoComplete="off"
+              autoFocus={existing === undefined}
               disabled={saving}
-              onChange={(event) => patch({ recipeYieldQuantity: parseAmount(event.target.value) })}
+              onChange={(event) => patch({ name: event.target.value })}
             />
           </FormField>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Unit</span>
-            <Select
-              aria-label="Yield unit"
-              options={unitOptions}
-              value={draft.yieldUnit?.id}
-              placeholder="No unit"
-              clearable
-              searchable
+
+          <FormField label="Description" feedback={feedback(errors, "description")}>
+            <Textarea
+              name="description"
+              rows={3}
+              value={draft.description}
               disabled={saving}
-              onValueChange={(id) => patch({ yieldUnit: units.find((unit) => unit.id === id) ?? null })}
+              onChange={(event) => patch({ description: event.target.value })}
+            />
+          </FormField>
+
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium">Image</span>
+            <ImageUpload
+              image={draft.image}
+              previewUrl={importedImageUrl}
+              disabled={saving}
+              onSelect={(chosen) => setFile(chosen)}
+              onRemove={() => {
+                setFile(null);
+                patch({ image: null });
+              }}
             />
           </div>
-          <FormField label="Makes" description="e.g. loaf, 12 muffins" feedback={feedback(errors, "recipeYield")}>
-            <Input name="recipeYield" value={draft.recipeYield} autoComplete="off" disabled={saving} onChange={(event) => patch({ recipeYield: event.target.value })} />
-          </FormField>
-        </fieldset>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Prep time (minutes)" feedback={feedback(errors, "prepTime")}>
-            <Input
-              name="prepTime"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              value={draft.prepTime ?? ""}
-              disabled={saving}
-              onChange={(event) => patch({ prepTime: parseMinutes(event.target.value) })}
-            />
-          </FormField>
-          <FormField label="Cook time (minutes)" feedback={feedback(errors, "performTime")}>
-            <Input
-              name="performTime"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              value={draft.performTime ?? ""}
-              disabled={saving}
-              onChange={(event) => patch({ performTime: parseMinutes(event.target.value) })}
-            />
-          </FormField>
-        </div>
+          <NumberStepper label="Servings" value={draft.recipeServings} min={0} disabled={saving} onChange={(recipeServings) => patch({ recipeServings })} />
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={tagsId}>Tags</Label>
-          <TagInput
-            id={tagsId}
-            value={draft.tags.map((tag) => tag.name)}
-            placeholder="Add a tag and press Enter"
-            onChange={(names) => patch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
-          />
-        </div>
+          <NotesEditor draft={draft} onChange={setDraft} errors={errors} disabled={saving} />
 
-        <FormField label="Source" description="Where the recipe came from" feedback={feedback(errors, "sourceUrl")}>
-          <Input
-            name="sourceUrl"
-            type="url"
-            inputMode="url"
-            placeholder="https://"
-            value={draft.sourceUrl ?? ""}
-            autoComplete="off"
-            disabled={saving}
-            onChange={(event) => patch({ sourceUrl: event.target.value.trim() === "" ? null : event.target.value })}
-          />
-        </FormField>
-      </Disclosure>
+          <PartsEditor draft={draft} onChange={setDraft} units={units} errors={errors} disabled={saving} />
+
+          <Disclosure title="Details" hint={detailsHint(draft)} defaultOpen={detailsOpen}>
+            <fieldset className="grid gap-4 sm:grid-cols-3">
+              <legend className="mb-2 text-sm font-medium">Yield</legend>
+              <FormField label="Quantity" feedback={feedback(errors, "recipeYieldQuantity")}>
+                <Input
+                  name="recipeYieldQuantity"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={draft.recipeYieldQuantity === 0 ? "" : String(draft.recipeYieldQuantity)}
+                  disabled={saving}
+                  onChange={(event) => patch({ recipeYieldQuantity: parseAmount(event.target.value) })}
+                />
+              </FormField>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium">Unit</span>
+                <Select
+                  aria-label="Yield unit"
+                  options={unitOptions}
+                  value={draft.yieldUnit?.id}
+                  placeholder="No unit"
+                  clearable
+                  searchable
+                  disabled={saving}
+                  onValueChange={(id) => patch({ yieldUnit: units.find((unit) => unit.id === id) ?? null })}
+                />
+              </div>
+              <FormField label="Makes" description="e.g. loaf, 12 muffins" feedback={feedback(errors, "recipeYield")}>
+                <Input
+                  name="recipeYield"
+                  value={draft.recipeYield}
+                  autoComplete="off"
+                  disabled={saving}
+                  onChange={(event) => patch({ recipeYield: event.target.value })}
+                />
+              </FormField>
+            </fieldset>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Prep time (minutes)" feedback={feedback(errors, "prepTime")}>
+                <Input
+                  name="prepTime"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={1}
+                  value={draft.prepTime ?? ""}
+                  disabled={saving}
+                  onChange={(event) => patch({ prepTime: parseMinutes(event.target.value) })}
+                />
+              </FormField>
+              <FormField label="Cook time (minutes)" feedback={feedback(errors, "performTime")}>
+                <Input
+                  name="performTime"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  step={1}
+                  value={draft.performTime ?? ""}
+                  disabled={saving}
+                  onChange={(event) => patch({ performTime: parseMinutes(event.target.value) })}
+                />
+              </FormField>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={tagsId}>Tags</Label>
+              <TagInput
+                id={tagsId}
+                value={draft.tags.map((tag) => tag.name)}
+                placeholder="Add a tag and press Enter"
+                onChange={(names) => patch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
+              />
+            </div>
+
+            <FormField label="Source" description="Where the recipe came from" feedback={feedback(errors, "sourceUrl")}>
+              <Input
+                name="sourceUrl"
+                type="url"
+                inputMode="url"
+                placeholder="https://"
+                value={draft.sourceUrl ?? ""}
+                autoComplete="off"
+                disabled={saving}
+                onChange={(event) => patch({ sourceUrl: event.target.value.trim() === "" ? null : event.target.value })}
+              />
+            </FormField>
+          </Disclosure>
         </>
       )}
 

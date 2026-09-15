@@ -4,7 +4,7 @@
 // The house style guide — a list of short statements — and the check that a
 // rewrite kept every fact.
 
-export { checkRestyle } from "./restyleCheck";
 export type { PartRestyleCheck, RestyleCheck, RestyledPart } from "./restyleCheck";
-export { StyleRuleCreate, StyleRuleId, StyleRuleReorder, StyleRuleUpdate, styleRuleNote } from "./style";
+export { checkRestyle } from "./restyleCheck";
 export type { StyleRule } from "./style";
+export { StyleRuleCreate, StyleRuleId, StyleRuleReorder, StyleRuleUpdate, styleRuleNote } from "./style";

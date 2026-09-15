@@ -14,10 +14,7 @@
   "performTime": "1 Hour",
   "description": "Sharp, set just enough to slice.",
   "recipeCategory": [{ "id": "c1", "name": "Dessert", "slug": "dessert" }],
-  "tags": [
-    { "id": "t1", "name": "Baking", "slug": "baking" },
-    { "id": "t2", "name": "Dessert", "slug": "dessert" }
-  ],
+  "tags": [{ "id": "t1", "name": "Baking", "slug": "baking" }, { "id": "t2", "name": "Dessert", "slug": "dessert" }],
   "tools": [],
   "rating": 5,
   "orgURL": "https://example.test/lemon-tart",

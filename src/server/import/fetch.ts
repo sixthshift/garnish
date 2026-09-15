@@ -12,7 +12,7 @@
 // Both are worth revisiting if headers alone stop being enough — see
 // docs/plan.md's Log for M35.4 on Serious Eats, which they are not.
 import type { PageResponse } from "../../domain/import";
-import { fetchProfileForAttempt, FETCH_PROFILES } from "./fetchProfiles";
+import { FETCH_PROFILES, fetchProfileForAttempt } from "./fetchProfiles";
 
 /** How long to wait on a page before giving up. */
 export const PAGE_TIMEOUT_MS = 15_000;

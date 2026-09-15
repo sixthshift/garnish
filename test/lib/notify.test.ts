@@ -2,16 +2,7 @@
 // with subscribers, and the Toaster (test/components/Toaster.test.tsx) is what
 // renders it.
 import { describe, expect, test, vi } from "vitest";
-import {
-  createNoticeStore,
-  defaultDuration,
-  MAX_NOTICES,
-  messageFrom,
-  type Notice,
-  type NoticeInput,
-  toNotice,
-  withNotice,
-} from "../../src/lib/notify";
+import { createNoticeStore, defaultDuration, MAX_NOTICES, messageFrom, type Notice, type NoticeInput, toNotice, withNotice } from "../../src/lib/notify";
 
 /** Ids in call order, so assertions can name them. */
 function counter(): () => string {

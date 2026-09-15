@@ -30,10 +30,10 @@ import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
-import { type Food } from "../../../db/models/food/repo";
-import { type Unit } from "../../../db/models/unit/repo";
-import { type Aisle, type FoodConversion, type FoodConversionInput } from "../../../domain/reference";
 import { Combobox } from "../../../components/ui/Combobox";
+import type { Food } from "../../../db/models/food/repo";
+import type { Unit } from "../../../db/models/unit/repo";
+import type { Aisle, FoodConversion, FoodConversionInput } from "../../../domain/reference";
 
 /** A recipe as the "Made by a recipe" Combobox offers it. */
 export type RecipeOption = { id: string; name: string };

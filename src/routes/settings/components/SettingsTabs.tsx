@@ -1,35 +1,35 @@
 import { Button } from "@sixthshift/design-system/button";
+import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Switch } from "@sixthshift/design-system/switch";
-import { Input } from "@sixthshift/design-system/input";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
+import { DataTable } from "../../../components/ui/DataTable";
+import { EditSheet } from "../../../components/ui/EditSheet";
+import { ReorderList } from "../../../components/ui/ReorderList";
+import { UsageConfirmDialog } from "../../../components/ui/UsageConfirmDialog";
+import type { RecipeSummary } from "../../../domain/recipe";
+import type { Aisle, Tag, Unit } from "../../../domain/reference";
+import { type StyleRule, styleRuleNote } from "../../../domain/style";
+import { useMutate } from "../../../lib/mutate";
+import { notify, notifyError } from "../../../lib/notify";
+import type { DataTableColumn } from "../../../lib/ui/dataTable";
+import type { SavedValues } from "../../../lib/ui/editSheet";
+import { deleteAisle, findOrCreateAisle, reorderAisles, updateAisle } from "../../../server/fns/aisles";
+import { deleteFood, mergeFood, updateFood, usingFood } from "../../../server/fns/foods";
+import { createStyleRule, deleteStyleRule, reorderStyleRules, updateStyleRule } from "../../../server/fns/style";
+import { deleteTag, mergeTag, updateTag, usingTag } from "../../../server/fns/tags";
+import { deleteUnit, mergeUnit, updateUnit, usingUnit } from "../../../server/fns/units";
+import type { FoodRow } from "../route";
 import { FoodEditSheet, type FoodPatch } from "./FoodEditSheet";
 import { FoodMergeDialog } from "./FoodMergeDialog";
 import { TagMergeDialog } from "./TagMergeDialog";
 import { ThemeToggle } from "./ThemeToggle";
 import { UnitEditSheet, type UnitPatch } from "./UnitEditSheet";
 import { UnitMergeDialog } from "./UnitMergeDialog";
-import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
-import { DataTable } from "../../../components/ui/DataTable";
-import { type DataTableColumn } from "../../../lib/ui/dataTable";
-import { EditSheet } from "../../../components/ui/EditSheet";
-import { type SavedValues } from "../../../lib/ui/editSheet";
-import { ReorderList } from "../../../components/ui/ReorderList";
-import { UsageConfirmDialog } from "../../../components/ui/UsageConfirmDialog";
-import { type RecipeSummary } from "../../../domain/recipe";
-import { type Aisle, type Tag, type Unit } from "../../../domain/reference";
-import { styleRuleNote, type StyleRule } from "../../../domain/style";
-import { useMutate } from "../../../lib/mutate";
-import { notify, notifyError } from "../../../lib/notify";
-import { deleteAisle, findOrCreateAisle, reorderAisles, updateAisle } from "../../../server/fns/aisles";
-import { deleteFood, mergeFood, updateFood, usingFood } from "../../../server/fns/foods";
-import { createStyleRule, deleteStyleRule, reorderStyleRules, updateStyleRule } from "../../../server/fns/style";
-import { deleteTag, mergeTag, updateTag, usingTag } from "../../../server/fns/tags";
-import { deleteUnit, mergeUnit, updateUnit, usingUnit } from "../../../server/fns/units";
-import { type FoodRow } from "../route";
 
 export function Appearance() {
   return (
@@ -57,14 +57,13 @@ export function AiImportNote() {
     <div className="flex flex-col gap-2" data-testid="ai-import-note">
       <SectionTitle as="h3">Importing with a model</SectionTitle>
       <Muted as="p" className="text-sm">
-        A new recipe can be read out of pasted text by a hosted model, over one OpenAI-compatible request from the server. The
-        option only appears when <code>AI_API_KEY</code> is set there; <code>AI_BASE_URL</code> and <code>AI_MODEL</code> pick a
-        provider and a model, and default to Google's Gemini free tier. Without a key, the other import paths still work and this
-        one stays hidden.
+        A new recipe can be read out of pasted text by a hosted model, over one OpenAI-compatible request from the server. The option only appears when{" "}
+        <code>AI_API_KEY</code> is set there; <code>AI_BASE_URL</code> and <code>AI_MODEL</code> pick a provider and a model, and default to Google's Gemini
+        free tier. Without a key, the other import paths still work and this one stays hidden.
       </Muted>
       <Muted as="p" className="text-sm">
-        The Gemini free tier may train on what is sent to it. What is sent is the text you pasted, which for a public recipe page
-        costs nothing; set the other two variables to use a paid provider or a model on the LAN instead.
+        The Gemini free tier may train on what is sent to it. What is sent is the text you pasted, which for a public recipe page costs nothing; set the other
+        two variables to use a paid provider or a model on the LAN instead.
       </Muted>
     </div>
   );
@@ -180,9 +179,8 @@ export function StyleTab({ rules }: { rules: readonly StyleRule[] }) {
     <section className="flex flex-col gap-4" aria-label="House style" data-style-list>
       <SectionTitle as="h2">House style</SectionTitle>
       <Muted as="p" className="text-sm">
-        Statements read to the model when a recipe's steps are restyled, in this order. The switch is the default for a run; every
-        statement can still be ticked on or off for one recipe. Temperatures, times and quantities are never changed, whatever the
-        guide says.
+        Statements read to the model when a recipe's steps are restyled, in this order. The switch is the default for a run; every statement can still be ticked
+        on or off for one recipe. Temperatures, times and quantities are never changed, whatever the guide says.
       </Muted>
       {order.length === 0 ? (
         <Muted as="p">No statements yet.</Muted>
@@ -198,11 +196,7 @@ export function StyleTab({ rules }: { rules: readonly StyleRule[] }) {
             return (
               <div className="flex flex-col gap-1 rounded-md border border-border-normal px-3 py-2">
                 <div className="flex items-center gap-3">
-                  <Switch
-                    checked={rule.enabled}
-                    aria-label={`Use "${rule.text}" by default`}
-                    onCheckedChange={(enabled) => void toggle(rule, enabled)}
-                  />
+                  <Switch checked={rule.enabled} aria-label={`Use "${rule.text}" by default`} onCheckedChange={(enabled) => void toggle(rule, enabled)} />
                   <Input
                     defaultValue={rule.text}
                     aria-label={`Statement: ${rule.text}`}
@@ -541,9 +535,7 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
         onEdit={(unit) => setEditing(unit)}
         onDelete={(selected) => void askDelete(selected)}
       />
-      {editing && (
-        <UnitEditSheet open unit={editing} busy={busy} onCancel={() => !busy && setEditing(null)} onSave={(patch) => void saveEdit(patch)} />
-      )}
+      {editing && <UnitEditSheet open unit={editing} busy={busy} onCancel={() => !busy && setEditing(null)} onSave={(patch) => void saveEdit(patch)} />}
       {deleting && (
         <UsageConfirmDialog
           name={unitsLabel(deleting)}

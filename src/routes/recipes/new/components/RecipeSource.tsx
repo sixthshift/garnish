@@ -54,17 +54,25 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { type FormEvent, useState } from "react";
-import { type FoodRow, type Tag, type Unit } from "../../../../domain/reference";
+import { draftFromScraped, filterUnits, type IngredientReview, type RecipeDraft } from "../../../../domain/draft";
+import {
+  type FileRecipe,
+  type ImportCheck,
+  type ImportedRecipe,
+  type ImportSource,
+  type MealieRecipe,
+  review,
+  type ScrapedRecipe,
+} from "../../../../domain/import";
 import { pendingCreations, reviewRows, rowCommit } from "../../../../domain/ingredient";
-import { type FileRecipe, type ImportedRecipe, type MealieRecipe, review, type ScrapedRecipe, type ImportCheck, type ImportSource } from "../../../../domain/import";
+import type { FoodRow, Tag, Unit } from "../../../../domain/reference";
 import { postImportFile } from "../../../../lib/importFile";
 import { messageFrom } from "../../../../lib/notify";
-import { foodForRecipe, findOrCreateFood, listFoods } from "../../../../server/fns/foods";
+import { findOrCreateFood, foodForRecipe, listFoods } from "../../../../server/fns/foods";
+import { importFromText, importFromUrl } from "../../../../server/fns/import";
 import { getRecipe, recipeByName } from "../../../../server/fns/recipes";
-import { importFromUrl, importFromText } from "../../../../server/fns/import";
 import { findOrCreateUnit } from "../../../../server/fns/units";
 import { IngredientReviewRow } from "../../components/IngredientReviewRow";
-import { type IngredientReview, filterUnits, type RecipeDraft, draftFromScraped } from "../../../../domain/draft";
 
 /** Which source the chooser is on. `paste` is the AI rung (M34.5) and only appears when `claude` is installed. */
 export type SourceKind = "url" | "manual" | "file" | "paste";
@@ -79,10 +87,7 @@ export type ModelReader = (text: string, anchor?: ScrapedRecipe) => Promise<Impo
  * had. A failure is returned rather than thrown: the rules result stays on the
  * screen and the message goes beside it.
  */
-export async function modelPass(
-  imported: ImportedRecipe,
-  read: ModelReader,
-): Promise<{ ok: true; result: ImportedRecipe } | { ok: false; error: string }> {
+export async function modelPass(imported: ImportedRecipe, read: ModelReader): Promise<{ ok: true; result: ImportedRecipe } | { ok: false; error: string }> {
   try {
     const anchor = imported.from === "schema" ? imported.recipe : undefined;
     const result = await read(imported.pageText, anchor);
@@ -141,8 +146,7 @@ export function SourceChooser({ onChoose, disabled, aiAvailable = false }: Sourc
           >
             <span className="block font-medium">Pasted text</span>
             <Muted as="span" className="mt-1 block text-sm">
-              A photo's text, an email, a page that gave nothing up. Claude reads it here on the server, and you check it before anything
-              is saved.
+              A photo's text, an email, a page that gave nothing up. Claude reads it here on the server, and you check it before anything is saved.
             </Muted>
           </button>
         )}
@@ -233,9 +237,9 @@ export function PasteSource({ text, busy, error, onTextChange, onRead, onBack }:
     <div className="flex flex-col gap-4" data-source-stage="paste">
       <SectionTitle as="h2">From pasted text</SectionTitle>
       <Muted as="p" className="text-sm">
-        Paste the whole recipe — ingredients and method together, in any order. If a site turned the address away, view its source,
-        select all and paste that instead: the page's own data is read first, exactly as a successful fetch would have read it. Either
-        way the model fills this app's fields and you check every line before anything is saved.
+        Paste the whole recipe — ingredients and method together, in any order. If a site turned the address away, view its source, select all and paste that
+        instead: the page's own data is read first, exactly as a successful fetch would have read it. Either way the model fills this app's fields and you check
+        every line before anything is saved.
       </Muted>
       <FormField label="The recipe, or the page's HTML (view source, select all, copy)">
         <Textarea
@@ -286,14 +290,10 @@ export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: 
     <div className="flex flex-col gap-4" data-source-stage="file">
       <SectionTitle as="h2">From a Mealie or Tandoor export</SectionTitle>
       <Muted as="p" className="text-sm">
-        A Mealie backup or a Tandoor export <code>.zip</code>, or a single recipe saved as JSON. Nothing is saved until you have looked
-        at it.
+        A Mealie backup or a Tandoor export <code>.zip</code>, or a single recipe saved as JSON. Nothing is saved until you have looked at it.
       </Muted>
       <div className="flex flex-wrap items-center gap-3">
-        <label
-          htmlFor={inputId}
-          className="cursor-pointer rounded-lg border border-border-normal px-3 py-2 text-sm font-medium hover:bg-bg-subtle"
-        >
+        <label htmlFor={inputId} className="cursor-pointer rounded-lg border border-border-normal px-3 py-2 text-sm font-medium hover:bg-bg-subtle">
           Choose file
         </label>
         <input
@@ -470,10 +470,18 @@ export function ImportReview(props: ImportReviewProps) {
         <div className="flex flex-col gap-2">
           {recipe.description !== "" && <p className="text-sm text-fg-subtle">{recipe.description}</p>}
           <div className="flex flex-wrap items-center gap-1.5">
-            {label !== "" && <Badge variant="soft" intent="neutral">{label}</Badge>}
+            {label !== "" && (
+              <Badge variant="soft" intent="neutral">
+                {label}
+              </Badge>
+            )}
             {recipe.prepMinutes !== null && <Badge variant="soft" intent="neutral">{`Prep ${recipe.prepMinutes} min`}</Badge>}
             {recipe.cookMinutes !== null && <Badge variant="soft" intent="neutral">{`Cook ${recipe.cookMinutes} min`}</Badge>}
-            {recipe.image !== null && <Badge variant="outline" intent="neutral">Image</Badge>}
+            {recipe.image !== null && (
+              <Badge variant="outline" intent="neutral">
+                Image
+              </Badge>
+            )}
             {recipe.tags.map((tag) => (
               <Badge key={tag} variant="outline" intent="brand">
                 {tag}
@@ -654,10 +662,7 @@ export function RecipeSource(props: RecipeSourceProps) {
     setError(null);
     setReadError(null);
     try {
-      const [found, foods] = await Promise.all([
-        load ? load(url) : importFromUrl({ data: { url } }),
-        (loadFoods ?? (() => listFoods({ data: {} })))(),
-      ]);
+      const [found, foods] = await Promise.all([load ? load(url) : importFromUrl({ data: { url } }), (loadFoods ?? (() => listFoods({ data: {} })))()]);
       setImported(found);
       setRows(reviewRows(review.ingredientLines(found.recipe), { units, foods }));
       setRowSteps(null);
@@ -715,10 +720,7 @@ export function RecipeSource(props: RecipeSourceProps) {
     setBusy(true);
     setError(null);
     try {
-      const [found, foods] = await Promise.all([
-        (loadFile ?? postImportFile)(file),
-        (loadFoods ?? (() => listFoods({ data: {} })))(),
-      ]);
+      const [found, foods] = await Promise.all([(loadFile ?? postImportFile)(file), (loadFoods ?? (() => listFoods({ data: {} })))()]);
       if (found.length === 0) throw new Error("No recipe in that file");
       setVocabulary(foods);
       if (found.length === 1) await chooseUploaded(found[0]!, foods);
@@ -912,10 +914,12 @@ export function importSummary(from: ImportSource, ingredients: number, steps: nu
   }
   // An AI read is a reading, not a transcription, so the review is told to
   // check it rather than merely approve it (M34.5).
-  if (from === "ai") return `Claude ${read.toLowerCase()} Check them against what you pasted — nothing is saved yet, and no food or unit is created unless you ask for it below.`;
+  if (from === "ai")
+    return `Claude ${read.toLowerCase()} Check them against what you pasted — nothing is saved yet, and no food or unit is created unless you ask for it below.`;
   // No model to read the page, so the headings it had are gone: schema.org
   // cannot say which part a line belongs to, and nothing else was asked.
-  if (sorted === false) return `${read} No model is configured, so the page's sections were not sorted into parts and every line is on the main body. ${nothingSaved}`;
+  if (sorted === false)
+    return `${read} No model is configured, so the page's sections were not sorted into parts and every line is on the main body. ${nothingSaved}`;
   return `${read} ${nothingSaved}`;
 }
 

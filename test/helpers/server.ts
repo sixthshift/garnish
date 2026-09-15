@@ -111,9 +111,7 @@ export function runLocally<M extends Record<string, unknown>>(mod: M): M {
   for (const [name, value] of Object.entries(mod)) {
     const fn = value as Fetcher;
     out[name] =
-      typeof fn === "function" && fn.serverFnMeta
-        ? Object.assign((opts?: { data?: unknown }) => callServerFn(fn, opts?.data as DataOf<Fetcher>), fn)
-        : value;
+      typeof fn === "function" && fn.serverFnMeta ? Object.assign((opts?: { data?: unknown }) => callServerFn(fn, opts?.data as DataOf<Fetcher>), fn) : value;
   }
   return out as M;
 }

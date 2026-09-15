@@ -9,7 +9,7 @@
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { recipes } from "../../db/models/recipe/repo";
-import { IMAGE_FIELD, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage, type ImageExtension } from "../../lib/imageFile";
+import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
 import { getDb } from "../core/db";
 import { imagesDir } from "./images";

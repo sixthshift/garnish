@@ -1,7 +1,7 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { createAisle, deleteAisle, findOrCreateAisle, listAisles, reorderAisles, updateAisle } from "../../../src/server/fns/aisles";
 import type { NotFoundData } from "../../../src/server/core/fn";
+import { createAisle, deleteAisle, findOrCreateAisle, listAisles, reorderAisles, updateAisle } from "../../../src/server/fns/aisles";
 import { createFood, listFoods } from "../../../src/server/fns/foods";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 

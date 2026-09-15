@@ -82,11 +82,7 @@ export function parseUnit<U extends UnitCandidate>(rest: string, units: readonly
  * candidate across any run of whitespace. Null when `candidate` isn't there.
  */
 function matchLength(text: string, candidate: string, caseSensitive: boolean): number | null {
-  const words = candidate
-    .trim()
-    .split(/\s+/)
-    .map(escapeRegExp)
-    .join("\\s+");
+  const words = candidate.trim().split(/\s+/).map(escapeRegExp).join("\\s+");
   const pattern = new RegExp(`^(?:${words})(?=$|[^\\p{L}\\p{N}])`, caseSensitive ? "u" : "iu");
   const match = pattern.exec(text);
   return match === null ? null : match[0].length;

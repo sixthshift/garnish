@@ -3,15 +3,13 @@
 // component, plus the head of the form (M27.1). Most of the form's rendering is
 // covered by the route tests in test/routes/loaders.test.tsx, which mount it
 // with a router, as the two render tests at the foot of this file do.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
-import { RecipeForm, type RecipeFormProps } from "../../../../src/routes/recipes/components/RecipeForm";
-import { draftFromRecipe, emptyDraft, hasDetails, isDirty, validateDraft, tagsFromNames } from "../../../../src/domain/draft";
-import { detailsHint } from "../../../../src/routes/recipes/components/RecipeForm";
-import { parseAmount, parseMinutes, saveNotice } from "../../../../src/routes/recipes/components/RecipeForm";
-import { clearDraft, putDraft } from "../../../../src/lib/drafts";
+import { draftFromRecipe, emptyDraft, hasDetails, isDirty, tagsFromNames, validateDraft } from "../../../../src/domain/draft";
 import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipe";
+import { clearDraft, putDraft } from "../../../../src/lib/drafts";
+import { detailsHint, parseAmount, parseMinutes, RecipeForm, type RecipeFormProps, saveNotice } from "../../../../src/routes/recipes/components/RecipeForm";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";
 import { renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
@@ -315,7 +313,7 @@ describe("hasDetails", () => {
 describe("detailsHint", () => {
   test("names what is in there", () => {
     expect(detailsHint({ ...emptyDraft(), recipeYield: "tart", prepTime: 20, tags: [weeknight], sourceUrl: "https://example.test/x" })).toBe(
-      "yield, times, 1 tag, source",
+      "yield, times, 1 tag, source"
     );
     expect(detailsHint({ ...emptyDraft(), tags: [weeknight, { ...weeknight, id: "x", name: "Baking", slug: "baking" }] })).toBe("2 tags");
   });
@@ -330,7 +328,8 @@ describe("detailsHint", () => {
 // autofocus is asserted as the attribute React serialises, not as
 // document.activeElement.
 describe("the head of the form", () => {
-  const head = (html: string) => ["name=\"name\"", "name=\"description\"", 'data-placeholder="image"', 'aria-label="Servings"'].map((needle) => html.indexOf(needle));
+  const head = (html: string) =>
+    ['name="name"', 'name="description"', 'data-placeholder="image"', 'aria-label="Servings"'].map((needle) => html.indexOf(needle));
 
   test("a new recipe: name, description, image, servings, and the name is autofocused", async () => {
     const html = await renderRoute("/recipes/new?source=manual");

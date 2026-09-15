@@ -60,11 +60,7 @@ export function TimerChip({ seconds, upperSeconds, label, onStart, timer, classN
       data-done={timer?.done ? "true" : undefined}
       className={cn("inline-flex align-baseline", className)}
     >
-      <Badge
-        variant="soft"
-        intent={timer === undefined ? "neutral" : timer.done ? "success" : "brand"}
-        className="inline-flex items-center gap-1 tabular-nums"
-      >
+      <Badge variant="soft" intent={timer === undefined ? "neutral" : timer.done ? "success" : "brand"} className="inline-flex items-center gap-1 tabular-nums">
         <ClockIcon />
         {timer?.text ?? label}
       </Badge>

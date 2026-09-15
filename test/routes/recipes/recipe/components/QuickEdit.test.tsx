@@ -5,11 +5,11 @@
 // the session's ticks survive.
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { QuickEditIngredientBody, QuickEditStepBody, saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
-import { withIngredientReplaced, withStepReplaced, type DraftIngredient } from "../../../../../src/domain/draft";
+import { type DraftIngredient, withIngredientReplaced, withStepReplaced } from "../../../../../src/domain/draft";
 import type { Ingredient, Recipe } from "../../../../../src/domain/recipe";
 import type { Unit } from "../../../../../src/domain/reference";
-import { getTicks, setIngredientTicked, setStepTicked, type StorageLike } from "../../../../../src/lib/ticks";
+import { getTicks, type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
+import { QuickEditIngredientBody, QuickEditStepBody, saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
 
 // `updateRecipe` is the only server call a save makes; the test keeps what it
 // was sent so it can be compared with the stored document.
@@ -24,8 +24,26 @@ vi.mock("../../../../../src/server/fns/recipes", () => ({
 vi.mock("../../../../../src/server/fns/units", () => ({ listUnits: () => Promise.resolve([]) }));
 vi.mock("../../../../../src/server/fns/foods", () => ({ listFoods: () => Promise.resolve([]) }));
 
-const flour = { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
-const sugar = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "sugar", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const flour = {
+  id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
+const sugar = {
+  id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  name: "sugar",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -93,7 +111,9 @@ const stored: Recipe = {
 };
 
 /** Every id in a document, in order: what a quick edit must leave alone. */
-function idsOf(doc: { parts: ReadonlyArray<{ id?: string; ingredients: ReadonlyArray<{ id?: string }>; steps: ReadonlyArray<{ id?: string }> }> }): Array<string | undefined> {
+function idsOf(doc: {
+  parts: ReadonlyArray<{ id?: string; ingredients: ReadonlyArray<{ id?: string }>; steps: ReadonlyArray<{ id?: string }> }>;
+}): Array<string | undefined> {
   return doc.parts.flatMap((part) => [part.id, ...part.ingredients.map((row) => row.id), ...part.steps.map((row) => row.id)]);
 }
 

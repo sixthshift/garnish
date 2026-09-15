@@ -149,10 +149,7 @@ const GLYPHS = [...GLYPH_FRACTIONS.keys()].join("");
 // and fractional halves could be taken separately; a rewrite that turns
 // "2 1/2 hrs" into "2½ hours" has kept the fact, not dropped one and added one.
 const NUMBER = String.raw`\d+\s+\d+\s*/\s*\d+|\d+\s*[${GLYPHS}]|\d+\s*/\s*\d+|\d+(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|[${GLYPHS}]`;
-const FACT = new RegExp(
-  String.raw`(${NUMBER})(?:\s*(?:-|–|—|to)\s*(${NUMBER}))?\s*(?:°\s*)?([a-z]+\.?)?`,
-  "giu",
-);
+const FACT = new RegExp(String.raw`(${NUMBER})(?:\s*(?:-|–|—|to)\s*(${NUMBER}))?\s*(?:°\s*)?([a-z]+\.?)?`, "giu");
 
 /**
  * A number that is a pointer, not a fact: "(Note 4)", "see note 2", "step 5",
@@ -213,10 +210,7 @@ function mentions(text: string, name: string): boolean {
  * counts as named when either its name or its plural appears as a whole word.
  * Pure.
  */
-export function foodsMentioned(
-  steps: readonly string[],
-  ingredients: OriginalPart["ingredients"],
-): string[] {
+export function foodsMentioned(steps: readonly string[], ingredients: OriginalPart["ingredients"]): string[] {
   const text = steps.join("\n");
   const found: string[] = [];
   for (const ingredient of ingredients) {

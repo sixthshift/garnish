@@ -85,7 +85,7 @@ function readAmount(text: string): { value: number; length: number } | null {
   const number = /^\d+(?:\.\d+)?/.exec(text);
   if (number === null) return null;
   const value = Number(number[0]);
-  let length = number[0].length;
+  const length = number[0].length;
 
   // "3/4": the number read was the numerator, not a whole number.
   const denominator = /^\s*\/\s*(\d+)/.exec(text.slice(length));

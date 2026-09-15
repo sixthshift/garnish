@@ -5,10 +5,10 @@ import { mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, expect, test } from "vitest";
-import { applyDevData } from "../../../src/db/dev/apply";
-import { devIds, generateDevRecipes } from "../../../src/db/dev/generate";
-import { parseDevSeedFlags } from "../../../src/db/dev/cli";
 import { openDatabase } from "../../../src/db/connection/open";
+import { applyDevData } from "../../../src/db/dev/apply";
+import { parseDevSeedFlags } from "../../../src/db/dev/cli";
+import { devIds, generateDevRecipes } from "../../../src/db/dev/generate";
 import { migrate } from "../../../src/db/migrations/migrate";
 import { recipes } from "../../../src/db/models/recipe/repo";
 import { timeline } from "../../../src/db/models/timeline/repo";
@@ -59,7 +59,7 @@ test("re-running replaces rather than duplicates, and lands in the same state", 
   expect(
     recipes(db)
       .list()
-      .map((r) => `${r.slug}|${r.rating}|${r.favourite}|${r.lastMade}`),
+      .map((r) => `${r.slug}|${r.rating}|${r.favourite}|${r.lastMade}`)
   ).toEqual(first);
 });
 
@@ -68,9 +68,7 @@ test("a hand-written recipe survives a re-run, even sharing a name", async () =>
   await applyDevData(db, dataset, images);
 
   // Same name as a generated one: the slug collides, the id does not.
-  const mine = recipes(db).create(
-    recipeInputSchema.parse({ name: dataset[0]!.input.name, parts: [{ name: "", ingredients: [], steps: [] }] }),
-  );
+  const mine = recipes(db).create(recipeInputSchema.parse({ name: dataset[0]!.input.name, parts: [{ name: "", ingredients: [], steps: [] }] }));
 
   await applyDevData(db, dataset, images);
   expect(recipes(db).get(mine.slug)).not.toBeNull();
@@ -92,7 +90,12 @@ test("timestamps are the generated ones, not the moment of the insert", async ()
 test("the ids it owns are exactly the ones it removes", async () => {
   const dataset = small();
   await applyDevData(db, dataset, images);
-  const stored = new Set(db.query<{ id: string }, []>("SELECT id FROM recipe").all().map((r) => r.id));
+  const stored = new Set(
+    db
+      .query<{ id: string }, []>("SELECT id FROM recipe")
+      .all()
+      .map((r) => r.id)
+  );
   expect(devIds(dataset).every((id) => stored.has(id))).toBe(true);
 });
 

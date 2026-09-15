@@ -8,7 +8,7 @@ export class NotFound extends Error {
     /** What was looked up, e.g. "recipe". */
     readonly entity: string,
     /** The id or slug that missed. */
-    readonly id: string,
+    readonly id: string
   ) {
     super(`${entity} ${id} not found`);
   }

@@ -18,28 +18,38 @@ import { Popover } from "@sixthshift/design-system/popover";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Link } from "@tanstack/react-router";
 import { type FormEvent, useState } from "react";
-import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingSheet";
-import { RecipeActions } from "./components/RecipeActions";
-import { IngredientModeToggle } from "./components/IngredientModeToggle";
-import { IngredientList, PartIngredients } from "./components/IngredientList";
-import { RecipeHeader, RecipeMetaFooter } from "./components/RecipeHeader";
-import { QuickEditProvider } from "./components/QuickEdit";
-import { StepList } from "./components/StepList";
-import { TimerStrip } from "./components/TimerStrip";
-import { mergeIngredients, scaledForServings, type Part, nextServings } from "../../../domain/recipe";
-import { MadeThisButton, TimelineList } from "./components/Timeline";
 import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
-import { useIngredientMode } from "../../../lib/prefs";
-import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
+import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingSheet";
+import { mergeIngredients, nextServings, type Part, scaledForServings } from "../../../domain/recipe";
 import { useMutate } from "../../../lib/mutate";
 import { notifyError } from "../../../lib/notify";
+import { useIngredientMode } from "../../../lib/prefs";
+import { clearTicksNow, useAnyTicked } from "../../../lib/ticks";
 import { setRating } from "../../../server/fns/recipes";
+import { IngredientList, PartIngredients } from "./components/IngredientList";
+import { IngredientModeToggle } from "./components/IngredientModeToggle";
+import { QuickEditProvider } from "./components/QuickEdit";
+import { RecipeActions } from "./components/RecipeActions";
+import { RecipeHeader, RecipeMetaFooter } from "./components/RecipeHeader";
+import { StepList } from "./components/StepList";
+import { MadeThisButton, TimelineList } from "./components/Timeline";
+import { TimerStrip } from "./components/TimerStrip";
 import { Route } from "./route";
 
 /** A pencil, drawn the way RecipeHeader.tsx draws its own icons. */
 function EditIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19 3 20l1-4Z" />
     </svg>
   );
@@ -163,12 +173,9 @@ export function RecipePage() {
                 </div>
               )}
 
-              {summary && hasIngredients && (
-                <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />
-              )}
+              {summary && hasIngredients && <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />}
 
-              {!summary &&
-                recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
+              {!summary && recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
             </aside>
 
             <div className="flex max-w-prose flex-col gap-6 md:col-span-2" data-testid="method-column">
@@ -229,7 +236,15 @@ function ScaleControl({ servings }: { servings: number }) {
   return (
     <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Scale servings">
       <div className="flex items-center gap-2">
-        <Button variant="outline" intent="neutral" size="sm" iconOnly aria-label="Fewer servings" disabled={servings <= 1} onClick={() => go(nextServings(servings, -1))}>
+        <Button
+          variant="outline"
+          intent="neutral"
+          size="sm"
+          iconOnly
+          aria-label="Fewer servings"
+          disabled={servings <= 1}
+          onClick={() => go(nextServings(servings, -1))}
+        >
           −
         </Button>
         <Popover

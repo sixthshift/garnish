@@ -5,10 +5,48 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { addPart, renamePart, addIngredient, ingredientSummary, isTextOnly, moveIngredient, moveIngredientTo, newIngredient, removeIngredient, textOnlyPatch, updateIngredient, addReviewedIngredients, parsedRowPatch, parseRowFor, reviewedIngredient, filterUnits, foodReference, matchUnit, parseQuantity, quantityText, unitReference, addStep, linkIngredient, type IngredientReview, type DraftPart, type DraftIngredient, type RecipeDraft, emptyDraft, validateDraft } from "../../../../src/domain/draft";
-import { confirmReviewedIngredients, EMPTY_INGREDIENT_SUMMARY, IngredientFields, type IngredientFieldsProps, ingredientReview, IngredientsEditor, INGREDIENT_DRAG_GROUP } from "../../../../src/routes/recipes/components/IngredientsEditor";
 import { BulkInlinePanel } from "../../../../src/components/ui/BulkAddSheet";
-import { pendingCreations, type ReviewRow, rowCommit, reviewRows } from "../../../../src/domain/ingredient";
+import {
+  addIngredient,
+  addPart,
+  addReviewedIngredients,
+  addStep,
+  type DraftIngredient,
+  type DraftPart,
+  emptyDraft,
+  filterUnits,
+  foodReference,
+  type IngredientReview,
+  ingredientSummary,
+  isTextOnly,
+  linkIngredient,
+  matchUnit,
+  moveIngredient,
+  moveIngredientTo,
+  newIngredient,
+  parsedRowPatch,
+  parseQuantity,
+  parseRowFor,
+  quantityText,
+  type RecipeDraft,
+  removeIngredient,
+  renamePart,
+  reviewedIngredient,
+  textOnlyPatch,
+  unitReference,
+  updateIngredient,
+  validateDraft,
+} from "../../../../src/domain/draft";
+import { pendingCreations, type ReviewRow, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
+import {
+  confirmReviewedIngredients,
+  EMPTY_INGREDIENT_SUMMARY,
+  INGREDIENT_DRAG_GROUP,
+  IngredientFields,
+  type IngredientFieldsProps,
+  IngredientsEditor,
+  ingredientReview,
+} from "../../../../src/routes/recipes/components/IngredientsEditor";
 import { findOrCreateFood, listFoods } from "../../../../src/server/fns/foods";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
@@ -105,8 +143,26 @@ describe("newIngredient, isTextOnly, textOnlyPatch", () => {
 
 describe("foodReference and unitReference", () => {
   test("a listFoods row becomes a document food with a null aisle", () => {
-    const ref = foodReference({ id: gram.id, name: "Flour", pluralName: null, aliases: ["plain flour"], aisleId: "aisle-1", recipeId: null, skipShopping: false, conversions: [] });
-    expect(ref).toEqual({ id: gram.id, name: "Flour", pluralName: null, aliases: ["plain flour"], aisle: null, recipeId: null, skipShopping: false, conversions: [] });
+    const ref = foodReference({
+      id: gram.id,
+      name: "Flour",
+      pluralName: null,
+      aliases: ["plain flour"],
+      aisleId: "aisle-1",
+      recipeId: null,
+      skipShopping: false,
+      conversions: [],
+    });
+    expect(ref).toEqual({
+      id: gram.id,
+      name: "Flour",
+      pluralName: null,
+      aliases: ["plain flour"],
+      aisle: null,
+      recipeId: null,
+      skipShopping: false,
+      conversions: [],
+    });
   });
 
   test("a name alone becomes a new reference with defaults and a client uuid", () => {
@@ -114,12 +170,23 @@ describe("foodReference and unitReference", () => {
     expect(ref).toMatchObject({ name: "yeast", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] });
     expect(ref.id).toMatch(UUID);
     const unit = unitReference(" handful ");
-    expect(unit).toMatchObject({ name: "handful", pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null });
+    expect(unit).toMatchObject({
+      name: "handful",
+      pluralName: null,
+      abbreviation: "",
+      useAbbreviation: false,
+      fraction: true,
+      standardQuantity: null,
+      standardUnitId: null,
+    });
     expect(unit.id).toMatch(UUID);
   });
 
   test("both pass the document schema inside a recipe", () => {
-    const draft = updateIngredient(addIngredient({ ...emptyDraft(), name: "Toast" }, 0), 0, 0, { food: foodReference({ name: "bread" }), unit: unitReference("slice") });
+    const draft = updateIngredient(addIngredient({ ...emptyDraft(), name: "Toast" }, 0), 0, 0, {
+      food: foodReference({ name: "bread" }),
+      unit: unitReference("slice"),
+    });
     expect(validateDraft(draft).ok).toBe(true);
   });
 });
@@ -170,7 +237,13 @@ describe("addIngredient, updateIngredient, removeIngredient", () => {
 
   test("out-of-range indices return an unchanged copy", () => {
     const draft = tart();
-    for (const next of [addIngredient(draft, 2), updateIngredient(draft, 0, 5, { note: "x" }), updateIngredient(draft, -1, 0, {}), removeIngredient(draft, 1, 1), removeIngredient(draft, 3, 0)]) {
+    for (const next of [
+      addIngredient(draft, 2),
+      updateIngredient(draft, 0, 5, { note: "x" }),
+      updateIngredient(draft, -1, 0, {}),
+      removeIngredient(draft, 1, 1),
+      removeIngredient(draft, 3, 0),
+    ]) {
       expect(next.parts).toEqual(draft.parts);
       expect(next.parts).not.toBe(draft.parts);
     }
@@ -232,7 +305,16 @@ describe("moveIngredientTo", () => {
 // The bulk-add path after the review step (M17.5): a reviewed line only
 // commits a structured row when its food resolved, and a declined one falls
 // back to the text-only row bulk add used to produce for every line.
-const flourRow = { id: "11111111-1111-4111-8111-111111111111", name: "flour", pluralName: null, aliases: [], aisleId: null, recipeId: null, skipShopping: false, conversions: [] };
+const flourRow = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisleId: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 
 function reviewOf(line: string): ReviewRow<typeof gram, typeof flourRow> {
   return reviewRows([line], { units, foods: [flourRow] })[0]!;
@@ -371,7 +453,7 @@ describe("IngredientsEditor", () => {
     expect(empty).toContain("One ingredient per line");
 
     const html = renderToString(
-      <IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} disabled errors={{ "parts.0.ingredients.1.quantity": "Too small" }} />,
+      <IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} disabled errors={{ "parts.0.ingredients.1.quantity": "Too small" }} />
     );
     expect(tagWithLabel(html, "Ingredient 1 quantity")).toContain('disabled=""');
     expect(tagWithLabel(html, "Ingredient 1 food")).toContain('disabled=""');
@@ -411,7 +493,16 @@ describe("Text-first ingredients (M27.2)", () => {
     const review = inlineReview();
     const rows = review.rows(["200 g flour", "100 g almond meal"]);
     const html = renderToString(
-      <BulkInlinePanel itemName="ingredient" review={review} text="200 g flour\n100 g almond meal" rows={rows} onTextChange={() => {}} onRowsChange={() => {}} onAdvance={() => {}} onBack={() => {}} />,
+      <BulkInlinePanel
+        itemName="ingredient"
+        review={review}
+        text="200 g flour\n100 g almond meal"
+        rows={rows}
+        onTextChange={() => {}}
+        onRowsChange={() => {}}
+        onAdvance={() => {}}
+        onBack={() => {}}
+      />
     );
     expect(html).not.toContain("One ingredient per line");
     expect(html).toContain("2 ingredients to review");
@@ -663,7 +754,12 @@ describe("the phone sheet's fields", () => {
   test("editing in the sheet saves back into the draft", () => {
     const draft = tart();
     let next: RecipeDraft | null = null;
-    const tree = IngredientFields({ ...fieldProps(draft, 1, (patch) => { next = updateIngredient(draft, 0, 1, patch); }), showOriginalText: true });
+    const tree = IngredientFields({
+      ...fieldProps(draft, 1, (patch) => {
+        next = updateIngredient(draft, 0, 1, patch);
+      }),
+      showOriginalText: true,
+    });
 
     elementWithLabel(tree, "Ingredient 2 quantity").props.onChange({ target: { value: "1 1/2" } });
     expect(next!.parts[0]!.ingredients[1]!.quantity).toBe(1.5);
@@ -861,7 +957,12 @@ describe("the Parse action's two placements (M17.6)", () => {
   test("pressing Parse in the sheet calls onStart", () => {
     const draft = textOnlyDraft("3 lemons");
     let started = false;
-    const parse = { ...noopParse, onStart: () => { started = true; } };
+    const parse = {
+      ...noopParse,
+      onStart: () => {
+        started = true;
+      },
+    };
     const tree = IngredientFields({ ...fieldProps(draft, 0, () => {}), parse, showOriginalText: true });
     elementWithLabel(tree, "Ingredient 1 parse").props.onClick();
     expect(started).toBe(true);
@@ -872,7 +973,19 @@ describe("the Parse action's two placements (M17.6)", () => {
     const row = parseRowFor("3 lemons", { units, foods: [flourRow] }, "row");
     let confirmed = false;
     let cancelled = false;
-    const parse = { review: row, busy: false, error: null, onStart: () => {}, onChange: () => {}, onCancel: () => { cancelled = true; }, onConfirm: () => { confirmed = true; } };
+    const parse = {
+      review: row,
+      busy: false,
+      error: null,
+      onStart: () => {},
+      onChange: () => {},
+      onCancel: () => {
+        cancelled = true;
+      },
+      onConfirm: () => {
+        confirmed = true;
+      },
+    };
     const tree = IngredientFields({ ...fieldProps(draft, 0, () => {}), parse, originalTextAbove: true });
     elementWithLabel(tree, "Ingredient 1 parse apply").props.onClick();
     expect(confirmed).toBe(true);

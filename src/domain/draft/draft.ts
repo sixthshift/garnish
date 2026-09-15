@@ -1,8 +1,9 @@
 // A draft from nothing, from a recipe, or from parsed input; and what it has in it.
-import { type ParsedRecipeInput, type Recipe } from "../recipe";
+
 import { randomUuid } from "../../lib/id";
+import type { ParsedRecipeInput, Recipe } from "../recipe";
 import { newPart } from "./parts";
-import { type RecipeDraft } from "./types";
+import type { RecipeDraft } from "./types";
 
 /** A blank recipe with one unnamed, empty component: the least document that validates. Pure apart from the component's random id. */
 export function emptyDraft(): RecipeDraft {
@@ -102,4 +103,3 @@ export function hasDetails(draft: RecipeDraft): boolean {
     (draft.sourceUrl ?? "").trim() !== ""
   );
 }
-

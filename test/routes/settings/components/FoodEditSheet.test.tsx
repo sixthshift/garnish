@@ -2,11 +2,20 @@
 // FoodEditSheetContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, expectTypeOf, test } from "vitest";
-import { FoodEditSheetContent, type FoodPatch } from "../../../../src/routes/settings/components/FoodEditSheet";
-import { aliasesText, blankConversion, conversionDraft, isBlankConversion, parseAliases, parseConversions, type ConversionDraft } from "../../../../src/routes/settings/components/FoodEditSheet";
 import type { Food } from "../../../../src/db/models/food/repo";
 import type { Unit } from "../../../../src/db/models/unit/repo";
 import type { Aisle } from "../../../../src/domain/reference";
+import {
+  aliasesText,
+  blankConversion,
+  type ConversionDraft,
+  conversionDraft,
+  FoodEditSheetContent,
+  type FoodPatch,
+  isBlankConversion,
+  parseAliases,
+  parseConversions,
+} from "../../../../src/routes/settings/components/FoodEditSheet";
 
 const dairy: Aisle = { id: "a1", name: "Dairy", position: 0 };
 const bakery: Aisle = { id: "a2", name: "Bakery", position: 1 };
@@ -96,16 +105,22 @@ describe("parseConversions", () => {
   test("conversionDraft round-trips a stored conversion", () => {
     const stored = { id: "c1", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 };
     expect(conversionDraft(stored)).toEqual({ key: "c1", quantity: "1", unitId: cup.id, toQuantity: "125", toUnitId: gram.id });
-    expect(parseConversions([conversionDraft(stored)]).conversions).toEqual([
-      { unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 },
-    ]);
+    expect(parseConversions([conversionDraft(stored)]).conversions).toEqual([{ unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }]);
   });
 });
 
 describe("FoodEditSheetContent render", () => {
   const render = (food: Food, aisles: readonly Aisle[] = [dairy, bakery], busy = false, units: readonly Unit[] = [cup, gram]) =>
     renderToString(
-      <FoodEditSheetContent food={food} aisles={aisles} units={units} busy={busy} onSave={() => {}} onCancel={() => {}} onCreateAisle={() => Promise.resolve(dairy)} />,
+      <FoodEditSheetContent
+        food={food}
+        aisles={aisles}
+        units={units}
+        busy={busy}
+        onSave={() => {}}
+        onCancel={() => {}}
+        onCreateAisle={() => Promise.resolve(dairy)}
+      />
     );
 
   test("shows the food's current values: name, plural, aisle and aliases", () => {
@@ -134,7 +149,7 @@ describe("FoodEditSheetContent render", () => {
 describe("the conversions editor", () => {
   const render = (food: Food, units: readonly Unit[] = [cup, gram]) =>
     renderToString(
-      <FoodEditSheetContent food={food} aisles={[dairy]} units={units} onSave={() => {}} onCancel={() => {}} onCreateAisle={() => Promise.resolve(dairy)} />,
+      <FoodEditSheetContent food={food} aisles={[dairy]} units={units} onSave={() => {}} onCancel={() => {}} onCreateAisle={() => Promise.resolve(dairy)} />
     );
 
   const flour: Food = {
@@ -178,14 +193,7 @@ describe("made by a recipe", () => {
   ];
   const render = (food: Food, list: readonly { id: string; name: string }[] = recipes) =>
     renderToString(
-      <FoodEditSheetContent
-        food={food}
-        aisles={[dairy]}
-        recipes={list}
-        onSave={() => {}}
-        onCancel={() => {}}
-        onCreateAisle={() => Promise.resolve(dairy)}
-      />,
+      <FoodEditSheetContent food={food} aisles={[dairy]} recipes={list} onSave={() => {}} onCancel={() => {}} onCreateAisle={() => Promise.resolve(dairy)} />
     );
 
   test("the field offers the recipes and starts blank for an ordinary food", () => {

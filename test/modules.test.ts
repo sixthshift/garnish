@@ -74,7 +74,7 @@ describe("layers", () => {
         relativeSpecifiers(readFileSync(file, "utf8"))
           .map((specifier) => relative(root, resolve(dirname(file), specifier)))
           .filter((target) => targets.some((t) => target.startsWith(t)))
-          .map((target) => `${relative(root, file)} -> ${target}`),
+          .map((target) => `${relative(root, file)} -> ${target}`)
       );
 
   test("domain/ imports nothing from routes/ or components/", () => {

@@ -3,7 +3,18 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { DataTable } from "../../../src/components/ui/DataTable";
-import { cellText, compareCells, type DataTableColumn, filterItems, headerChecked, nextSort, searchText, sortItems, toggleAll, toggleKey } from "../../../src/lib/ui/dataTable";
+import {
+  cellText,
+  compareCells,
+  type DataTableColumn,
+  filterItems,
+  headerChecked,
+  nextSort,
+  searchText,
+  sortItems,
+  toggleAll,
+  toggleKey,
+} from "../../../src/lib/ui/dataTable";
 
 type Row = { id: string; name: string; aisle: string | null; aliases: number; skip: boolean };
 

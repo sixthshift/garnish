@@ -5,10 +5,18 @@
 // hand, the way the other sheet tests do it.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { RestyleSheetContent, type RestyleAnswer } from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
-import { applyPayload, type ApplyPart, enabledRuleIds, initialTicked, missingLine, partHeading } from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
 import type { Part, Recipe, Step } from "../../../../../src/domain/recipe";
 import { checkRestyle, type StyleRule } from "../../../../../src/domain/style";
+import {
+  type ApplyPart,
+  applyPayload,
+  enabledRuleIds,
+  initialTicked,
+  missingLine,
+  partHeading,
+  type RestyleAnswer,
+  RestyleSheetContent,
+} from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
 
 let n = 0;
 function step(text: string): Step {
@@ -143,7 +151,10 @@ describe("applyPayload", () => {
   });
 
   test("the part's name is always the recipe's own, never the answer's", () => {
-    const renamed = [{ name: "MAIN", steps: ["One."] }, { name: "sauce", steps: ["Two."] }];
+    const renamed = [
+      { name: "MAIN", steps: ["One."] },
+      { name: "sauce", steps: ["Two."] },
+    ];
     expect(applyPayload(original, renamed, new Set([0, 1])).map((p) => p.name)).toEqual(["", "Sauce"]);
   });
 });
@@ -205,10 +216,7 @@ describe("the rules stage", () => {
 });
 
 describe("the diff stage", () => {
-  const recipe = recipeWith([
-    part("", ["Heat the oven to 180°C.", "Bake for 30 minutes."]),
-    part("Sauce", ["Fry the onion for 5 minutes."]),
-  ]);
+  const recipe = recipeWith([part("", ["Heat the oven to 180°C.", "Bake for 30 minutes."]), part("Sauce", ["Fry the onion for 5 minutes."])]);
   // The second part's rewrite drops the 5 minutes, so M37.3 fails it.
   const restyled = [
     { name: "", steps: ["Heat the oven to 180°C, then bake for 30 minutes."] },

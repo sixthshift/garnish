@@ -1,6 +1,6 @@
 // A draft against the recipe schema, with the field messages the form shows.
 import { type ParsedRecipeInput, recipeInputSchema } from "../recipe";
-import { type RecipeDraft } from "./types";
+import type { RecipeDraft } from "./types";
 
 /** Field path ("name", "parts.0.name") to its first error message. */
 export type FieldErrors = Record<string, string>;
@@ -29,4 +29,3 @@ export function validateDraft(draft: RecipeDraft): ValidationResult {
   }
   return { ok: false, errors };
 }
-

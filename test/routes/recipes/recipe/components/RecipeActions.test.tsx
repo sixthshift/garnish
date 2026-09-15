@@ -2,12 +2,12 @@
 // left it for buttons of their own in the header (M25.5). Rendered inside a
 // throwaway router since `useNavigate` (duplicate, delete) needs one, even
 // though the menu itself no longer holds any `Link`.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, expectTypeOf, test } from "vitest";
-import { RecipeActions, type RecipeActionsProps } from "../../../../../src/routes/recipes/recipe/components/RecipeActions";
 import { Menu } from "../../../../../src/components/ui/Menu";
 import type { Recipe } from "../../../../../src/domain/recipe";
+import { RecipeActions, type RecipeActionsProps } from "../../../../../src/routes/recipes/recipe/components/RecipeActions";
 
 const base: Recipe = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -85,7 +85,7 @@ describe("the menu's items", () => {
       <Menu label="Recipe actions" open>
         <Menu.Item onSelect={() => {}}>Duplicate</Menu.Item>
         <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
-      </Menu>,
+      </Menu>
     );
     expect(html).toContain("Make this a food");
   });
@@ -103,7 +103,7 @@ describe("Copy as Cooklang (M34.2)", () => {
         <Menu.Item onSelect={() => {}}>Copy link</Menu.Item>
         <Menu.Item onSelect={() => {}}>Copy ingredients</Menu.Item>
         <Menu.Item onSelect={() => {}}>Copy as Cooklang</Menu.Item>
-      </Menu>,
+      </Menu>
     );
     expect(html).toContain("Copy as Cooklang");
   });
@@ -120,7 +120,7 @@ describe("Plan (M33.4)", () => {
       <Menu label="Recipe actions" open>
         <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
         <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
-      </Menu>,
+      </Menu>
     );
     expect(html).toContain("Plan");
   });
@@ -138,7 +138,7 @@ describe("Restyle steps (M37.6)", () => {
       <Menu label="Recipe actions" open>
         <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
         <Menu.Item onSelect={() => {}}>Restyle steps</Menu.Item>
-      </Menu>,
+      </Menu>
     );
     expect(html).toContain("Restyle steps");
   });

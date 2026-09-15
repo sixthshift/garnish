@@ -3,10 +3,10 @@
 // duplicate throws SQLite's UNIQUE error, findOrCreate returns the match.
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import { orm } from "../../connection/client";
-import { cleanName, likePattern } from "../../../lib/names";
-import { ingredient } from "../recipe/schema";
 import type { FoodConversion, FoodRow } from "../../../domain/reference";
+import { cleanName, likePattern } from "../../../lib/names";
+import { orm } from "../../connection/client";
+import { ingredient } from "../recipe/schema";
 import { food, foodConversion } from "./schema";
 
 export type Food = FoodRow;
@@ -56,7 +56,7 @@ export function foods(db: Database) {
           quantity: row.quantity,
           toUnitId: row.toUnitId,
           toQuantity: row.toQuantity,
-        })),
+        }))
       )
       .run();
   }
@@ -101,7 +101,7 @@ export function foods(db: Database) {
               .where(sql`${food.name} LIKE ${likePattern(q)} ESCAPE '\\'`)
               .orderBy(asc(food.name))
               .all()
-          : query.orderBy(asc(food.name)).all(),
+          : query.orderBy(asc(food.name)).all()
       );
     },
     get,

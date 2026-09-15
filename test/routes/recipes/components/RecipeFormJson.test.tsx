@@ -1,7 +1,7 @@
 // The editor's JSON view (M13.5): the document round-trips through the
 // textarea, and bad text comes back as a message rather than a draft.
 import { describe, expect, test } from "vitest";
-import { draftFromInput, draftFromRecipe, emptyDraft, draftFromJson, draftToJson, type RecipeDraft } from "../../../../src/domain/draft";
+import { draftFromInput, draftFromJson, draftFromRecipe, draftToJson, emptyDraft, type RecipeDraft } from "../../../../src/domain/draft";
 import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipe";
 
 const gram = {
@@ -37,7 +37,9 @@ const stored: Recipe = {
     {
       id: "33333333-3333-4333-8333-333333333333",
       name: "Pastry",
-      ingredients: [{ id: "44444444-4444-4444-8444-444444444444", quantity: 200, unit: gram, food: null, note: "flour", originalText: "200 g flour", fixed: true }],
+      ingredients: [
+        { id: "44444444-4444-4444-8444-444444444444", quantity: 200, unit: gram, food: null, note: "flour", originalText: "200 g flour", fixed: true },
+      ],
       steps: [{ id: "55555555-5555-4555-8555-555555555555", text: "Rub in.", ingredientIds: [], image: null }],
     },
     {

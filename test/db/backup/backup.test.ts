@@ -29,7 +29,11 @@ async function sourceDb(): Promise<{ db: Database; path: string }> {
 }
 
 const journalMode = (db: Database) => db.query<{ journal_mode: string }, []>("PRAGMA journal_mode").get()!.journal_mode;
-const unitNames = (db: Database) => db.query<{ name: string }, []>("SELECT name FROM unit ORDER BY name").all().map((r) => r.name);
+const unitNames = (db: Database) =>
+  db
+    .query<{ name: string }, []>("SELECT name FROM unit ORDER BY name")
+    .all()
+    .map((r) => r.name);
 
 test("backupFileName is garnish-YYYYMMDD-HHmmss.db in UTC", () => {
   expect(backupFileName(new Date("2026-09-10T03:04:05.678Z"))).toBe("garnish-20260910-030405.db");

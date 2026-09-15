@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { formatAmount } from "../../src/domain/ingredient";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { units, type UnitRepository } from "../../src/db/models/unit/repo";
+import { type UnitRepository, units } from "../../src/db/models/unit/repo";
+import { formatAmount } from "../../src/domain/ingredient";
 
 let db: Database;
 let repo: UnitRepository;
@@ -27,7 +27,14 @@ test("create applies Mealie defaults and list returns by name", () => {
   });
 
   const gram = repo.create({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false });
-  const kilogram = repo.create({ name: "kilogram", abbreviation: "kg", useAbbreviation: true, fraction: false, standardQuantity: 1000, standardUnitId: gram.id });
+  const kilogram = repo.create({
+    name: "kilogram",
+    abbreviation: "kg",
+    useAbbreviation: true,
+    fraction: false,
+    standardQuantity: 1000,
+    standardUnitId: gram.id,
+  });
   expect(gram).toMatchObject({ abbreviation: "g", useAbbreviation: true, fraction: false });
   expect(kilogram).toMatchObject({ standardQuantity: 1000, standardUnitId: gram.id });
 

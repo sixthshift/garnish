@@ -19,21 +19,20 @@ import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
+import { Disclosure } from "../../../../components/ui/Disclosure";
+import { Menu } from "../../../../components/ui/Menu";
+import { type DraftNote, draftFromRecipe, type RecipeDraft } from "../../../../domain/draft";
 import { servingsLabel } from "../../../../domain/plan";
-import { type Recipe, type TimelineEvent, type TimelineEventInput } from "../../../../domain/recipe";
+import type { Recipe, TimelineEvent, TimelineEventInput } from "../../../../domain/recipe";
+import { formatDateStamp } from "../../../../lib/dates";
+import { randomUuid } from "../../../../lib/id";
 import { timelineImageUrl, uploadTimelineImage } from "../../../../lib/images";
 import { useMutate } from "../../../../lib/mutate";
 import { notify, notifyError } from "../../../../lib/notify";
 import { clearTicksNow } from "../../../../lib/ticks";
 import { createTimelineEvent, deleteTimelineEvent } from "../../../../server/fns/timeline";
-import { formatDateStamp } from "../../../../lib/dates";
-import { Disclosure } from "../../../../components/ui/Disclosure";
-import { Menu } from "../../../../components/ui/Menu";
 import { MadeThisSheet } from "./MadeThisSheet";
 import { saveQuickEdit, useQuickEditContext } from "./QuickEdit";
-
-import { draftFromRecipe, type DraftNote, type RecipeDraft } from "../../../../domain/draft";
-import { randomUuid } from "../../../../lib/id";
 
 export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "recipeServings"> };
 
@@ -85,8 +84,8 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
           {
             createEvent: (recipeId, created) => createTimelineEvent({ data: { recipeId, event: created } }),
             uploadPhoto: uploadTimelineImage,
-          },
-        ),
+          }
+        )
       );
       notify({ intent: "success", title: "Cook logged", message: formatDateStamp(event.occurredOn) });
       setOpen(false);
@@ -99,14 +98,7 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        intent="neutral"
-        size="sm"
-        data-testid="made-this"
-        onClick={() => setOpen(true)}
-      >
+      <Button type="button" variant="outline" intent="neutral" size="sm" data-testid="made-this" onClick={() => setOpen(true)}>
         Made this
       </Button>
       <MadeThisSheet

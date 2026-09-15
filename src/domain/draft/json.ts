@@ -1,7 +1,7 @@
 // A draft as JSON and back (the editor's JSON tab).
 import { recipeInputSchema } from "../recipe";
-import { type RecipeDraft } from "./types";
 import { draftFromInput } from "./draft";
+import type { RecipeDraft } from "./types";
 
 /** The draft as the document text the JSON view shows: the write shape, indented, key order as written. Pure. */
 export function draftToJson(draft: RecipeDraft): string {

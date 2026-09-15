@@ -156,14 +156,14 @@ export function withTick(timers: readonly Timer[], now: number): { timers: Timer
 /** `timers` with `id` paused at `now`: its remainder frozen, its end time dropped. Pure. */
 export function withPaused(timers: readonly Timer[], id: string, now: number): Timer[] {
   return timers.map((timer) =>
-    timer.id !== id || timer.done || timer.endsAt === null ? timer : { ...timer, endsAt: null, remaining: remainingSeconds(timer, now) },
+    timer.id !== id || timer.done || timer.endsAt === null ? timer : { ...timer, endsAt: null, remaining: remainingSeconds(timer, now) }
   );
 }
 
 /** `timers` with `id` running again from `now`, for whatever it had left. Pure. */
 export function withResumed(timers: readonly Timer[], id: string, now: number): Timer[] {
   return timers.map((timer) =>
-    timer.id !== id || timer.done || timer.endsAt !== null ? timer : { ...timer, endsAt: now + Math.max(0, timer.remaining) * 1000 },
+    timer.id !== id || timer.done || timer.endsAt !== null ? timer : { ...timer, endsAt: now + Math.max(0, timer.remaining) * 1000 }
   );
 }
 
@@ -282,15 +282,12 @@ export function useTimers(recipeId: string): TimersApi {
     return () => clearInterval(handle);
   }, [recipeId, running]);
 
-  const write = useCallback(
-    (change: (storage: StorageLike, at: number) => void) => {
-      const storage = browserStorage();
-      if (!storage) return;
-      change(storage, Date.now());
-      setNow(Date.now());
-    },
-    [],
-  );
+  const write = useCallback((change: (storage: StorageLike, at: number) => void) => {
+    const storage = browserStorage();
+    if (!storage) return;
+    change(storage, Date.now());
+    setNow(Date.now());
+  }, []);
 
   const start = useCallback((input: TimerInput) => write((storage, at) => startTimer(storage, recipeId, input, at)), [recipeId, write]);
   const pause = useCallback((id: string) => write((storage, at) => pauseTimer(storage, recipeId, id, at)), [recipeId, write]);

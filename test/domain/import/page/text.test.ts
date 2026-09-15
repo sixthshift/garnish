@@ -86,7 +86,7 @@ describe("looksLikeHtml", () => {
   const cases: [string, string, boolean][] = [
     ["a doctype", "<!DOCTYPE html>\n<html><body>hi</body></html>", true],
     ["a doctype in any case", "<!doctype HTML><body>hi</body>", true],
-    ["an html tag with no doctype", "<html lang=\"en\"><body>hi</body></html>", true],
+    ["an html tag with no doctype", '<html lang="en"><body>hi</body></html>', true],
     ["an ld+json script in a fragment", '<div><script type="application/ld+json">{"@type":"Recipe"}</script></div>', true],
     ["the recorded 200 fixture", RECIPE_200, true],
     ["the sectioned page", SECTIONED_PAGE, true],

@@ -5,9 +5,9 @@
 // (from M15.2 on) an editor sheet and a delete that lists the recipes it
 // touches. Appearance needs no loader and no table.
 import { Heading } from "@sixthshift/design-system/heading";
-import { Tabs, type TabItem } from "@sixthshift/design-system/tabs";
+import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
+import { AislesTab, Appearance, ExportTab, FoodsTab, StyleTab, TagsTab, UnitsTab } from "./components/SettingsTabs";
 import { Route } from "./route";
-import { Appearance, ExportTab, StyleTab, TagsTab, AislesTab, UnitsTab, FoodsTab } from "./components/SettingsTabs";
 
 export function SettingsPage() {
   const { aisles, units, foods, tags, recipes, styleRules } = Route.useLoaderData();

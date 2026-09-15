@@ -12,8 +12,8 @@ import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
-import { type FieldErrors, type RecipeDraft, addNote, updateNote, removeNote } from "../../../domain/draft";
 import { ReorderList } from "../../../components/ui/ReorderList";
+import { addNote, type FieldErrors, type RecipeDraft, removeNote, updateNote } from "../../../domain/draft";
 
 // --- Pure helpers -----------------------------------------------------------
 

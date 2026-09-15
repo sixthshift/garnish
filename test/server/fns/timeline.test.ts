@@ -2,7 +2,7 @@
 // the last-made bookkeeping they drive, validation failures and not-found.
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { timelineEventSchema, type RecipeInput } from "../../../src/domain/recipe";
+import { type RecipeInput, timelineEventSchema } from "../../../src/domain/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
 import { createTimelineEvent, deleteTimelineEvent, listTimeline } from "../../../src/server/fns/timeline";
@@ -12,8 +12,7 @@ useTempDataDir();
 
 const missing = "99999999-9999-4999-8999-999999999999";
 
-const doc = (name = "Flatbread"): RecipeInput =>
-  ({ name, parts: [{ name: "", ingredients: [], steps: [{ text: "Mix." }] }] }) as RecipeInput;
+const doc = (name = "Flatbread"): RecipeInput => ({ name, parts: [{ name: "", ingredients: [], steps: [{ text: "Mix." }] }] }) as RecipeInput;
 
 async function seed(name?: string) {
   return callServerFn(createRecipe, doc(name));
@@ -102,7 +101,9 @@ test("deleteTimelineEvent on an unknown entry is a not-found", async () => {
 
 test("a date that is not YYYY-MM-DD is rejected before the handler runs", async () => {
   const recipe = await seed();
-  await expect(callServerFn(createTimelineEvent, { recipeId: recipe.id, event: { occurredOn: "11/09/2026", message: "", image: null } } as never)).rejects.toThrow();
+  await expect(
+    callServerFn(createTimelineEvent, { recipeId: recipe.id, event: { occurredOn: "11/09/2026", message: "", image: null } } as never)
+  ).rejects.toThrow();
 });
 
 test("a non-uuid recipe id is rejected before the handler runs", async () => {

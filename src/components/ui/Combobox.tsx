@@ -18,7 +18,7 @@
 import { Input } from "@sixthshift/design-system/input";
 import { cn } from "@sixthshift/design-system/utils";
 import { type KeyboardEvent, useId, useState } from "react";
-import { type ComboboxOption, type ComboboxItem, listItems, enterChoice, stepActive } from "../../lib/ui/combobox";
+import { type ComboboxItem, type ComboboxOption, enterChoice, listItems, stepActive } from "../../lib/ui/combobox";
 
 export type ComboboxProps = {
   value: string;
@@ -144,7 +144,7 @@ export function Combobox({
                 className={cn(
                   "flex cursor-pointer items-baseline justify-between gap-2 rounded-md px-2 py-1.5 text-sm",
                   selected ? "bg-bg-subtle" : "hover:bg-bg-subtle",
-                  item.kind === "create" && "text-fg-brand",
+                  item.kind === "create" && "text-fg-brand"
                 )}
                 // mousedown would blur the input and close the list before click lands.
                 onMouseDown={(event) => event.preventDefault()}

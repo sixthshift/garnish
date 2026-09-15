@@ -68,7 +68,9 @@ describe("validateValues", () => {
   });
 
   test("flags a number that will not parse, and passes a good record", () => {
-    expect(validateValues(fields, { ...initialValues(fields, unit), standardQuantity: "lots" })).toEqual({ standardQuantity: "Standard quantity must be a number." });
+    expect(validateValues(fields, { ...initialValues(fields, unit), standardQuantity: "lots" })).toEqual({
+      standardQuantity: "Standard quantity must be a number.",
+    });
     expect(validateValues(fields, initialValues(fields, unit))).toEqual({});
   });
 });

@@ -57,20 +57,44 @@ import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { type KeyboardEvent, type ReactNode, useEffect, useState } from "react";
-import { pendingCreations, reviewRows, rowCommit } from "../../../domain/ingredient";
-import { type FoodRow, type Food, type Unit } from "../../../domain/reference";
-import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
-import { findOrCreateFood, listFoods } from "../../../server/fns/foods";
-import { findOrCreateUnit } from "../../../server/fns/units";
-import { needsParseAll, type IngredientReview, parseRowFor, parsedRowPatch, addReviewedIngredients, type DraftIngredient, type RecipeDraft, type FieldErrors, parseQuantity, quantityText, foodReference, unitReference, matchUnit, filterUnits, isTextOnly, withIngredients, addIngredient, updateIngredient, removeIngredient, moveIngredientTo, moveIngredient, textOnlyPatch, ingredientSummary } from "../../../domain/draft";
-import { ParseAllSheet } from "./ParseAllSheet";
-import { partLabel } from "./PartsEditor";
-import { IngredientReviewRow } from "./IngredientReviewRow";
 import { BulkAddSheet, BulkInlineAdd, type BulkReview } from "../../../components/ui/BulkAddSheet";
 import { Combobox } from "../../../components/ui/Combobox";
-import { type ComboboxOption } from "../../../lib/ui/combobox";
 import { Menu } from "../../../components/ui/Menu";
 import { ReorderList } from "../../../components/ui/ReorderList";
+import {
+  addIngredient,
+  addReviewedIngredients,
+  type DraftIngredient,
+  type FieldErrors,
+  filterUnits,
+  foodReference,
+  type IngredientReview,
+  ingredientSummary,
+  isTextOnly,
+  matchUnit,
+  moveIngredient,
+  moveIngredientTo,
+  needsParseAll,
+  parsedRowPatch,
+  parseQuantity,
+  parseRowFor,
+  quantityText,
+  type RecipeDraft,
+  removeIngredient,
+  textOnlyPatch,
+  unitReference,
+  updateIngredient,
+  withIngredients,
+} from "../../../domain/draft";
+import { pendingCreations, reviewRows, rowCommit } from "../../../domain/ingredient";
+import type { Food, FoodRow, Unit } from "../../../domain/reference";
+import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
+import type { ComboboxOption } from "../../../lib/ui/combobox";
+import { findOrCreateFood, listFoods } from "../../../server/fns/foods";
+import { findOrCreateUnit } from "../../../server/fns/units";
+import { IngredientReviewRow } from "./IngredientReviewRow";
+import { ParseAllSheet } from "./ParseAllSheet";
+import { partLabel } from "./PartsEditor";
 
 /** How long the food input waits after the last keystroke before querying. */
 export const FOOD_SEARCH_DEBOUNCE_MS = 200;
@@ -262,7 +286,17 @@ export const EMPTY_INGREDIENT_SUMMARY = "New ingredient";
 
 function Chevron() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <title>Open</title>
       <path d="m9 18 6-6-6-6" />
     </svg>
@@ -341,7 +375,7 @@ function parseAction(
   label: string,
   units: readonly Unit[],
   disabled: boolean | undefined,
-  variant: "menu" | "button",
+  variant: "menu" | "button"
 ): ReactNode {
   const busy = parse.busy || disabled === true;
 
@@ -391,7 +425,24 @@ function parseAction(
 }
 
 export function IngredientFields(props: IngredientFieldsProps) {
-  const { ingredient, path, label, units, errors, disabled, textOnly, quantityDraft, unitText, foodText, foodRows, controls, showOriginalText, originalTextAbove, parse, onEnter } = props;
+  const {
+    ingredient,
+    path,
+    label,
+    units,
+    errors,
+    disabled,
+    textOnly,
+    quantityDraft,
+    unitText,
+    foodText,
+    foodRows,
+    controls,
+    showOriginalText,
+    originalTextAbove,
+    parse,
+    onEnter,
+  } = props;
   // Enter in a single-line field submits the form by default; the list's own
   // meaning for it has to say so explicitly (decisions.md row 55).
   const enterKey =

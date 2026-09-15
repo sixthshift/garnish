@@ -1,7 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { buildCookCards, cardAnnouncement, clampStep, isFinishedIndex, nextPreview, partPills, PREVIEW_MAX_CHARS, totalWithFinish } from "../../../src/domain/recipe/cook";
-import { SWIPE_MAX_MS, SWIPE_MIN_PX, SWIPE_RATIO, swipeIntent } from "../../../src/lib/swipe";
+import {
+  buildCookCards,
+  cardAnnouncement,
+  clampStep,
+  isFinishedIndex,
+  nextPreview,
+  PREVIEW_MAX_CHARS,
+  partPills,
+  totalWithFinish,
+} from "../../../src/domain/recipe/cook";
 import type { Ingredient, Part, Step } from "../../../src/domain/recipe/recipe";
+import { SWIPE_MAX_MS, SWIPE_MIN_PX, SWIPE_RATIO, swipeIntent } from "../../../src/lib/swipe";
 
 const uuid = () => crypto.randomUUID();
 const step = (text: string, ingredientIds: string[] = []): Step => ({ id: uuid(), text, ingredientIds, image: null });
@@ -25,13 +34,7 @@ describe("buildCookCards", () => {
       ":Cool.",
     ]);
     // Step numbering restarts per list and knows the list's length.
-    expect(cards.filter((c) => c.kind === "step").map((c) => (c.kind === "step" ? `${c.number}/${c.total}` : ""))).toEqual([
-      "1/2",
-      "2/2",
-      "1/1",
-      "1/2",
-      "2/2",
-    ]);
+    expect(cards.filter((c) => c.kind === "step").map((c) => (c.kind === "step" ? `${c.number}/${c.total}` : ""))).toEqual(["1/2", "2/2", "1/1", "1/2", "2/2"]);
     // Ingredient cards carry the part's rows untouched, fixed flag included.
     const fillingCard = cards[3];
     expect(fillingCard?.kind).toBe("ingredients");
@@ -96,7 +99,7 @@ describe("buildCookCards", () => {
     const pastry = part(
       "Pastry",
       [flour, butter, salt],
-      [step("Rub the butter in.", [butter.id]), step("Add the salt.", [salt.id]), step("Add the butter again.", [butter.id])],
+      [step("Rub the butter in.", [butter.id]), step("Add the salt.", [salt.id]), step("Add the butter again.", [butter.id])]
     );
 
     const cards = buildCookCards({ parts: [pastry] });
@@ -156,11 +159,7 @@ describe("cardAnnouncement", () => {
 describe("partPills", () => {
   test("one pill per part in deck order, each at that part's first card", () => {
     const cards = buildCookCards({
-      parts: [
-        part("Pastry", [ingredient("flour")], [step("Rub.")]),
-        part("Filling", [], [step("Whisk."), step("Chill.")]),
-        part("", [], [step("Bake.")]),
-      ],
+      parts: [part("Pastry", [ingredient("flour")], [step("Rub.")]), part("Filling", [], [step("Whisk."), step("Chill.")]), part("", [], [step("Bake.")])],
     });
     expect(partPills(cards)).toEqual([
       { name: "Pastry", label: "Pastry", index: 0 },

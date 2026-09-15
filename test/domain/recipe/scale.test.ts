@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { type Recipe, recipeSchema } from "../../../src/domain/recipe/recipe";
-import { ScaleError, scaleRecipe, scaledForServings } from "../../../src/domain/recipe/scale";
+import { ScaleError, scaledForServings, scaleRecipe } from "../../../src/domain/recipe/scale";
 
 const ids = {
   recipe: "11111111-1111-4111-8111-111111111111",

@@ -34,19 +34,33 @@ import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from "react";
 import { z } from "zod";
-import { AddToShoppingButton } from "../../../../components/shopping/AddToShoppingSheet";
-import { MadeThisButton } from "../components/Timeline";
-import { NumberStepper } from "../../../../components/ui/NumberStepper";
-import { StepCard } from "../components/StepCard";
-import { buildCookCards, cardAnnouncement, clampStep, nextPreview, partPills, isFinishedIndex, totalWithFinish, type CookCard, scaledForServings, type Ingredient, type Recipe, stepForKey, positionLabel } from "../../../../domain/recipe";
-import { swipeIntent } from "../../../../lib/swipe";
-import { formatIngredient } from "../../../../domain/ingredient";
 import { SubRecipesProvider } from "../../../../components/recipe/SubRecipes";
+import { AddToShoppingButton } from "../../../../components/shopping/AddToShoppingSheet";
+import { NumberStepper } from "../../../../components/ui/NumberStepper";
+import { formatIngredient } from "../../../../domain/ingredient";
+import {
+  buildCookCards,
+  type CookCard,
+  cardAnnouncement,
+  clampStep,
+  type Ingredient,
+  isFinishedIndex,
+  nextPreview,
+  partPills,
+  positionLabel,
+  type Recipe,
+  scaledForServings,
+  stepForKey,
+  totalWithFinish,
+} from "../../../../domain/recipe";
+import { swipeIntent } from "../../../../lib/swipe";
 import { useIngredientTick } from "../../../../lib/ticks";
-import { TimerStrip } from "../components/TimerStrip";
 import { useWakeLock } from "../../../../lib/useWakeLock";
+import { StepCard } from "../components/StepCard";
+import { MadeThisButton } from "../components/Timeline";
+import { TimerStrip } from "../components/TimerStrip";
 import { Route } from "./route";
 
 /** Eye: the screen is being watched, so it is being kept on. Same drawing style as RecipeHeader's stat icons. */
@@ -139,11 +153,7 @@ export function CookPage() {
             {screenOn && (
               <Tooltip>
                 <Tooltip.Trigger asChild>
-                  <span
-                    className="shrink-0 text-fg-subtle"
-                    data-wake-lock
-                    aria-label="The screen stays on while you cook"
-                  >
+                  <span className="shrink-0 text-fg-subtle" data-wake-lock aria-label="The screen stays on while you cook">
                     <WakeLockIcon />
                   </span>
                 </Tooltip.Trigger>
@@ -182,7 +192,12 @@ export function CookPage() {
           {finished ? "Finished" : card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
         </p>
 
-        <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4" onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => (swipe.current = null)}>
+        <main
+          className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4"
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
+          onPointerCancel={() => (swipe.current = null)}
+        >
           {finished ? (
             <FinishedCard recipe={recipe} servings={requested} from={from} parentName={parentName} />
           ) : (
@@ -195,13 +210,7 @@ export function CookPage() {
               }
             >
               {card !== undefined && (
-                <CookCardView
-                  card={card}
-                  recipeId={recipe.id}
-                  preview={nextPreview(cards, index)}
-                  onNext={() => goTo(index + 1)}
-                  cookFrom={recipe.slug}
-                />
+                <CookCardView card={card} recipeId={recipe.id} preview={nextPreview(cards, index)} onNext={() => goTo(index + 1)} cookFrom={recipe.slug} />
               )}
             </EmptyBoundary>
           )}

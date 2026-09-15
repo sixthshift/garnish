@@ -4,11 +4,11 @@
 // layout is a single column with no fixed widths, asserted below by class.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { positionLabel, stepForKey } from "../../../../../src/domain/recipe";
-import { type CookRouteData, Route as CookRoute } from "../../../../../src/routes/recipes/recipe/cook/route";
-import { createRecipe } from "../../../../../src/server/fns/recipes";
+import { type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
+import type { Route as CookRoute, CookRouteData } from "../../../../../src/routes/recipes/recipe/cook/route";
 import { foodForRecipe } from "../../../../../src/server/fns/foods";
+import { createRecipe } from "../../../../../src/server/fns/recipes";
 import { findOrCreateUnit, listUnits } from "../../../../../src/server/fns/units";
-import { setIngredientTicked, type StorageLike } from "../../../../../src/lib/ticks";
 import { renderRoute } from "../../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../../helpers/server";
 

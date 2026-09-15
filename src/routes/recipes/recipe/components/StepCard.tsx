@@ -20,15 +20,14 @@
 // is running has to be reachable after its step is done.
 import { cn } from "@sixthshift/design-system/utils";
 import { useMemo } from "react";
-import { type Ingredient, type Step, durationsIn } from "../../../../domain/recipe";
+import { Markdown } from "../../../../components/ui/Markdown";
+import { durationsIn, type Ingredient, type Step } from "../../../../domain/recipe";
 import { stepImageUrl } from "../../../../lib/images";
 import { useStepTick } from "../../../../lib/ticks";
 import { chipTimerId, useTimers } from "../../../../lib/timers";
 import { IngredientRow } from "./IngredientRow";
-import { Markdown } from "../../../../components/ui/Markdown";
 import { useQuickEditStep } from "./QuickEdit";
 import { TimerChip } from "./TimerChip";
-
 
 /** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
 export type StepCardSize = "page" | "cook";
@@ -86,7 +85,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
           className={cn(
             "mt-0.5 flex shrink-0 items-center justify-center rounded-full font-semibold",
             scale.bubble,
-            done ? "bg-bg-subtle text-fg-subtle" : "bg-bg-brand-subtle text-fg-brand",
+            done ? "bg-bg-subtle text-fg-subtle" : "bg-bg-brand-subtle text-fg-brand"
           )}
           aria-hidden="true"
         >
@@ -111,13 +110,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
                   data-testid="step-image"
                 />
               )}
-              <button
-                type="button"
-                onClick={toggle}
-                aria-pressed={done}
-                className={cn("text-left", done && "text-fg-subtle")}
-                data-testid="step-toggle"
-              >
+              <button type="button" onClick={toggle} aria-pressed={done} className={cn("text-left", done && "text-fg-subtle")} data-testid="step-toggle">
                 <span className="sr-only">{`Step ${position}. ${done ? "Done. " : ""}`}</span>
                 <Markdown source={step.text} className={cn(scale.text, done && "line-clamp-1")} />
               </button>

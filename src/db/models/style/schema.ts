@@ -21,5 +21,5 @@ export const styleRule = sqliteTable(
     createdAt: text("created_at").notNull().default(nowUtc),
     updatedAt: text("updated_at").notNull().default(nowUtc),
   },
-  (t) => [check("enabled_flag", sql`${t.enabled} IN (0, 1)`)],
+  (t) => [check("enabled_flag", sql`${t.enabled} IN (0, 1)`)]
 );

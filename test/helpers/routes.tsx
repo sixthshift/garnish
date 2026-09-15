@@ -2,7 +2,7 @@
 // browser would after navigation: loaders run in `router.load()`, then the tree
 // renders to a string. Route tests that hit loaders must also `vi.mock` the
 // `src/server/*` modules through `runLocally` (see ./server.ts).
-import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { RouteError, RouteNotFound, RoutePending } from "../../src/components/shell/RouteStates";
 import { routeTree } from "../../src/routes/routes";

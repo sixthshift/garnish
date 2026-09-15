@@ -49,12 +49,7 @@ export type StorageLike = {
 function isEntry(value: unknown): value is OutboxEntry {
   if (typeof value !== "object" || value === null) return false;
   const { id, itemId, kind, at } = value as Record<string, unknown>;
-  return (
-    typeof id === "string" &&
-    typeof itemId === "string" &&
-    typeof at === "string" &&
-    (kind === "tick" || kind === "untick" || kind === "remove")
-  );
+  return typeof id === "string" && typeof itemId === "string" && typeof at === "string" && (kind === "tick" || kind === "untick" || kind === "remove");
 }
 
 /** A queue parsed out of whatever was stored. Anything unrecognised is dropped, not thrown over. Pure. */
@@ -83,12 +78,7 @@ export function enqueue(queue: readonly OutboxEntry[], entry: OutboxEntry): Outb
 }
 
 /** A new entry for `itemId`. `newId` and `at` are injected so the result is reproducible in a test. Pure. */
-export function outboxEntry(
-  itemId: string,
-  kind: OutboxKind,
-  newId: () => string = randomUuid,
-  at: string = new Date().toISOString(),
-): OutboxEntry {
+export function outboxEntry(itemId: string, kind: OutboxKind, newId: () => string = randomUuid, at: string = new Date().toISOString()): OutboxEntry {
   return { id: newId(), itemId, kind, at };
 }
 
@@ -127,10 +117,7 @@ export type FlushResult = {
  * the next flush starts again from the same place. Never throws: a failure is
  * a result, because the caller is an effect nobody is watching.
  */
-export async function flushOutbox(
-  queue: readonly OutboxEntry[],
-  send: (entry: OutboxEntry) => Promise<unknown>,
-): Promise<FlushResult> {
+export async function flushOutbox(queue: readonly OutboxEntry[], send: (entry: OutboxEntry) => Promise<unknown>): Promise<FlushResult> {
   const sent: OutboxEntry[] = [];
   for (let index = 0; index < queue.length; index += 1) {
     const entry = queue[index]!;
@@ -190,11 +177,7 @@ export type Outbox = {
  * server, a locked-down browser): the ticks still apply to the rendered list
  * for this page's life, they just do not survive a reload.
  */
-export function createOutbox(
-  storage: StorageLike | undefined,
-  newId: () => string = randomUuid,
-  now: () => string = () => new Date().toISOString(),
-): Outbox {
+export function createOutbox(storage: StorageLike | undefined, newId: () => string = randomUuid, now: () => string = () => new Date().toISOString()): Outbox {
   let memory: OutboxEntry[] = storage ? readOutbox(storage) : [];
   const save = (queue: OutboxEntry[]): OutboxEntry[] => {
     memory = queue;
@@ -274,7 +257,7 @@ export function useOutbox({ send, online, onFlushed, storage }: UseOutboxOptions
     (itemId: string, kind: OutboxKind) => {
       setQueue(outbox.push(itemId, kind));
     },
-    [outbox],
+    [outbox]
   );
 
   // Coming back online: flush what the shelf collected. Runs on mount too,

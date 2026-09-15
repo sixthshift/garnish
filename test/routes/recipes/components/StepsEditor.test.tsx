@@ -4,10 +4,47 @@
 // moveStep and moveNote, updateRecipe stores the new orders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { addPart, renamePart, addNote, moveNote, updateNote, emptyDraft, type RecipeDraft, validateDraft, addBulkSteps, addStep, canSplitAll, insertStepAbove, insertStepBelow, mergeAllSteps, mergeStepWithNext, moveStep, newStep, removeStep, setStepImage, splitAllSteps, splitStepByParagraph, stepsOf, stepsPath, updateStep, withSteps, linkableIngredients, linkedIngredients, linkIngredient, stepLinks, suggestPartLinks, unionLinks, unlinkIngredient, unlinkStepIngredient, addIngredient, updateIngredient, foodReference, ingredientLine } from "../../../../src/domain/draft";
-import { StepsEditor } from "../../../../src/routes/recipes/components/StepsEditor";
-import { suggestNotice } from "../../../../src/routes/recipes/components/StepsEditor";
+import {
+  addBulkSteps,
+  addIngredient,
+  addNote,
+  addPart,
+  addStep,
+  canSplitAll,
+  emptyDraft,
+  foodReference,
+  ingredientLine,
+  insertStepAbove,
+  insertStepBelow,
+  linkableIngredients,
+  linkedIngredients,
+  linkIngredient,
+  mergeAllSteps,
+  mergeStepWithNext,
+  moveNote,
+  moveStep,
+  newStep,
+  type RecipeDraft,
+  removeStep,
+  renamePart,
+  setStepImage,
+  splitAllSteps,
+  splitStepByParagraph,
+  stepLinks,
+  stepsOf,
+  stepsPath,
+  suggestPartLinks,
+  unionLinks,
+  unlinkIngredient,
+  unlinkStepIngredient,
+  updateIngredient,
+  updateNote,
+  updateStep,
+  validateDraft,
+  withSteps,
+} from "../../../../src/domain/draft";
 import { paragraphs } from "../../../../src/domain/ingredient";
+import { StepsEditor, suggestNotice } from "../../../../src/routes/recipes/components/StepsEditor";
 import { createRecipe, getRecipe, updateRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 
@@ -276,7 +313,9 @@ describe("StepsEditor", () => {
     expect(bare).toContain('aria-label="Step 3 image"');
     expect(bare).not.toContain("data-step-image");
 
-    const withPhoto = renderToString(<StepsEditor draft={setStepImage(focaccia(), 0, 1, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png")} pi={0} onChange={() => {}} />);
+    const withPhoto = renderToString(
+      <StepsEditor draft={setStepImage(focaccia(), 0, 1, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png")} pi={0} onChange={() => {}} />
+    );
     expect(withPhoto).toContain('data-step-image="1"');
     expect(withPhoto).toContain('src="/api/images/steps/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png"');
     expect(withPhoto).toContain('alt="Step 2"');

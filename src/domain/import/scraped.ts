@@ -164,7 +164,7 @@ export function text(value: unknown): string {
     value
       .replace(/<\s*br\s*\/?\s*>/gi, "\n")
       .replace(/<\s*\/\s*(?:p|div|li|h[1-6])\s*>/gi, "\n")
-      .replace(/<[^>]*>/g, ""),
+      .replace(/<[^>]*>/g, "")
   )
     .split("\n")
     .map((line) => line.replace(/\s+/g, " ").trim())
@@ -212,7 +212,9 @@ export function durationToMinutes(value: unknown): number | null {
     const plain = Number(raw);
     return plain > 0 ? plain : null;
   }
-  const match = raw.match(/^P(?:\d+(?:\.\d+)?Y)?(?:\d+(?:\.\d+)?M)?(?:(\d+(?:\.\d+)?)W)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i);
+  const match = raw.match(
+    /^P(?:\d+(?:\.\d+)?Y)?(?:\d+(?:\.\d+)?M)?(?:(\d+(?:\.\d+)?)W)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/i
+  );
   if (!match) return null;
   const [, weeks, days, hours, minutes, seconds] = match;
   const total = Number(weeks ?? 0) * 10080 + Number(days ?? 0) * 1440 + Number(hours ?? 0) * 60 + Number(minutes ?? 0) + Number(seconds ?? 0) / 60;
@@ -239,7 +241,9 @@ const YIELD_PREFIX = /^\s*(?:makes|serves|yields?|serving\s+size|about|approx(?:
  * entry at all. Pure.
  */
 export function parseYield(value: unknown): { servings: number; yieldText: string } {
-  const entries = list(value).map(text).filter((entry) => entry !== "");
+  const entries = list(value)
+    .map(text)
+    .filter((entry) => entry !== "");
   const chosen = entries.find((entry) => /\d/.test(entry)) ?? entries[0] ?? "";
   let body = chosen;
   for (;;) {
@@ -294,7 +298,12 @@ function stepsOfEntry(value: unknown): string[] {
   const inner = list(node.itemListElement).flatMap(stepsOfEntry);
   if (inner.length > 0) return inner;
   const body = text(field(node, "text", "name", "description"));
-  return body === "" ? [] : body.split("\n").map((line) => line.trim()).filter((line) => line !== "");
+  return body === ""
+    ? []
+    : body
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
 }
 
 /**
@@ -338,7 +347,9 @@ export function partsFromInstructions(value: unknown): ScrapedPart[] {
 export function scrapedFromSchema(node: JsonLdNode): ScrapedRecipe {
   const { servings, yieldText } = parseYield(field(node, "recipeYield", "yield"));
   const parts = partsFromInstructions(field(node, "recipeInstructions", "instructions"));
-  const lines = list(field(node, "recipeIngredient", "ingredients")).map(text).filter((line) => line !== "");
+  const lines = list(field(node, "recipeIngredient", "ingredients"))
+    .map(text)
+    .filter((line) => line !== "");
   // Every line on the unnamed part, because that is the whole of what the page
   // said: a `recipeIngredient` carries no section, whatever headings the page
   // draws around it. A recipe of nothing but named sections gains an unnamed
@@ -413,7 +424,7 @@ export function normaliseScraped(parsed: z.output<typeof ScrapedRecipeSchema>): 
         ingredients: part.ingredients.map((line) => line.trim()).filter((line) => line !== ""),
         steps: part.steps.map((step) => step.trim()).filter((step) => step !== ""),
       }))
-      .filter((part) => part.name !== "" || part.ingredients.length > 0 || part.steps.length > 0),
+      .filter((part) => part.name !== "" || part.ingredients.length > 0 || part.steps.length > 0)
   );
   if (!parts.some((part) => part.name === "")) parts.unshift({ name: "", ingredients: [], steps: [] });
   return {

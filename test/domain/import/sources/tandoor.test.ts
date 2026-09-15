@@ -5,6 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
+import { ingredientLines } from "../../../../src/domain/import/scraped";
 import { imageDataUrl } from "../../../../src/domain/import/sources/mealie";
 import {
   isTandoorRecipe,
@@ -17,13 +18,12 @@ import {
   readTandoorExport,
   reviewRowsFromTandoor,
   stepRecipeName,
+  type TandoorRecipe,
   tandoorBundles,
   tandoorIngredient,
   tandoorRecipe,
   tandoorRecipesFrom,
-  type TandoorRecipe,
 } from "../../../../src/domain/import/sources/tandoor";
-import { ingredientLines } from "../../../../src/domain/import/scraped";
 import type { Food } from "../../../../src/domain/reference";
 import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 

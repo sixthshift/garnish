@@ -86,9 +86,7 @@ describe("route states", () => {
   });
 
   test("error shows the message and a retry button", () => {
-    const html = renderToString(
-      <RouteError error={new Error("boom")} reset={() => {}} info={{ componentStack: "" }} />,
-    );
+    const html = renderToString(<RouteError error={new Error("boom")} reset={() => {}} info={{ componentStack: "" }} />);
     expect(html).toContain("boom");
     expect(html).toContain('role="alert"');
     expect(html).toContain("Retry");

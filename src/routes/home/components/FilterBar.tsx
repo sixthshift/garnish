@@ -7,12 +7,12 @@ import { Switch } from "@sixthshift/design-system/switch";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
-import type { Food } from "../../../db/models/food/repo";
-import type { Tag } from "../../../domain/reference";
-import { type TagMatch } from "../../../domain/recipe";
-import { addUnique, withoutId } from "../../../lib/lists";
 import { Combobox } from "../../../components/ui/Combobox";
-import { type ComboboxOption } from "../../../lib/ui/combobox";
+import type { Food } from "../../../db/models/food/repo";
+import type { TagMatch } from "../../../domain/recipe";
+import type { Tag } from "../../../domain/reference";
+import { addUnique, withoutId } from "../../../lib/lists";
+import type { ComboboxOption } from "../../../lib/ui/combobox";
 
 export type FilterBarProps = {
   allTags: readonly Tag[];
@@ -27,18 +27,7 @@ export type FilterBarProps = {
   onFavouriteChange: (favourite: boolean) => void;
 };
 
-export function FilterBar({
-  allTags,
-  allFoods,
-  tags,
-  match,
-  foods,
-  favourite,
-  onTagsChange,
-  onMatchChange,
-  onFoodsChange,
-  onFavouriteChange,
-}: FilterBarProps) {
+export function FilterBar({ allTags, allFoods, tags, match, foods, favourite, onTagsChange, onMatchChange, onFoodsChange, onFavouriteChange }: FilterBarProps) {
   const [foodText, setFoodText] = useState("");
   const foodById = new Map(allFoods.map((food) => [food.id, food]));
   const q = foodText.trim().toLowerCase();

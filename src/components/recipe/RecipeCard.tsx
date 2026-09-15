@@ -20,12 +20,12 @@ import { Card } from "@sixthshift/design-system/card";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { formatDuration } from "../../domain/ingredient";
-import { type RecipeSummary } from "../../domain/recipe";
-import { type Tag } from "../../domain/reference";
+import type { RecipeSummary } from "../../domain/recipe";
+import type { Tag } from "../../domain/reference";
 import { recipeImageUrl } from "../../lib/images";
-import { type ViewMode } from "../../lib/prefs";
+import type { ViewMode } from "../../lib/prefs";
 import { FavouriteButton } from "../ui/FavouriteButton";
 import { Rating } from "../ui/Rating";
 
@@ -58,11 +58,7 @@ function ImagePlaceholder({ className }: { className: string }) {
 
 /** The recipe's image, or the placeholder, sized by `className` for the card's mode. */
 function CardImage({ src, className }: { src: string | null; className: string }) {
-  return src ? (
-    <img src={src} alt="" loading="lazy" className={`${className} object-cover`} />
-  ) : (
-    <ImagePlaceholder className={className} />
-  );
+  return src ? <img src={src} alt="" loading="lazy" className={`${className} object-cover`} /> : <ImagePlaceholder className={className} />;
 }
 
 /** Rating stars and the total-time chip, shared by both card modes. */
@@ -134,11 +130,8 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
   const src = recipeImageUrl(recipe.image);
 
   const totalTime = formatDuration(recipe.totalTime);
-  const body: ReactNode = mode === "list" ? (
-    <ListBody recipe={recipe} src={src} totalTime={totalTime} />
-  ) : (
-    <GridBody recipe={recipe} src={src} totalTime={totalTime} />
-  );
+  const body: ReactNode =
+    mode === "list" ? <ListBody recipe={recipe} src={src} totalTime={totalTime} /> : <GridBody recipe={recipe} src={src} totalTime={totalTime} />;
 
   const link = (
     <Link

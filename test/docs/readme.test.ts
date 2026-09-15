@@ -30,7 +30,7 @@ export const REQUIRED_COMMANDS = [
 /** Distinct `bun run <script>` names in `markdown`. Paths (`bun run src/x.ts`) are not scripts and are skipped. Pure. */
 export function bunRunScripts(markdown: string): string[] {
   const names = new Set<string>();
-  for (const match of markdown.matchAll(/\bbun run ([A-Za-z][\w:-]*)(?![\w:\/.-])/g)) names.add(match[1]!);
+  for (const match of markdown.matchAll(/\bbun run ([A-Za-z][\w:-]*)(?![\w:/.-])/g)) names.add(match[1]!);
   return [...names].sort();
 }
 
@@ -81,10 +81,7 @@ export function migrationTables(migrations: string): string[] {
 
 describe("bunRunScripts", () => {
   test("collects distinct script names and ignores file paths", () => {
-    expect(bunRunScripts("run `bun run dev` then `bun run dev` and `bun run seed --sample`; `bun run src/db/seed.ts`")).toEqual([
-      "dev",
-      "seed",
-    ]);
+    expect(bunRunScripts("run `bun run dev` then `bun run dev` and `bun run seed --sample`; `bun run src/db/seed.ts`")).toEqual(["dev", "seed"]);
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { parseFood, type FoodCandidate } from "../../../src/domain/ingredient/parseFood";
+import { type FoodCandidate, parseFood } from "../../../src/domain/ingredient/parseFood";
 
 const food = (name: string, pluralName: string | null, aliases: string[] = []): FoodCandidate => ({
   name,

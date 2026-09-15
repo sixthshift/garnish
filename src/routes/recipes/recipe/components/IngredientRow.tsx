@@ -29,11 +29,11 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
-import { formatIngredient, formatAmount, formatFood } from "../../../../domain/ingredient";
+import { useSubRecipe } from "../../../../components/recipe/SubRecipes";
+import { formatAmount, formatFood, formatIngredient } from "../../../../domain/ingredient";
 import { type Ingredient, subRecipeCookLabel, subRecipeHint, subRecipeScale } from "../../../../domain/recipe";
 import { useIngredientTick } from "../../../../lib/ticks";
 import { useQuickEditIngredient } from "./QuickEdit";
-import { useSubRecipe } from "../../../../components/recipe/SubRecipes";
 
 export type IngredientRowProps = {
   /** The owning recipe's id: ticks.ts keys session state by it. */
@@ -94,7 +94,11 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
       )}
     </span>
   );
-  const noteLine = note !== "" && <Muted as="p" className={cn("text-sm", done && "line-through")}>{note}</Muted>;
+  const noteLine = note !== "" && (
+    <Muted as="p" className={cn("text-sm", done && "line-through")}>
+      {note}
+    </Muted>
+  );
 
   return (
     <li

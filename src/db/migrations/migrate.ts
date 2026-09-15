@@ -86,9 +86,7 @@ export async function migrate(db: Database, opts: MigrateOptions = {}): Promise<
 
   const pending = all.filter((m) => !applied.has(m.id));
   const { sources: bundled } = opts;
-  const sources = bundled
-    ? pending.map((m) => bundled[m.file]!)
-    : await Promise.all(pending.map((m) => Bun.file(join(dir, m.file)).text()));
+  const sources = bundled ? pending.map((m) => bundled[m.file]!) : await Promise.all(pending.map((m) => Bun.file(join(dir, m.file)).text()));
 
   const insert = db.prepare("INSERT INTO migration (id, name) VALUES (?, ?)");
   const apply = db.transaction((m: Migration, sql: string) => {

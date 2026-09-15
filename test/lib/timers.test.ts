@@ -12,12 +12,12 @@ import {
   pauseTimer,
   remainingSeconds,
   resumeTimer,
+  type StorageLike,
   startTimer,
   subscribeTimers,
+  type Timer,
   tickTimers,
   timerDisplay,
-  type StorageLike,
-  type Timer,
 } from "../../src/lib/timers";
 
 /** A plain in-memory Storage-like, for round-trip tests. */

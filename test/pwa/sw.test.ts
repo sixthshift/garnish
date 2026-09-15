@@ -26,7 +26,11 @@ type Listener<E> = (event: E) => void;
 /** A fake scope. `fetch` is a vi.fn the test drives; caches are in-memory maps. */
 function fakeScope() {
   const stores = new Map<string, Map<string, Response>>();
-  const listeners = { install: [] as Listener<ExtendableEventLike>[], activate: [] as Listener<ExtendableEventLike>[], fetch: [] as Listener<FetchEventLike>[] };
+  const listeners = {
+    install: [] as Listener<ExtendableEventLike>[],
+    activate: [] as Listener<ExtendableEventLike>[],
+    fetch: [] as Listener<FetchEventLike>[],
+  };
   const fetch = vi.fn<(request: RequestLike | string) => Promise<Response>>();
 
   const openCache = (name: string): CacheLike => {
@@ -281,7 +285,10 @@ describe("fetch: writes pass through", () => {
 
 describe("build step", () => {
   test("precacheList: bundle files plus public files as URL paths, no maps, no sw.js, sorted, deduplicated", () => {
-    const list = precacheList(["assets/index-a.js", "assets/index-a.js.map", "assets/styles-b.css", "assets/index-a.js"], ["manifest.webmanifest", "icons/icon.svg", "sw.js"]);
+    const list = precacheList(
+      ["assets/index-a.js", "assets/index-a.js.map", "assets/styles-b.css", "assets/index-a.js"],
+      ["manifest.webmanifest", "icons/icon.svg", "sw.js"]
+    );
     expect(list).toEqual(["/assets/index-a.js", "/assets/styles-b.css", "/icons/icon.svg", "/manifest.webmanifest"]);
   });
 

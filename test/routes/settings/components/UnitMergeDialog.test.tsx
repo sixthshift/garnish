@@ -2,9 +2,9 @@
 // content UnitMergeDialogContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { UnitMergeDialogContent } from "../../../../src/routes/settings/components/UnitMergeDialog";
-import { mergeTargets } from "../../../../src/lib/lists";
 import type { Unit } from "../../../../src/db/models/unit/repo";
+import { mergeTargets } from "../../../../src/lib/lists";
+import { UnitMergeDialogContent } from "../../../../src/routes/settings/components/UnitMergeDialog";
 
 function unit(id: string, name: string): Unit {
   return { id, name, pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null };

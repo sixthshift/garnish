@@ -5,25 +5,25 @@ import {
   addDays,
   dayLabel,
   entryLabel,
-  isToday,
-  reorderMove,
-  servingsLabel,
-  todayIso,
-  weekLabel,
-  weekMonday,
   groupByDay,
   isoDate,
+  isToday,
   mondayOf,
+  type PlanDay,
+  type PlanEntry,
   planDaySchema,
   planEntryInputSchema,
   planEntryPatchSchema,
   planEntrySchema,
   planWeekAdditions,
+  reorderMove,
+  servingsLabel,
+  todayIso,
   weekDates,
-  type PlanDay,
-  type PlanEntry,
+  weekLabel,
+  weekMonday,
 } from "../../../src/domain/plan/plan";
-import { recipeSchema, type Recipe } from "../../../src/domain/recipe";
+import { type Recipe, recipeSchema } from "../../../src/domain/recipe";
 
 const ids = {
   a: "11111111-1111-4111-8111-111111111111",
@@ -67,15 +67,7 @@ test.each([
 });
 
 test("weekDates is Monday to Sunday", () => {
-  expect(weekDates("2026-09-14")).toEqual([
-    "2026-09-14",
-    "2026-09-15",
-    "2026-09-16",
-    "2026-09-17",
-    "2026-09-18",
-    "2026-09-19",
-    "2026-09-20",
-  ]);
+  expect(weekDates("2026-09-14")).toEqual(["2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20"]);
 });
 
 // --- The week layout ---------------------------------------------------------
@@ -248,9 +240,36 @@ const gram = {
   standardUnitId: null,
 };
 
-const flour = { id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
-const garlic = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", name: "garlic", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: true, conversions: [] };
-const butter = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "butter", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
+const flour = {
+  id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
+const garlic = {
+  id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  name: "garlic",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: true,
+  conversions: [],
+};
+const butter = {
+  id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  name: "butter",
+  pluralName: null,
+  aliases: [],
+  aisle: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
 
 const planStamp = "2026-09-13T00:00:00.000Z";
 

@@ -1,10 +1,11 @@
 // The confirm's content renders to a string; the Modal around it is mount-driven
 // and paints only on the client, so the wrapper is checked to render empty
 // without throwing.
+
+import { Modal } from "@sixthshift/design-system/modal";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { Modal } from "@sixthshift/design-system/modal";
 import { ConfirmDialog, ConfirmDialogContent } from "../../../src/components/ui/ConfirmDialog";
 
 describe("ConfirmDialogContent", () => {
@@ -12,7 +13,7 @@ describe("ConfirmDialogContent", () => {
     const html = renderToString(
       <ConfirmDialogContent title="Delete Lemon tart?" confirmLabel="Delete" onCancel={() => {}} onConfirm={() => {}}>
         This cannot be undone.
-      </ConfirmDialogContent>,
+      </ConfirmDialogContent>
     );
     expect(html).toContain("Delete Lemon tart?");
     expect(html).toContain("<p>This cannot be undone.</p>");
@@ -26,7 +27,7 @@ describe("ConfirmDialogContent", () => {
     const html = renderToString(
       <ConfirmDialogContent title="Delete Lemon tart?" confirmLabel="Delete" busy busyLabel="Deleting…" onCancel={() => {}} onConfirm={() => {}}>
         <p className="x">Gone for good.</p>
-      </ConfirmDialogContent>,
+      </ConfirmDialogContent>
     );
     expect(html.match(/disabled=""/g)).toHaveLength(2);
     expect(html).toContain("Deleting…");
@@ -40,7 +41,7 @@ describe("ConfirmDialog", () => {
     const html = renderToString(
       <ConfirmDialog title="Delete Lemon tart?" confirmLabel="Delete" aria-label="Delete recipe" onCancel={() => {}} onConfirm={() => {}}>
         This cannot be undone.
-      </ConfirmDialog>,
+      </ConfirmDialog>
     );
     expect(html).toBe("");
   });
@@ -58,7 +59,13 @@ describe("ConfirmDialog", () => {
 // media queries are what differ, not this component.
 describe("ConfirmDialog at both widths", () => {
   function element(): ReactElement<{ size?: string; align?: string }> {
-    return ConfirmDialog({ title: "Delete Lemon tart?", confirmLabel: "Delete", onCancel: () => {}, onConfirm: () => {}, children: "This cannot be undone." }) as ReactElement<{
+    return ConfirmDialog({
+      title: "Delete Lemon tart?",
+      confirmLabel: "Delete",
+      onCancel: () => {},
+      onConfirm: () => {},
+      children: "This cannot be undone.",
+    }) as ReactElement<{
       size?: string;
       align?: string;
     }>;

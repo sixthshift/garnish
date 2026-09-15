@@ -2,16 +2,15 @@
 // (stacked below md, image beside the text from md) asserted through the
 // classes on the split container, the order the header's children run in
 // (M24.3), and `RecipeMetaFooter`'s source URL as a link when set.
-import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { RecipeHeader, RecipeMetaFooter } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
-import { formatDateStamp } from "../../../../../src/lib/dates";
-import { isLinkable, sourceLabel } from "../../../../../src/lib/urls";
-import { timeStats } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
 import type { Recipe } from "../../../../../src/domain/recipe";
+import { formatDateStamp } from "../../../../../src/lib/dates";
 import { nextRating } from "../../../../../src/lib/ui/rating";
+import { isLinkable, sourceLabel } from "../../../../../src/lib/urls";
+import { RecipeHeader, RecipeMetaFooter, timeStats } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -275,7 +274,7 @@ describe("RecipeMetaFooter", () => {
   test("a source that is not a URL is plain text, not a link", () => {
     const html = renderToString(<RecipeMetaFooter recipe={{ ...base, sourceUrl: "Nonna's notebook" }} />);
     expect(html).toMatch(/<span[^>]*data-testid="source-url"/);
-    expect(html).not.toContain("<a href=\"Nonna");
+    expect(html).not.toContain('<a href="Nonna');
   });
 
   test("no source at all leaves the footer to the dates alone", () => {
@@ -291,7 +290,7 @@ describe("RecipeMetaFooter", () => {
 
   test("a restyled recipe says so, quietly, beside the source (M37.5)", () => {
     const html = renderToString(
-      <RecipeMetaFooter recipe={{ ...base, sourceUrl: "https://www.nytimes.com/recipes/1234", restyledAt: "2026-09-14T02:30:00.000Z" }} />,
+      <RecipeMetaFooter recipe={{ ...base, sourceUrl: "https://www.nytimes.com/recipes/1234", restyledAt: "2026-09-14T02:30:00.000Z" }} />
     );
     expect(html).toContain('data-testid="restyled"');
     expect(html).toContain(`Restyled ${formatDateStamp("2026-09-14T02:30:00.000Z")}`);

@@ -19,5 +19,5 @@ export const unit = sqliteTable(
     index("unit_standard_unit_id").on(t.standardUnitId),
     check("use_abbreviation_flag", sql`${t.useAbbreviation} IN (0, 1)`),
     check("fraction_flag", sql`${t.fraction} IN (0, 1)`),
-  ],
+  ]
 );

@@ -3,8 +3,8 @@
 // ones. See src/domain/recipe/subRecipe.ts.
 import { describe, expect, test } from "vitest";
 import type { Ingredient, Recipe } from "../../../src/domain/recipe/recipe";
-import type { Food, Unit } from "../../../src/domain/reference";
 import { type SubRecipe, subRecipeHint, subRecipeIds, subRecipeMap, subRecipeScale } from "../../../src/domain/recipe/subRecipe";
+import type { Food, Unit } from "../../../src/domain/reference";
 
 const gram: Unit = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -65,9 +65,7 @@ const pastry = (conversions: Food["conversions"] = []): Food => ({
 });
 
 /** "1 cup of pastry is 250 g." */
-const cupToGram: Food["conversions"] = [
-  { id: "11111111-1111-4111-8111-111111111111", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 250 },
-];
+const cupToGram: Food["conversions"] = [{ id: "11111111-1111-4111-8111-111111111111", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 250 }];
 
 const child = (overrides: Partial<SubRecipe> = {}): SubRecipe => ({
   id: CHILD_ID,

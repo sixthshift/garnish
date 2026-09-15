@@ -79,10 +79,10 @@ export function anchorJson(anchor: ScrapedRecipe): string {
 /** The rules for a page with no structured data: the text is all there is, so the model reads the recipe out of it. */
 const UNANCHORED_RULES = [
   "Read the recipe out of the text below and answer with JSON matching the schema. Rules:",
-  "- `parts`: a named section of the recipe (a sauce, a topping) is a part with that name, holding the ingredient lines written under that heading and the steps written under it. Anything under no heading at all — ingredients and steps both — goes in the part named \"\" (empty), which is the main body.",
+  '- `parts`: a named section of the recipe (a sauce, a topping) is a part with that name, holding the ingredient lines written under that heading and the steps written under it. Anything under no heading at all — ingredients and steps both — goes in the part named "" (empty), which is the main body.',
   "- Copy ingredient lines verbatim into their part's `ingredients`, one entry per line, quantity and unit and all. Do not convert, round or reword them, and do not repeat a line on a second part.",
   "- `steps` are that part's method, one entry per step, without numbering.",
-  "- `servings` is a number and 0 when the text does not say. `yieldText` is what it makes without the count (\"biscuits\", \"loaf\"), empty when the yield was only a number.",
+  '- `servings` is a number and 0 when the text does not say. `yieldText` is what it makes without the count ("biscuits", "loaf"), empty when the yield was only a number.',
   "- `prepMinutes` and `cookMinutes` are whole minutes or null. `image` is a URL found in the text or null.",
   "- `tags` are short topic words the text itself gives. Do not invent any.",
   "- Never invent an ingredient, a step, a time or a quantity. What is not in the text is empty, 0 or null.",
@@ -119,9 +119,9 @@ const ANCHORED_RULES = [
   "- The text's *ingredient* headings decide which part an ingredient line belongs to, and they decide it on their own, independently of the headings the steps sit under. Read the ingredient list's own headings and put each line under the one above it.",
   "- A line's part may be one the anchor already names, or a new part named after an ingredient heading the anchor never mentions. A part may hold lines and no steps, or steps and no lines; both are fine.",
   "- When an ingredient heading and a step section clearly refer to the same thing, they are one part: give them the same name and let it hold both the lines and the steps.",
-  "- A heading that is the recipe's own name, or a heading of the list itself such as \"Ingredients\", \"Instructions\" or \"Method\", is not a part.",
-  "- Name a part from its heading as written, but leave out a trailing colon and a note marker such as \"(Note 4)\".",
-  "- A line or a step that sits under no heading stays on the part named \"\" (empty), which is the main body. If the text shows no headings at all, answer with the anchor's parts unchanged.",
+  '- A heading that is the recipe\'s own name, or a heading of the list itself such as "Ingredients", "Instructions" or "Method", is not a part.',
+  '- Name a part from its heading as written, but leave out a trailing colon and a note marker such as "(Note 4)".',
+  '- A line or a step that sits under no heading stays on the part named "" (empty), which is the main body. If the text shows no headings at all, answer with the anchor\'s parts unchanged.',
   "- `name`, `description`, `image`, `servings`, `yieldText`, `prepMinutes`, `cookMinutes` and `tags`: copy them from the anchor exactly as given. Do not improve them.",
   "- Answer with the JSON only.",
 ];

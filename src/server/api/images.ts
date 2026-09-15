@@ -8,11 +8,11 @@
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { recipes } from "../../db/models/recipe/repo";
-import { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../../lib/imageFile";
+import { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
 import { getDb } from "../core/db";
 
-export { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../../lib/imageFile";
+export { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 
 const RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
