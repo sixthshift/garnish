@@ -4,7 +4,7 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { orm } from "../../connection/client";
-import { cleanName, likePattern, slugify, uniqueSlug } from "../../../domain/names";
+import { cleanName, likePattern, slugify, uniqueSlug } from "../../../lib/names";
 import { recipeTag } from "../recipe/schema";
 import { tag } from "./schema";
 

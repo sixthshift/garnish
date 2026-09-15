@@ -4,7 +4,7 @@ import { expect, test } from "vitest";
 import { DEV_RECIPE_COUNT, devIds, generateDevRecipes } from "../../../src/db/dev/generate";
 import { hslToRgb, placeholderPng } from "../../../src/db/dev/png";
 import { random, seedFrom } from "../../../src/db/dev/random";
-import { slugify } from "../../../src/domain/names";
+import { slugify } from "../../../src/lib/names";
 import { recipeInputSchema } from "../../../src/domain/recipe";
 
 test("the same seed produces byte-identical data, a different seed does not", () => {

@@ -4,7 +4,7 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, max, sql } from "drizzle-orm";
 import { orm } from "../../connection/client";
-import { cleanName, likePattern } from "../../../domain/names";
+import { cleanName, likePattern } from "../../../lib/names";
 import { aisle } from "./schema";
 
 export type Aisle = {

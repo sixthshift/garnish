@@ -18,7 +18,7 @@ import { aisles as aisleRepository } from "../aisle/repo";
 import { type Executor, orm } from "../../connection/client";
 import { food } from "../food/schema";
 import { foods as foodRepository } from "../food/repo";
-import { slugify, uniqueSlug } from "../../../domain/names";
+import { slugify, uniqueSlug } from "../../../lib/names";
 import { tag } from "../tag/schema";
 import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
 import { tags as tagRepository } from "../tag/repo";

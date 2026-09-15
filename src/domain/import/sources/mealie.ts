@@ -29,7 +29,7 @@
 // file reads Mealie and nothing else.
 import { type FoodCandidate, type UnitCandidate, parseIngredient, reviewRow, type ReviewRow } from "../../ingredient";
 import { durationToMinutes, parseYield, type ScrapedPart, type ScrapedRecipe, text } from "../scraped";
-import { IMAGE_TYPES, sniffImage } from "../../image";
+import { IMAGE_TYPES, sniffImage } from "../../../lib/imageFile";
 import { isZip, readZip, type ZipEntry } from "./zip";
 
 /** One of Mealie's ingredient rows, already parsed by Mealie. */

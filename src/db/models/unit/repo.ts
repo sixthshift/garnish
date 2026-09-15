@@ -3,7 +3,7 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, sql } from "drizzle-orm";
 import { orm } from "../../connection/client";
-import { cleanName, likePattern } from "../../../domain/names";
+import { cleanName, likePattern } from "../../../lib/names";
 import { ingredient, recipe } from "../recipe/schema";
 import { unit } from "./schema";
 

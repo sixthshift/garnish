@@ -1,4 +1,4 @@
-// Markdown: the safe subset (src/domain/markdown.ts) as React elements —
+// Markdown: the safe subset (src/lib/markdown.ts) as React elements —
 // blocks, inline emphasis, and the guarantee that anything HTML-shaped a cook
 // typed reaches the DOM as the characters they typed. M29.1 removed the
 // `decorate` prop with the timer chips that were spliced through it, so there

@@ -12,7 +12,7 @@
 // the CLI that runs both is in ./cli.ts.
 import type { Database } from "bun:sqlite";
 import { type Recipe, recipeInputSchema } from "../../domain/recipe";
-import { slugify } from "../../domain/names";
+import { slugify } from "../../lib/names";
 import { orm } from "../connection/client";
 import { recipes } from "../models/recipe/repo";
 import { timeline } from "../models/timeline/repo";

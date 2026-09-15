@@ -1,7 +1,7 @@
 // The safe markdown subset: blocks, inline emphasis, and the guarantee that
 // nothing HTML-shaped in a recipe ever becomes markup.
 import { describe, expect, test } from "vitest";
-import { parseInline, parseMarkdown, plainText } from "../../src/domain/markdown";
+import { parseInline, parseMarkdown, plainText } from "../../src/lib/markdown";
 
 const text = (value: string) => ({ type: "text", value }) as const;
 

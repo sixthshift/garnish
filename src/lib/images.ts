@@ -1,10 +1,10 @@
-// Client-side image helpers. The recipe row stores only the file name (see
-// imageFileName in src/domain/image.ts); GET /api/images/:file serves it and
+// Client-side image helpers: URLs and uploads. The recipe row stores only the file name (see
+// imageFileName in src/lib/imageFile.ts); GET /api/images/:file serves it and
 // POST /api/recipes/:id/image replaces it.
-import { IMAGE_FIELD } from "../domain/image";
+import { IMAGE_FIELD } from "./imageFile";
 
 /** Multipart field the upload routes read. Re-exported so callers of this module need only one import. */
-export { IMAGE_FIELD } from "../domain/image";
+export { IMAGE_FIELD } from "./imageFile";
 
 /** The URL that serves a recipe's stored image, or null when it has none. Pure. */
 export function recipeImageUrl(image: string | null | undefined): string | null {

@@ -3,13 +3,13 @@
 // `step.image` and carried in the recipe document so a save keeps it.
 //
 // The pure rules — formats, size cap, sniffing, file naming — are the recipe
-// image store's (./images.ts, src/domain/image.ts); only the directory
+// image store's (./images.ts, src/lib/imageFile.ts); only the directory
 // differs, so a step photo can never be served as, or overwrite, a recipe
 // image or a timeline photo.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { recipes } from "../../db/models/recipe/repo";
-import { IMAGE_FIELD, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage, type ImageExtension } from "../../domain/image";
+import { IMAGE_FIELD, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage, type ImageExtension } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
 import { getDb } from "../core/db";
 import { imagesDir } from "./images";

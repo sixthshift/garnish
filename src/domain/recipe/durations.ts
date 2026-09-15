@@ -2,7 +2,7 @@
 
 // Every duration named in a step's text, with its offset in that text and its
 // length in seconds. Pure: no IO, importable by the client, run over the raw
-// step text before it goes anywhere near markdown (src/domain/markdown.ts) so
+// step text before it goes anywhere near markdown (src/lib/markdown.ts) so
 // a bold "**20 minutes**" still gets a timer.
 //
 // Recognised shapes: "20 minutes", "20 min", "1 hour", "1½ hours",

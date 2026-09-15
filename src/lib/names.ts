@@ -1,4 +1,4 @@
-// Name and slug helpers shared by the repositories. Pure.
+// Name and slug helpers: trimming, slugs as python-slugify makes them, unique slugs, and a LIKE pattern. Pure.
 
 /** Trimmed name; throws when nothing is left. Uniqueness is the schema's job. */
 export function cleanName(name: string): string {

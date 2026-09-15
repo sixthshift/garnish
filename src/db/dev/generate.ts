@@ -9,7 +9,7 @@
 // one with many. The list, filter, sort and cook screens all have an awkward
 // case to render.
 import type { z } from "zod";
-import { slugify } from "../../domain/names";
+import { slugify } from "../../lib/names";
 import { type ingredientInputSchema, type RecipeInput, type TimelineEventInput, suggestLinks } from "../../domain/recipe";
 import type { Food, Tag, Unit } from "../../domain/reference";
 import { DEFAULT_UNITS } from "../seed/units";

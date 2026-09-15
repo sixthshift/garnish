@@ -1,11 +1,11 @@
-// Renders the safe markdown subset (src/domain/markdown.ts) as React elements.
+// Renders the safe markdown subset (src/lib/markdown.ts) as React elements.
 // Deliberately not `dangerouslySetInnerHTML`: the parser never produces HTML,
 // and every text node goes through React, so anything HTML-shaped a cook typed
 // into a step renders as the characters they typed.
 import { Fragment } from "react";
 import { cn } from "@sixthshift/design-system/utils";
-import type { Block, Inline } from "../../domain/markdown";
-import { parseMarkdown } from "../../domain/markdown";
+import type { Block, Inline } from "../../lib/markdown";
+import { parseMarkdown } from "../../lib/markdown";
 
 function InlineNodes({ nodes }: { nodes: Inline[] }) {
   return (

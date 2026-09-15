@@ -9,7 +9,7 @@
 import type { z } from "zod";
 import { type ingredientInputSchema, type RecipeInput } from "../../domain/recipe";
 import { type Food, type Tag, type Unit } from "../../domain/reference";
-import { slugify } from "../../domain/names";
+import { slugify } from "../../lib/names";
 import { DEFAULT_UNITS } from "./units";
 
 // Reference rows are resolved by name (case-insensitive) when this id is not

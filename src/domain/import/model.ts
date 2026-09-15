@@ -9,7 +9,7 @@
 // record that. What is left for the model alone is text that is not a page at
 // all — the block off a photograph, an email, a book you typed out — where
 // there is nothing structured to anchor it to.
-import { stripFence } from "../ai";
+import { stripFence } from "../../lib/ai";
 import { ImportError } from "./errors";
 import { MAX_PAGE_TEXT } from "./page/text";
 import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "./scraped";

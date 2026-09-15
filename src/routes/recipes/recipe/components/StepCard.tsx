@@ -4,7 +4,7 @@
 //
 // What is on it: the step's number, the ingredients the step *links*
 // (M28.1 — stored, in link order, always rows of the step's own part), the
-// step's text through the safe markdown subset (src/domain/markdown.ts), and a
+// step's text through the safe markdown subset (src/lib/markdown.ts), and a
 // footer of one `TimerChip` per duration named in the text.
 //
 // Three things that used to live on the row are gone with it: chips

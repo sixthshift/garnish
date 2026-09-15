@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { cleanName, likePattern, slugify, uniqueSlug } from "../../src/domain/names";
+import { cleanName, likePattern, slugify, uniqueSlug } from "../../src/lib/names";
 
 test("cleanName trims and rejects blank", () => {
   expect(cleanName("  Butter ")).toBe("Butter");

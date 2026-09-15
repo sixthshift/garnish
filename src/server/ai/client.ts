@@ -140,4 +140,4 @@ export function createFetchRunner(fetcher: Fetcher = fetch, options: RunnerOptio
 }
 
 /** Re-exported for the restyle pass and the tests; the function itself is the domain's. */
-export { stripFence } from "../../domain/ai";
+export { stripFence } from "../../lib/ai";

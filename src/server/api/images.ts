@@ -3,16 +3,16 @@
 // The two /api routes call the handlers here.
 //
 // The pure rules — formats, size cap, sniffing, file naming — live in
-// src/domain/image.ts and are re-exported below, so importing them cannot pull
+// src/lib/imageFile.ts and are re-exported below, so importing them cannot pull
 // this module's database and `node:fs` imports into the client bundle.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { recipes } from "../../db/models/recipe/repo";
-import { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../../domain/image";
+import { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
 import { getDb } from "../core/db";
 
-export { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../../domain/image";
+export { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, MAX_IMAGE_BYTES, imageContentType, imageFileName, sniffImage } from "../../lib/imageFile";
 
 const RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
