@@ -74,7 +74,7 @@ test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev`, `build`, `start`, `check`, `test`, `migrate`, `seed`, `dev:seed`, `db:generate`, `backup`, `icons`. README.md says how to use them.
+Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `test`, `migrate`, `seed`, `dev:seed`, `db:generate`, `backup`, `icons`. README.md says how to use them. `lint` and `format` are Biome (`biome.json`, the design system's configuration: two spaces, double quotes, semicolons, a 160-column line, imports organised); the devcontainer sets it as the editor's formatter on save.
 
 ## Stack
 

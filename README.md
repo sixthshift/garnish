@@ -43,6 +43,15 @@ The app icons are generated, not drawn by hand. `src/components/shell/Logo.tsx` 
 bun run icons
 ```
 
+## Lint and format
+
+Biome, configured in `biome.json` the way the design system is. The devcontainer runs it as the editor's formatter on save; from the terminal:
+
+```bash
+bun run lint      # biome check: format, imports and lint rules, read-only
+bun run format    # biome format --write
+```
+
 ## Test
 
 The gate, run before every commit:
