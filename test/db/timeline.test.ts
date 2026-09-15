@@ -17,7 +17,7 @@ const minimal = (name: string): RecipeInput => ({ name, parts: [{ name: "", ingr
 
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = timeline(db);
   recipeRepo = recipes(db);
   recipeId = recipeRepo.create(recipeInputSchema.parse(minimal("Butter pasta"))).id;

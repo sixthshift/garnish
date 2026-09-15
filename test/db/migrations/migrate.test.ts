@@ -67,7 +67,7 @@ test("migrate applies in order on :memory:, second run is a no-op", async () => 
   const dir = migrationsDir(TWO);
   const db = openDatabase(":memory:");
 
-  const first = await migrate(db, { migrationsDir: dir });
+  const first = migrate(db, { migrationsDir: dir });
   expect(first.map((m) => m.file)).toEqual(["001_recipe.sql", "002_tag.sql"]);
   expect(tables(db)).toEqual(["migration", "recipe", "recipe_tag", "tag"]);
   expect([...appliedMigrations(db)]).toEqual([
@@ -75,7 +75,7 @@ test("migrate applies in order on :memory:, second run is a no-op", async () => 
     [2, "tag"],
   ]);
 
-  const second = await migrate(db, { migrationsDir: dir });
+  const second = migrate(db, { migrationsDir: dir });
   expect(second).toEqual([]);
   expect(tables(db)).toEqual(["migration", "recipe", "recipe_tag", "tag"]);
   expect(db.query<{ n: number }, []>("SELECT count(*) AS n FROM migration").get()?.n).toBe(2);
@@ -84,10 +84,10 @@ test("migrate applies in order on :memory:, second run is a no-op", async () => 
 test("migrate applies only migrations newer than those recorded", async () => {
   const dir = migrationsDir({ "001_recipe.sql": TWO["001_recipe.sql"] });
   const db = openDatabase(":memory:");
-  await migrate(db, { migrationsDir: dir });
+  migrate(db, { migrationsDir: dir });
 
   writeFileSync(join(dir, "002_tag.sql"), TWO["002_tag.sql"]);
-  const applied = await migrate(db, { migrationsDir: dir });
+  const applied = migrate(db, { migrationsDir: dir });
   expect(applied.map((m) => m.id)).toEqual([2]);
   expect(tables(db)).toContain("tag");
 });
@@ -99,7 +99,7 @@ test("a failing migration rolls back and records nothing", async () => {
   });
   const db = openDatabase(":memory:");
 
-  await expect(migrate(db, { migrationsDir: dir })).rejects.toThrow();
+  expect(() => migrate(db, { migrationsDir: dir })).toThrow();
   expect(tables(db)).toEqual(["migration", "recipe"]);
   expect([...appliedMigrations(db).keys()]).toEqual([1]);
 });
@@ -107,13 +107,13 @@ test("a failing migration rolls back and records nothing", async () => {
 test("migrate refuses a database recorded ahead of, or differently from, the files", async () => {
   const dir = migrationsDir(TWO);
   const db = openDatabase(":memory:");
-  await migrate(db, { migrationsDir: dir });
+  migrate(db, { migrationsDir: dir });
 
   rmSync(join(dir, "002_tag.sql"));
-  await expect(migrate(db, { migrationsDir: dir })).rejects.toThrow(/recorded but missing/);
+  expect(() => migrate(db, { migrationsDir: dir })).toThrow(/recorded but missing/);
 
   writeFileSync(join(dir, "002_label.sql"), TWO["002_tag.sql"]);
-  await expect(migrate(db, { migrationsDir: dir })).rejects.toThrow(/recorded as "tag"/);
+  expect(() => migrate(db, { migrationsDir: dir })).toThrow(/recorded as "tag"/);
 });
 
 test("openDatabase creates the file with WAL and foreign keys on", () => {
@@ -131,15 +131,15 @@ test("openDatabase creates the file with WAL and foreign keys on", () => {
 
 test("foreign keys are enforced on an opened database", async () => {
   const db = openDatabase(":memory:");
-  await migrate(db, { migrationsDir: migrationsDir(TWO) });
+  migrate(db, { migrationsDir: migrationsDir(TWO) });
   expect(() => db.run("INSERT INTO recipe_tag (recipe_id, tag_id) VALUES ('nope', 'nope')")).toThrow(/FOREIGN KEY/);
 });
 
 test("the default migrations directory resolves and applies cleanly twice", async () => {
   expect(existsSync(MIGRATIONS_DIR)).toBe(true);
   const db = openDatabase(":memory:");
-  const first = await migrate(db);
-  const second = await migrate(db);
+  const first = migrate(db);
+  const second = migrate(db);
   expect(second).toEqual([]);
   expect(appliedMigrations(db).size).toBe(first.length);
 });
@@ -152,11 +152,11 @@ test("listMigrationsFrom works on names alone, ignoring non-migrations", () => {
 
 test("migrate accepts bundled sources instead of a directory", async () => {
   const db = openDatabase(":memory:");
-  const first = await migrate(db, { sources: TWO });
+  const first = migrate(db, { sources: TWO });
   expect(first.map((m) => m.file)).toEqual(["001_recipe.sql", "002_tag.sql"]);
   expect(tables(db)).toEqual(["migration", "recipe", "recipe_tag", "tag"]);
-  expect(await migrate(db, { sources: TWO })).toEqual([]);
+  expect(migrate(db, { sources: TWO })).toEqual([]);
 
   const { "002_tag.sql": _dropped, ...onlyOne } = TWO;
-  await expect(migrate(db, { sources: onlyOne })).rejects.toThrow(/missing from the bundled migrations/);
+  expect(() => migrate(db, { sources: onlyOne })).toThrow(/missing from the bundled migrations/);
 });

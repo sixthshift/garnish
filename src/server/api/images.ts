@@ -1,9 +1,8 @@
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { recipes } from "../../db/models/recipe/repo";
-import { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
+import recipes from "../../db/models/recipe/repo";
+import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
-import { getDb } from "../core/db";
 
 export { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 
@@ -39,8 +38,7 @@ const notFound = (error: string): Response => Response.json({ error }, { status:
  */
 export async function handleUploadImage(request: Request, recipeId: string): Promise<Response> {
   if (!RECIPE_ID.test(recipeId)) return notFound(`recipe ${recipeId} not found`);
-  const repo = recipes(await getDb());
-  if (!repo.getById(recipeId)) return notFound(`recipe ${recipeId} not found`);
+  if (!recipes.getById(recipeId)) return notFound(`recipe ${recipeId} not found`);
 
   let form: FormData;
   try {
@@ -58,7 +56,7 @@ export async function handleUploadImage(request: Request, recipeId: string): Pro
   if (!ext) return badRequest("not a png, jpeg, webp or gif image");
 
   const image = await storeImage(recipeId.toLowerCase(), ext, bytes);
-  if (!repo.setImage(recipeId, image)) return notFound(`recipe ${recipeId} not found`);
+  if (!recipes.setImage(recipeId, image)) return notFound(`recipe ${recipeId} not found`);
   return Response.json({ image });
 }
 

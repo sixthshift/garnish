@@ -20,7 +20,7 @@ useTempDataDir();
 let db: Database;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   seed(db);
 });
 
@@ -177,7 +177,7 @@ test("skips only the recipes whose slug exists and does not touch the user's cop
 
 test("works without the units seed, creating the units it names", async () => {
   const bare = openDatabase(":memory:");
-  await migrate(bare);
+  migrate(bare);
   seedSample(bare);
   expect(bare.query<{ n: number }, []>("SELECT count(*) AS n FROM recipe").get()!.n).toBe(3);
   expect(recipes(bare).get("anzac-biscuits")!.parts[0]!.ingredients[3]!.unit).toMatchObject({ name: "gram", abbreviation: "g", useAbbreviation: true });
@@ -185,7 +185,7 @@ test("works without the units seed, creating the units it names", async () => {
 });
 
 test("listRecipes shows the three sample recipes", async () => {
-  seedSample(await getDb());
+  seedSample(getDb());
   const listed = await callServerFn(listRecipes, {});
   expect(listed.map((r) => r.name).sort()).toEqual(["Anzac Biscuits", "Lemon Tart", "Roast Pumpkin Soup with Garlic Croutons"]);
   expect((await callServerFn(listRecipes, { tag: "baking" })).map((r) => r.slug).sort()).toEqual(["anzac-biscuits", "lemon-tart"]);

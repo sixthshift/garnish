@@ -1,11 +1,10 @@
-import { aisles } from "../../db/models/aisle/repo";
-import { type Food, foods } from "../../db/models/food/repo";
-import { recipes } from "../../db/models/recipe/repo";
-import { tags } from "../../db/models/tag/repo";
-import { units } from "../../db/models/unit/repo";
+import aisles from "../../db/models/aisle/repo";
+import foods, { type Food } from "../../db/models/food/repo";
+import recipes from "../../db/models/recipe/repo";
+import tags from "../../db/models/tag/repo";
+import units from "../../db/models/unit/repo";
 import { EXPORT_VERSION, exportedRecipe, exportFileName, type Recipe, toCooklang } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
-import { getDb } from "../core/db";
 
 /**
  * The whole-database export. Recipes carry their documents whole, including
@@ -28,10 +27,9 @@ const notFound = (error: string): Response => Response.json({ error }, { status:
 
 /** Every recipe's full document, by name, with image URLs. */
 async function allRecipes(): Promise<Recipe[]> {
-  const repo = recipes(await getDb());
   const documents: Recipe[] = [];
-  for (const summary of repo.list({ sort: "name", dir: "asc" })) {
-    const doc = repo.get(summary.slug);
+  for (const summary of recipes.list({ sort: "name", dir: "asc" })) {
+    const doc = recipes.get(summary.slug);
     if (doc) documents.push(exportedRecipe(doc));
   }
   return documents;
@@ -39,14 +37,13 @@ async function allRecipes(): Promise<Recipe[]> {
 
 /** The export as an object, so the tests and the route read the same thing. */
 export async function buildExport(at: Date = new Date()): Promise<GarnishExport> {
-  const db = await getDb();
   return {
     garnish: { version: EXPORT_VERSION, exportedAt: at.toISOString() },
     recipes: await allRecipes(),
-    foods: foods(db).list(),
-    units: units(db).list(),
-    aisles: aisles(db).list(),
-    tags: tags(db).list(),
+    foods: foods.list(),
+    units: units.list(),
+    aisles: aisles.list(),
+    tags: tags.list(),
   };
 }
 
@@ -57,7 +54,7 @@ export async function buildExport(at: Date = new Date()): Promise<GarnishExport>
 export async function handleRecipeJson(slug: string): Promise<Response> {
   const wanted = slug.trim();
   if (wanted === "") return notFound("recipe  not found");
-  const doc = recipes(await getDb()).get(wanted);
+  const doc = recipes.get(wanted);
   if (!doc) return notFound(`recipe ${wanted} not found`);
   return Response.json(exportedRecipe(doc));
 }
@@ -81,7 +78,7 @@ export async function handleExportJson(at: Date = new Date()): Promise<Response>
 export async function handleRecipeCook(slug: string): Promise<Response> {
   const wanted = slug.trim();
   if (wanted === "") return notFound("recipe  not found");
-  const doc = recipes(await getDb()).get(wanted);
+  const doc = recipes.get(wanted);
   if (!doc) return notFound(`recipe ${wanted} not found`);
   return new Response(toCooklang(doc), { headers: { "content-type": "text/plain; charset=utf-8" } });
 }

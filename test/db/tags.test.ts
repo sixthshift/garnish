@@ -8,7 +8,7 @@ let db: Database;
 let repo: TagRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = tags(db);
 });
 

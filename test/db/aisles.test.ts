@@ -9,7 +9,7 @@ let db: Database;
 let repo: AisleRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = aisles(db);
 });
 

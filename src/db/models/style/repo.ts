@@ -1,5 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, max } from "drizzle-orm";
+import { lazy } from "../../../lib/lazy";
+import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { nowUtc } from "../columns";
 import { styleRule } from "./schema";
@@ -99,3 +101,6 @@ export function styleRules(db: Database) {
 }
 
 export type StyleRuleRepository = ReturnType<typeof styleRules>;
+
+/** The repository over the application database. Tests build their own with `styleRules(db)`. */
+export default lazy(getDb, styleRules);

@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { desc, eq, max } from "drizzle-orm";
 import type { TimelineEvent, TimelineEventInput } from "../../../domain/recipe";
+import { lazy } from "../../../lib/lazy";
+import { getDb } from "../../../server/core/db";
 import { type Executor, orm } from "../../connection/client";
 import { recipe } from "../recipe/schema";
 import { timelineEvent } from "./schema";
@@ -77,3 +79,6 @@ export function timeline(db: Database) {
 }
 
 export type TimelineRepository = ReturnType<typeof timeline>;
+
+/** The repository over the application database. Tests build their own with `timeline(db)`. */
+export default lazy(getDb, timeline);

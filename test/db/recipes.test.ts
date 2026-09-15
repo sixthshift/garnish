@@ -11,7 +11,7 @@ let db: Database;
 let repo: RecipeRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = recipes(db);
 });
 

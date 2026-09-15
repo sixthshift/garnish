@@ -20,7 +20,7 @@ let images: string;
 
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   seed(db);
   images = mkdtempSync(join(tmpdir(), "garnish-dev-images-"));
 });

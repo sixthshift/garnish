@@ -21,7 +21,7 @@ const parse = (input: PlanEntryInput) => planEntryInputSchema.parse(input);
 
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = plan(db);
 });
 

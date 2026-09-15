@@ -1,9 +1,8 @@
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { timeline } from "../../db/models/timeline/repo";
+import timeline from "../../db/models/timeline/repo";
 import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
-import { getDb } from "../core/db";
 import { imagesDir } from "./images";
 
 const EVENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,8 +37,7 @@ const notFound = (error: string): Response => Response.json({ error }, { status:
  */
 export async function handleUploadTimelineImage(request: Request, eventId: string): Promise<Response> {
   if (!EVENT_ID.test(eventId)) return notFound(`timeline event ${eventId} not found`);
-  const repo = timeline(await getDb());
-  if (!repo.get(eventId)) return notFound(`timeline event ${eventId} not found`);
+  if (!timeline.get(eventId)) return notFound(`timeline event ${eventId} not found`);
 
   let form: FormData;
   try {
@@ -57,7 +55,7 @@ export async function handleUploadTimelineImage(request: Request, eventId: strin
   if (!ext) return badRequest("not a png, jpeg, webp or gif image");
 
   const image = await storeTimelineImage(eventId.toLowerCase(), ext, bytes);
-  if (!repo.setImage(eventId, image)) return notFound(`timeline event ${eventId} not found`);
+  if (!timeline.setImage(eventId, image)) return notFound(`timeline event ${eventId} not found`);
   return Response.json({ image });
 }
 

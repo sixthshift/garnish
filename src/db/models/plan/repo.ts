@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, gte, inArray, lte, max, ne } from "drizzle-orm";
 import { addDays, groupByDay, type ParsedPlanEntryInput, type PlanDay, type PlanEntry, type PlanEntryPatch, type PlanRecipe } from "../../../domain/plan";
+import { lazy } from "../../../lib/lazy";
+import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { recipe } from "../recipe/schema";
 import { mealPlanEntry } from "./schema";
@@ -139,3 +141,6 @@ export function plan(db: Database) {
 }
 
 export type PlanRepository = ReturnType<typeof plan>;
+
+/** The repository over the application database. Tests build their own with `plan(db)`. */
+export default lazy(getDb, plan);

@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { eq, sql } from "drizzle-orm";
 import type { ParsedRecipeInput, Recipe, RecipeSummary } from "../../../domain/recipe";
+import { lazy } from "../../../lib/lazy";
+import { getDb } from "../../../server/core/db";
 import { recipeContext } from "./context";
 import { type ListFilter, listRows } from "./list";
 import { readers } from "./read";
@@ -132,3 +134,6 @@ export function recipes(db: Database) {
 }
 
 export type RecipeRepository = ReturnType<typeof recipes>;
+
+/** The repository over the application database. Tests build their own with `recipes(db)`. */
+export default lazy(getDb, recipes);

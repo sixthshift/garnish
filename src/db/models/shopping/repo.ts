@@ -1,4 +1,6 @@
 import type { Database } from "bun:sqlite";
+import { lazy } from "../../../lib/lazy";
+import { getDb } from "../../../server/core/db";
 import { shoppingContext } from "./context";
 import { readers } from "./read";
 import { writers } from "./write";
@@ -12,3 +14,6 @@ export function shopping(db: Database) {
 }
 
 export type ShoppingRepository = ReturnType<typeof shopping>;
+
+/** The repository over the application database. Tests build their own with `shopping(db)`. */
+export default lazy(getDb, shopping);

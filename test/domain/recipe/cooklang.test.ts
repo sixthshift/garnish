@@ -157,7 +157,7 @@ describe("toCooklang", () => {
 describe("golden files: the three sample recipes", () => {
   test.each([["anzac-biscuits"], ["roast-pumpkin-soup-with-garlic-croutons"], ["lemon-tart"]])("%s matches its fixture", async (slug) => {
     const db = openDatabase(":memory:");
-    await migrate(db);
+    migrate(db);
     seedSample(db);
     const doc = recipes(db).get(slug)!;
     const expected = readFileSync(join(FIXTURES, `${slug}.cook`), "utf8");

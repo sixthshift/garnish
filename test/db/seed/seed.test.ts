@@ -11,7 +11,7 @@ import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 let db: Database;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
 });
 
 const count = () => db.query<{ n: number }, []>("SELECT count(*) AS n FROM unit").get()!.n;

@@ -22,13 +22,13 @@ export function useTempDataDir(): { readonly dir: string } {
   let dir = "";
   let previous: string | undefined;
   beforeEach(async () => {
-    await closeDb();
+    closeDb();
     previous = process.env.DATA_DIR;
     dir = mkdtempSync(join(tmpdir(), "garnish-test-"));
     process.env.DATA_DIR = dir;
   });
   afterEach(async () => {
-    await closeDb();
+    closeDb();
     if (previous === undefined) delete process.env.DATA_DIR;
     else process.env.DATA_DIR = previous;
     rmSync(dir, { recursive: true, force: true });

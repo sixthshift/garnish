@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern, slugify, uniqueSlug } from "../../../lib/names";
+import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { recipeTag } from "../recipe/schema";
 import { tag } from "./schema";
@@ -111,3 +113,6 @@ export function tags(db: Database) {
 }
 
 export type TagRepository = ReturnType<typeof tags>;
+
+/** The repository over the application database. Tests build their own with `tags(db)`. */
+export default lazy(getDb, tags);

@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, sql } from "drizzle-orm";
+import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
+import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { ingredient, recipe } from "../recipe/schema";
 import { unit } from "./schema";
@@ -103,3 +105,6 @@ export function units(db: Database) {
 }
 
 export type UnitRepository = ReturnType<typeof units>;
+
+/** The repository over the application database. Tests build their own with `units(db)`. */
+export default lazy(getDb, units);

@@ -1,9 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { recipes } from "../../db/models/recipe/repo";
-import { timeline } from "../../db/models/timeline/repo";
+import recipes from "../../db/models/recipe/repo";
+import timeline from "../../db/models/timeline/repo";
 import { timelineEventInputSchema } from "../../domain/recipe";
-import { getDb } from "../core/db";
 import { NotFound } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
@@ -19,7 +18,7 @@ export const DeleteTimelineEventInput = z.object({ id: z.uuid() });
 export const listTimeline = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListTimelineInput)
-  .handler(async ({ data }) => timeline(await getDb()).list(data.recipeId));
+  .handler(async ({ data }) => timeline.list(data.recipeId));
 
 /**
  * Log a cook. Pulls `recipe.last_made` up to the recipe's latest date and
@@ -30,9 +29,8 @@ export const createTimelineEvent = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(CreateTimelineEventInput)
   .handler(async ({ data }) => {
-    const db = await getDb();
-    if (!recipes(db).getById(data.recipeId)) throw new NotFound("recipe", data.recipeId);
-    return timeline(db).create(data.recipeId, data.event);
+    if (!recipes.getById(data.recipeId)) throw new NotFound("recipe", data.recipeId);
+    return timeline.create(data.recipeId, data.event);
   });
 
 /** Delete a logged cook and recompute the recipe's last made date. */
@@ -40,6 +38,6 @@ export const deleteTimelineEvent = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(DeleteTimelineEventInput)
   .handler(async ({ data }) => {
-    if (!timeline(await getDb()).remove(data.id)) throw new NotFound("timeline event", data.id);
+    if (!timeline.remove(data.id)) throw new NotFound("timeline event", data.id);
     return { id: data.id };
   });

@@ -1,6 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, max, sql } from "drizzle-orm";
+import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
+import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { aisle } from "./schema";
 
@@ -94,3 +96,6 @@ export function aisles(db: Database) {
 }
 
 export type AisleRepository = ReturnType<typeof aisles>;
+
+/** The repository over the application database. Tests build their own with `aisles(db)`. */
+export default lazy(getDb, aisles);

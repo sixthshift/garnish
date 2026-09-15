@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ensureDataDir } from "../../server/core/boot";
@@ -66,9 +66,10 @@ export type MigrateOptions = {
 /**
  * Apply every pending migration in id order. Each file runs in its own
  * transaction together with its `migration` row, so a failing file leaves
- * nothing behind. Returns the migrations applied on this run.
+ * nothing behind. Returns the migrations applied on this run. Synchronous,
+ * like the store: `getDb()` opens, migrates and seeds in one call.
  */
-export async function migrate(db: Database, opts: MigrateOptions = {}): Promise<Migration[]> {
+export function migrate(db: Database, opts: MigrateOptions = {}): Migration[] {
   const dir = opts.migrationsDir ?? MIGRATIONS_DIR;
   const where = opts.sources ? "the bundled migrations" : dir;
   const all = opts.sources ? listMigrationsFrom(Object.keys(opts.sources)) : listMigrations(dir);
@@ -84,7 +85,7 @@ export async function migrate(db: Database, opts: MigrateOptions = {}): Promise<
 
   const pending = all.filter((m) => !applied.has(m.id));
   const { sources: bundled } = opts;
-  const sources = bundled ? pending.map((m) => bundled[m.file]!) : await Promise.all(pending.map((m) => Bun.file(join(dir, m.file)).text()));
+  const sources = bundled ? pending.map((m) => bundled[m.file]!) : pending.map((m) => readFileSync(join(dir, m.file), "utf8"));
 
   const insert = db.prepare("INSERT INTO migration (id, name) VALUES (?, ?)");
   const apply = db.transaction((m: Migration, sql: string) => {
@@ -92,7 +93,7 @@ export async function migrate(db: Database, opts: MigrateOptions = {}): Promise<
     insert.run(m.id, m.name);
   });
 
-  pending.forEach((m, i) => apply(m, sources[i]!));
+  for (const [i, m] of pending.entries()) apply(m, sources[i]!);
   return pending;
 }
 
@@ -101,7 +102,7 @@ if (import.meta.main) {
   const path = databasePath(dir);
   const db = openDatabase(path);
   try {
-    const done = await migrate(db);
+    const done = migrate(db);
     console.log(done.length === 0 ? `${path}: up to date` : `${path}: applied ${done.map((m) => m.file).join(", ")}`);
   } finally {
     db.close();

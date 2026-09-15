@@ -8,7 +8,7 @@ import { migrate } from "../../src/db/migrations/migrate";
 let db: Database;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
 });
 
 function tables(): string[] {

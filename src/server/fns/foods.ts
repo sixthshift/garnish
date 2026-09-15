@@ -1,25 +1,24 @@
 import { createServerFn } from "@tanstack/react-start";
-import { foods } from "../../db/models/food/repo";
-import { recipes } from "../../db/models/recipe/repo";
+import foods from "../../db/models/food/repo";
+import recipes from "../../db/models/recipe/repo";
 import { FoodConversions, FoodCreate, FoodMerge, FoodUpdate, IdInput, ListQuery, NameInput, RecipeFoodInput } from "../../domain/reference";
-import { getDb } from "../core/db";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
 export const listFoods = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListQuery)
-  .handler(async ({ data }) => foods(await getDb()).list(data.q));
+  .handler(async ({ data }) => foods.list(data.q));
 
 export const createFood = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(FoodCreate)
-  .handler(async ({ data }) => foods(await getDb()).create(data));
+  .handler(async ({ data }) => foods.create(data));
 
 export const updateFood = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(FoodUpdate)
-  .handler(async ({ data: { id, ...patch } }) => required(foods(await getDb()).update(id, patch), "food", id));
+  .handler(async ({ data: { id, ...patch } }) => required(foods.update(id, patch), "food", id));
 
 /**
  * This food's conversions, replaced wholesale. `updateFood`
@@ -28,16 +27,15 @@ export const updateFood = createServerFn({ method: "POST" })
 export const setFoodConversions = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(FoodConversions)
-  .handler(async ({ data: { id, conversions } }) => required(foods(await getDb()).setConversions(id, conversions), "food", id));
+  .handler(async ({ data: { id, conversions } }) => required(foods.setConversions(id, conversions), "food", id));
 
 /** Deletes and returns the row, as Mealie does. */
 export const deleteFood = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(IdInput)
   .handler(async ({ data }) => {
-    const repo = foods(await getDb());
-    const food = required(repo.get(data.id), "food", data.id);
-    repo.remove(data.id);
+    const food = required(foods.get(data.id), "food", data.id);
+    foods.remove(data.id);
     return food;
   });
 
@@ -45,7 +43,7 @@ export const deleteFood = createServerFn({ method: "POST" })
 export const findOrCreateFood = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(NameInput)
-  .handler(async ({ data }) => foods(await getDb()).findOrCreate(data.name));
+  .handler(async ({ data }) => foods.findOrCreate(data.name));
 
 /**
  * The food this recipe is: the existing food of
@@ -58,19 +56,17 @@ export const foodForRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(RecipeFoodInput)
   .handler(async ({ data }) => {
-    const db = await getDb();
-    const recipe = required(recipes(db).getById(data.recipeId), "recipe", data.recipeId);
-    const repo = foods(db);
-    const food = repo.findOrCreate(recipe.name);
+    const recipe = required(recipes.getById(data.recipeId), "recipe", data.recipeId);
+    const food = foods.findOrCreate(recipe.name);
     if (food.recipeId === recipe.id) return food;
-    return required(repo.update(food.id, { recipeId: recipe.id }), "food", food.id);
+    return required(foods.update(food.id, { recipeId: recipe.id }), "food", food.id);
   });
 
 /** The recipes with an ingredient of this food, for the delete/merge confirm dialogs. */
 export const usingFood = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(IdInput)
-  .handler(async ({ data }) => recipes(await getDb()).usingFood(data.id));
+  .handler(async ({ data }) => recipes.usingFood(data.id));
 
 /**
  * Merge `sourceId` into `targetId`: every ingredient using the source is
@@ -81,8 +77,7 @@ export const mergeFood = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(FoodMerge)
   .handler(async ({ data: { sourceId, targetId } }) => {
-    const repo = foods(await getDb());
-    required(repo.get(sourceId), "food", sourceId);
-    required(repo.get(targetId), "food", targetId);
-    return required(repo.merge(sourceId, targetId), "food", targetId);
+    required(foods.get(sourceId), "food", sourceId);
+    required(foods.get(targetId), "food", targetId);
+    return required(foods.merge(sourceId, targetId), "food", targetId);
   });

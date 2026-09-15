@@ -21,7 +21,7 @@ const png = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAA
 const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0xff, 0xd9]);
 
 async function createRecipe(name = "Flatbread"): Promise<string> {
-  const repo = recipes(await getDb());
+  const repo = recipes(getDb());
   return repo.create(recipeInputSchema.parse({ name, parts: [{ name: "", ingredients: [], steps: [] }] })).id;
 }
 
@@ -46,7 +46,7 @@ test("upload then GET returns the same bytes with the image content type", async
   expect(await bytesOf(got)).toEqual(png);
 
   expect(existsSync(join(tmp.dir, "images", `${id}.png`))).toBe(true);
-  expect(recipes(await getDb()).getById(id)?.image).toBe(`${id}.png`);
+  expect(recipes(getDb()).getById(id)?.image).toBe(`${id}.png`);
 });
 
 test("uploading a different format replaces the file and updates recipe.image", async () => {
@@ -60,7 +60,7 @@ test("uploading a different format replaces the file and updates recipe.image", 
   const got = await handleGetImage(`${id}.jpg`);
   expect(got.headers.get("content-type")).toBe("image/jpeg");
   expect(await bytesOf(got)).toEqual(jpg);
-  expect(recipes(await getDb()).getById(id)?.image).toBe(`${id}.jpg`);
+  expect(recipes(getDb()).getById(id)?.image).toBe(`${id}.jpg`);
 });
 
 test("the format comes from the bytes, not the declared type or file name", async () => {
@@ -106,7 +106,7 @@ test.each([
   const res = await send(id);
   expect(res.status).toBe(400);
   expect(typeof (await res.json()).error).toBe("string");
-  expect(recipes(await getDb()).getById(id)?.image).toBeNull();
+  expect(recipes(getDb()).getById(id)?.image).toBeNull();
 });
 
 test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(

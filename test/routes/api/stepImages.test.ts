@@ -27,7 +27,7 @@ const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x4
 
 /** A one-step recipe, and the id of that step. */
 async function createRecipe(): Promise<Recipe> {
-  const db = await getDb();
+  const db = getDb();
   return recipes(db).create(recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [{ text: "Knead it." }] }] }));
 }
 
@@ -58,7 +58,7 @@ test("upload then GET returns the same bytes, and the step points at the file", 
   expect(await bytesOf(got)).toEqual(png);
 
   expect(existsSync(join(tmp.dir, "images", "steps", `${stepId}.png`))).toBe(true);
-  expect((await recipes(await getDb()).getById(recipe.id))?.parts[0]!.steps[0]!.image).toBe(`${stepId}.png`);
+  expect((await recipes(getDb()).getById(recipe.id))?.parts[0]!.steps[0]!.image).toBe(`${stepId}.png`);
 });
 
 test("the photo survives a save, because the document carries it", async () => {
@@ -66,7 +66,7 @@ test("the photo survives a save, because the document carries it", async () => {
   const stepId = stepIdOf(recipe);
   await upload(stepId, png);
 
-  const repo = recipes(await getDb());
+  const repo = recipes(getDb());
   const stored = repo.getById(recipe.id)!;
   repo.update(recipe.id, recipeInputSchema.parse({ ...stored, name: "Flatbread, again" }));
 
@@ -82,7 +82,7 @@ test("uploading a different format replaces the file and the stored name", async
 
   expect(readdirSync(join(tmp.dir, "images", "steps"))).toEqual([`${stepId}.jpg`]);
   expect((await handleGetStepImage(`${stepId}.png`)).status).toBe(404);
-  expect(recipes(await getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBe(`${stepId}.jpg`);
+  expect(recipes(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBe(`${stepId}.jpg`);
 });
 
 test("the format comes from the bytes, not the declared type or file name", async () => {
@@ -122,7 +122,7 @@ test.each([
   const res = await send(stepIdOf(recipe));
   expect(res.status).toBe(400);
   expect(typeof (await res.json()).error).toBe("string");
-  expect(recipes(await getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBeNull();
+  expect(recipes(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBeNull();
 });
 
 test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(

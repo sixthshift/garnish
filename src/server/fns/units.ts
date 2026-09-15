@@ -1,34 +1,32 @@
 import { createServerFn } from "@tanstack/react-start";
-import { recipes } from "../../db/models/recipe/repo";
-import { units } from "../../db/models/unit/repo";
+import recipes from "../../db/models/recipe/repo";
+import units from "../../db/models/unit/repo";
 import { IdInput, ListQuery, NameInput, UnitCreate, UnitMerge, UnitUpdate } from "../../domain/reference";
-import { getDb } from "../core/db";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
 export const listUnits = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListQuery)
-  .handler(async ({ data }) => units(await getDb()).list(data.q));
+  .handler(async ({ data }) => units.list(data.q));
 
 export const createUnit = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(UnitCreate)
-  .handler(async ({ data }) => units(await getDb()).create(data));
+  .handler(async ({ data }) => units.create(data));
 
 export const updateUnit = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(UnitUpdate)
-  .handler(async ({ data: { id, ...patch } }) => required(units(await getDb()).update(id, patch), "unit", id));
+  .handler(async ({ data: { id, ...patch } }) => required(units.update(id, patch), "unit", id));
 
 /** Deletes and returns the row, as Mealie does. */
 export const deleteUnit = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(IdInput)
   .handler(async ({ data }) => {
-    const repo = units(await getDb());
-    const unit = required(repo.get(data.id), "unit", data.id);
-    repo.remove(data.id);
+    const unit = required(units.get(data.id), "unit", data.id);
+    units.remove(data.id);
     return unit;
   });
 
@@ -36,13 +34,13 @@ export const deleteUnit = createServerFn({ method: "POST" })
 export const findOrCreateUnit = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(NameInput)
-  .handler(async ({ data }) => units(await getDb()).findOrCreate(data.name));
+  .handler(async ({ data }) => units.findOrCreate(data.name));
 
 /** The recipes with an ingredient or a yield unit of this unit, for the delete/merge confirm dialogs. */
 export const usingUnit = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(IdInput)
-  .handler(async ({ data }) => recipes(await getDb()).usingUnit(data.id));
+  .handler(async ({ data }) => recipes.usingUnit(data.id));
 
 /**
  * Merge `sourceId` into `targetId`: every ingredient and recipe yield using
@@ -53,8 +51,7 @@ export const mergeUnit = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(UnitMerge)
   .handler(async ({ data: { sourceId, targetId } }) => {
-    const repo = units(await getDb());
-    required(repo.get(sourceId), "unit", sourceId);
-    required(repo.get(targetId), "unit", targetId);
-    return required(repo.merge(sourceId, targetId), "unit", targetId);
+    required(units.get(sourceId), "unit", sourceId);
+    required(units.get(targetId), "unit", targetId);
+    return required(units.merge(sourceId, targetId), "unit", targetId);
   });

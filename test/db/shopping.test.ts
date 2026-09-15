@@ -24,7 +24,7 @@ const parse = (input: ShoppingItemInput) => shoppingItemInputSchema.parse(input)
 
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = shopping(db);
 });
 
@@ -210,14 +210,14 @@ test("005 applies to an existing database migrated only as far as 004", async ()
   for (const file of earlier) copyFileSync(join(MIGRATIONS_DIR, file), join(dir, file));
 
   const existing = openDatabase(":memory:");
-  await migrate(existing, { migrationsDir: dir });
+  migrate(existing, { migrationsDir: dir });
   const before = existing.query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'shopping%'").all();
   expect(before).toEqual([]);
 
   for (const file of files.filter((f) => f.startsWith("005_"))) {
     copyFileSync(join(MIGRATIONS_DIR, file), join(dir, file));
   }
-  const applied = await migrate(existing, { migrationsDir: dir });
+  const applied = migrate(existing, { migrationsDir: dir });
   expect(applied.map((m) => m.id)).toEqual([5]);
 
   const after = existing

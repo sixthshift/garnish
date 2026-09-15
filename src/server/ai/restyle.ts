@@ -1,10 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { recipes } from "../../db/models/recipe/repo";
-import { styleRules } from "../../db/models/style/repo";
+import recipes from "../../db/models/recipe/repo";
+import styleRules from "../../db/models/style/repo";
 import type { Recipe } from "../../domain/recipe";
 import { checkRestyle, type RestyleCheck, type RestyledPart } from "../../domain/style";
-import { getDb } from "../core/db";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher } from "./client";
@@ -76,10 +75,9 @@ export const restyleSteps = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(RestyleStepsInput)
   .handler(async ({ data }): Promise<RestyleResult> => {
-    const db = await getDb();
-    const recipe = required(recipes(db).getById(data.id), "recipe", data.id);
+    const recipe = required(recipes.getById(data.id), "recipe", data.id);
     const wanted = new Set(data.ruleIds);
-    const rules = styleRules(db)
+    const rules = styleRules
       .list()
       .filter((rule) => wanted.has(rule.id))
       .map((rule) => rule.text);
@@ -108,8 +106,7 @@ export const applyRestyle = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(ApplyRestyleInput)
   .handler(async ({ data }): Promise<Recipe> => {
-    const db = await getDb();
-    return required(recipes(db).restyleParts(data.id, data.parts), "recipe", data.id);
+    return required(recipes.restyleParts(data.id, data.parts), "recipe", data.id);
   });
 
 export const RestoreStepsInput = z.object({ id: z.string().min(1) });
@@ -123,6 +120,5 @@ export const restoreSteps = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(RestoreStepsInput)
   .handler(async ({ data }): Promise<Recipe> => {
-    const db = await getDb();
-    return required(recipes(db).restoreParts(data.id), "recipe", data.id);
+    return required(recipes.restoreParts(data.id), "recipe", data.id);
   });

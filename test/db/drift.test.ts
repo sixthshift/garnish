@@ -20,7 +20,7 @@ type ColumnInfo = { name: string; type: string; notnull: 0 | 1; pk: number };
 let db: Database;
 beforeAll(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
 });
 
 // Every table every domain declares. A glob rather than a list of imports, so a

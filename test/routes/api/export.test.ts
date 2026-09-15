@@ -32,7 +32,7 @@ const FLOUR_INGREDIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";
  * the Baking aisle.
  */
 async function seed(): Promise<{ tart: Recipe; pastry: Recipe }> {
-  const db = await getDb();
+  const db = getDb();
   const recipeRepo = recipes(db);
   const unitRepo = units(db);
   const foodRepo = foods(db);
@@ -159,7 +159,7 @@ test("the whole export carries every recipe's document and the four reference li
 });
 
 test("a database with no recipes still exports a well-formed envelope", async () => {
-  await getDb();
+  getDb();
   const body = await buildExport(new Date("2026-09-13T10:00:00.000Z"));
   expect(body.garnish).toEqual({ version: 1, exportedAt: "2026-09-13T10:00:00.000Z" });
   expect(body.recipes).toEqual([]);

@@ -23,7 +23,7 @@ function tmp(prefix = "garnish-backup-"): string {
 async function sourceDb(): Promise<{ db: Database; path: string }> {
   const path = join(tmp(), "garnish.db");
   const db = openDatabase(path);
-  await migrate(db);
+  migrate(db);
   units(db).create({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false });
   return { db, path };
 }

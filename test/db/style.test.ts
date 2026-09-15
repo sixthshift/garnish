@@ -10,7 +10,7 @@ let db: Database;
 let repo: StyleRuleRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = styleRules(db);
 });
 

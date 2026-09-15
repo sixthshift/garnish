@@ -12,7 +12,7 @@ const temp = useTempDataDir();
 
 test("first getDb creates the file under DATA_DIR, migrates and seeds", async () => {
   expect(existsSync(join(temp.dir, DB_FILE))).toBe(false);
-  const db = await getDb();
+  const db = getDb();
   expect(existsSync(join(temp.dir, DB_FILE))).toBe(true);
   const applied = db.query<{ n: number }, []>("SELECT count(*) AS n FROM migration").get()!.n;
   expect(applied).toBeGreaterThan(0);
@@ -20,17 +20,17 @@ test("first getDb creates the file under DATA_DIR, migrates and seeds", async ()
 });
 
 test("getDb caches the handle and does not re-seed", async () => {
-  const a = await getDb();
-  const b = await getDb();
+  const a = getDb();
+  const b = getDb();
   expect(b).toBe(a);
   expect(units(a).list()).toHaveLength(DEFAULT_UNITS.length);
 });
 
 test("closeDb forgets the handle; the next getDb reopens the same file", async () => {
-  const a = await getDb();
+  const a = getDb();
   units(a).create({ name: "handful", pluralName: "handfuls", abbreviation: "hf" });
-  await closeDb();
-  const b = await getDb();
+  closeDb();
+  const b = getDb();
   expect(b).not.toBe(a);
   expect(
     units(b)
@@ -41,7 +41,7 @@ test("closeDb forgets the handle; the next getDb reopens the same file", async (
 });
 
 test("closeDb with nothing open is a no-op", async () => {
-  await expect(closeDb()).resolves.toBeUndefined();
+  expect(closeDb()).toBeUndefined();
 });
 
 test("the bundled migrations match the files on disk", () => {

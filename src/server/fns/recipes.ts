@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { recipes } from "../../db/models/recipe/repo";
+import recipes from "../../db/models/recipe/repo";
 import { duplicateInput, recipeInputSchema, scaleRecipe } from "../../domain/recipe";
-import { getDb } from "../core/db";
 import { NotFound, required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
@@ -58,7 +57,7 @@ export const SetRatingInput = z.object({ id: recipeId, rating: z.number().min(0)
 export const listRecipes = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListRecipesInput)
-  .handler(async ({ data }) => recipes(await getDb()).list(data));
+  .handler(async ({ data }) => recipes.list(data));
 
 export const RecipeBySourceInput = z.object({ sourceUrl: z.string().trim().min(1) });
 
@@ -66,7 +65,7 @@ export const RecipeBySourceInput = z.object({ sourceUrl: z.string().trim().min(1
 export const recipeBySource = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(RecipeBySourceInput)
-  .handler(async ({ data }) => recipes(await getDb()).bySourceUrl(data.sourceUrl));
+  .handler(async ({ data }) => recipes.bySourceUrl(data.sourceUrl));
 
 export const RecipeByNameInput = z.object({ name: z.string().trim().min(1) });
 
@@ -74,7 +73,7 @@ export const RecipeByNameInput = z.object({ name: z.string().trim().min(1) });
 export const recipeByName = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(RecipeByNameInput)
-  .handler(async ({ data }) => recipes(await getDb()).byName(data.name));
+  .handler(async ({ data }) => recipes.byName(data.name));
 
 /**
  * One recipe by slug. With `servings`, the document is scaled to that many
@@ -90,13 +89,13 @@ export const recipeByName = createServerFn({ method: "GET" })
 export const listSubRecipes = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(SubRecipesInput)
-  .handler(async ({ data }) => recipes(await getDb()).subRecipes(data.ids));
+  .handler(async ({ data }) => recipes.subRecipes(data.ids));
 
 export const getRecipe = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(GetRecipeInput)
   .handler(async ({ data }) => {
-    const doc = required(recipes(await getDb()).get(data.slug), "recipe", data.slug);
+    const doc = required(recipes.get(data.slug), "recipe", data.slug);
     if (data.servings === undefined || doc.recipeServings <= 0) return doc;
     return scaleRecipe(doc, data.servings);
   });
@@ -105,20 +104,20 @@ export const getRecipe = createServerFn({ method: "GET" })
 export const createRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(CreateRecipeInput)
-  .handler(async ({ data }) => recipes(await getDb()).create(data));
+  .handler(async ({ data }) => recipes.create(data));
 
 /** Replace the recipe `id` with `doc`, keeping id and created_at. Returns the stored document. */
 export const updateRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(UpdateRecipeInput)
-  .handler(async ({ data }) => required(recipes(await getDb()).update(data.id, data.doc), "recipe", data.id));
+  .handler(async ({ data }) => required(recipes.update(data.id, data.doc), "recipe", data.id));
 
 /** Flip the favourite flag alone. Returns the flag as stored. Not-found for an unknown id. */
 export const setFavourite = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(SetFavouriteInput)
   .handler(async ({ data }) => {
-    if (!recipes(await getDb()).setFavourite(data.id, data.favourite)) throw new NotFound("recipe", data.id);
+    if (!recipes.setFavourite(data.id, data.favourite)) throw new NotFound("recipe", data.id);
     return { id: data.id, favourite: data.favourite };
   });
 
@@ -133,7 +132,7 @@ export const setRating = createServerFn({ method: "POST" })
   .validator(SetRatingInput)
   .handler(async ({ data }) => {
     const rating = data.rating === 0 ? null : data.rating;
-    if (!recipes(await getDb()).setRating(data.id, rating)) throw new NotFound("recipe", data.id);
+    if (!recipes.setRating(data.id, rating)) throw new NotFound("recipe", data.id);
     return { id: data.id, rating };
   });
 
@@ -146,9 +145,8 @@ export const duplicateRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(DuplicateRecipeInput)
   .handler(async ({ data }) => {
-    const repo = recipes(await getDb());
-    const source = required(repo.getById(data.id), "recipe", data.id);
-    return repo.create(recipeInputSchema.parse(duplicateInput(source)));
+    const source = required(recipes.getById(data.id), "recipe", data.id);
+    return recipes.create(recipeInputSchema.parse(duplicateInput(source)));
   });
 
 /** Delete the recipe `id`. Returns the document as it was, the way Mealie does. */
@@ -156,8 +154,7 @@ export const deleteRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(DeleteRecipeInput)
   .handler(async ({ data }) => {
-    const repo = recipes(await getDb());
-    const doc = required(repo.getById(data.id), "recipe", data.id);
-    if (!repo.remove(data.id)) throw new NotFound("recipe", data.id);
+    const doc = required(recipes.getById(data.id), "recipe", data.id);
+    if (!recipes.remove(data.id)) throw new NotFound("recipe", data.id);
     return doc;
   });

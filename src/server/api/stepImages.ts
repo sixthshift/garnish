@@ -1,9 +1,8 @@
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
-import { recipes } from "../../db/models/recipe/repo";
+import recipes from "../../db/models/recipe/repo";
 import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
-import { getDb } from "../core/db";
 import { imagesDir } from "./images";
 
 const STEP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -38,8 +37,7 @@ const notFound = (error: string): Response => Response.json({ error }, { status:
  */
 export async function handleUploadStepImage(request: Request, stepId: string): Promise<Response> {
   if (!STEP_ID.test(stepId)) return notFound(`step ${stepId} not found`);
-  const repo = recipes(await getDb());
-  if (!repo.stepExists(stepId)) return notFound(`step ${stepId} not found`);
+  if (!recipes.stepExists(stepId)) return notFound(`step ${stepId} not found`);
 
   let form: FormData;
   try {
@@ -57,7 +55,7 @@ export async function handleUploadStepImage(request: Request, stepId: string): P
   if (!ext) return badRequest("not a png, jpeg, webp or gif image");
 
   const image = await storeStepImage(stepId.toLowerCase(), ext, bytes);
-  if (!repo.setStepImage(stepId, image)) return notFound(`step ${stepId} not found`);
+  if (!recipes.setStepImage(stepId, image)) return notFound(`step ${stepId} not found`);
   return Response.json({ image });
 }
 

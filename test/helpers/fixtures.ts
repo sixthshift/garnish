@@ -1,15 +1,14 @@
 // Test-only server functions exercising the scaffold. Not part of the app.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { units } from "../../src/db/models/unit/repo";
-import { getDb } from "../../src/server/core/db";
+import units from "../../src/db/models/unit/repo";
 import { NotFound } from "../../src/server/core/errors";
 import { notFoundMiddleware } from "../../src/server/core/fn";
 
-/** Reads through getDb(): proves the temp DATA_DIR wiring end to end. */
+/** Reads through the repository's default export, and so through getDb(): proves the temp DATA_DIR wiring end to end. */
 export const unitCount = createServerFn()
   .middleware([notFoundMiddleware])
-  .handler(async () => ({ count: units(await getDb()).list().length }));
+  .handler(async () => ({ count: units.list().length }));
 
 export const FindInput = z.object({ id: z.string() });
 

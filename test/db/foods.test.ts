@@ -12,7 +12,7 @@ let db: Database;
 let repo: FoodRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
-  await migrate(db);
+  migrate(db);
   repo = foods(db);
 });
 

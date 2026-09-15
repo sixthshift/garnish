@@ -1,7 +1,9 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import type { FoodConversion, FoodRow } from "../../../domain/reference";
+import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
+import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { ingredient } from "../recipe/schema";
 import { food, foodConversion } from "./schema";
@@ -153,3 +155,6 @@ export function foods(db: Database) {
 }
 
 export type FoodRepository = ReturnType<typeof foods>;
+
+/** The repository over the application database. Tests build their own with `foods(db)`. */
+export default lazy(getDb, foods);
