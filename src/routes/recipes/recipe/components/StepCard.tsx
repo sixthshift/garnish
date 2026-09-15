@@ -1,33 +1,14 @@
-// One step, as a card. The recipe page lays the deck out; cook mode deals the
-// same cards one at a time in bigger type (decisions.md row 66), so a step
-// reads identically whichever way it is being cooked from.
-//
-// What is on it: the step's number, the ingredients the step *links*
-// (M28.1 — stored, in link order, always rows of the step's own part), the
-// step's text through the safe markdown subset (src/lib/markdown.ts), and a
-// footer of one `TimerChip` per duration named in the text.
-//
-// Three things that used to live on the row are gone with it: chips
-// name-matched at render (the links are stored now), timer chips spliced into
-// the prose (they sit in the footer, where they do not break a sentence in
-// half) and `Markdown`'s `decorate` seam that carried them.
-//
-// Ticks are the session store (src/lib/ticks.ts), shared with the prep list
-// and cook mode: an ingredient linked from two steps shows on both cards and
-// ticking it on either strikes it through everywhere. Tapping the text ticks
-// the step itself — its text collapses to one line and the card dims, so a
-// long method shortens as you work through it. The footer stays: a timer that
-// is running has to be reachable after its step is done.
 import { cn } from "@sixthshift/design-system/utils";
 import { useMemo } from "react";
 import { Markdown } from "../../../../components/ui/Markdown";
 import { durationsIn, type Ingredient, type Step } from "../../../../domain/recipe";
 import { stepImageUrl } from "../../../../lib/images";
-import { useStepTick } from "../../../../lib/ticks";
-import { chipTimerId, useTimers } from "../../../../lib/timers";
+import { useStepTick } from "../../../../lib/useTicks";
+import { chipTimerId } from "../../../../lib/timers";
+import { useTimers } from "../../../../lib/useTimers";
 import { IngredientRow } from "./IngredientRow";
-import { useQuickEditStep } from "./QuickEdit";
 import { TimerChip } from "./TimerChip";
+import { useQuickEditStep } from "./useQuickEdit";
 
 /** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
 export type StepCardSize = "page" | "cook";
@@ -43,14 +24,14 @@ export type StepCardProps = {
   step: Step;
   /** 1-based position within its part, for the number bubble and the screen-reader label. */
   position: number;
-  /** The owning part's ingredients — the only rows a link may name (decisions.md row 64). */
+  /** The owning part's ingredients — the only rows a link may name. */
   ingredients?: Ingredient[];
   /** The type scale. Defaults to the page's. */
   size?: StepCardSize;
-  /** The owning part's id. Quick edit (M27.5) needs it to find the stored step; without it the card renders no pencil. */
+  /** The owning part's id. Quick edit needs it to find the stored step; without it the card renders no pencil. */
   partId?: string;
   /**
-   * The parent recipe's slug, cook mode only (M32.4): forwarded to each linked
+   * The parent recipe's slug, cook mode only: forwarded to each linked
    * row so a sub-recipe ingredient offers a link into the child's own cook
    * mode instead of the plain "Make N servings" hint. Absent on the recipe page.
    */
@@ -59,14 +40,14 @@ export type StepCardProps = {
 
 export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId, cookFrom }: StepCardProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
-  // The corner "…" menu and its sheet, or nothing outside the recipe page (M27.5, M29.4).
+  // The corner "…" menu and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditStep(partId, step.id);
   // `find` closes over the current timers, so it changes on every second's
   // tick; that is exactly when a running chip has to repaint.
   const { start, find } = useTimers(recipeId);
   const rows = useMemo(() => linkedIngredients(step, ingredients), [step, ingredients]);
   const durations = useMemo(() => stepDurations(step.text), [step.text]);
-  // The step's photo, above its text at both sizes (M35.1). A ticked step
+  // The step's photo, above its text at both sizes. A ticked step
   // collapses to one line, so its photo goes with the rest of the detail.
   const photo = stepImageUrl(step.image);
   const scale = SCALE[size];
@@ -116,6 +97,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
               </button>
             </div>
           </div>
+          {/* The footer stays on a ticked step: a running timer has to be reachable after its step is done. */}
           {durations.length > 0 && (
             <div className="flex flex-wrap gap-2" data-testid="step-timers">
               {durations.map((duration) => {

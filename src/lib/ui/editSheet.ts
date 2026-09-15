@@ -1,5 +1,3 @@
-// The logic behind components/ui/EditSheet: field specs to values and back, and validation.
-
 export type FieldOption = { value: string; label: string };
 
 /** One editable field. `name` is the key in both the item and the saved values. */

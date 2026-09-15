@@ -1,7 +1,3 @@
-// The ingredient lists the recipe page shows: one flat list of rows, and one
-// part's list under the part's name. Lifted out of the view route (M24.6) so
-// the phone's ingredients sheet renders exactly the same markup — the same
-// `IngredientRow`s, reading the same ticks — rather than a second copy of it.
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import type { Ingredient, Part } from "../../../../domain/recipe";
 import { IngredientRow } from "./IngredientRow";
@@ -12,7 +8,7 @@ export type IngredientListProps = {
   recipeId: string;
   /** True when the page is showing servings other than the recipe's own. */
   scaled?: boolean;
-  /** The owning part's id, passed to each row for quick edit (M27.5). Absent for the merged summary list. */
+  /** The owning part's id, passed to each row for quick edit. Absent for the merged summary list. */
   partId?: string;
 };
 

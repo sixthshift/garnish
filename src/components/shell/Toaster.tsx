@@ -1,14 +1,3 @@
-// The one place notices are rendered. Mounted once in `root.tsx`; every
-// caller reaches it through `notify()` (src/lib/notify.ts), never by rendering
-// a toast itself.
-//
-// The design system's `Toast` positions itself bottom-centre when standalone,
-// which cannot stack, so it is rendered with `standalone={false}` inside a
-// container this file positions: above the phone's bottom nav, bottom-right
-// from md up. Each notice's wrapper keeps its own auto-dismiss timer — `Toast`
-// has none — and the wrapper is also what carries the notice in the markup, so
-// a server-rendered page can be asserted on (Toast paints only after its enter
-// animation starts, i.e. on the client).
 import { Toast } from "@sixthshift/design-system/toast";
 import { useEffect } from "react";
 import { dismissNotice, type Notice, useNotices } from "../../lib/notify";
@@ -20,6 +9,7 @@ export type NoticeToastProps = {
 
 export function NoticeToast({ notice, onDismiss }: NoticeToastProps) {
   const { id, duration } = notice;
+  // Toast has no auto-dismiss of its own.
   useEffect(() => {
     if (duration <= 0) return;
     const timer = setTimeout(() => onDismiss(id), duration);

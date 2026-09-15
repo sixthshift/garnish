@@ -1,11 +1,3 @@
-// Star rating, 0 to 5. The design system has no rating primitive, so this is
-// built from its tokens: filled stars in the warning (amber) colour, empty ones
-// in the subtle foreground. Half a star and up rounds to a full one visually;
-// the exact value stays in the accessible label ("Rated 4.5 out of 5").
-//
-// Read-only without `onChange`. With it, each star is a button: pressing star
-// N rates N, and pressing the star that is already the rating clears it to 0
-// (Mealie's behaviour), so a recipe can be un-rated without a separate control.
 import { cn } from "@sixthshift/design-system/utils";
 import { filledStars, nextRating, RATING_MAX, ratingLabel } from "../../lib/ui/rating";
 

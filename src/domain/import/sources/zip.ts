@@ -1,17 +1,3 @@
-// Reading a zip archive, for the Mealie import (M34.3, decisions.md row 73).
-//
-// A Mealie backup arrives as a zip, and Bun has no zip reader. Rather than add
-// a dependency for one screen, the central directory is walked here and the
-// entries are inflated with the platform's `DecompressionStream("deflate-raw")`
-// — a web standard Bun, Node and every browser already implement.
-//
-// Only what a backup actually uses is supported: stored (method 0) and
-// deflated (method 8) entries in a classic, non-zip64 archive with no
-// encryption. Anything else throws with a message meant for the import screen
-// rather than silently producing half a file.
-//
-// No IO: bytes in, bytes out, so the whole reader is testable without a disk.
-
 /** One file in an archive. Directories are dropped by `readZip`. */
 export type ZipEntry = { name: string; bytes: Uint8Array };
 

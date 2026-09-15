@@ -1,5 +1,3 @@
-// Applied migrations, written by migrate.ts rather than by any repository.
-// Declared so the drift test sees every table the database actually has.
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nowUtc } from "../columns";
 

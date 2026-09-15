@@ -1,5 +1,3 @@
-// The house style guide: the statements the restyle pass is told, in order
-// (decisions.md row 78). Mirrors 010_style.sql.
 import { sql } from "drizzle-orm";
 import { check, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nowUtc } from "../columns";

@@ -9,7 +9,9 @@ import { type DraftIngredient, withIngredientReplaced, withStepReplaced } from "
 import type { Ingredient, Recipe } from "../../../../../src/domain/recipe";
 import type { Unit } from "../../../../../src/domain/reference";
 import { getTicks, type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
-import { QuickEditIngredientBody, QuickEditStepBody, saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
+import { QuickEditIngredientBody } from "../../../../../src/routes/recipes/recipe/components/QuickEditIngredient";
+import { QuickEditStepBody } from "../../../../../src/routes/recipes/recipe/components/QuickEditStep";
+import { saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/saveQuickEdit";
 
 // `updateRecipe` is the only server call a save makes; the test keeps what it
 // was sent so it can be compared with the stored document.

@@ -1,10 +1,3 @@
-// The Units tab's editor sheet: name, plural, abbreviation, use abbreviation
-// and fraction — the fields M15.3 puts in the table. `standardQuantity` and
-// `standardUnitId` (unit conversion) are untouched here; `update` merges a
-// patch, so leaving them out of the patch keeps their current values.
-//
-// Sheet only paints after mounting on the client, so the form lives in
-// `UnitEditSheetContent`, which renders anywhere and is what the tests exercise.
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { FormField } from "@sixthshift/design-system/form-field";

@@ -5,7 +5,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { BulkInlinePanel } from "../../../../src/components/ui/BulkAddSheet";
+import { BulkInlinePanel } from "../../../../src/components/ui/bulk/BulkInlinePanel";
 import {
   addIngredient,
   addPart,
@@ -38,15 +38,9 @@ import {
   validateDraft,
 } from "../../../../src/domain/draft";
 import { pendingCreations, type ReviewRow, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
-import {
-  confirmReviewedIngredients,
-  EMPTY_INGREDIENT_SUMMARY,
-  INGREDIENT_DRAG_GROUP,
-  IngredientFields,
-  type IngredientFieldsProps,
-  IngredientsEditor,
-  ingredientReview,
-} from "../../../../src/routes/recipes/components/IngredientsEditor";
+import { EMPTY_INGREDIENT_SUMMARY, IngredientFields, type IngredientFieldsProps } from "../../../../src/routes/recipes/components/IngredientFields";
+import { confirmReviewedIngredients, ingredientReview } from "../../../../src/routes/recipes/components/ingredientReview";
+import { INGREDIENT_DRAG_GROUP, IngredientsEditor } from "../../../../src/routes/recipes/components/IngredientsEditor";
 import { findOrCreateFood, listFoods } from "../../../../src/server/fns/foods";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
@@ -629,7 +623,7 @@ function elementWithLabel(node: ReactNode, label: string): ReactElement<Record<s
   }
 }
 
-/** The props `IngredientRow` hands `IngredientFields`, for row `ii` of part 0. */
+/** The props `IngredientEditRow` hands `IngredientFields`, for row `ii` of part 0. */
 function fieldProps(draft: RecipeDraft, ii: number, onPatch: (patch: Partial<DraftIngredient>) => void): IngredientFieldsProps {
   const ingredient = draft.parts[0]!.ingredients[ii]!;
   return {

@@ -1,20 +1,3 @@
-// The editor's toolbar (M22.2): what the form is, whether it has moved, and
-// the three things you do to it — view the document, save, leave.
-//
-// The recipe editor is a long page. Its Save lived only at the bottom, so on a
-// recipe with twenty ingredients the answer to "have my changes stuck?" was a
-// scroll away, and "Edit as JSON" sat in a floating right-aligned row with
-// nothing to anchor it. Both incumbents put a bar above the form — Mealie's
-// `RecipePageEditorToolbar`, Tandoor's editor card header — and this is that.
-//
-// It sticks from `md` up, where the app's own chrome is a side nav and the top
-// of the content column is free. On a phone it is a plain header and `SaveBar`
-// keeps the footer, because a sticky strip at the top of a phone screen is
-// competing with the browser's own and the save wants to be under a thumb.
-//
-// It bleeds to the edges with `-mx-4 px-4` below `md` and `-mx-6 px-6` from
-// `md`, matching the editor pages' own `p-4 md:p-6`, so the strip's
-// background spans the full width at either size.
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import type { ReactNode } from "react";

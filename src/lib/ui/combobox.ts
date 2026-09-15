@@ -1,5 +1,3 @@
-// The logic behind components/ui/Combobox: matching, the list, and what Enter picks.
-
 export type ComboboxOption = { value: string; label: string; hint?: string };
 
 /** A row in the open list: an option, or the create affordance for the typed text. */

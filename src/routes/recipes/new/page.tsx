@@ -1,18 +1,10 @@
-// New recipe. The first question is where the recipe is from (M23.6,
-// decisions.md row 57): a web page, a Mealie export (M34.3), pasted text read
-// by `claude -p` (M34.5), or your own.
-// `?source` carries the answer — `url`, `file`, `paste` or `manual` — so each stage is a place the browser's Back button
-// leaves the way it leaves any other, and a link to the blank editor is a link
-// anyone can keep.
-//
-// The editor's pickers need the unit and tag lists, and the import needs the
-// units too: they are the parser's unit vocabulary.
 import { Heading } from "@sixthshift/design-system/heading";
 import { useState } from "react";
 import { emptyDraft, type RecipeDraft } from "../../../domain/draft";
 import { recipeByName, recipeBySource } from "../../../server/fns/recipes";
 import { RecipeForm } from "../components/RecipeForm";
-import { RecipeSource, type SourceKind } from "./components/RecipeSource";
+import type { SourceKind } from "./components/importSummary";
+import { RecipeSource } from "./components/RecipeSource";
 import { Route } from "./route";
 
 export function NewRecipePage() {
@@ -36,7 +28,7 @@ export function NewRecipePage() {
           tags={tags}
           importedImageUrl={imported?.imageUrl ?? null}
           /* An imported recipe lands on its page with the restyle sheet open
-             when there is a model to rewrite with (M37.6): the import keeps
+             when there is a model to rewrite with: the import keeps
              the author's words on purpose, so the offer to put them in the
              household's voice belongs at the end of the import and nowhere
              else. "My own" skips it. */
@@ -63,7 +55,7 @@ export function NewRecipePage() {
 }
 
 /**
- * A recipe already imported from `url`, for the review's warning (M23.7). A
+ * A recipe already imported from `url`, for the review's warning. A
  * lookup that fails is reported as "no duplicate": a warning nobody got is
  * better than an import nobody could finish.
  */
@@ -75,7 +67,7 @@ async function findDuplicateBySource(url: string): Promise<{ name: string; slug:
   }
 }
 
-/** A recipe already here under this name, for an uploaded export's warning (M34.3). Same rule: a failed lookup is no duplicate. */
+/** A recipe already here under this name, for an uploaded export's warning. Same rule: a failed lookup is no duplicate. */
 async function findDuplicateByName(name: string): Promise<{ name: string; slug: string } | null> {
   if (name.trim() === "") return null;
   try {

@@ -1,11 +1,3 @@
-// Whether the browser believes it has a network. `navigator.onLine` plus the
-// `online` / `offline` events; the editor uses it to refuse saves offline
-// rather than let a write fail half way. The browser's answer is optimistic
-// (a connected LAN with no server still reads online), so callers keep their
-// error handling: this is a notice, not a guarantee.
-//
-// Same shape as useWakeLock: a controller over the globals it needs so it can
-// be tested without a DOM, and a thin React hook around it.
 import { useEffect, useState } from "react";
 
 /** The slice of `window` the controller uses. */

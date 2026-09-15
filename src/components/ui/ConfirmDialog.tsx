@@ -1,18 +1,3 @@
-// A destructive confirm built from the design system's Modal: title, a line
-// of explanation, Cancel and a danger button. The design system has no
-// confirm primitive of its own. Mount-driven like Modal: the parent renders it
-// while a decision is pending and unmounts it on either answer.
-//
-// Modal only paints after mounting on the client, so the header, body and
-// footer live in `ConfirmDialogContent`, which renders anywhere and is what
-// the tests exercise.
-//
-// Phone confirmations (M13.6): no `Sheet`/`Modal` switch here either, same
-// call as decision 44/45. `Modal`'s own mobile shape already slides up
-// full-width from the bottom (a sheet in effect) and is centred from `sm` up,
-// which is the phone/wide split the task line asks for — `size="sm"` and the
-// default (centred) `align` are what carries that, so neither is overridden
-// below.
 import { Button } from "@sixthshift/design-system/button";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "@sixthshift/design-system/modal";
 import type { ReactNode } from "react";

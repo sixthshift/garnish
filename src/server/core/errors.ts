@@ -1,4 +1,4 @@
-// Errors repositories and server code share. Pure: no bun:sqlite, safe for the client bundle.
+// Client-safe: no bun:sqlite, so route loaders and components may import it.
 
 /** A row that should exist does not. Server functions map this to TanStack's `notFound()`. */
 export class NotFound extends Error {

@@ -7,21 +7,16 @@ import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipe";
 import { AiError, type AiRunner } from "../../../src/server/ai/client";
+import { applyRestyle, createRestyleRunner, restoreSteps, restyleSettings, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
 import {
-  applyRestyle,
-  createRestyleRunner,
   FIXED_RESTYLE_LINE,
   matchParts,
   parseRestyleAnswer,
   promptParts,
   RESTYLE_JSON_SCHEMA,
   RestyledPartSchema,
-  restoreSteps,
   restylePrompt,
-  restyleSettings,
-  restyleSteps,
-  runRestyle,
-} from "../../../src/server/ai/restyle";
+} from "../../../src/server/ai/restylePrompt";
 import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
 import { listStyleRules } from "../../../src/server/fns/style";
 import { callServerFn, useTempDataDir } from "../../helpers/server";

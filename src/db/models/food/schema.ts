@@ -1,5 +1,3 @@
-// Ingredient foods. `name` is COLLATE NOCASE in the SQL. A food may point at a
-// recipe (the sub-recipe hook); the behaviour is deferred, the column is not.
 import { sql } from "drizzle-orm";
 import { check, index, integer, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { aisle } from "../aisle/schema";
@@ -10,7 +8,7 @@ export const food = sqliteTable(
   "food",
   {
     id: text("id").primaryKey(),
-    name: text("name").notNull().unique(),
+    name: text("name").notNull().unique(), // COLLATE NOCASE in the SQL; Drizzle has no collation builder
     pluralName: text("plural_name"),
     /** JSON array of strings; `{ mode: "json" }` parses and serialises it. */
     aliases: text("aliases", { mode: "json" }).$type<string[]>().notNull().default([]),
@@ -23,7 +21,7 @@ export const food = sqliteTable(
 );
 
 /**
- * "1 cup of plain flour is 125 g" (decisions.md row 69). The conversion hangs
+ * "1 cup of plain flour is 125 g". The conversion hangs
  * off the food because the answer depends on the ingredient, not on the unit;
  * `unit.standardQuantity` / `unit.standardUnitId` keep the unit-to-unit ones.
  * Both units cascade: a conversion missing a side is not a conversion.

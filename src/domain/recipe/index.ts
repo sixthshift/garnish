@@ -1,10 +1,3 @@
-// recipe: a module. This index is its whole surface; nothing outside the folder
-// imports anything else in it (test/modules.test.ts).
-//
-// The recipe document and what is true of one on any screen: scaling,
-// duplicating, copying out, sub-recipes, step links, cook-mode cards, durations
-// in step text, the list's sort and filters, the two serialisations.
-
 export type { CookCard } from "./cook";
 export { buildCookCards, cardAnnouncement, clampStep, isFinishedIndex, nextPreview, partPills, positionLabel, stepForKey, totalWithFinish } from "./cook";
 export { toCooklang } from "./cooklang";

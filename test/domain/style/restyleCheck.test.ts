@@ -2,7 +2,8 @@
 // about what it may not change — the numbers, and the ingredients the method
 // names — and about the normalisation that keeps "180C" and "180°C" one fact.
 import { describe, expect, test } from "vitest";
-import { checkPart, checkRestyle, factsOf, foodsMentioned, type OriginalPart, type RestyledPart } from "../../../src/domain/style/restyleCheck";
+import { factsOf, foodsMentioned } from "../../../src/domain/style/facts";
+import { checkPart, checkRestyle, type OriginalPart, type RestyledPart } from "../../../src/domain/style/restyleCheck";
 
 function food(name: string, pluralName: string | null = null) {
   return { food: { name, pluralName }, originalText: name };

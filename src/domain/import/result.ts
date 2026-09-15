@@ -1,15 +1,12 @@
-// What every source hands the review: one shape, whoever produced it. A page,
-// a paste, a Mealie or Tandoor file and the model's read all end here, which
-// is what lets one review screen serve all of them.
 import type { ImportCheck } from "./check";
-import type { ScrapedRecipe } from "./scraped";
+import type { ScrapedRecipe } from "./scraped/types";
 
 /**
  * Which rung produced the result, so the review can say how much it actually
- * got. `mealie` and `tandoor` are uploaded exports (M34.3, M34.4) rather than
+ * got. `mealie` and `tandoor` are uploaded exports rather than
  * rungs of the URL import, and read as well as `schema` does: both apps have
  * already parsed the recipe. `ai` is the rung under both of the URL
- * import's (M34.5): `claude -p` reading prose that carries no structure.
+ * import's: `claude -p` reading prose that carries no structure.
  */
 export type ImportSource = "schema" | "stub" | "mealie" | "tandoor" | "ai";
 
@@ -20,14 +17,14 @@ export type ImportedRecipe = {
   url: string;
   recipe: ScrapedRecipe;
   /**
-   * The page's readable text (M36.3), for a future AI rung over a fetched
+   * The page's readable text, for a future AI rung over a fetched
    * page to read alongside the rules' result. Empty for every source that
    * never held a page's HTML: the file imports, and the AI rung itself,
    * which is handed text rather than producing it.
    */
   pageText: string;
   /**
-   * The anchored read's verdict (M36.5), present only when the AI rung ran
+   * The anchored read's verdict, present only when the AI rung ran
    * with a JSON-LD anchor to check against. Undefined everywhere else: the
    * rules-based rungs have nothing to check themselves against.
    */

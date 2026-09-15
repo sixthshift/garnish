@@ -1,7 +1,3 @@
-// House style server functions (M37.2). The guide is one ordered list, so every
-// call here is about the list as a whole: it is read in full, a statement is
-// added at the foot, edited in place, switched on or off, moved, or deleted.
-// Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
 import { styleRules } from "../../db/models/style/repo";
 import { StyleRuleCreate, StyleRuleId, StyleRuleReorder, StyleRuleUpdate } from "../../domain/style";

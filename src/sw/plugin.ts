@@ -1,19 +1,5 @@
-// Vite plugin that writes the service worker at build time.
-//
-// Why a plugin and not a post-build script: nitro serves static files from a
-// manifest baked into .output/server/index.mjs when the server bundle is
-// built, so a file dropped into .output/public afterwards is a 404 (that is
-// why the prerendered _shell.html is not reachable over HTTP either). Emitting
-// sw.js as an asset of the client bundle puts it in the client output before
-// nitro copies that directory to .output/public and lists it. It also gives
-// the plugin the built asset list for free: the `bundle` handed to
-// generateBundle is exactly what ends up under /assets/.
-//
-// The worker source (src/sw/entry.ts -> src/sw/worker.ts) is bundled with
-// Bun.build to a classic script (module workers are still patchy on iOS), with
-// `__SW_CONFIG__` defined as the shell URL, the precache list and a version
-// hash of the worker code plus that list, so any change to either installs a
-// fresh precache.
+// Emitted as a client-bundle asset rather than written after the build: nitro serves only the files in the manifest it bakes when the server bundle is built.
+
 import { createHash } from "node:crypto";
 import { readdir } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";

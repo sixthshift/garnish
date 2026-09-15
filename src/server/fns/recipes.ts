@@ -1,6 +1,3 @@
-// Recipe server functions: the app's own calls for the recipe resource.
-// Each one is the full `createServerFn` chain (see ./fn.ts for why), reads the
-// database through getDb(), and hands back the document from src/domain/recipe/recipe.ts.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { recipes } from "../../db/models/recipe/repo";
@@ -14,7 +11,7 @@ const recipeId = z.uuid();
 export const ListRecipesInput = z.object({
   /** Case-insensitive substring of the recipe name. */
   q: z.string().optional(),
-  /** Tag slug; only recipes carrying that tag. Folded into `tags` (M12.3). */
+  /** Tag slug; only recipes carrying that tag. Folded into `tags`. */
   tag: z.string().optional(),
   /** Tag slugs; combined with `tag`, de-duplicated. */
   tags: z.array(z.string()).optional(),
@@ -24,7 +21,7 @@ export const ListRecipesInput = z.object({
   foods: z.array(z.uuid()).optional(),
   /** Only favourited recipes when true. */
   favourite: z.boolean().optional(),
-  /** Sort key (M12.4). Unset keeps the original newest-first order. */
+  /** Sort key. Unset keeps the original newest-first order. */
   sort: z.enum(["name", "created", "updated", "lastMade", "rating", "random"]).optional(),
   /** Sort direction. Unset defaults per key; ignored for `sort: "random"`. */
   dir: z.enum(["asc", "desc"]).optional(),
@@ -49,7 +46,7 @@ export const DeleteRecipeInput = z.object({ id: recipeId });
 
 export const DuplicateRecipeInput = z.object({ id: recipeId });
 
-/** The recipe ids an ingredient row's food points at (M32.3). */
+/** The recipe ids an ingredient row's food points at. */
 export const SubRecipesInput = z.object({ ids: z.array(recipeId) });
 
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
@@ -57,7 +54,7 @@ export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean()
 /** `rating` is 0 to 5; 0 means "no rating" and clears the column to null, as pressing the current star does. */
 export const SetRatingInput = z.object({ id: recipeId, rating: z.number().min(0).max(5) });
 
-/** Card summaries, newest first by default, optionally filtered by name substring and tag slug, and sorted or shuffled per `sort`/`dir`/`seed` (M12.4). */
+/** Card summaries, newest first by default, optionally filtered by name substring and tag slug, and sorted or shuffled per `sort`/`dir`/`seed`. */
 export const listRecipes = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListRecipesInput)
@@ -65,7 +62,7 @@ export const listRecipes = createServerFn({ method: "GET" })
 
 export const RecipeBySourceInput = z.object({ sourceUrl: z.string().trim().min(1) });
 
-/** A recipe already imported from this address, for the import's duplicate warning (M23.7). Null when there is none. */
+/** A recipe already imported from this address, for the import's duplicate warning. Null when there is none. */
 export const recipeBySource = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(RecipeBySourceInput)
@@ -73,7 +70,7 @@ export const recipeBySource = createServerFn({ method: "GET" })
 
 export const RecipeByNameInput = z.object({ name: z.string().trim().min(1) });
 
-/** A recipe already here under this name, for the Mealie import's duplicate warning (M34.3). Null when there is none. */
+/** A recipe already here under this name, for the Mealie import's duplicate warning. Null when there is none. */
 export const recipeByName = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(RecipeByNameInput)
@@ -86,7 +83,7 @@ export const recipeByName = createServerFn({ method: "GET" })
  */
 /**
  * The link-and-scale facts the view page needs about the recipes its
- * ingredient foods point at (M32.3). One call for the whole page, so a
+ * ingredient foods point at. One call for the whole page, so a
  * sub-recipe row costs no fetch of its own; unknown ids come back absent
  * rather than not-found.
  */

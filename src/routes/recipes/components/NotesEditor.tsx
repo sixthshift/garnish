@@ -1,11 +1,3 @@
-// The recipe's notes: a title input and a textarea per note in a ReorderList,
-// with add, remove and move up/down. The parent owns the draft; every change
-// goes through a pure helper and comes back through `onChange` as a new
-// `RecipeDraft`. Positions are never edited here: the repository writes them
-// from array order on save.
-//
-// A note's title is optional, as in Mealie; the view page shows a card with
-// no heading for a blank one.
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";

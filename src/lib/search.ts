@@ -1,8 +1,3 @@
-// Pure key-handling helpers behind global search (M12.5). `GlobalSearch`
-// (src/components/shell/GlobalSearch.tsx) wires these into a document keydown
-// listener and the dialog's own key handling; kept here, plain, so the rules
-// can be tested without a DOM.
-
 /** The bits of `KeyboardEvent` the shortcut cares about. */
 export type SearchKeyEvent = {
   key: string;

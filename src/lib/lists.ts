@@ -1,5 +1,3 @@
-// Generic list operations: reorder, and every item but one.
-
 /** Every item but the source. Pure. */
 export function mergeTargets<T extends { id: string }>(items: readonly T[], sourceId: string): T[] {
   return items.filter((item) => item.id !== sourceId);

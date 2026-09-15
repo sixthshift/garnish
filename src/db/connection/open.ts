@@ -1,9 +1,3 @@
-// Server-only. Opening the SQLite file: where it lives and the pragmas every
-// connection needs. Never import from client code.
-//
-// Separate from the migration runner so that opening a database does not drag
-// migrations in: `backup/` and `seed/cli.ts` want a handle, not a schema
-// upgrade.
 import { Database } from "bun:sqlite";
 import { join } from "node:path";
 import { dataDir } from "../../server/core/boot";

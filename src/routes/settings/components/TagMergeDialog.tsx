@@ -1,10 +1,3 @@
-// The merge confirm for the Tags tab: pick which of two (or more) tags
-// survives. The source is deleted and every recipe carrying it gains the
-// target tag instead (`tags.merge`, ui-gap.md's tag tab).
-//
-// Built on the same ConfirmDialogContent as the plain delete confirm, with a
-// Select in place of the confirm question's body. Mirrors FoodMergeDialog and
-// UnitMergeDialog.
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";

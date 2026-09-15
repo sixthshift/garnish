@@ -1,4 +1,3 @@
-// The links between a part's steps and its ingredient rows.
 import { suggestLinks } from "../recipe";
 import { stepsOf, withSteps } from "./steps";
 import type { DraftIngredient, DraftPart, DraftStep, RecipeDraft } from "./types";
@@ -65,7 +64,7 @@ export function unlinkIngredient<P extends { steps: DraftStep[] }>(part: P, ingr
 }
 
 /**
- * The draft with the M28.2 matcher run over part `pi`: every step with no
+ * The draft with the step-ingredient matcher run over part `pi`: every step with no
  * links gets the part's ingredients named in its text, and a step that already
  * links something is left alone. `filled` counts the steps that gained links,
  * which is what the button reports. Pure.

@@ -1,18 +1,3 @@
-// The model behind every AI pass (decisions.md row 75): a hosted one behind a
-// single OpenAI-compatible HTTP call. Nothing in this file knows what is being
-// asked — the import (`src/domain/import`, wired in `src/server/import`) and
-// the restyle (`./restyle.ts`) each bring their own prompt, their own JSON
-// Schema and their own parser, and share what is here: which provider, which key, the one request shape, the
-// deadline and the four ways a call fails.
-//
-// It is plain `fetch` rather than an SDK because the request is twelve lines
-// and every provider worth using speaks this shape. Three environment
-// variables say which model, and they are read at call time rather than at
-// import so the container can be given a key without a rebuild: `AI_API_KEY`
-// alone gets Gemini's free tier, and Mistral, Groq, OpenRouter or an Ollama on
-// the LAN are `AI_BASE_URL` and `AI_MODEL` away (Ollama ignores the key, but
-// wants one to be there).
-
 /** How long a call is given before the request is aborted. A recipe answers in seconds; a minute is the outer bound. */
 export const AI_TIMEOUT_MS = 60_000;
 

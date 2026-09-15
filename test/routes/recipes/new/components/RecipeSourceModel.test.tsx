@@ -12,17 +12,17 @@ import { draftFromScraped } from "../../../../../src/domain/draft";
 import { type ImportCheck, type ImportedRecipe, review, type ScrapedRecipe } from "../../../../../src/domain/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient";
 import type { Unit } from "../../../../../src/domain/reference";
+import { ImportReview } from "../../../../../src/routes/recipes/new/components/ImportReview";
 import {
   changedLines,
   changeSummary,
-  ImportReview,
   importSummary,
   type ModelReader,
   modelPass,
   rejectionMessage,
   shouldReadWithModel,
   withRejectedAnswer,
-} from "../../../../../src/routes/recipes/new/components/RecipeSource";
+} from "../../../../../src/routes/recipes/new/components/importSummary";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

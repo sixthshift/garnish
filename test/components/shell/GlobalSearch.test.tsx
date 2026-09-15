@@ -6,7 +6,7 @@
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { GlobalSearchContent, type GlobalSearchContentProps } from "../../../src/components/shell/GlobalSearch";
+import { GlobalSearchContent, type GlobalSearchContentProps } from "../../../src/components/shell/GlobalSearchContent";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 
 const lemonTart: RecipeSummary = {

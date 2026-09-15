@@ -1,21 +1,3 @@
-// Servings scaling, Cooklang-style. Pure: no IO, importable by the client.
-//
-// Rules:
-//   - Linear ingredients (fixed: false, quantity non-null) multiply by
-//     target / original servings.
-//   - `fixed` ingredients (Cooklang `=`) keep their quantity: one bay leaf is one
-//     bay leaf however many you feed.
-//   - A null quantity ("salt to taste") stays null.
-//   - `recipeYieldQuantity` scales with the servings when it is set; 0 means
-//     "no yield recorded" and stays 0.
-//   - `recipeServings` is set to the target.
-// The input document is never mutated; a new document is returned.
-//
-// A recipe whose `recipeServings` is 0 (the schema default: servings unknown)
-// cannot be scaled: there is no factor to derive. We throw rather than return
-// the document unchanged, so a caller that shows a scaling control on such a
-// recipe finds out in tests rather than by a silent no-op. Callers should hide
-// the control when servings is 0.
 import type { Ingredient, Recipe } from "./recipe";
 
 export class ScaleError extends Error {
@@ -54,8 +36,7 @@ export function scaleRecipe(doc: Recipe, targetServings: number): Recipe {
  * (no `?servings=` in the URL) or a recipe with no servings recorded comes back
  * as stored, anything else is scaled. Exactly what `getRecipe({ servings })`
  * returns for the same document, so the client can scale a document the loader
- * fetched once instead of asking the server per tap (M25.1, decisions.md row
- * 62). Pure; the input document is returned by identity when nothing scales.
+ * fetched once instead of asking the server per tap. Pure; the input document is returned by identity when nothing scales.
  */
 export function scaledForServings(doc: Recipe, targetServings: number | undefined): Recipe {
   if (targetServings === undefined || !(doc.recipeServings > 0)) return doc;

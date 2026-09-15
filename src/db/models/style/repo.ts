@@ -1,7 +1,3 @@
-// House style repository (M37.2). Server-only. The guide is one ordered list of
-// statements, read in `position` order because that is the order they are
-// numbered to the model; ties fall back to `created_at` so a list seeded in one
-// transaction still reads in the order it was written.
 import type { Database } from "bun:sqlite";
 import { asc, eq, max } from "drizzle-orm";
 import { orm } from "../../connection/client";
@@ -19,6 +15,7 @@ export type StyleRule = {
 
 export type StyleRuleInput = { text: string; enabled?: boolean; position?: number };
 
+// Ties fall back to created_at so a list seeded in one transaction reads in the order it was written.
 const order = [asc(styleRule.position), asc(styleRule.createdAt)];
 
 export function styleRules(db: Database) {

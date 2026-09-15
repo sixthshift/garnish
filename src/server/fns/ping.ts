@@ -1,4 +1,3 @@
-// The reference server function: the shape every other one in this directory follows.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { notFoundMiddleware } from "../core/fn";

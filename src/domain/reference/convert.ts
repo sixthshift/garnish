@@ -1,16 +1,5 @@
-// Quantity conversion: a food's own conversions (decisions.md row 69, "1 cup
-// of plain flour is 125 g") plus a unit's own `standard_*` base-unit link
-// (kilogram -> gram), composed as a tiny graph so the two mechanisms chain
-// through each other. Pure: no IO, importable by the client.
-//
-// Only `unit` and `toUnit` are ever nodes we know the full shape of — a food
-// conversion names its units by id, and a unit's `standardUnitId` is just an
-// id too — so the graph is built from what those two units and the food's
-// conversion rows say about each other, not from a full units list. That
-// caps the useful chain at one hop of each kind (a food conversion to reach
-// a base unit, then that unit's own standard link, or the reverse), which is
-// what "chaining one hop each way" buys: cup -[food conversion]-> gram
-// -[unit standard]-> kilogram, without needing gram's own Unit object.
+// A quantity through a food's own conversions and a unit's standard link, one hop of each.
+
 import type { Food, Unit } from "./reference";
 
 interface Edge {

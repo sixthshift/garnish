@@ -1,13 +1,6 @@
-// The recipe's running timers, one row each: what it was started for, the time
-// left, a pause and a dismiss. It shows in two places, both above whatever
-// already owns the bottom of the screen — inside cook mode's footer, over the
-// progress bar, and fixed above the phone tab bar on the recipe page.
-//
-// The store is src/lib/timers.ts; the rows here are presentational, so they
-// render on their own in a test.
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
-import { type RunningTimer, useTimers } from "../../../../lib/timers";
+import { type RunningTimer, useTimers } from "../../../../lib/useTimers";
 
 export type TimerStripRowsProps = {
   timers: RunningTimer[];

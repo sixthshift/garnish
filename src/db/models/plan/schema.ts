@@ -1,5 +1,3 @@
-// The meal plan: one entry on one day (decisions.md row 71). Mirrors
-// 007_plan.sql.
 import { sql } from "drizzle-orm";
 import { check, index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { recipe } from "../recipe/schema";

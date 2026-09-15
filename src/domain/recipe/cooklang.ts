@@ -1,27 +1,3 @@
-// Cooklang export (M34.2): a recipe document as a `.cook` file.
-//
-// Borrows the shapes the Cooklang spec (https://cooklang.org/docs/spec/)
-// defines, not the incumbents' file format: a metadata block of `>> key:
-// value` lines, an `== Part ==` heading per named part (the unnamed part is
-// the body and gets no heading), an ingredient a step links written inline as
-// `@food{quantity%unit}` (`@multi word food{}` needs the braces to know where
-// the name ends; a single word does not, when there is nothing in the braces
-// to write), a fixed quantity as `{=quantity%unit}`, and a timer found by
-// `durationsIn` written as `~{quantity%unit}`.
-//
-// A step's text is free prose, not guaranteed to name every ingredient it
-// links (decisions.md row 64's links are set by hand or by `suggestLinks`'s
-// guess, not parsed back out of the words). Where the food's name (or a
-// plural or alias — `foodNames` from `./stepIngredients`) is found in the
-// text, that span becomes the `@` reference in place; where it is not found,
-// the reference is appended to the line, so a linked food is never dropped
-// from the file. Timers are found the same way, over whatever text is left
-// once ingredient spans are marked off, so a duration inside a matched food
-// name (unlikely, but "5 minute steak") is never claimed twice.
-//
-// Pure: no IO, importable by the client — the same module the export route
-// and the recipe menu's "Copy as Cooklang" both call.
-
 import type { Food, Unit } from "../reference";
 import { durationsIn } from "./durations";
 import type { Ingredient, Part, Recipe, Step } from "./recipe";

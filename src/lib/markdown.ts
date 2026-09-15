@@ -1,18 +1,4 @@
-// The safe markdown subset step text (and, later, note text) is written in.
-// Pure: text in, a small block/inline tree out. No IO, no HTML string, no
-// dependency — the tree is rendered by React (src/components/ui/Markdown.tsx), so
-// every text node is escaped by React and there is no path by which raw HTML in
-// a recipe can become markup. `<script>alert(1)</script>` in a step is text.
-//
-// The subset, and nothing else (decisions.md row 13's "copy Mealie" applies to
-// the syntax, not to markdown-it's full feature set):
-//   - paragraphs, separated by a blank line; single newlines inside one are
-//     kept as line breaks, because cooks write steps that way;
-//   - `- `, `* ` or `+ ` bullet lists, `1. ` / `1) ` numbered lists;
-//   - `**bold**` / `__bold__` and `*italic*` / `_italic_`, nestable.
-// Anything else — headings, links, images, code, block quotes, tables, HTML —
-// is left alone as literal text rather than being stripped, so nothing a cook
-// typed disappears from a recipe.
+// The safe markdown subset: paragraphs, bullet and numbered lists, bold and italics; anything else stays literal text.
 
 /** An inline run: literal text, or an emphasis wrapper around more inline runs. */
 export type Inline = { type: "text"; value: string } | { type: "strong"; children: Inline[] } | { type: "em"; children: Inline[] };

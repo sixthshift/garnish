@@ -1,25 +1,5 @@
-// The review step between a pasted block of ingredient lines and the rows it
-// becomes (M17.5). Pure: no IO, no ids invented, importable by the client.
-//
-// `parseIngredient` (M17.4) reads a line and reports what it could not
-// resolve; it never creates anything. This module holds what a reviewer then
-// decides about each line, and what that decision commits to — the part
-// decisions.md row 47 calls the review step, and the reason it exists:
-// auto-creating every unmatched food fills the food table with near-duplicates
-// ("flour", "plain flour", "Plain Flour") that the merge tools then have to
-// clean up. So a proposal is never a creation. Each unresolved slot starts at
-// `{ kind: "none" }` — declined — and only an explicit `create` or a picked
-// `existing` moves it, which means confirming a paste untouched creates
-// nothing at all.
-//
-// One rule ties the two slots together: the food is what makes a row
-// structured. A row with no food commits as text only — no amount, no unit, no
-// note, just the raw line in `originalText`, exactly the shape bulk add used
-// to produce for every line. A row with a food but no unit is a normal
-// structured row ("3 lemons"); declining a unit only drops the unit.
-//
-// `originalText` is the line as pasted either way, on a fully matched row as
-// much as on a declined one, so nothing a paste contained is ever lost.
+// Reviewing a pasted block's rows: an unresolved food or unit starts declined, so confirming a paste untouched creates nothing.
+
 import type { FoodCandidate } from "./parseFood";
 import { type ParsedIngredient, parseIngredient } from "./parseIngredient";
 import type { UnitCandidate } from "./parseUnit";

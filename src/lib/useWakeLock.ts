@@ -1,11 +1,3 @@
-// Keep the screen on while cooking. `navigator.wakeLock` is requested on
-// enter, released on leave, and requested again when the page becomes visible
-// (the browser drops the lock on its own whenever the tab is hidden). Every
-// failure is swallowed: an unsupported browser, a denied request, or a low
-// battery policy just means the screen dims as usual.
-//
-// The logic lives in a controller over the two globals it needs so it can be
-// unit tested without a DOM; the hook is the thin React wrapper around it.
 import { useEffect, useState } from "react";
 
 /** The slice of `WakeLockSentinel` the controller uses. */

@@ -1,5 +1,3 @@
-// cook: the route. What the URL carries, what the loader reads, and
-// the page it renders, loaded on demand. The page itself is page.tsx.
 import { Card } from "@sixthshift/design-system/card";
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
@@ -15,7 +13,7 @@ export const CookSearch = z.object({
    * `/cook` to `/cook?step=0`). Out-of-range values are clamped at render time.
    */
   step: z.number().int().nonnegative().optional(),
-  /** The parent recipe's slug, when this cook session was opened from a sub-recipe link (M32.4). */
+  /** The parent recipe's slug, when this cook session was opened from a sub-recipe link. */
   from: z.string().optional(),
 });
 

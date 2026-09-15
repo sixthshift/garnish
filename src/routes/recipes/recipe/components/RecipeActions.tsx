@@ -1,33 +1,3 @@
-// The recipe page's action menu: everything you can do to the recipe you are
-// looking at except Edit and Cook, which sit beside it as their own buttons
-// in the header (M25.5) rather than living in here.
-//
-// Duplicate writes through `useMutate` and lands on the copy; the Copy items
-// (link, ingredients, Cooklang) go through `src/lib/clipboard.ts` — the
-// Cooklang one via `src/domain/recipe/cooklang.ts`'s `toCooklang` (M34.2), the same
-// function `GET /api/recipes/:slug.cook` serves; Print asks the browser to
-// print the page (the print rules live in src/styles.css); Delete confirms
-// first, and is the one destructive item, kept at the bottom behind a separator.
-// Delete moved here from the edit page (M11.6), which is where Mealie has it,
-// and keeps the same `ConfirmDialog`.
-//
-// "Make this a food" (M32.3, decisions.md row 70) is the sub-recipe hook from
-// the recipe's own side: it finds or creates a food of the recipe's name with
-// `recipeId` set, so the next recipe that calls for it can pick it out of the
-// ingredient editor's food list and get a link back here. Idempotent — running
-// it twice lands on the same food — so it needs no confirmation.
-//
-// "Restyle steps" (M37.6) opens `RestyleSheet`, and is only offered when a
-// model is configured: without one there is nothing to rewrite with, and the
-// page's loader has already asked. The same flag and the page's `?restyle`
-// search param open the sheet on arrival, which is how a URL import's Create
-// lands straight on the offer — `onRestyleClose` is what clears the param
-// again, so dismissing it is the one tap the task asks for.
-//
-// "Plan" (M33.4) opens `PlanPopover` (src/routes/recipes/recipe/components/PlanPopover.tsx): the
-// next seven days and a servings stepper. It sits in its own `relative` box
-// alongside the menu because the popover's trigger has to be an element that
-// outlives the menu item that opens it — see that file's header for why.
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
@@ -45,7 +15,7 @@ import { RestyleSheet } from "./RestyleSheet";
 
 export type RecipeActionsProps = {
   recipe: Recipe;
-  /** Whether a model is configured (M37.6). Without one, Restyle steps is not offered. */
+  /** Whether a model is configured. Without one, Restyle steps is not offered. */
   aiAvailable?: boolean;
   /** Open the restyle sheet on mount: the page's `?restyle` param, after an import's Create. */
   restyleOpen?: boolean;

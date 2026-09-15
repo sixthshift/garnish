@@ -1,8 +1,3 @@
-// Server-only. Photos attached to a logged cook: one file per event under
-// `<DATA_DIR>/images/timeline/<eventId>.<ext>`, the file name mastered in
-// `timeline_event.image`. The format sniffing, size cap and name checks are
-// the recipe image store's (./images.ts); only the directory differs, so a
-// timeline photo can never be served as, or overwrite, a recipe image.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { timeline } from "../../db/models/timeline/repo";

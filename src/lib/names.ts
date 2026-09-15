@@ -1,5 +1,3 @@
-// Name and slug helpers: trimming, slugs as python-slugify makes them, unique slugs, and a LIKE pattern. Pure.
-
 /** Trimmed name; throws when nothing is left. Uniqueness is the schema's job. */
 export function cleanName(name: string): string {
   const trimmed = name.trim();
@@ -18,7 +16,7 @@ export function slugify(text: string): string {
 }
 
 /**
- * First of `base`, `base-2`, `base-3`, ... that `taken` does not claim.
+ * First of `base`, `base-2`, `base-3`,... that `taken` does not claim.
  * An empty base becomes `untitled`.
  */
 export function uniqueSlug(base: string, taken: (slug: string) => boolean): string {

@@ -9,7 +9,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import type { Ingredient, Recipe, Step } from "../../../../../src/domain/recipe";
 import type { Food } from "../../../../../src/domain/reference";
 import { type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
-import { QuickEditProvider } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
+import { QuickEditProvider } from "../../../../../src/routes/recipes/recipe/components/QuickEditContext";
 import { linkedIngredients, StepCard, stepDurations } from "../../../../../src/routes/recipes/recipe/components/StepCard";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";

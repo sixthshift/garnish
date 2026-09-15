@@ -1,4 +1,3 @@
-// A draft as JSON and back (the editor's JSON tab).
 import { recipeInputSchema } from "../recipe";
 import { draftFromInput } from "./draft";
 import type { RecipeDraft } from "./types";

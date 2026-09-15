@@ -1,15 +1,3 @@
-// Server-only. Putting the seed data into a database, idempotently.
-//
-// Units are matched by name case-insensitively and existing rows are left
-// alone, so a user's edits survive a re-seed; the house style statements are
-// matched the same way on their whole text (M37.2), so a reworded statement is
-// a new row and an untouched one is never duplicated. Sample recipes are matched by
-// slug and saved through the recipe repository, so they take exactly the path
-// the editor does; the units, foods and tags they name are resolved to existing
-// rows or created, which is why this works with or without the units seed.
-//
-// The data itself is in ./units.ts, ./style.ts, ./recipes.ts and ./timeline.ts;
-// the CLI that runs both is in ./cli.ts.
 import type { Database } from "bun:sqlite";
 import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { slugify } from "../../lib/names";

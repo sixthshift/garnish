@@ -1,10 +1,3 @@
-// Cook mode's card sequence. Pure: the recipe document in, a flat list of
-// cards out, so the route only has to pick one by index. Part order: each
-// part's ingredients card, then a card per step. The ingredients card carries
-// only the rows none of the part's steps link — a linked row is read on its
-// step card instead (M29.2, StepCard resolves the link) — so a part where
-// every row is linked gets no ingredients card, and one with nothing at all
-// contributes nothing: a blank card is a wasted tap.
 import type { Ingredient, Recipe, Step } from "./recipe";
 
 export type CookCard =
@@ -24,7 +17,7 @@ export type CookCard =
       total: number;
       /**
        * That part's ingredients, carried so the card can show the ones this
-       * step names (M26.1, src/domain/recipe/stepIngredients.ts). The card is the
+       * step names (src/domain/recipe/stepIngredients.ts). The card is the
        * whole screen in cook mode, so the list is not on it anywhere else.
        */
       ingredients: Ingredient[];

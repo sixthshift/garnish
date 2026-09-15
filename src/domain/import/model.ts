@@ -1,18 +1,11 @@
-// What the importer asks a model, and how it reads the answer (M34.5, M36.1,
-// M36.4, decisions.md rows 74 to 76). Pure: the request itself is the
-// `model` port the importer is given, so nothing here knows which provider
-// answers or how.
-//
-// Since M36.6 the model is the default reader of a page rather than a rung
-// under the rules: the rules (`extract.ts`) say what the lines are and the
-// model says which part each sits under, because schema.org has nowhere to
-// record that. What is left for the model alone is text that is not a page at
-// all — the block off a photograph, an email, a book you typed out — where
-// there is nothing structured to anchor it to.
+// What the importer asks the model and how it reads the answer; the request itself is the injected `model` port.
+
 import { stripFence } from "../../lib/ai";
 import { ImportError } from "./errors";
 import { MAX_PAGE_TEXT } from "./page/text";
-import { ingredientLines, normaliseScraped, type ScrapedRecipe, ScrapedRecipeSchema } from "./scraped";
+import { ingredientLines } from "./scraped/parts";
+import { normaliseScraped, ScrapedRecipeSchema } from "./scraped/schema";
+import type { ScrapedRecipe } from "./scraped/types";
 
 /** The most text worth sending: `readableText`'s own cap (`pageText.ts`), so there is one number for it rather than two that can drift. */
 export const MAX_AI_TEXT = MAX_PAGE_TEXT;
@@ -90,16 +83,16 @@ const UNANCHORED_RULES = [
 ];
 
 /**
- * The rules for a page that came with structured data, which since M36.6 is
+ * The rules for a page that came with structured data, which is
  * most pages. The question being asked is a narrow one and the prompt says so
  * in as many ways as it can: the anchor's lines and steps *are* the recipe,
  * and the only thing missing from them is which heading each one sat under,
  * because schema.org has nowhere to put that. So the model is not reading a
  * recipe here, it is sorting known lines into parts — and `checkAgainstAnchor`
- * (M36.5) throws the answer away if it did anything else, which is the real
+ * throws the answer away if it did anything else, which is the real
  * reason these rules can be this blunt.
  *
- * The ingredient headings had to be spelled out separately (M37.1). On the
+ * The ingredient headings had to be spelled out separately. On the
  * ragu page the anchor already carried three parts off the page's
  * `HowToSection`s, and the model read that as the question already answered:
  * all eighteen ingredient lines stayed on the unnamed part although the page
@@ -130,8 +123,8 @@ const ANCHORED_RULES = [
  * What the model is asked. Unanchored, the fields are described in the app's
  * own terms because the schema only gives their types: an empty string is "the
  * text did not say", ingredient lines are copied verbatim for `parseIngredient`
- * to read (row 47), and a named section is a part, as row 59 already has the
- * URL import treat a `HowToSection`. Anchored, the task is a different one
+ * to read, and a named section is a part, as the
+ * URL import already treats a `HowToSection`. Anchored, the task is a different one
  * altogether and the rules say so. Pure.
  */
 export function aiPrompt({ text, anchor = null }: { text: string; anchor?: ScrapedRecipe | null }): string {

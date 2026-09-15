@@ -12,7 +12,10 @@ import { draftFromScraped, isTextOnly } from "../../../../../src/domain/draft";
 import { type ImportedRecipe, review, type ScrapedRecipe } from "../../../../../src/domain/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient";
 import type { Unit } from "../../../../../src/domain/reference";
-import { ImportReview, importSummary, SourceChooser, stepCount, UrlSource, yieldLabel } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { ImportReview } from "../../../../../src/routes/recipes/new/components/ImportReview";
+import { importSummary, stepCount, yieldLabel } from "../../../../../src/routes/recipes/new/components/importSummary";
+import { SourceChooser } from "../../../../../src/routes/recipes/new/components/SourceChooser";
+import { UrlSource } from "../../../../../src/routes/recipes/new/components/UrlSource";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

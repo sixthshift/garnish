@@ -1,4 +1,3 @@
-// Tag server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
 import { recipes } from "../../db/models/recipe/repo";
 import { tags } from "../../db/models/tag/repo";

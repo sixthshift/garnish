@@ -3,26 +3,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { ingredientLines } from "../../../../src/domain/import/scraped";
-import {
-  imageDataUrl,
-  imageForRecipe,
-  ingredientLine,
-  looksLikeMealieRecipe,
-  type MealieRecipe,
-  matchFood,
-  matchUnit,
-  mealieIngredient,
-  mealieRecipe,
-  mealieRecipesFrom,
-  mealieTimeToMinutes,
-  partsFromMealie,
-  readMealieExport,
-  recipesFromDatabase,
-  reviewRowFromMealie,
-  reviewRowsFromMealie,
-  tagNames,
-} from "../../../../src/domain/import/sources/mealie";
+import { ingredientLines } from "../../../../src/domain/import/scraped/parts";
+import { imageDataUrl } from "../../../../src/domain/import/sources/file";
+import { mealieRecipesFrom, recipesFromDatabase } from "../../../../src/domain/import/sources/mealie/database";
+import { imageForRecipe, readMealieExport } from "../../../../src/domain/import/sources/mealie/export";
+import { ingredientLine, mealieIngredient, partsFromMealie } from "../../../../src/domain/import/sources/mealie/ingredient";
+import { looksLikeMealieRecipe, mealieRecipe, mealieTimeToMinutes, tagNames } from "../../../../src/domain/import/sources/mealie/recipe";
+import { matchFood, matchUnit, reviewRowFromMealie, reviewRowsFromMealie } from "../../../../src/domain/import/sources/mealie/review";
+import type { MealieRecipe } from "../../../../src/domain/import/sources/mealie/types";
 import type { Food } from "../../../../src/domain/reference";
 import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 

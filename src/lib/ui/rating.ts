@@ -1,5 +1,3 @@
-// The arithmetic behind components/ui/Rating.
-
 export const RATING_MAX = 5;
 
 /** How many of the five stars to fill for `value`. Pure. */

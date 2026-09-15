@@ -1,10 +1,3 @@
-// The uploaded export (M34.3, M34.4). A route rather than a server function,
-// because the file is a file: the image upload already posts multipart to
-// `/api/recipes/:id/image`, and this joins it rather than inventing a base64
-// server function beside it.
-//
-// Nothing is written here. The route parses and answers; the review step
-// (M17.5's rows) is what decides, and the editor's Save is what writes.
 import type { FileRecipe } from "../../domain/import";
 import { IMPORT_FIELD } from "../../lib/importFile";
 import { importer } from "../import/importer";

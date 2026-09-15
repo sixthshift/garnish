@@ -6,7 +6,8 @@
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { notices } from "../../../../../src/lib/notify";
-import { type RunningTimer, type StorageLike, startTimer, type Timer, tickTimersNow, timerDisplay } from "../../../../../src/lib/timers";
+import { type StorageLike, startTimer, type Timer, timerDisplay } from "../../../../../src/lib/timers";
+import { type RunningTimer, tickTimersNow } from "../../../../../src/lib/useTimers";
 import { TimerStrip, TimerStripRows } from "../../../../../src/routes/recipes/recipe/components/TimerStrip";
 
 const RECIPE = "11111111-1111-4111-8111-111111111111";

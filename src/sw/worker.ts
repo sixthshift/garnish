@@ -1,18 +1,4 @@
-// The service worker's behaviour, as a controller over the globals a worker
-// scope offers (`caches`, `fetch`, `addEventListener`, `skipWaiting`,
-// `clients`). src/sw/entry.ts installs it on the real `self`; the tests
-// install it on a fake scope. Nothing here touches a bare global.
-//
-// Policies, per fetch:
-//   navigation (mode "navigate")      network, falling back to the cached shell
-//   built assets (/assets/*, public/) cache first; fetched and stored on a miss
-//   GET /_serverFn/*, /api/images/*   network first; stored on success, served
-//                                     from the copy when the network fails
-//   anything else (POST, other hosts) not handled; the browser does its thing
-//
-// Two caches: the versioned precache (shell + built assets, replaced wholesale
-// on every deploy) and one data cache that survives deploys, so a recipe read
-// yesterday still opens offline after tonight's update.
+// Fetch policy: navigations go network-first with the cached shell as fallback, built assets cache-first, GET server functions and images network-first into a data cache that survives deploys, anything else untouched.
 
 export type SwConfig = {
   /** Build hash. Names the precache; a new one evicts the old on activate. */

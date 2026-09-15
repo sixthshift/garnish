@@ -1,32 +1,7 @@
-// The mechanical check that makes the anchored read safe (M36.5, decisions.md
-// row 76). On a page that carried structured data, the JSON-LD already holds
-// the recipe's content — every ingredient line, every step, in the site's own
-// words — and the one thing it cannot hold is which heading each of them sat
-// under, because schema.org has no place to put that. So the model is asked
-// for the structure and nothing else, and this is what holds it to that:
-// the answer's lines and steps must be the anchor's lines and steps, as
-// multisets, or the answer is thrown away.
-//
-// A multiset rather than a set, and per-collection rather than per-part: a
-// recipe that says "salt" twice must still say it twice, and moving a line
-// from the main body into "For the sauce" is the whole point of the exercise,
-// so order and part membership are exactly what this must not compare. What
-// is left is the content, and the content is not the model's to change.
-//
-// The comparison normalises first — `decodeEntities`, whitespace collapsed,
-// trimmed — because those three differences are noise a model introduces
-// without meaning to, and rejecting an answer over a non-breaking space would
-// discard good structure for nothing. Case and wording are not noise: "Preheat
-// the oven" against "Heat the oven" is a reworded step, which is precisely the
-// failure this exists to catch.
-//
-// A failure discards the structure, not the content. `recipe_scrapers` has a
-// group rule of the same shape — read the sections, and fall back to the flat
-// list when they do not account for the ingredients — with the selectors
-// replaced by a model. The caller keeps the anchor as the result and carries
-// the rejected answer alongside it, so the review can still offer it to a
-// household that can see the model was right.
-import { decodeEntities, type ScrapedPart } from "./scraped";
+// The anchored read's guard: the answer's lines and steps must equal the anchor's as multisets (entities and whitespace normalised), or its structure is discarded.
+
+import { decodeEntities } from "./scraped/text";
+import type { ScrapedPart } from "./scraped/types";
 
 /** What the comparison found. `ok` is the gate; the four lists are what a review, or a test, reads. */
 export type ImportCheck = {

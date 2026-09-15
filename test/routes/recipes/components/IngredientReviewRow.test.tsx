@@ -9,16 +9,12 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { BulkReviewList } from "../../../../src/components/ui/BulkAddSheet";
+import { BulkReviewList } from "../../../../src/components/ui/bulk/BulkReviewList";
 import { type IngredientReview, isTextOnly, reviewedIngredient } from "../../../../src/domain/draft";
 import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
-import {
-  amountChip,
-  chipText,
-  IngredientReviewFields,
-  type IngredientReviewFieldsProps,
-  IngredientReviewRow,
-} from "../../../../src/routes/recipes/components/IngredientReviewRow";
+import { IngredientReviewFields, type IngredientReviewFieldsProps } from "../../../../src/routes/recipes/components/IngredientReviewFields";
+import { IngredientReviewRow } from "../../../../src/routes/recipes/components/IngredientReviewRow";
+import { amountChip, chipText } from "../../../../src/routes/recipes/components/reviewChips";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

@@ -1,6 +1,3 @@
-// Food repository. Server-only; pass the Database opened by openDatabase.
-// Names are unique case-insensitively (NOCASE in 001_init.sql); creating a
-// duplicate throws SQLite's UNIQUE error, findOrCreate returns the match.
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import type { FoodConversion, FoodRow } from "../../../domain/reference";

@@ -1,5 +1,3 @@
-// recipe: the route. What the URL carries, what the loader reads, and
-// the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
 import { type Recipe, type SubRecipe, subRecipeIds, type TimelineEvent } from "../../../domain/recipe";
@@ -11,7 +9,7 @@ import { Route as rootRoute } from "../../root";
 export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),
   /**
-   * Open the restyle sheet on arrival (M37.6). The new recipe page sets it
+   * Open the restyle sheet on arrival. The new recipe page sets it
    * after an import's Create when a model is configured, and the sheet clears
    * it again on dismiss, so a reload does not re-offer a rewrite nobody asked
    * for twice.
@@ -21,7 +19,7 @@ export const RecipeViewSearch = z.object({
 
 /**
  * What the page reads: the stored document, its logged cooks, and the recipes
- * its ingredient foods are made by (M32.3). The sub-recipes come in one call
+ * its ingredient foods are made by. The sub-recipes come in one call
  * for the whole page rather than a fetch per row; a recipe with none costs no
  * request at all.
  */
@@ -35,7 +33,7 @@ export const Route = createRoute({
     const recipe = await getRecipe({ data: { slug: params.slug } });
     const ids = subRecipeIds(recipe);
     // Whether a model is configured is asked here rather than in the menu, so
-    // "Restyle steps" is either there or it is not (M37.6). A failed ask is
+    // "Restyle steps" is either there or it is not. A failed ask is
     // "no model": everything else on the page still works.
     const [timeline, subRecipes, ai] = await Promise.all([
       listTimeline({ data: { recipeId: recipe.id } }),

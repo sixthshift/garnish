@@ -3,7 +3,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { SubRecipesProvider } from "../../../src/components/recipe/SubRecipes";
-import { AddToShoppingSheetContent } from "../../../src/components/shopping/AddToShoppingSheet";
+import { AddToShoppingSheetContent } from "../../../src/components/shopping/AddToShoppingSheetContent";
 import type { Ingredient, Part, Recipe, SubRecipe } from "../../../src/domain/recipe";
 import type { Food, Unit } from "../../../src/domain/reference";
 import { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/domain/shopping";

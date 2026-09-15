@@ -1,13 +1,3 @@
-// A titled section that starts folded. The design system has `card`, `tabs`
-// and `popover` but nothing that collapses in place, so this composes the
-// browser's own `<details>` — which brings the keyboard behaviour, the
-// `aria-expanded` semantics and the open/closed state for free, and renders
-// its content into the HTML whether it is open or not, so a field inside a
-// closed one is still a field in the form (M20.1).
-//
-// That last part is the reason for `<details>` over a conditional render: the
-// editor's `Details` section holds real inputs, and a closed disclosure must
-// not quietly drop them from the document or from validation.
 import { cn } from "@sixthshift/design-system/utils";
 import type { ReactNode } from "react";
 
@@ -25,6 +15,7 @@ export type DisclosureProps = {
 };
 
 export function Disclosure({ title, hint, defaultOpen, children, className, ...rest }: DisclosureProps) {
+  // A <details> keeps a closed section's fields in the form and in validation; a conditional render would drop them.
   return (
     <details
       open={defaultOpen}

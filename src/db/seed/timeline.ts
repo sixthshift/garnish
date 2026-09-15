@@ -1,4 +1,3 @@
-// "Made this" entries for the timeline demo. Data only — `seed.ts` applies them.
 import type { TimelineEventInput } from "../../domain/recipe";
 
 /**

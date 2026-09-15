@@ -1,12 +1,7 @@
-// Ids. New reference rows the editor invents (a tag typed by name)
-// need a well-formed UUID to pass the document schema; the server resolves them
-// by name and keeps its own id. `crypto.randomUUID` exists only in secure
-// contexts, and this app runs over plain http on the LAN, so fall back to
-// `getRandomValues`, which browsers allow everywhere.
-
 /** A random v4 UUID string. */
 export function randomUuid(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  // randomUUID exists only in secure contexts, and the app runs over plain http on the LAN.
   return uuidFromBytes(crypto.getRandomValues(new Uint8Array(16)));
 }
 

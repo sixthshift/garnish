@@ -1,20 +1,3 @@
-// One recipe in the list: image (or a placeholder), name, rating stars, a
-// total-time chip, up to three tag chips (with a "+N" overflow) and a
-// favourite heart that toggles optimistically. The whole card links to the
-// recipe page; the heart sits over the image as a sibling so it stays out of
-// the anchor (a <button> nested in an <a> is invalid). List owns layout.
-//
-// `mode` (M12.2) switches the card's shape: "grid" is the plain vertical card
-// above; "list" is Mealie's `RecipeCardMobile` row — a small square image on
-// the left, text stacked to the right — for the list view mode in prefs.ts.
-//
-// An `ingredientPreview` (M35.3) wraps the link in a hover `Tooltip` of its
-// first six ingredient lines; the popup itself is shown only from `md` (a
-// phone has no hover, and a focus-triggered popup would otherwise still
-// appear there), so a smaller viewport gets the plain link. The lines
-// themselves are also mirrored onto the link's `data-ingredient-preview`
-// (JSON), since the tooltip's own body renders only once opened and cannot
-// be asserted from a static render.
 import { Badge } from "@sixthshift/design-system/badge";
 import { Card } from "@sixthshift/design-system/card";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
@@ -146,6 +129,7 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
 
   return (
     <div className="group relative h-full" data-card-mode={mode}>
+      {/* A sibling of the link, not a child: a <button> inside an <a> is invalid. */}
       <FavouriteButton
         id={recipe.id}
         favourite={recipe.favourite}

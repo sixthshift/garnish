@@ -16,16 +16,12 @@ import { describe, expect, test } from "vitest";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../../src/domain/reference";
 import type { StyleRule } from "../../../src/domain/style";
-import {
-  AislesTab,
-  dedupeSummaries,
-  ExportTab,
-  foodsLabel,
-  groupTagsAZ,
-  StyleTab,
-  TagsTab,
-  unitsLabel,
-} from "../../../src/routes/settings/components/SettingsTabs";
+import { AislesTab } from "../../../src/routes/settings/components/AislesTab";
+import { ExportTab } from "../../../src/routes/settings/components/ExportTab";
+import { StyleTab } from "../../../src/routes/settings/components/StyleTab";
+import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
+import { TagsTab } from "../../../src/routes/settings/components/TagsTab";
+import { groupTagsAZ } from "../../../src/routes/settings/components/tagGroups";
 import type { FoodRow } from "../../../src/routes/settings/route";
 
 function summary(id: string, name: string): RecipeSummary {

@@ -1,23 +1,4 @@
-// Which of a part's ingredients a step mentions. Pure: no IO, importable by
-// the client.
-//
-// Mealie stores step-to-ingredient links, set by hand in its editor
-// (`RecipeStep.ingredientReferences`); decisions.md row 22 declined to store
-// them, so this computes the match instead — nothing is written, nothing has
-// to be kept in step with an edit. The rules are deliberately dull, because a
-// wrong chip under a step is worse than a missing one:
-//
-//   - a food matches on its name, its plural name or any of its aliases,
-//     case-insensitively,
-//   - only at word boundaries, so "pear" does not match "spearmint",
-//   - longest name first, and a matched span is consumed, so "brown sugar"
-//     in the text does not also light up the "sugar" row,
-//   - each ingredient at most once however many times it is named,
-//   - results in the part's own list order, not the order they appear in the
-//     text, so the chips read like the list above them.
-//
-// A text-only ingredient (`food === null`) has nothing to match on and is
-// skipped: its `originalText` is a whole line, not a food name.
+// Which of a part's ingredients a step names, computed from its text at word boundaries, longest name first; nothing is stored.
 
 import type { Food } from "../reference";
 import type { Step } from "./recipe";

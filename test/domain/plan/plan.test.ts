@@ -1,28 +1,18 @@
 // The meal plan document: its date arithmetic, the week layout, and what the
 // write schemas accept and refuse.
 import { describe, expect, test } from "vitest";
+import { addDays, isToday, mondayOf, todayIso, weekDates, weekMonday } from "../../../src/domain/plan/dates";
+import { dayLabel, entryLabel, servingsLabel, weekLabel } from "../../../src/domain/plan/labels";
 import {
-  addDays,
-  dayLabel,
-  entryLabel,
-  groupByDay,
   isoDate,
-  isToday,
-  mondayOf,
   type PlanDay,
   type PlanEntry,
   planDaySchema,
   planEntryInputSchema,
   planEntryPatchSchema,
   planEntrySchema,
-  planWeekAdditions,
-  reorderMove,
-  servingsLabel,
-  todayIso,
-  weekDates,
-  weekLabel,
-  weekMonday,
-} from "../../../src/domain/plan/plan";
+} from "../../../src/domain/plan/schema";
+import { groupByDay, planWeekAdditions, reorderMove } from "../../../src/domain/plan/week";
 import { type Recipe, recipeSchema } from "../../../src/domain/recipe";
 
 const ids = {

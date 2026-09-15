@@ -1,5 +1,3 @@
-// Editing a part's ingredient rows.
-
 import { randomUuid } from "../../lib/id";
 import { formatIngredient } from "../ingredient";
 import type { Recipe } from "../recipe";
@@ -44,7 +42,7 @@ export function updateIngredient(draft: RecipeDraft, pi: number, ii: number, pat
  * The draft with part `pi`'s steps no longer linking `ingredientId`. A link
  * never crosses a part, so a row that leaves a part — deleted, or moved
  * elsewhere — goes out of that part's step links too, in the draft, before
- * save (M28.3). An id-less row (never saved, never linked) is a no-op. Pure.
+ * save. An id-less row (never saved, never linked) is a no-op. Pure.
  */
 export function withoutLinks(draft: RecipeDraft, pi: number, ingredientId: string | undefined): RecipeDraft {
   if (ingredientId === undefined) return draft;
@@ -86,7 +84,7 @@ export function moveIngredientTo(draft: RecipeDraft, fromPi: number, ii: number,
     }),
   };
   // The row is another part's now, and a link never crosses a part: the part
-  // it left forgets it. The part it joined links nothing to it yet (M28.3).
+  // it left forgets it. The part it joined links nothing to it yet.
   return withoutLinks(moved, fromPi, row.id);
 }
 

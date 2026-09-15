@@ -1,5 +1,3 @@
-// Editing a part's steps: add, move, split, merge.
-
 import { randomUuid } from "../../lib/id";
 import { moveItem } from "../../lib/lists";
 import { paragraphs } from "../ingredient";
@@ -45,7 +43,7 @@ export function updateStep(draft: RecipeDraft, pi: number, si: number, text: str
 /**
  * The draft with step `si` of part `pi`'s step array pointing at `image` — the
  * file name the upload route answered with, or null to drop the photo from the
- * document (M35.1). The bytes are already on disk either way; this is what the
+ * document. The bytes are already on disk either way; this is what the
  * next save writes back to `step.image`. Out-of-range indices return a copy
  * unchanged. Pure.
  */

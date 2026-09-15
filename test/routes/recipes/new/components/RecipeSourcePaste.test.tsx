@@ -10,7 +10,9 @@ import { draftFromScraped } from "../../../../../src/domain/draft";
 import { review, type ScrapedRecipe } from "../../../../../src/domain/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/ingredient";
 import type { Unit } from "../../../../../src/domain/reference";
-import { importSummary, PasteSource, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { importSummary } from "../../../../../src/routes/recipes/new/components/importSummary";
+import { PasteSource } from "../../../../../src/routes/recipes/new/components/PasteSource";
+import { SourceChooser } from "../../../../../src/routes/recipes/new/components/SourceChooser";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

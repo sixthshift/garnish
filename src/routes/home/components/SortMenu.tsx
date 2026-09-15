@@ -1,9 +1,3 @@
-// Sort menu for the recipe list toolbar (M12.4): the fixed key+direction
-// entries from src/domain/recipe/sort.ts, built on the local `Menu` primitive
-// (M11.6). Fully controlled, like FilterBar — the route owns the search
-// params and re-navigates on selection; this component only renders the
-// current choice and reports the next one upward.
-
 import { Menu } from "../../../components/ui/Menu";
 import { SORT_OPTIONS, type SortDir, type SortKey } from "../../../domain/recipe";
 

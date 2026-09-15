@@ -1,8 +1,3 @@
-// Picks a recipe image. Shows the stored image (by file name, served from
-// /api/images), a local preview of a just-chosen file, or a placeholder. It
-// never uploads: the parent gets the File from `onSelect` and decides when to
-// POST it (M5.2). The preview is an object URL, revoked when it is replaced or
-// the component unmounts.
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import { useEffect, useId, useRef, useState } from "react";
@@ -12,7 +7,7 @@ import { recipeImageUrl } from "../../lib/images";
 export type ImageUploadProps = {
   /** Stored image file name, as on the recipe row. */
   image?: string | null;
-  /** An image that exists only as a remote URL — one an import found, before it has been fetched and stored (M23.6). Shown when nothing local or stored is. */
+  /** An image that exists only as a remote URL — one an import found, before it has been fetched and stored. Shown when nothing local or stored is. */
   previewUrl?: string | null;
   onSelect: (file: File) => void;
   /** When given, a "Remove image" button shows while there is an image. */

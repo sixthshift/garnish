@@ -1,16 +1,5 @@
-// The importer's `fetchPage` port (M23.5, M35.4): GET a page the way a browser
-// would. The browser itself cannot read most recipe sites (CORS), so the server
-// does it, exactly as `imageFetch` does for an imported recipe's image.
-//
-// The fetch sends a full browser header set because a default one, or even a
-// bare `User-Agent`, gets a 403 from a good number of sites. A 403 gets one
-// retry under a second header profile (`fetchProfiles.ts`) before this hands
-// the 403 back and the importer says the site is blocking automated requests.
-// That is as far as this goes: Mealie impersonates a real browser's TLS
-// fingerprint with curl_cffi to get past Cloudflare, and Tandoor sidesteps the
-// problem with a bookmarklet that captures the HTML the browser already has.
-// Both are worth revisiting if headers alone stop being enough — see
-// docs/plan.md's Log for M35.4 on Serious Eats, which they are not.
+// GET a page with a full browser header set; a 403 gets one retry under a second profile before it is handed back.
+
 import type { PageResponse } from "../../domain/import";
 import { FETCH_PROFILES, fetchProfileForAttempt } from "./fetchProfiles";
 

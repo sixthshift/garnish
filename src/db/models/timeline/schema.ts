@@ -1,5 +1,3 @@
-// One logged cook (decisions.md row 41). `recipe.last_made` is derived from
-// these, never written directly.
 import { desc, sql } from "drizzle-orm";
 import { check, index, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nowUtc } from "../columns";
@@ -18,7 +16,7 @@ export const timelineEvent = sqliteTable(
     /** File name under `DATA_DIR/images/timeline/`. */
     image: text("image"),
     createdAt: text("created_at").notNull().default(nowUtc),
-    /** Servings the cook was made at, or NULL when not recorded (M35.2). Added by `009_cook_servings.sql`, after `created_at` because `ALTER TABLE` appends. */
+    /** Servings the cook was made at, or NULL when not recorded. Added by `009_cook_servings.sql`, after `created_at` because `ALTER TABLE` appends. */
     servings: real("servings"),
   },
   (t) => [

@@ -1,5 +1,3 @@
-// Quantities, units, foods and tags as the editor reads and writes them.
-
 import { randomUuid } from "../../lib/id";
 import { slugify } from "../../lib/names";
 import type { Food, FoodRow, Tag, Unit } from "../reference";

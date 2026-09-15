@@ -1,26 +1,3 @@
-// The editor's unsaved draft, kept in `localStorage` so a closed tab, a
-// reload or a phone that swapped the app out does not lose what was typed.
-//
-// Same shape as prefs.ts and ticks.ts: a pure controller over a storage-like
-// interface, try/catch around every access, so it unit tests without a DOM
-// (including a storage that throws). There are no hooks here — the only reader
-// is `RecipeForm`, which holds the draft in state already and takes a
-// `storage` prop so the same controller can be driven from a test.
-//
-// One key per recipe (`garnish.draft.<id>`), and `garnish.draft.new` for a
-// recipe that does not exist yet. The new key is shared by every route that
-// opens a blank editor, imported or manual: there is only one "new recipe" at
-// a time, and a draft saved from one of them is worth offering in the other.
-//
-// The stored value is the draft's own JSON plus `savedAt` and `hadImage`, and
-// it is validated on read with `recipeInputSchema` — the same schema Save
-// parses with. A draft written by an older shape of the document therefore
-// simply does not come back, which is the right answer: resuming into fields
-// the form no longer has is worse than losing the draft.
-//
-// The picked image file is not stored. It is a `File` handle, not JSON, and
-// nothing survives the reload it would need to survive; `hadImage` records
-// that there was one so the notice can say to pick it again.
 import { type ParsedRecipeInput, recipeInputSchema } from "../domain/recipe";
 
 /** The slice of `Storage` the controller uses. */

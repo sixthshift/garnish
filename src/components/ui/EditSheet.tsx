@@ -1,15 +1,3 @@
-// The editor behind a DataTable row: a sheet whose fields come from a spec,
-// so a tab describes its columns once and gets a form for free. Foods, units,
-// aisles and tags all edit a flat record of strings, numbers, booleans and
-// one-of choices, which is exactly what a spec can cover; anything richer
-// belongs in its own component.
-//
-// Values are held as strings (and booleans for a checkbox) while editing —
-// what an input gives back — and are converted once, on save, by `fieldValues`.
-// That keeps a half-typed number from becoming NaN mid-keystroke.
-//
-// Sheet only paints after mounting on the client, so the form lives in
-// `EditSheetContent`, which renders anywhere and is what the tests exercise.
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { FormField } from "@sixthshift/design-system/form-field";
@@ -35,6 +23,7 @@ export type EditSheetContentProps = {
 };
 
 export function EditSheetContent({ title, fields, item = null, onSave, onCancel, busy = false, saveLabel = "Save" }: EditSheetContentProps) {
+  // Strings while editing, converted once on save, so a half-typed number never becomes NaN.
   const [values, setValues] = useState<FieldValues>(() => initialValues(fields, item));
   const [errors, setErrors] = useState<Record<string, string>>({});
 

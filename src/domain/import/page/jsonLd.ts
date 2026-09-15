@@ -1,29 +1,3 @@
-// The `ld+json` a page carries (M23.2, decisions.md row 58). Pure: no IO, no
-// DOM, importable by the client — the server hands it a string of HTML.
-//
-// Read with a regular expression rather than a DOM parser on purpose. The
-// target is one element type with one attribute, the content is opaque JSON
-// that no amount of malformed HTML around it can change, and the alternative
-// is a parser dependency for a job with exactly one shape. What the regex must
-// get right is only this: any attribute order, any quoting, any casing, and a
-// non-greedy body so two blocks on a page stay two blocks.
-//
-// Recipe pages put their structured data in one of three arrangements and all
-// three have to be flattened before anything can be looked for:
-//
-//   {...}                     one node
-//   [{...}, {...}]            a top-level array
-//   {"@graph": [{...}, ...]}  Yoast and most WordPress SEO plugins
-//
-// A page usually carries several nodes and only one of them is the recipe —
-// the rest are `Organization`, `WebSite`, `BreadcrumbList`, `Person`. And
-// `@type` is itself either a string or an array (`["Recipe", "NewsArticle"]`),
-// so the test for "is this the recipe" is a membership check, not equality.
-//
-// One malformed block must not cost the others. Sites ship broken JSON-LD more
-// often than you would hope — a trailing comma, an unescaped quote in a
-// description — and it is nearly always in the block nobody needed.
-
 /** A parsed `ld+json` object. Values are unknown until something reads them. */
 export type JsonLdNode = Record<string, unknown>;
 

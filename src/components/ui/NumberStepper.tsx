@@ -1,9 +1,3 @@
-// Controlled number input with minus and plus. The design system has Input and
-// Button but no stepper, so this composes them. Typing is allowed: the field
-// keeps the raw text while it is being edited and commits every parseable value,
-// clamped to [min, max]; on blur it snaps back to the committed value. The
-// buttons move by `step`, rounded to the step's precision, and disable at the
-// bounds. Replaces the inline scale control on the recipe page later.
 import { Button } from "@sixthshift/design-system/button";
 import { Input } from "@sixthshift/design-system/input";
 import { Label } from "@sixthshift/design-system/label";

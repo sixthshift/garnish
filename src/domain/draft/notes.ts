@@ -1,4 +1,3 @@
-// Editing a draft's notes.
 import { randomUuid } from "../../lib/id";
 import { moveItem } from "../../lib/lists";
 import type { DraftNote, RecipeDraft } from "./types";

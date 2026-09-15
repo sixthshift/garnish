@@ -6,7 +6,10 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { BulkAddFields, BulkAddSheet, BulkInlinePanel, BulkReviewList } from "../../../src/components/ui/BulkAddSheet";
+import { BulkAddFields } from "../../../src/components/ui/bulk/BulkAddFields";
+import { BulkAddSheet } from "../../../src/components/ui/bulk/BulkAddSheet";
+import { BulkInlinePanel } from "../../../src/components/ui/bulk/BulkInlinePanel";
+import { BulkReviewList } from "../../../src/components/ui/bulk/BulkReviewList";
 import { paragraphs, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/ingredient";
 
 /** The first element in `node` whose `children` prop is exactly `text`, without rendering it. */

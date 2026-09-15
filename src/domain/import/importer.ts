@@ -5,9 +5,10 @@ import { extractRecipe } from "./extract";
 import { aiPrompt, anchorJson, MAX_AI_TEXT, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "./model";
 import { looksLikeHtml, readableText } from "./page/text";
 import type { ImportedRecipe } from "./result";
-import { normaliseScraped, type ScrapedRecipe, type ScrapedRecipeSchema } from "./scraped";
-import type { ImportFile } from "./sources/mealie";
-import { type FileRecipe, readExport } from "./sources/tandoor";
+import { normaliseScraped, type ScrapedRecipeSchema } from "./scraped/schema";
+import type { ScrapedRecipe } from "./scraped/types";
+import type { ImportFile } from "./sources/file";
+import { type FileRecipe, readExport } from "./sources/fileRecipe";
 
 /** How much of a page is worth reading. Structured data is near the top; a page this big is not a recipe. */
 export const MAX_PAGE_BYTES = 5_000_000;
@@ -136,7 +137,7 @@ export class Importer {
     if (body === "") throw new ImportError("failed", "Paste the recipe first.");
 
     // An anchor means the caller has already run the rules over this page and
-    // is handing back its text (M36.6); only a bare paste can be markup.
+    // is handing back its text; only a bare paste can be markup.
     if (anchor === null && looksLikeHtml(body)) {
       const found = extractRecipe(body, sourceUrl);
       if (found !== null) {
@@ -183,7 +184,7 @@ export class Importer {
     const answer = parseAiAnswer(content);
     if (anchor === null) return { from: "ai", url: sourceUrl, recipe: answer, pageText };
 
-    // The anchored read is the model sorting known lines into parts (M36.5), so
+    // The anchored read is the model sorting known lines into parts, so
     // the only question left is whether it did anything else. It did: the
     // structure goes and the page's own content stays, as `from: "schema"`, with
     // the answer kept under `rejected` so the review can still offer it.

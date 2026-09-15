@@ -1,11 +1,3 @@
-// Plain text for the clipboard: what "Copy ingredients" puts on it. Pure: no
-// IO, no clipboard, importable by the client.
-//
-// Mealie's copy button hands over the ingredient lines as text, one per line.
-// Here the recipe's parts each contribute a heading (a named part only — the
-// unnamed part has nothing to head) followed by its lines, so a pasted list of
-// a multi-part recipe still says which ingredients belong to what. Empty lines
-// and empty parts are dropped; a recipe with nothing to copy yields "".
 import { formatIngredient } from "../ingredient";
 import type { Ingredient, Part } from "./recipe";
 

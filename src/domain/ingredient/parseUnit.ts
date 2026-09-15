@@ -1,24 +1,3 @@
-// The unit of an ingredient line, the second step of the parser decisions.md
-// row 47 describes. Pure: no IO, importable by the client. Sibling of
-// `parseQuantity.ts`; M17.4 composes the two.
-//
-// `rest` is what `parseQuantity` left after reading the leading amount ("cups
-// flour", "T sugar", "salt to taste"). This matches the leading token(s) of
-// that string against every unit's `name`, `pluralName` and `abbreviation`,
-// case-insensitively. Longest match wins, so "fluid ounce" beats "ounce" when
-// both are present and the text has the longer word. A match must land on a
-// word boundary — "cup" does not match "cupcakes" — and a multi-word field
-// ("fluid ounce") matches across a run of whitespace, not just one space.
-//
-// A static alias map covers spellings the seed vocabulary (`src/db/seed/units.ts`)
-// does not already carry as a name, plural or abbreviation — so "grams" is not
-// in it (gram's pluralName already is), but "gr" is. `T`/`t` are the one pair
-// that must stay case-sensitive even though the rest of the match is not:
-// American shorthand uses the capital for tablespoon and the lowercase for
-// teaspoon, and folding case would make the two indistinguishable.
-//
-// No match at all: null unit, the input returned unchanged so the token stays
-// in `rest` for `parseFood` to try.
 import type { Unit } from "../reference";
 
 /** The unit fields matching needs. A full `Unit` row satisfies it. */
@@ -32,9 +11,9 @@ export type ParsedUnit<U extends UnitCandidate> = {
 
 /**
  * Spellings the seed vocabulary doesn't carry as a name, plural or
- * abbreviation. `T` and `t` are deliberately both present and matched
- * case-sensitively (see the file header); every other alias here is matched
- * the same way for consistency, though none of the others currently collide.
+ * abbreviation. `T` and `t` are both present and matched case-sensitively: American
+ * shorthand uses the capital for tablespoon and the lowercase for teaspoon, and folding
+ * case would make them indistinguishable. Every other alias is matched the same way.
  */
 const UNIT_ALIASES: ReadonlyArray<readonly [alias: string, unitName: string]> = [
   ["T", "tablespoon"],

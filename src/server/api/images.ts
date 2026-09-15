@@ -1,10 +1,3 @@
-// Server-only. Recipe images on disk: one file per recipe under
-// `<DATA_DIR>/images/<recipeId>.<ext>`, the file name mastered in `recipe.image`.
-// The two /api routes call the handlers here.
-//
-// The pure rules — formats, size cap, sniffing, file naming — live in
-// src/lib/imageFile.ts and are re-exported below, so importing them cannot pull
-// this module's database and `node:fs` imports into the client bundle.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { recipes } from "../../db/models/recipe/repo";

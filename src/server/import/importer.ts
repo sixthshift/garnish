@@ -1,8 +1,4 @@
-// The one real importer: the domain's `Importer` given the server's two ports.
-// The page fetch is `fetch.ts` with its browser profiles; the model is the
-// shared OpenAI-compatible client asked whatever the importer asks, its failures
-// mapped onto the importer's own error kinds so the screen shows the import's
-// words rather than the provider's class.
+// The domain's Importer given the server's two ports: fetch.ts for pages, the shared AI client for the model.
 
 import { ImportError, Importer, type Ports } from "../../domain/import";
 import { AiError, createFetchRunner, type Fetcher } from "../ai/client";

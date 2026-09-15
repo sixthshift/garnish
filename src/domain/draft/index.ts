@@ -1,10 +1,3 @@
-// draft: a module. This index is its whole surface; nothing outside the folder
-// imports anything else in it (test/modules.test.ts).
-//
-// A recipe as it is being edited, before it is a document: the draft types,
-// every update to one, validation, JSON in and out, the vocabulary the editor
-// reads, and a draft from an import.
-
 export { draftFromInput, draftFromRecipe, emptyDraft, hasDetails, isDirty } from "./draft";
 export {
   addIngredient,

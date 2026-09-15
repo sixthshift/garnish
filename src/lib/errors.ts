@@ -1,5 +1,3 @@
-// Reading an error for the user: network or not, and the words to show.
-
 export type ErrorDescription = {
   title: string;
   detail: string;

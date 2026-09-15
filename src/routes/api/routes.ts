@@ -1,5 +1,5 @@
-// The server routes: HTTP endpoints for callers outside the app. Their
-// handlers import the store, so routes.ts adds this list on the server only.
+// The server routes (/api/*), added to the tree on the server only: their handlers import the store.
+
 import { exportJsonRoute, recipeCookRoute, recipeJsonRoute } from "./export";
 import { healthRoute } from "./health";
 import { getImageRoute, uploadImageRoute } from "./images";

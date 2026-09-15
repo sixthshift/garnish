@@ -1,12 +1,3 @@
-// The word lists the dev dataset is assembled from. Data only — ./generate.ts
-// combines these into recipe documents.
-//
-// en-AU spelling and metric throughout, matching the rest of the project. The
-// foods are grouped by the aisle they belong to so the aisle reference data and
-// the shopping-order screens have something realistic to sort; the tags are
-// deliberately uneven, a few on many recipes and several on only one, so tag
-// filtering and the A-Z tag list are worth looking at.
-
 /** Aisles, in the order a supermarket walks them. Position follows this order. */
 export const AISLES: readonly string[] = ["Fruit & veg", "Butcher", "Seafood", "Dairy & eggs", "Bakery", "Pantry", "Spices", "Freezer"];
 
@@ -125,7 +116,7 @@ export const FOODS: readonly FoodEntry[] = [
 ];
 
 /**
- * Tags, heaviest first. ./generate.ts weights its picks towards the front of
+ * Tags, heaviest first../generate.ts weights its picks towards the front of
  * this list, so the leading tags land on many recipes and the trailing ones on
  * one or two — which is what makes the tag list and the any/all filter switch
  * worth testing.
@@ -318,7 +309,7 @@ export const SHAPES: readonly Shape[] = [
 /** Step sentences. `{food}` and `{unit}` are filled from the recipe's own ingredients. */
 /**
  * Templates naming two of a part's rows in one line, so `suggestLinks` always
- * has at least one step to link to two rows at once (see ./generate.ts).
+ * has at least one step to link to two rows at once (see./generate.ts).
  */
 export const DOUBLE_STEPS: readonly string[] = [
   "Combine the {food} and the {food} in a large bowl.",

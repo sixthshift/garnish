@@ -1,8 +1,3 @@
-// Shopping list server functions: the one household list (decisions.md row 67).
-// Each is the full `createServerFn` chain (see ./fn.ts for why), reads through
-// getDb() and hands back `ShoppingItem` documents from src/domain/shopping/shopping.ts.
-//
-// There is no list id in any signature because there is no second list.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { shopping } from "../../db/models/shopping/repo";
@@ -43,7 +38,7 @@ export const addShoppingItems = createServerFn({ method: "POST" })
   .handler(async ({ data }) => shopping(await getDb()).addMany(data.items));
 
 /**
- * Apply `mergeIntoList`'s `merges` half (M31.2): each named line takes its new
+ * Apply `mergeIntoList`'s `merges` half: each named line takes its new
  * total and keeps the sources appended to it. The `additions` half goes through
  * `addShoppingItems`; the two together are one "Add to shopping list" tap.
  * Not-found when any id is unknown.
@@ -62,7 +57,7 @@ export const updateShoppingItem = createServerFn({ method: "POST" })
   .validator(UpdateShoppingItemInput)
   .handler(async ({ data: { id, ...patch } }) => required(shopping(await getDb()).update(id, patch), "shopping item", id));
 
-/** Tick or untick a line: the write the supermarket queues (M31.5). */
+/** Tick or untick a line: the write the supermarket queues. */
 export const tickShoppingItem = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(TickShoppingItemInput)

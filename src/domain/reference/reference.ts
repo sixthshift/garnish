@@ -1,6 +1,3 @@
-// Input schemas for the reference data server functions (foods, units, aisles,
-// tags). Pure and client-importable. Shapes mirror the table columns; names are
-// trimmed here so a blank name fails validation rather than the repository.
 import { z } from "zod";
 
 /** A row id. */
@@ -17,7 +14,7 @@ export type NameInput = z.infer<typeof NameInput>;
 export const ListQuery = z.object({ q: z.string().optional() });
 export type ListQuery = z.infer<typeof ListQuery>;
 
-/** "1 cup of flour is 125 g" as it is written: no id, the food is the parent (decisions.md row 69). */
+/** "1 cup of flour is 125 g" as it is written: no id, the food is the parent. */
 export const FoodConversionInput = z
   .object({
     unitId: Id,
@@ -45,7 +42,7 @@ export type FoodUpdate = z.infer<typeof FoodUpdate>;
 export const FoodConversions = z.object({ id: Id, conversions: z.array(FoodConversionInput) });
 export type FoodConversions = z.infer<typeof FoodConversions>;
 
-/** The recipe a food is made by (M32.3); the food is found or created from the recipe's name. */
+/** The recipe a food is made by; the food is found or created from the recipe's name. */
 export const RecipeFoodInput = z.object({ recipeId: Id });
 export type RecipeFoodInput = z.infer<typeof RecipeFoodInput>;
 
@@ -115,7 +112,7 @@ export const unitSchema = z.object({
 });
 
 /**
- * "1 cup of plain flour is 125 g" (decisions.md row 69): `quantity` of `unitId`
+ * "1 cup of plain flour is 125 g": `quantity` of `unitId`
  * of the owning food equals `toQuantity` of `toUnitId`. Units are ids, not
  * nested objects — the conversion is only ever read beside a units list.
  */
@@ -163,6 +160,6 @@ export type FoodRow = {
   aisleId: string | null;
   recipeId: string | null;
   skipShopping: boolean;
-  /** "1 cup of flour is 125 g" (decisions.md row 69). Empty for most foods. */
+  /** "1 cup of flour is 125 g". Empty for most foods. */
   conversions: FoodConversion[];
 };

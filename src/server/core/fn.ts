@@ -1,18 +1,3 @@
-// Shared pieces for server functions. Client-safe: nothing here touches bun:sqlite.
-//
-// TanStack Start's compiler splits a server function out of its module by
-// finding the literal chain `createServerFn(...)...handler(fn)` assigned to a
-// top-level variable, so `createServerFn` cannot be hidden behind a wrapper.
-// Each server function is written in full, with this middleware in the chain:
-//
-//   export const getRecipe = createServerFn({ method: "GET" })
-//     .middleware([notFoundMiddleware])
-//     .validator(RecipeIdInput)            // any zod schema; Standard Schema is accepted
-//     .handler(async ({ data }) => required(recipes(await getDb()).get(data.id), "recipe", data.id));
-//
-// A validation failure throws before the handler runs. A thrown NotFound
-// becomes TanStack's not-found error, which the client discriminates with
-// `isNotFound(error)` and route loaders render through `notFoundComponent`.
 import { notFound } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
 import { isNotFoundError } from "./errors";
@@ -27,6 +12,7 @@ export function toNotFound(error: unknown): unknown {
   return notFound({ data });
 }
 
+// Start's compiler finds the literal createServerFn(...).handler() chain at top level, so createServerFn cannot be wrapped: each server function writes the chain in full and adds this middleware.
 /** Function middleware: rethrows a repository NotFound as `notFound()`. Everything else passes through. */
 export const notFoundMiddleware = createMiddleware({ type: "function" }).server(async ({ next }) => {
   try {

@@ -1,13 +1,3 @@
-// The sub-recipes the page knows about, for the ingredient rows to look their
-// food's child up in (M32.3, decisions.md row 70).
-//
-// A context rather than a prop drilled through `IngredientList`, `StepCard`
-// and the phone's ingredients sheet: a row that happens to be a sub-recipe is
-// the same row everywhere, and the view route is the one place that has the
-// children — its loader fetches them all in one call. Outside the provider
-// (cook mode, the editor's preview) `useSubRecipe` answers null and a row is
-// exactly what it was before, which is how the rest of the page's optional
-// behaviour is wired (see `QuickEditProvider`).
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { type SubRecipe, subRecipeMap } from "../../domain/recipe";
 import type { Food } from "../../domain/reference";
@@ -31,7 +21,7 @@ export function useSubRecipe(food: Food | null): SubRecipe | null {
 /**
  * The whole map, for a caller that looks several rows' foods up while
  * rendering one list — the shopping sheet's "Add hollandaise's ingredients
- * instead" option (M32.5) — rather than one at a time through `useSubRecipe`,
+ * instead" option — rather than one at a time through `useSubRecipe`,
  * which would mean a hook call per row. Empty outside the provider.
  */
 export function useSubRecipes(): ReadonlyMap<string, SubRecipe> {

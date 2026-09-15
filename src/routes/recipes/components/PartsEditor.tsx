@@ -1,26 +1,3 @@
-// The recipe editor's part list: add, rename, reorder and delete the named
-// parts a recipe is made of. Each row edits its ingredients through
-// `IngredientsEditor` and its steps through `StepsEditor`.
-//
-// A flat recipe — one part, unnamed — gets none of that chrome (decisions.md
-// row 53). It is the common case, the view page has printed it without a
-// heading since row 49, and a blank "Part name" input above the only
-// ingredient list made every simple recipe look like a structured one that
-// had forgotten its label. `isBare` is the test; "Add part" is the way out of
-// it, and pressing it gives this part its name field back along with the new
-// one.
-//
-// The parent owns the draft: every change goes through one of the pure
-// helpers below and comes back through `onChange` as a new `RecipeDraft`.
-//
-// Positions are never edited here. The document carries no position fields;
-// the repository writes them from array order on save, so moving a row is
-// the whole story.
-//
-// A part with nothing in it is removed on the spot. One that holds
-// ingredients or steps asks first, in a modal, because the rows go with it
-// and there is no undo. A recipe always keeps at least one part (the schema
-// requires it), so the sole part has no remove button.
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";

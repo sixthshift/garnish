@@ -4,7 +4,7 @@
 // dropped line, an added one, a reworded step).
 import { describe, expect, test } from "vitest";
 import { checkAgainstAnchor, normaliseForCheck } from "../../../src/domain/import/check";
-import type { ScrapedPart } from "../../../src/domain/import/scraped";
+import type { ScrapedPart } from "../../../src/domain/import/scraped/types";
 
 const ANCHOR: { parts: ScrapedPart[] } = {
   parts: [

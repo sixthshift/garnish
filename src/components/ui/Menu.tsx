@@ -1,16 +1,3 @@
-// A dropdown action menu. The design system has `popover` but no menu, so this
-// is the local primitive: a trigger button and a `role="menu"` panel of
-// `role="menuitem"` buttons, positioned against the trigger.
-//
-// It is not built on `Popover` because a menu owns keyboard behaviour a
-// popover does not have (arrow keys move focus between items, Escape closes,
-// choosing an item closes) and because the panel needs to render in the same
-// tree as the trigger so a server render can show it. Open state is internal
-// unless the caller controls it with `open`; the tests render it open.
-//
-// Items are the compound children `Menu.Item` (a button) and, with `asChild`,
-// any single element the caller supplies (a router `Link`, an `a`): the child
-// keeps its own props and gains the item's role, class and close-on-click.
 import { cn } from "@sixthshift/design-system/utils";
 import {
   Children,

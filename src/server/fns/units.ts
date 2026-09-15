@@ -1,4 +1,3 @@
-// Unit server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
 import { recipes } from "../../db/models/recipe/repo";
 import { units } from "../../db/models/unit/repo";

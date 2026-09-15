@@ -1,22 +1,5 @@
-// The shopping list's outbox (M31.5): the one place in garnish where a write
-// is allowed to happen with no server.
-//
-// Everywhere else the rule from the editor holds — a write offline is refused,
-// not queued (`RecipeForm`'s "Changes cannot be saved offline"), because a
-// recipe is a whole document and a half-written one is worse than none. The
-// list is the exception the app exists to serve: the supermarket is not on the
-// LAN, the service worker's data cache still has the last list read, and a
-// cook ticking a line off a shelf cannot be told to come home first. Ticks,
-// unticks and removes are single-field, idempotent-by-id writes over rows that
-// already exist, so replaying them later is safe in a way replaying a document
-// save is not. Adding a line and clearing the ticked stay server-first: both
-// create or destroy rows, and neither is what you do at the shelf.
-//
-// Same shape as prefs.ts, ticks.ts and drafts.ts: a pure core (enqueue,
-// coalesce, apply, flush) over plain values, a thin `localStorage` controller
-// around it, and a hook around that. The pure core is what the tests drive; it
-// never touches a DOM, a clock it was not given, or the network.
-import { useCallback, useEffect, useRef, useState } from "react";
+// The one offline write path: ticks, unticks and removes queue and replay; adding a line and clearing the ticked stay server-first.
+
 import type { ShoppingItem } from "../domain/shopping";
 import { randomUuid } from "./id";
 
@@ -61,12 +44,12 @@ export function parseOutbox(value: unknown): OutboxEntry[] {
  * `queue` with `entry` added, coalesced against what is already pending for
  * the same line:
  *
- *   - a tick or an untick replaces any tick or untick already queued for that
- *     line — a cook who ticks and unticks the same lemon has changed their
- *     mind, not made two writes, and the server only ever needs the last word;
- *   - a remove supersedes everything queued for that line: there is nothing to
- *     tick on a row that is going away;
- *   - once a remove is queued for a line, nothing further is queued for it.
+ * - a tick or an untick replaces any tick or untick already queued for that
+ * line — a cook who ticks and unticks the same lemon has changed their
+ * mind, not made two writes, and the server only ever needs the last word;
+ * - a remove supersedes everything queued for that line: there is nothing to
+ * tick on a row that is going away;
+ * - once a remove is queued for a line, nothing further is queued for it.
  *
  * The surviving entry is appended, so the queue stays in the order the cook's
  * last word on each line was given. Pure.
@@ -194,89 +177,4 @@ export function createOutbox(storage: StorageLike | undefined, newId: () => stri
     },
     clear: () => void save([]),
   };
-}
-
-/** `window.localStorage`, or undefined on the server and where it is unavailable. */
-export function browserStorage(): StorageLike | undefined {
-  return typeof window === "undefined" ? undefined : window.localStorage;
-}
-
-// --- The hook ----------------------------------------------------------------
-
-/** What the page needs from the outbox. */
-export type UseOutbox = {
-  /** The pending writes, oldest first. */
-  queue: OutboxEntry[];
-  /** Queue a tick, untick or remove and re-render with it applied. */
-  push: (itemId: string, kind: OutboxKind) => void;
-  /** Flush now. Called on coming back online and on regaining focus; safe to call by hand. */
-  flush: () => Promise<void>;
-};
-
-export type UseOutboxOptions = {
-  /** How one entry reaches the server. */
-  send: (entry: OutboxEntry) => Promise<unknown>;
-  /** Whether the browser believes it has a network; a false→true flip flushes. */
-  online: boolean;
-  /** Called after a flush that sent at least one entry, so the page can re-read the list. */
-  onFlushed?: () => void;
-  /** Injected in tests; defaults to `window.localStorage`. */
-  storage?: StorageLike;
-};
-
-/**
- * The stored queue as React state, flushed when `online` turns true and when
- * the page regains focus (coming back to the app in the car park is a focus,
- * not always an `online` event). One flush at a time: a second call while one
- * is in flight is dropped rather than queued, since the next trigger will pick
- * up whatever is left.
- */
-export function useOutbox({ send, online, onFlushed, storage }: UseOutboxOptions): UseOutbox {
-  const [outbox] = useState(() => createOutbox(storage ?? browserStorage()));
-  const [queue, setQueue] = useState<OutboxEntry[]>(() => outbox.list());
-  const running = useRef(false);
-  // Kept in refs so the flush effect does not re-subscribe on every render.
-  const sendRef = useRef(send);
-  sendRef.current = send;
-  const flushedRef = useRef(onFlushed);
-  flushedRef.current = onFlushed;
-
-  const flush = useCallback(async () => {
-    if (running.current) return;
-    running.current = true;
-    try {
-      const result = await outbox.flush((entry) => sendRef.current(entry));
-      setQueue(result.queue);
-      if (result.sent.length > 0) flushedRef.current?.();
-    } finally {
-      running.current = false;
-    }
-  }, [outbox]);
-
-  const push = useCallback(
-    (itemId: string, kind: OutboxKind) => {
-      setQueue(outbox.push(itemId, kind));
-    },
-    [outbox]
-  );
-
-  // Coming back online: flush what the shelf collected. Runs on mount too,
-  // which clears anything a previous visit left behind.
-  useEffect(() => {
-    if (online) void flush();
-  }, [online, flush]);
-
-  // Regaining focus, with a network: same flush. `focus` rather than
-  // `visibilitychange` alone because a phone waking to the app fires both and
-  // one handler is enough.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onFocus = () => {
-      if (online) void flush();
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [online, flush]);
-
-  return { queue, push, flush };
 }

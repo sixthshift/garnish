@@ -1,20 +1,3 @@
-// The garnish mark: a sprig of seven leaves staggered up one side of the stem
-// then the other, tapering gently towards the tip.
-//
-// Everything is drawn in a 512×512 box, and the mark itself stays inside a
-// centred 300px box — so the same drawing serves the rounded app icon, the
-// full-bleed maskable icon (where the platform crops to a circle of 80% width)
-// and the favicon, with no second version to keep in step.
-//
-// The taper is deliberate and was the last thing settled: leaves run 82 down to
-// 52, a 37% drop. Enough that the sprig has a growing tip and you can tell which
-// way is up; gentle enough that the top leaves are still above the size a 16px
-// favicon can draw. Steepen it and the crown disappears before the icon does.
-//
-// Colour is never hard-coded in the mark. Its shapes take `currentColor`, so
-// the app sets it with a text-colour class and the fixed PNG assets pass the
-// literal hex below. `bun run icons` regenerates every file in public/icons
-// from this component; nothing in there is drawn by hand.
 import type { CSSProperties } from "react";
 
 /**

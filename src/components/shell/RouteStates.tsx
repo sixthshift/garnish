@@ -1,18 +1,3 @@
-// Router-wide pending, error and not-found views, built from design system
-// pieces, plus the fallback for the app-wide ErrorBoundary in root.tsx.
-//
-// Two ways a page can fail: a loader throws (the route's errorComponent, here
-// `RouteError`, renders in the outlet with the shell still up), or a render
-// throws past every route boundary (the design system `ErrorBoundary` around
-// the shell renders `AppErrorFallback`). Both read the same copy from
-// `describeError`, and Retry on both clears the boundary and re-runs the
-// loaders through `router.invalidate()`.
-//
-// A server function that cannot reach the server rejects with the browser's
-// fetch TypeError ("Failed to fetch", "Load failed", "NetworkError when
-// attempting to fetch resource.", Bun's "fetch failed"); that is the case the
-// plan's kill-the-server check exercises, so it gets its own message, refined
-// by `useOnline` when the browser knows it is offline.
 import { Button } from "@sixthshift/design-system/button";
 import type { ErrorFallbackProps } from "@sixthshift/design-system/error-boundary";
 import { Heading } from "@sixthshift/design-system/heading";

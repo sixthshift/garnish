@@ -1,20 +1,3 @@
-// Every duration named in a step's text, with its offset in that text and its
-// length in seconds. Pure: no IO, importable by the client, run over the raw
-// step text before it goes anywhere near markdown (src/lib/markdown.ts) so
-// a bold "**20 minutes**" still gets a timer.
-//
-// Recognised shapes: "20 minutes", "20 min", "1 hour", "1½ hours",
-// "1 hr 30 min" (one match, summed), "30 seconds", "10-12 minutes" and
-// "10 to 12 minutes" (one match, both bounds kept — the chip that reads them
-// offers the lower). Units accepted beyond the full words, only where a
-// number in front of them is unambiguous: "mins", "min", "hrs", "hr", "h",
-// "secs", "sec", "s" — not "m", which is as likely to be metres. Anything
-// without one of these units right after a number is not a duration:
-// "2 eggs", "step 3", "350 degrees", "350°C" and "gas mark 4" all fail to
-// match anything.
-//
-// Matches are non-overlapping and returned in the order they appear.
-
 export type Duration = {
   /** Offset of the match's first character in `text`. */
   start: number;
@@ -32,6 +15,7 @@ const FRACTIONS: Record<string, number> = { "½": 0.5, "¼": 0.25, "¾": 0.75 };
 
 const NUMBER = String.raw`(?:\d+(?:[½¼¾])?|[½¼¾])`;
 const HOUR = String.raw`(?:hours|hour|hrs|hr|h)`;
+// No bare "m": after a number it is as likely metres as minutes.
 const MINUTE = String.raw`(?:minutes|minute|mins|min)`;
 const SECOND = String.raw`(?:seconds|second|secs|sec|s)`;
 const ANY_UNIT = `(?:${HOUR}|${MINUTE}|${SECOND})`;

@@ -1,6 +1,3 @@
-// Posting an uploaded Mealie or Tandoor export to the parser (M34.3, M34.4). The twin of
-// `uploadRecipeImage` in ./images: a multipart POST to a route under /api,
-// with the `fetch` injectable so a test can drive it without a server.
 import type { FileRecipe } from "../domain/import";
 
 /** The multipart field the export travels in. The upload route reads the same name. */

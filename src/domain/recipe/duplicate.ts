@@ -1,17 +1,3 @@
-// Turning a stored recipe back into a write document, for "Duplicate".
-// Pure: no IO, importable by the client.
-//
-// Mealie's duplicate copies the recipe itself and nothing that records what
-// happened to it. So:
-//   - the name gains " (copy)" and the repository derives a fresh slug from it;
-//   - every id is dropped, recipe and children alike, so the write inserts new
-//     rows rather than colliding with the original's primary keys;
-//   - `lastMade` and `favourite` reset — the copy has never been cooked and
-//     nobody has favourited it;
-//   - reference rows (units, foods, tags) keep their ids: they are shared, and
-//     the repository resolves them by id.
-// The image file name is carried over: images are written once and read by
-// name, so both recipes point at the same picture until one is re-uploaded.
 import type { Recipe, RecipeInput } from "./recipe";
 
 /** The suffix a duplicate's name gains, as in Mealie. */

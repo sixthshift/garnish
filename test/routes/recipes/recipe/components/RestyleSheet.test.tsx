@@ -15,8 +15,8 @@ import {
   missingLine,
   partHeading,
   type RestyleAnswer,
-  RestyleSheetContent,
-} from "../../../../../src/routes/recipes/recipe/components/RestyleSheet";
+} from "../../../../../src/routes/recipes/recipe/components/restylePayload";
+import { RestyleSheetContent } from "../../../../../src/routes/recipes/recipe/components/RestyleSheetContent";
 
 let n = 0;
 function step(text: string): Step {

@@ -1,5 +1,3 @@
-// Units of measure. `name` is COLLATE NOCASE in the SQL; `standard_unit_id` is
-// the conversion hook, pointing at another unit (deferred, see scope.md).
 import { sql } from "drizzle-orm";
 import { type AnySQLiteColumn, check, index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
@@ -7,7 +5,7 @@ export const unit = sqliteTable(
   "unit",
   {
     id: text("id").primaryKey(),
-    name: text("name").notNull().unique(),
+    name: text("name").notNull().unique(), // COLLATE NOCASE in the SQL; Drizzle has no collation builder
     pluralName: text("plural_name"),
     abbreviation: text("abbreviation").notNull().default(""),
     useAbbreviation: integer("use_abbreviation", { mode: "boolean" }).notNull().default(false),

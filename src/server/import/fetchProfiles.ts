@@ -1,21 +1,3 @@
-// Header profiles for `importFromUrl`'s fetch (M35.4). A bare `User-Agent`
-// gets a 403 from a good number of recipe sites (M23.5's note on
-// `IMPORT_USER_AGENT`); a full, current browser header set — `Accept`,
-// `Accept-Language`, the `Sec-Fetch-*` trio a real navigation always sends —
-// gets past a few more of them, because a check that only reads the
-// User-Agent is the cheap half of what a bot wall can do.
-//
-// Two profiles, not one: a single fixed header set is itself a fingerprint,
-// and a site that blocks it specifically still has an answer if a different
-// one is offered. Both are data — no code path differs between them — so
-// they live here as a plain array, picked by `fetchProfileForAttempt`.
-//
-// This is headers only. A site guarding itself at the TLS layer (Cloudflare's
-// managed challenge, which is what Serious Eats runs — see docs/plan.md's Log
-// for M35.4) is out of reach for `fetch` no matter which of these is sent;
-// Mealie gets past it with `curl_cffi`, which impersonates a browser's TLS
-// fingerprint, not just its headers. That stays deferred.
-
 /** One browser's worth of request headers. `name` is for error messages and tests, never sent. */
 export type FetchProfile = {
   name: string;

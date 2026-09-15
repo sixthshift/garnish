@@ -1,11 +1,3 @@
-// The delete confirm for a reference row: the ConfirmDialog, plus the list of
-// recipes that use the row. Deleting a food, unit or tag never fails — every
-// reference is ON DELETE SET NULL or CASCADE — so the question is not whether
-// it can go but what it takes with it, and the only honest answer is the list.
-// The recipes come from `recipes.usingFood`/`usingUnit`/`usingTag`.
-//
-// Long lists are capped so the dialog cannot outgrow a phone; the count in the
-// sentence is always the true one.
 import { Modal } from "@sixthshift/design-system/modal";
 import { Muted } from "@sixthshift/design-system/muted";
 import type { RecipeSummary } from "../../domain/recipe";

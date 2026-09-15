@@ -1,42 +1,5 @@
-// One ingredient line, end to end: the parser decisions.md row 47 describes.
-// Pure: no IO, importable by the client. Composes `parseQuantity.ts`,
-// `parseUnit.ts` and `parseFood.ts` in that order, which is the order the
-// pieces appear in a written line: amount, unit, food, note.
-//
-// `format.ts`'s `formatIngredient` is the exact inverse, and the round-trip
-// test in `test/domain/parseIngredient.test.ts` holds the two together over the
-// whole seed corpus.
-//
-// Nothing here invents an id or creates a row. A slot that matched carries the
-// vocabulary row itself; a slot that missed carries the text it could not
-// resolve, and what to do about that — create the food, pick an existing one,
-// leave the line text-only — is the caller's (M17.5, M17.6). The two text
-// fields are not quite symmetric, because the two slots fail differently:
-//   - `foodText` is whatever of the food candidate no row accounts for: the
-//     whole of it on a miss, empty on a full match. `parseFood` reads the
-//     remainder of the line, so a miss there always has text to report.
-//   - `unitText` is the unit word the line used. On a match it echoes the text
-//     as written ("tbsp", "cups"), so a review sheet can show what was
-//     consumed. A miss normally leaves it empty, because an unmatched token is
-//     handed straight on to the food rather than held back — with one
-//     exception below.
-//
-// The exception is the backtrack. When a line has an amount but neither the
-// unit nor the food matched, the word sitting in the unit's position is tried
-// as a unit anyway: "2 sprigs rosemary" against a vocabulary holding rosemary
-// but no "sprig" parses the food as rosemary and reports `unitText: "sprigs"`.
-// The retry only stands if it produces a food match, so a plain adjective is
-// never promoted to a unit unless dropping it is what made the line readable.
-// It is a proposal for the review step, never a row.
-//
-// Two smaller rules:
-//   - a line with no amount does not give its whole remainder to the unit.
-//     "pinch" on its own is a food-less line, not a unit with nothing to
-//     measure, and Mealie drops the unit of an amount-less line on the way out
-//     too (see `formatIngredient`).
-//   - `originalText` is the line as given, trimmed and otherwise untouched:
-//     the `=`, the note and the amount all stay in it, so a row can be stored
-//     verbatim whatever the parse made of it.
+// One ingredient line end to end: parseQuantity, then parseUnit, then parseFood; nothing here invents an id or creates a row.
+
 import { type FoodCandidate, parseFood } from "./parseFood";
 import { parseQuantity } from "./parseQuantity";
 import { parseUnit, type UnitCandidate } from "./parseUnit";

@@ -1,5 +1,3 @@
-// Parsed ingredient rows under review, and what confirming them writes into the draft.
-
 import { type CommitRef, parseIngredient, type ReviewRow, type RowCommit, reviewRow, rowCommit } from "../ingredient";
 import type { Food, FoodRow, Unit } from "../reference";
 import { inRange, isTextOnly, newIngredient, updateIngredient, withIngredients } from "./ingredients";
@@ -10,7 +8,7 @@ import { foodReference } from "./vocabulary";
 export type IngredientReview = ReviewRow<Unit, FoodRow>;
 
 /**
- * One reviewed line as a draft row (M17.5). `createdFoods`/`createdUnits` are
+ * One reviewed line as a draft row. `createdFoods`/`createdUnits` are
  * the rows Confirm found or created, keyed by the lowercased name that was
  * approved.
  *
@@ -47,7 +45,7 @@ export function resolveUnit(ref: CommitRef<Unit>, created: ReadonlyMap<string, U
 
 /**
  * A saved row's `originalText`, parsed fresh against the current vocabulary
- * and turned into a review row (M17.6) — the same shape bulk add reviews a
+ * and turned into a review row — the same shape bulk add reviews a
  * pasted line with, so an unknown food or unit still asks before anything is
  * created. `key` only needs to be stable for the life of the review; the row
  * keeps its own id regardless. Pure.

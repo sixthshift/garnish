@@ -1,16 +1,3 @@
-// A minimal PNG encoder, just enough to give the dev recipes placeholder
-// images. Dev-only: nothing that ships depends on this.
-//
-// Real photographs are not something a generator can invent, but recipe cards,
-// the header and cook mode all look wrong with every image missing, so each
-// dev recipe gets a flat colour block with a soft vertical gradient. They are
-// ~1 KB each, deterministic from the recipe name, and are written through the
-// same store as a real upload, so they exercise the sniffing and serving path
-// rather than bypassing it.
-//
-// `Bun.deflateSync` produces a *raw* deflate stream; PNG's IDAT wants a zlib
-// one, so the 2-byte header and trailing Adler-32 are added here.
-
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
   for (let n = 0; n < 256; n += 1) {

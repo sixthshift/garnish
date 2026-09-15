@@ -1,21 +1,7 @@
-// What Enter does inside a list of editable rows (M21.4, decisions.md row 55).
-//
-// Typing a recipe in is typing a list of rows, and a mouse trip to "Add
-// ingredient" per row is the difference between ninety seconds and four
-// minutes. Tandoor appends on Tab out of the last field; this uses Enter
-// instead, because Tab is the browser's own focus order and stealing it on the
-// last field leaves no way to tab out of the list at all.
-//
-// Enter inside a single-line input submits the enclosing form by default, so
-// the handler has to `preventDefault()` whichever branch it takes — which is
-// why "do nothing" is a decision here and not an absence of one.
-//
-// The decision is pure and the focus is not, so they are separate: `rowEnter`
-// says what to do, `focusNamed` does the part that needs a document.
-
 /** What Enter on row `index` of a list should do. */
 export type RowEnter = "append" | "next" | "ignore";
 
+// "ignore" still needs the caller's preventDefault: Enter in a single-line input submits the form otherwise.
 /**
  * Enter on the last row appends a new one; on any earlier row it moves to the
  * next. An empty list, or an index outside it, has nothing to do. Pure.

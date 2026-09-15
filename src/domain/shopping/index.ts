@@ -1,31 +1,7 @@
-// shopping: a module. This index is its whole surface; nothing outside the folder
-// imports anything else in it (test/modules.test.ts).
-//
-// The one shopping list: its document, the merge rule (by food and unit, into
-// an unticked line), what a recipe adds to it, and how it groups by aisle.
-
-export type {
-  ParsedShoppingItemInput,
-  ShoppingAddition,
-  ShoppingItem,
-  ShoppingItemInput,
-  ShoppingItemPatch,
-  ShoppingItemSourceInput,
-  ShoppingListMerge,
-  ShoppingMergePlan,
-} from "./shopping";
-export {
-  additionsFor,
-  additionsForWithSubRecipes,
-  groupByAisle,
-  ingredientText,
-  mergeIntoList,
-  recipeAdditions,
-  shoppingGroups,
-  shoppingItemInputSchema,
-  shoppingItemLabel,
-  shoppingItemPatchSchema,
-  shoppingItemSchema,
-  shoppingItemSourceInputSchema,
-  sourceLabel,
-} from "./shopping";
+export { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "./additions";
+export { groupByAisle, shoppingItemLabel, sourceLabel } from "./groups";
+export type { ShoppingAddition, ShoppingListMerge, ShoppingMergePlan } from "./merge";
+export { mergeIntoList } from "./merge";
+export type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemInput, ShoppingItemPatch, ShoppingItemSourceInput } from "./schema";
+export { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSchema, shoppingItemSourceInputSchema } from "./schema";
+export { recipeAdditions } from "./subRecipe";

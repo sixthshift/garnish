@@ -1,26 +1,3 @@
-// Recipe document: the full nested shape the API reads and writes.
-// Pure: no IO, no bun:sqlite. Importable by the client.
-//
-// Mirrors src/db/migrations/001_init.sql column for column in camelCase,
-// with Mealie's field names where Mealie has the concept:
-//   servings        -> recipeServings
-//   yield_quantity  -> recipeYieldQuantity
-//   yield_text      -> recipeYield         (decisions.md row 20)
-//   prep_minutes    -> prepTime            integer minutes, not Mealie's free text
-//   cook_minutes    -> performTime         integer minutes, not Mealie's free text
-// Shape decisions:
-//   - Array order is `position`. The document carries no position fields; the
-//     repository writes them from array index and reads them back in order.
-//   - Foreign keys (unit_id, food_id, yield_unit_id, tag_id) are nested
-//     reference objects, as in Mealie. Writes use only the nested `id`.
-//   - A step's `ingredientIds` are links, not ownership: ids of ingredients in
-//     the same part, in link order. Many to many within the part; a link
-//     naming a row outside it is dropped on save (decisions.md row 64).
-//   - Every step belongs to a part, so `steps` exists only inside `parts`.
-//     The unnamed part ('') is the recipe's main body: a flat recipe is one
-//     unnamed part, and a sectioned recipe puts its unsectioned method there
-//     rather than inventing a heading for it (decisions.md row 49).
-//   - Parent ids (recipe_id, part_id) are implied by nesting and omitted.
 import { z } from "zod";
 import { foodSchema, tagSchema, unitSchema } from "../reference";
 
@@ -46,13 +23,13 @@ const ingredientFields = {
 const stepFields = {
   text,
   /**
-   * The ingredients this step uses, in link order (decisions.md row 64). Ids of
+   * The ingredients this step uses, in link order. Ids of
    * rows in the step's own part; a link naming anything else is dropped on save.
    */
   ingredientIds: z.array(id).default([]),
   /**
    * The step's photo as a stored file name, served from `/api/images/steps/`
-   * (M35.1). Null is no photo. It rides in the document so a save, which
+   *. Null is no photo. It rides in the document so a save, which
    * re-inserts every step from it, keeps the photo a step already had.
    */
   image: z.string().nullable().default(null),
@@ -104,7 +81,7 @@ export const recipeSchema = z.object({
   parts: z.array(partSchema).min(1, "a recipe needs at least one part"),
   /**
    * When the steps were last rewritten in the house style, or null while they
-   * are still the author's words (M37.5). Read-only: it is not in
+   * are still the author's words. Read-only: it is not in
    * `recipeFields`, so it is absent from the write shape — the editor never
    * sends it and an ordinary save cannot set or clear it. Only `applyRestyle`
    * and `restoreSteps` move it.
@@ -128,7 +105,7 @@ export const recipeSummarySchema = z.object({
   lastMade: timestamp.nullable(),
   favourite: z.boolean(),
   tags: z.array(tagSchema),
-  /** First six ingredient lines, part order then row order, formatted with domain/ingredient/format.ts's formatIngredient (M35.3). */
+  /** First six ingredient lines, part order then row order, formatted with domain/ingredient/format.ts's formatIngredient. */
   ingredientPreview: z.array(z.string()),
 });
 
@@ -139,7 +116,7 @@ export const timelineEventSchema = z.object({
   occurredOn: date,
   message: text,
   image: z.string().nullable().default(null),
-  /** Servings the cook was made at, or null when not recorded (M35.2). */
+  /** Servings the cook was made at, or null when not recorded. */
   servings: z.number().positive().nullable().default(null),
   createdAt: timestamp,
 });

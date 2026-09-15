@@ -1,16 +1,3 @@
-// The editor's save bar: a sticky strip at the foot of the screen on phone,
-// a plain inline row from `md` up. The design system has no bar primitive, so
-// it is built here from `Button` plus the app's border and surface tokens.
-//
-// On phone it sticks `bottom-20`, clear of the fixed tab bar in `AppShell`,
-// and bleeds to the edges with `-mx-4 px-4` — both editor pages lay their
-// content out with `p-4` below `md` (`p-6` from `md`), so the strip's
-// background spans the full width. From `md` the stickiness, the bleed and
-// the chrome all drop away, so there is no `md:` bleed to match the wider
-// padding — `md:mx-0 md:px-0` already resets it.
-//
-// The Cancel control is passed in rather than built here: the editor's is a
-// `Link` back to wherever the form was opened from, which only the form knows.
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import type { ReactNode } from "react";

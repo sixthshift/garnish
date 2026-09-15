@@ -1,5 +1,5 @@
-// Server-only. The one process-wide SQLite handle: opened from DATA_DIR on
-// first use, migrated and seeded once, then cached. Never import from client code.
+// The one process-wide SQLite handle: opened from DATA_DIR on first use, migrated and seeded once, then cached.
+
 import type { Database } from "bun:sqlite";
 import { basename } from "node:path";
 import { databasePath, openDatabase } from "../../db/connection/open";

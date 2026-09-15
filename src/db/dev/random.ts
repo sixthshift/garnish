@@ -1,10 +1,3 @@
-// A tiny seeded PRNG so the dev dataset is byte-identical on every run.
-// Not cryptographic and not meant to be: the only requirement is that the same
-// seed yields the same sequence on every machine, so two developers comparing
-// screenshots are looking at the same fifteen recipes.
-//
-// mulberry32: 32-bit state, one multiply-xorshift round per draw.
-
 export type Random = {
   /** Float in [0, 1). */
   next(): number;
@@ -30,6 +23,7 @@ export function seedFrom(text: string): number {
   return hash >>> 0;
 }
 
+// mulberry32: 32-bit state, one multiply-xorshift round per draw.
 export function random(seed: number | string): Random {
   let state = (typeof seed === "string" ? seedFrom(seed) : seed) >>> 0;
 

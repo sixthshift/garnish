@@ -1,11 +1,3 @@
-// Server-only. Photos attached to a method step (M35.1): one file per step
-// under `<DATA_DIR>/images/steps/<stepId>.<ext>`, the file name mastered in
-// `step.image` and carried in the recipe document so a save keeps it.
-//
-// The pure rules — formats, size cap, sniffing, file naming — are the recipe
-// image store's (./images.ts, src/lib/imageFile.ts); only the directory
-// differs, so a step photo can never be served as, or overwrite, a recipe
-// image or a timeline photo.
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { recipes } from "../../db/models/recipe/repo";

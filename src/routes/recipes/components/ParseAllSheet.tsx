@@ -1,18 +1,3 @@
-// Parse every unparsed row of a part at once (M21.3, decisions.md row 54).
-//
-// M17.6 gave a text-only row a Parse action in its own menu, which is the
-// right place for one row and the wrong place for twelve — a recipe imported
-// before the parser existed, or a paste whose foods were all declined, is a
-// whole list of them and there was no way to say so. Mealie's answer is a
-// standing alert at the top of the ingredient list when nothing in it has a
-// food or a unit, with one button; this is that button.
-//
-// It changes nothing about the rules. Each row goes through the same
-// `parseIngredient` over the same vocabulary, the results are the same review
-// rows with every proposal declined by default, and Apply creates only what
-// was approved and patches only the parsed fields — `originalText` is never
-// touched, so the raw line a row started with survives whatever the parse
-// decided.
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Sheet } from "@sixthshift/design-system/sheet";
@@ -142,6 +127,7 @@ export function ParseAllSheet({ open, onOpenChange, draft, pi, units, disabled, 
       for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
       const createdUnits = new Map<string, Unit>();
       for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
+      // Only the parsed fields are patched; `originalText` survives whatever the parse decided.
       onChange(applyParsedRows(draft, pi, rows, createdFoods, createdUnits));
       close();
     } catch (cause) {

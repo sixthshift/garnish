@@ -1,10 +1,3 @@
-// Image rules with no I/O: the accepted formats, the size cap, magic-byte
-// sniffing and the stored-file naming. Pure, so both sides of the wire can
-// import it — the /api routes and the store in src/server/images.ts, and the
-// editor's client code, which must not drag the database in behind it.
-//
-// Everything that touches disk or the database stays in src/server/images.ts.
-
 /** Accepted formats, by the extension the file is stored under. */
 export const IMAGE_TYPES = {
   png: "image/png",

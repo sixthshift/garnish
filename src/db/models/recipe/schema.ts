@@ -1,12 +1,3 @@
-// The recipe aggregate: the recipe row and the tables it owns.
-//
-// They live in one file because they are written as one thing — `repo.ts`
-// replaces a recipe's parts, ingredients, steps, step links, notes and tag
-// links in a single transaction, and nothing addresses them independently. The aggregate
-// is the boundary, so it is also the file.
-//
-// Mealie's field names where Mealie has the concept; the two times are integer
-// minutes rather than free text (decisions.md row 35).
 import { sql } from "drizzle-orm";
 import { type AnySQLiteColumn, check, index, integer, primaryKey, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { nowUtc } from "../columns";
@@ -36,7 +27,7 @@ export const recipe = sqliteTable(
     // 002_stage2.sql
     favourite: integer("favourite", { mode: "boolean" }).notNull().default(false),
     // 011_restyle.sql: when the steps were last rewritten in the house style,
-    // NULL while they are still the author's words (M37.5).
+    // NULL while they are still the author's words.
     restyledAt: text("restyled_at"),
   },
   (t) => [
@@ -64,7 +55,7 @@ export const recipeNote = sqliteTable(
 /**
  * A named part of a recipe, owning its ingredients and its steps. Every recipe
  * has at least one; a single unnamed part is the flat case, and among named
- * parts the unnamed one is the recipe's main body (decisions.md row 49).
+ * parts the unnamed one is the recipe's main body.
  */
 export const part = sqliteTable(
   "part",
@@ -80,7 +71,7 @@ export const part = sqliteTable(
      * 011_restyle.sql: the step texts this part had before its first restyle,
      * as a JSON array in position order; NULL until one happens. Written once
      * and cleared by a restore, so it is always the author's words or nothing
-     * (M37.5). `{ mode: "json" }` parses and serialises it, as `food.aliases` does.
+     *. `{ mode: "json" }` parses and serialises it, as `food.aliases` does.
      */
     sourceSteps: text("source_steps", { mode: "json" }).$type<string[]>(),
   },
@@ -124,7 +115,7 @@ export const ingredient = sqliteTable(
 
 /**
  * A method step, owned by a part. `position` is scoped to the part, so a step
- * has exactly one container and one place in it (decisions.md row 49). The
+ * has exactly one container and one place in it. The
  * recipe is reached through the part rather than stored again here.
  */
 export const step = sqliteTable(
@@ -136,14 +127,14 @@ export const step = sqliteTable(
       .references(() => part.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     text: text("text").notNull().default(""),
-    /** File name under `data/images/steps/`, or NULL for a step with no photo (M35.1). */
+    /** File name under `data/images/steps/`, or NULL for a step with no photo. */
     image: text("image"),
   },
   (t) => [unique().on(t.partId, t.position)]
 );
 
 /**
- * Step-to-ingredient links (decisions.md row 64). Many to many within one part:
+ * Step-to-ingredient links. Many to many within one part:
  * a step may link any ingredient of its own part, and an ingredient may be
  * linked from several of that part's steps. The pair is the primary key, so a
  * step links a row at most once; `position` is the order the document listed

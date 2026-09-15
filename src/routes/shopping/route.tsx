@@ -1,5 +1,3 @@
-// shopping: the route. What the URL carries, what the loader reads, and
-// the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import type { Aisle } from "../../domain/reference";
 import type { ShoppingItem } from "../../domain/shopping";

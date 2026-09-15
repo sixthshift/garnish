@@ -1,5 +1,3 @@
-// Editing a draft's parts.
-
 import { randomUuid } from "../../lib/id";
 import { moveItem } from "../../lib/lists";
 import { formatIngredient } from "../ingredient";
@@ -59,7 +57,7 @@ export function ingredientLine(ingredient: DraftIngredient): string {
 
 /**
  * Is this draft a flat recipe — one part, unnamed? Then the part is not a part
- * anyone chose, it is just the recipe (decisions.md rows 49 and 53), and the
+ * anyone chose, it is just the recipe, and the
  * editor prints its two lists without a name field, a card or a reorder
  * handle, exactly as the view page prints it without a heading. Pure.
  */

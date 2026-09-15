@@ -1,22 +1,3 @@
-// "Made this": the sheet behind the button beside last-made in the header.
-// A logged cook is a date (today by default), a servings stepper defaulting
-// to the page's current scale (M35.2), an optional comment and an optional
-// photo — Mealie's timeline entry, minus the entry types it only writes from
-// imports, plus the servings Mealie's own timeline never recorded.
-//
-// The photo is uploaded after the event exists, because the file is stored
-// under the event's id; the caller does that in `onSave` and only needs to
-// hand back a promise it can await.
-//
-// M25.3 put a rating star row above the comment, on the theory that the
-// moment a cook is logged is the moment to rate it. M29.4 removed it again:
-// rating lives in the header only (`RecipeHeader`'s own `Rating`, wired to
-// `setRating` from the recipe route), so this sheet is just the date, the
-// servings, the comment and the photo.
-//
-// Sheet only paints after mounting on the client, so the form lives in
-// `MadeThisSheetContent`, which renders anywhere and is what the tests
-// exercise.
 import { Button } from "@sixthshift/design-system/button";
 import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
@@ -36,7 +17,7 @@ export type MadeThisSheetContentProps = {
   busy?: boolean;
   /** Injected so tests get a fixed default date. */
   today?: string;
-  /** The stepper's starting value — the page's current scale (M35.2). */
+  /** The stepper's starting value — the page's current scale. */
   defaultServings?: number;
 };
 

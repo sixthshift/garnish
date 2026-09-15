@@ -1,10 +1,3 @@
-// The merge confirm for the Units tab: pick which of two (or more) units
-// survives. The source is deleted and every ingredient and recipe yield using
-// it is repointed to the target (`units.merge`, ui-gap.md's "Merge two foods
-// or units into one, source deleted, references repointed").
-//
-// Built on the same ConfirmDialogContent as the plain delete confirm, with a
-// Select in place of the confirm question's body. Mirrors FoodMergeDialog.
 import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";

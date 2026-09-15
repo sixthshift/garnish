@@ -1,12 +1,3 @@
-// Transient feedback for something that already happened: a save, a delete, a
-// failed upload. `notify()` is callable from anywhere — a submit handler, a
-// catch block, a non-React helper — and the single `<Toaster />` mounted in
-// `root.tsx` renders whatever is in the store.
-//
-// Same shape as the other lib/ modules: a pure controller (here a store over a
-// plain array, with no DOM and no timers of its own) plus a thin hook. The
-// module-level `notices` store is the app's one instance; tests build their own
-// with `createNoticeStore()`.
 import { useSyncExternalStore } from "react";
 import { randomUuid } from "./id";
 
@@ -23,7 +14,7 @@ export type Notice = {
   duration: number;
   /**
    * One optional link-style button inside the notice: "3 items added" with a
-   * "View list" beside it (M31.3). A callback rather than an href because the
+   * "View list" beside it. A callback rather than an href because the
    * Toaster is not the router's business — the caller, which is already inside
    * a route, navigates.
    */

@@ -1,6 +1,3 @@
-// The import's server functions: what the review screen calls. Each is one
-// line into the importer; the sequencing is its, not theirs. Nothing here is
-// written — the caller reviews the result first (M17.5).
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { ScrapedRecipeSchema } from "../../domain/import";

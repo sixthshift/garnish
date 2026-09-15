@@ -1,4 +1,3 @@
-// Food server functions. Every id lookup that misses raises NotFound.
 import { createServerFn } from "@tanstack/react-start";
 import { foods } from "../../db/models/food/repo";
 import { recipes } from "../../db/models/recipe/repo";
@@ -23,7 +22,7 @@ export const updateFood = createServerFn({ method: "POST" })
   .handler(async ({ data: { id, ...patch } }) => required(foods(await getDb()).update(id, patch), "food", id));
 
 /**
- * This food's conversions, replaced wholesale (decisions.md row 69). `updateFood`
+ * This food's conversions, replaced wholesale. `updateFood`
  * carries them too; this is the call the conversions editor makes on its own.
  */
 export const setFoodConversions = createServerFn({ method: "POST" })
@@ -49,7 +48,7 @@ export const findOrCreateFood = createServerFn({ method: "POST" })
   .handler(async ({ data }) => foods(await getDb()).findOrCreate(data.name));
 
 /**
- * The food this recipe is (M32.3, decisions.md row 70): the existing food of
+ * The food this recipe is: the existing food of
  * the recipe's name, or a new one, with `recipeId` pointing back at the
  * recipe. Idempotent — running it twice on the same recipe returns the same
  * food, which is what "create or link" means. Not-found when the recipe is

@@ -17,7 +17,11 @@ import { draftFromScraped } from "../../../../../src/domain/draft";
 import { type ImportedRecipe, Importer, type MealieRecipe, review, type TandoorRecipe } from "../../../../../src/domain/import";
 import { rowCommit } from "../../../../../src/domain/ingredient";
 import type { Unit } from "../../../../../src/domain/reference";
-import { duplicateMessage, FileSource, ImportReview, RecipePicker, SourceChooser } from "../../../../../src/routes/recipes/new/components/RecipeSource";
+import { FileSource } from "../../../../../src/routes/recipes/new/components/FileSource";
+import { ImportReview } from "../../../../../src/routes/recipes/new/components/ImportReview";
+import { duplicateMessage } from "../../../../../src/routes/recipes/new/components/importSummary";
+import { RecipePicker } from "../../../../../src/routes/recipes/new/components/RecipePicker";
+import { SourceChooser } from "../../../../../src/routes/recipes/new/components/SourceChooser";
 
 const FIXTURE = join(import.meta.dirname, "../../../../fixtures/mealie/lemon-tart.json");
 // Read through the importer, as the upload route does, and cloned per test. Neither port is reached by a file.

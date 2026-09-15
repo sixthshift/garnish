@@ -1,8 +1,3 @@
-// The reference units every database gets: common metric, kitchen measures and
-// imperial, en-AU spelling. Data only — `seed.ts` inserts them.
-//
-// `fraction` is off for anything measured on a scale or in a jug (450 g, not
-// 450½ g) and on for the kitchen measures people do halve.
 import type { UnitInput } from "../models/unit/repo";
 
 /** Default units, en-AU spelling. Fraction off for weights and volumes measured on a scale or jug. */

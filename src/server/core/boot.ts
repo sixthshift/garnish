@@ -1,4 +1,3 @@
-// Server-only. Runs once when the server entry loads; never import from client code.
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 

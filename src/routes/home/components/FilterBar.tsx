@@ -1,8 +1,3 @@
-// Filter bar for the recipe list (M12.3): tag chips with an any/all switch,
-// a food picker built on the existing `Combobox`, and a favourites toggle.
-// Fully controlled — the route owns the search params and re-navigates on
-// every change; this component only renders the current state and reports
-// intent upward.
 import { Switch } from "@sixthshift/design-system/switch";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";

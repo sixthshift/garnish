@@ -1,5 +1,3 @@
-// Unit repository. Server-only. Names unique case-insensitively (NOCASE), which
-// the column's collation gives `eq` for free.
 import type { Database } from "bun:sqlite";
 import { asc, eq, sql } from "drizzle-orm";
 import { cleanName, likePattern } from "../../../lib/names";

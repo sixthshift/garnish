@@ -1,11 +1,3 @@
-// The house style guide's document and its input schemas (decisions.md row 78).
-// Pure and client-importable: no IO, no bun:sqlite.
-//
-// Mirrors src/db/migrations/010_style.sql column for column in camelCase. A
-// statement is nothing but its own sentence, so unlike the recipe document
-// there is nothing nested here and nothing derived — `text` is what goes to the
-// model, `enabled` is the default tick for a run, `position` the order the
-// statements are numbered in.
 import { z } from "zod";
 
 const id = z.uuid();
@@ -58,7 +50,7 @@ export type StyleRuleId = z.infer<typeof StyleRuleId>;
  */
 const NOTES: Record<string, string> = {
   "prefer metric: where a step gives both, keep only metric.":
-    "The facts check (M37.3) counts numbers, not pairs, so it will flag the dropped imperial figures until it understands them.",
+    "The facts check counts numbers, not pairs, so it will flag the dropped imperial figures until it understands them.",
 };
 
 /** The note for this statement, or null. Matched on the whole sentence, case-insensitively. Pure. */

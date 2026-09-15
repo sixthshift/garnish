@@ -1,4 +1,3 @@
-// The logic behind components/ui/DataTable: search, sort and selection over rows.
 import type { ReactNode } from "react";
 
 /** What one column shows, sorts on and searches. */

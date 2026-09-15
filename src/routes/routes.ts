@@ -1,9 +1,3 @@
-// The route tree, in code. Each page folder exports its Route (createRoute,
-// parented on root.tsx) and this file is the one place that lists them; the
-// router (src/router.tsx) takes the tree from here. Add a page by adding it
-// to the list. Start's own route generator still runs (vite.config.ts), but
-// only to build the asset manifest it insists on — nothing imports its output.
-
 import { Route as home } from "./home/route";
 import { Route as plan } from "./plan/route";
 import { Route as newRecipe } from "./recipes/new/route";

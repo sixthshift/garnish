@@ -1,20 +1,3 @@
-// Free-text input with a suggestion list: type to filter, pick a suggestion,
-// or keep what was typed. The design system's Select only picks from fixed
-// options and its TagInput holds many values, so autocomplete over a single
-// value (a unit, a food) is built here from Input.
-//
-// The parent owns both the text (`value`/`onChange`) and the suggestions
-// (`options`), so it decides whether they come from a local list or a server
-// query. When `onCreate` is given and the text matches no option label, a
-// final "Create “text”" row offers the typed value as a new entry. The list
-// opens while the input has focus and there is something to show; it renders
-// closed on the server. Arrow keys move, Enter picks, Escape closes.
-//
-// Enter with the list closed — after an Escape, or a pick, or on a field whose
-// suggestions never arrived — takes the typed text anyway: the exact option if
-// there is one, else the new name (M21.5). That is Mealie's "press enter to
-// create", and it also means Enter in this field never reaches the form and
-// saves the recipe by accident, which is what it used to do.
 import { Input } from "@sixthshift/design-system/input";
 import { cn } from "@sixthshift/design-system/utils";
 import { type KeyboardEvent, useId, useState } from "react";
@@ -83,6 +66,7 @@ export function Combobox({
       setActive(-1);
       return;
     }
+    // Enter with the list closed still takes the typed text, so Enter here never submits the form.
     if (event.key === "Enter") {
       const choice = enterChoice(items, options, value, open, activeItem, onCreate !== undefined);
       if (choice.kind === "pass") return;

@@ -1,4 +1,3 @@
-// The recipe editor's state: a recipe as it is being edited, before it is a document.
 import type { RecipeInput } from "../recipe";
 import type { Tag, Unit } from "../reference";
 

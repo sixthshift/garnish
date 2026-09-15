@@ -1,15 +1,3 @@
-// A table over a list of reference rows — foods, units, aisles, tags. The
-// design system has no data table, so this is the local primitive the whole
-// of Settings is built from: a search box, sortable column headers, a
-// checkbox per row, and an Edit button that hands the row back to the parent.
-//
-// It owns only view state (the query, the sort, the selection). The rows,
-// what a column shows, and what Edit or Delete do all come from props, so
-// every tab describes its own table and nothing here knows about foods.
-//
-// Filtering and sorting are pure functions exported beside the component:
-// they are the part worth testing, and a tab that needs the same order
-// somewhere else can call them directly.
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";

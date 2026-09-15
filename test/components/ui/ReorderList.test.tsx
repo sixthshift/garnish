@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { ReorderList, TOUCH_DELAY_MS } from "../../../src/components/ui/ReorderList";
+import { ReorderList } from "../../../src/components/ui/ReorderList";
+import { TOUCH_DELAY_MS } from "../../../src/components/ui/useReorderDrag";
 import { moveItem } from "../../../src/lib/lists";
 import { dropIndex, rectContains, type Span } from "../../../src/lib/ui/reorder";
 

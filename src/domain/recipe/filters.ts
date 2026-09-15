@@ -1,8 +1,3 @@
-// Pure helpers for the recipe list's filter bar (M12.3): folding the legacy
-// single `tag` search param into the new multi-select `tags`, and small array
-// utilities for the tag chips and food picker. No IO; shared by the list
-// route and its filter-bar components.
-
 export type TagMatch = "any" | "all";
 
 /**

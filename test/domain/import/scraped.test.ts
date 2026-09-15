@@ -1,19 +1,9 @@
 import { describe, expect, test } from "vitest";
-import {
-  decodeEntities,
-  durationToMinutes,
-  firstImage,
-  hasContent,
-  ingredientLines,
-  normaliseScraped,
-  parseKeywords,
-  parseYield,
-  partsFromInstructions,
-  ScrapedRecipeSchema,
-  scrapedFromSchema,
-  text,
-  tidyPartName,
-} from "../../../src/domain/import/scraped";
+import { ingredientLines, tidyPartName } from "../../../src/domain/import/scraped/parts";
+import { hasContent, normaliseScraped, ScrapedRecipeSchema } from "../../../src/domain/import/scraped/schema";
+import { durationToMinutes, firstImage, parseKeywords, partsFromInstructions, scrapedFromSchema } from "../../../src/domain/import/scraped/schemaOrg";
+import { decodeEntities, text } from "../../../src/domain/import/scraped/text";
+import { parseYield } from "../../../src/domain/import/scraped/yield";
 
 describe("decodeEntities and text", () => {
   test("named and numeric entities decode", () => {

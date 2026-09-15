@@ -1,32 +1,3 @@
-// The food and note of an ingredient line, the third step of the parser
-// decisions.md row 47 describes. Pure: no IO, importable by the client.
-// Sibling of `parseQuantity.ts` and `parseUnit.ts`; M17.4 composes the three.
-//
-// `rest` is what `parseUnit` left after reading the leading unit ("plain
-// flour, sifted", "chicken breast (about 400 g)", "salt to taste"). Unlike
-// the quantity and unit steps, there is no further stage to hand a remainder
-// to, so this reads the whole of `rest`:
-//   - any parenthetical aside — "(about 400 g)" — is lifted out and joined
-//     into the note, wherever in the line it falls.
-//   - what's left is split on the first comma: the head is the food
-//     candidate, the tail joins the note (after any parenthetical, in the
-//     order they appeared). A second comma ("flour, sifted, cooled") stays
-//     inside the note rather than splitting again.
-//   - the head is matched against every food's `name`, `pluralName` and each
-//     entry in `aliases`, case-insensitively, anchored at the start of the
-//     head (as `parseUnit` anchors on `rest`). Longest match wins, so
-//     "chicken breast" beats "chicken" when both are candidates and the head
-//     has the longer word.
-//
-// A match is only ever a prefix of the head, never a search anywhere within
-// it, so a leading word that isn't part of any candidate can never be
-// silently dropped: "plain flour" against a table holding only "flour" never
-// matches at all ("flour" is not a prefix of "plain flour"), so the whole
-// head becomes `foodText` and `food` stays null — not "flour" with "plain"
-// discarded. Anything trailing a genuine match that the head doesn't need
-// (rare — most real trailing detail lands after the comma instead) is kept
-// in `foodText` too, so a partial match never narrows the proposal; only a
-// match spanning the entire head leaves `foodText` empty.
 import type { Food } from "../reference";
 
 /** The food fields matching needs. A full `Food` row satisfies it. */

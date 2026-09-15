@@ -1,13 +1,9 @@
-// The favourite heart: a self-contained control that owns its optimistic
-// state and writes through `setFavourite`, so any page can drop it in without
-// wiring a handler. `RecipeCard` positions it absolutely over the image with
-// `className`; `RecipeHeader` renders it inline beside the actions. Marked
-// `data-print="hide"`: a control, not content.
 import { Button } from "@sixthshift/design-system/button";
 import { type MouseEvent, useEffect, useState } from "react";
 import { useMutate } from "../../lib/mutate";
 import { notifyError } from "../../lib/notify";
 import { setFavourite } from "../../server/fns/recipes";
+import { HeartIcon } from "./icons";
 
 export type FavouriteToggleResult = { favourite: boolean; error?: unknown };
 
@@ -28,25 +24,6 @@ export async function toggleFavourite(
   } catch (error) {
     return { favourite: current, error };
   }
-}
-
-function HeartIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      data-favourite={filled ? "true" : "false"}
-    >
-      <path d="M12 21s-7.1-4.5-9.6-9A5.4 5.4 0 0 1 12 6.3 5.4 5.4 0 0 1 21.6 12c-2.5 4.5-9.6 9-9.6 9Z" />
-    </svg>
-  );
 }
 
 export type FavouriteButtonProps = {

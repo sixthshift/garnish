@@ -1,6 +1,3 @@
-// Aisle repository (Mealie's shopping labels). Server-only. Names unique
-// case-insensitively (the column is COLLATE NOCASE, so `eq` matches that way);
-// listed in position order for the shopping list.
 import type { Database } from "bun:sqlite";
 import { asc, eq, max, sql } from "drizzle-orm";
 import { cleanName, likePattern } from "../../../lib/names";

@@ -1,17 +1,3 @@
-// Server-only, dev-only. Putting the generated dataset into a database.
-//
-// Re-running is a replace, not a merge: every recipe the dataset owns is
-// deleted first, then all of them are re-created. That keeps the database in
-// one known state, so a screenshot taken today matches one taken next week.
-// Ownership is by id, not by name — the ids are derived from the seed, so a
-// recipe you wrote by hand is never touched even if it shares a name. Units,
-// foods, aisles and tags are reference data and are reused rather than
-// duplicated on the next run.
-//
-// Two things the recipe document cannot carry are applied afterwards:
-// `created_at`/`updated_at`, because `create()` always stamps them with the
-// current time and sorting by either needs a real spread; and the image, which
-// has to exist on disk before the row can name it.
 import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -28,7 +14,7 @@ import { placeholderPng } from "./png";
 
 /**
  * `<DATA_DIR>/images`, the same directory the upload route writes to. Computed
- * here rather than imported from src/server/images.ts: that module reaches the
+ * here rather than imported from src/server/api/images.ts: that module reaches the
  * database through `getDb`, which is Vite-only (`import.meta.glob`), and this
  * runs as a plain `bun` script.
  */

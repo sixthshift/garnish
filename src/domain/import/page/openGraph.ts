@@ -1,26 +1,4 @@
-// A page's OpenGraph tags, the last rung of the URL import (M23.4,
-// decisions.md row 58). Pure: no IO, no DOM.
-//
-// This is Mealie's `RecipeScraperOpenGraph`, and the point of it is honesty. A
-// page with no schema.org Recipe has not given us a recipe and no amount of
-// rules will find one, so rather than erroring the way Tandoor does, the
-// import falls back to what every page does carry — a title, a description and
-// a share image — and hands over a named, illustrated, linked shell with empty
-// lists. You type the recipe in, but you type it into something that already
-// knows what it is and where it came from.
-//
-// Mealie fills its ingredient list with the literal string "Could not detect
-// ingredients". This leaves the lists empty instead: an empty list is a state
-// the editor already draws well, and a row that has to be deleted before you
-// can start is worse than no row.
-//
-// Read with a regular expression for the same reason `jsonLd.ts` is: one
-// element, two attributes, and `<meta>` is void so there is no nesting to get
-// wrong. `property` is what OpenGraph specifies and `name` is what a good
-// number of sites emit instead, so both are accepted — but only for `og:`
-// keys, never `twitter:`, whose `twitter:title` would otherwise win on a page
-// that has both.
-import { decodeEntities } from "../scraped";
+import { decodeEntities } from "../scraped/text";
 
 /** What a page gives up when it has no structured recipe data. */
 export type OpenGraphStub = {
@@ -51,6 +29,7 @@ export function openGraphTags(html: string): Map<string, string> {
     const key = attribute(attrs, "property") ?? attribute(attrs, "name");
     if (key === null) continue;
     const normalised = key.trim().toLowerCase();
+    // Only `og:` keys: a page's `twitter:title` must never win over its `og:title`.
     if (!normalised.startsWith("og:")) continue;
     const stripped = normalised.slice(3);
     if (tags.has(stripped)) continue;

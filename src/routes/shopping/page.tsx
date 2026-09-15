@@ -1,37 +1,13 @@
-// The shopping list (M31.4): one household list, one page, no owner.
-//
-// The read is the whole list in `position` order and the page draws
-// `groupByAisle` over it (src/domain/shopping/shopping.ts) — headings in
-// `aisle.position` order, the unaisled under "Other" at the foot of the
-// unticked lines, and every ticked line in a "Ticked" group below them with
-// **Clear ticked**. The grouping is a pure function so this file stays a
-// render of it.
-//
-// Phone first: the tick box and the row body are both full-height tap targets,
-// the sources expand through a `<details>` (the browser's own keyboard and
-// aria behaviour, and it renders its content whether open or closed, so a
-// test sees it without a DOM), and nothing anywhere depends on hover.
-//
-// `ShoppingListView` takes its writes as callbacks and renders anywhere; the
-// route component binds them to the server functions through `useMutate`, the
-// way every other page writes. That split is what the render tests exercise.
-//
-// M31.6: a row whose food has no aisle gets a quiet "Set aisle" control in its
-// expansion — a `Select` over the same aisles Settings manages, writing the
-// food through `updateFood`. Aisles and foods are still only *managed* in
-// Settings; this is a shortcut to the one field the list cares about. The
-// loader fetches the aisle list alongside the items so the Select has
-// something to offer; picking one invalidates the loader like every other
-// write, so the row leaves "Other" on the next read rather than being moved
-// locally.
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutate } from "../../lib/mutate";
 import { notify, notifyError } from "../../lib/notify";
-import { applyOutbox, type OutboxKind, useOutbox } from "../../lib/outbox";
+import { applyOutbox, type OutboxKind } from "../../lib/outbox";
+import { useOutbox } from "../../lib/useOutbox";
 import { useOnline } from "../../lib/useOnline";
 import { addShoppingItems, clearTickedShoppingItems, removeShoppingItem, tickShoppingItem } from "../../server/fns/shopping";
-import { ShoppingListView, sendOutboxEntry, setFoodAisle } from "./components/ShoppingListView";
+import { ShoppingListView } from "./components/ShoppingListView";
+import { sendOutboxEntry, setFoodAisle } from "./components/shoppingListActions";
 import { Route } from "./route";
 
 /**

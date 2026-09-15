@@ -1,24 +1,4 @@
-// Readable text out of a page's raw HTML (M36.3), for the AI import rung
-// (`aiImport.ts`) to read once a model is configured. A page is markup meant
-// for a browser, not for a model, and the model has no use for the chrome
-// around a recipe: the nav bar, the header, the cookie banner in the aside,
-// the footer, a `<script>`'s payload. Stripped down to the words a reader
-// would actually see, in roughly the order they read them, a page fits in far
-// fewer tokens and stops confusing the model with navigation text that reads
-// like a list of links.
-//
-// This is a small tag scanner, not a DOM: no parser dependency, and one that
-// runs the same on the server as it would in a test. It walks the markup once
-// with a regex over tag boundaries, keeping a stack of the tags being
-// dropped so their content — and any tags nested inside them — never reaches
-// the output, and turning every block element's boundary into a line break so
-// the shape of the page (one line of content per row, one heading per line)
-// survives even though the tags themselves do not. Headings come out prefixed
-// `# `, the closest a plain-text rendering gets to marking a heading, because
-// `aiPrompt`'s "a named section is a part" reads better with a line it can
-// point at than with the heading's text sitting flush with the paragraph
-// after it.
-import { decodeEntities } from "../scraped";
+import { decodeEntities } from "../scraped/text";
 
 /** The most text worth handing to a model. `aiImport.ts`'s `MAX_AI_TEXT` is this number: one cap, defined once. */
 export const MAX_PAGE_TEXT = 40_000;
@@ -151,7 +131,7 @@ export function readableText(html: string): string {
 }
 
 /**
- * Whether a paste is a page's source rather than prose (M36.7). Someone who
+ * Whether a paste is a page's source rather than prose. Someone who
  * hit a bot wall is told to view source, select all and copy, and what lands
  * in the box is then the same markup a successful fetch would have returned —
  * so it deserves the same treatment, rules first and the model over the

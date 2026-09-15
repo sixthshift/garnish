@@ -1,13 +1,3 @@
-// Builds the dev dataset. Pure: no database, no disk, no clock — everything is
-// derived from the seed, so the same seed always produces the same fifteen
-// recipes with the same timestamps. ./apply.ts is what writes them.
-//
-// The point of the mix is coverage, not realism. Across the set there is
-// always at least one of each of: a flat recipe, a recipe with several named
-// parts, one with no rating, one never made, one with no image, one with
-// a source URL, one with a very long name, one with a single ingredient, and
-// one with many. The list, filter, sort and cook screens all have an awkward
-// case to render.
 import type { z } from "zod";
 import { type ingredientInputSchema, type RecipeInput, suggestLinks, type TimelineEventInput } from "../../domain/recipe";
 import type { Food, Tag, Unit } from "../../domain/reference";
@@ -28,7 +18,7 @@ export const DEV_EPOCH = Date.UTC(2026, 8, 1); // 2026-09-01
 /**
  * One generated recipe: the document, plus the stamps and events that the
  * repository will not take from a document. `createdAt`/`updatedAt` are
- * applied by ./apply.ts after the insert, because `create()` always stamps
+ * applied by./apply.ts after the insert, because `create()` always stamps
  * them with the current time and sorting by either needs a real spread.
  */
 export type DevRecipe = {
@@ -173,7 +163,7 @@ function pickTags(rng: Random, shapeTags: readonly string[]): Tag[] {
 
 /**
  * A deterministic UUID for a dev recipe. The dataset carries its own ids so
- * ./apply.ts can delete exactly what it created last time, by id — matching on
+ *./apply.ts can delete exactly what it created last time, by id — matching on
  * the slug would risk deleting a hand-written recipe that happened to share a
  * name. Shaped as a v4 UUID so it passes the same validation as a real one.
  */
@@ -193,7 +183,7 @@ function hueFor(name: string): number {
  * The whole dev dataset, in insertion order. Deterministic for a given seed.
  *
  * Names are de-duplicated: the repository derives the slug from the name, and
- * ./apply.ts removes previous dev recipes by slug, so two recipes sharing a
+ *./apply.ts removes previous dev recipes by slug, so two recipes sharing a
  * name would leave one behind on the next run.
  */
 export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_RECIPE_COUNT): DevRecipe[] {
@@ -278,7 +268,7 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
         id: devId(rng),
         name: finalName,
         description: DESCRIPTIONS[i % DESCRIPTIONS.length]!,
-        image: null, // set by ./apply.ts once the file is written
+        image: null, // set by./apply.ts once the file is written
         rating: rated ? rng.int(2, 5) : null,
         lastMade: null, // derived from the timeline events
         recipeServings: shape.servings,
@@ -303,7 +293,7 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
   return made;
 }
 
-/** The ids the dataset owns. ./apply.ts removes exactly these before re-creating. */
+/** The ids the dataset owns../apply.ts removes exactly these before re-creating. */
 export function devIds(recipes: readonly DevRecipe[]): string[] {
   return recipes.map((r) => r.input.id!);
 }

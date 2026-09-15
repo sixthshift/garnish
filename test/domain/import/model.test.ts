@@ -5,7 +5,8 @@ import { describe, expect, test } from "vitest";
 import type { ScrapedRecipe } from "../../../src/domain/import";
 import { ImportError } from "../../../src/domain/import/errors";
 import { aiPrompt, anchorJson, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "../../../src/domain/import/model";
-import { ingredientLines, ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import/scraped";
+import { ingredientLines } from "../../../src/domain/import/scraped/parts";
+import { ScrapedPartSchema, ScrapedRecipeSchema } from "../../../src/domain/import/scraped/schema";
 
 /** What a good answer looks like: the recipe as JSON in the message content. */
 const FIXTURE = {

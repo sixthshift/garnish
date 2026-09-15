@@ -1,5 +1,3 @@
-// Reading a URL for display.
-
 /**
  * The text shown for a source URL: its host without a leading "www.", so a
  * long recipe URL stays one readable word. A value that is not a URL is shown

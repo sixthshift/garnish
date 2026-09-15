@@ -1,13 +1,5 @@
-// One "Add to shopping list" tap, end to end (M31.3).
-//
-// The merge (M31.2) is a pure function over the list as it stands, so the tap
-// is: read the list, plan, write the plan. The plan has two halves and they go
-// to two server functions — `addShoppingItems` for lines the list does not
-// have yet, `mergeShoppingItems` for lines that absorbed an addition (a new
-// total plus the sources behind it, which a plain patch cannot carry).
-//
-// Same shape as the other lib/ modules: pure helpers plus a thin wrapper, with
-// the writes injectable so a test can drive the whole flow without a router.
+// One "Add to shopping list" tap, end to end: read the list, plan the merge, write the plan through two server functions.
+
 import {
   mergeIntoList,
   type ShoppingAddition,

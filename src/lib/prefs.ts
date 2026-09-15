@@ -1,19 +1,3 @@
-// Client display preferences: view mode, sort, ingredient display mode,
-// theme and the screen-awake switch. All in `localStorage`.
-//
-// Same shape as useWakeLock.ts / useOnline.ts: a pure controller over a
-// storage-like interface (so it can be unit tested without a DOM, including a
-// storage that throws) and thin hooks around it. Unlike those two, there is no
-// external event to listen for here — a preference only changes when this tab
-// calls the setter — so the hooks are plain read-on-mount, write-through state.
-//
-// `theme`'s key ("theme") and JSON encoding deliberately match the design
-// system's own store (`@sixthshift/design-system/hooks`, `bootstrapTheme` /
-// `useTheme`), which already owns applying the value to the DOM and reacting
-// to OS and cross-tab changes. The functions here exist so callers that don't
-// need that machinery (or aren't React) can still read and write the same
-// setting; `useTheme` below is a plain mirror for consistency with the other
-// preferences and does not replace the design system's hook.
 import { useCallback, useState } from "react";
 
 /** The slice of `Storage` the controller uses. */
@@ -33,7 +17,7 @@ const KEY_VIEW_MODE = "garnish.viewMode";
 const KEY_SORT = "garnish.sort";
 const KEY_INGREDIENT_MODE = "garnish.ingredientMode";
 const KEY_SCREEN_AWAKE = "garnish.screenAwake";
-const KEY_THEME = "theme"; // shared with the design system, see header comment
+const KEY_THEME = "theme"; // the design system's own key and encoding, so its bootstrapTheme/useTheme read the same value
 
 const VIEW_MODES: readonly ViewMode[] = ["grid", "list"];
 const SORT_KEYS: readonly SortKey[] = ["name", "created", "updated", "lastMade", "rating", "random"];

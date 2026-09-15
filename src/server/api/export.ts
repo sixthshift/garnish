@@ -1,10 +1,3 @@
-// Server-only. The export endpoints: one recipe's document and the whole
-// database's recipes plus the reference tables they lean on (M34.1), and one
-// recipe as a Cooklang file (M34.2).
-//
-// The database stays the master (decisions.md row 72) — this is a copy taken
-// for reading elsewhere, not a second home for the data. Images are named by
-// their `/api/images/` URLs and their bytes are not in the file.
 import { aisles } from "../../db/models/aisle/repo";
 import { type Food, foods } from "../../db/models/food/repo";
 import { recipes } from "../../db/models/recipe/repo";
@@ -81,7 +74,7 @@ export async function handleExportJson(at: Date = new Date()): Promise<Response>
 }
 
 /**
- * GET /api/recipes/:slug.cook (M34.2) — the recipe as a `.cook` file
+ * GET /api/recipes/:slug.cook — the recipe as a `.cook` file
  * (`src/domain/recipe/cooklang.ts`). 404 for an unknown slug, the same as the JSON
  * twin.
  */

@@ -1,5 +1,3 @@
-// Keyboard movement in components/ui/Menu.
-
 /**
  * Where the arrow keys land next. `count` is how many items the menu has;
  * `current` is the focused index, or -1 for "nothing focused yet". Returns the

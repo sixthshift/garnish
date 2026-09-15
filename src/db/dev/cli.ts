@@ -1,18 +1,3 @@
-// `bun run dev:seed [--count N] [--seed TEXT]`. Dev only — this never ships;
-// `.dockerignore` keeps src/db/dev out of the image entirely, which is also why
-// it is its own script rather than part of the server entry. Nothing runs it
-// automatically; `bun run dev` leaves the database alone.
-//
-// A clean slate in three steps:
-//
-//   1. wipe DATA_DIR's database, its WAL sidecars and the images directory
-//   2. migrate, then run the same `seed()` the server runs on every start,
-//      dev or not — the default units, so the generated recipes resolve real
-//      ones rather than inventing their own
-//   3. apply the generated dev dataset
-//
-// Step 2 is the production seed on purpose: dev should be looking at the
-// reference data a real install has, not a parallel set that only exists here.
 import { ensureDataDir } from "../../server/core/boot";
 import { databasePath, openDatabase } from "../connection/open";
 import { migrate } from "../migrations/migrate";
@@ -64,6 +49,7 @@ if (import.meta.main) {
   const db = openDatabase(path);
   try {
     await migrate(db);
+    // The production seed, on purpose: dev looks at the reference data a real install has.
     const { units } = seed(db);
     console.log(`${path}: migrated, seeded ${units.length} units`);
 

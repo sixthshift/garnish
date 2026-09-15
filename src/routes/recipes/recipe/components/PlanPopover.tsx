@@ -1,27 +1,3 @@
-// "Plan" (M33.4): the recipe page's action menu gains this alongside "Make
-// this a food" (M32.3) — a popover offering the next seven days (today
-// first) and a servings stepper defaulting to the page's scale (the scaled
-// `recipe` prop the route already passes to `RecipeActions`, M25.1). Choosing
-// a day writes one plan entry through `addPlanEntry` (M33.1), copying the
-// recipe's name into `text` the way the plan page's own add row does
-// (M33.2, `src/routes/plan/Plan.tsx`): the entry still reads as what was planned
-// once the recipe is renamed or deleted.
-//
-// `Popover.Body` only paints on the client (it portals through
-// `FloatingPortal`, which needs `document`), so the day list and stepper live
-// in `PlanPopoverContent`, which renders anywhere and is what the tests
-// exercise — the same split `AddToShoppingSheetContent` and
-// `MadeThisSheetContent` use for their own overlays.
-//
-// The popover's `Trigger` is an invisible span rather than the menu item
-// itself: the design system's `Popover` needs a `Trigger` to float against,
-// but the action menu's panel (and everything in it, including the "Plan"
-// item) unmounts the instant an item is chosen — anchoring to the item would
-// lose its reference node at the exact moment the popover is meant to open.
-// `RecipeActions` wraps the menu and this trigger in one `relative` box, so
-// the invisible span sits where the "…" button is; opening is driven by the
-// menu item's `onSelect` through the controlled `open`/`onOpenChange` pair,
-// not by a click on the trigger itself.
 import { Popover } from "@sixthshift/design-system/popover";
 import { useState } from "react";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
@@ -42,7 +18,7 @@ export type PlanPopoverContentProps = {
 
 export function PlanPopoverContent({ recipe, onChoose, busy = false, today = todayIso() }: PlanPopoverContentProps) {
   // Defaults to the page's scale: `recipe` is the already-scaled document the
-  // route hands `RecipeActions` (M25.1), so this is whatever the page is
+  // route hands `RecipeActions`, so this is whatever the page is
   // currently showing, not the recipe's own stored servings.
   const [servings, setServings] = useState(() => (recipe.recipeServings > 0 ? Number(recipe.recipeServings.toFixed(2)) : 1));
   const days = nextSevenDays(today);
@@ -83,6 +59,7 @@ export type PlanPopoverProps = {
 export function PlanPopover({ recipe, open, onOpenChange, onChoose, busy = false }: PlanPopoverProps) {
   return (
     <Popover open={open} onOpenChange={onOpenChange} placement="bottom-end">
+      {/* An invisible trigger: the menu item that opens this unmounts when chosen, so the popover anchors to this span in RecipeActions' relative box. */}
       <Popover.Trigger asChild>
         <span aria-hidden="true" className="pointer-events-none absolute inset-0" />
       </Popover.Trigger>
@@ -96,7 +73,7 @@ export function PlanPopover({ recipe, open, onOpenChange, onChoose, busy = false
 /**
  * What choosing `date` at `servings` sends to `addPlanEntry`: the recipe's id
  * and its name copied into `text`, the way the plan page's own add row does
- * (M33.2) so the entry still reads as what was planned after the recipe is
+ * so the entry still reads as what was planned after the recipe is
  * renamed or deleted. Pure.
  */
 export function planEntryFor(recipe: Pick<Recipe, "id" | "name">, date: string, servings: number): PlanEntryInput {

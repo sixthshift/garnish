@@ -5,25 +5,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { ingredientLines } from "../../../../src/domain/import/scraped";
-import { imageDataUrl } from "../../../../src/domain/import/sources/mealie";
-import {
-  isTandoorRecipe,
-  looksLikeTandoor,
-  looksLikeTandoorRecipe,
-  namesIn,
-  partsFromTandoor,
-  readExport,
-  readNestedZip,
-  readTandoorExport,
-  reviewRowsFromTandoor,
-  stepRecipeName,
-  type TandoorRecipe,
-  tandoorBundles,
-  tandoorIngredient,
-  tandoorRecipe,
-  tandoorRecipesFrom,
-} from "../../../../src/domain/import/sources/tandoor";
+import { ingredientLines } from "../../../../src/domain/import/scraped/parts";
+import { imageDataUrl } from "../../../../src/domain/import/sources/file";
+import { isTandoorRecipe, readExport } from "../../../../src/domain/import/sources/fileRecipe";
+import { looksLikeTandoor, looksLikeTandoorRecipe, namesIn, tandoorRecipesFrom } from "../../../../src/domain/import/sources/tandoor/detect";
+import { readNestedZip, readTandoorExport, tandoorBundles } from "../../../../src/domain/import/sources/tandoor/export";
+import { partsFromTandoor, stepRecipeName, tandoorIngredient } from "../../../../src/domain/import/sources/tandoor/ingredient";
+import { tandoorRecipe } from "../../../../src/domain/import/sources/tandoor/recipe";
+import { reviewRowsFromTandoor } from "../../../../src/domain/import/sources/tandoor/review";
+import type { TandoorRecipe } from "../../../../src/domain/import/sources/tandoor/types";
 import type { Food } from "../../../../src/domain/reference";
 import { makeZip, PNG_BYTES } from "../../../helpers/zip";
 

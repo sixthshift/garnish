@@ -1,6 +1,3 @@
-// `bun run seed [--sample]`. Opens DATA_DIR's database, migrates it, seeds the
-// reference units and the house style guide, and with --sample adds the demo
-// recipes.
 import { ensureDataDir } from "../../server/core/boot";
 import { databasePath, openDatabase } from "../connection/open";
 import { migrate } from "../migrations/migrate";

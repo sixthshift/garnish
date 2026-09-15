@@ -1,5 +1,3 @@
-// home: the route. What the URL carries, what the loader reads, and
-// the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
 import type { RecipeSummary } from "../../domain/recipe";
@@ -11,6 +9,7 @@ import { Route as rootRoute } from "../root";
 
 export const RecipeListSearch = z.object({
   q: z.string().optional(),
+  // `tag` is the single slug the recipe view's tag chips link to; `tags` is the filter bar's list.
   tag: z.string().optional(),
   tags: z.array(z.string()).optional(),
   match: z.enum(["any", "all"]).optional(),

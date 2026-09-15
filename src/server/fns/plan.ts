@@ -1,10 +1,3 @@
-// Meal plan server functions: the one household plan (decisions.md row 71).
-// Each is the full `createServerFn` chain (see ./fn.ts for why), reads through
-// getDb() and hands back the documents in src/domain/plan/plan.ts.
-//
-// There is no plan id in any signature because there is no second plan, and no
-// meal type because the day is the slot. A week is read whole: `listPlanWeek`
-// takes the Monday and answers with seven days.
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { plan } from "../../db/models/plan/repo";
@@ -69,12 +62,12 @@ export const removePlanEntry = createServerFn({ method: "POST" })
 export const AddPlanWeekToShoppingInput = z.object({ monday: isoDate });
 
 /**
- * "Add this week to the shopping list" (M33.3): every recipe entry's own
+ * "Add this week to the shopping list": every recipe entry's own
  * ingredients at the entry's servings (the recipe's own when unset), plus
  * every text entry as a free-text line, stamped with the entry's day rather
- * than the recipe's own part (`planWeekAdditions`, src/domain/plan/plan.ts), merged
+ * than the recipe's own part (`planWeekAdditions`, src/domain/plan/week.ts), merged
  * into the current list the same way the recipe page's own "Add to shopping
- * list" does (`mergeIntoList`, M31.2). The week's recipes are loaded and
+ * list" does (`mergeIntoList`). The week's recipes are loaded and
  * scaled through the same path `getRecipe` takes, so the client need not
  * re-read the plan or the recipes to build the additions itself. Returns how
  * many lines the list gained, for the toast.

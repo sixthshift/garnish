@@ -1,15 +1,3 @@
-// Meal plan repository: the one household plan (decisions.md row 71).
-// Server-only; pass the Database opened by openDatabase.
-//
-// There is no plan id because there is no second plan, and no meal type because
-// a day is the slot. Every read is a week — the unit the page draws — assembled
-// as seven days, empty ones included, through `groupByDay` in
-// src/domain/plan/plan.ts.
-//
-// A recipe entry comes back with the recipe's summary fields nested (name, slug,
-// image), the way a shopping line comes back with its food: one extra select
-// per week, not one per entry. An entry whose recipe has since been deleted
-// reads back with `recipe: null` and keeps its day and its text.
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, gte, inArray, lte, max, ne } from "drizzle-orm";
 import { addDays, groupByDay, type ParsedPlanEntryInput, type PlanDay, type PlanEntry, type PlanEntryPatch, type PlanRecipe } from "../../../domain/plan";

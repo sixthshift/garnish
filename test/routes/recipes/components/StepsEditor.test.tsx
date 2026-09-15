@@ -44,7 +44,8 @@ import {
   withSteps,
 } from "../../../../src/domain/draft";
 import { paragraphs } from "../../../../src/domain/ingredient";
-import { StepsEditor, suggestNotice } from "../../../../src/routes/recipes/components/StepsEditor";
+import { StepsEditor } from "../../../../src/routes/recipes/components/StepsEditor";
+import { suggestNotice } from "../../../../src/routes/recipes/components/stepsEditorText";
 import { createRecipe, getRecipe, updateRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 

@@ -2,22 +2,16 @@
 // the patch's "absent means leave alone".
 import { describe, expect, test } from "vitest";
 import { type Ingredient, mergeIngredients, type Recipe, recipeSchema, type SubRecipe, scaleRecipe } from "../../../src/domain/recipe";
+import { groupByAisle, shoppingItemLabel, sourceLabel, TICKED_GROUP, UNASSIGNED_GROUP } from "../../../src/domain/shopping/groups";
+import { mergeIntoList, type ShoppingAddition, type ShoppingAdditionSource } from "../../../src/domain/shopping/merge";
 import {
-  groupByAisle,
-  mergeIntoList,
-  type ShoppingAddition,
-  type ShoppingAdditionSource,
   type ShoppingItem,
   shoppingItemInputSchema,
-  shoppingItemLabel,
   shoppingItemPatchSchema,
   shoppingItemSchema,
   shoppingItemSourceSchema,
-  sourceLabel,
-  subRecipeAdditions,
-  TICKED_GROUP,
-  UNASSIGNED_GROUP,
-} from "../../../src/domain/shopping/shopping";
+} from "../../../src/domain/shopping/schema";
+import { subRecipeAdditions } from "../../../src/domain/shopping/subRecipe";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const stamp = "2026-09-13T00:00:00.000Z";

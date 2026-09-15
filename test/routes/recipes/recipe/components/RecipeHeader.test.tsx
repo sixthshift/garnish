@@ -10,7 +10,9 @@ import type { Recipe } from "../../../../../src/domain/recipe";
 import { formatDateStamp } from "../../../../../src/lib/dates";
 import { nextRating } from "../../../../../src/lib/ui/rating";
 import { isLinkable, sourceLabel } from "../../../../../src/lib/urls";
-import { RecipeHeader, RecipeMetaFooter, timeStats } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
+import { RecipeHeader } from "../../../../../src/routes/recipes/recipe/components/RecipeHeader";
+import { RecipeMetaFooter } from "../../../../../src/routes/recipes/recipe/components/RecipeMetaFooter";
+import { timeStats } from "../../../../../src/routes/recipes/recipe/components/timeStats";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

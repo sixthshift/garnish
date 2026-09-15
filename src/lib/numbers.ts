@@ -1,5 +1,3 @@
-// The arithmetic of a number field: clamping, stepping and reading a decimal.
-
 /** `value` held within [min, max]. NaN becomes `min` (or 0 when unbounded). Pure. */
 export function clamp(value: number, min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY): number {
   if (!Number.isFinite(value)) return Number.isFinite(min) ? min : 0;

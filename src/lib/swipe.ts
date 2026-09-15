@@ -1,5 +1,3 @@
-// Reading a pointer gesture as a swipe: the thresholds and the verdict.
-
 /** Pixels a pointer must travel vertically before a drag counts as a swipe rather than a scroll. */
 export const SWIPE_MIN_PX = 56;
 

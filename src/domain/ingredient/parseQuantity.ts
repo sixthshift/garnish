@@ -1,22 +1,3 @@
-// The leading amount of an ingredient line, the first step of the parser
-// decision 47 describes. Pure: no IO, importable by the client.
-//
-// `format.ts`'s `formatQuantity` is the inverse, so every form it can emit is
-// read back here: plain decimals ("0.75"), whole numbers ("2") and mixed
-// numbers written with a vulgar fraction glyph ("1½", "½"). On top of that the
-// forms a person types or pastes:
-//   - ASCII fractions, alone ("3/4") or after a whole number ("1 1/2").
-//   - `a` / `an` as 1, as Mealie's parser does ("a pinch of salt").
-//   - a leading `=` marks the amount fixed (Cooklang): it does not scale with
-//     the servings. The `=` is consumed, `fixed` is true.
-//   - a range takes its low value, which is what Mealie does with "1-2":
-//     both "1-2" and "1 to 2" (and an en or em dash) parse as 1, the upper
-//     bound discarded rather than averaged.
-// Nothing numeric at the front — "salt, to taste" — returns a null quantity
-// and the line unchanged, so the caller can hand the whole of it to the unit
-// and food matchers. A `=` with no amount behind it is not an amount either,
-// so it is left in the text rather than silently eaten.
-
 /** What a line's leading amount parses to. `rest` is the line with that amount removed. */
 export type ParsedQuantity = {
   quantity: number | null;

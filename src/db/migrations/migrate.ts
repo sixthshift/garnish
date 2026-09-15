@@ -1,5 +1,3 @@
-// Server-only. Applies the NNN_name.sql files beside this one in order and
-// records each in the `migration` table. Never import from client code.
 import type { Database } from "bun:sqlite";
 import { readdirSync } from "node:fs";
 import { dirname, join } from "node:path";

@@ -1,5 +1,3 @@
-// The shopping list: one household list and the provenance of each of its lines
-// (decisions.md row 67). Mirrors 005_shopping.sql.
 import { sql } from "drizzle-orm";
 import { check, index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nowUtc } from "../columns";

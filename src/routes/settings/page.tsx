@@ -1,12 +1,12 @@
-// Settings is the reference data a household edits — foods, units, aisles,
-// tags and the house style guide — plus Appearance, the light / dark / system
-// choice. Each of those is a
-// tab over the same local DataTable primitive: search, sortable columns, and
-// (from M15.2 on) an editor sheet and a delete that lists the recipes it
-// touches. Appearance needs no loader and no table.
 import { Heading } from "@sixthshift/design-system/heading";
 import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
-import { AislesTab, Appearance, ExportTab, FoodsTab, StyleTab, TagsTab, UnitsTab } from "./components/SettingsTabs";
+import { AislesTab } from "./components/AislesTab";
+import { Appearance } from "./components/Appearance";
+import { ExportTab } from "./components/ExportTab";
+import { FoodsTab } from "./components/FoodsTab";
+import { StyleTab } from "./components/StyleTab";
+import { TagsTab } from "./components/TagsTab";
+import { UnitsTab } from "./components/UnitsTab";
 import { Route } from "./route";
 
 export function SettingsPage() {

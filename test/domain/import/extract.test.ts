@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { extractRecipe, scrapedFromStub } from "../../../src/domain/import/extract";
-import { ingredientLines } from "../../../src/domain/import/scraped";
+import { ingredientLines } from "../../../src/domain/import/scraped/parts";
 
 const URL_UNDER_TEST = "https://example.test/anzac-biscuits";
 

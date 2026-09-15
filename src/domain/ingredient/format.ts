@@ -1,29 +1,3 @@
-// Quantity and unit display. Pure: no IO, importable by the client.
-//
-// Follows Mealie's ingredient display rules (frontend/composables/recipes/
-// use-recipe-ingredients.ts), with unicode vulgar fractions in place of its
-// <sup>/<sub> markup:
-//   - unit.fraction true:  mixed number with the nearest vulgar fraction that
-//                          has a glyph (denominators 2..10). 1.5 -> "1½",
-//                          0.33 -> "⅓", 2.999 -> "3".
-//   - otherwise, or no unit: decimals to 2 places, trailing zeros trimmed.
-//                          1.5 -> "1.5", 2 -> "2", 0.125 -> "0.13".
-//   - null or 0 quantity renders no number (Mealie hides a zero amount).
-//   - unit label: abbreviation when useAbbreviation is set and one exists
-//     (never pluralised: "g", "ml", "tbsp"); else the plural when the quantity
-//     is above 1 or is 0 and a plural exists ("2 cups", "½ cup", "cups" for an
-//     unquantified ingredient); else the name.
-//   - ingredient line: amount, food, note. Mealie's useParsedIngredientText:
-//     the unit is dropped when there is no quantity ("salt, to taste", not
-//     "tsp salt"); the food takes its plural when the quantity is null, 0 or
-//     above 1 and a plural exists, whether or not a unit is present ("2 eggs",
-//     "2 cups eggs"). Divergences, both because this returns plain text where
-//     Mealie returns markup: the note follows a comma (Mealie separates it with
-//     a styled span, and its parser strips that comma on the way in), and a
-//     line whose food is null falls back to `originalText` verbatim when there
-//     is one (Mealie never renders originalText; its disable-amounts path,
-//     which shows the raw line alone, is the closest analogue). The raw line
-//     already carries its own amount and note, so neither is prefixed.
 import type { Food, Unit } from "../reference";
 
 /** The unit fields display needs. A full `Unit` satisfies it. */

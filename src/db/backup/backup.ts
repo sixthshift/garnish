@@ -1,6 +1,3 @@
-// Server-only. Copies the live database into a fresh, compacted file with
-// `VACUUM INTO`. The source is only read: WAL mode, page contents and open
-// connections are all left as they were. Never import from client code.
 import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";

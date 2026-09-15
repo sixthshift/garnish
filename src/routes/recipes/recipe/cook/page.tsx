@@ -1,89 +1,35 @@
-// Cook mode: the recipe as a deck of cards, one on screen at a time in large
-// type. `?step=N` is the card index and `?servings=N` the scale, both through
-// the URL so a refresh lands on the same card at the same scale. The loader is
-// still the one read path — it fetches the stored document once — and the
-// scale is a pure view over it, applied here with `scaledForServings` rather
-// than by the server, so the stepper repaints without a request (M25.1,
-// decisions.md row 62; the view page does the same). The shell hides its nav here
-// (`staticData.fullscreen`), leaving the header and footer of this page as the
-// only chrome. A screen wake lock is held while the page is mounted.
-//
-// Three ways through the deck: the Prev/Next buttons and arrow keys, a pill per
-// part that jumps to its first card, and a vertical swipe (pure
-// `swipeIntent`, so the scroll-versus-swipe line is a tested function rather
-// than a feel). A live region speaks the card as it changes.
-//
-// The page stays `max-w-3xl` (M24.7) while the view and editor routes widen:
-// one card of large type at roughly 35 characters a line is the right measure
-// for reading across a bench, so this is a deliberate exception, not a leftover.
-//
-// Cook through a sub-recipe (M32.4): the loader fetches the recipes this
-// recipe's ingredient foods are made by, the same call the view loader makes
-// (M32.3), so a step card's linked row can offer "Open <child> at N servings"
-// into the child's own cook mode. That link carries `?from=` this recipe's
-// slug; when the deck reaches Finished having been entered that way, the
-// card offers "Back to <parent>". `from` is resolved to a name in the loader
-// too — a stale or deleted slug just drops the way back rather than failing
-// the page.
 import { Button } from "@sixthshift/design-system/button";
-import { Card } from "@sixthshift/design-system/card";
-import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
-import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from "react";
 import { z } from "zod";
 import { SubRecipesProvider } from "../../../../components/recipe/SubRecipes";
-import { AddToShoppingButton } from "../../../../components/shopping/AddToShoppingSheet";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
-import { formatIngredient } from "../../../../domain/ingredient";
 import {
   buildCookCards,
   type CookCard,
   cardAnnouncement,
   clampStep,
-  type Ingredient,
   isFinishedIndex,
   nextPreview,
   partPills,
   positionLabel,
-  type Recipe,
   scaledForServings,
   stepForKey,
   totalWithFinish,
 } from "../../../../domain/recipe";
 import { swipeIntent } from "../../../../lib/swipe";
-import { useIngredientTick } from "../../../../lib/ticks";
 import { useWakeLock } from "../../../../lib/useWakeLock";
-import { StepCard } from "../components/StepCard";
-import { MadeThisButton } from "../components/Timeline";
 import { TimerStrip } from "../components/TimerStrip";
+import { CookCardView } from "./components/CookCardView";
+import { FinishedCard } from "./components/FinishedCard";
 import { Route } from "./route";
+import { WakeLockIcon } from "../../../../components/ui/icons";
 
 /** Eye: the screen is being watched, so it is being kept on. Same drawing style as RecipeHeader's stat icons. */
-function WakeLockIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="shrink-0"
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
 export function CookPage() {
   const { recipe: stored, subRecipes, parentName } = Route.useLoaderData();
   const { step, servings: requested, from } = Route.useSearch();
@@ -235,128 +181,5 @@ export function CookPage() {
         </footer>
       </div>
     </SubRecipesProvider>
-  );
-}
-
-/**
- * The deck's last "card": logged the cook is done, with a shortcut to log it
- * (M11.7's sheet, reused as-is) and a way out. When this session was opened
- * from a sub-recipe link (`from`), and that parent still resolves
- * (`parentName`), a "Back to <parent>" button offers the way back into its
- * own cook mode (M32.4). A stale `from` with no `parentName` shows nothing extra.
- */
-function FinishedCard({
-  recipe,
-  servings,
-  from,
-  parentName,
-}: {
-  recipe: Recipe;
-  servings: number | undefined;
-  from: string | undefined;
-  parentName: string | null;
-}) {
-  return (
-    <Card title={<span className="text-xl">Finished</span>} data-card="finished">
-      <div className="flex flex-col items-center gap-4 py-6 text-center">
-        <p className="text-2xl font-semibold text-fg-strong">Nice work, that's everything.</p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <MadeThisButton recipe={recipe} />
-          {/* The same button the recipe page carries (M31.3), on the scaled
-              document the deck was built from: what you just cooked is what
-              you need to replace. */}
-          <AddToShoppingButton recipe={recipe} />
-          {from !== undefined && parentName !== null && (
-            <Button asChild variant="outline" intent="neutral" size="sm">
-              <Link to="/recipes/$slug/cook" params={{ slug: from }} data-testid="back-to-parent">
-                Back to {parentName}
-              </Link>
-            </Button>
-          )}
-          <Button asChild variant="outline" intent="neutral" size="sm">
-            <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings }}>
-              Exit
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-/** One ingredient card row: ticks off for this session, shared with the recipe view page (src/lib/ticks.ts). */
-function CookIngredientItem({ recipeId, ingredient }: { recipeId: string; ingredient: Ingredient }) {
-  const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
-  return (
-    <li
-      className="flex flex-wrap items-baseline gap-x-3"
-      data-testid="cook-ingredient"
-      data-ticked={done ? "true" : undefined}
-      data-fixed={ingredient.fixed ? "true" : undefined}
-    >
-      <Checkbox checked={done} onCheckedChange={toggle} className="mt-1.5 self-start" aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`} />
-      <button type="button" onClick={toggle} className={cn("flex flex-1 flex-wrap items-baseline gap-x-3 text-left", done && "text-fg-subtle")}>
-        <span className={cn(done && "line-through")}>{formatIngredient(ingredient)}</span>
-      </button>
-      {ingredient.fixed && (
-        <Muted as="span" className="text-sm" title="Fixed amount, does not scale with servings">
-          fixed
-        </Muted>
-      )}
-    </li>
-  );
-}
-
-/** The foot of every card: a dimmed, tappable preview of the card that follows. */
-function NextPreview({ preview, onNext }: { preview: string; onNext: () => void }) {
-  return (
-    <button type="button" data-testid="next-preview" onClick={onNext} className="mt-4 block text-left text-sm text-fg-subtle hover:text-fg-normal">
-      Next: {preview}
-    </button>
-  );
-}
-
-/** One card in large type: the part's ingredient list, or a single step. */
-function CookCardView({
-  card,
-  recipeId,
-  preview,
-  onNext,
-  cookFrom,
-}: {
-  card: CookCard;
-  recipeId: string;
-  /** The next card's preview line, or "Finished" past the last one (`nextPreview`). */
-  preview: string;
-  onNext: () => void;
-  /** This recipe's slug, forwarded to a step card's linked rows for the sub-recipe cook link (M32.4). */
-  cookFrom: string;
-}) {
-  const heading = card.part === "" ? undefined : card.part;
-  if (card.kind === "ingredients") {
-    return (
-      <Card title={heading && <span className="text-xl">{heading}</span>} data-card="ingredients">
-        <p className="mb-3 text-sm font-medium uppercase tracking-wide text-fg-subtle">Ingredients</p>
-        <ul className="flex flex-col gap-3 text-2xl leading-snug" aria-label="Ingredients">
-          {card.ingredients.map((ingredient) => (
-            <CookIngredientItem key={ingredient.id} recipeId={recipeId} ingredient={ingredient} />
-          ))}
-        </ul>
-        <NextPreview preview={preview} onNext={onNext} />
-      </Card>
-    );
-  }
-  return (
-    <Card title={heading && <span className="text-xl">{heading}</span>} data-card="step">
-      <p className="mb-3 text-sm font-medium uppercase tracking-wide text-fg-subtle">
-        Step {card.number} of {card.total}
-      </p>
-      {/* Same card the recipe page deals, in the cook deck's bigger type: its
-          own linked ingredients and timers come with it (M29.2). */}
-      <ul>
-        <StepCard recipeId={recipeId} step={card.step} position={card.number} ingredients={card.ingredients} size="cook" cookFrom={cookFrom} />
-      </ul>
-      <NextPreview preview={preview} onNext={onNext} />
-    </Card>
   );
 }

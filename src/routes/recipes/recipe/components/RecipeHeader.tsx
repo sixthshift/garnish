@@ -1,12 +1,3 @@
-// The recipe page's header. Presentational: everything it shows comes from the
-// recipe document, and the caller passes its own action buttons in.
-//
-// Layout follows Mealie's recipe page: from `md` the image sits beside the
-// text, below `md` it stacks above it. Order (M24.3): image, name with the
-// actions, stars, one strip holding prep / cook / total, yield and the last
-// made date as text. The source/added/updated meta moves out of the header;
-// `RecipeMetaFooter` below renders it as the page's own footer, at the foot
-// of the page rather than under the header.
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
@@ -15,11 +6,12 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
 import { Rating } from "../../../../components/ui/Rating";
-import { formatDuration, formatYield, totalMinutes } from "../../../../domain/ingredient";
+import { formatYield } from "../../../../domain/ingredient";
 import type { Recipe } from "../../../../domain/recipe";
 import { formatDateStamp } from "../../../../lib/dates";
 import { recipeImageUrl } from "../../../../lib/images";
-import { isLinkable, sourceLabel } from "../../../../lib/urls";
+import { StatIcon } from "./StatIcon";
+import { timeStats } from "./timeStats";
 
 export type RecipeHeaderProps = {
   recipe: Recipe;
@@ -39,40 +31,6 @@ export type RecipeHeaderProps = {
    */
   madeCount?: number;
 };
-
-const ICON_PATHS: Record<StatKey, ReactNode> = {
-  // Knife: preparation.
-  prep: <path d="M4 20 14.5 9.5M18 3l3 3-6.5 6.5L11 9z" />,
-  // Flame: time on the heat.
-  cook: <path d="M12 3s5 4 5 8a5 5 0 0 1-10 0c0-1.5.8-2.8 1.5-3.5.3 1.2 1 2 1.8 2C11.7 9.5 12 6 12 3Z" />,
-  // Clock: the whole thing, end to end.
-  total: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </>
-  ),
-};
-
-function StatIcon({ stat }: { stat: StatKey }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      data-icon={stat}
-      className="shrink-0 text-fg-subtle"
-    >
-      {ICON_PATHS[stat]}
-    </svg>
-  );
-}
 
 function ImagePlaceholder() {
   return (
@@ -114,9 +72,7 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
           )}
 
           {/* One strip: prep / cook / total, the yield, and the last made
-              date as text. The "Made this" button used to sit beside the
-              last made line; it moved out of the header (M25.6 gives it a
-              home in the timeline section). */}
+              date as text. */}
           <div className="flex flex-col gap-1" data-testid="stat-strip">
             {stats.length > 0 && (
               <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
@@ -175,59 +131,3 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
     </header>
   );
 }
-
-/**
- * Source, added and updated: the page's own footer, at the foot of the page
- * under the timeline (M24.3) rather than under the header. Renders nothing
- * when the recipe has none of the three.
- */
-export function RecipeMetaFooter({ recipe }: { recipe: Recipe }) {
-  const source = sourceLabel(recipe.sourceUrl);
-  const created = formatDateStamp(recipe.createdAt);
-  const updated = formatDateStamp(recipe.updatedAt);
-  const restyled = recipe.restyledAt;
-  const restyledOn = formatDateStamp(restyled);
-  if (source === "" && created === "" && updated === "" && restyled === null) return null;
-
-  return (
-    <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border-subtle pt-3 text-xs text-fg-subtle" data-testid="recipe-meta">
-      {source !== "" &&
-        (isLinkable(recipe.sourceUrl) ? (
-          <a
-            href={recipe.sourceUrl ?? undefined}
-            target="_blank"
-            rel="noreferrer noopener"
-            data-testid="source-url"
-            className="underline underline-offset-2 hover:text-fg-normal"
-          >
-            Source: {source}
-          </a>
-        ) : (
-          <span data-testid="source-url">Source: {source}</span>
-        ))}
-      {/* Quiet, beside the source, because it is a fact about the words on the
-          page: the steps are the household's voice rather than the author's
-          (M37.5). The original is kept, so this is a note, not a warning. */}
-      {restyled !== null && (
-        <Muted as="span" className="text-xs" data-testid="restyled">
-          {restyledOn === "" ? "Restyled" : `Restyled ${restyledOn}`}
-        </Muted>
-      )}
-      {created !== "" && <span data-testid="created">Added {created}</span>}
-      {updated !== "" && <span data-testid="updated">Updated {updated}</span>}
-    </footer>
-  );
-}
-
-/** Prep / cook / total, dropping the ones with nothing recorded. Pure. */
-export function timeStats(recipe: Pick<Recipe, "prepTime" | "performTime">): Array<{ key: StatKey; label: string; value: string }> {
-  const total = totalMinutes(recipe.prepTime, recipe.performTime);
-  const rows: Array<{ key: StatKey; label: string; value: string }> = [
-    { key: "prep", label: "Prep", value: formatDuration(recipe.prepTime) },
-    { key: "cook", label: "Cook", value: formatDuration(recipe.performTime) },
-    { key: "total", label: "Total", value: formatDuration(total) },
-  ];
-  return rows.filter((row) => row.value !== "");
-}
-
-export type StatKey = "prep" | "cook" | "total";

@@ -1,7 +1,4 @@
-// Renders the safe markdown subset (src/lib/markdown.ts) as React elements.
-// Deliberately not `dangerouslySetInnerHTML`: the parser never produces HTML,
-// and every text node goes through React, so anything HTML-shaped a cook typed
-// into a step renders as the characters they typed.
+// Never dangerouslySetInnerHTML: the parser produces no HTML and every text node goes through React.
 
 import { cn } from "@sixthshift/design-system/utils";
 import { Fragment } from "react";
@@ -54,9 +51,7 @@ function BlockNode({ block }: { block: Block }) {
 
 /**
  * `source` parsed and rendered. Renders nothing when the source is blank.
- * Nothing is spliced into the text: M29.1 moved the timer chips out of the
- * prose and into the step card's footer, and the `decorate` seam that carried
- * them went with them.
+ * Nothing is spliced into the text: timer chips live in the step card's footer, not the prose.
  */
 export function Markdown({ source, className }: { source: string; className?: string }) {
   const blocks = parseMarkdown(source);

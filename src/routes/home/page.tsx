@@ -1,9 +1,3 @@
-// Recipe list. Search params `q` (name substring), `tag` (legacy single tag
-// slug, still used by the recipe view's tag chip links), `tags`/`match`
-// (M12.3 tag chips with an any/all switch), `foods` (food ids), `favourite`
-// and `sort`/`dir`/`seed` (M12.4) feed the loader through loaderDeps, so
-// changing any of them re-runs it. The search box, filter bar and sort menu
-// only ever navigate; the loader is the one read path.
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Heading } from "@sixthshift/design-system/heading";
@@ -20,6 +14,7 @@ import { FilterBar } from "./components/FilterBar";
 import { SortMenu } from "./components/SortMenu";
 import { ViewModeToggle } from "./components/ViewModeToggle";
 import { Route } from "./route";
+import { DiceIcon } from "../../components/ui/icons";
 
 export function RecipesPage() {
   const { recipes, tags, foods } = Route.useLoaderData();
@@ -106,29 +101,6 @@ export function RecipesPage() {
 }
 
 /** A six-sided die, for the "open a random recipe" button. */
-function DiceIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      <circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none" />
-      <circle cx="16" cy="8" r="1.2" fill="currentColor" stroke="none" />
-      <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
-      <circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none" />
-      <circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
 function EmptyState({ filtered }: { filtered: boolean }) {
   if (filtered) {
     return (

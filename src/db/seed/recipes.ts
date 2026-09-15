@@ -1,11 +1,3 @@
-// The demo recipe documents for `bun run seed --sample`, and the small builders
-// that keep them readable. Data only — `seed.ts` inserts them through the recipe
-// repository, so they take exactly the path the editor does.
-//
-// Three en-AU metric recipes: one flat (a single unnamed part), one with
-// named parts, one carrying a source URL. One is favourited and one has
-// timeline events (see ./timeline.ts), so every stage 2 screen has something to
-// show without a person seeding it by hand.
 import type { z } from "zod";
 import type { ingredientInputSchema, RecipeInput } from "../../domain/recipe";
 import type { Food, Tag, Unit } from "../../domain/reference";

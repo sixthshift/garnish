@@ -1,10 +1,3 @@
-// Timeline server functions: the "Made this" log for one recipe. Each is the
-// full `createServerFn` chain (see ./fn.ts for why), reads through getDb() and
-// hands back `TimelineEvent` documents from src/domain/recipe/recipe.ts.
-//
-// The photo is not part of these calls: a create returns the event, the client
-// then POSTs the file to /api/timeline/:id/image, which stores it and points
-// the row at it (same split as recipe images).
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { recipes } from "../../db/models/recipe/repo";

@@ -1,4 +1,4 @@
-// The geometry behind components/ui/ReorderList: moving an item, and where a drop lands.
+// The geometry behind ReorderList: moving an item, and where a drop lands.
 
 /** The vertical span of one row, in client coordinates. */
 export type Span = { top: number; bottom: number };

@@ -1,11 +1,3 @@
-// Timeline repository: the "Made this" log (decisions.md row 41). Server-only;
-// pass the Database opened by openDatabase.
-//
-// `occurred_on` is a calendar date (YYYY-MM-DD) because a cook happened on a
-// day. `recipe.last_made` stays the ISO timestamp the document already exposes
-// and is derived from the events: it is midnight UTC of the greatest
-// `occurred_on`, recomputed on every create and remove, and null when the
-// recipe has no events left.
 import type { Database } from "bun:sqlite";
 import { desc, eq, max } from "drizzle-orm";
 import type { TimelineEvent, TimelineEventInput } from "../../../domain/recipe";

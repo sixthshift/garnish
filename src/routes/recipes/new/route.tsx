@@ -1,5 +1,3 @@
-// new: the route. What the URL carries, what the loader reads, and
-// the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
 import type { Tag, Unit } from "../../../domain/reference";
@@ -22,7 +20,7 @@ export const Route = createRoute({
   loader: async (): Promise<NewRecipeData> => {
     // Whether the AI rung can run is asked here rather than in the component,
     // so the chooser never flashes an option that is about to disappear
-    // (M34.5). A failed ask is "not installed": the other rungs still work.
+    //. A failed ask is "not installed": the other rungs still work.
     const [units, tags, ai] = await Promise.all([listUnits({ data: {} }), listTags({ data: {} }), aiImportAvailable().catch(() => ({ available: false }))]);
     return { units, tags, aiAvailable: ai.available };
   },

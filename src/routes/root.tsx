@@ -10,8 +10,8 @@ import appCss from "../styles.css?url";
 
 // PWA manifest colours are literal hex because a manifest cannot read CSS.
 // They mirror the Garnish theme's tokens (src/styles/theme.css):
-//   light --bg-brand  = emerald-600 #2c666c   light --bg-normal = earth-50  #fefcfb
-//   dark  --bg-brand  = emerald-400 #4ba5a9   dark  --bg-normal = earth-950 #211916
+// light --bg-brand = emerald-600 #2c666c light --bg-normal = earth-50 #fefcfb
+// dark --bg-brand = emerald-400 #4ba5a9 dark --bg-normal = earth-950 #211916
 // public/manifest.webmanifest carries the light pair. The theme-color metas
 // carry both and live in RootDocument, not head(): HeadContent keeps one meta
 // per name, which would drop one of the two media-scoped entries.

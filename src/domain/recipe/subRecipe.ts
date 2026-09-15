@@ -1,19 +1,3 @@
-// Sub-recipes: a food that points at a recipe (`food.recipe_id`). The parent
-// never inlines the child — an ingredient row whose food has a recipe renders
-// as a link to it, with a hint saying how many servings of the child yield the
-// amount the parent asks for (decisions.md row 70).
-//
-// The hint is arithmetic over the child's own yield: the child says it makes
-// `recipeYieldQuantity` of `yieldUnit` at `recipeServings` servings, so an
-// ingredient asking for `quantity` of `unit` wants that amount expressed in
-// the child's yield unit, divided by the child's yield, times its servings.
-// M32.2's `convert` does the expressing, through the food's own conversions
-// and the units' `standard_*` links, so "2 cups of pastry" relates to a child
-// yielding 500 g as long as the food carries a cup-to-gram row.
-//
-// Null whenever the two cannot be related — no amount, no yield, no servings
-// to scale, or no conversion path — and the row then shows the link alone.
-// Pure: no IO, importable by the client.
 import { convert, type Food, type Unit } from "../reference";
 import type { Ingredient, Recipe } from "./recipe";
 
@@ -63,7 +47,7 @@ export function subRecipeHint(servings: number): string {
 
 /**
  * The scale as cook mode's link reads it: "Open <name> at 2 servings", the
- * child's own name standing in for the bare food name the hint uses (M32.4).
+ * child's own name standing in for the bare food name the hint uses.
  * Rounded to two places, same as `subRecipeHint`. Pure.
  */
 export function subRecipeCookLabel(servings: number, name: string): string {

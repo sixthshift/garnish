@@ -1,6 +1,3 @@
-// Tag repository. Server-only. Names unique case-insensitively (the column is
-// COLLATE NOCASE, so `eq` matches that way); the slug is derived from the name
-// (Mealie) and de-duplicated with a numeric suffix.
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { cleanName, likePattern, slugify, uniqueSlug } from "../../../lib/names";

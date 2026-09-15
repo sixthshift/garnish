@@ -1,6 +1,3 @@
-// Client-side image helpers: URLs and uploads. The recipe row stores only the file name (see
-// imageFileName in src/lib/imageFile.ts); GET /api/images/:file serves it and
-// POST /api/recipes/:id/image replaces it.
 import { IMAGE_FIELD } from "./imageFile";
 
 /** Multipart field the upload routes read. Re-exported so callers of this module need only one import. */
@@ -59,7 +56,7 @@ export async function uploadTimelineImage(eventId: string, file: File, fetcher: 
   return payload.image;
 }
 
-/** The URL that serves a step's photo, or null when the step has none (M35.1). Pure. */
+/** The URL that serves a step's photo, or null when the step has none. Pure. */
 export function stepImageUrl(image: string | null | undefined): string | null {
   if (!image) return null;
   return `/api/images/steps/${encodeURIComponent(image)}`;
@@ -85,7 +82,7 @@ export async function uploadStepImage(stepId: string, file: File, fetcher: Fetch
   return payload.image;
 }
 
-/** What `fetchImage` (src/server/imageFetch.ts) answers with, as the client needs it. */
+/** What `fetchImage` (src/server/import/imageFetch.ts) answers with, as the client needs it. */
 export type FetchedImageData = { base64: string; contentType: string; name: string };
 
 /** Decode base64 to bytes. Pure; throws on characters that are not base64. */
@@ -97,7 +94,7 @@ export function base64ToBytes(base64: string): Uint8Array {
 }
 
 /**
- * A `data:` URL as a File. An image out of an uploaded Mealie backup (M34.3)
+ * A `data:` URL as a File. An image out of an uploaded Mealie backup
  * arrives as bytes, not an address, so it comes back from the parser as a data
  * URL and is rebuilt here rather than fetched. Pure; throws on anything that
  * is not a base64 data URL.

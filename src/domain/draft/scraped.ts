@@ -11,7 +11,7 @@ import { tagsFromNames } from "./vocabulary";
 // A draft from a scraped or imported recipe: the import review's starting point.
 
 /**
- * `part` with `suggestLinks` (M28.2) run over its steps, so an imported
+ * `part` with `suggestLinks` run over its steps, so an imported
  * recipe arrives with its links filled for review. `suggestLinks` needs an
  * id on every row to name it in a link; the scraper's rows already carry
  * one (`newStep`, `reviewedIngredient`), but a fresh id is given here too,
@@ -36,7 +36,7 @@ export function withSuggestedLinks(part: DraftPart): DraftPart {
 }
 
 /**
- * `part` with the links the source already knew (M34.4): `stepOfRow[i]` is the
+ * `part` with the links the source already knew: `stepOfRow[i]` is the
  * step that owns the part's i-th row, or -1 for a row no step claimed. Used
  * instead of `suggestLinks` when the export says outright which step a row was
  * written under — Tandoor's steps own their ingredients — because a stated
@@ -59,13 +59,13 @@ export function withStepRows(part: DraftPart, stepOfRow: readonly number[]): Dra
 
 /**
  * A scraped recipe and its reviewed ingredient lines as a draft. The parts are
- * the source's own (decisions.md row 59), and each row goes back on the part
+ * the source's own, and each row goes back on the part
  * whose line it was parsed from: the review's rows are the parts' lines
- * flattened in part order (M36.2), so the parts' own counts are the allocation
+ * flattened in part order, so the parts' own counts are the allocation
  * and nothing has to carry it alongside. A schema.org page puts every line on
  * the unnamed body because that is all its markup can say; a Mealie or Tandoor
  * export, or a model that read the headings, says more, and this reads all of
- * them the same way. Each part then runs through `suggestLinks` (M28.2), so
+ * them the same way. Each part then runs through `suggestLinks`, so
  * the draft arrives with its step-ingredient links already filled for review.
  * Pure apart from the ids it fills in.
  */
@@ -78,7 +78,7 @@ export function draftFromScraped(opts: {
   knownTags?: readonly Tag[];
   /**
    * Which step of its part each commit was written under, by index, -1 for
-   * none (M34.4). Given, the links are taken from it rather than guessed by
+   * none. Given, the links are taken from it rather than guessed by
    * `suggestLinks`; only Tandoor's steps know.
    */
   rowSteps?: readonly number[];

@@ -1,5 +1,3 @@
-// settings: the route. What the URL carries, what the loader reads, and
-// the page it renders, loaded on demand. The page itself is page.tsx.
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import type { RecipeSummary } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
@@ -33,7 +31,7 @@ export const Route = createRoute({
       listUnits({ data: {} }),
       listFoods({ data: {} }),
       listTags({ data: {} }),
-      // For the food sheet's "Made by a recipe" (M32.3).
+      // For the food sheet's "Made by a recipe".
       listRecipes({ data: { sort: "name", dir: "asc" } }),
       listStyleRules(),
     ]);

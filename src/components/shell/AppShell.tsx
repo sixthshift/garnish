@@ -1,7 +1,3 @@
-// Root layout: bottom nav on phones, side nav from md up. Colours are design
-// system tokens, so dark mode follows the `data-theme` attribute that
-// `bootstrapTheme` keeps in step with the OS setting. A fullscreen route
-// (cook mode) gets the outlet alone: no nav, no bottom padding.
 import { bootstrapTheme } from "@sixthshift/design-system/hooks";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link, Outlet, useMatches } from "@tanstack/react-router";

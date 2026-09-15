@@ -1,22 +1,10 @@
-// The Drizzle handle. Server-only.
-//
-// Repositories keep taking the `bun:sqlite` Database they always took — the
-// store and its lifecycle (WAL, foreign keys, the cached handle in
-// src/server/db.ts) are unchanged. Drizzle wraps that same connection as a
-// typed query builder, so this is a query-layer change, not a store change
-// (decisions.md row 46).
-//
-// No schema is passed to `drizzle()`: that option exists to power the relational
-// query API (`db.query.recipe.findMany({ with: … })`), which nothing here uses —
-// every repository joins explicitly. The core builder the repositories do use
-// takes its types from the table objects they import directly. Adopting `with:`
-// later means declaring relations and handing them over here.
 import type { Database } from "bun:sqlite";
 import { type BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
 
 export type Db = ReturnType<typeof wrap>;
 
 function wrap(db: Database) {
+  // No schema: the relational query API is unused, every repository joins explicitly.
   return drizzle(db);
 }
 

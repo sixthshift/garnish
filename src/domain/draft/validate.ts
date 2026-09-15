@@ -1,4 +1,3 @@
-// A draft against the recipe schema, with the field messages the form shows.
 import { type ParsedRecipeInput, recipeInputSchema } from "../recipe";
 import type { RecipeDraft } from "./types";
 

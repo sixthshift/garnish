@@ -7,14 +7,10 @@ import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Recipe, TimelineEvent } from "../../../../../src/domain/recipe";
 import { getTicks, type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
-import { saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/QuickEdit";
-import {
-  offersSaveAsNote,
-  saveCook,
-  saveCookAndClearTicks,
-  TimelineList,
-  withNoteFromCook,
-} from "../../../../../src/routes/recipes/recipe/components/Timeline";
+import { saveCook, saveCookAndClearTicks } from "../../../../../src/routes/recipes/recipe/components/saveCook";
+import { saveQuickEdit } from "../../../../../src/routes/recipes/recipe/components/saveQuickEdit";
+import { TimelineList } from "../../../../../src/routes/recipes/recipe/components/Timeline";
+import { offersSaveAsNote, withNoteFromCook } from "../../../../../src/routes/recipes/recipe/components/timelineNotes";
 
 // `updateRecipe` is the only server call `saveQuickEdit` makes; kept here so
 // the "save as note" test can compare what was sent with the stored document.
