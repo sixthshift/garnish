@@ -25,7 +25,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { type Span, rectContains, dropIndex } from "../../lib/ui/reorder";
-import { moveItem } from "../../domain/lists";
+import { moveItem } from "../../lib/lists";
 
 /** Milliseconds a touch must rest on the handle before the drag starts. */
 export const TOUCH_DELAY_MS = 250;

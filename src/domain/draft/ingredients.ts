@@ -1,6 +1,6 @@
 // Editing a part's ingredient rows.
 import { formatIngredient } from "../ingredient";
-import { randomUuid } from "../ids";
+import { randomUuid } from "../../lib/id";
 import { unlinkIngredient } from "./links";
 import { type DraftIngredient, type RecipeDraft } from "./types";
 import { type Recipe } from "../recipe";

@@ -2,7 +2,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { ReorderList, TOUCH_DELAY_MS } from "../../../src/components/ui/ReorderList";
 import { dropIndex, rectContains, type Span } from "../../../src/lib/ui/reorder";
-import { moveItem } from "../../../src/domain/lists";
+import { moveItem } from "../../../src/lib/lists";
 
 /** The opening tag of the control carrying `label`. */
 function tagWithLabel(html: string, label: string): string {

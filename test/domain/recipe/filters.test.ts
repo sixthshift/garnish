@@ -2,7 +2,7 @@
 // `tags`, and the small array utilities the food picker uses.
 import { describe, expect, test } from "vitest";
 import { selectedTags } from "../../../src/domain/recipe/filters";
-import { addUnique, arrayParam, withoutId } from "../../../src/domain/lists";
+import { addUnique, arrayParam, withoutId } from "../../../src/lib/lists";
 
 describe("selectedTags", () => {
   test("folds the legacy singular tag into the array, de-duplicated", () => {

@@ -33,7 +33,7 @@ import { MadeThisSheet } from "./MadeThisSheet";
 import { saveQuickEdit, useQuickEditContext } from "./QuickEdit";
 
 import { draftFromRecipe, type DraftNote, type RecipeDraft } from "../../../../domain/draft";
-import { randomUuid } from "../../../../domain/ids";
+import { randomUuid } from "../../../../lib/id";
 
 export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "recipeServings"> };
 

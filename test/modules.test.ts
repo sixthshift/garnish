@@ -62,7 +62,9 @@ describe("domain modules", () => {
 
 // Layers: domain/ is what is true of a recipe on any screen, lib/ is logic that
 // exists because a screen or a widget does, and routes/ and components/ render.
-// Each may import from the ones before it and never from the ones after.
+// Each may import from the ones before it and never from the ones after — with
+// one allowance: a lib file that imports nothing of the app (id, lists,
+// numbers, dates...) is a library, and a domain may use a library.
 describe("layers", () => {
   const files = walk(join(root, "src"));
   const importsFrom = (dir: string, targets: string[]) =>
@@ -75,8 +77,17 @@ describe("layers", () => {
           .map((target) => `${relative(root, file)} -> ${target}`),
       );
 
-  test("domain/ imports nothing from lib/, routes/ or components/", () => {
-    expect(importsFrom("src/domain/", ["src/lib/", "src/routes/", "src/components/"])).toEqual([]);
+  test("domain/ imports nothing from routes/ or components/", () => {
+    expect(importsFrom("src/domain/", ["src/routes/", "src/components/"])).toEqual([]);
+  });
+
+  test("domain/ imports from lib/ only library files: ones that import nothing of the app", () => {
+    const notLibraries = importsFrom("src/domain/", ["src/lib/"]).filter((edge) => {
+      const target = edge.split(" -> ")[1]!;
+      const file = ["", ".ts"].map((ext) => join(root, target + ext)).find((p) => existsSync(p) && statSync(p).isFile());
+      return file === undefined || relativeSpecifiers(readFileSync(file, "utf8")).length > 0;
+    });
+    expect(notLibraries).toEqual([]);
   });
 
   test("lib/ imports nothing from routes/ or components/", () => {

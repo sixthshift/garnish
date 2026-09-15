@@ -10,7 +10,7 @@ import { useState } from "react";
 import type { Food } from "../../../db/models/food/repo";
 import type { Tag } from "../../../domain/reference";
 import { type TagMatch } from "../../../domain/recipe";
-import { addUnique, withoutId } from "../../../domain/lists";
+import { addUnique, withoutId } from "../../../lib/lists";
 import { Combobox } from "../../../components/ui/Combobox";
 import { type ComboboxOption } from "../../../lib/ui/combobox";
 

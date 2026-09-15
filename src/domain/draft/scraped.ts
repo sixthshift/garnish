@@ -3,7 +3,7 @@ import { type FoodRow, type Tag, type Unit } from "../reference";
 import { type RowCommit } from "../ingredient";
 import { type ScrapedRecipe } from "../import";
 import { suggestLinks } from "../recipe";
-import { randomUuid } from "../ids";
+import { randomUuid } from "../../lib/id";
 import { reviewedIngredient } from "./review";
 import { emptyDraft } from "./draft";
 import { type DraftPart, type RecipeDraft } from "./types";

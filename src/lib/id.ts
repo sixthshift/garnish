@@ -1,4 +1,4 @@
-// Client-side ids. New reference rows the editor invents (a tag typed by name)
+// Ids. New reference rows the editor invents (a tag typed by name)
 // need a well-formed UUID to pass the document schema; the server resolves them
 // by name and keeps its own id. `crypto.randomUUID` exists only in secure
 // contexts, and this app runs over plain http on the LAN, so fall back to

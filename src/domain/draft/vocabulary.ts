@@ -1,6 +1,6 @@
 // Quantities, units, foods and tags as the editor reads and writes them.
 import { type FoodRow, type Food, type Unit, type Tag } from "../reference";
-import { randomUuid } from "../ids";
+import { randomUuid } from "../../lib/id";
 import { slugify } from "../names";
 
 export const VULGAR: Record<string, number> = {

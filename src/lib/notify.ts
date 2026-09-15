@@ -8,7 +8,7 @@
 // module-level `notices` store is the app's one instance; tests build their own
 // with `createNoticeStore()`.
 import { useSyncExternalStore } from "react";
-import { randomUuid } from "../domain/ids";
+import { randomUuid } from "./id";
 
 /** Maps straight onto the design system's Message/Toast intents. */
 export type NoticeIntent = "neutral" | "success" | "warning" | "danger";

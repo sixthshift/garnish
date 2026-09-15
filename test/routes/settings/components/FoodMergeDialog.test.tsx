@@ -3,7 +3,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { FoodMergeDialogContent } from "../../../../src/routes/settings/components/FoodMergeDialog";
-import { mergeTargets } from "../../../../src/domain/lists";
+import { mergeTargets } from "../../../../src/lib/lists";
 import type { Food } from "../../../../src/db/models/food/repo";
 
 function food(id: string, name: string): Food {

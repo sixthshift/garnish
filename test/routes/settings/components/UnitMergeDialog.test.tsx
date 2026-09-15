@@ -3,7 +3,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { UnitMergeDialogContent } from "../../../../src/routes/settings/components/UnitMergeDialog";
-import { mergeTargets } from "../../../../src/domain/lists";
+import { mergeTargets } from "../../../../src/lib/lists";
 import type { Unit } from "../../../../src/db/models/unit/repo";
 
 function unit(id: string, name: string): Unit {

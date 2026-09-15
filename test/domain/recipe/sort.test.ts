@@ -2,7 +2,7 @@
 // order and the dice button's pick.
 import { describe, expect, test } from "vitest";
 import { defaultDir, resolveSort, SORT_OPTIONS } from "../../../src/domain/recipe/sort";
-import { hash32, newSeed, pickRandom, seededOrder } from "../../../src/domain/lists";
+import { hash32, newSeed, pickRandom, seededOrder } from "../../../src/lib/lists";
 
 describe("defaultDir", () => {
   test("name reads ascending; every other key defaults newest/highest first", () => {
