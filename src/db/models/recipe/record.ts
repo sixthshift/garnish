@@ -148,6 +148,8 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
       }
       dz.transaction((tx) => {
         rows.forEach((row, index) => {
+          // An empty part answered with nothing was never sent to the model: leave it, or it would be stamped as restyled.
+          if (parts[index]!.steps.length === 0 && row.sourceSteps === null && stepTexts(row.id).length === 0) return;
           if (row.sourceSteps === null) {
             tx.update(part)
               .set({ sourceSteps: stepTexts(row.id) })
@@ -159,6 +161,16 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
         tx.update(recipe).set({ restyledAt: nowUtc, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
       });
       return getById(id);
+    },
+
+    /**
+     * The author's steps of every part that has been restyled: part id to the
+     * texts kept in `source_steps`. A part never restyled is absent, since its
+     * steps are still the author's. What the restyle lab rebuilds a recipe
+     * from, so a rewrite is always tried against the original words.
+     */
+    authorSteps(): Map<string, string[]> {
+      return new Map(partRows().flatMap((row) => (row.sourceSteps === null ? [] : [[row.id, row.sourceSteps] as const])));
     },
 
     /**

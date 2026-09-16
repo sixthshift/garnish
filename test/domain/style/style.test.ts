@@ -79,11 +79,26 @@ describe("enabledRules", () => {
 });
 
 describe("the seeded guide", () => {
-  test("is fourteen statements, the first ten on and the last four off, all distinct", () => {
-    expect(DEFAULT_STYLE_RULES).toHaveLength(14);
-    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual([...Array(10).fill(true), ...Array(4).fill(false)]);
+  test("is eight statements, one per theme, all on, all distinct", () => {
+    expect(DEFAULT_STYLE_RULES).toHaveLength(8);
+    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual(Array(8).fill(true));
+    expect(DEFAULT_STYLE_RULES.map((r) => r.text.split(/[:,]/)[0])).toEqual([
+      "One stage per step",
+      "Imperative",
+      "No chatter",
+      "Ingredients by their food name",
+      "Timing",
+      'Move plating and garnish steps to a part named "To serve".',
+      "Drop the author's alternative methods",
+      "Prefer metric",
+    ]);
     const texts = DEFAULT_STYLE_RULES.map((r) => r.text.toLowerCase());
     expect(new Set(texts).size).toBe(texts.length);
     for (const r of DEFAULT_STYLE_RULES) expect(r.text).toBe(r.text.trim());
+  });
+
+  test("a replaced sentence is never also a current one", () => {
+    const current = new Set(DEFAULT_STYLE_RULES.map((r) => r.text.toLowerCase()));
+    for (const r of DEFAULT_STYLE_RULES) for (const old of r.was ?? []) expect(current.has(old.toLowerCase())).toBe(false);
   });
 });

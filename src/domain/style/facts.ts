@@ -1,4 +1,4 @@
-// The facts a restyle must keep: numbers with their units, normalised so "180C" and "180 °C" are one, and the foods the original steps mention.
+// The facts a restyle must keep: numbers with their units, normalised so "180C" and "180 °C" are one, and the foods the original steps mention. A unitless number inside a bracketed remark of four words or more is an aside, not a fact.
 
 import type { OriginalPart } from "./restyleCheck";
 
@@ -96,6 +96,31 @@ const FACT = new RegExp(String.raw`(${NUMBER})(?:\s*(?:-|–|—|to)\s*(${NUMBER
  */
 const REFERENCE = /\b(?:note|notes|step|steps)\s+\d+(?:\s*(?:-|–|—|to|and|&)\s*\d+)*\b/giu;
 
+/** A parenthetical with no nesting: what an author's aside looks like. */
+const PARENTHETICAL = /\(([^()]*)\)/gu;
+
+/** How many words a bracketed remark needs before it reads as a sentence rather than a quantity. */
+const ASIDE_WORDS = 4;
+
+/**
+ * An aside is a parenthetical that reads as a remark — four words or more —
+ * whose numbers carry no unit: "(I use 2 wooden spoons)", "(Note 5 for slow
+ * cooker and pressure cooker)". The no-chatter statement drops these on
+ * purpose, so their numbers are not facts. A short bracket is a quantity the
+ * author tucked away — "(2 cloves)", "(about 3)", "(or 6)" — and a bracket
+ * with a unit or a degree sign — "(3 - 5 minutes in total)", "(180°C)" — is
+ * the method itself; both are kept. Pure.
+ */
+function withoutAsides(text: string): string {
+  return text.replace(PARENTHETICAL, (whole, inner: string) => {
+    if (inner.trim().split(/\s+/u).length < ASIDE_WORDS) return whole;
+    for (const match of inner.matchAll(FACT)) {
+      if (normaliseUnit(match[3]) !== null || /°/u.test(match[0])) return whole;
+    }
+    return " ";
+  });
+}
+
 /** A number as it is written in a fact: glyphs spelled out, thousands separators and spaces gone. */
 function normaliseNumber(raw: string): string {
   const glyph = GLYPH_FRACTIONS.get(raw);
@@ -125,7 +150,7 @@ function normaliseUnit(raw: string | undefined): string | null {
 export function factsOf(steps: readonly string[]): string[] {
   const facts: string[] = [];
   for (const step of steps) {
-    const withoutReferences = step.replace(REFERENCE, " ");
+    const withoutReferences = withoutAsides(step).replace(REFERENCE, " ");
     for (const match of withoutReferences.matchAll(FACT)) {
       const unit = normaliseUnit(match[3]) ?? "";
       facts.push(normaliseNumber(match[1]!) + unit);

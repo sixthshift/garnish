@@ -139,6 +139,18 @@ test("note and step references are pointers, not facts", () => {
   expect(factsOf(["Repeat steps 2 to 4 for the second batch of 6 pieces"])).toEqual(["6"]);
 });
 
+test("a bracketed remark with no unit is chatter, not a fact; a bracketed quantity, time or temperature is a fact", () => {
+  expect(factsOf(["Gently toss the pasta (I use 2 wooden spoons) for 1 to 2 minutes."])).toEqual(["1min", "2min"]);
+  expect(factsOf(["Sear until very browned (3 - 5 minutes in total)."])).toEqual(["3min", "5min"]);
+  expect(factsOf(["Heat the oven (180°C) and cut into 4 pieces (or 6)."])).toEqual(["180c", "4", "6"]);
+  expect(factsOf(["Add the garlic (2 cloves) and the eggs (about 3)."])).toEqual(["2", "3"]);
+  expect(factsOf(["Cover (Note 5 for slow cooker and pressure cooker) and cook 2 hours."])).toEqual(["2h"]);
+  const cloves: OriginalPart = { name: "", ingredients: [], steps: [{ text: "Add the garlic (2 cloves)." }] };
+  expect(checkPart(cloves, { name: "", steps: ["Add the garlic."] }).ok).toBe(false);
+  const original: OriginalPart = { name: "", ingredients: [], steps: [{ text: "Toss (I use 2 wooden spoons) for 1 to 2 minutes." }] };
+  expect(checkPart(original, { name: "", steps: ["Toss for 1 to 2 minutes."] }).ok).toBe(true);
+});
+
 test("a number the author repeated in a step's title and body survives being said once", () => {
   const original: OriginalPart = {
     name: "",

@@ -121,7 +121,17 @@ Four environment variables, on the host or in the container:
 | `AI_API_KEY` | _(unset)_ | The provider's API key. Setting it is the whole of the setup; unset, the option is hidden |
 | `AI_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta/openai` | Any OpenAI-compatible endpoint, without the `/chat/completions` |
 | `AI_MODEL` | `gemini-flash-lite-latest` | The model to ask. The default is Google's rolling alias, so it follows releases without a change here |
-| `AI_RESTYLE_MODEL` | _(`AI_MODEL`)_ | The model the house style pass asks (M37.4). Rewriting steps is harder than reading a page, so the restyle can run a bigger model while the import stays on the default |
+| `AI_RESTYLE_MODEL` | _(`AI_MODEL`)_ | The model the house style pass asks (M37.4), when it should differ from the import's. The prompt and the seeded statements are written to read well on whatever model is passed in, so this is a preference, not a fix |
+
+To try the house style on a real recipe without writing anything, from the author's steps even if the recipe was restyled already:
+
+```bash
+bun run restyle "Slow Cooked Shredded Beef Ragu Pasta"              # the guide's enabled statements, on AI_RESTYLE_MODEL
+bun run restyle beef-ragu --part "Full recipe" --model gemini-flash-lite-latest,gemini-3.6-flash
+bun run restyle beef-ragu --rules my-statements.txt --prompt         # one statement per line; print the prompt too
+```
+
+Each model's rewrite is printed with the facts check's verdict and the step count before and after. A statement or prompt change should read well on two models before it is kept.
 
 The defaults are Google's Gemini free tier, so a key from [AI Studio](https://aistudio.google.com/apikey) is all that is needed. Any OpenAI-compatible provider works instead — Mistral, Groq, OpenRouter, or an Ollama on the LAN (`AI_BASE_URL=http://ollama.lan:11434/v1`, any non-empty key):
 

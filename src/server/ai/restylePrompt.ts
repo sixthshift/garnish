@@ -44,23 +44,60 @@ export type RestyleAnswer = z.infer<typeof RestyleAnswerSchema>;
 /** A part as the prompt shows it: the name, the ingredient lines as the app renders them, and the steps. */
 export type PromptPart = { name: string; ingredients: string[]; steps: string[] };
 
+/** The marker after an ingredient line that names its food: what a step is told to call the ingredient. Pure. */
+export function foodMarker(name: string): string {
+  return `(food: ${name.trim()})`;
+}
+
 /**
  * The parts as the prompt shows them. Ingredient lines are formatted the way
  * the recipe page formats them (`formatIngredient`) rather than sent as the
- * raw `originalText`, because the list the model is told to name ingredients
- * from (statement 8) should be the list the household reads. A row that
- * formats to nothing falls back to its raw line so no ingredient goes
- * unmentioned. Pure.
+ * raw `originalText`, because the list the model reads should be the list the
+ * household reads. A row that formats to nothing falls back to its raw line so
+ * no ingredient goes unmentioned. A row with a food carries `(food: …)` after
+ * it: the name a step calls the ingredient by (statement "call an ingredient
+ * by its food name"), which is also the name the step linker matches on, so a
+ * rewrite that obeys links better than the author's steps did. Pure.
  */
 export function promptParts(parts: readonly Part[]): PromptPart[] {
   return parts.map((part) => ({
     name: part.name,
     ingredients: part.ingredients.map((row) => {
-      const line = formatIngredient(row).trim();
-      return line === "" ? row.originalText.trim() : line;
+      const formatted = formatIngredient(row).trim();
+      const line = formatted === "" ? row.originalText.trim() : formatted;
+      return row.food ? `${line} ${foodMarker(row.food.name)}` : line;
     }),
     steps: part.steps.map((step) => step.text),
   }));
+}
+
+/**
+ * The parts worth asking about: those with a step. An empty part (an import
+ * sometimes leaves the main body with no steps when every step sits under a
+ * heading) is not sent, because a model given nothing to rewrite tends to
+ * leave it out of its answer, and the pairing would then fail. `withEmptyParts`
+ * puts them back. Pure.
+ */
+export function partsWithSteps<P extends { steps: readonly unknown[] }>(parts: readonly P[]): P[] {
+  return parts.filter((part) => part.steps.length > 0);
+}
+
+/**
+ * The answer's parts back in the recipe's positions: `answered` pairs with the
+ * parts `partsWithSteps` kept, and every empty part is spliced in as itself,
+ * with no steps, so what comes out pairs with the recipe by index. An answer
+ * with the wrong count for the parts that were asked is `malformed`. Pure.
+ */
+export function withEmptyParts(original: readonly Part[], answered: readonly RestyledPart[]): RestyledPart[] {
+  const asked = partsWithSteps(original).length;
+  if (answered.length !== asked) {
+    throw new AiError(
+      "malformed",
+      `The model answered with ${answered.length} part${answered.length === 1 ? "" : "s"} where the recipe has ${asked} with steps, so nothing was changed.`
+    );
+  }
+  let next = 0;
+  return original.map((part) => (part.steps.length === 0 ? { name: part.name, steps: [] } : answered[next++]!));
 }
 
 /**
@@ -86,6 +123,9 @@ function partHeading(name: string): string {
  * steps rewritten and nothing else touched. They are separate from the
  * statements on purpose, because the statements are the household's and change
  * in Settings, while these are the contract the parser and the check depend on.
+ * They also anchor the rewrite to the author's step boundaries: told that
+ * steps "may be merged or split", every model tried turned seven steps into
+ * twenty, so splitting and merging are left to the statements alone.
  * Pure.
  */
 export function restylePrompt({ rules, parts }: { rules: readonly string[]; parts: readonly PromptPart[] }): string {
@@ -96,16 +136,16 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     "HOUSE STYLE:",
   ];
   if (rules.length === 0) lines.push("(no statements are ticked: leave the steps as they are)");
-  else rules.forEach((rule, index) => lines.push(`${index + 1}. ${rule}`));
+  else for (const [index, rule] of rules.entries()) lines.push(`${index + 1}. ${rule}`);
 
   lines.push(
     "",
     "Rules for the answer:",
     "- Answer with the same parts, in the same order, with their names copied exactly as given below. Do not add, drop, merge, rename or reorder a part.",
     "- Rewrite `steps` only. The ingredient lines are shown so you know what is used and what it is called; never answer with them, and never change a quantity, a unit or an ingredient.",
-    "- A part's steps may be merged or split, so a part may answer with more or fewer steps than it was given, but everything the original steps said must still be said.",
+    "- Split or merge steps only where a house style statement asks for it; otherwise keep the author's step boundaries. Everything the original steps said must still be said.",
     "- Keep every number, temperature and time exactly as written, including its unit. Do not convert between metric and imperial, do not round, and do not drop one.",
-    "- Keep every ingredient the original steps named, called by the name the ingredient list uses.",
+    "- Keep every ingredient the original steps named, called by the food name marked `(food: …)` after its ingredient line, never by the whole line.",
     "- Do not invent an ingredient, a step, a time or a quantity, and do not add advice the recipe does not give.",
     "- Steps carry no numbering of their own: one entry per step, plain sentences.",
     "- Answer with the JSON only.",
@@ -119,7 +159,7 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     else for (const line of part.ingredients) lines.push(`- ${line}`);
     lines.push("STEPS:");
     if (part.steps.length === 0) lines.push("(none)");
-    else part.steps.forEach((step, index) => lines.push(`${index + 1}. ${step}`));
+    else for (const [index, step] of part.steps.entries()) lines.push(`${index + 1}. ${step}`);
   }
 
   return lines.join("\n");

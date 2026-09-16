@@ -7,7 +7,7 @@ import { checkRestyle, type RestyleCheck, type RestyledPart } from "../../domain
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher } from "./client";
-import { matchParts, parseRestyleAnswer, promptParts, RESTYLE_JSON_SCHEMA, restylePrompt } from "./restylePrompt";
+import { matchParts, parseRestyleAnswer, partsWithSteps, promptParts, RESTYLE_JSON_SCHEMA, restylePrompt, withEmptyParts } from "./restylePrompt";
 
 export { AiError } from "./client";
 
@@ -39,11 +39,12 @@ export function createRestyleRunner(fetcher: Fetcher = fetch): AiRunner {
  * over it. The rules arrive as their texts rather than as ids so this stays
  * free of the database — `restyleSteps` below does the lookups — and the
  * result is returned whether or not the check passed, because a failed check
- * is something the household is shown, not an error.
+ * is something the household is shown, not an error. Only parts with steps are
+ * sent; an empty part comes back as itself.
  */
 export async function runRestyle(recipe: Recipe, rules: readonly string[], options: { run?: AiRunner } = {}): Promise<RestyleResult> {
   const { run = restyleRunner } = options;
-  const prompt = restylePrompt({ rules, parts: promptParts(recipe.parts) });
+  const prompt = restylePrompt({ rules, parts: promptParts(partsWithSteps(recipe.parts)) });
 
   let content: string;
   try {
@@ -53,7 +54,7 @@ export async function runRestyle(recipe: Recipe, rules: readonly string[], optio
     throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
 
-  const parts = parseRestyleAnswer(content);
+  const parts = withEmptyParts(recipe.parts, parseRestyleAnswer(content));
   matchParts(recipe.parts, parts);
   return { parts, check: checkRestyle(recipe.parts, parts) };
 }

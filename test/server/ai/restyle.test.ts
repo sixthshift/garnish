@@ -5,6 +5,7 @@
 
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import recipes from "../../../src/db/models/recipe/repo";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipe";
 import { AiError, type AiRunner } from "../../../src/server/ai/client";
 import { applyRestyle, createRestyleRunner, restoreSteps, restyleSettings, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
@@ -12,10 +13,12 @@ import {
   FIXED_RESTYLE_LINE,
   matchParts,
   parseRestyleAnswer,
+  partsWithSteps,
   promptParts,
   RESTYLE_JSON_SCHEMA,
   RestyledPartSchema,
   restylePrompt,
+  withEmptyParts,
 } from "../../../src/server/ai/restylePrompt";
 import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
 import { listStyleRules } from "../../../src/server/fns/style";
@@ -177,7 +180,72 @@ describe("the prompt", () => {
         steps: [{ id: "s", text: "Melt.", ingredientIds: [], image: null }],
       },
     ]);
-    expect(lines).toEqual([{ name: "", ingredients: ["125 butter", "a pinch of salt"], steps: ["Melt."] }]);
+    expect(lines).toEqual([{ name: "", ingredients: ["125 butter (food: butter)", "a pinch of salt"], steps: ["Melt."] }]);
+  });
+
+  test("anchors the rewrite to the author's step boundaries and to the marked food names", () => {
+    const prompt = restylePrompt({ rules: ["Plain words."], parts });
+    expect(prompt).toMatch(/keep the author's step boundaries/);
+    expect(prompt).not.toMatch(/may be merged or split/);
+    expect(prompt).toMatch(/food name marked `\(food: …\)`/);
+  });
+});
+
+describe("empty parts", () => {
+  const withSteps = (name: string, ...texts: string[]) => ({
+    id: name,
+    name,
+    ingredients: [],
+    steps: texts.map((text) => ({ id: text, text, ingredientIds: [], image: null })),
+  });
+  const body = withSteps("");
+  const sauce = withSteps("Sauce", "Simmer 10 minutes.");
+  const topping = withSteps("Topping", "Melt the butter.");
+
+  test("are not sent: only parts with steps go in the prompt", () => {
+    expect(partsWithSteps([body, sauce, topping]).map((part) => part.name)).toEqual(["Sauce", "Topping"]);
+  });
+
+  test("come back as themselves, in the recipe's positions", () => {
+    const answered = [
+      { name: "Sauce", steps: ["Simmer for 10 minutes."] },
+      { name: "Topping", steps: ["Melt the butter gently."] },
+    ];
+    expect(withEmptyParts([body, sauce, topping], answered)).toEqual([{ name: "", steps: [] }, answered[0], answered[1]]);
+    expect(withEmptyParts([sauce, body], [answered[0]!])).toEqual([answered[0], { name: "", steps: [] }]);
+  });
+
+  test("an answer with the wrong count for the parts asked is malformed, and says how many were asked", () => {
+    let caught: unknown;
+    try {
+      withEmptyParts([body, sauce, topping], [{ name: "Sauce", steps: [] }]);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(AiError);
+    expect((caught as AiError).kind).toBe("malformed");
+    expect((caught as AiError).message).toMatch(/1 part where the recipe has 2 with steps/);
+  });
+
+  test("runRestyle pairs a two-part answer with a three-part recipe whose main body has no steps", async () => {
+    const input = doc();
+    const recipe = await callServerFn(createRecipe, {
+      ...input,
+      parts: [{ ...input.parts[0]!, steps: [] }, input.parts[1]!, { name: "Topping", ingredients: [], steps: [{ text: "Melt the butter." }] }],
+    });
+    const run = fakeRunner(JSON.stringify({ parts: [GOOD.parts[1], { name: "Topping", steps: ["Melt the butter slowly."] }] }));
+    const { parts, check } = await runRestyle(recipe, ["Plain words."], { run });
+    expect(run.calls[0]!.prompt).not.toContain("main body");
+    expect(parts.map((part) => part.name)).toEqual(["", "Golden syrup mixture", "Topping"]);
+    expect(parts[0]).toEqual({ name: "", steps: [] });
+    expect(check.ok).toBe(true);
+    expect(check.parts).toHaveLength(3);
+
+    // Applying that answer leaves the empty part as it was: no kept steps, so `authorSteps` does not list it.
+    const written = await callServerFn(applyRestyle, { id: recipe.id, parts: parts.map((part) => ({ name: part.name, steps: [...part.steps] })) });
+    expect(written.restyledAt).not.toBeNull();
+    const kept = recipes.ref(recipe.id).authorSteps();
+    expect([...kept.keys()]).toEqual([recipe.parts[1]!.id, recipe.parts[2]!.id]);
   });
 });
 
