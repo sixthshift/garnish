@@ -44,7 +44,13 @@ export function createRestyleRunner(fetcher: Fetcher = fetch): AiRunner {
  */
 export async function runRestyle(recipe: Recipe, rules: readonly string[], options: { run?: AiRunner } = {}): Promise<RestyleResult> {
   const { run = restyleRunner } = options;
-  const prompt = restylePrompt({ rules, parts: promptParts(partsWithSteps(recipe.parts)) });
+  const asked = partsWithSteps(recipe.parts);
+  if (asked.length === 0) {
+    // A recipe with no steps at all has nothing to rewrite: the answer is the recipe, and the model is not called.
+    const parts = recipe.parts.map((part) => ({ name: part.name, steps: [] }));
+    return { parts, check: checkRestyle(recipe.parts, parts) };
+  }
+  const prompt = restylePrompt({ rules, parts: promptParts(asked) });
 
   let content: string;
   try {

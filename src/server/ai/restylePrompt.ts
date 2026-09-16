@@ -123,9 +123,9 @@ function partHeading(name: string): string {
  * steps rewritten and nothing else touched. They are separate from the
  * statements on purpose, because the statements are the household's and change
  * in Settings, while these are the contract the parser and the check depend on.
- * They also anchor the rewrite to the author's step boundaries: told that
- * steps "may be merged or split", every model tried turned seven steps into
- * twenty, so splitting and merging are left to the statements alone.
+ * They also anchor the rewrite to the author's step boundaries: a frame that
+ * lets steps be merged or split is read as an invitation to atomise, so
+ * splitting and merging are left to the statements alone.
  * Pure.
  */
 export function restylePrompt({ rules, parts }: { rules: readonly string[]; parts: readonly PromptPart[] }): string {

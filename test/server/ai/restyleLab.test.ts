@@ -32,6 +32,7 @@ describe("parseLabFlags", () => {
   test("refuses an unknown flag, a flag without a value, two recipes, and no recipe", () => {
     expect(() => parseLabFlags(["ragu", "--loud"], "lite")).toThrow(/Unknown argument --loud/);
     expect(() => parseLabFlags(["ragu", "--part"], "lite")).toThrow(/--part needs a value/);
+    expect(() => parseLabFlags(["ragu", "--model", " , "], "lite")).toThrow(/--model needs at least one model/);
     expect(() => parseLabFlags(["ragu", "pie"], "lite")).toThrow(/One recipe at a time/);
     expect(() => parseLabFlags([], "lite")).toThrow(LAB_USAGE);
   });

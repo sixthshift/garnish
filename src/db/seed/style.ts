@@ -10,19 +10,13 @@ import type { StyleRuleInput } from "../models/style/repo";
 export type SeededStyleRule = StyleRuleInput & { was?: readonly string[] };
 
 /**
- * The starting guide, in reading order, all eight on. One statement per
- * theme — step size, voice, chatter, ingredients, timing — because a finer
- * list (fourteen, then fifteen) read as granular in Settings and every model
- * tried followed a theme's one sentence as well as it followed three. The
- * last three move or drop content rather than reword it; the facts check
- * flags what they drop, so the part starts unticked in the sheet.
- *
- * Reworded 2026-09-16 after a live restyle turned seven steps into twenty
- * whatever the model: "one action per step" read as one verb per step however
- * it was defined, so a step is a stage, which held the author's seven steps
- * everywhere; and quantities pasted into steps now stay in the ingredient row
- * the step links to. `bun run restyle` is how to try a change here against a
- * real recipe on two models before it lands.
+ * The starting guide, in reading order, all eight on: one statement per theme
+ * — step size, voice, chatter, ingredients, timing — then three that move or
+ * drop content rather than reword it, which the facts check flags so the part
+ * starts unticked in the sheet. A step is a stage rather than an action
+ * because models read "one action" as one verb; quantities stay in the
+ * ingredient row a step links to rather than in its text. Try a change here
+ * with `bun run restyle` on two models before it lands.
  */
 export const DEFAULT_STYLE_RULES: readonly SeededStyleRule[] = [
   {

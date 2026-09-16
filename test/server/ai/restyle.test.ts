@@ -227,6 +227,19 @@ describe("empty parts", () => {
     expect((caught as AiError).message).toMatch(/1 part where the recipe has 2 with steps/);
   });
 
+  test("a recipe with no steps at all is its own answer, and the model is not called", async () => {
+    const input = doc();
+    const recipe = await callServerFn(createRecipe, { ...input, parts: input.parts.map((part) => ({ ...part, steps: [] })) });
+    const run = fakeRunner("never read");
+    const { parts, check } = await runRestyle(recipe, ["Plain words."], { run });
+    expect(run.calls).toEqual([]);
+    expect(parts).toEqual([
+      { name: "", steps: [] },
+      { name: "Golden syrup mixture", steps: [] },
+    ]);
+    expect(check.ok).toBe(true);
+  });
+
   test("runRestyle pairs a two-part answer with a three-part recipe whose main body has no steps", async () => {
     const input = doc();
     const recipe = await callServerFn(createRecipe, {

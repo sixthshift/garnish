@@ -18,11 +18,8 @@ if (import.meta.main) {
   const db = openDatabase(path);
   try {
     const recipes = recipeRepository(db);
-    const found: Recipe | null =
-      recipes.get(flags.recipe) ??
-      recipes.getById(flags.recipe) ??
-      recipes.query({ by: "name", name: flags.recipe }).map((row) => recipes.getById(row.id))[0] ??
-      null;
+    const byName = recipes.query({ by: "name", name: flags.recipe })[0];
+    const found: Recipe | null = recipes.get(flags.recipe) ?? recipes.getById(flags.recipe) ?? (byName ? recipes.getById(byName.id) : null);
     if (found === null) throw new Error(`No recipe "${flags.recipe}" by slug, id or name.`);
 
     const rules =

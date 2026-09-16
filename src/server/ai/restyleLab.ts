@@ -30,11 +30,13 @@ export function parseLabFlags(argv: readonly string[], defaultModel: string): La
       if (value === undefined) throw new Error(`${arg} needs a value. ${LAB_USAGE}`);
       if (arg === "--part") flags.part = value;
       else if (arg === "--rules") flags.rulesFile = value;
-      else
+      else {
         flags.models = value
           .split(",")
           .map((m) => m.trim())
           .filter((m) => m !== "");
+        if (flags.models.length === 0) throw new Error(`--model needs at least one model. ${LAB_USAGE}`);
+      }
     } else if (arg.startsWith("--")) throw new Error(`Unknown argument ${arg}. ${LAB_USAGE}`);
     else if (flags.recipe === "") flags.recipe = arg;
     else throw new Error(`One recipe at a time. ${LAB_USAGE}`);
