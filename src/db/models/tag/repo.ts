@@ -15,7 +15,7 @@ export type Tag = {
 
 export type TagInput = { name: string };
 
-export function tags(db: Database) {
+export function tagRepository(db: Database) {
   const dz = orm(db);
 
   function get(id: string): Tag | null {
@@ -112,7 +112,7 @@ export function tags(db: Database) {
   };
 }
 
-export type TagRepository = ReturnType<typeof tags>;
+export type TagRepository = ReturnType<typeof tagRepository>;
 
-/** The repository over the application database. Tests build their own with `tags(db)`. */
-export default lazy(getDb, tags);
+/** The repository over the application database. Tests build their own with `tagRepository(db)`. */
+export default lazy(getDb, tagRepository);

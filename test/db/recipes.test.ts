@@ -4,7 +4,7 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { type RecipeRepository, recipes } from "../../src/db/models/recipe/repo";
+import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
 import { type RecipeInput, recipeInputSchema, recipeSchema, recipeSummarySchema } from "../../src/domain/recipe";
 
 let db: Database;
@@ -12,7 +12,7 @@ let repo: RecipeRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = recipes(db);
+  repo = recipeRepository(db);
 });
 
 function count(table: string): number {
@@ -166,7 +166,7 @@ test("create round-trips a full document and creates its references", () => {
   expect(repo.getById("nope")).toBeNull();
 
   // Writing the read document back is a no-op on content: the editor saves exactly what it loaded.
-  const again = repo.update(created.id, recipeInputSchema.parse(created))!;
+  const again = repo.ref(created.id).replace(recipeInputSchema.parse(created))!;
   expect({ ...again, updatedAt: created.updatedAt }).toEqual(created);
 });
 
@@ -218,8 +218,7 @@ test("slugs are lowercase ASCII, de-duplicated with -2, -3", () => {
 test("update replaces components, steps, notes and tags in place and keeps id and slug", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
 
-  const updated = repo.update(
-    created.id,
+  const updated = repo.ref(created.id).replace(
     recipeInputSchema.parse({
       ...fullDoc,
       description: "Now flat.",
@@ -273,7 +272,7 @@ test("update replaces components, steps, notes and tags in place and keeps id an
   expect(count("unit")).toBe(1);
 
   expect(repo.get("butter-pasta")).toEqual(updated);
-  expect(repo.update("missing", recipeInputSchema.parse(minimal("x")))).toBeNull();
+  expect(repo.ref("missing").replace(recipeInputSchema.parse(minimal("x")))).toBeNull();
 });
 
 test("update regenerates the slug only when the name changes", () => {
@@ -281,13 +280,13 @@ test("update regenerates the slug only when the name changes", () => {
   const created = repo.create(recipeInputSchema.parse(minimal("Toast")));
   expect(created.slug).toBe("toast");
 
-  expect(repo.update(created.id, recipeInputSchema.parse(minimal("Toast", { description: "same name" })))!.slug).toBe("toast");
-  const renamed = repo.update(created.id, recipeInputSchema.parse(minimal("Toast 2")))!;
+  expect(repo.ref(created.id).replace(recipeInputSchema.parse(minimal("Toast", { description: "same name" })))!.slug).toBe("toast");
+  const renamed = repo.ref(created.id).replace(recipeInputSchema.parse(minimal("Toast 2")))!;
   expect(renamed.slug).toBe("toast-2-2"); // "toast-2" is taken by the other recipe
   expect(repo.get("toast")).toBeNull();
   expect(repo.get("toast-2-2")!.id).toBe(created.id);
   // Renaming back reclaims the free slug rather than suffixing against itself.
-  expect(repo.update(created.id, recipeInputSchema.parse(minimal("Toast")))!.slug).toBe("toast");
+  expect(repo.ref(created.id).replace(recipeInputSchema.parse(minimal("Toast")))!.slug).toBe("toast");
 });
 
 test("a failing write leaves the previous recipe intact", () => {
@@ -299,7 +298,7 @@ test("a failing write leaves the previous recipe intact", () => {
     { id: ids.step1, text: "dup", ingredientIds: [], image: null },
   ];
 
-  expect(() => repo.update(created.id, bad)).toThrow(/UNIQUE|PRIMARY/);
+  expect(() => repo.ref(created.id).replace(bad)).toThrow(/UNIQUE|PRIMARY/);
   expect(repo.get("butter-pasta")).toEqual(created);
   expect(count("recipe")).toBe(1);
 
@@ -349,7 +348,7 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
   const toast = repo.create(recipeInputSchema.parse(minimal("Cheese Toast", { tags: [weeknight], prepTime: 2 })));
   const soup = repo.create(recipeInputSchema.parse(minimal("Pumpkin soup", { rating: 3 })));
 
-  const all = repo.list();
+  const all = repo.query();
   expect(all.map((r) => r.slug).sort()).toEqual(["butter-pasta", "cheese-toast", "pumpkin-soup"]);
   for (const s of all) expect(recipeSummarySchema.parse(s)).toEqual(s);
   const bySlug = Object.fromEntries(all.map((r) => [r.slug, r]));
@@ -384,25 +383,25 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
   expect(bySlug["pumpkin-soup"]!.rating).toBe(3);
   expect(bySlug["pumpkin-soup"]!.tags).toEqual([]);
 
-  expect(repo.list({ q: "PAST" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.query({ by: "filter", q: "PAST" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
   expect(
     repo
-      .list({ q: "s" })
+      .query({ by: "filter", q: "s" })
       .map((r) => r.slug)
       .sort()
   ).toEqual(["butter-pasta", "cheese-toast", "pumpkin-soup"]);
-  expect(repo.list({ q: "   " }).length).toBe(3);
-  expect(repo.list({ q: "nothing" })).toEqual([]);
+  expect(repo.query({ by: "filter", q: "" }).length).toBe(3);
+  expect(repo.query({ by: "filter", q: "nothing" })).toEqual([]);
 
   expect(
     repo
-      .list({ tag: "weeknight" })
+      .query({ by: "filter", tags: ["weeknight"] })
       .map((r) => r.slug)
       .sort()
   ).toEqual(["butter-pasta", "cheese-toast"]);
-  expect(repo.list({ tag: "pasta" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
-  expect(repo.list({ tag: "weeknight", q: "toast" }).map((r) => r.slug)).toEqual(["cheese-toast"]);
-  expect(repo.list({ tag: "missing" })).toEqual([]);
+  expect(repo.query({ by: "filter", tags: ["pasta"] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.query({ by: "filter", tags: ["weeknight"], q: "toast" }).map((r) => r.slug)).toEqual(["cheese-toast"]);
+  expect(repo.query({ by: "filter", tags: ["missing"] })).toEqual([]);
   expect(soup.tags).toEqual([]);
 });
 
@@ -431,7 +430,7 @@ test("a summary's ingredientPreview is the first six lines, part order then row 
     ],
   };
   const created = repo.create(recipeInputSchema.parse(doc));
-  const summary = repo.list().find((r) => r.id === created.id)!;
+  const summary = repo.query().find((r) => r.id === created.id)!;
   // Seven lines across two parts; the seventh (part B's third row) is dropped.
   expect(summary.ingredientPreview).toEqual(["1 g food 1", "2 g food 2", "3 g food 3", "4 g food 4", "5 g food 5", "6 g food 6"]);
 });
@@ -444,27 +443,27 @@ test("list filters by tags[] with any (default) and all match", () => {
   // any: either tag.
   expect(
     repo
-      .list({ tags: ["pasta", "weeknight"] })
+      .query({ by: "filter", tags: ["pasta", "weeknight"] })
       .map((r) => r.slug)
       .sort()
   ).toEqual(["butter-pasta", "cheese-toast"]);
   expect(
     repo
-      .list({ tags: ["pasta", "weeknight"], match: "any" })
+      .query({ by: "filter", tags: ["pasta", "weeknight"], match: "any" })
       .map((r) => r.slug)
       .sort()
   ).toEqual(["butter-pasta", "cheese-toast"]);
   // all: only the recipe carrying every tag.
-  expect(repo.list({ tags: ["pasta", "weeknight"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
-  expect(repo.list({ tags: ["missing"] })).toEqual([]);
-  // The legacy singular `tag` folds into the set alongside `tags`.
-  expect(repo.list({ tag: "weeknight", tags: ["pasta"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.query({ by: "filter", tags: ["pasta", "weeknight"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.query({ by: "filter", tags: ["missing"] })).toEqual([]);
+  // A slug given twice is one constraint, not two.
+  expect(repo.query({ by: "filter", tags: ["weeknight", "pasta", "weeknight"], match: "all" }).map((r) => r.slug)).toEqual(["butter-pasta"]);
   expect(
     repo
-      .list({ tag: "weeknight", tags: ["weeknight"] })
+      .query({ by: "filter", tags: ["weeknight", "weeknight"] })
       .map((r) => r.slug)
       .sort()
-  ).toEqual(["butter-pasta", "cheese-toast"]); // de-duplicated, not doubled
+  ).toEqual(["butter-pasta", "cheese-toast"]); // each once, not doubled
 });
 
 test("list filters by foods[]", () => {
@@ -473,26 +472,26 @@ test("list filters by foods[]", () => {
   const spaghettiId = full.parts[0]!.ingredients[0]!.food!.id;
   const butterId = full.parts[1]!.ingredients[0]!.food!.id;
 
-  expect(repo.list({ foods: [spaghettiId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
-  expect(repo.list({ foods: [butterId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
-  expect(repo.list({ foods: [spaghettiId, crypto.randomUUID()] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
-  expect(repo.list({ foods: [crypto.randomUUID()] })).toEqual([]);
+  expect(repo.query({ by: "filter", foods: [spaghettiId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.query({ by: "filter", foods: [butterId] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.query({ by: "filter", foods: [spaghettiId, crypto.randomUUID()] }).map((r) => r.slug)).toEqual(["butter-pasta"]);
+  expect(repo.query({ by: "filter", foods: [crypto.randomUUID()] })).toEqual([]);
 });
 
 test("list filters by favourite", () => {
   repo.create(recipeInputSchema.parse(minimal("Fav", { favourite: true })));
   repo.create(recipeInputSchema.parse(minimal("Not fav")));
 
-  expect(repo.list({ favourite: true }).map((r) => r.slug)).toEqual(["fav"]);
+  expect(repo.query({ by: "filter", favourite: true }).map((r) => r.slug)).toEqual(["fav"]);
   expect(
     repo
-      .list({ favourite: false })
+      .query({ by: "filter", favourite: false })
       .map((r) => r.slug)
       .sort()
   ).toEqual(["fav", "not-fav"]);
   expect(
     repo
-      .list()
+      .query()
       .map((r) => r.slug)
       .sort()
   ).toEqual(["fav", "not-fav"]);
@@ -502,7 +501,7 @@ test("list orders newest first", () => {
   const a = repo.create(recipeInputSchema.parse(minimal("A")));
   db.run("UPDATE recipe SET created_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", [a.id]);
   const b = repo.create(recipeInputSchema.parse(minimal("B")));
-  expect(repo.list().map((r) => r.id)).toEqual([b.id, a.id]);
+  expect(repo.query().map((r) => r.id)).toEqual([b.id, a.id]);
 });
 
 test("list sorts by name, created and updated in both directions (M12.4)", () => {
@@ -510,26 +509,26 @@ test("list sorts by name, created and updated in both directions (M12.4)", () =>
   const a = repo.create(recipeInputSchema.parse(minimal("Apple pie")));
   const c = repo.create(recipeInputSchema.parse(minimal("Carrot soup")));
 
-  expect(repo.list({ sort: "name", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "banana-cake", "carrot-soup"]);
-  expect(repo.list({ sort: "name", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "banana-cake", "apple-pie"]);
+  expect(repo.query({ by: "filter", sort: "name", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "banana-cake", "carrot-soup"]);
+  expect(repo.query({ by: "filter", sort: "name", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "banana-cake", "apple-pie"]);
   // Omitted dir defaults per key: name reads ascending.
-  expect(repo.list({ sort: "name" }).map((r) => r.slug)).toEqual(["apple-pie", "banana-cake", "carrot-soup"]);
+  expect(repo.query({ by: "filter", sort: "name" }).map((r) => r.slug)).toEqual(["apple-pie", "banana-cake", "carrot-soup"]);
 
   db.run("UPDATE recipe SET created_at = '2020-06-01T00:00:00.000Z' WHERE id = ?", [b.id]);
   db.run("UPDATE recipe SET created_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", [a.id]);
   db.run("UPDATE recipe SET created_at = '2020-03-01T00:00:00.000Z' WHERE id = ?", [c.id]);
-  expect(repo.list({ sort: "created", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
-  expect(repo.list({ sort: "created", dir: "desc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  expect(repo.query({ by: "filter", sort: "created", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
+  expect(repo.query({ by: "filter", sort: "created", dir: "desc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
   // Omitted sort/dir keeps the original newest-created-first order.
-  expect(repo.list().map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  expect(repo.query().map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
   // Omitted dir defaults per key: created reads newest first.
-  expect(repo.list({ sort: "created" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  expect(repo.query({ by: "filter", sort: "created" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
 
   db.run("UPDATE recipe SET updated_at = '2021-06-01T00:00:00.000Z' WHERE id = ?", [b.id]);
   db.run("UPDATE recipe SET updated_at = '2021-01-01T00:00:00.000Z' WHERE id = ?", [a.id]);
   db.run("UPDATE recipe SET updated_at = '2021-03-01T00:00:00.000Z' WHERE id = ?", [c.id]);
-  expect(repo.list({ sort: "updated", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
-  expect(repo.list({ sort: "updated", dir: "desc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  expect(repo.query({ by: "filter", sort: "updated", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
+  expect(repo.query({ by: "filter", sort: "updated", dir: "desc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
 });
 
 test("list sorts by lastMade and rating, nulls last regardless of direction (M12.4)", () => {
@@ -537,79 +536,79 @@ test("list sorts by lastMade and rating, nulls last regardless of direction (M12
   repo.create(recipeInputSchema.parse(minimal("Apple pie", { lastMade: "2026-01-01T00:00:00.000Z" }))); // no rating
   repo.create(recipeInputSchema.parse(minimal("Carrot soup", { rating: 5, lastMade: "2026-06-01T00:00:00.000Z" })));
 
-  expect(repo.list({ sort: "lastMade", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
-  expect(repo.list({ sort: "lastMade", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "apple-pie", "banana-cake"]);
+  expect(repo.query({ by: "filter", sort: "lastMade", dir: "asc" }).map((r) => r.slug)).toEqual(["apple-pie", "carrot-soup", "banana-cake"]);
+  expect(repo.query({ by: "filter", sort: "lastMade", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "apple-pie", "banana-cake"]);
 
-  expect(repo.list({ sort: "rating", dir: "asc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
-  expect(repo.list({ sort: "rating", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "banana-cake", "apple-pie"]);
+  expect(repo.query({ by: "filter", sort: "rating", dir: "asc" }).map((r) => r.slug)).toEqual(["banana-cake", "carrot-soup", "apple-pie"]);
+  expect(repo.query({ by: "filter", sort: "rating", dir: "desc" }).map((r) => r.slug)).toEqual(["carrot-soup", "banana-cake", "apple-pie"]);
 });
 
 test("list sort random is stable for a given seed, reshuffles for a different one, and keeps the same rows (M12.4)", () => {
   const created = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"].map((name) => repo.create(recipeInputSchema.parse(minimal(name))));
 
-  const first = repo.list({ sort: "random", seed: "seed-a" }).map((r) => r.id);
-  const again = repo.list({ sort: "random", seed: "seed-a" }).map((r) => r.id);
+  const first = repo.query({ by: "filter", sort: "random", seed: "seed-a" }).map((r) => r.id);
+  const again = repo.query({ by: "filter", sort: "random", seed: "seed-a" }).map((r) => r.id);
   expect(again).toEqual(first);
   expect(first.slice().sort()).toEqual(created.map((r) => r.id).sort());
 
-  const other = repo.list({ sort: "random", seed: "seed-b" }).map((r) => r.id);
+  const other = repo.query({ by: "filter", sort: "random", seed: "seed-b" }).map((r) => r.id);
   expect(other).not.toEqual(first);
 
   // A filter still applies before the shuffle.
-  expect(repo.list({ sort: "random", seed: "seed-a", q: "alp" }).map((r) => r.slug)).toEqual(["alpha"]);
+  expect(repo.query({ by: "filter", sort: "random", seed: "seed-a", q: "alp" }).map((r) => r.slug)).toEqual(["alpha"]);
 });
 
-test("setImage changes only the image column and reports whether the id exists", () => {
+test("ref(id).setImage changes only the image column and reports whether the id exists", () => {
   const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
   expect(created.image).toBeNull();
 
-  expect(repo.setImage(created.id, `${created.id}.png`)).toBe(true);
+  expect(repo.ref(created.id).setImage(`${created.id}.png`)).toBe(true);
   const after = repo.getById(created.id)!;
   expect(after.image).toBe(`${created.id}.png`);
   expect({ ...after, image: null, updatedAt: created.updatedAt }).toEqual(created);
 
-  expect(repo.setImage(created.id, null)).toBe(true);
+  expect(repo.ref(created.id).setImage(null)).toBe(true);
   expect(repo.getById(created.id)!.image).toBeNull();
-  expect(repo.setImage(ids.recipe, "x.png")).toBe(false);
+  expect(repo.ref(ids.recipe).setImage("x.png")).toBe(false);
 });
 
 test("favourite round-trips through create, update and the list summary", () => {
   const created = repo.create(recipeInputSchema.parse(minimal("Toast", { favourite: true })));
   expect(created.favourite).toBe(true);
-  expect(repo.list().find((r) => r.id === created.id)!.favourite).toBe(true);
+  expect(repo.query().find((r) => r.id === created.id)!.favourite).toBe(true);
 
-  const updated = repo.update(created.id, recipeInputSchema.parse(minimal("Toast", { favourite: false })))!;
+  const updated = repo.ref(created.id).replace(recipeInputSchema.parse(minimal("Toast", { favourite: false })))!;
   expect(updated.favourite).toBe(false);
 });
 
-test("setRating writes the rating, clears it with null, and reports whether the id exists", () => {
+test("ref(id).rate writes the rating, clears it with null, and reports whether the id exists", () => {
   const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
   expect(created.rating).toBeNull();
 
-  expect(repo.setRating(created.id, 4)).toBe(true);
+  expect(repo.ref(created.id).rate(4)).toBe(true);
   const after = repo.getById(created.id)!;
   expect(after.rating).toBe(4);
   expect({ ...after, rating: null, updatedAt: created.updatedAt }).toEqual(created);
-  expect(repo.list().find((r) => r.id === created.id)!.rating).toBe(4);
+  expect(repo.query().find((r) => r.id === created.id)!.rating).toBe(4);
 
-  expect(repo.setRating(created.id, null)).toBe(true);
+  expect(repo.ref(created.id).rate(null)).toBe(true);
   expect(repo.getById(created.id)!.rating).toBeNull();
-  expect(repo.setRating(ids.recipe, 3)).toBe(false);
+  expect(repo.ref(ids.recipe).rate(3)).toBe(false);
 });
 
-test("setFavourite changes only the favourite column and reports whether the id exists", () => {
+test("ref(id).favourite changes only the favourite column and reports whether the id exists", () => {
   const created = repo.create(recipeInputSchema.parse(minimal("Toast", { description: "Bread, heated." })));
   expect(created.favourite).toBe(false);
 
-  expect(repo.setFavourite(created.id, true)).toBe(true);
+  expect(repo.ref(created.id).favourite(true)).toBe(true);
   const after = repo.getById(created.id)!;
   expect(after.favourite).toBe(true);
   expect({ ...after, favourite: false }).toEqual(created);
-  expect(repo.list().find((r) => r.id === created.id)!.favourite).toBe(true);
+  expect(repo.query().find((r) => r.id === created.id)!.favourite).toBe(true);
 
-  expect(repo.setFavourite(created.id, false)).toBe(true);
+  expect(repo.ref(created.id).favourite(false)).toBe(true);
   expect(repo.getById(created.id)!.favourite).toBe(false);
-  expect(repo.setFavourite(ids.recipe, true)).toBe(false);
+  expect(repo.ref(ids.recipe).favourite(true)).toBe(false);
 });
 
 // --- Step links (M28.1) ------------------------------------------------------
@@ -642,7 +641,7 @@ test("a step reads back with the ingredients it links, in link order, and a row 
   expect(count("step_ingredient")).toBe(4);
 
   // Round-trip: saving what was read changes nothing.
-  const again = repo.update(created.id, recipeInputSchema.parse(created))!;
+  const again = repo.ref(created.id).replace(recipeInputSchema.parse(created))!;
   expect({ ...again, updatedAt: created.updatedAt }).toEqual(created);
 });
 
@@ -665,7 +664,7 @@ test("a step link goes with either side: deleting the recipe clears the table, a
   // Dropping the ingredient row from the document takes the two links naming it.
   const trimmed = recipeInputSchema.parse(created);
   trimmed.parts[0]!.ingredients = trimmed.parts[0]!.ingredients.filter((i) => i.id !== ids.ing1);
-  const updated = repo.update(created.id, trimmed)!;
+  const updated = repo.ref(created.id).replace(trimmed)!;
   expect(updated.parts[0]!.steps.map((s) => s.ingredientIds)).toEqual([[ids.ing2], []]);
   expect(count("step_ingredient")).toBe(2);
 
@@ -674,7 +673,7 @@ test("a step link goes with either side: deleting the recipe clears the table, a
 });
 
 // --- Restyle (M37.5) ---------------------------------------------------------
-// `restyleParts` and `restoreParts` are the only writes that touch steps
+// `ref(id).restyle` and `ref(id).restore` are the only writes that touch steps
 // without touching the rest of the document, so they are tested against the
 // table rather than only through the document: `source_steps` is written once
 // and never again, and it is the column a restore reads.
@@ -697,7 +696,7 @@ const restyled = [
 test("a restyle keeps the author's steps, replaces the steps and links the new ones", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
 
-  const after = repo.restyleParts(created.id, restyled)!;
+  const after = repo.ref(created.id).restyle(restyled)!;
 
   expect(after.parts.map((p) => p.steps.map((s) => s.text))).toEqual(restyled.map((p) => p.steps));
   // Fresh rows: a rewritten step is not the step it replaced.
@@ -716,9 +715,9 @@ test("a restyle keeps the author's steps, replaces the steps and links the new o
 
 test("a second restyle leaves the kept original alone: it is the author's, not the last rewrite", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
-  repo.restyleParts(created.id, restyled);
+  repo.ref(created.id).restyle(restyled);
 
-  const again = repo.restyleParts(created.id, [
+  const again = repo.ref(created.id).restyle([
     { name: "Pasta", steps: ["Boil salted water, then cook the spaghetti."] },
     { name: "Sauce", steps: ["Melt the butter."] },
     { name: "", steps: ["Serve."] },
@@ -730,9 +729,9 @@ test("a second restyle leaves the kept original alone: it is the author's, not t
 
 test("restoring puts the author's words back, re-links them and clears the stamp", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
-  repo.restyleParts(created.id, restyled);
+  repo.ref(created.id).restyle(restyled);
 
-  const restored = repo.restoreParts(created.id)!;
+  const restored = repo.ref(created.id).restore()!;
 
   expect(restored.parts.map((p) => p.steps.map((s) => s.text))).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."]]);
   expect(restored.restyledAt).toBeNull();
@@ -748,7 +747,7 @@ test("restoring puts the author's words back, re-links them and clears the stamp
 test("restoring a recipe nobody restyled changes nothing", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
 
-  const restored = repo.restoreParts(created.id)!;
+  const restored = repo.ref(created.id).restore()!;
 
   expect({ ...restored, updatedAt: created.updatedAt }).toEqual(created);
   expect(sourceSteps()).toEqual([null, null, null]);
@@ -757,33 +756,38 @@ test("restoring a recipe nobody restyled changes nothing", () => {
 test("a restyle answering with the wrong number of parts throws and writes nothing", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
 
-  expect(() => repo.restyleParts(created.id, restyled.slice(0, 2))).toThrow(/2 parts where the recipe has 3/);
+  expect(() => repo.ref(created.id).restyle(restyled.slice(0, 2))).toThrow(/2 parts where the recipe has 3/);
   expect(repo.getById(created.id)).toEqual(created);
   expect(sourceSteps()).toEqual([null, null, null]);
 });
 
 test("an ordinary edit keeps the author's steps and the stamp", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
-  const after = repo.restyleParts(created.id, restyled)!;
+  const after = repo.ref(created.id).restyle(restyled)!;
 
   // The editor saves what it loaded, with one field changed; it never sends
   // either of the restyle's columns.
-  const edited = repo.update(created.id, recipeInputSchema.parse({ ...after, description: "Edited." }))!;
+  const edited = repo.ref(created.id).replace(recipeInputSchema.parse({ ...after, description: "Edited." }))!;
 
   expect(edited.description).toBe("Edited.");
   expect(edited.restyledAt).toBe(after.restyledAt);
   expect(sourceSteps()).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."]]);
   // And a restore after the edit still reaches the author's words.
-  expect(repo.restoreParts(created.id)!.parts[0]!.steps.map((s) => s.text)).toEqual(["Boil the pasta."]);
+  expect(
+    repo
+      .ref(created.id)
+      .restore()!
+      .parts[0]!.steps.map((s) => s.text)
+  ).toEqual(["Boil the pasta."]);
 });
 
 test("a part the editor adds after a restyle has no original of its own", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
-  const after = repo.restyleParts(created.id, restyled)!;
+  const after = repo.ref(created.id).restyle(restyled)!;
 
   const doc = recipeInputSchema.parse(after);
   doc.parts.push({ name: "To serve", ingredients: [], steps: [{ text: "Grate over parmesan.", ingredientIds: [], image: null }] });
-  repo.update(created.id, doc);
+  repo.ref(created.id).replace(doc);
 
   expect(sourceSteps()).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."], null]);
 });

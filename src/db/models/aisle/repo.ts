@@ -16,7 +16,7 @@ export type AisleInput = Partial<Omit<Aisle, "id">> & { name: string };
 
 const order = [asc(aisle.position), asc(aisle.name)];
 
-export function aisles(db: Database) {
+export function aisleRepository(db: Database) {
   const dz = orm(db);
 
   function get(id: string): Aisle | null {
@@ -95,7 +95,7 @@ export function aisles(db: Database) {
   };
 }
 
-export type AisleRepository = ReturnType<typeof aisles>;
+export type AisleRepository = ReturnType<typeof aisleRepository>;
 
-/** The repository over the application database. Tests build their own with `aisles(db)`. */
-export default lazy(getDb, aisles);
+/** The repository over the application database. Tests build their own with `aisleRepository(db)`. */
+export default lazy(getDb, aisleRepository);

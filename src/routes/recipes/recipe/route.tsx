@@ -1,8 +1,8 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
-import { type Recipe, type SubRecipe, subRecipeIds, type TimelineEvent } from "../../../domain/recipe";
+import { type Recipe, type SubRecipe, type TimelineEvent } from "../../../domain/recipe";
 import { aiImportAvailable } from "../../../server/fns/import";
-import { getRecipe, listSubRecipes } from "../../../server/fns/recipes";
+import { getRecipe, subRecipesOf } from "../../../server/fns/recipes";
 import { listTimeline } from "../../../server/fns/timeline";
 import { Route as rootRoute } from "../../root";
 
@@ -31,13 +31,12 @@ export const Route = createRoute({
   validateSearch: RecipeViewSearch,
   loader: async ({ params }): Promise<RecipeViewData> => {
     const recipe = await getRecipe({ data: { slug: params.slug } });
-    const ids = subRecipeIds(recipe);
     // Whether a model is configured is asked here rather than in the menu, so
     // "Restyle steps" is either there or it is not. A failed ask is
     // "no model": everything else on the page still works.
     const [timeline, subRecipes, ai] = await Promise.all([
       listTimeline({ data: { recipeId: recipe.id } }),
-      ids.length === 0 ? Promise.resolve<SubRecipe[]>([]) : listSubRecipes({ data: { ids } }),
+      subRecipesOf({ data: { id: recipe.id } }),
       aiImportAvailable().catch(() => ({ available: false })),
     ]);
     return { recipe, timeline, subRecipes, aiAvailable: ai.available };

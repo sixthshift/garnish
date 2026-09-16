@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { orm } from "../../connection/client";
-import { aisles as aisleRepository } from "../aisle/repo";
-import { foods as foodRepository } from "../food/repo";
-import { units as unitRepository } from "../unit/repo";
+import { aisleRepository } from "../aisle/repo";
+import { foodRepository } from "../food/repo";
+import { unitRepository } from "../unit/repo";
 
 export type ShoppingContext = {
   dz: ReturnType<typeof orm>;

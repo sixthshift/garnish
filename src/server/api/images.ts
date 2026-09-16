@@ -56,7 +56,7 @@ export async function handleUploadImage(request: Request, recipeId: string): Pro
   if (!ext) return badRequest("not a png, jpeg, webp or gif image");
 
   const image = await storeImage(recipeId.toLowerCase(), ext, bytes);
-  if (!recipes.setImage(recipeId, image)) return notFound(`recipe ${recipeId} not found`);
+  if (!recipes.ref(recipeId).setImage(image)) return notFound(`recipe ${recipeId} not found`);
   return Response.json({ image });
 }
 

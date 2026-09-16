@@ -20,7 +20,7 @@ export type StyleRuleInput = { text: string; enabled?: boolean; position?: numbe
 // Ties fall back to created_at so a list seeded in one transaction reads in the order it was written.
 const order = [asc(styleRule.position), asc(styleRule.createdAt)];
 
-export function styleRules(db: Database) {
+export function styleRuleRepository(db: Database) {
   const dz = orm(db);
 
   function get(id: string): StyleRule | null {
@@ -100,7 +100,7 @@ export function styleRules(db: Database) {
   };
 }
 
-export type StyleRuleRepository = ReturnType<typeof styleRules>;
+export type StyleRuleRepository = ReturnType<typeof styleRuleRepository>;
 
-/** The repository over the application database. Tests build their own with `styleRules(db)`. */
-export default lazy(getDb, styleRules);
+/** The repository over the application database. Tests build their own with `styleRuleRepository(db)`. */
+export default lazy(getDb, styleRuleRepository);

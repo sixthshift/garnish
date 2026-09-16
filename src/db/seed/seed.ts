@@ -2,10 +2,10 @@ import type { Database } from "bun:sqlite";
 import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { slugify } from "../../lib/names";
 import { orm } from "../connection/client";
-import { recipes } from "../models/recipe/repo";
-import { type StyleRule, styleRules } from "../models/style/repo";
-import { timeline } from "../models/timeline/repo";
-import { type Unit, units } from "../models/unit/repo";
+import { recipeRepository } from "../models/recipe/repo";
+import { type StyleRule, styleRuleRepository } from "../models/style/repo";
+import { timelineRepository } from "../models/timeline/repo";
+import { type Unit, unitRepository } from "../models/unit/repo";
 import { SAMPLE_RECIPES } from "./recipes";
 import { DEFAULT_STYLE_RULES } from "./style";
 import { SAMPLE_TIMELINE } from "./timeline";
@@ -26,8 +26,8 @@ export type SeedResult = { units: Unit[]; styleRules: StyleRule[] };
  * of the guide, where it can be switched off.
  */
 export function seed(db: Database): SeedResult {
-  const unitRepo = units(db);
-  const styleRepo = styleRules(db);
+  const unitRepo = unitRepository(db);
+  const styleRepo = styleRuleRepository(db);
   return orm(db).transaction((): SeedResult => {
     const existingUnits = new Set(unitRepo.list().map((u) => u.name.toLowerCase()));
     const madeUnits: Unit[] = [];
@@ -60,8 +60,8 @@ export type SampleResult = { recipes: Recipe[] };
  * events, which pulls its `lastMade` up to the latest one.
  */
 export function seedSample(db: Database): SampleResult {
-  const repo = recipes(db);
-  const events = timeline(db);
+  const repo = recipeRepository(db);
+  const events = timelineRepository(db);
   const created = orm(db).transaction((): Recipe[] => {
     const made: Recipe[] = [];
     for (const doc of SAMPLE_RECIPES) {

@@ -132,7 +132,7 @@ describe("stepImageUrl", () => {
 
 describe("stepImageUploadUrl", () => {
   test("targets the step's photo route", () => {
-    expect(stepImageUploadUrl("abc-1")).toBe("/api/steps/abc-1/image");
+    expect(stepImageUploadUrl("r-1", "abc-1")).toBe("/api/recipes/r-1/steps/abc-1/image");
   });
 });
 
@@ -145,20 +145,20 @@ describe("uploadStepImage", () => {
       calls.push({ url, init });
       return Response.json({ image: "abc.png" });
     };
-    await expect(uploadStepImage("abc", file, fetcher)).resolves.toBe("abc.png");
-    expect(calls[0]!.url).toBe("/api/steps/abc/image");
+    await expect(uploadStepImage("r", "abc", file, fetcher)).resolves.toBe("abc.png");
+    expect(calls[0]!.url).toBe("/api/recipes/r/steps/abc/image");
     expect(calls[0]!.init?.method).toBe("POST");
     expect((calls[0]!.init?.body as FormData).get(IMAGE_FIELD)).toBeInstanceOf(File);
   });
 
   test("rejects with the server's error text — a step the recipe never saved is a 404 there", async () => {
     const fetcher: Fetcher = async () => Response.json({ error: "step abc not found" }, { status: 404 });
-    await expect(uploadStepImage("abc", file, fetcher)).rejects.toThrow("step abc not found");
+    await expect(uploadStepImage("r", "abc", file, fetcher)).rejects.toThrow("step abc not found");
   });
 
   test("rejects when the response carries no file name", async () => {
     const fetcher: Fetcher = async () => Response.json({});
-    await expect(uploadStepImage("abc", file, fetcher)).rejects.toThrow("no file name");
+    await expect(uploadStepImage("r", "abc", file, fetcher)).rejects.toThrow("no file name");
   });
 });
 

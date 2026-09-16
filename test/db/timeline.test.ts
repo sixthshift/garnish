@@ -4,8 +4,8 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { type RecipeRepository, recipes } from "../../src/db/models/recipe/repo";
-import { lastMadeFrom, type TimelineRepository, timeline } from "../../src/db/models/timeline/repo";
+import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
+import { lastMadeFrom, type TimelineRepository, timelineRepository } from "../../src/db/models/timeline/repo";
 import { type RecipeInput, recipeInputSchema, timelineEventSchema } from "../../src/domain/recipe";
 
 let db: Database;
@@ -18,8 +18,8 @@ const minimal = (name: string): RecipeInput => ({ name, parts: [{ name: "", ingr
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = timeline(db);
-  recipeRepo = recipes(db);
+  repo = timelineRepository(db);
+  recipeRepo = recipeRepository(db);
   recipeId = recipeRepo.create(recipeInputSchema.parse(minimal("Butter pasta"))).id;
 });
 

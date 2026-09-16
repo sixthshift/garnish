@@ -3,7 +3,7 @@
 // ones. See src/domain/recipe/subRecipe.ts.
 import { describe, expect, test } from "vitest";
 import type { Ingredient, Recipe } from "../../../src/domain/recipe/recipe";
-import { type SubRecipe, subRecipeHint, subRecipeIds, subRecipeMap, subRecipeScale } from "../../../src/domain/recipe/subRecipe";
+import { type SubRecipe, subRecipeHint, subRecipeMap, subRecipeScale } from "../../../src/domain/recipe/subRecipe";
 import type { Food, Unit } from "../../../src/domain/reference";
 
 const gram: Unit = {
@@ -147,27 +147,6 @@ describe("subRecipeHint", () => {
     expect(subRecipeHint(1)).toBe("Make 1 serving");
     expect(subRecipeHint(2 / 3)).toBe("Make 0.67 servings");
     expect(subRecipeHint(1.5)).toBe("Make 1.5 servings");
-  });
-});
-
-describe("subRecipeIds", () => {
-  const ingredientWith = (food: Food | null, id: string): Ingredient => ({ ...row({ food }), id });
-
-  test("every recipe an ingredient's food points at, de-duplicated, in first-seen order", () => {
-    const other = { ...pastry(), id: "33333333-3333-4333-8333-333333333333", recipeId: "44444444-4444-4444-8444-444444444444" };
-    const plain = { ...pastry(), id: "55555555-5555-4555-8555-555555555555", recipeId: null };
-    const recipe = {
-      parts: [
-        { id: "p1", name: "", ingredients: [ingredientWith(pastry(), "i1"), ingredientWith(plain, "i2")], steps: [] },
-        { id: "p2", name: "Filling", ingredients: [ingredientWith(other, "i3"), ingredientWith(pastry(), "i4")], steps: [] },
-      ],
-    } as unknown as Recipe;
-    expect(subRecipeIds(recipe)).toEqual([CHILD_ID, other.recipeId]);
-  });
-
-  test("a recipe with no sub-recipes asks for nothing", () => {
-    const recipe = { parts: [{ id: "p1", name: "", ingredients: [ingredientWith(null, "i1")], steps: [] }] } as unknown as Recipe;
-    expect(subRecipeIds(recipe)).toEqual([]);
   });
 });
 

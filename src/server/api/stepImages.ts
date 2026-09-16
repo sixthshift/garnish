@@ -5,7 +5,7 @@ import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_
 import { dataDir } from "../core/boot";
 import { imagesDir } from "./images";
 
-const STEP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `<root>/images/steps`; root defaults to the resolved DATA_DIR. */
 export function stepImagesDir(root: string = dataDir()): string {
@@ -30,14 +30,15 @@ const badRequest = (error: string): Response => Response.json({ error }, { statu
 const notFound = (error: string): Response => Response.json({ error }, { status: 404 });
 
 /**
- * POST /api/steps/:id/image — multipart body with the file in the `image`
- * field. Stores it, points `step.image` at the file and answers
- * `{ image: "<id>.<ext>" }`. 404 for a step that has never been saved, 400 for
- * a missing, oversized or non-image file.
+ * POST /api/recipes/:id/steps/:stepId/image — multipart body with the file in
+ * the `image` field. Stores it, points `step.image` at the file and answers
+ * `{ image: "<stepId>.<ext>" }`. 404 for a step that has never been saved or is
+ * not this recipe's, 400 for a missing, oversized or non-image file.
  */
-export async function handleUploadStepImage(request: Request, stepId: string): Promise<Response> {
-  if (!STEP_ID.test(stepId)) return notFound(`step ${stepId} not found`);
-  if (!recipes.stepExists(stepId)) return notFound(`step ${stepId} not found`);
+export async function handleUploadStepImage(request: Request, recipeId: string, stepId: string): Promise<Response> {
+  if (!UUID.test(recipeId) || !UUID.test(stepId)) return notFound(`step ${stepId} not found`);
+  const record = recipes.ref(recipeId);
+  if (!record.hasStep(stepId)) return notFound(`step ${stepId} not found`);
 
   let form: FormData;
   try {
@@ -55,7 +56,7 @@ export async function handleUploadStepImage(request: Request, stepId: string): P
   if (!ext) return badRequest("not a png, jpeg, webp or gif image");
 
   const image = await storeStepImage(stepId.toLowerCase(), ext, bytes);
-  if (!recipes.setStepImage(stepId, image)) return notFound(`step ${stepId} not found`);
+  if (!record.setStepImage(stepId, image)) return notFound(`step ${stepId} not found`);
   return Response.json({ image });
 }
 

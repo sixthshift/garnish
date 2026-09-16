@@ -4,8 +4,8 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
-import { recipes } from "../../../src/db/models/recipe/repo";
-import { timeline } from "../../../src/db/models/timeline/repo";
+import { recipeRepository } from "../../../src/db/models/recipe/repo";
+import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { parseSeedFlags } from "../../../src/db/seed/cli";
 import { SAMPLE_RECIPES } from "../../../src/db/seed/recipes";
 import { seed, seedSample } from "../../../src/db/seed/seed";
@@ -40,7 +40,7 @@ test("seeds three recipes that read back as full documents", () => {
   expect(count("recipe")).toBe(3);
   for (const doc of created) expect(recipeSchema.safeParse(doc).success).toBe(true);
 
-  const listed = recipes(db).list();
+  const listed = recipeRepository(db).query();
   expect(listed.map((r) => r.name).sort()).toEqual(["Anzac Biscuits", "Lemon Tart", "Roast Pumpkin Soup with Garlic Croutons"]);
   expect(listed.every((r) => r.image === null)).toBe(true);
   expect(listed.some((r) => r.rating !== null)).toBe(true);
@@ -49,7 +49,7 @@ test("seeds three recipes that read back as full documents", () => {
 
 test("one recipe has three parts in order, one has two named parts plus the unnamed body, one is flat", () => {
   seedSample(db);
-  const repo = recipes(db);
+  const repo = recipeRepository(db);
 
   const tart = repo.get("lemon-tart")!;
   expect(tart.parts.map((c) => c.name)).toEqual(["Pastry", "Filling", "To finish"]);
@@ -74,7 +74,7 @@ test("one recipe has three parts in order, one has two named parts plus the unna
 
 test("each sample recipe has at least one linked step, and every link names a row in its own part", () => {
   seedSample(db);
-  const repo = recipes(db);
+  const repo = recipeRepository(db);
   for (const slug of ["anzac-biscuits", "roast-pumpkin-soup-with-garlic-croutons", "lemon-tart"]) {
     const doc = repo.get(slug)!;
     const linkedSteps = doc.parts.flatMap((p) => p.steps).filter((s) => s.ingredientIds.length > 0);
@@ -88,7 +88,7 @@ test("each sample recipe has at least one linked step, and every link names a ro
 
 test("fixed, null-quantity and text-only rows survive the round trip", () => {
   seedSample(db);
-  const repo = recipes(db);
+  const repo = recipeRepository(db);
 
   const soupRows = repo.get("roast-pumpkin-soup-with-garlic-croutons")!.parts[0]!.ingredients;
   const bayLeaf = soupRows.find((i) => i.food?.name === "bay leaf")!;
@@ -108,7 +108,7 @@ test("references resolve to the seeded units and shared foods and tags", () => {
   seedSample(db);
   expect(count("unit")).toBe(DEFAULT_UNITS.length);
   const seededGram = db.query<{ id: string }, []>("SELECT id FROM unit WHERE name = 'gram'").get()!.id;
-  const flour = recipes(db)
+  const flour = recipeRepository(db)
     .get("anzac-biscuits")!
     .parts[0]!.ingredients.find((i) => i.food?.name === "brown sugar")!;
   expect(flour.unit?.id).toBe(seededGram);
@@ -121,7 +121,7 @@ test("references resolve to the seeded units and shared foods and tags", () => {
 
 test("one recipe is favourited, one carries a source URL, and one has two timeline events", () => {
   seedSample(db);
-  const repo = recipes(db);
+  const repo = recipeRepository(db);
 
   const biscuits = repo.get("anzac-biscuits")!;
   expect(biscuits.favourite).toBe(true);
@@ -133,7 +133,7 @@ test("one recipe is favourited, one carries a source URL, and one has two timeli
   expect(biscuits.sourceUrl).toBeNull();
 
   const tart = repo.get("lemon-tart")!;
-  const events = timeline(db).list(tart.id);
+  const events = timelineRepository(db).list(tart.id);
   expect(events).toHaveLength(2);
   expect(events.map((e) => e.occurredOn)).toEqual(["2026-09-06", "2026-08-16"]);
   expect(tart.lastMade).toBe("2026-09-06T00:00:00.000Z");
@@ -166,13 +166,13 @@ test("seeding twice leaves three recipes, two timeline events and no duplicate c
 });
 
 test("skips only the recipes whose slug exists and does not touch the user's copy", () => {
-  const repo = recipes(db);
+  const repo = recipeRepository(db);
   const mine = repo.create(recipeInputSchema.parse({ name: "Lemon Tart", parts: [{ name: "", ingredients: [], steps: [] }] }));
   const { recipes: created } = seedSample(db);
   expect(created.map((r) => r.slug).sort()).toEqual(["anzac-biscuits", "roast-pumpkin-soup-with-garlic-croutons"]);
   expect(count("recipe")).toBe(3);
   expect(repo.get("lemon-tart")).toEqual(mine);
-  expect(timeline(db).list(mine.id)).toEqual([]);
+  expect(timelineRepository(db).list(mine.id)).toEqual([]);
 });
 
 test("works without the units seed, creating the units it names", async () => {
@@ -180,7 +180,11 @@ test("works without the units seed, creating the units it names", async () => {
   migrate(bare);
   seedSample(bare);
   expect(bare.query<{ n: number }, []>("SELECT count(*) AS n FROM recipe").get()!.n).toBe(3);
-  expect(recipes(bare).get("anzac-biscuits")!.parts[0]!.ingredients[3]!.unit).toMatchObject({ name: "gram", abbreviation: "g", useAbbreviation: true });
+  expect(recipeRepository(bare).get("anzac-biscuits")!.parts[0]!.ingredients[3]!.unit).toMatchObject({
+    name: "gram",
+    abbreviation: "g",
+    useAbbreviation: true,
+  });
   bare.close();
 });
 

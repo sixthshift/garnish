@@ -1,8 +1,8 @@
 import { Card } from "@sixthshift/design-system/card";
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
-import { type Recipe, type SubRecipe, subRecipeIds } from "../../../../domain/recipe";
-import { getRecipe, listSubRecipes } from "../../../../server/fns/recipes";
+import { type Recipe, type SubRecipe } from "../../../../domain/recipe";
+import { getRecipe, subRecipesOf } from "../../../../server/fns/recipes";
 import { Route as rootRoute } from "../../../root";
 
 export const CookSearch = z.object({
@@ -38,11 +38,7 @@ export const Route = createRoute({
   loaderDeps: ({ search: { from } }) => ({ from }),
   loader: async ({ params, deps }): Promise<CookRouteData> => {
     const recipe = await getRecipe({ data: { slug: params.slug } });
-    const ids = subRecipeIds(recipe);
-    const [subRecipes, parentName] = await Promise.all([
-      ids.length === 0 ? Promise.resolve<SubRecipe[]>([]) : listSubRecipes({ data: { ids } }),
-      resolveParentName(deps.from),
-    ]);
+    const [subRecipes, parentName] = await Promise.all([subRecipesOf({ data: { id: recipe.id } }), resolveParentName(deps.from)]);
     return { recipe, subRecipes, parentName };
   },
   component: lazyRouteComponent(() => import("./page"), "CookPage"),

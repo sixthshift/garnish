@@ -10,8 +10,8 @@ import { applyDevData } from "../../../src/db/dev/apply";
 import { parseDevSeedFlags } from "../../../src/db/dev/cli";
 import { devIds, generateDevRecipes } from "../../../src/db/dev/generate";
 import { migrate } from "../../../src/db/migrations/migrate";
-import { recipes } from "../../../src/db/models/recipe/repo";
-import { timeline } from "../../../src/db/models/timeline/repo";
+import { recipeRepository } from "../../../src/db/models/recipe/repo";
+import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { seed } from "../../../src/db/seed/seed";
 import { recipeInputSchema } from "../../../src/domain/recipe";
 
@@ -33,12 +33,12 @@ test("creates the dataset, its timeline events and its images", async () => {
   const result = await applyDevData(db, dataset, images);
 
   expect(result).toEqual({ removed: 0, created: 6, images: dataset.filter((r) => r.imageHue !== null).length });
-  expect(recipes(db).list()).toHaveLength(6);
+  expect(recipeRepository(db).query()).toHaveLength(6);
 
   const withEvents = dataset.filter((r) => r.timeline.length > 0);
   expect(withEvents.length).toBeGreaterThan(0);
   for (const item of withEvents) {
-    expect(timeline(db).list(item.input.id!)).toHaveLength(item.timeline.length);
+    expect(timelineRepository(db).list(item.input.id!)).toHaveLength(item.timeline.length);
   }
 
   expect(readdirSync(images)).toHaveLength(result.images);
@@ -47,18 +47,18 @@ test("creates the dataset, its timeline events and its images", async () => {
 test("re-running replaces rather than duplicates, and lands in the same state", async () => {
   const dataset = small();
   await applyDevData(db, dataset, images);
-  const first = recipes(db)
-    .list()
+  const first = recipeRepository(db)
+    .query()
     .map((r) => `${r.slug}|${r.rating}|${r.favourite}|${r.lastMade}`);
 
   const second = await applyDevData(db, dataset, images);
   expect(second.removed).toBe(6);
   expect(second.created).toBe(6);
-  expect(recipes(db).list()).toHaveLength(6);
+  expect(recipeRepository(db).query()).toHaveLength(6);
 
   expect(
-    recipes(db)
-      .list()
+    recipeRepository(db)
+      .query()
       .map((r) => `${r.slug}|${r.rating}|${r.favourite}|${r.lastMade}`)
   ).toEqual(first);
 });
@@ -68,11 +68,11 @@ test("a hand-written recipe survives a re-run, even sharing a name", async () =>
   await applyDevData(db, dataset, images);
 
   // Same name as a generated one: the slug collides, the id does not.
-  const mine = recipes(db).create(recipeInputSchema.parse({ name: dataset[0]!.input.name, parts: [{ name: "", ingredients: [], steps: [] }] }));
+  const mine = recipeRepository(db).create(recipeInputSchema.parse({ name: dataset[0]!.input.name, parts: [{ name: "", ingredients: [], steps: [] }] }));
 
   await applyDevData(db, dataset, images);
-  expect(recipes(db).get(mine.slug)).not.toBeNull();
-  expect(recipes(db).list()).toHaveLength(7);
+  expect(recipeRepository(db).get(mine.slug)).not.toBeNull();
+  expect(recipeRepository(db).query()).toHaveLength(7);
 });
 
 test("timestamps are the generated ones, not the moment of the insert", async () => {

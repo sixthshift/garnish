@@ -62,9 +62,9 @@ export function stepImageUrl(image: string | null | undefined): string | null {
   return `/api/images/steps/${encodeURIComponent(image)}`;
 }
 
-/** The photo upload endpoint for a step. Pure. */
-export function stepImageUploadUrl(stepId: string): string {
-  return `/api/steps/${encodeURIComponent(stepId)}/image`;
+/** The photo upload endpoint for a step of a recipe. Pure. */
+export function stepImageUploadUrl(recipeId: string, stepId: string): string {
+  return `/api/recipes/${encodeURIComponent(recipeId)}/steps/${encodeURIComponent(stepId)}/image`;
 }
 
 /**
@@ -72,10 +72,10 @@ export function stepImageUploadUrl(stepId: string): string {
  * with the server's `error` text on a non-2xx — a step the recipe has never
  * saved is a 404 there, so the editor asks for a save first.
  */
-export async function uploadStepImage(stepId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
+export async function uploadStepImage(recipeId: string, stepId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
   const body = new FormData();
   body.append(IMAGE_FIELD, file);
-  const response = await fetcher(stepImageUploadUrl(stepId), { method: "POST", body });
+  const response = await fetcher(stepImageUploadUrl(recipeId, stepId), { method: "POST", body });
   const payload = (await response.json().catch(() => ({}))) as { image?: string; error?: string };
   if (!response.ok) throw new Error(payload.error ?? `photo upload failed (${response.status})`);
   if (typeof payload.image !== "string") throw new Error("photo upload returned no file name");

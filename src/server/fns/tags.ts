@@ -40,7 +40,7 @@ export const findOrCreateTag = createServerFn({ method: "POST" })
 export const usingTag = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(IdInput)
-  .handler(async ({ data }) => recipes.usingTag(data.id));
+  .handler(async ({ data }) => recipes.query({ by: "tag", id: data.id }));
 
 /**
  * Merge `sourceId` into `targetId`: every recipe carrying the source tag

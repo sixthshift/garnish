@@ -6,11 +6,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { aisles } from "../../../src/db/models/aisle/repo";
-import { foods } from "../../../src/db/models/food/repo";
-import { recipes } from "../../../src/db/models/recipe/repo";
-import { tags } from "../../../src/db/models/tag/repo";
-import { units } from "../../../src/db/models/unit/repo";
+import { aisleRepository } from "../../../src/db/models/aisle/repo";
+import { foodRepository } from "../../../src/db/models/food/repo";
+import { recipeRepository } from "../../../src/db/models/recipe/repo";
+import { tagRepository } from "../../../src/db/models/tag/repo";
+import { unitRepository } from "../../../src/db/models/unit/repo";
 import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe";
 import { exportJsonRoute as ExportRoute, recipeCookRoute as RecipeCookRoute, recipeJsonRoute as RecipeJsonRoute } from "../../../src/routes/api/export";
 import { buildExport, type GarnishExport, handleExportJson, handleRecipeCook, handleRecipeJson } from "../../../src/server/api/export";
@@ -33,15 +33,15 @@ const FLOUR_INGREDIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";
  */
 async function seed(): Promise<{ tart: Recipe; pastry: Recipe }> {
   const db = getDb();
-  const recipeRepo = recipes(db);
-  const unitRepo = units(db);
-  const foodRepo = foods(db);
+  const recipeRepo = recipeRepository(db);
+  const unitRepo = unitRepository(db);
+  const foodRepo = foodRepository(db);
 
   // The seed has already created the common units, so take them as they are.
   const gram = unitRepo.getByName("gram") ?? unitRepo.create({ name: "gram", abbreviation: "g" });
   const cup = unitRepo.getByName("cup") ?? unitRepo.create({ name: "cup" });
-  const baking = aisles(db).create({ name: "Baking" });
-  const dessert = tags(db).create({ name: "Dessert" });
+  const baking = aisleRepository(db).create({ name: "Baking" });
+  const dessert = tagRepository(db).create({ name: "Dessert" });
 
   const pastry = recipeRepo.create(
     recipeInputSchema.parse({
@@ -76,7 +76,7 @@ async function seed(): Promise<{ tart: Recipe; pastry: Recipe }> {
       ],
     })
   );
-  recipeRepo.setImage(tart.id, `${tart.id}.jpg`);
+  recipeRepo.ref(tart.id).setImage(`${tart.id}.jpg`);
   return { tart: recipeRepo.getById(tart.id)!, pastry };
 }
 

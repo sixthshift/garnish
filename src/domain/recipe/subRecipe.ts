@@ -55,21 +55,6 @@ export function subRecipeCookLabel(servings: number, name: string): string {
   return `Open ${name} at ${rounded} ${rounded === 1 ? "serving" : "servings"}`;
 }
 
-/**
- * The ids of every recipe reached by an ingredient's food in this recipe, in
- * first-seen order and de-duplicated. The view loader fetches them in one call
- * rather than a read per row. Pure.
- */
-export function subRecipeIds(recipe: Pick<Recipe, "parts">): string[] {
-  const ids = new Set<string>();
-  for (const part of recipe.parts) {
-    for (const row of part.ingredients) {
-      if (row.food?.recipeId) ids.add(row.food.recipeId);
-    }
-  }
-  return [...ids];
-}
-
 /** The sub-recipes keyed by recipe id, for a row to look its food's child up in. Pure. */
 export function subRecipeMap(children: readonly SubRecipe[]): Map<string, SubRecipe> {
   return new Map(children.map((child) => [child.id, child]));

@@ -6,7 +6,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { recipes } from "../../../src/db/models/recipe/repo";
+import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe";
 import { getStepImageRoute as GetRoute, uploadStepImageRoute as PostRoute } from "../../../src/routes/api/stepImages";
 import { handleGetImage } from "../../../src/server/api/images";
@@ -28,15 +28,16 @@ const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x4
 /** A one-step recipe, and the id of that step. */
 async function createRecipe(): Promise<Recipe> {
   const db = getDb();
-  return recipes(db).create(recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [{ text: "Knead it." }] }] }));
+  return recipeRepository(db).create(recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [{ text: "Knead it." }] }] }));
 }
 
 const stepIdOf = (recipe: Recipe) => recipe.parts[0]!.steps[0]!.id;
 
-function upload(id: string, body: BodyInit | null, field = "image", type = "image/png", name = "photo.png"): Promise<Response> {
+function upload(recipe: Recipe | string, stepId: string, body: BodyInit | null, field = "image", type = "image/png", name = "photo.png"): Promise<Response> {
+  const recipeId = typeof recipe === "string" ? recipe : recipe.id;
   const form = new FormData();
   if (body !== null) form.set(field, new Blob([body as ArrayBuffer], { type }), name);
-  return handleUploadStepImage(new Request(`http://localhost/api/steps/${id}/image`, { method: "POST", body: form }), id);
+  return handleUploadStepImage(new Request(`http://localhost/api/recipes/${recipeId}/steps/${stepId}/image`, { method: "POST", body: form }), recipeId, stepId);
 }
 
 const bytesOf = async (res: Response) => new Uint8Array(await res.arrayBuffer());
@@ -48,7 +49,7 @@ test("stepImagesDir sits under the data directory's images folder", () => {
 test("upload then GET returns the same bytes, and the step points at the file", async () => {
   const recipe = await createRecipe();
   const stepId = stepIdOf(recipe);
-  const posted = await upload(stepId, png);
+  const posted = await upload(recipe, stepId, png);
   expect(posted.status).toBe(200);
   expect(await posted.json()).toEqual({ image: `${stepId}.png` });
 
@@ -58,17 +59,17 @@ test("upload then GET returns the same bytes, and the step points at the file", 
   expect(await bytesOf(got)).toEqual(png);
 
   expect(existsSync(join(tmp.dir, "images", "steps", `${stepId}.png`))).toBe(true);
-  expect((await recipes(getDb()).getById(recipe.id))?.parts[0]!.steps[0]!.image).toBe(`${stepId}.png`);
+  expect((await recipeRepository(getDb()).getById(recipe.id))?.parts[0]!.steps[0]!.image).toBe(`${stepId}.png`);
 });
 
 test("the photo survives a save, because the document carries it", async () => {
   const recipe = await createRecipe();
   const stepId = stepIdOf(recipe);
-  await upload(stepId, png);
+  await upload(recipe, stepId, png);
 
-  const repo = recipes(getDb());
+  const repo = recipeRepository(getDb());
   const stored = repo.getById(recipe.id)!;
-  repo.update(recipe.id, recipeInputSchema.parse({ ...stored, name: "Flatbread, again" }));
+  repo.ref(recipe.id).replace(recipeInputSchema.parse({ ...stored, name: "Flatbread, again" }));
 
   expect(repo.getById(recipe.id)?.parts[0]!.steps[0]!.image).toBe(`${stepId}.png`);
 });
@@ -76,53 +77,58 @@ test("the photo survives a save, because the document carries it", async () => {
 test("uploading a different format replaces the file and the stored name", async () => {
   const recipe = await createRecipe();
   const stepId = stepIdOf(recipe);
-  await upload(stepId, png);
-  const replaced = await upload(stepId, jpg, "image", "image/jpeg", "photo.jpg");
+  await upload(recipe, stepId, png);
+  const replaced = await upload(recipe, stepId, jpg, "image", "image/jpeg", "photo.jpg");
   expect(await replaced.json()).toEqual({ image: `${stepId}.jpg` });
 
   expect(readdirSync(join(tmp.dir, "images", "steps"))).toEqual([`${stepId}.jpg`]);
   expect((await handleGetStepImage(`${stepId}.png`)).status).toBe(404);
-  expect(recipes(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBe(`${stepId}.jpg`);
+  expect(recipeRepository(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBe(`${stepId}.jpg`);
 });
 
 test("the format comes from the bytes, not the declared type or file name", async () => {
   const recipe = await createRecipe();
-  expect(await (await upload(stepIdOf(recipe), jpg, "image", "image/png", "photo.png")).json()).toEqual({ image: `${stepIdOf(recipe)}.jpg` });
+  expect(await (await upload(recipe, stepIdOf(recipe), jpg, "image", "image/png", "photo.png")).json()).toEqual({ image: `${stepIdOf(recipe)}.jpg` });
 });
 
 test("a step photo is not served as a recipe image or a timeline photo", async () => {
   const recipe = await createRecipe();
   const stepId = stepIdOf(recipe);
-  await upload(stepId, png);
+  await upload(recipe, stepId, png);
   expect((await handleGetImage(`${stepId}.png`)).status).toBe(404);
   expect((await handleGetTimelineImage(`${stepId}.png`)).status).toBe(404);
 });
 
-test("a step that was never saved is 404 and nothing is written", async () => {
-  expect((await upload(missing, png)).status).toBe(404);
-  expect((await upload("not-a-uuid", png)).status).toBe(404);
+test("a step that was never saved, or is another recipe's, is 404 and nothing is written", async () => {
+  const recipe = await createRecipe();
+  const other = await createRecipe();
+  expect((await upload(recipe, missing, png)).status).toBe(404);
+  expect((await upload(recipe, "not-a-uuid", png)).status).toBe(404);
+  expect((await upload(missing, stepIdOf(recipe), png)).status).toBe(404);
+  expect((await upload(other, stepIdOf(recipe), png)).status).toBe(404);
   expect(existsSync(join(tmp.dir, "images", "steps"))).toBe(false);
 });
 
 test.each([
-  ["no file field", (id: string) => upload(id, null)],
-  ["wrong field name", (id: string) => upload(id, png, "photo")],
-  ["empty file", (id: string) => upload(id, new Uint8Array())],
-  ["not an image", (id: string) => upload(id, new TextEncoder().encode("<svg/>"), "image", "image/svg+xml", "x.svg")],
+  ["no file field", (r: Recipe, id: string) => upload(r, id, null)],
+  ["wrong field name", (r: Recipe, id: string) => upload(r, id, png, "photo")],
+  ["empty file", (r: Recipe, id: string) => upload(r, id, new Uint8Array())],
+  ["not an image", (r: Recipe, id: string) => upload(r, id, new TextEncoder().encode("<svg/>"), "image", "image/svg+xml", "x.svg")],
   [
     "json body",
-    (id: string) =>
+    (r: Recipe, id: string) =>
       handleUploadStepImage(
-        new Request(`http://localhost/api/steps/${id}/image`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
+        new Request(`http://localhost/api/recipes/${r.id}/steps/${id}/image`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
+        r.id,
         id
       ),
   ],
 ])("bad upload is 400: %s", async (_label, send) => {
   const recipe = await createRecipe();
-  const res = await send(stepIdOf(recipe));
+  const res = await send(recipe, stepIdOf(recipe));
   expect(res.status).toBe(400);
   expect(typeof (await res.json()).error).toBe("string");
-  expect(recipes(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBeNull();
+  expect(recipeRepository(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBeNull();
 });
 
 test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
@@ -146,7 +152,10 @@ test("routes wire POST and GET to the handlers with their path params", async ()
 
   const form = new FormData();
   form.set("image", new Blob([png as unknown as ArrayBuffer], { type: "image/png" }), "photo.png");
-  const posted = await post({ request: new Request(`http://localhost/api/steps/${stepId}/image`, { method: "POST", body: form }), params: { id: stepId } });
+  const posted = await post({
+    request: new Request(`http://localhost/api/recipes/${recipe.id}/steps/${stepId}/image`, { method: "POST", body: form }),
+    params: { id: recipe.id, stepId },
+  });
   expect(await posted.json()).toEqual({ image: `${stepId}.png` });
 
   const got = await get({ request: new Request(`http://localhost/api/images/steps/${stepId}.png`), params: { file: `${stepId}.png` } });

@@ -6,9 +6,9 @@ import { recipeInputSchema } from "../../domain/recipe";
 import { imageFileName } from "../../lib/imageFile";
 import { dataDir } from "../../server/core/boot";
 import { orm } from "../connection/client";
-import { recipes as recipeRepository } from "../models/recipe/repo";
+import { recipeRepository } from "../models/recipe/repo";
 import { recipe } from "../models/recipe/schema";
-import { timeline as timelineRepository } from "../models/timeline/repo";
+import { timelineRepository } from "../models/timeline/repo";
 import { type DevRecipe, devIds, generateDevRecipes } from "./generate";
 import { placeholderPng } from "./png";
 
@@ -77,7 +77,7 @@ export async function applyDevData(db: Database, dataset: readonly DevRecipe[] =
       mkdirSync(dir, { recursive: true });
       const name = imageFileName(made.id, "png");
       await Bun.write(join(dir, name), placeholderPng(item.imageHue));
-      repo.setImage(made.id, name);
+      repo.ref(made.id).setImage(name);
       images += 1;
     }
 

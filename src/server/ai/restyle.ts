@@ -106,7 +106,7 @@ export const applyRestyle = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(ApplyRestyleInput)
   .handler(async ({ data }): Promise<Recipe> => {
-    return required(recipes.restyleParts(data.id, data.parts), "recipe", data.id);
+    return required(recipes.ref(data.id).restyle(data.parts), "recipe", data.id);
   });
 
 export const RestoreStepsInput = z.object({ id: z.string().min(1) });
@@ -120,5 +120,5 @@ export const restoreSteps = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(RestoreStepsInput)
   .handler(async ({ data }): Promise<Recipe> => {
-    return required(recipes.restoreParts(data.id), "recipe", data.id);
+    return required(recipes.ref(data.id).restore(), "recipe", data.id);
   });

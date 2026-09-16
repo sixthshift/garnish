@@ -28,7 +28,7 @@ const notFound = (error: string): Response => Response.json({ error }, { status:
 /** Every recipe's full document, by name, with image URLs. */
 async function allRecipes(): Promise<Recipe[]> {
   const documents: Recipe[] = [];
-  for (const summary of recipes.list({ sort: "name", dir: "asc" })) {
+  for (const summary of recipes.query({ by: "filter", sort: "name", dir: "asc" })) {
     const doc = recipes.get(summary.slug);
     if (doc) documents.push(exportedRecipe(doc));
   }

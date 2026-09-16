@@ -2,9 +2,9 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { aisles } from "../../src/db/models/aisle/repo";
-import { type FoodRepository, foods } from "../../src/db/models/food/repo";
-import { units } from "../../src/db/models/unit/repo";
+import { aisleRepository } from "../../src/db/models/aisle/repo";
+import { type FoodRepository, foodRepository } from "../../src/db/models/food/repo";
+import { unitRepository } from "../../src/db/models/unit/repo";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -13,7 +13,7 @@ let repo: FoodRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = foods(db);
+  repo = foodRepository(db);
 });
 
 test("create applies defaults and list returns by name", () => {
@@ -30,7 +30,7 @@ test("create applies defaults and list returns by name", () => {
     conversions: [],
   });
 
-  const dairy = aisles(db).create({ name: "Dairy" });
+  const dairy = aisleRepository(db).create({ name: "Dairy" });
   const apple = repo.create({ name: " Apple ", pluralName: "apples", aliases: ["granny smith"], aisleId: dairy.id, skipShopping: true });
   expect(apple).toMatchObject({ name: "Apple", pluralName: "apples", aliases: ["granny smith"], aisleId: dairy.id, skipShopping: true });
 
@@ -132,7 +132,11 @@ test("list with q filters by case-insensitive substring and escapes wildcards", 
 
 /** A cup, a gram and a millilitre to convert between. */
 function seedUnits() {
-  return { cup: units(db).create({ name: "cup" }), gram: units(db).create({ name: "gram" }), ml: units(db).create({ name: "millilitre" }) };
+  return {
+    cup: unitRepository(db).create({ name: "cup" }),
+    gram: unitRepository(db).create({ name: "gram" }),
+    ml: unitRepository(db).create({ name: "millilitre" }),
+  };
 }
 
 test("a food round-trips its conversions through create, get and list", () => {
@@ -200,6 +204,6 @@ test("the table refuses a repeated pair of units, and a deleted food or unit tak
     ])
   ).toThrow(/UNIQUE/);
 
-  units(db).remove(gram.id);
+  unitRepository(db).remove(gram.id);
   expect(repo.get(flour.id)!.conversions).toEqual([]);
 });

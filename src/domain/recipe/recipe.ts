@@ -91,24 +91,6 @@ export const recipeSchema = z.object({
   updatedAt: timestamp,
 });
 
-/** List shape: what a recipe card needs, without parts, steps or notes. */
-export const recipeSummarySchema = z.object({
-  id,
-  slug: nonEmpty,
-  name: nonEmpty,
-  image: z.string().nullable(),
-  rating: z.number().min(0).max(5).nullable(),
-  prepTime: z.number().int().nonnegative().nullable(),
-  performTime: z.number().int().nonnegative().nullable(),
-  /** prepTime + performTime; null when neither is recorded. See domain/ingredient/format.ts's totalMinutes. */
-  totalTime: z.number().int().nonnegative().nullable(),
-  lastMade: timestamp.nullable(),
-  favourite: z.boolean(),
-  tags: z.array(tagSchema),
-  /** First six ingredient lines, part order then row order, formatted with domain/ingredient/format.ts's formatIngredient. */
-  ingredientPreview: z.array(z.string()),
-});
-
 /** One logged cook: "Made this" on a date, with an optional note and photo. */
 export const timelineEventSchema = z.object({
   id,
@@ -160,7 +142,6 @@ export type Step = z.infer<typeof stepSchema>;
 export type RecipeNote = z.infer<typeof recipeNoteSchema>;
 export type Part = z.infer<typeof partSchema>;
 export type Recipe = z.infer<typeof recipeSchema>;
-export type RecipeSummary = z.infer<typeof recipeSummarySchema>;
 export type TimelineEvent = z.infer<typeof timelineEventSchema>;
 export type TimelineEventInput = z.infer<typeof timelineEventInputSchema>;
 

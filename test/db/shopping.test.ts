@@ -9,11 +9,11 @@ import { join } from "node:path";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { MIGRATIONS_DIR, migrate } from "../../src/db/migrations/migrate";
-import { aisles } from "../../src/db/models/aisle/repo";
-import { foods } from "../../src/db/models/food/repo";
-import { recipes } from "../../src/db/models/recipe/repo";
-import { type ShoppingRepository, shopping } from "../../src/db/models/shopping/repo";
-import { units } from "../../src/db/models/unit/repo";
+import { aisleRepository } from "../../src/db/models/aisle/repo";
+import { foodRepository } from "../../src/db/models/food/repo";
+import { recipeRepository } from "../../src/db/models/recipe/repo";
+import { type ShoppingRepository, shoppingRepository } from "../../src/db/models/shopping/repo";
+import { unitRepository } from "../../src/db/models/unit/repo";
 import { type RecipeInput, recipeInputSchema } from "../../src/domain/recipe";
 import { type ShoppingItemInput, shoppingItemInputSchema, shoppingItemSchema } from "../../src/domain/shopping";
 
@@ -25,19 +25,19 @@ const parse = (input: ShoppingItemInput) => shoppingItemInputSchema.parse(input)
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = shopping(db);
+  repo = shoppingRepository(db);
 });
 
 function seedFlour() {
-  const aisle = aisles(db).create({ name: "Baking" });
-  const food = foods(db).create({ name: "Plain flour", aisleId: aisle.id });
-  const unit = units(db).create({ name: "gram", abbreviation: "g" });
+  const aisle = aisleRepository(db).create({ name: "Baking" });
+  const food = foodRepository(db).create({ name: "Plain flour", aisleId: aisle.id });
+  const unit = unitRepository(db).create({ name: "gram", abbreviation: "g" });
   return { aisle, food, unit };
 }
 
 function seedRecipe(name = "Lemon tart"): { id: string } {
   const doc: RecipeInput = { name, parts: [{ name: "", ingredients: [], steps: [] }] };
-  return recipes(db).create(recipeInputSchema.parse(doc));
+  return recipeRepository(db).create(recipeInputSchema.parse(doc));
 }
 
 test("the list starts empty", () => {
@@ -176,7 +176,7 @@ test("a source survives its recipe being deleted, keeping the copied names", () 
     }),
   ]);
 
-  expect(recipes(db).remove(recipe.id)).toBe(true);
+  expect(recipeRepository(db).remove(recipe.id)).toBe(true);
 
   const after = repo.get(item!.id)!;
   expect(after.sources).toHaveLength(1);
@@ -191,8 +191,8 @@ test("a line survives its food and unit being deleted, keeping its quantity", ()
   const { food, unit } = seedFlour();
   const [item] = repo.addMany([parse({ quantity: 250, foodId: food.id, unitId: unit.id })]);
 
-  expect(foods(db).remove(food.id)).toBe(true);
-  expect(units(db).remove(unit.id)).toBe(true);
+  expect(foodRepository(db).remove(food.id)).toBe(true);
+  expect(unitRepository(db).remove(unit.id)).toBe(true);
 
   const after = repo.get(item!.id)!;
   expect(after.food).toBeNull();

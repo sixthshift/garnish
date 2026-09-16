@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
-import { recipes } from "../../../src/db/models/recipe/repo";
+import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { seedSample } from "../../../src/db/seed/seed";
 import { cooklangStepText, toCooklang } from "../../../src/domain/recipe/cooklang";
 import type { Ingredient, Recipe } from "../../../src/domain/recipe/recipe";
@@ -159,7 +159,7 @@ describe("golden files: the three sample recipes", () => {
     const db = openDatabase(":memory:");
     migrate(db);
     seedSample(db);
-    const doc = recipes(db).get(slug)!;
+    const doc = recipeRepository(db).get(slug)!;
     const expected = readFileSync(join(FIXTURES, `${slug}.cook`), "utf8");
     expect(toCooklang(doc)).toBe(expected);
     db.close();

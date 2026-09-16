@@ -2,14 +2,14 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { type TagRepository, tags } from "../../src/db/models/tag/repo";
+import { type TagRepository, tagRepository } from "../../src/db/models/tag/repo";
 
 let db: Database;
 let repo: TagRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = tags(db);
+  repo = tagRepository(db);
 });
 
 test("create derives the slug from the name and de-duplicates slugs", () => {

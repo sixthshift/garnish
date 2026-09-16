@@ -6,7 +6,7 @@ import { afterEach, expect, test } from "vitest";
 import { BACKUPS_SUBDIR, backup, backupFileName, backupsDir } from "../../../src/db/backup/backup";
 import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
-import { units } from "../../../src/db/models/unit/repo";
+import { unitRepository } from "../../../src/db/models/unit/repo";
 
 const scratch: string[] = [];
 afterEach(() => {
@@ -24,7 +24,7 @@ async function sourceDb(): Promise<{ db: Database; path: string }> {
   const path = join(tmp(), "garnish.db");
   const db = openDatabase(path);
   migrate(db);
-  units(db).create({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false });
+  unitRepository(db).create({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false });
   return { db, path };
 }
 
@@ -89,7 +89,7 @@ test("backup leaves the source untouched", async () => {
 
   expect(journalMode(db)).toBe(before.journal);
   expect(unitNames(db)).toEqual(before.units);
-  units(db).create({ name: "litre", pluralName: "litres", abbreviation: "l", useAbbreviation: true, fraction: false });
+  unitRepository(db).create({ name: "litre", pluralName: "litres", abbreviation: "l", useAbbreviation: true, fraction: false });
   expect(unitNames(db)).toEqual(["gram", "litre"]);
   db.close();
 

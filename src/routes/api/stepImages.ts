@@ -13,13 +13,13 @@ export const getStepImageRoute = createRoute({
   },
 });
 
-/** POST /api/steps/:id/image — multipart upload replacing a step's photo. */
+/** POST /api/recipes/:id/steps/:stepId/image — multipart upload replacing a step's photo. */
 export const uploadStepImageRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/api/steps/$id/image",
+  path: "/api/recipes/$id/steps/$stepId/image",
   server: {
     handlers: {
-      POST: ({ request, params }) => handleUploadStepImage(request, params.id),
+      POST: ({ request, params }) => handleUploadStepImage(request, params.id, params.stepId),
     },
   },
 });

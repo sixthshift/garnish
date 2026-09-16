@@ -9,7 +9,7 @@ import { mealPlanEntry } from "./schema";
 
 const order = [asc(mealPlanEntry.position), asc(mealPlanEntry.id)];
 
-export function plan(db: Database) {
+export function planRepository(db: Database) {
   const dz = orm(db);
 
   // --- Document assembly ---------------------------------------------------
@@ -140,7 +140,7 @@ export function plan(db: Database) {
   };
 }
 
-export type PlanRepository = ReturnType<typeof plan>;
+export type PlanRepository = ReturnType<typeof planRepository>;
 
-/** The repository over the application database. Tests build their own with `plan(db)`. */
-export default lazy(getDb, plan);
+/** The repository over the application database. Tests build their own with `planRepository(db)`. */
+export default lazy(getDb, planRepository);

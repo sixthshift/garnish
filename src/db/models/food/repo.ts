@@ -15,7 +15,7 @@ export type FoodInput = Partial<Omit<Food, "id" | "conversions">> & { name: stri
 /** A conversion as it is written: the id is the repository's, the food's is the parent's. */
 export type FoodConversionInput = Omit<FoodConversion, "id">;
 
-export function foods(db: Database) {
+export function foodRepository(db: Database) {
   const dz = orm(db);
 
   /** Every conversion of these foods, keyed by food id, in insertion order. */
@@ -154,7 +154,7 @@ export function foods(db: Database) {
   };
 }
 
-export type FoodRepository = ReturnType<typeof foods>;
+export type FoodRepository = ReturnType<typeof foodRepository>;
 
-/** The repository over the application database. Tests build their own with `foods(db)`. */
-export default lazy(getDb, foods);
+/** The repository over the application database. Tests build their own with `foodRepository(db)`. */
+export default lazy(getDb, foodRepository);

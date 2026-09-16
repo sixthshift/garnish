@@ -9,7 +9,7 @@ import {
   deleteRecipe,
   getRecipe,
   listRecipes,
-  listSubRecipes,
+  subRecipesOf,
   recipeByName,
   recipeBySource,
   setFavourite,
@@ -93,6 +93,8 @@ test("listRecipes returns summaries newest first and filters by name and tag", a
   expect((await callServerFn(listRecipes, { q: "flat" })).map((r) => r.slug)).toEqual(["flatbread"]);
   expect((await callServerFn(listRecipes, { tag: "weeknight" })).map((r) => r.slug)).toEqual(["flatbread"]);
   expect(await callServerFn(listRecipes, { q: "pan", tag: "weeknight" })).toEqual([]);
+  // Blank q is no constraint; `tag` folds into `tags`, trimmed and de-duplicated.
+  expect((await callServerFn(listRecipes, { q: "   ", tag: " weeknight ", tags: ["weeknight"] })).map((r) => r.slug)).toEqual(["flatbread"]);
 });
 
 test("listRecipes filters by tags[] with match, foods[] and favourite", async () => {
@@ -258,7 +260,7 @@ describe("recipeByName (M34.3)", () => {
   });
 });
 
-test("listSubRecipes returns the slug and yield of each id, skipping unknown ones", async () => {
+test("subRecipesOf returns the slug and yield of each recipe this one's foods are made by, by name", async () => {
   const gram = await callServerFn(findOrCreateUnit, { name: "gram" });
   const pastry = await callServerFn(createRecipe, {
     name: "Sweet pastry",
@@ -268,9 +270,23 @@ test("listSubRecipes returns the slug and yield of each id, skipping unknown one
     parts: [{ name: "" }],
   } as unknown as RecipeInput);
   const sauce = await callServerFn(createRecipe, { name: "Hollandaise", parts: [{ name: "" }] } as unknown as RecipeInput);
+  const tart = await callServerFn(createRecipe, {
+    name: "Tart",
+    parts: [
+      {
+        name: "",
+        ingredients: [
+          { quantity: 1, food: { ...food(crypto.randomUUID(), "Sweet pastry"), recipeId: pastry.id } },
+          { quantity: 1, food: { ...food(crypto.randomUUID(), "Hollandaise"), recipeId: sauce.id } },
+          { quantity: 1, food: { ...food(crypto.randomUUID(), "Hollandaise again"), recipeId: sauce.id } },
+          { quantity: 1, food: food(crypto.randomUUID(), "Salt") },
+        ],
+      },
+    ],
+  } as unknown as RecipeInput);
 
-  const children = await callServerFn(listSubRecipes, { ids: [pastry.id, sauce.id, MISSING_ID] });
-  expect(children.map((child) => child.name)).toEqual(["Hollandaise", "Sweet pastry"]);
+  const children = await callServerFn(subRecipesOf, { id: tart.id });
+  expect(children.map((child) => child.name)).toEqual(["Hollandaise", "Sweet pastry"]); // each once, by name
   expect(children.find((child) => child.id === pastry.id)).toEqual({
     id: pastry.id,
     slug: "sweet-pastry",
@@ -282,8 +298,8 @@ test("listSubRecipes returns the slug and yield of each id, skipping unknown one
   expect(children.find((child) => child.id === sauce.id)?.yieldUnit).toBeNull();
 });
 
-test("listSubRecipes with no ids asks for nothing, and de-duplicates the ones it gets", async () => {
-  const pastry = await callServerFn(createRecipe, { name: "Shortcrust", parts: [{ name: "" }] } as unknown as RecipeInput);
-  expect(await callServerFn(listSubRecipes, { ids: [] })).toEqual([]);
-  expect(await callServerFn(listSubRecipes, { ids: [pastry.id, pastry.id] })).toHaveLength(1);
+test("subRecipesOf is empty for a recipe with no sub-recipes, and for an unknown id", async () => {
+  const plain = await callServerFn(createRecipe, { name: "Shortcrust", parts: [{ name: "" }] } as unknown as RecipeInput);
+  expect(await callServerFn(subRecipesOf, { id: plain.id })).toEqual([]);
+  expect(await callServerFn(subRecipesOf, { id: MISSING_ID })).toEqual([]);
 });

@@ -66,7 +66,7 @@ export const foodForRecipe = createServerFn({ method: "POST" })
 export const usingFood = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(IdInput)
-  .handler(async ({ data }) => recipes.usingFood(data.id));
+  .handler(async ({ data }) => recipes.query({ by: "food", id: data.id }));
 
 /**
  * Merge `sourceId` into `targetId`: every ingredient using the source is

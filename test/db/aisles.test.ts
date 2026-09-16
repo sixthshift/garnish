@@ -2,15 +2,15 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { type AisleRepository, aisles } from "../../src/db/models/aisle/repo";
-import { foods } from "../../src/db/models/food/repo";
+import { type AisleRepository, aisleRepository } from "../../src/db/models/aisle/repo";
+import { foodRepository } from "../../src/db/models/food/repo";
 
 let db: Database;
 let repo: AisleRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = aisles(db);
+  repo = aisleRepository(db);
 });
 
 test("create appends to the end unless given a position; list is in position order", () => {
@@ -39,10 +39,10 @@ test("update renames and reorders; unknown id is null", () => {
 
 test("remove leaves foods in the aisle with aisle_id null", () => {
   const dairy = repo.create({ name: "Dairy" });
-  const butter = foods(db).create({ name: "butter", aisleId: dairy.id });
+  const butter = foodRepository(db).create({ name: "butter", aisleId: dairy.id });
   expect(repo.remove(dairy.id)).toBe(true);
   expect(repo.remove(dairy.id)).toBe(false);
-  expect(foods(db).get(butter.id)?.aisleId).toBeNull();
+  expect(foodRepository(db).get(butter.id)?.aisleId).toBeNull();
 });
 
 test("list with q filters by case-insensitive substring, keeping position order", () => {

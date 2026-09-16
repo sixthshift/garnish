@@ -20,7 +20,7 @@ export type Unit = {
 
 export type UnitInput = Partial<Omit<Unit, "id">> & { name: string };
 
-export function units(db: Database) {
+export function unitRepository(db: Database) {
   const dz = orm(db);
 
   function get(id: string): Unit | null {
@@ -104,7 +104,7 @@ export function units(db: Database) {
   };
 }
 
-export type UnitRepository = ReturnType<typeof units>;
+export type UnitRepository = ReturnType<typeof unitRepository>;
 
-/** The repository over the application database. Tests build their own with `units(db)`. */
-export default lazy(getDb, units);
+/** The repository over the application database. Tests build their own with `unitRepository(db)`. */
+export default lazy(getDb, unitRepository);

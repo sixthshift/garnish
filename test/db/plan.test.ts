@@ -5,8 +5,8 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { type PlanRepository, plan } from "../../src/db/models/plan/repo";
-import { recipes } from "../../src/db/models/recipe/repo";
+import { type PlanRepository, planRepository } from "../../src/db/models/plan/repo";
+import { recipeRepository } from "../../src/db/models/recipe/repo";
 import { type PlanEntryInput, planDaySchema, planEntryInputSchema, planEntrySchema } from "../../src/domain/plan";
 import { type RecipeInput, recipeInputSchema } from "../../src/domain/recipe";
 
@@ -22,12 +22,12 @@ const parse = (input: PlanEntryInput) => planEntryInputSchema.parse(input);
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = plan(db);
+  repo = planRepository(db);
 });
 
 function seedRecipe(name = "Lemon tart"): { id: string; slug: string } {
   const doc: RecipeInput = { name, parts: [{ name: "", ingredients: [], steps: [] }] };
-  const created = recipes(db).create(recipeInputSchema.parse(doc));
+  const created = recipeRepository(db).create(recipeInputSchema.parse(doc));
   return { id: created.id, slug: created.slug };
 }
 
@@ -144,7 +144,7 @@ test("deleting the recipe leaves the day's entry, with no recipe on it", () => {
   const recipe = seedRecipe();
   const entry = repo.add(parse({ date: MONDAY, recipeId: recipe.id, servings: 4 }));
 
-  recipes(db).remove(recipe.id);
+  recipeRepository(db).remove(recipe.id);
 
   const after = repo.get(entry.id);
   expect(after).toMatchObject({ id: entry.id, date: MONDAY, recipe: null, servings: 4 });

@@ -1,32 +1,47 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import recipes from "../../db/models/recipe/repo";
-import { duplicateInput, recipeInputSchema, scaleRecipe } from "../../domain/recipe";
+import recipes, { type RecipeQuery } from "../../db/models/recipe/repo";
+import { duplicateInput, type RecipeSummary, recipeInputSchema, scaleRecipe } from "../../domain/recipe";
 import { NotFound, required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
 const recipeId = z.uuid();
 
-export const ListRecipesInput = z.object({
-  /** Case-insensitive substring of the recipe name. */
-  q: z.string().optional(),
-  /** Tag slug; only recipes carrying that tag. Folded into `tags`. */
-  tag: z.string().optional(),
-  /** Tag slugs; combined with `tag`, de-duplicated. */
-  tags: z.array(z.string()).optional(),
-  /** How `tags` combine: any of them (default) or all of them. */
-  match: z.enum(["any", "all"]).optional(),
-  /** Food ids; only recipes with an ingredient using one of these foods. */
-  foods: z.array(z.uuid()).optional(),
-  /** Only favourited recipes when true. */
-  favourite: z.boolean().optional(),
-  /** Sort key. Unset keeps the original newest-first order. */
-  sort: z.enum(["name", "created", "updated", "lastMade", "rating", "random"]).optional(),
-  /** Sort direction. Unset defaults per key; ignored for `sort: "random"`. */
-  dir: z.enum(["asc", "desc"]).optional(),
-  /** Shuffle seed for `sort: "random"`, so paging stays stable across requests using the same seed. */
-  seed: z.string().optional(),
-});
+/**
+ * The list page's search params, as the URL carries them, turned into the
+ * repository's query: `q` trimmed and empty dropped, the legacy singular `tag`
+ * folded into `tags`, slugs trimmed and de-duplicated, food ids de-duplicated.
+ */
+export const ListRecipesInput = z
+  .object({
+    /** Case-insensitive substring of the recipe name. */
+    q: z.string().optional(),
+    /** Tag slug; only recipes carrying that tag. Folded into `tags`. */
+    tag: z.string().optional(),
+    /** Tag slugs; combined with `tag`, de-duplicated. */
+    tags: z.array(z.string()).optional(),
+    /** How `tags` combine: any of them (default) or all of them. */
+    match: z.enum(["any", "all"]).optional(),
+    /** Food ids; only recipes with an ingredient using one of these foods. */
+    foods: z.array(z.uuid()).optional(),
+    /** Only favourited recipes when true. */
+    favourite: z.boolean().optional(),
+    /** Sort key. Unset keeps the original newest-first order. */
+    sort: z.enum(["name", "created", "updated", "lastMade", "rating", "random"]).optional(),
+    /** Sort direction. Unset defaults per key; ignored for `sort: "random"`. */
+    dir: z.enum(["asc", "desc"]).optional(),
+    /** Shuffle seed for `sort: "random"`, so paging stays stable across requests using the same seed. */
+    seed: z.string().optional(),
+  })
+  .transform(
+    ({ q, tag, tags, foods, ...rest }): RecipeQuery => ({
+      by: "filter",
+      ...rest,
+      q: q?.trim() || undefined,
+      tags: [...new Set([tag, ...(tags ?? [])].map((t) => t?.trim()).filter((t): t is string => Boolean(t)))],
+      foods: foods && [...new Set(foods)],
+    })
+  );
 
 export const GetRecipeInput = z.object({
   slug: z.string().trim().min(1),
@@ -45,8 +60,7 @@ export const DeleteRecipeInput = z.object({ id: recipeId });
 
 export const DuplicateRecipeInput = z.object({ id: recipeId });
 
-/** The recipe ids an ingredient row's food points at. */
-export const SubRecipesInput = z.object({ ids: z.array(recipeId) });
+export const SubRecipesInput = z.object({ id: recipeId });
 
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
 
@@ -57,7 +71,10 @@ export const SetRatingInput = z.object({ id: recipeId, rating: z.number().min(0)
 export const listRecipes = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListRecipesInput)
-  .handler(async ({ data }) => recipes.list(data));
+  .handler(async ({ data }) => recipes.query(data));
+
+/** What the import's duplicate warning needs of a match: the name to show and the slug to link to. */
+const nameAndSlug = (found?: RecipeSummary): { name: string; slug: string } | null => (found ? { name: found.name, slug: found.slug } : null);
 
 export const RecipeBySourceInput = z.object({ sourceUrl: z.string().trim().min(1) });
 
@@ -65,7 +82,7 @@ export const RecipeBySourceInput = z.object({ sourceUrl: z.string().trim().min(1
 export const recipeBySource = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(RecipeBySourceInput)
-  .handler(async ({ data }) => recipes.bySourceUrl(data.sourceUrl));
+  .handler(async ({ data }) => nameAndSlug(recipes.query({ by: "url", url: data.sourceUrl })[0]));
 
 export const RecipeByNameInput = z.object({ name: z.string().trim().min(1) });
 
@@ -73,7 +90,7 @@ export const RecipeByNameInput = z.object({ name: z.string().trim().min(1) });
 export const recipeByName = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(RecipeByNameInput)
-  .handler(async ({ data }) => recipes.byName(data.name));
+  .handler(async ({ data }) => nameAndSlug(recipes.query({ by: "name", name: data.name })[0]));
 
 /**
  * One recipe by slug. With `servings`, the document is scaled to that many
@@ -81,15 +98,15 @@ export const recipeByName = createServerFn({ method: "GET" })
  * 0 has no factor to scale by and is returned as stored.
  */
 /**
- * The link-and-scale facts the view page needs about the recipes its
- * ingredient foods point at. One call for the whole page, so a
- * sub-recipe row costs no fetch of its own; unknown ids come back absent
- * rather than not-found.
+ * The link-and-scale facts the view page needs about the recipes this one's
+ * ingredient foods are made by. One call for the whole page, so a sub-recipe
+ * row costs no fetch of its own. Empty for a recipe with none, and for an
+ * unknown id.
  */
-export const listSubRecipes = createServerFn({ method: "GET" })
+export const subRecipesOf = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(SubRecipesInput)
-  .handler(async ({ data }) => recipes.subRecipes(data.ids));
+  .handler(async ({ data }) => recipes.ref(data.id).subRecipes());
 
 export const getRecipe = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
@@ -110,14 +127,14 @@ export const createRecipe = createServerFn({ method: "POST" })
 export const updateRecipe = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(UpdateRecipeInput)
-  .handler(async ({ data }) => required(recipes.update(data.id, data.doc), "recipe", data.id));
+  .handler(async ({ data }) => required(recipes.ref(data.id).replace(data.doc), "recipe", data.id));
 
 /** Flip the favourite flag alone. Returns the flag as stored. Not-found for an unknown id. */
 export const setFavourite = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(SetFavouriteInput)
   .handler(async ({ data }) => {
-    if (!recipes.setFavourite(data.id, data.favourite)) throw new NotFound("recipe", data.id);
+    if (!recipes.ref(data.id).favourite(data.favourite)) throw new NotFound("recipe", data.id);
     return { id: data.id, favourite: data.favourite };
   });
 
@@ -132,7 +149,7 @@ export const setRating = createServerFn({ method: "POST" })
   .validator(SetRatingInput)
   .handler(async ({ data }) => {
     const rating = data.rating === 0 ? null : data.rating;
-    if (!recipes.setRating(data.id, rating)) throw new NotFound("recipe", data.id);
+    if (!recipes.ref(data.id).rate(rating)) throw new NotFound("recipe", data.id);
     return { id: data.id, rating };
   });
 

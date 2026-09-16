@@ -12,7 +12,7 @@ export function lastMadeFrom(occurredOn: string | null): string | null {
   return occurredOn === null ? null : `${occurredOn}T00:00:00.000Z`;
 }
 
-export function timeline(db: Database) {
+export function timelineRepository(db: Database) {
   const dz = orm(db);
 
   function get(id: string): TimelineEvent | null {
@@ -78,7 +78,7 @@ export function timeline(db: Database) {
   };
 }
 
-export type TimelineRepository = ReturnType<typeof timeline>;
+export type TimelineRepository = ReturnType<typeof timelineRepository>;
 
-/** The repository over the application database. Tests build their own with `timeline(db)`. */
-export default lazy(getDb, timeline);
+/** The repository over the application database. Tests build their own with `timelineRepository(db)`. */
+export default lazy(getDb, timelineRepository);

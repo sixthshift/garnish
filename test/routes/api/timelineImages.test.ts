@@ -5,8 +5,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { recipes } from "../../../src/db/models/recipe/repo";
-import { timeline } from "../../../src/db/models/timeline/repo";
+import { recipeRepository } from "../../../src/db/models/recipe/repo";
+import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { recipeInputSchema, type TimelineEvent } from "../../../src/domain/recipe";
 import { getTimelineImageRoute as GetRoute, uploadTimelineImageRoute as PostRoute } from "../../../src/routes/api/timelineImages";
 import { handleGetImage } from "../../../src/server/api/images";
@@ -26,8 +26,8 @@ const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x4
 
 async function createEvent(): Promise<TimelineEvent> {
   const db = getDb();
-  const recipe = recipes(db).create(recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [] }] }));
-  return timeline(db).create(recipe.id, { occurredOn: "2026-09-11", message: "", image: null, servings: null });
+  const recipe = recipeRepository(db).create(recipeInputSchema.parse({ name: "Flatbread", parts: [{ name: "", ingredients: [], steps: [] }] }));
+  return timelineRepository(db).create(recipe.id, { occurredOn: "2026-09-11", message: "", image: null, servings: null });
 }
 
 function upload(id: string, body: BodyInit | null, field = "image", type = "image/png", name = "photo.png"): Promise<Response> {
@@ -54,7 +54,7 @@ test("upload then GET returns the same bytes, and the event points at the file",
   expect(await bytesOf(got)).toEqual(png);
 
   expect(existsSync(join(tmp.dir, "images", "timeline", `${event.id}.png`))).toBe(true);
-  expect(timeline(getDb()).get(event.id)?.image).toBe(`${event.id}.png`);
+  expect(timelineRepository(getDb()).get(event.id)?.image).toBe(`${event.id}.png`);
 });
 
 test("uploading a different format replaces the file and the stored name", async () => {
@@ -65,7 +65,7 @@ test("uploading a different format replaces the file and the stored name", async
 
   expect(readdirSync(join(tmp.dir, "images", "timeline"))).toEqual([`${event.id}.jpg`]);
   expect((await handleGetTimelineImage(`${event.id}.png`)).status).toBe(404);
-  expect(timeline(getDb()).get(event.id)?.image).toBe(`${event.id}.jpg`);
+  expect(timelineRepository(getDb()).get(event.id)?.image).toBe(`${event.id}.jpg`);
 });
 
 test("the format comes from the bytes, not the declared type or file name", async () => {
@@ -103,7 +103,7 @@ test.each([
   const res = await send(event.id);
   expect(res.status).toBe(400);
   expect(typeof (await res.json()).error).toBe("string");
-  expect(timeline(getDb()).get(event.id)?.image).toBeNull();
+  expect(timelineRepository(getDb()).get(event.id)?.image).toBeNull();
 });
 
 test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(

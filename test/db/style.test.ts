@@ -4,14 +4,14 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { type StyleRuleRepository, styleRules } from "../../src/db/models/style/repo";
+import { type StyleRuleRepository, styleRuleRepository } from "../../src/db/models/style/repo";
 
 let db: Database;
 let repo: StyleRuleRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = styleRules(db);
+  repo = styleRuleRepository(db);
 });
 
 test("create appends to the foot, on by default, and round-trips through get", () => {

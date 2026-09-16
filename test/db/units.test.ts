@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
-import { type UnitRepository, units } from "../../src/db/models/unit/repo";
+import { type UnitRepository, unitRepository } from "../../src/db/models/unit/repo";
 import { formatAmount } from "../../src/domain/ingredient";
 
 let db: Database;
@@ -10,7 +10,7 @@ let repo: UnitRepository;
 beforeEach(async () => {
   db = openDatabase(":memory:");
   migrate(db);
-  repo = units(db);
+  repo = unitRepository(db);
 });
 
 test("create applies Mealie defaults and list returns by name", () => {

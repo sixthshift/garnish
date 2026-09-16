@@ -40,7 +40,7 @@ export const findOrCreateUnit = createServerFn({ method: "POST" })
 export const usingUnit = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(IdInput)
-  .handler(async ({ data }) => recipes.usingUnit(data.id));
+  .handler(async ({ data }) => recipes.query({ by: "unit", id: data.id }));
 
 /**
  * Merge `sourceId` into `targetId`: every ingredient and recipe yield using

@@ -23,7 +23,7 @@ export type StepsEditorProps = {
   /** Step ids to open in preview rather than editing. The row menu moves them after that; tests use it to render the state a click would reach. */
   previewSteps?: readonly string[];
   /** POSTs a picked photo and resolves with the stored file name. Injectable so a test never touches the network. */
-  uploadImage?: (stepId: string, file: File) => Promise<string>;
+  uploadImage?: (recipeId: string, stepId: string, file: File) => Promise<string>;
 };
 
 export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {}, disabled, previewSteps, uploadImage = uploadStepImage }: StepsEditorProps) {
@@ -57,14 +57,15 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
 
   /**
    * Store a picked photo against the *saved* step, then point the draft at the
-   * file name so the next save keeps it. A step that has never been saved is a
-   * 404 at the route — the file is named for the step id, and the id only
-   * exists in the database once the recipe has been written — so that reads as
-   * "save the recipe first" rather than as a failure of the upload.
+   * file name so the next save keeps it. The route is addressed by recipe and
+   * step, and both ids exist only once the recipe has been written: a draft
+   * with no id is told to save first here, and a step the recipe has not saved
+   * yet is a 404 at the route that reads the same way.
    */
   const addImage = async (si: number, stepId: string, file: File) => {
     try {
-      const image = await uploadImage(stepId, file);
+      if (!draft.id) throw new Error("Save the recipe first, then add photos to its steps.");
+      const image = await uploadImage(draft.id, stepId, file);
       onChange(setStepImage(draft, pi, si, image));
       notify({ intent: "success", title: "Photo added", message: "It is saved with the step." });
     } catch (error) {
