@@ -1,12 +1,12 @@
 import { Heading } from "@sixthshift/design-system/heading";
 import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
-import { AislesTab } from "./components/AislesTab";
 import { Appearance } from "./components/Appearance";
-import { ExportTab } from "./components/ExportTab";
-import { FoodsTab } from "./components/FoodsTab";
-import { StyleTab } from "./components/StyleTab";
-import { TagsTab } from "./components/TagsTab";
-import { UnitsTab } from "./components/UnitsTab";
+import { AislesTab } from "./components/tabs/AislesTab";
+import { ExportTab } from "./components/tabs/ExportTab";
+import { FoodsTab } from "./components/tabs/FoodsTab";
+import { StyleTab } from "./components/tabs/StyleTab";
+import { TagsTab } from "./components/tabs/TagsTab";
+import { UnitsTab } from "./components/tabs/UnitsTab";
 import { Route } from "./route";
 
 export function SettingsPage() {
@@ -23,7 +23,7 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 md:p-6">
       <Heading as="h1">Settings</Heading>
       <Tabs items={items} defaultValue="foods">
         <Tabs.List />

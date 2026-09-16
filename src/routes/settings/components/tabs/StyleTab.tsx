@@ -1,14 +1,20 @@
 import { Button } from "@sixthshift/design-system/button";
-import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Switch } from "@sixthshift/design-system/switch";
-import { useEffect, useState } from "react";
-import { ReorderList } from "../../../components/ui/ReorderList";
-import { type StyleRule, styleRuleNote } from "../../../domain/style";
-import { useMutate } from "../../../lib/mutate";
-import { notify, notifyError } from "../../../lib/notify";
-import { createStyleRule, deleteStyleRule, reorderStyleRules, updateStyleRule } from "../../../server/fns/style";
+import { Textarea } from "@sixthshift/design-system/textarea";
+import { useEffect, useRef, useState } from "react";
+import { ReorderList } from "../../../../components/ui/ReorderList";
+import { type StyleRule, styleRuleNote } from "../../../../domain/style";
+import { useMutate } from "../../../../lib/mutate";
+import { notify, notifyError } from "../../../../lib/notify";
+import { createStyleRule, deleteStyleRule, reorderStyleRules, updateStyleRule } from "../../../../server/fns/style";
+
+/** Grows a textarea to fit its content instead of scrolling internally. */
+function autosize(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
 
 /**
  * The Style tab: the house style guide, which is
@@ -34,6 +40,11 @@ export function StyleTab({ rules }: { rules: readonly StyleRule[] }) {
   useEffect(() => setOrder(rules.slice()), [rules]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const draftRef = useRef<HTMLTextAreaElement>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: draft only triggers the resize, it isn't read here
+  useEffect(() => {
+    if (draftRef.current) autosize(draftRef.current);
+  }, [draft]);
 
   const persistOrder = async (next: StyleRule[]) => {
     const previous = order;
@@ -108,15 +119,28 @@ export function StyleTab({ rules }: { rules: readonly StyleRule[] }) {
             const note = styleRuleNote(rule.text);
             return (
               <div className="flex flex-col gap-1 rounded-md border border-border-normal px-3 py-2">
-                <div className="flex items-center gap-3">
-                  <Switch checked={rule.enabled} aria-label={`Use "${rule.text}" by default`} onCheckedChange={(enabled) => void toggle(rule, enabled)} />
-                  <Input
+                <div className="flex items-start gap-3">
+                  <Switch
+                    checked={rule.enabled}
+                    aria-label={`Use "${rule.text}" by default`}
+                    className="mt-1"
+                    onCheckedChange={(enabled) => void toggle(rule, enabled)}
+                  />
+                  <Textarea
                     defaultValue={rule.text}
                     aria-label={`Statement: ${rule.text}`}
-                    className="min-w-0 flex-1"
+                    rows={1}
+                    ref={(el) => {
+                      if (el) autosize(el);
+                    }}
+                    className="min-h-0 min-w-0 flex-1 resize-none overflow-hidden border-0 py-1 shadow-none"
+                    onInput={(event) => autosize(event.currentTarget)}
                     onBlur={(event) => void saveText(rule, event.currentTarget.value)}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                      }
                     }}
                   />
                 </div>
@@ -130,18 +154,23 @@ export function StyleTab({ rules }: { rules: readonly StyleRule[] }) {
           }}
         />
       )}
-      <div className="flex items-center gap-2">
-        <Input
+      <div className="flex items-start gap-2">
+        <Textarea
+          ref={draftRef}
           value={draft}
           aria-label="New statement"
           placeholder="Add a statement"
-          className="min-w-0 flex-1"
+          rows={1}
+          className="min-h-0 min-w-0 flex-1 resize-none overflow-hidden py-2"
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") void add();
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              void add();
+            }
           }}
         />
-        <Button type="button" variant="outline" intent="neutral" disabled={busy || draft.trim() === ""} onClick={() => void add()}>
+        <Button type="button" variant="outline" intent="neutral" className="mt-0.5" disabled={busy || draft.trim() === ""} onClick={() => void add()}>
           Add
         </Button>
       </div>

@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { DataTable } from "../../../components/ui/DataTable";
-import { UsageConfirmDialog } from "../../../components/ui/UsageConfirmDialog";
-import type { RecipeSummary } from "../../../domain/recipe";
-import type { Unit } from "../../../domain/reference";
-import { useMutate } from "../../../lib/mutate";
-import { notify, notifyError } from "../../../lib/notify";
-import type { DataTableColumn } from "../../../lib/ui/dataTable";
-import { deleteUnit, mergeUnit, updateUnit, usingUnit } from "../../../server/fns/units";
-import { mergeColumn } from "./columns";
-import { dedupeSummaries, unitsLabel } from "./settingsLabels";
-import { UnitEditSheet, type UnitPatch } from "./UnitEditSheet";
-import { UnitMergeDialog } from "./UnitMergeDialog";
+import { DataTable } from "../../../../components/ui/DataTable";
+import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
+import type { RecipeSummary } from "../../../../domain/recipe";
+import type { Unit } from "../../../../domain/reference";
+import { useMutate } from "../../../../lib/mutate";
+import { notify, notifyError } from "../../../../lib/notify";
+import type { DataTableColumn } from "../../../../lib/ui/dataTable";
+import { deleteUnit, mergeUnit, updateUnit, usingUnit } from "../../../../server/fns/units";
+import { mergeColumn } from "../columns";
+import { dedupeSummaries, unitsLabel } from "../settingsLabels";
+import { UnitEditSheet, type UnitPatch } from "../UnitEditSheet";
+import { UnitMergeDialog } from "../UnitMergeDialog";
 
 export function UnitsTab({ units }: { units: readonly Unit[] }) {
   const mutate = useMutate();

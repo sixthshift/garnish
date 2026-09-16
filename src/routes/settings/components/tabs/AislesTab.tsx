@@ -1,15 +1,15 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { useEffect, useState } from "react";
-import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
-import { EditSheet } from "../../../components/ui/EditSheet";
-import { ReorderList } from "../../../components/ui/ReorderList";
-import type { Aisle } from "../../../domain/reference";
-import { useMutate } from "../../../lib/mutate";
-import { notify, notifyError } from "../../../lib/notify";
-import type { SavedValues } from "../../../lib/ui/editSheet";
-import { deleteAisle, reorderAisles, updateAisle } from "../../../server/fns/aisles";
-import { NAME_FIELDS } from "./columns";
+import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
+import { EditSheet } from "../../../../components/ui/EditSheet";
+import { ReorderList } from "../../../../components/ui/ReorderList";
+import type { Aisle } from "../../../../domain/reference";
+import { useMutate } from "../../../../lib/mutate";
+import { notify, notifyError } from "../../../../lib/notify";
+import type { SavedValues } from "../../../../lib/ui/editSheet";
+import { deleteAisle, reorderAisles, updateAisle } from "../../../../server/fns/aisles";
+import { NAME_FIELDS } from "../columns";
 
 export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
   const mutate = useMutate();

@@ -1,18 +1,18 @@
 import { useState } from "react";
-import { DataTable } from "../../../components/ui/DataTable";
-import { UsageConfirmDialog } from "../../../components/ui/UsageConfirmDialog";
-import type { RecipeSummary } from "../../../domain/recipe";
-import type { Aisle, Unit } from "../../../domain/reference";
-import { useMutate } from "../../../lib/mutate";
-import { notify, notifyError } from "../../../lib/notify";
-import type { DataTableColumn } from "../../../lib/ui/dataTable";
-import { findOrCreateAisle } from "../../../server/fns/aisles";
-import { deleteFood, mergeFood, updateFood, usingFood } from "../../../server/fns/foods";
-import type { FoodRow } from "../route";
-import { mergeColumn } from "./columns";
-import { FoodEditSheet, type FoodPatch } from "./FoodEditSheet";
-import { FoodMergeDialog } from "./FoodMergeDialog";
-import { dedupeSummaries, foodsLabel } from "./settingsLabels";
+import { DataTable } from "../../../../components/ui/DataTable";
+import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
+import type { RecipeSummary } from "../../../../domain/recipe";
+import type { Aisle, Unit } from "../../../../domain/reference";
+import { useMutate } from "../../../../lib/mutate";
+import { notify, notifyError } from "../../../../lib/notify";
+import type { DataTableColumn } from "../../../../lib/ui/dataTable";
+import { findOrCreateAisle } from "../../../../server/fns/aisles";
+import { deleteFood, mergeFood, updateFood, usingFood } from "../../../../server/fns/foods";
+import type { FoodRow } from "../../route";
+import { mergeColumn } from "../columns";
+import { FoodEditSheet, type FoodPatch } from "../FoodEditSheet";
+import { FoodMergeDialog } from "../FoodMergeDialog";
+import { dedupeSummaries, foodsLabel } from "../settingsLabels";
 
 export function FoodsTab({
   foods,

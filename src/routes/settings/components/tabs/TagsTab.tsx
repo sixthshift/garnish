@@ -4,17 +4,17 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { EditSheet } from "../../../components/ui/EditSheet";
-import { UsageConfirmDialog } from "../../../components/ui/UsageConfirmDialog";
-import type { RecipeSummary } from "../../../domain/recipe";
-import type { Tag } from "../../../domain/reference";
-import { useMutate } from "../../../lib/mutate";
-import { notify, notifyError } from "../../../lib/notify";
-import type { SavedValues } from "../../../lib/ui/editSheet";
-import { deleteTag, mergeTag, updateTag, usingTag } from "../../../server/fns/tags";
-import { NAME_FIELDS } from "./columns";
-import { TagMergeDialog } from "./TagMergeDialog";
-import { groupTagsAZ } from "./tagGroups";
+import { EditSheet } from "../../../../components/ui/EditSheet";
+import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
+import type { RecipeSummary } from "../../../../domain/recipe";
+import type { Tag } from "../../../../domain/reference";
+import { useMutate } from "../../../../lib/mutate";
+import { notify, notifyError } from "../../../../lib/notify";
+import type { SavedValues } from "../../../../lib/ui/editSheet";
+import { deleteTag, mergeTag, updateTag, usingTag } from "../../../../server/fns/tags";
+import { NAME_FIELDS } from "../columns";
+import { TagMergeDialog } from "../TagMergeDialog";
+import { groupTagsAZ } from "../tagGroups";
 
 export function TagsTab({ tags }: { tags: readonly Tag[] }) {
   const mutate = useMutate();

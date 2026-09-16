@@ -1,7 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { AiImportNote } from "./AiImportNote";
+import { AiImportNote } from "../AiImportNote";
 
 /**
  * The Export tab: one link at the whole database, and the caveat that
