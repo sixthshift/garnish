@@ -73,7 +73,7 @@ src/
   server.ts     custom server entry: boot, then the default Start handler
 vite.config.ts  tanstackStart({ spa, router }), nitro({ preset: 'bun' }), viteReact(), tailwindcss(), serviceWorkerPlugin(). The `router` option hands Start's route generator the root alone and an output under .tanstack/ that nothing imports: Start needs the generator to run to build its asset manifest, even though routing is code
 public/         manifest.webmanifest, icons/, apple-touch-icon.png
-test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests
+test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests; *.dom.test.tsx is the happy-dom project (helpers/dom.tsx renders into one), everything else is node
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
@@ -92,7 +92,7 @@ Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `
 | Queries | Drizzle ORM over that same `bun:sqlite` handle; tables in `src/db/models/<domain>/schema.ts` (decisions.md row 46) |
 | Validation | zod, one schema per document, shared by API and editor |
 | IDs | UUID, plus slug on recipe (Mealie) |
-| Tests | vitest, run as `bun run test` (`bun --bun vitest run`, so `bun:sqlite` resolves). The nitro plugin is left out of the config under vitest |
+| Tests | vitest, run as `bun run test` (`bun --bun vitest run`, so `bun:sqlite` resolves). The nitro plugin is left out of the config under vitest. Two projects: `node` for everything, `dom` (happy-dom, Testing Library, `vitest.setup.ts`) for `*.dom.test.tsx` |
 | Deploy | Docker, single container, one volume |
 
 ## Data model

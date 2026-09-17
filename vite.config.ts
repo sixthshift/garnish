@@ -27,7 +27,31 @@ export default defineConfig({
     serviceWorkerPlugin(),
   ],
   test: {
-    include: ["test/**/*.test.{ts,tsx}"],
-    environment: "node",
+    // Two projects, told apart by file name. Everything is node — pure domain
+    // logic, repositories, server functions, and components through
+    // `renderToString` — except `*.dom.test.tsx`, which gets happy-dom and
+    // Testing Library so an interaction can be driven rather than read. The
+    // design system splits its suite the same way, and for the same reason
+    // (its vitest.config.ts): a DOM for every file would cost every file.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "node",
+          include: ["test/**/*.test.{ts,tsx}"],
+          exclude: ["test/**/*.dom.test.tsx"],
+          environment: "node",
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "dom",
+          include: ["test/**/*.dom.test.tsx"],
+          environment: "happy-dom",
+          setupFiles: ["./vitest.setup.ts"],
+        },
+      },
+    ],
   },
 });

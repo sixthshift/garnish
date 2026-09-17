@@ -27,7 +27,7 @@ Keep the argument in `docs/`; keep operating constraints here.
 - **Frontend:** React 19 + Tailwind 4 via `@tailwindcss/vite`. Phone-first PWA.
 - **UI kit:** `@sixthshift/design-system` (Jason's personal system). Subpath imports only, e.g. `@sixthshift/design-system/button`. Check its exports before writing any UI element. Missing primitives are built locally from its pieces.
 - **Locale:** metric, en-AU spelling. UUID ids, zod validation, images on disk.
-- **Tests:** vitest via `bun run test`. Not `bun test`. `bun run lint` (Biome, a11y included) is part of the gate too.
+- **Tests:** vitest via `bun run test`. Not `bun test`. `bun run lint` (Biome, a11y included) is part of the gate too. Two projects in one command: everything runs in `node` and renders with `renderToString`, except `*.dom.test.tsx`, which gets happy-dom and Testing Library so an interaction can be driven. Name a file `.dom.test.tsx` only when it presses something; a DOM for a file that just checks markup costs the whole suite.
 - **Deploy:** one Docker container, SQLite file on a volume.
 - **Cooklang:** borrow sections, `=` fixed quantities, servings scaling, aisle config. Do not adopt the file format.
 
