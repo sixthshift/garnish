@@ -3,8 +3,6 @@
 // document an export is most likely to lose — a step linked to its ingredient
 // rows, an ingredient whose food is made by another recipe, a food conversion,
 // an aisle, a tag, and an image.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { expect, test } from "vitest";
 import { aisleRepository } from "../../../src/db/models/aisle/repo";
 import { foodRepository } from "../../../src/db/models/food/repo";

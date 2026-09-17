@@ -175,7 +175,13 @@ describe("tickTimers", () => {
   test("nothing to do means no write and no notification", () => {
     const storage = memoryStorage();
     let writes = 0;
-    const counting: StorageLike = { getItem: storage.getItem, setItem: (key, value) => (writes++, storage.setItem(key, value)) };
+    const counting: StorageLike = {
+      getItem: storage.getItem,
+      setItem: (key, value) => {
+        writes++;
+        storage.setItem(key, value);
+      },
+    };
     startTimer(counting, RECIPE, { id: chip(), label: "Simmer", seconds: 600 }, T0);
     writes = 0;
     const { expired } = tickTimers(counting, RECIPE, T0 + 500);

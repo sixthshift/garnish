@@ -1,6 +1,6 @@
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
-import { useViewMode, type ViewMode } from "../../../lib/prefs";
 import { GridIcon, ListIcon } from "../../../components/ui/icons";
+import { useViewMode, type ViewMode } from "../../../lib/prefs";
 
 export function ViewModeToggle() {
   const [mode, setMode] = useViewMode();

@@ -35,7 +35,17 @@ export type RecipeHeaderProps = {
 function ImagePlaceholder() {
   return (
     <div data-placeholder="image" aria-hidden="true" className="flex aspect-video w-full items-center justify-center rounded-xl bg-bg-subtle text-fg-subtle">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        aria-hidden="true"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <circle cx="8.5" cy="10" r="1.5" />
         <path d="m21 16-4.5-4.5L9 19" />

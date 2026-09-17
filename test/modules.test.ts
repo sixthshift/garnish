@@ -37,10 +37,10 @@ export function deepImportsInto(module: string, files: readonly string[]): { fil
   const found: { file: string; specifier: string }[] = [];
   for (const file of files) {
     const rel = relative(root, file);
-    if (rel.startsWith(module + "/") || rel.startsWith(testFolder + "/")) continue;
+    if (rel.startsWith(`${module}/`) || rel.startsWith(`${testFolder}/`)) continue;
     for (const specifier of relativeSpecifiers(readFileSync(file, "utf8"))) {
       const target = relative(root, resolve(dirname(file), specifier));
-      if (target.startsWith(module + "/")) found.push({ file: rel, specifier });
+      if (target.startsWith(`${module}/`)) found.push({ file: rel, specifier });
     }
   }
   return found;

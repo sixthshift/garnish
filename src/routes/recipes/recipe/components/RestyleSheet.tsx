@@ -33,6 +33,7 @@ export function RestyleSheet({ open, recipe, onClose, loadRules }: RestyleSheetP
 
   // The guide is read when the sheet opens rather than by the page's loader:
   // a recipe nobody restyles should not pay for it on every view.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: opening is the trigger; loadRules is a test seam passed inline, so depending on it would re-read the guide on every render.
   useEffect(() => {
     if (!open) return;
     let stale = false;
@@ -53,7 +54,6 @@ export function RestyleSheet({ open, recipe, onClose, loadRules }: RestyleSheetP
     return () => {
       stale = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const close = () => {

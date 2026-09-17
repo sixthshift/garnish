@@ -6,6 +6,7 @@ import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CARD_MIN_WIDTH, RecipeCard } from "../../components/recipe/RecipeCard";
+import { DiceIcon } from "../../components/ui/icons";
 import { resolveSort, type SortDir, type SortKey, selectedTags } from "../../domain/recipe";
 import { arrayParam, newSeed, pickRandom } from "../../lib/lists";
 import { useViewMode } from "../../lib/prefs";
@@ -14,7 +15,6 @@ import { FilterBar } from "./components/FilterBar";
 import { SortMenu } from "./components/SortMenu";
 import { ViewModeToggle } from "./components/ViewModeToggle";
 import { Route } from "./route";
-import { DiceIcon } from "../../components/ui/icons";
 
 export function RecipesPage() {
   const { recipes, tags, foods } = Route.useLoaderData();
@@ -53,15 +53,16 @@ export function RecipesPage() {
           <Link to="/recipes/new">New recipe</Link>
         </Button>
       </div>
-      <form
-        role="search"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void navigate({ search: (prev) => ({ ...prev, q: searchParam(query) }) });
-        }}
-      >
-        <SearchInput value={query} onChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
-      </form>
+      <search>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void navigate({ search: (prev) => ({ ...prev, q: searchParam(query) }) });
+          }}
+        >
+          <SearchInput value={query} onChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
+        </form>
+      </search>
       <FilterBar
         allTags={tags}
         allFoods={foods}

@@ -21,7 +21,7 @@ export function recipeAdditions(recipe: Recipe, sourceForPart: (partName: string
   for (const part of recipe.parts) {
     const partName = part.name.trim();
     for (const ingredient of part.ingredients) {
-      if (ingredient.food !== null && ingredient.food.skipShopping) continue;
+      if (ingredient.food?.skipShopping) continue;
       const originalText = displayText(ingredient);
       if (ingredient.food === null && originalText === "") continue;
       additions.push({

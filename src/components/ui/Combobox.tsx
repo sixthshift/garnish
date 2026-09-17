@@ -110,7 +110,7 @@ export function Combobox({
         onKeyDown={onKeyDown}
       />
       {open && (
-        <ul
+        <div
           id={listId}
           role="listbox"
           aria-label={ariaLabel ? `${ariaLabel} suggestions` : undefined}
@@ -120,10 +120,12 @@ export function Combobox({
             const selected = index === active;
             const key = item.kind === "option" ? item.option.value : "__create__";
             return (
-              <li
+              // biome-ignore lint/a11y/useKeyWithClickEvents: an ARIA 1.2 combobox keeps focus on the input; the list is driven by aria-activedescendant and Enter is handled in onKeyDown above, so a key handler here could never fire.
+              <div
                 key={key}
                 id={`${listId}-${index}`}
                 role="option"
+                tabIndex={-1}
                 aria-selected={selected}
                 className={cn(
                   "flex cursor-pointer items-baseline justify-between gap-2 rounded-md px-2 py-1.5 text-sm",
@@ -143,10 +145,10 @@ export function Combobox({
                 ) : (
                   <span>Create “{item.text}”</span>
                 )}
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

@@ -69,7 +69,7 @@
     column-gap: 1.5rem;
   }
 
-  ul[aria-label="Ingredients"] li {
+  [aria-label="Ingredients"] li {
     break-inside: avoid;
   }
 

@@ -33,6 +33,7 @@ export function GlobalSearch() {
   }, [open]);
 
   // Any navigation — a result opened, a link followed elsewhere, back/forward — closes it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: href is the trigger, not a value the effect reads — it is what makes a navigation close the dialog.
   useEffect(() => {
     setOpen(false);
   }, [href]);

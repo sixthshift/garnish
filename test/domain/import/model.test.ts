@@ -123,7 +123,7 @@ describe("parseAiAnswer", () => {
   });
 
   test("reads a fenced answer from a model that fences anyway", () => {
-    expect(parseAiAnswer("```json\n" + answer + "\n```").name).toBe("Anzac biscuits");
+    expect(parseAiAnswer(`\`\`\`json\n${answer}\n\`\`\``).name).toBe("Anzac biscuits");
   });
 
   test("fills what the answer left out, and always has a main body", () => {

@@ -50,7 +50,7 @@ test("a backup zip comes back with every recipe and its image", async () => {
 });
 
 test("the route is wired to the handler", async () => {
-  const post = handlersOf(Route)["POST"];
+  const post = handlersOf(Route).POST;
   expect(post).toBeTypeOf("function");
   const response = await post!({ request: upload(fixtureText()), params: {} });
   expect(response.status).toBe(200);

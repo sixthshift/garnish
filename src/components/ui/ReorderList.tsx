@@ -53,7 +53,7 @@ export function ReorderList<T>({
         return (
           <li
             key={keyOf(item)}
-            className={cn("flex items-start gap-2 rounded-md", dragging && "opacity-60 ring-1 ring-current/20")}
+            className={cn("flex items-center gap-2 rounded-md", dragging && "opacity-60 ring-1 ring-current/20")}
             data-index={index}
             data-dragging={dragging ? "" : undefined}
           >
@@ -73,7 +73,7 @@ export function ReorderList<T>({
               <Grip />
             </button>
             <div className="min-w-0 flex-1">{renderItem(item, index)}</div>
-            <div className="flex shrink-0 items-center gap-1" role="group" aria-label={`Reorder ${name}`}>
+            <fieldset className="flex shrink-0 items-center gap-1" aria-label={`Reorder ${name}`}>
               <Button
                 type="button"
                 variant="ghost"
@@ -103,7 +103,7 @@ export function ReorderList<T>({
                   <Cross />
                 </Button>
               )}
-            </div>
+            </fieldset>
           </li>
         );
       })}

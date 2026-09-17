@@ -82,8 +82,7 @@ export function readableText(html: string): string {
   let lastIndex = 0;
   const dropStack: string[] = [];
   TAG_PATTERN.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = TAG_PATTERN.exec(withoutComments)) !== null) {
+  for (let match = TAG_PATTERN.exec(withoutComments); match !== null; match = TAG_PATTERN.exec(withoutComments)) {
     const segment = withoutComments.slice(lastIndex, match.index);
     lastIndex = TAG_PATTERN.lastIndex;
 

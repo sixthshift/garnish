@@ -21,6 +21,7 @@ export function RecipePicker({ recipes, busy, onPick, onBack }: RecipePickerProp
       </Muted>
       <ul className="flex flex-col gap-2">
         {recipes.map((recipe, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the file's recipes are unsaved and have no ids; the index is the choice the picker reports back.
           <li key={`${index}-${recipe.name}`}>
             <button
               type="button"

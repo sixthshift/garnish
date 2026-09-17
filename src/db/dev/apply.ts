@@ -9,7 +9,7 @@ import { orm } from "../connection/client";
 import { recipeRepository } from "../models/recipe/repo";
 import { recipe } from "../models/recipe/schema";
 import { timelineRepository } from "../models/timeline/repo";
-import { type DevRecipe, devIds, generateDevRecipes } from "./generate";
+import { type DevRecipe, generateDevRecipes } from "./generate";
 import { placeholderPng } from "./png";
 
 /**

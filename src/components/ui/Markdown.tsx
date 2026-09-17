@@ -36,6 +36,7 @@ function BlockNode({ block }: { block: Block }) {
     );
   }
   const items = block.items.map((item, index) => (
+    // biome-ignore lint/suspicious/noArrayIndexKey: parsed markdown items are positional and carry no id; the whole block re-renders when the source changes.
     <li key={index}>
       <InlineNodes nodes={item} />
     </li>
@@ -59,6 +60,7 @@ export function Markdown({ source, className }: { source: string; className?: st
   return (
     <div className={cn("flex flex-col gap-2", className)} data-testid="markdown">
       {blocks.map((block, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: parsed markdown blocks are positional and carry no id; the whole document re-renders when the source changes.
         <BlockNode key={index} block={block} />
       ))}
     </div>

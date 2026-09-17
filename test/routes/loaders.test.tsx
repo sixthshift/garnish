@@ -109,7 +109,7 @@ describe("/ (list)", () => {
   test("the search box and active tag reflect the URL", async () => {
     await seed("Flatbread", { tags: [weeknight] });
     const html = await renderRoute("/?q=flat&tag=weeknight");
-    expect(html).toContain('role="search"');
+    expect(html).toContain("<search>"); // the search landmark, as an element rather than a role
     expect(html).toContain('value="flat"');
     // The legacy singular `tag` param still selects its chip (M12.3 folds it into `tags`).
     expect(html).toMatch(/data-state="on"[^>]*>Weeknight/);

@@ -59,7 +59,8 @@ export function Menu({ label, iconOnly = false, open: openProp, defaultOpen = fa
       return;
     }
     const all = items();
-    const index = all.findIndex((item) => item === document.activeElement);
+    const active = document.activeElement;
+    const index = active instanceof HTMLElement ? all.indexOf(active) : -1;
     const next = nextMenuIndex(index, all.length, event.key);
     if (next === null) return;
     event.preventDefault();
@@ -153,7 +154,7 @@ export function MenuItem({ children, onSelect, intent = "neutral", disabled = fa
 
 /** A hairline between groups of items. */
 export function MenuSeparator() {
-  return <div role="separator" className="my-1 border-t border-border-subtle" />;
+  return <hr className="my-1 border-t border-border-subtle" />;
 }
 
 Menu.Item = MenuItem;

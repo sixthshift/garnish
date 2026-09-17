@@ -35,13 +35,14 @@ export function Rating({ value, onChange, disabled, className }: RatingProps) {
     return (
       <span role="img" aria-label={ratingLabel(value)} className={cn("inline-flex items-center gap-0.5", className)}>
         {Array.from({ length: RATING_MAX }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: a fixed-length run of stars: position is the identity.
           <Star key={i} filled={i < filled} />
         ))}
       </span>
     );
   }
   return (
-    <div role="group" aria-label={ratingLabel(value)} className={cn("inline-flex items-center gap-0.5", className)}>
+    <fieldset aria-label={ratingLabel(value)} className={cn("inline-flex items-center gap-0.5", className)}>
       {Array.from({ length: RATING_MAX }, (_, i) => {
         const star = i + 1;
         return (
@@ -58,6 +59,6 @@ export function Rating({ value, onChange, disabled, className }: RatingProps) {
           </button>
         );
       })}
-    </div>
+    </fieldset>
   );
 }

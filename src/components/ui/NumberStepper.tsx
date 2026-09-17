@@ -38,7 +38,7 @@ export function NumberStepper({ value, onChange, min, max, step = 1, label, id, 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label !== undefined && <Label htmlFor={inputId}>{label}</Label>}
-      <div className="flex items-center gap-2" role="group" aria-label={label}>
+      <fieldset className="flex items-center gap-2" aria-label={label}>
         <Button
           type="button"
           variant="outline"
@@ -76,7 +76,7 @@ export function NumberStepper({ value, onChange, min, max, step = 1, label, id, 
         >
           +
         </Button>
-      </div>
+      </fieldset>
     </div>
   );
 }

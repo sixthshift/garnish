@@ -134,6 +134,7 @@ export function RestyleSheetContent(props: RestyleSheetContentProps) {
                   )}
                   <ol className="flex flex-col gap-3">
                     {Array.from({ length: rows }, (_, row) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: a row is a position: step n before beside step n after, and the two arrays are only ever replaced.
                       <li key={row} className="grid gap-2 md:grid-cols-2" data-testid="restyle-step">
                         <div className="text-sm text-fg-subtle" data-testid="restyle-step-before">
                           {part.steps[row]?.text ?? ""}

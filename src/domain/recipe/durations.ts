@@ -14,12 +14,12 @@ export type Duration = {
 const FRACTIONS: Record<string, number> = { "½": 0.5, "¼": 0.25, "¾": 0.75 };
 
 const NUMBER = String.raw`(?:\d+(?:[½¼¾])?|[½¼¾])`;
-const HOUR = String.raw`(?:hours|hour|hrs|hr|h)`;
+const HOUR = `(?:hours|hour|hrs|hr|h)`;
 // No bare "m": after a number it is as likely metres as minutes.
-const MINUTE = String.raw`(?:minutes|minute|mins|min)`;
-const SECOND = String.raw`(?:seconds|second|secs|sec|s)`;
+const MINUTE = `(?:minutes|minute|mins|min)`;
+const SECOND = `(?:seconds|second|secs|sec|s)`;
 const ANY_UNIT = `(?:${HOUR}|${MINUTE}|${SECOND})`;
-const NOT_LETTER = String.raw`(?![A-Za-z])`;
+const NOT_LETTER = `(?![A-Za-z])`;
 const GAP = String.raw`[ \t]*`;
 
 // Sticky ('y'): each regex is retried at an exact offset, never scans ahead on

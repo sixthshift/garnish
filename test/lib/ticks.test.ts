@@ -52,11 +52,11 @@ describe("getTicks", () => {
 
   test("falls back to empty for malformed or unexpected content", () => {
     const storage = memoryStorage();
-    storage.setItem("garnish.ticks." + RECIPE, "not json{");
+    storage.setItem(`garnish.ticks.${RECIPE}`, "not json{");
     expect(getTicks(storage, RECIPE)).toEqual({ ingredients: [], steps: [] });
-    storage.setItem("garnish.ticks." + RECIPE, JSON.stringify({ ingredients: [1, 2], steps: [] }));
+    storage.setItem(`garnish.ticks.${RECIPE}`, JSON.stringify({ ingredients: [1, 2], steps: [] }));
     expect(getTicks(storage, RECIPE)).toEqual({ ingredients: [], steps: [] });
-    storage.setItem("garnish.ticks." + RECIPE, JSON.stringify(["not", "an", "object"]));
+    storage.setItem(`garnish.ticks.${RECIPE}`, JSON.stringify(["not", "an", "object"]));
     expect(getTicks(storage, RECIPE)).toEqual({ ingredients: [], steps: [] });
   });
 

@@ -13,8 +13,9 @@ What one task looks like, whoever runs it (an ailoop subagent, a /loop firing, o
    ```
    bun run check     # tsc --noEmit
    bun run test      # vitest run
+   bun run lint      # biome check .
    ```
-   Both must pass. A failing gate is not done. Fix it or revert the task.
+   All three must pass. A failing gate is not done. Fix it or revert the task.
 5. Commit with a one-line message naming the task id, e.g. `M1.3 recipe document schema`. Attribution trailer per `CLAUDE.md`.
 6. Report. Under `/ailoop` the orchestrator ticks the task, appends the Log line and commits; a subagent never edits this file. Under `/loop`, do it yourself.
 7. Stop. One task per iteration.

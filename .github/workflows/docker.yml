@@ -2,7 +2,8 @@
 # ghcr.io/<owner>/<repo> on every push to main (tagged latest and by commit)
 # and every v* tag (tagged by version). Pull requests build without pushing.
 # The test job gates the image: nothing ships that does not pass
-# `bun run check` and `bun run test` on the same Bun the image runs.
+# `bun run check`, `bun run test` and `bun run lint` on the same Bun the image
+# runs.
 # docker/docker-compose.yml pulls the latest tag. test/docker/workflow.test.ts
 # asserts this contract.
 name: docker
@@ -29,6 +30,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run check
       - run: bun run test
+      - run: bun run lint
 
   image:
     needs: test

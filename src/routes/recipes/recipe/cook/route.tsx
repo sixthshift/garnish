@@ -1,7 +1,6 @@
-import { Card } from "@sixthshift/design-system/card";
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
-import { type Recipe, type SubRecipe } from "../../../../domain/recipe";
+import type { Recipe, SubRecipe } from "../../../../domain/recipe";
 import { getRecipe, subRecipesOf } from "../../../../server/fns/recipes";
 import { Route as rootRoute } from "../../../root";
 

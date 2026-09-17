@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { PencilIcon } from "../../../../components/ui/icons";
 import { Menu } from "../../../../components/ui/Menu";
 import { type DraftIngredient, withIngredientReplaced, withStepReplaced } from "../../../../domain/draft";
 import type { Unit } from "../../../../domain/reference";
@@ -8,7 +9,6 @@ import { useQuickEditContext } from "./QuickEditContext";
 import { QuickEditIngredientSheet } from "./QuickEditIngredient";
 import { QuickEditStepSheet } from "./QuickEditStep";
 import { saveQuickEdit } from "./saveQuickEdit";
-import { PencilIcon } from "../../../../components/ui/icons";
 
 // --- The trigger a row renders ------------------------------------------------
 

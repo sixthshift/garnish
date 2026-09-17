@@ -68,7 +68,7 @@ export function PlanAddRow({
     clear();
   };
 
-  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
       const recipe = selectedResult(results, selected);
@@ -89,10 +89,11 @@ export function PlanAddRow({
   };
 
   return (
-    <div className="flex flex-col gap-1" onKeyDown={onKeyDown} data-testid="plan-add">
+    <div className="flex flex-col gap-1" data-testid="plan-add">
       <SearchInput
         value={query}
         onChange={setQuery}
+        onKeyDown={onKeyDown}
         disabled={busy}
         name="entry"
         placeholder="Add a recipe or a line"

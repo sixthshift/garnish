@@ -48,7 +48,7 @@ describe("nextRating", () => {
 describe("Rating editable", () => {
   test("with onChange renders five star buttons, the filled ones pressed", () => {
     const html = renderToString(<Rating value={2} onChange={() => {}} />);
-    expect(html).toContain('role="group"');
+    expect(html).toContain("<fieldset"); // the group, as an element rather than a role
     expect(html).toContain('aria-label="Rated 2 out of 5"');
     expect(html).not.toContain('role="img"');
     for (let star = 1; star <= 5; star++) expect(html).toContain(`aria-label="Rate ${star} out of 5"`);

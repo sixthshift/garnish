@@ -40,9 +40,9 @@ describe("triggers", () => {
 });
 
 describe("test job", () => {
-  test("installs from the lockfile, typechecks and tests", () => {
+  test("installs from the lockfile, typechecks, tests and lints", () => {
     const runs = testJob!.steps.map((step) => step.run).filter(Boolean);
-    expect(runs).toEqual(["bun install --frozen-lockfile", "bun run check", "bun run test"]);
+    expect(runs).toEqual(["bun install --frozen-lockfile", "bun run check", "bun run test", "bun run lint"]);
   });
 
   test("runs the Bun the image is pinned to", () => {

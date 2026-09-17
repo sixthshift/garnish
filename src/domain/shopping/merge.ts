@@ -92,7 +92,7 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
   for (const addition of additions) {
     const { quantity, unit, food, originalText, fixed, source } = addition;
 
-    if (food !== null && food.skipShopping) continue; // on hand already: dropped
+    if (food?.skipShopping) continue; // on hand already: dropped
 
     if (food === null) {
       // Free text, or an ingredient the parser found no food for: its own new

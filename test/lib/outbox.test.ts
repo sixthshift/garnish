@@ -33,9 +33,18 @@ function memoryStorage(fail = false): StorageLike & { map: Map<string, string> }
   };
   return {
     map,
-    getItem: (key) => (boom(), map.get(key) ?? null),
-    setItem: (key, value) => void (boom(), map.set(key, value)),
-    removeItem: (key) => void (boom(), map.delete(key)),
+    getItem: (key) => {
+      boom();
+      return map.get(key) ?? null;
+    },
+    setItem: (key, value) => {
+      boom();
+      map.set(key, value);
+    },
+    removeItem: (key) => {
+      boom();
+      map.delete(key);
+    },
   };
 }
 
@@ -195,7 +204,10 @@ describe("the stored queue", () => {
 describe("createOutbox", () => {
   const ids = () => {
     let i = 0;
-    return () => `e${(i += 1)}`;
+    return () => {
+      i += 1;
+      return `e${i}`;
+    };
   };
 
   test("picks up what a previous visit left behind and persists every push", () => {

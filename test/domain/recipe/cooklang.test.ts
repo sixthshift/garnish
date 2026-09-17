@@ -205,7 +205,7 @@ function randomIngredient(rng: () => number, id: string): Ingredient {
 
 function randomText(rng: () => number): string {
   const length = 3 + randomInt(rng, 8);
-  return Array.from({ length }, () => pick(rng, WORDS)).join(" ") + ".";
+  return `${Array.from({ length }, () => pick(rng, WORDS)).join(" ")}.`;
 }
 
 test("every linked food comes out as an @ reference, over many random steps", () => {

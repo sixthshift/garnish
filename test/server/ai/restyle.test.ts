@@ -274,7 +274,7 @@ describe("the answer's schema", () => {
   });
 
   test("a fenced answer is read, and prose is malformed", () => {
-    expect(parseRestyleAnswer("```json\n" + JSON.stringify(GOOD) + "\n```")).toHaveLength(2);
+    expect(parseRestyleAnswer(`\`\`\`json\n${JSON.stringify(GOOD)}\n\`\`\``)).toHaveLength(2);
     const caught = (() => {
       try {
         parseRestyleAnswer("Sure! Here is your recipe.");

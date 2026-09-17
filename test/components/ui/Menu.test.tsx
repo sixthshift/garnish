@@ -61,7 +61,7 @@ describe("Menu", () => {
     expect(html.match(/role="menuitem"/g)).toHaveLength(2);
     expect(html).toContain("Duplicate");
     expect(html).toContain("Delete");
-    expect(html).toContain('role="separator"');
+    expect(html).toContain("<hr"); // the separator, as an element rather than a role
   });
 
   test("iconOnly names the trigger with the label instead of showing it", () => {

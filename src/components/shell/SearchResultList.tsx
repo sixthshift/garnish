@@ -37,19 +37,22 @@ export function SearchResultList({
   label = "Search results",
 }: SearchResultListProps) {
   return (
-    <ul className="flex flex-col gap-2" role="listbox" aria-label={label}>
+    <div className="flex flex-col gap-2" role="listbox" aria-label={label}>
       {results.map((recipe, index) => (
-        <li key={recipe.id} role="option" aria-selected={index === selected}>
-          <div
-            data-selected={index === selected}
-            className={index === selected ? "rounded-xl ring-2 ring-border-brand" : "rounded-xl"}
-            onMouseEnter={() => onSelect(index)}
-            onClick={onChoose === undefined ? undefined : () => onChoose(index)}
-          >
-            {renderResult(recipe)}
-          </div>
-        </li>
+        // biome-ignore lint/a11y/useKeyWithClickEvents: focus stays on the caller's search input, which owns the keyboard (see the doc comment); an option can never receive a key event.
+        <div
+          key={recipe.id}
+          role="option"
+          tabIndex={-1}
+          aria-selected={index === selected}
+          data-selected={index === selected}
+          className={index === selected ? "rounded-xl ring-2 ring-border-brand" : "rounded-xl"}
+          onMouseEnter={() => onSelect(index)}
+          onClick={onChoose === undefined ? undefined : () => onChoose(index)}
+        >
+          {renderResult(recipe)}
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }

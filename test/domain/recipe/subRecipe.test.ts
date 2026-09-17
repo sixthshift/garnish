@@ -2,7 +2,7 @@
 // an ingredient's amount, over matching units, convertible units and unrelated
 // ones. See src/domain/recipe/subRecipe.ts.
 import { describe, expect, test } from "vitest";
-import type { Ingredient, Recipe } from "../../../src/domain/recipe/recipe";
+import type { Ingredient } from "../../../src/domain/recipe/recipe";
 import { type SubRecipe, subRecipeHint, subRecipeMap, subRecipeScale } from "../../../src/domain/recipe/subRecipe";
 import type { Food, Unit } from "../../../src/domain/reference";
 

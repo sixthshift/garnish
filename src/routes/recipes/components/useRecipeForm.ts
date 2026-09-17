@@ -59,6 +59,7 @@ export function useRecipeForm({ initial, existing, online: onlineOverride, impor
 
   // An imported image is a URL on someone else's server. Fetch it once, into
   // the same `file` a picked one lands in, so Save stores it here.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchFromUrl is rebuilt every render; depending on it would refetch the image on every keystroke. The URL is the only trigger.
   useEffect(() => {
     if (importedImageUrl == null || importedImageUrl === "") return;
     let stale = false;
@@ -72,7 +73,6 @@ export function useRecipeForm({ initial, existing, online: onlineOverride, impor
     return () => {
       stale = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importedImageUrl]);
 
   /** Forget the stored draft: after a save, a discard, or leaving anyway. */

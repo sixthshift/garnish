@@ -36,7 +36,7 @@ export function buildCookCards(recipe: Pick<Recipe, "parts">): CookCard[] {
     const linkedIds = new Set(part.steps.flatMap((step) => step.ingredientIds));
     const unlinked = part.ingredients.filter((ingredient) => !linkedIds.has(ingredient.id));
     if (unlinked.length > 0) cards.push({ kind: "ingredients", part: name, ingredients: unlinked });
-    part.steps.forEach((step, index) =>
+    part.steps.forEach((step, index) => {
       cards.push({
         kind: "step",
         part: name,
@@ -44,8 +44,8 @@ export function buildCookCards(recipe: Pick<Recipe, "parts">): CookCard[] {
         number: index + 1,
         total: part.steps.length,
         ingredients: part.ingredients,
-      })
-    );
+      });
+    });
   }
   return cards;
 }

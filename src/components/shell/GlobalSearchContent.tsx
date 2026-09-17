@@ -18,7 +18,7 @@ export type GlobalSearchContentProps = {
 
 /** The dialog's body: the search box and its results. Renders anywhere — used directly by the render test. */
 export function GlobalSearchContent({ query, onQueryChange, results, loading = false, selected, onSelect, onOpen }: GlobalSearchContentProps) {
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
       onOpen(selected);
@@ -34,8 +34,16 @@ export function GlobalSearchContent({ query, onQueryChange, results, loading = f
     <>
       <ModalHeader>Search recipes</ModalHeader>
       <ModalBody>
-        <div className="flex flex-col gap-3" onKeyDown={onKeyDown}>
-          <SearchInput autoFocus value={query} onChange={onQueryChange} placeholder="Search recipes" aria-label="Search recipes" name="q" />
+        <div className="flex flex-col gap-3">
+          <SearchInput
+            autoFocus
+            value={query}
+            onChange={onQueryChange}
+            onKeyDown={onKeyDown}
+            placeholder="Search recipes"
+            aria-label="Search recipes"
+            name="q"
+          />
           {results.length === 0 ? (
             <p className="py-6 text-center text-sm text-fg-subtle">
               {loading ? "Searching…" : query.trim() === "" ? "Start typing to search." : "No recipes match."}

@@ -96,6 +96,7 @@ export function ParseAllSheet({ open, onOpenChange, draft, pi, units, disabled, 
   // combobox asks for — the same load bulk add does when it opens. Read once,
   // when the sheet opens: re-reading on every keystroke would throw away the
   // decisions already made in it.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: opening is the trigger; adding loadFoods or units would re-read the foods mid-session and throw away the decisions made in the sheet.
   useEffect(() => {
     if (!open) return;
     let stale = false;
@@ -115,7 +116,6 @@ export function ParseAllSheet({ open, onOpenChange, draft, pi, units, disabled, 
     return () => {
       stale = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const apply = async () => {

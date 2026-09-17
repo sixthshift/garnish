@@ -23,15 +23,6 @@ const SCHEMA_PAGE = `<html><head>
    "recipeInstructions":[{"@type":"HowToStep","text":"Mix."},{"@type":"HowToStep","text":"Bake."}]}
 ]}</script></head><body></body></html>`;
 
-/** A page with only OpenGraph tags. */
-const STUB_PAGE = `<html><head>
-<meta property="og:title" content="Nan's shortbread">
-<meta property="og:description" content="A family recipe.">
-<meta property="og:image" content="https://example.test/sb.jpg">
-</head><body><p>Cream the butter and sugar…</p></body></html>`;
-
-const BARE_PAGE = "<html><head><title>Nothing here</title></head><body><p>Prose.</p></body></html>";
-
 /** A fetcher returning `body` with `status`, recording what it was called with. */
 function stubFetch(body: string, status = 200): Fetcher & { calls: { url: string; init?: RequestInit }[] } {
   const calls: { url: string; init?: RequestInit }[] = [];

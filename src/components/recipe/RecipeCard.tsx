@@ -30,7 +30,17 @@ export const CARD_MIN_WIDTH = "22rem";
 function ImagePlaceholder({ className }: { className: string }) {
   return (
     <div data-placeholder="image" aria-hidden="true" className={`flex items-center justify-center bg-bg-subtle text-fg-subtle ${className}`}>
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        aria-hidden="true"
+        width="40"
+        height="40"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <circle cx="8.5" cy="10" r="1.5" />
         <path d="m21 16-4.5-4.5L9 19" />
@@ -85,7 +95,7 @@ function CardTags({ tags }: { tags: readonly Tag[] }) {
 function GridBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: string | null; totalTime: string }) {
   return (
     <Card className="flex h-full flex-col overflow-hidden p-0 transition-colors group-hover:border-border-normal-hovered">
-      <CardImage src={src} className="aspect-[4/3] w-full" />
+      <CardImage src={src} className="aspect-4/3 w-full" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <span className="font-semibold text-fg-strong group-hover:underline">{recipe.name}</span>
         <CardStats rating={recipe.rating} totalTime={totalTime} />
@@ -141,6 +151,7 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
           <Tooltip.Body className="hidden max-w-xs text-left md:block">
             <ul>
               {recipe.ingredientPreview.map((line, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: the preview is a positional list of plain strings with no id; it is replaced wholesale, never reordered.
                 <li key={i}>{line}</li>
               ))}
             </ul>

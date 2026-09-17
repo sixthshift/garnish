@@ -39,8 +39,8 @@ import {
 } from "../../../../src/domain/draft";
 import { pendingCreations, type ReviewRow, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
 import { EMPTY_INGREDIENT_SUMMARY, IngredientFields, type IngredientFieldsProps } from "../../../../src/routes/recipes/components/IngredientFields";
-import { confirmReviewedIngredients, ingredientReview } from "../../../../src/routes/recipes/components/ingredientReview";
 import { INGREDIENT_DRAG_GROUP, IngredientsEditor } from "../../../../src/routes/recipes/components/IngredientsEditor";
+import { confirmReviewedIngredients, ingredientReview } from "../../../../src/routes/recipes/components/ingredientReview";
 import { findOrCreateFood, listFoods } from "../../../../src/server/fns/foods";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";

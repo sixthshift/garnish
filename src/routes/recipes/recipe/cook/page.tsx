@@ -5,8 +5,8 @@ import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { Link } from "@tanstack/react-router";
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from "react";
-import { z } from "zod";
 import { SubRecipesProvider } from "../../../../components/recipe/SubRecipes";
+import { WakeLockIcon } from "../../../../components/ui/icons";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
 import {
   buildCookCards,
@@ -27,7 +27,6 @@ import { TimerStrip } from "../components/TimerStrip";
 import { CookCardView } from "./components/CookCardView";
 import { FinishedCard } from "./components/FinishedCard";
 import { Route } from "./route";
-import { WakeLockIcon } from "../../../../components/ui/icons";
 
 /** Eye: the screen is being watched, so it is being kept on. Same drawing style as RecipeHeader's stat icons. */
 export function CookPage() {
@@ -99,7 +98,7 @@ export function CookPage() {
             {screenOn && (
               <Tooltip>
                 <Tooltip.Trigger asChild>
-                  <span className="shrink-0 text-fg-subtle" data-wake-lock aria-label="The screen stays on while you cook">
+                  <span className="shrink-0 text-fg-subtle" data-wake-lock role="img" aria-label="The screen stays on while you cook">
                     <WakeLockIcon />
                   </span>
                 </Tooltip.Trigger>

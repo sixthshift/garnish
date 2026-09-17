@@ -87,6 +87,7 @@ export function ImportReview(props: ImportReviewProps) {
             <span>{rejectionMessage(rejected)}</span>
             <ul className="flex list-disc flex-col gap-0.5 pl-5 text-sm">
               {changedLines(rejected).map((line, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: a one-shot report of what the model changed; the rows have no ids and are never reordered.
                 <li key={`${index}-${line.label}`} data-changed-line={line.label}>
                   {`${line.label}: “${line.text}”`}
                 </li>
@@ -161,10 +162,12 @@ export function ImportReview(props: ImportReviewProps) {
           {recipe.parts
             .filter((part) => part.steps.length > 0)
             .map((part, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: a scraped draft has no ids yet; this preview is read-only and never reordered.
               <div key={`${index}-${part.name}`} className="flex flex-col gap-1" data-import-part={part.name}>
                 {part.name !== "" && <span className="text-sm font-medium">{part.name}</span>}
                 <ol className="flex list-decimal flex-col gap-1 pl-6">
                   {part.steps.map((step, si) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a scraped draft's steps are plain strings in order; this preview is read-only.
                     <li key={`${si}-${step.slice(0, 24)}`} className="text-sm">
                       {step}
                     </li>

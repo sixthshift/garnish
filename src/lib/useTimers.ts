@@ -5,12 +5,12 @@ import {
   getTimers,
   pauseTimer,
   resumeTimer,
-  startTimer,
   type StorageLike,
+  startTimer,
   subscribeTimers,
-  tickTimers,
   type Timer,
   type TimerInput,
+  tickTimers,
   timerDisplay,
 } from "./timers";
 

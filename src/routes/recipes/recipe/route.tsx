@@ -1,6 +1,6 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
-import { type Recipe, type SubRecipe, type TimelineEvent } from "../../../domain/recipe";
+import type { Recipe, SubRecipe, TimelineEvent } from "../../../domain/recipe";
 import { aiImportAvailable } from "../../../server/fns/import";
 import { getRecipe, subRecipesOf } from "../../../server/fns/recipes";
 import { listTimeline } from "../../../server/fns/timeline";

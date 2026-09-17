@@ -186,7 +186,7 @@ describe('import({ kind: "text" })', () => {
   });
 
   test("a fenced answer is read the same way", async () => {
-    const imported = await reading(fakeModel("```json\n" + answer + "\n```")).import({ kind: "text", text: "text" });
+    const imported = await reading(fakeModel(`\`\`\`json\n${answer}\n\`\`\``)).import({ kind: "text", text: "text" });
     expect(imported.recipe.name).toBe("Anzac biscuits");
   });
 

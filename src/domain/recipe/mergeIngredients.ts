@@ -2,11 +2,6 @@
 
 import type { Ingredient, Part } from "./recipe";
 
-/** True for ingredients that fold into a summed group; false for lines kept on their own. */
-function isMergeable(ingredient: Ingredient): boolean {
-  return !ingredient.fixed && ingredient.quantity !== null;
-}
-
 /** Merge identity: same food (or, lacking one, the same raw text) and the same unit. */
 function mergeKey(ingredient: Ingredient): string {
   const foodKey = ingredient.food !== null ? `food:${ingredient.food.id}` : `raw:${ingredient.originalText.trim()}`;

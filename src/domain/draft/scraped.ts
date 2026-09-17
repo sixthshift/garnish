@@ -103,13 +103,17 @@ export function draftFromScraped(opts: {
   // last line — nothing produces one today — falls to the first part rather
   // than being dropped.
   const rowParts = scraped.parts.flatMap((part, index) => part.ingredients.map(() => index));
-  rows.forEach((row, index) => (parts[rowParts[index] ?? 0] ?? parts[0]!).ingredients.push(row));
+  rows.forEach((row, index) => {
+    (parts[rowParts[index] ?? 0] ?? parts[0]!).ingredients.push(row);
+  });
 
   // The steps each part's rows were written under, in the order the rows were
   // pushed onto that part, so `withStepRows` can read them off positionally.
   const stepsPerPart: number[][] = parts.map(() => []);
   if (rowSteps !== undefined) {
-    rows.forEach((_, index) => stepsPerPart[rowParts[index] ?? 0]?.push(rowSteps[index] ?? -1));
+    rows.forEach((_, index) => {
+      stepsPerPart[rowParts[index] ?? 0]?.push(rowSteps[index] ?? -1);
+    });
   }
   const linked = parts.map((part, index) => (rowSteps === undefined ? withSuggestedLinks(part) : withStepRows(part, stepsPerPart[index] ?? [])));
 
