@@ -96,7 +96,7 @@ describe("describeError", () => {
   test("network while online blames the server", () => {
     expect(describeError(new TypeError("Failed to fetch"), true)).toEqual({
       title: "Can't reach the server",
-      detail: "garnish is not answering. Check it is running, then retry.",
+      detail: "Garnish is not answering. Check it is running, then retry.",
       network: true,
     });
   });

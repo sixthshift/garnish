@@ -35,7 +35,7 @@ const pngIcons = manifest.icons.filter((icon) => icon.type === "image/png");
 describe("manifest installability", () => {
   test("has a name", () => {
     expect(manifest.name || manifest.short_name).toBeTruthy();
-    expect(manifest.short_name).toBe("garnish");
+    expect(manifest.short_name).toBe("Garnish");
   });
 
   test("start_url, scope and standalone display", () => {

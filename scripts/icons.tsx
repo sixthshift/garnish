@@ -12,7 +12,7 @@
  */
 import { Resvg } from "@resvg/resvg-js";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ICON_GROUND, ICON_MARK, LogoIcon } from "../src/components/Logo";
+import { ICON_GROUND, ICON_MARK, LogoIcon } from "../src/components/shell/Logo";
 
 const OUT = new URL("../public/", import.meta.url);
 

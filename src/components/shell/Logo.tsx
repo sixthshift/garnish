@@ -77,7 +77,7 @@ export function LogoMark({ size, className, style }: LogoMarkProps) {
       className={className}
       style={style}
       role="img"
-      aria-label="garnish"
+      aria-label="Garnish"
     >
       <Sprig scale={SCALE_FULL} />
     </svg>
@@ -113,7 +113,7 @@ export function LogoIcon({ size, ground = ICON_GROUND, mark, cornerRadius = ICON
       className={className}
       style={mark ? { color: mark, ...style } : style}
       role="img"
-      aria-label="garnish"
+      aria-label="Garnish"
     >
       <rect width="512" height="512" rx={cornerRadius} fill={ground} />
       <Sprig scale={maskable ? SCALE_SAFE : SCALE_FULL} />
@@ -122,9 +122,9 @@ export function LogoIcon({ size, ground = ICON_GROUND, mark, cornerRadius = ICON
 }
 
 /**
- * The horizontal lockup: mark plus the lowercase wordmark in the display face.
- * The app writes its name lowercase everywhere, so the wordmark does too — it
- * is never capitalised, even at the start of a sentence.
+ * The horizontal lockup: mark plus the wordmark in the display face. The app
+ * presents its name as Garnish — the capital is the name, not a sentence
+ * position. Identifiers keep the lowercase form (decisions.md row 96).
  */
 export function Logo({ size, className, style }: LogoMarkProps) {
   return (
@@ -134,7 +134,7 @@ export function Logo({ size, className, style }: LogoMarkProps) {
           fg-strong, so a caller can tint the mark without the name following
           it into a colour that fails contrast. */}
       <span className="font-display font-semibold tracking-tight text-fg-strong" style={{ fontSize: size * 0.82, lineHeight: 1 }}>
-        garnish
+        Garnish
       </span>
     </span>
   );

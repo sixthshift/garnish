@@ -21,7 +21,7 @@ export function describeError(error: unknown, online = true): ErrorDescription {
     if (!online) {
       return { title: "You are offline", detail: "Reconnect, then retry.", network: true };
     }
-    return { title: "Can't reach the server", detail: "garnish is not answering. Check it is running, then retry.", network: true };
+    return { title: "Can't reach the server", detail: "Garnish is not answering. Check it is running, then retry.", network: true };
   }
   const message = error instanceof Error ? error.message : String(error);
   return { title: "Something went wrong", detail: message === "" ? "No details were given." : message, network: false };

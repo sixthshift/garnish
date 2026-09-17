@@ -1,4 +1,4 @@
-# garnish
+# Garnish
 
 A personal recipe manager. Single household, runs on the LAN.
 
@@ -145,14 +145,14 @@ Note that Gemini's free tier may train on what is sent to it. What is sent is th
 
 ## Run with Docker
 
-Everything Docker lives in `docker/`: the `Dockerfile`, its ignore file, and the compose file, which is the canonical way to run garnish. The compose file pulls the image GitHub Actions publishes to `ghcr.io/sixthshift/garnish` on every push to `main` (`.github/workflows/docker.yml`: the tests gate the build, and the image is built for amd64 and arm64). Nothing is built on the machine that runs it:
+Everything Docker lives in `docker/`: the `Dockerfile`, its ignore file, and the compose file, which is the canonical way to run Garnish. The compose file pulls the image GitHub Actions publishes to `ghcr.io/sixthshift/garnish` on every push to `main` (`.github/workflows/docker.yml`: the tests gate the build, and the image is built for amd64 and arm64). Nothing is built on the machine that runs it:
 
 ```bash
 cd docker
 docker compose up -d
 ```
 
-garnish is then on http://localhost:3000 (the compose file publishes port 3000). All state lives in the named volume `garnish-data`, mounted at `/data` inside the container: `garnish.db`, `images/` and `backups/`. Migrations run on every start, so a fresh volume is set up on first boot.
+Garnish is then on http://localhost:3000 (the compose file publishes port 3000). All state lives in the named volume `garnish-data`, mounted at `/data` inside the container: `garnish.db`, `images/` and `backups/`. Migrations run on every start, so a fresh volume is set up on first boot.
 
 To update, pull the new image and restart; the volume is untouched:
 
