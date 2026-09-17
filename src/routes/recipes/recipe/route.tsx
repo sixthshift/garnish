@@ -41,5 +41,11 @@ export const Route = createRoute({
     ]);
     return { recipe, timeline, subRecipes, aiAvailable: ai.available };
   },
+  // The tab says which recipe you are on, not which app: with a dozen open,
+  // every one of them reading "Garnish" tells you nothing. This wins over the
+  // root's title because HeadContent walks the matches deepest-first and takes
+  // the first title it finds. No loader data yet — pending, or a load that
+  // failed — returns nothing and leaves the root's title in place.
+  head: ({ loaderData }) => (loaderData === undefined ? {} : { meta: [{ title: loaderData.recipe.name }] }),
   component: lazyRouteComponent(() => import("./page"), "RecipePage"),
 });
