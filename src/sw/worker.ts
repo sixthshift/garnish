@@ -1,5 +1,7 @@
 // Fetch policy: navigations go network-first with the cached shell as fallback, built assets cache-first, GET server functions and images network-first into a data cache that survives deploys, anything else untouched.
 
+import { isSkipWaiting } from "./message";
+
 export type SwConfig = {
   /** Build hash. Names the precache; a new one evicts the old on activate. */
   version: string;
@@ -27,6 +29,8 @@ export type CacheStorageLike = {
 };
 
 export type ExtendableEventLike = { waitUntil: (promise: Promise<unknown>) => void };
+/** The slice of a `message` event the worker reads. */
+export type MessageEventLike = { data: unknown };
 export type FetchEventLike = ExtendableEventLike & {
   request: RequestLike;
   respondWith: (response: Promise<Response> | Response) => void;
@@ -43,6 +47,7 @@ export type ServiceWorkerScopeLike = {
     (type: "install", listener: (event: ExtendableEventLike) => void): void;
     (type: "activate", listener: (event: ExtendableEventLike) => void): void;
     (type: "fetch", listener: (event: FetchEventLike) => void): void;
+    (type: "message", listener: (event: MessageEventLike) => void): void;
   };
 };
 
@@ -84,13 +89,17 @@ export function installServiceWorker(scope: ServiceWorkerScopeLike, config: SwCo
   const precacheCache = precacheName(config.version);
   const keep = new Set([precacheCache, DATA_CACHE]);
 
+  // No skipWaiting here: a new worker installs and then waits, so a deploy
+  // never pulls the assets out from under a page that is already running (the
+  // activate below deletes the old precache). The page offers the update and
+  // sends SKIP_WAITING when it is taken. On a first install there is nothing
+  // to wait behind, so the worker activates at once and claims the page.
   scope.addEventListener("install", (event) => {
-    event.waitUntil(
-      scope.caches
-        .open(precacheCache)
-        .then((cache) => cache.addAll([config.shell, ...config.precache]))
-        .then(() => scope.skipWaiting())
-    );
+    event.waitUntil(scope.caches.open(precacheCache).then((cache) => cache.addAll([config.shell, ...config.precache])));
+  });
+
+  scope.addEventListener("message", (event) => {
+    if (isSkipWaiting(event.data)) void scope.skipWaiting();
   });
 
   scope.addEventListener("activate", (event) => {

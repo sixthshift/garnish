@@ -4,6 +4,7 @@
 // (bundled here with the same plugin the build uses) evaluated with the fake
 // as `self`, which is the stand-in for the "go offline, reload" Check.
 import { describe, expect, test, vi } from "vitest";
+import { SKIP_WAITING } from "../../src/sw/message";
 import { buildServiceWorker, precacheList, SHELL_URL, stampVersion, versionOf } from "../../src/sw/plugin";
 import {
   type CacheLike,
@@ -12,6 +13,7 @@ import {
   type ExtendableEventLike,
   type FetchEventLike,
   installServiceWorker,
+  type MessageEventLike,
   precacheName,
   type RequestLike,
   type ServiceWorkerScopeLike,
@@ -30,6 +32,7 @@ function fakeScope() {
     install: [] as Listener<ExtendableEventLike>[],
     activate: [] as Listener<ExtendableEventLike>[],
     fetch: [] as Listener<FetchEventLike>[],
+    message: [] as Listener<MessageEventLike>[],
   };
   const fetch = vi.fn<(request: RequestLike | string) => Promise<Response>>();
 
@@ -85,10 +88,20 @@ function fakeScope() {
       await settle();
     },
     /** Dispatch a fetch event; resolves to the response handed to respondWith, or null when none was. */
+    /** Dispatch a message event, as `postMessage` from a page does. */
+    post(data: unknown) {
+      for (const listener of listeners.message) listener({ data });
+    },
     async dispatch(request: RequestLike): Promise<Response | null> {
       let handled: Promise<Response> | Response | null = null;
       const { event, settle } = extendable();
-      const fetchEvent: FetchEventLike = { ...event, request, respondWith: (response) => void (handled = response) };
+      const fetchEvent: FetchEventLike = {
+        ...event,
+        request,
+        respondWith: (response) => {
+          handled = response;
+        },
+      };
       for (const listener of listeners.fetch) listener(fetchEvent);
       await settle();
       return handled === null ? null : await handled;
@@ -131,13 +144,27 @@ describe("classifyRequest", () => {
 });
 
 describe("install and activate", () => {
-  test("install precaches the shell and every listed asset, then skips waiting", async () => {
+  test("install precaches the shell and every listed asset, and then waits", async () => {
     const world = installedScope();
     await world.install();
 
     expect(world.cached(PRECACHE, "/")).toBeDefined();
     for (const path of config.precache) expect(world.cached(PRECACHE, path), path).toBeDefined();
     expect(world.fetch).toHaveBeenCalledTimes(1 + config.precache.length);
+    // Not skipWaiting: the running page keeps its old assets until it says so.
+    expect(world.scope.skipWaiting).not.toHaveBeenCalled();
+  });
+
+  test("the skip-waiting message, and only that message, takes over", async () => {
+    const world = installedScope();
+    await world.install();
+
+    world.post({ type: "something-else" });
+    world.post("garnish:skip-waiting");
+    world.post(null);
+    expect(world.scope.skipWaiting).not.toHaveBeenCalled();
+
+    world.post(SKIP_WAITING);
     expect(world.scope.skipWaiting).toHaveBeenCalledTimes(1);
   });
 

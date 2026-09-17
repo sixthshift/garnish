@@ -5,7 +5,8 @@ import { AppShell } from "../components/shell/AppShell";
 import { GlobalSearch } from "../components/shell/GlobalSearch";
 import { AppErrorFallback } from "../components/shell/RouteStates";
 import { Toaster } from "../components/shell/Toaster";
-import { registerServiceWorker } from "../lib/sw";
+import { notify } from "../lib/notify";
+import { registerServiceWorker, updateNotice } from "../lib/sw";
 import appCss from "../styles.css?url";
 
 // PWA manifest colours are literal hex because a manifest cannot read CSS.
@@ -63,9 +64,12 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: ReactNode }) {
   // Client-only, production-only: public/sw.js exists only in a build, and a
-  // worker in dev would serve stale modules over Vite's.
+  // worker in dev would serve stale modules over Vite's. A deploy that lands
+  // while the app is open offers itself as a notice rather than taking over.
   useEffect(() => {
-    registerServiceWorker(typeof navigator === "undefined" ? undefined : navigator, import.meta.env.PROD);
+    registerServiceWorker(typeof navigator === "undefined" ? undefined : navigator, import.meta.env.PROD, {
+      onUpdateReady: (waiting) => void notify(updateNotice(waiting)),
+    });
   }, []);
   return (
     <html lang="en-AU">
