@@ -1,6 +1,6 @@
 // The stage state of /recipes/new and the flows between stages; RecipeSource renders what this returns.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { IngredientReview } from "../../../../domain/draft";
 import { type FileRecipe, type ImportedRecipe, review } from "../../../../domain/import";
 import { reviewRows } from "../../../../domain/ingredient";
@@ -16,8 +16,8 @@ import { useModelPass } from "./useModelPass";
 
 export function useRecipeSource(props: RecipeSourceProps) {
   const { units, tags, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadFile, linkSubRecipeFood } = props;
-  const { aiAvailable = false, loadText } = props;
-  const [url, setUrl] = useState("");
+  const { aiAvailable = false, loadText, initialUrl = null } = props;
+  const [url, setUrl] = useState(initialUrl ?? "");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [choices, setChoices] = useState<FileRecipe[] | null>(null);
@@ -72,6 +72,16 @@ export function useRecipeSource(props: RecipeSourceProps) {
       setBusy(false);
     }
   };
+
+  // A shared address is read as soon as the stage mounts: the share already
+  // said which page, so asking for "Read the page" again would be a second
+  // tap for nothing. Once only, whatever the address later becomes.
+  const readShared = useRef(initialUrl !== null && initialUrl !== "");
+  useEffect(() => {
+    if (!readShared.current) return;
+    readShared.current = false;
+    void read();
+  });
 
   /**
    * Pasted text through `claude -p`, onto the same review. A failed

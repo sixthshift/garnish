@@ -24,3 +24,22 @@ export function isLinkable(url: string | null): boolean {
     return false;
   }
 }
+
+const HTTP_URL = /https?:\/\/[^\s<>"']+/;
+
+/**
+ * The address a share sheet handed over. Android's share puts a browser's
+ * URL in `text` as often as in `url`, and some apps send it inside a
+ * sentence, so each field is tried whole and then scanned for the first
+ * http(s) address. Null when none of them holds one. Pure.
+ */
+export function sharedUrl(fields: { url?: string; text?: string; title?: string }): string | null {
+  for (const value of [fields.url, fields.text, fields.title]) {
+    if (value === undefined) continue;
+    const trimmed = value.trim();
+    if (isLinkable(trimmed)) return trimmed;
+    const found = HTTP_URL.exec(trimmed)?.[0];
+    if (found !== undefined) return found.replace(/[.,;:!?)]+$/, "");
+  }
+  return null;
+}

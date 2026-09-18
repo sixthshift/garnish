@@ -22,6 +22,7 @@ Stages 7 to 13, in the order they were built. The argument for each is in [decis
 - Out and in (stage 10). JSON and Cooklang export; import from Mealie and Tandoor backups, the adoption path neither incumbent offers.
 - Small parity items (stage 11). Step photos, servings on a logged cook, an ingredient preview on the card, and a second browser profile for a fetch that meets a bot wall.
 - Import as one pipeline (stage 12). Fetch the page, extract what the rules can (JSON-LD, OpenGraph, readable text), read it with a hosted model over an OpenAI-compatible endpoint using the JSON-LD as an anchor, check the answer against that anchor word for word, review it before anything is saved. The model supplies the parts the markup cannot; the page keeps the words. With no key configured the rules result is the whole of it, and pasted prose goes through the same read.
+- Share to garnish. The installed app is a share target: a URL shared from the phone's browser opens the import on it and reads the page at once (decisions row 103).
 - The house style (stage 13). A guide of short statements in Settings and a Restyle pass that rewrites steps into the household's voice, held to a facts check and approved per part.
 
 ## Later, in rough order

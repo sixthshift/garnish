@@ -73,7 +73,7 @@ src/
   router.tsx    getRouter() over routes/routes.ts, and the Register declarations that type Link and the route hooks
   server.ts     custom server entry: boot, then the default Start handler
 vite.config.ts  tanstackStart({ spa, router }), nitro({ preset: 'bun' }), viteReact(), tailwindcss(), serviceWorkerPlugin(). The `router` option hands Start's route generator the root alone and an output under .tanstack/ that nothing imports: Start needs the generator to run to build its asset manifest, even though routing is code
-public/         manifest.webmanifest, icons/, apple-touch-icon.png
+public/         manifest.webmanifest (installability, and the share_target that lands a shared URL on /recipes/new), icons/, apple-touch-icon.png
 test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests; *.dom.test.tsx is the happy-dom project (helpers/dom.tsx renders into one), everything else is node
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```

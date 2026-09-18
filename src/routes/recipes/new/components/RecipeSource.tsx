@@ -18,6 +18,8 @@ export type RecipeSourceProps = {
   source: SourceKind | null;
   /** Choosing a source is a navigation, so the route owns it. */
   onChoose: (kind: SourceKind | null) => void;
+  /** An address handed in by the route (a share sheet's): the URL stage opens on it and reads it at once. */
+  initialUrl?: string | null;
   /** Called once with the draft the editor should open on. */
   onDraft: (draft: RecipeDraft, imageUrl: string | null) => void;
   /** Look for a recipe already imported from this address. */

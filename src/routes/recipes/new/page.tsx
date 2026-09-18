@@ -9,7 +9,7 @@ import { Route } from "./route";
 
 export function NewRecipePage() {
   const { units, tags, aiAvailable } = Route.useLoaderData();
-  const { source } = Route.useSearch();
+  const { source, url } = Route.useSearch();
   const navigate = Route.useNavigate();
   // An imported draft has no URL of its own, and the form must not be
   // remounted under an edit in progress. The blank one is made once per mount
@@ -46,6 +46,7 @@ export function NewRecipePage() {
         units={units}
         tags={tags}
         source={source ?? null}
+        initialUrl={url ?? null}
         aiAvailable={aiAvailable}
         onChoose={choose}
         onDraft={(draft, imageUrl) => setImported({ draft, imageUrl })}

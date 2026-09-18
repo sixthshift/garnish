@@ -18,7 +18,7 @@ import { createFood, listFoods } from "../../src/server/fns/foods";
 import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/server/fns/recipes";
 import type { listTags } from "../../src/server/fns/tags";
 import { listUnits } from "../../src/server/fns/units";
-import { elementHtml, renderRoute } from "../helpers/routes";
+import { elementHtml, renderRoute, testRouter } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
 // vi.mock is hoisted above imports and needs literal specifiers, so the shared
@@ -595,6 +595,34 @@ describe("/recipes/new", () => {
     expect(html).toContain('data-source-stage="url"');
     expect(html).toContain('aria-label="Recipe address"');
     expect(html).not.toContain('aria-label="New recipe"');
+  });
+
+  test("a share is redirected onto the URL stage, whichever field held the address", async () => {
+    // Android's share puts the browser's URL in `text`. Without a `document`
+    // the router takes itself for a server and hands the redirect back for a
+    // 302 rather than following it, so the Location is what is checked here.
+    const router = testRouter("/recipes/new?title=Anzac%20biscuits&text=https%3A%2F%2Fexample.test%2Fanzac");
+    await router.load();
+    const result = router._serverResult;
+    expect(result?.type).toBe("redirect");
+    if (result?.type !== "redirect") return;
+    expect(result.redirect.headers.get("Location")).toBe("/recipes/new?source=url&url=https%3A%2F%2Fexample.test%2Fanzac");
+  });
+
+  test("a share with no address in it is redirected to the chooser", async () => {
+    const router = testRouter("/recipes/new?title=Anzac%20biscuits&text=Chewy%20and%20golden");
+    await router.load();
+    const result = router._serverResult;
+    expect(result?.type).toBe("redirect");
+    if (result?.type !== "redirect") return;
+    expect(result.redirect.headers.get("Location")).toBe("/recipes/new");
+  });
+
+  test("where the redirect lands: the URL stage with the address filled in", async () => {
+    const html = await renderRoute("/recipes/new?source=url&url=https%3A%2F%2Fexample.test%2Fanzac");
+    expect(html).toContain('data-source-stage="url"');
+    expect(html).toMatch(/aria-label="Recipe address"[^>]*value="https:\/\/example\.test\/anzac"/);
+    // The read itself starts in an effect, which a string render never runs: RecipeSourceShare.dom.test.tsx presses that.
   });
 
   test("renders the blank form with the seeded units available", async () => {

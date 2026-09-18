@@ -17,6 +17,7 @@ type Manifest = {
   theme_color?: string;
   background_color?: string;
   icons: Icon[];
+  share_target?: { action: string; method?: string; params?: { url?: string; text?: string; title?: string } };
 };
 
 const manifest = JSON.parse(readFileSync(pub("manifest.webmanifest"), "utf8")) as Manifest;
@@ -69,6 +70,14 @@ describe("manifest installability", () => {
     const svg = manifest.icons.find((icon) => icon.type === "image/svg+xml");
     expect(svg?.sizes).toBe("any");
     expect(readFileSync(pub(svg!.src), "utf8")).toContain("<svg");
+  });
+
+  test("is a share target that lands a shared address on the import (decisions row 103)", () => {
+    // GET, so the share is a plain navigation the service worker already
+    // handles; all three fields, because Android puts a browser's URL in text.
+    expect(manifest.share_target?.action).toBe("/recipes/new");
+    expect(manifest.share_target?.method ?? "GET").toBe("GET");
+    expect(manifest.share_target?.params).toEqual({ url: "url", text: "text", title: "title" });
   });
 
   test("apple-touch-icon is a 180px PNG", () => {
