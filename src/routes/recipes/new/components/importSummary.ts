@@ -1,5 +1,5 @@
 import { type ImportCheck, type ImportedRecipe, type ImportSource, review, type ScrapedRecipe } from "../../../../domain/import";
-import { messageFrom } from "../../../../lib/notify";
+import { messageFrom } from "../../../../lib/errors";
 
 /** Which source the chooser is on. `paste` is the AI rung and only appears when `claude` is installed. */
 export type SourceKind = "url" | "manual" | "file" | "paste";

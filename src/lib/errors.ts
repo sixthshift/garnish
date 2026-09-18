@@ -26,3 +26,10 @@ export function describeError(error: unknown, online = true): ErrorDescription {
   const message = error instanceof Error ? error.message : String(error);
   return { title: "Something went wrong", detail: message === "" ? "No details were given." : message, network: false };
 }
+
+/** A thrown value as a line a person can read. Pure. */
+export function messageFrom(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  const text = String(error);
+  return text === "" ? "Something went wrong." : text;
+}

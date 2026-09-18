@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { applyParsedRows, type DraftIngredient, filterUnits, type IngredientReview, parseAllRows, type RecipeDraft } from "../../../domain/draft";
 import { pendingCreations } from "../../../domain/ingredient";
 import type { FoodRow, Unit } from "../../../domain/reference";
-import { messageFrom } from "../../../lib/notify";
+import { messageFrom } from "../../../lib/errors";
 import { findOrCreateFood, listFoods } from "../../../server/fns/foods";
 import { findOrCreateUnit } from "../../../server/fns/units";
 import { IngredientReviewRow } from "./IngredientReviewRow";

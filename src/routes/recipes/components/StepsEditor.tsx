@@ -1,5 +1,6 @@
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
+import { toast } from "@sixthshift/design-system/overlay";
 import { useState } from "react";
 import { BulkAddSheet } from "../../../components/ui/bulk/BulkAddSheet";
 import { BulkInlineAdd } from "../../../components/ui/bulk/BulkInlineAdd";
@@ -7,8 +8,8 @@ import { ReorderList } from "../../../components/ui/ReorderList";
 import { addBulkSteps, addStep, type FieldErrors, type RecipeDraft, setStepImage, stepsOf, stepsPath, withSteps } from "../../../domain/draft";
 import { paragraphs } from "../../../domain/ingredient";
 import { uploadStepImage } from "../../../lib/images";
-import { notify, notifyError } from "../../../lib/notify";
 import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
+import { toastError } from "../../../lib/toast";
 import { StepEditRow } from "./StepEditRow";
 import { StepsEditorActions } from "./StepsEditorActions";
 
@@ -68,9 +69,9 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
       if (!draft.id) throw new Error("Save the recipe first, then add photos to its steps.");
       const image = await uploadImage(draft.id, stepId, file);
       onChange(setStepImage(draft, pi, si, image));
-      notify({ intent: "success", title: "Photo added", message: "It is saved with the step." });
+      toast({ intent: "success", title: "Photo added", children: "It is saved with the step." });
     } catch (error) {
-      notifyError("Could not add the photo", error);
+      toastError("Could not add the photo", error);
     }
   };
 

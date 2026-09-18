@@ -4,8 +4,8 @@ import { GLOBAL_SEARCH_DEBOUNCE_MS } from "../../../components/shell/GlobalSearc
 import { SearchResultList } from "../../../components/shell/SearchResultList";
 import { dayLabel, type Meal } from "../../../domain/plan";
 import type { RecipeSummary } from "../../../domain/recipe";
-import { notifyError } from "../../../lib/notify";
 import { clampSelection, nextSearchIndex, selectedResult } from "../../../lib/search";
+import { toastError } from "../../../lib/toast";
 import { MealPicker } from "./MealPicker";
 import { PlanSearchResult } from "./PlanSearchResult";
 
@@ -63,7 +63,7 @@ export function PlanAddRow({
         .catch((error: unknown) => {
           if (requestId.current !== id) return;
           setResults([]);
-          notifyError("Search failed", error);
+          toastError("Search failed", error);
         });
     }, GLOBAL_SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);

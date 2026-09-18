@@ -8,8 +8,8 @@ import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingB
 import { PencilIcon } from "../../../components/ui/icons";
 import { mergeIngredients, scaledForServings } from "../../../domain/recipe";
 import { useMutate } from "../../../lib/mutate";
-import { notifyError } from "../../../lib/notify";
 import { useIngredientMode } from "../../../lib/prefs";
+import { toastError } from "../../../lib/toast";
 import { clearTicksNow, useAnyTicked } from "../../../lib/useTicks";
 import { setRating } from "../../../server/fns/recipes";
 import { IngredientList, PartIngredients } from "./components/IngredientList";
@@ -52,7 +52,7 @@ export function RecipePage() {
     try {
       await mutate(() => setRating({ data: { id: recipe.id, rating } }));
     } catch (error) {
-      notifyError("Couldn't update rating", error);
+      toastError("Couldn't update rating", error);
     }
   };
 

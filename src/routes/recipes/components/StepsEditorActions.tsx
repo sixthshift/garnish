@@ -3,7 +3,7 @@ import { addStep, canSplitAll, type DraftPart, mergeAllSteps, type RecipeDraft, 
 
 type DraftStep = DraftPart["steps"][number];
 
-import { notify } from "../../../lib/notify";
+import { toast } from "@sixthshift/design-system/overlay";
 import { EditorSectionHeader } from "./EditorSectionHeader";
 import { suggestNotice } from "./stepsEditorText";
 
@@ -34,7 +34,7 @@ export function StepsEditorActions({ heading, draft, pi, steps, ingredientCount,
             onClick={() => {
               const suggested = suggestPartLinks(draft, pi);
               onChange(suggested.draft);
-              notify({ intent: suggested.filled === 0 ? "neutral" : "success", title: suggestNotice(suggested.filled) });
+              toast({ intent: suggested.filled === 0 ? "neutral" : "success", title: suggestNotice(suggested.filled) });
             }}
           >
             Suggest links

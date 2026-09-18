@@ -1,10 +1,11 @@
 import { Button } from "@sixthshift/design-system/button";
+import { toast } from "@sixthshift/design-system/overlay";
 import { useState } from "react";
 import type { Recipe, TimelineEventInput } from "../../../../domain/recipe";
 import { formatDateStamp } from "../../../../lib/dates";
 import { uploadTimelineImage } from "../../../../lib/images";
 import { useMutate } from "../../../../lib/mutate";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import { createTimelineEvent } from "../../../../server/fns/timeline";
 import { MadeThisSheet } from "./MadeThisSheet";
 import { saveCookAndClearTicks } from "./saveCook";
@@ -29,10 +30,10 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
           }
         )
       );
-      notify({ intent: "success", title: "Cook logged", message: formatDateStamp(event.occurredOn) });
+      toast({ intent: "success", title: "Cook logged", children: formatDateStamp(event.occurredOn) });
       setOpen(false);
     } catch (error) {
-      notifyError("Could not log this cook", error);
+      toastError("Could not log this cook", error);
     } finally {
       setSaving(false);
     }

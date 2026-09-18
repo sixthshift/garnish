@@ -7,7 +7,7 @@ import { useState } from "react";
 import { formatIngredient } from "../../domain/ingredient";
 import { type Ingredient, type Recipe, type SubRecipe, subRecipeScale } from "../../domain/recipe";
 import { additionsForWithSubRecipes, ingredientText, type ShoppingAddition, shoppingGroups } from "../../domain/shopping";
-import { notifyError } from "../../lib/notify";
+import { toastError } from "../../lib/toast";
 import { getRecipe } from "../../server/fns/recipes";
 import { useSubRecipes } from "../recipe/SubRecipes";
 
@@ -60,7 +60,7 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
       const doc = await getRecipe({ data: { slug: child.slug, servings } });
       setChildRecipes((previous) => ({ ...previous, [ingredient.id]: doc }));
     } catch (error) {
-      notifyError(`Couldn't load ${child.name}`, error);
+      toastError(`Couldn't load ${child.name}`, error);
       setExpanded((previous) => {
         const next = new Set(previous);
         next.delete(ingredient.id);

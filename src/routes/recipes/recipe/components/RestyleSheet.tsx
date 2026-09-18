@@ -1,9 +1,11 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useEffect, useState } from "react";
 import type { Recipe } from "../../../../domain/recipe";
 import type { StyleRule } from "../../../../domain/style";
+import { messageFrom } from "../../../../lib/errors";
 import { useMutate } from "../../../../lib/mutate";
-import { messageFrom, notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import { applyRestyle, restoreSteps, restyleSteps } from "../../../../server/ai/restyle";
 import { listStyleRules } from "../../../../server/fns/style";
 import { RestyleSheetContent } from "./RestyleSheetContent";
@@ -96,10 +98,10 @@ export function RestyleSheet({ open, recipe, onClose, loadRules }: RestyleSheetP
     setError(null);
     try {
       await mutate(() => applyRestyle({ data: { id: recipe.id, parts } }));
-      notify({ intent: "success", title: "Steps restyled" });
+      toast({ intent: "success", title: "Steps restyled" });
       close();
     } catch (cause) {
-      notifyError("Couldn't apply the restyle", cause);
+      toastError("Couldn't apply the restyle", cause);
       setError(messageFrom(cause));
       setBusy(false);
     }
@@ -110,10 +112,10 @@ export function RestyleSheet({ open, recipe, onClose, loadRules }: RestyleSheetP
     setError(null);
     try {
       await mutate(() => restoreSteps({ data: { id: recipe.id } }));
-      notify({ intent: "success", title: "Original steps restored" });
+      toast({ intent: "success", title: "Original steps restored" });
       close();
     } catch (cause) {
-      notifyError("Couldn't restore the original steps", cause);
+      toastError("Couldn't restore the original steps", cause);
       setError(messageFrom(cause));
       setBusy(false);
     }

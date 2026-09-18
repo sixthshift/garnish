@@ -119,9 +119,9 @@ test("the notice is sticky and its Reload tells the waiting worker to take over"
   const notice = updateNotice(waiting);
 
   expect(notice.duration).toBe(0);
-  expect(notice.action?.label).toBe("Reload");
+  expect(notice.action).toBe("Reload");
   expect(waiting.postMessage).not.toHaveBeenCalled();
-  notice.action?.onSelect();
+  notice.onAction?.();
   expect(waiting.postMessage).toHaveBeenCalledWith(SKIP_WAITING);
 });
 

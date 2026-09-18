@@ -1,4 +1,5 @@
 import { Muted } from "@sixthshift/design-system/muted";
+import { toast } from "@sixthshift/design-system/overlay";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
 import { Menu } from "../../../../components/ui/Menu";
@@ -7,7 +8,7 @@ import type { TimelineEvent } from "../../../../domain/recipe";
 import { formatDateStamp } from "../../../../lib/dates";
 import { timelineImageUrl } from "../../../../lib/images";
 import { useMutate } from "../../../../lib/mutate";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import { deleteTimelineEvent } from "../../../../server/fns/timeline";
 import { useQuickEditContext } from "./QuickEditContext";
 import { saveQuickEdit } from "./saveQuickEdit";
@@ -35,9 +36,9 @@ export function TimelineRow({ event }: { event: TimelineEvent }) {
     setDeleting(true);
     try {
       await mutate(() => deleteTimelineEvent({ data: { id: event.id } }));
-      notify({ intent: "success", title: "Entry deleted" });
+      toast({ intent: "success", title: "Entry deleted" });
     } catch (error) {
-      notifyError("Could not delete this entry", error);
+      toastError("Could not delete this entry", error);
       setDeleting(false);
     }
   };
@@ -52,9 +53,9 @@ export function TimelineRow({ event }: { event: TimelineEvent }) {
     setSavingNote(true);
     try {
       await saveQuickEdit(withNoteFromCook(context.recipe, event), context.run);
-      notify({ intent: "success", title: "Saved as a note" });
+      toast({ intent: "success", title: "Saved as a note" });
     } catch (error) {
-      notifyError("Could not save this as a note", error);
+      toastError("Could not save this as a note", error);
     } finally {
       setSavingNote(false);
     }

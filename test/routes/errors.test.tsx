@@ -4,12 +4,13 @@
 // kill-the-server browser check: a dead server makes the browser's fetch
 // reject with a TypeError, which is exactly what the first mock throws.
 import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
+import { OverlayProvider } from "@sixthshift/design-system/overlay";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { AppErrorFallback, ErrorView } from "../../src/components/shell/RouteStates";
-import { Toaster } from "../../src/components/shell/Toaster";
 import { describeError, isNetworkError } from "../../src/lib/errors";
+import { TOAST_POSITION } from "../../src/lib/toast";
 import { Route as RootRoute } from "../../src/routes/root";
 import { renderRoute } from "../helpers/routes";
 
@@ -134,12 +135,16 @@ describe("ErrorView and AppErrorFallback", () => {
 });
 
 describe("root route", () => {
-  /** The root component is a fragment of the guarded shell and the Toaster; this is its children. */
-  function rootChildren(): ReactElement[] {
+  /** The root component is the overlay provider around the guarded shell; this is the provider element. */
+  function rootElement(): ReactElement<{ toastClassName?: string; children: ReactElement[] }> {
     const component = RootRoute.options.component as unknown as (() => ReactElement) | undefined;
     expect(component).toBeDefined();
-    const { children } = component!().props as { children: ReactElement[] };
-    return children;
+    return component!() as ReactElement<{ toastClassName?: string; children: ReactElement[] }>;
+  }
+
+  /** The provider's children: the boundary and what sits beside it. */
+  function rootChildren(): ReactElement[] {
+    return rootElement().props.children;
   }
 
   test("wraps the shell in the design system ErrorBoundary with the app fallback", () => {
@@ -151,9 +156,11 @@ describe("root route", () => {
     expect(renderToString(fallback)).toContain("render blew up");
   });
 
-  test("mounts exactly one Toaster, outside the boundary so a shell error keeps the notices", () => {
-    const children = rootChildren();
-    expect(children.filter((child) => child.type === Toaster)).toHaveLength(1);
-    expect(children.findIndex((child) => child.type === Toaster)).toBeGreaterThan(children.findIndex((child) => child.type === ErrorBoundary));
+  test("the design system's overlay provider hosts the toast stack outside the boundary, placed above the bottom nav", () => {
+    const element = rootElement();
+    expect(element.type).toBe(OverlayProvider);
+    expect(element.props.toastClassName).toBe(TOAST_POSITION);
+    // The boundary is a child of the provider, so a shell error cannot unmount the stack.
+    expect(rootChildren().some((child) => child.type === ErrorBoundary)).toBe(true);
   });
 });

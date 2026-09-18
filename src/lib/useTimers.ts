@@ -1,5 +1,5 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { useCallback, useEffect, useState } from "react";
-import { notify } from "./notify";
 import {
   dismissTimer,
   getTimers,
@@ -29,11 +29,11 @@ export function timersSnapshot(recipeId: string): Timer[] {
 
 /**
  * Say a timer is up: a toast with the step's text, and a buzz where the device
- * has one. The notice store has no "info" intent (src/lib/notify.ts), so a
- * timer reads as neutral — it is not a success or a failure, just the clock.
+ * has one. `Toast` has no "info" intent, so a timer reads as neutral — it is
+ * not a success or a failure, just the clock.
  */
 function announce(timer: Timer): void {
-  notify({ intent: "neutral", title: "Timer done", message: timer.label });
+  toast({ intent: "neutral", title: "Timer done", children: timer.label });
   if (typeof navigator !== "undefined") navigator.vibrate?.([200, 100, 200]);
 }
 

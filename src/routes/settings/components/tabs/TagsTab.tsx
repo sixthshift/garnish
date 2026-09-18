@@ -1,5 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
+import { toast } from "@sixthshift/design-system/overlay";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
@@ -9,7 +10,7 @@ import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog
 import type { RecipeSummary } from "../../../../domain/recipe";
 import type { Tag } from "../../../../domain/reference";
 import { useMutate } from "../../../../lib/mutate";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import type { SavedValues } from "../../../../lib/ui/editSheet";
 import { deleteTag, mergeTag, updateTag, usingTag } from "../../../../server/fns/tags";
 import { NAME_FIELDS } from "../columns";
@@ -36,10 +37,10 @@ export function TagsTab({ tags }: { tags: readonly Tag[] }) {
     setBusy(true);
     try {
       await mutate(() => deleteTag({ data: { id: deleting.id } }));
-      notify({ intent: "success", title: `${deleting.name} deleted` });
+      toast({ intent: "success", title: `${deleting.name} deleted` });
       setDeleting(null);
     } catch (error) {
-      notifyError("Could not delete", error);
+      toastError("Could not delete", error);
     } finally {
       setBusy(false);
     }
@@ -51,10 +52,10 @@ export function TagsTab({ tags }: { tags: readonly Tag[] }) {
     try {
       const name = values.name as string;
       await mutate(() => updateTag({ data: { id: editing.id, name } }));
-      notify({ intent: "success", title: `${name} saved` });
+      toast({ intent: "success", title: `${name} saved` });
       setEditing(null);
     } catch (error) {
-      notifyError("Could not save tag", error);
+      toastError("Could not save tag", error);
     } finally {
       setBusy(false);
     }
@@ -65,10 +66,10 @@ export function TagsTab({ tags }: { tags: readonly Tag[] }) {
     setBusy(true);
     try {
       await mutate(() => mergeTag({ data: { sourceId: merging.id, targetId } }));
-      notify({ intent: "success", title: `${merging.name} merged` });
+      toast({ intent: "success", title: `${merging.name} merged` });
       setMerging(null);
     } catch (error) {
-      notifyError("Could not merge tag", error);
+      toastError("Could not merge tag", error);
     } finally {
       setBusy(false);
     }

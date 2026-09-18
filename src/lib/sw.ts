@@ -1,5 +1,5 @@
+import type { ToastOptions } from "@sixthshift/design-system/overlay";
 import { SKIP_WAITING } from "../sw/message";
-import type { NoticeInput } from "./notify";
 
 /** The slice of a `ServiceWorker` the page talks to. */
 export type ServiceWorkerLike = {
@@ -92,14 +92,15 @@ export function reloadOnControllerChange(container: ServiceWorkerContainerLike, 
 }
 
 /** The notice offering the update. Pure: `onSelect` is the only thing that acts. */
-export function updateNotice(waiting: ServiceWorkerLike): NoticeInput {
+export function updateNotice(waiting: ServiceWorkerLike): ToastOptions {
   return {
     intent: "neutral",
     title: "A new version is ready",
-    message: "Reload to pick it up. Anything unsaved stays as it is until you do.",
+    children: "Reload to pick it up. Anything unsaved stays as it is until you do.",
     // Sticky: this one waits for an answer rather than sliding past mid-cook.
     duration: 0,
-    action: { label: "Reload", onSelect: () => applyUpdate(waiting) },
+    action: "Reload",
+    onAction: () => applyUpdate(waiting),
   };
 }
 

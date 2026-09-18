@@ -1,6 +1,6 @@
 import type { FormFieldFeedback } from "@sixthshift/design-system/form-field";
+import type { ToastOptions } from "@sixthshift/design-system/overlay";
 import type { FieldErrors, RecipeDraft } from "../../../domain/draft";
-import type { NoticeInput } from "../../../lib/notify";
 
 export function feedback(errors: FieldErrors, path: string): FormFieldFeedback | undefined {
   const message = errors[path];
@@ -8,9 +8,9 @@ export function feedback(errors: FieldErrors, path: string): FormFieldFeedback |
 }
 
 /** What to say once the document is stored: a failed image downgrades the success to a warning that names it. Pure. */
-export function saveNotice(opts: { existing: boolean; imageError: string | null }): NoticeInput {
+export function saveNotice(opts: { existing: boolean; imageError: string | null }): ToastOptions {
   const title = opts.existing ? "Changes saved" : "Recipe created";
-  if (opts.imageError !== null) return { intent: "warning", title, message: `The image did not upload: ${opts.imageError}` };
+  if (opts.imageError !== null) return { intent: "warning", title, children: `The image did not upload: ${opts.imageError}` };
   return { intent: "success", title };
 }
 

@@ -1,7 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
 import { type MouseEvent, useEffect, useState } from "react";
 import { useMutate } from "../../lib/mutate";
-import { notifyError } from "../../lib/notify";
+import { toastError } from "../../lib/toast";
 import { setFavourite } from "../../server/fns/recipes";
 import { HeartIcon } from "./icons";
 
@@ -35,7 +35,7 @@ export type FavouriteButtonProps = {
 /**
  * A heart button that toggles a recipe's favourite flag optimistically:
  * flips immediately, writes through `setFavourite`, and reverts with a
- * `notifyError` if the write fails.
+ * `toastError` if the write fails.
  */
 export function FavouriteButton({ id, favourite, className }: FavouriteButtonProps) {
   const mutate = useMutate();
@@ -49,7 +49,7 @@ export function FavouriteButton({ id, favourite, className }: FavouriteButtonPro
     setCurrent(!current);
     const result = await toggleFavourite(id, current, (recipeId, next) => mutate(() => setFavourite({ data: { id: recipeId, favourite: next } })));
     setCurrent(result.favourite);
-    if (result.error !== undefined) notifyError("Couldn't update favourite", result.error);
+    if (result.error !== undefined) toastError("Couldn't update favourite", result.error);
   }
 
   return (

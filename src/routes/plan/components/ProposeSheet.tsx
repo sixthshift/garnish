@@ -1,8 +1,9 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useState } from "react";
 import type { Meal } from "../../../domain/plan";
+import { messageFrom } from "../../../lib/errors";
 import { useMutate } from "../../../lib/mutate";
-import { messageFrom, notify } from "../../../lib/notify";
 import type { StorageLike } from "../../../lib/useLocalStorage";
 import type { ProposedWeek } from "../../../server/ai/planner";
 import { applyPlanProposal, proposePlanWeek } from "../../../server/fns/planner";
@@ -103,7 +104,7 @@ export function ProposeSheet({ open, monday, onClose, today, storage }: ProposeS
     setError(null);
     try {
       await mutate(() => applyPlanProposal({ data: { entries } }));
-      notify({ intent: "success", title: addedMealsMessage(entries.length) });
+      toast({ intent: "success", title: addedMealsMessage(entries.length) });
       close();
     } catch (cause) {
       setError(messageFrom(cause));

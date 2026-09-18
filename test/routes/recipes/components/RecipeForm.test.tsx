@@ -239,7 +239,7 @@ describe("saveNotice", () => {
     const notice = saveNotice({ existing: true, imageError: "file too large" });
     expect(notice.intent).toBe("warning");
     expect(notice.title).toBe("Changes saved");
-    expect(notice.message).toContain("file too large");
+    expect(notice.children).toContain("file too large");
   });
 });
 

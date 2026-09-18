@@ -3,11 +3,18 @@
 // never run under `renderToString` — the clock is driven by hand with
 // `vi.setSystemTime` and the store's own `tickTimersNow`, which is what the
 // hook's interval calls once a second.
+
+import { toastStore } from "@sixthshift/design-system/overlay";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { notices } from "../../../../../src/lib/notify";
 import { type StorageLike, startTimer, type Timer, timerDisplay } from "../../../../../src/lib/timers";
 import { type RunningTimer, tickTimersNow } from "../../../../../src/lib/useTimers";
+
+/** Drop every toast at once: the store's own `clear` only begins their exit. */
+function clearToasts() {
+  for (const record of toastStore.snapshot()) toastStore.remove(record.id);
+}
+
 import { TimerStrip, TimerStripRows } from "../../../../../src/routes/recipes/recipe/components/TimerStrip";
 
 const RECIPE = "11111111-1111-4111-8111-111111111111";
@@ -43,7 +50,7 @@ const running = (over: Partial<Timer> = {}, now = T0): RunningTimer => {
 afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
   vi.useRealTimers();
-  notices.clear();
+  clearToasts();
 });
 
 describe("TimerStripRows", () => {
@@ -128,7 +135,7 @@ describe("TimerStrip", () => {
     const vibrate = vi.fn();
     const previous = Object.getOwnPropertyDescriptor(globalThis, "navigator");
     Object.defineProperty(globalThis, "navigator", { value: { vibrate }, configurable: true, writable: true });
-    notices.clear();
+    clearToasts();
 
     try {
       startTimer(storage, RECIPE, { id: `${STEP}#0#20 minutes`, label: "Simmer for 20 minutes", seconds: 1200 }, T0);
@@ -137,20 +144,20 @@ describe("TimerStrip", () => {
       // A second short of the end: still counting, nobody told.
       vi.setSystemTime(T0 + 1_199_000);
       tickTimersNow(RECIPE);
-      expect(notices.snapshot()).toHaveLength(0);
+      expect(toastStore.snapshot()).toHaveLength(0);
       expect(renderToString(<TimerStrip recipeId={RECIPE} />)).toContain("0:01");
 
       // Zero. This is what the hook's once-a-second interval does.
       vi.setSystemTime(T0 + 1_200_000);
       tickTimersNow(RECIPE);
-      expect(notices.snapshot()).toHaveLength(1);
-      expect(notices.snapshot()[0]).toMatchObject({ title: "Timer done", message: "Simmer for 20 minutes" });
+      expect(toastStore.snapshot()).toHaveLength(1);
+      expect(toastStore.snapshot()[0]).toMatchObject({ options: { title: "Timer done", children: "Simmer for 20 minutes" } });
       expect(vibrate).toHaveBeenCalledWith([200, 100, 200]);
 
       // Said once, however often it ticks afterwards; the row stays until dismissed.
       vi.setSystemTime(T0 + 1_300_000);
       tickTimersNow(RECIPE);
-      expect(notices.snapshot()).toHaveLength(1);
+      expect(toastStore.snapshot()).toHaveLength(1);
       const html = renderToString(<TimerStrip recipeId={RECIPE} />);
       expect(html).toContain("Done");
       expect(html).toContain("Dismiss the timer for Simmer for 20 minutes");

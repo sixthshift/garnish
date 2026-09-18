@@ -1,13 +1,14 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
+import { toast } from "@sixthshift/design-system/overlay";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { EditSheet } from "../../../../components/ui/EditSheet";
 import { ReorderList } from "../../../../components/ui/ReorderList";
 import type { Aisle } from "../../../../domain/reference";
 import { useMutate } from "../../../../lib/mutate";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import type { SavedValues } from "../../../../lib/ui/editSheet";
 import { deleteAisle, reorderAisles, updateAisle } from "../../../../server/fns/aisles";
 import { NAME_FIELDS } from "../columns";
@@ -27,7 +28,7 @@ export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
       await mutate(() => reorderAisles({ data: { ids: next.map((aisle) => aisle.id) } }));
     } catch (error) {
       setOrder(previous);
-      notifyError("Could not reorder aisles", error);
+      toastError("Could not reorder aisles", error);
     }
   };
 
@@ -37,10 +38,10 @@ export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
     try {
       const name = values.name as string;
       await mutate(() => updateAisle({ data: { id: editing.id, name } }));
-      notify({ intent: "success", title: `${name} saved` });
+      toast({ intent: "success", title: `${name} saved` });
       setEditing(null);
     } catch (error) {
-      notifyError("Could not save aisle", error);
+      toastError("Could not save aisle", error);
     } finally {
       setBusy(false);
     }
@@ -51,10 +52,10 @@ export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
     setBusy(true);
     try {
       await mutate(() => deleteAisle({ data: { id: deleting.id } }));
-      notify({ intent: "success", title: `${deleting.name} deleted` });
+      toast({ intent: "success", title: `${deleting.name} deleted` });
       setDeleting(null);
     } catch (error) {
-      notifyError("Could not delete", error);
+      toastError("Could not delete", error);
     } finally {
       setBusy(false);
     }

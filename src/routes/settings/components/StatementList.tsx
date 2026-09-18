@@ -1,12 +1,13 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
+import { toast } from "@sixthshift/design-system/overlay";
 import { Switch } from "@sixthshift/design-system/switch";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useEffect, useRef, useState } from "react";
 import { ReorderList } from "../../../components/ui/ReorderList";
 import { useMutate } from "../../../lib/mutate";
-import { notify, notifyError } from "../../../lib/notify";
+import { toastError } from "../../../lib/toast";
 
 /** The shape both guides' rows share: the house style statement and the planner statement are the same object. */
 export type Statement = { id: string; text: string; enabled: boolean };
@@ -70,7 +71,7 @@ export function StatementList({ statements, ops, guideName, noteFor }: Statement
       await mutate(() => ops.reorder(next.map((rule) => rule.id)));
     } catch (error) {
       setOrder(previous);
-      notifyError(`Could not reorder the ${guideName}`, error);
+      toastError(`Could not reorder the ${guideName}`, error);
     }
   };
 
@@ -78,7 +79,7 @@ export function StatementList({ statements, ops, guideName, noteFor }: Statement
     try {
       await mutate(() => ops.update(rule.id, { enabled }));
     } catch (error) {
-      notifyError("Could not change the statement", error);
+      toastError("Could not change the statement", error);
     }
   };
 
@@ -87,18 +88,18 @@ export function StatementList({ statements, ops, guideName, noteFor }: Statement
     if (next === "" || next === rule.text) return;
     try {
       await mutate(() => ops.update(rule.id, { text: next }));
-      notify({ intent: "success", title: "Statement saved" });
+      toast({ intent: "success", title: "Statement saved" });
     } catch (error) {
-      notifyError("Could not save the statement", error);
+      toastError("Could not save the statement", error);
     }
   };
 
   const remove = async (rule: Statement) => {
     try {
       await mutate(() => ops.remove(rule.id));
-      notify({ intent: "success", title: "Statement deleted" });
+      toast({ intent: "success", title: "Statement deleted" });
     } catch (error) {
-      notifyError("Could not delete the statement", error);
+      toastError("Could not delete the statement", error);
     }
   };
 
@@ -110,7 +111,7 @@ export function StatementList({ statements, ops, guideName, noteFor }: Statement
       await mutate(() => ops.create(text));
       setDraft("");
     } catch (error) {
-      notifyError("Could not add the statement", error);
+      toastError("Could not add the statement", error);
     } finally {
       setBusy(false);
     }

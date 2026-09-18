@@ -1,9 +1,10 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { type ReactNode, useEffect, useState } from "react";
 import { PencilIcon } from "../../../../components/ui/icons";
 import { Menu } from "../../../../components/ui/Menu";
 import { type DraftIngredient, withIngredientReplaced, withStepReplaced } from "../../../../domain/draft";
 import type { Unit } from "../../../../domain/reference";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import { listUnits } from "../../../../server/fns/units";
 import { useQuickEditContext } from "./QuickEditContext";
 import { QuickEditIngredientSheet } from "./QuickEditIngredient";
@@ -83,11 +84,11 @@ export function useQuickEditIngredient(partId: string | undefined, ingredientId:
     try {
       // The stored document with one row swapped; ids are kept, so session ticks keyed by row id survive the save.
       await saveQuickEdit(withIngredientReplaced(context.recipe, partId, ingredientId, next), context.run);
-      notify({ intent: "success", title: "Ingredient saved" });
+      toast({ intent: "success", title: "Ingredient saved" });
       setOpen(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save this ingredient");
-      notifyError("Couldn't save this ingredient", cause);
+      toastError("Couldn't save this ingredient", cause);
     } finally {
       setBusy(false);
     }
@@ -131,11 +132,11 @@ export function useQuickEditStep(partId: string | undefined, stepId: string): Re
     setError(null);
     try {
       await saveQuickEdit(withStepReplaced(context.recipe, partId, stepId, text), context.run);
-      notify({ intent: "success", title: "Step saved" });
+      toast({ intent: "success", title: "Step saved" });
       setOpen(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save this step");
-      notifyError("Couldn't save this step", cause);
+      toastError("Couldn't save this step", cause);
     } finally {
       setBusy(false);
     }

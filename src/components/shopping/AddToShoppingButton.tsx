@@ -1,10 +1,11 @@
 import { Button } from "@sixthshift/design-system/button";
+import { toast } from "@sixthshift/design-system/overlay";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Recipe } from "../../domain/recipe";
 import type { ShoppingAddition } from "../../domain/shopping";
-import { notify, notifyError } from "../../lib/notify";
 import { addedMessage, addToShoppingList } from "../../lib/shopping";
+import { toastError } from "../../lib/toast";
 import { AddToShoppingSheet } from "./AddToShoppingSheet";
 
 /** The list page. */
@@ -31,15 +32,16 @@ export function AddToShoppingButton({ recipe, size = "sm" }: AddToShoppingButton
     try {
       const added = await addToShoppingList(additions);
       setOpen(false);
-      notify({
+      toast({
         intent: "success",
         title: addedMessage(added),
-        // The Toaster is not the router's business, so the caller navigates:
+        // The toast stack is not the router's business, so the caller navigates:
         // this button is always rendered inside a route.
-        action: { label: "View list", onSelect: () => void router.navigate({ to: SHOPPING_PATH }) },
+        action: "View list",
+        onAction: () => void router.navigate({ to: SHOPPING_PATH }),
       });
     } catch (error) {
-      notifyError("Couldn't add to the shopping list", error);
+      toastError("Couldn't add to the shopping list", error);
     } finally {
       setBusy(false);
     }

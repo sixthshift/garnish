@@ -2,15 +2,15 @@ import { Modal } from "@sixthshift/design-system/modal";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { RecipeSummary } from "../../domain/recipe";
-import { notifyError } from "../../lib/notify";
 import { clampSelection, type SearchEventTarget, selectedResult, shouldOpenGlobalSearch } from "../../lib/search";
+import { toastError } from "../../lib/toast";
 import { listRecipes } from "../../server/fns/recipes";
 import { GlobalSearchContent } from "./GlobalSearchContent";
 
 /** How long typing pauses before the search runs. */
 export const GLOBAL_SEARCH_DEBOUNCE_MS = 200;
 
-/** Mounted once, app-wide (`src/routes/root.tsx`), alongside the Toaster. */
+/** Mounted once, app-wide (`src/routes/root.tsx`), inside the overlay provider. */
 export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -67,7 +67,7 @@ export function GlobalSearch() {
         .catch((error: unknown) => {
           if (requestId.current !== id) return;
           setResults([]);
-          notifyError("Search failed", error);
+          toastError("Search failed", error);
         })
         .finally(() => {
           if (requestId.current === id) setLoading(false);

@@ -1,10 +1,12 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useState } from "react";
 import { draftFromInput, draftFromJson, draftToJson, type FieldErrors, hasDetails, isDirty, type RecipeDraft, validateDraft } from "../../../domain/draft";
 import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft } from "../../../lib/drafts";
+import { messageFrom } from "../../../lib/errors";
 import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../../../lib/images";
 import { useMutate } from "../../../lib/mutate";
-import { messageFrom, notify, notifyError } from "../../../lib/notify";
+import { toastError } from "../../../lib/toast";
 import { useOnline } from "../../../lib/useOnline";
 import { createRecipe, updateRecipe } from "../../../server/fns/recipes";
 import { fetchImage } from "../../../server/import/imageFetch";
@@ -138,10 +140,10 @@ export function useRecipeForm({ initial, existing, online: onlineOverride, impor
         return recipe;
       });
       clearStoredDraft();
-      notify(saveNotice({ existing: existing !== undefined, imageError: image.error }));
+      toast(saveNotice({ existing: existing !== undefined, imageError: image.error }));
       await navigate({ to: "/recipes/$slug", params: { slug: saved.slug }, search: afterSaveSearch ?? {} });
     } catch (error) {
-      notifyError(existing ? "Could not save changes" : "Could not create recipe", error);
+      toastError(existing ? "Could not save changes" : "Could not create recipe", error);
       setSaving(false);
     }
   };

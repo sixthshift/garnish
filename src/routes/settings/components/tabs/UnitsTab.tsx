@@ -1,10 +1,11 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { useState } from "react";
 import { DataTable } from "../../../../components/ui/DataTable";
 import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../../domain/recipe";
 import type { Unit } from "../../../../domain/reference";
 import { useMutate } from "../../../../lib/mutate";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import type { DataTableColumn } from "../../../../lib/ui/dataTable";
 import { deleteUnit, mergeUnit, updateUnit, usingUnit } from "../../../../server/fns/units";
 import { mergeColumn } from "../columns";
@@ -34,10 +35,10 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
     setBusy(true);
     try {
       await mutate(() => Promise.all(deleting.map((unit) => deleteUnit({ data: { id: unit.id } }))));
-      notify({ intent: "success", title: `${unitsLabel(deleting)} deleted` });
+      toast({ intent: "success", title: `${unitsLabel(deleting)} deleted` });
       setDeleting(null);
     } catch (error) {
-      notifyError("Could not delete", error);
+      toastError("Could not delete", error);
     } finally {
       setBusy(false);
     }
@@ -47,10 +48,10 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
     setBusy(true);
     try {
       await mutate(() => updateUnit({ data: patch }));
-      notify({ intent: "success", title: `${patch.name} saved` });
+      toast({ intent: "success", title: `${patch.name} saved` });
       setEditing(null);
     } catch (error) {
-      notifyError("Could not save unit", error);
+      toastError("Could not save unit", error);
     } finally {
       setBusy(false);
     }
@@ -61,10 +62,10 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
     setBusy(true);
     try {
       await mutate(() => mergeUnit({ data: { sourceId: merging.id, targetId } }));
-      notify({ intent: "success", title: `${merging.name} merged` });
+      toast({ intent: "success", title: `${merging.name} merged` });
       setMerging(null);
     } catch (error) {
-      notifyError("Could not merge unit", error);
+      toastError("Could not merge unit", error);
     } finally {
       setBusy(false);
     }

@@ -1,12 +1,12 @@
 import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
+import { OverlayProvider, toast } from "@sixthshift/design-system/overlay";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { AppShell } from "../components/shell/AppShell";
 import { GlobalSearch } from "../components/shell/GlobalSearch";
 import { AppErrorFallback } from "../components/shell/RouteStates";
-import { Toaster } from "../components/shell/Toaster";
-import { notify } from "../lib/notify";
 import { registerServiceWorker, updateNotice } from "../lib/sw";
+import { TOAST_POSITION } from "../lib/toast";
 import appCss from "../styles.css?url";
 
 // PWA manifest colours are literal hex because a manifest cannot read CSS.
@@ -50,15 +50,16 @@ export const Route = createRootRoute({
 // a Retry instead of a blank page. Route loader errors never get this far;
 // the router's defaultErrorComponent renders those inside the shell.
 function RootComponent() {
+  // The provider hosts the toast stack, outside the boundary so a render
+  // error in the shell does not take a notice with it. `toast()` is callable
+  // from anywhere; the stack is placed above the phone's bottom nav.
   return (
-    <>
+    <OverlayProvider toastClassName={TOAST_POSITION}>
       <ErrorBoundary fallback={(props) => <AppErrorFallback {...props} />}>
         <AppShell />
       </ErrorBoundary>
-      {/* Outside the boundary: a render error in the shell should not take the notice with it. */}
-      <Toaster />
       <GlobalSearch />
-    </>
+    </OverlayProvider>
   );
 }
 
@@ -68,7 +69,7 @@ function RootDocument({ children }: { children: ReactNode }) {
   // while the app is open offers itself as a notice rather than taking over.
   useEffect(() => {
     registerServiceWorker(typeof navigator === "undefined" ? undefined : navigator, import.meta.env.PROD, {
-      onUpdateReady: (waiting) => void notify(updateNotice(waiting)),
+      onUpdateReady: (waiting) => void toast(updateNotice(waiting)),
     });
   }, []);
   return (

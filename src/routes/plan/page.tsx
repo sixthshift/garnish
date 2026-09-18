@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutate } from "../../lib/mutate";
-import { notifyError } from "../../lib/notify";
+import { toastError } from "../../lib/toast";
 import { addPlanEntry, movePlanEntry, removePlanEntry } from "../../server/fns/plan";
 import { PlanWeekView } from "./components/PlanWeekView";
 import { searchPlanRecipes } from "./components/searchPlanRecipes";
@@ -17,7 +17,7 @@ export function PlanPage() {
     try {
       await mutate(run);
     } catch (error) {
-      notifyError(what, error);
+      toastError(what, error);
     } finally {
       setBusy(false);
     }

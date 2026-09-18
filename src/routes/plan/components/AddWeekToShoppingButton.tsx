@@ -1,9 +1,10 @@
 import { Button } from "@sixthshift/design-system/button";
+import { toast } from "@sixthshift/design-system/overlay";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { SHOPPING_PATH } from "../../../components/shopping/AddToShoppingButton";
-import { notify, notifyError } from "../../../lib/notify";
 import { addedMessage } from "../../../lib/shopping";
+import { toastError } from "../../../lib/toast";
 import { addPlanWeekToShopping } from "../../../server/fns/plan";
 
 /**
@@ -22,13 +23,14 @@ export function AddWeekToShoppingButton({ monday }: { monday: string }) {
     setBusy(true);
     try {
       const { added } = await addPlanWeekToShopping({ data: { monday } });
-      notify({
+      toast({
         intent: "success",
         title: addedMessage(added),
-        action: { label: "View list", onSelect: () => void router.navigate({ to: SHOPPING_PATH }) },
+        action: "View list",
+        onAction: () => void router.navigate({ to: SHOPPING_PATH }),
       });
     } catch (error) {
-      notifyError("Couldn't add the week to the shopping list", error);
+      toastError("Couldn't add the week to the shopping list", error);
     } finally {
       setBusy(false);
     }

@@ -1,3 +1,4 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
@@ -6,7 +7,7 @@ import { dayLabel } from "../../../../domain/plan";
 import { ingredientsText, type Recipe, recipeUrl, toCooklang } from "../../../../domain/recipe";
 import { writeClipboard } from "../../../../lib/clipboard";
 import { useMutate } from "../../../../lib/mutate";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import { foodForRecipe } from "../../../../server/fns/foods";
 import { addPlanEntry } from "../../../../server/fns/plan";
 import { deleteRecipe, duplicateRecipe } from "../../../../server/fns/recipes";
@@ -35,11 +36,11 @@ export function RecipeActions({ recipe, aiAvailable = false, restyleOpen = false
 
   const copy = async (text: string, what: string) => {
     if (text.trim() === "") {
-      notify({ intent: "warning", title: "Nothing to copy" });
+      toast({ intent: "warning", title: "Nothing to copy" });
       return;
     }
-    if (await writeClipboard(text)) notify({ intent: "success", title: `${what} copied` });
-    else notify({ intent: "danger", title: `Could not copy ${what.toLowerCase()}` });
+    if (await writeClipboard(text)) toast({ intent: "success", title: `${what} copied` });
+    else toast({ intent: "danger", title: `Could not copy ${what.toLowerCase()}` });
   };
 
   const copyLink = () => {
@@ -50,29 +51,29 @@ export function RecipeActions({ recipe, aiAvailable = false, restyleOpen = false
   const duplicate = async () => {
     try {
       const copyOfRecipe = await mutate(() => duplicateRecipe({ data: { id: recipe.id } }));
-      notify({ intent: "success", title: `${copyOfRecipe.name} created` });
+      toast({ intent: "success", title: `${copyOfRecipe.name} created` });
       await navigate({ to: "/recipes/$slug", params: { slug: copyOfRecipe.slug } });
     } catch (error) {
-      notifyError("Could not duplicate recipe", error);
+      toastError("Could not duplicate recipe", error);
     }
   };
 
   const makeFood = async () => {
     try {
       const food = await mutate(() => foodForRecipe({ data: { recipeId: recipe.id } }));
-      notify({ intent: "success", title: `${food.name} is now a food`, message: "Add it to another recipe's ingredients to link back here." });
+      toast({ intent: "success", title: `${food.name} is now a food`, children: "Add it to another recipe's ingredients to link back here." });
     } catch (error) {
-      notifyError("Could not make this a food", error);
+      toastError("Could not make this a food", error);
     }
   };
 
   const planTo = async (date: string, servings: number) => {
     try {
       await mutate(() => addPlanEntry({ data: planEntryFor(recipe, date, servings) }));
-      notify({ intent: "success", title: `Added to ${dayLabel(date)}` });
+      toast({ intent: "success", title: `Added to ${dayLabel(date)}` });
       setPlanning(false);
     } catch (error) {
-      notifyError("Could not plan this recipe", error);
+      toastError("Could not plan this recipe", error);
     }
   };
 
@@ -80,10 +81,10 @@ export function RecipeActions({ recipe, aiAvailable = false, restyleOpen = false
     setDeleting(true);
     try {
       await mutate(() => deleteRecipe({ data: { id: recipe.id } }));
-      notify({ intent: "success", title: `${recipe.name} deleted` });
+      toast({ intent: "success", title: `${recipe.name} deleted` });
       await navigate({ to: "/" });
     } catch (error) {
-      notifyError("Could not delete recipe", error);
+      toastError("Could not delete recipe", error);
       setDeleting(false);
     }
   };

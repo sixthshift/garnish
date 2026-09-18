@@ -1,10 +1,11 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { useState } from "react";
 import { DataTable } from "../../../../components/ui/DataTable";
 import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../../domain/recipe";
 import type { Aisle, Unit } from "../../../../domain/reference";
 import { useMutate } from "../../../../lib/mutate";
-import { notify, notifyError } from "../../../../lib/notify";
+import { toastError } from "../../../../lib/toast";
 import type { DataTableColumn } from "../../../../lib/ui/dataTable";
 import { findOrCreateAisle } from "../../../../server/fns/aisles";
 import { deleteFood, mergeFood, updateFood, usingFood } from "../../../../server/fns/foods";
@@ -46,10 +47,10 @@ export function FoodsTab({
     setBusy(true);
     try {
       await mutate(() => Promise.all(deleting.map((food) => deleteFood({ data: { id: food.id } }))));
-      notify({ intent: "success", title: `${foodsLabel(deleting)} deleted` });
+      toast({ intent: "success", title: `${foodsLabel(deleting)} deleted` });
       setDeleting(null);
     } catch (error) {
-      notifyError("Could not delete", error);
+      toastError("Could not delete", error);
     } finally {
       setBusy(false);
     }
@@ -59,10 +60,10 @@ export function FoodsTab({
     setBusy(true);
     try {
       await mutate(() => updateFood({ data: patch }));
-      notify({ intent: "success", title: `${patch.name} saved` });
+      toast({ intent: "success", title: `${patch.name} saved` });
       setEditing(null);
     } catch (error) {
-      notifyError("Could not save food", error);
+      toastError("Could not save food", error);
     } finally {
       setBusy(false);
     }
@@ -75,10 +76,10 @@ export function FoodsTab({
     setBusy(true);
     try {
       await mutate(() => mergeFood({ data: { sourceId: merging.id, targetId } }));
-      notify({ intent: "success", title: `${merging.name} merged` });
+      toast({ intent: "success", title: `${merging.name} merged` });
       setMerging(null);
     } catch (error) {
-      notifyError("Could not merge food", error);
+      toastError("Could not merge food", error);
     } finally {
       setBusy(false);
     }

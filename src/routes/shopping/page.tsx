@@ -1,9 +1,10 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { randomUuid } from "../../lib/id";
 import { useMutate } from "../../lib/mutate";
-import { notify, notifyError } from "../../lib/notify";
 import { applyOutbox } from "../../lib/outbox";
+import { toastError } from "../../lib/toast";
 import { useOnline } from "../../lib/useOnline";
 import { useOutbox } from "../../lib/useOutbox";
 import { addShoppingItems, clearTickedShoppingItems, removeShoppingItem, tickShoppingItem } from "../../server/fns/shopping";
@@ -32,7 +33,7 @@ export function ShoppingPage() {
     try {
       await mutate(run);
     } catch (error) {
-      notifyError(what, error);
+      toastError(what, error);
     } finally {
       setBusy(false);
     }
@@ -50,7 +51,7 @@ export function ShoppingPage() {
         await mutate(run);
       } catch {
         enqueue();
-        notify({ intent: "warning", title: "Saved for when you're back online" });
+        toast({ intent: "warning", title: "Saved for when you're back online" });
       } finally {
         setBusy(false);
       }
@@ -89,7 +90,7 @@ export function ShoppingPage() {
       onClearTicked={() =>
         void write("Couldn't clear the ticked items", async () => {
           const { removed } = await clearTickedShoppingItems();
-          notify({ intent: "success", title: `${removed} ${removed === 1 ? "item" : "items"} cleared` });
+          toast({ intent: "success", title: `${removed} ${removed === 1 ? "item" : "items"} cleared` });
         })
       }
       onSetAisle={(foodId, aisleId) => void write("Couldn't set the aisle", () => setFoodAisle(foodId, aisleId))}
