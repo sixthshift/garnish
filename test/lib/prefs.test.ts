@@ -1,6 +1,6 @@
 // The prefs controller against an in-memory storage, including one that
 // throws on every access. The hooks read the same keys through one
-// process-wide store (decisions row 105) and are pressed in
+// process-wide store (decisions rows 105 and 106) and are pressed in
 // test/routes/home/components/ViewModeToggle.dom.test.tsx; the controller
 // carries the read and write behaviour.
 import { describe, expect, test } from "vitest";
