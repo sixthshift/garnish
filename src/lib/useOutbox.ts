@@ -13,7 +13,9 @@ export type UseOutbox = {
   /** The pending writes, oldest first. */
   queue: OutboxEntry[];
   /** Queue a tick, untick or remove and re-render with it applied. */
-  push: (itemId: string, kind: OutboxKind) => void;
+  push: (itemId: string, kind: Exclude<OutboxKind, "add">) => void;
+  /** Queue a typed line under the id it has on this device, and re-render with it on the list. */
+  add: (itemId: string, text: string) => void;
   /** Flush now. Called on coming back online and on regaining focus; safe to call by hand. */
   flush: () => Promise<void>;
 };
@@ -59,8 +61,15 @@ export function useOutbox({ send, online, onFlushed, storage }: UseOutboxOptions
   }, [outbox]);
 
   const push = useCallback(
-    (itemId: string, kind: OutboxKind) => {
+    (itemId: string, kind: Exclude<OutboxKind, "add">) => {
       setQueue(outbox.push(itemId, kind));
+    },
+    [outbox]
+  );
+
+  const add = useCallback(
+    (itemId: string, text: string) => {
+      setQueue(outbox.add(itemId, text));
     },
     [outbox]
   );
@@ -83,5 +92,5 @@ export function useOutbox({ send, online, onFlushed, storage }: UseOutboxOptions
     return () => window.removeEventListener("focus", onFocus);
   }, [online, flush]);
 
-  return { queue, push, flush };
+  return { queue, push, add, flush };
 }

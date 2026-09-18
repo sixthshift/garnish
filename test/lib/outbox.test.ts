@@ -2,6 +2,7 @@
 // controller over it. No DOM anywhere — the hook's wiring is the route's, and
 // the render side is covered in test/routes/shopping.test.tsx.
 import { describe, expect, test, vi } from "vitest";
+import type { ShoppingItem } from "../../src/domain/shopping";
 import {
   applyOutbox,
   createOutbox,
@@ -10,6 +11,7 @@ import {
   OUTBOX_KEY,
   type OutboxEntry,
   type OutboxKind,
+  outboxAdd,
   outboxEntry,
   parseOutbox,
   pendingLabel,
@@ -20,9 +22,17 @@ import {
 
 const at = "2026-09-13T00:00:00.000Z";
 let n = 0;
-function entry(itemId: string, kind: OutboxKind): OutboxEntry {
+function entry(itemId: string, kind: Exclude<OutboxKind, "add">): OutboxEntry {
   n += 1;
   return { id: `e${n}`, itemId, kind, at };
+}
+function added(itemId: string, text: string, ticked = false): OutboxEntry {
+  n += 1;
+  return { id: `e${n}`, itemId, kind: "add", text, ticked, at };
+}
+/** A stored line, hand-typed, with only what the outbox reads varying: id, ticked, position. */
+function line(id: string, ticked: boolean, position: number): ShoppingItem {
+  return { id, ticked, position, text: id, quantity: null, unit: null, food: null, createdAt: at, updatedAt: at, sources: [] };
 }
 
 /** A `localStorage` stand-in; `fail` makes every access throw, as a full or locked-down one does. */
@@ -88,25 +98,58 @@ describe("enqueue", () => {
     enqueue(before, entry("a", "untick"));
     expect(before.map((e) => e.kind)).toEqual(["tick"]);
   });
+
+  test("a typed line is appended like any other entry, and two lines keep their order", () => {
+    const queue = enqueue(enqueue([], added("x", "Milk")), added("y", "Bread"));
+    expect(queue.map((e) => [e.itemId, e.kind])).toEqual([
+      ["x", "add"],
+      ["y", "add"],
+    ]);
+  });
+
+  test("a tick on a line the server has not seen goes into the add itself, in place", () => {
+    let queue = enqueue(enqueue([], added("x", "Milk")), added("y", "Bread"));
+    queue = enqueue(queue, entry("x", "tick"));
+    expect(queue.map((e) => [e.itemId, e.kind, e.kind === "add" ? e.ticked : null])).toEqual([
+      ["x", "add", true],
+      ["y", "add", false],
+    ]);
+    queue = enqueue(queue, entry("x", "untick"));
+    expect(queue[0]).toMatchObject({ kind: "add", ticked: false });
+  });
+
+  test("a remove of a line the server has not seen drops the add and queues nothing", () => {
+    const queue = enqueue(enqueue(enqueue([], added("x", "Milk")), entry("a", "tick")), entry("x", "remove"));
+    expect(queue.map((e) => [e.itemId, e.kind])).toEqual([["a", "tick"]]);
+  });
 });
 
-test("outboxEntry takes its id and its clock from its caller", () => {
+test("outboxEntry and outboxAdd take their id and their clock from their caller", () => {
   expect(outboxEntry("a", "tick", () => "fixed", at)).toEqual({ id: "fixed", itemId: "a", kind: "tick", at });
+  expect(outboxAdd("x", "Milk", () => "fixed", at)).toEqual({ id: "fixed", itemId: "x", kind: "add", text: "Milk", ticked: false, at });
 });
 
 describe("applyOutbox", () => {
-  const items = [
-    { id: "a", ticked: false },
-    { id: "b", ticked: true },
-    { id: "c", ticked: false },
-  ];
+  const items = [line("a", false, 0), line("b", true, 1), line("c", false, 2)];
 
   test("a pending tick and untick show on the rendered list", () => {
-    expect(applyOutbox(items, [entry("a", "tick"), entry("b", "untick")])).toEqual([
-      { id: "a", ticked: true },
-      { id: "b", ticked: false },
-      { id: "c", ticked: false },
+    expect(applyOutbox(items, [entry("a", "tick"), entry("b", "untick")])).toEqual([{ ...items[0], ticked: true }, { ...items[1], ticked: false }, items[2]]);
+  });
+
+  test("a pending line joins the foot of the list as a hand-typed row, ticked as queued", () => {
+    const shown = applyOutbox(items, [added("x", "Milk", true), added("y", "Bread")]);
+    expect(shown.map((i) => [i.id, i.text, i.ticked, i.position])).toEqual([
+      ["a", "a", false, 0],
+      ["b", "b", true, 1],
+      ["c", "c", false, 2],
+      ["x", "Milk", true, 3],
+      ["y", "Bread", false, 4],
     ]);
+    expect(shown[3]).toMatchObject({ food: null, unit: null, quantity: null, sources: [] });
+  });
+
+  test("a pending line the server turns out to have already is not shown twice", () => {
+    expect(applyOutbox(items, [added("a", "a")]).map((i) => i.id)).toEqual(["a", "b", "c"]);
   });
 
   test("a pending remove takes the line off the list", () => {
@@ -189,8 +232,17 @@ describe("the stored queue", () => {
     const storage = memoryStorage();
     storage.map.set(OUTBOX_KEY, "{not json");
     expect(readOutbox(storage)).toEqual([]);
-    storage.map.set(OUTBOX_KEY, JSON.stringify([{ id: "e", itemId: "a", kind: "explode", at }, { id: 1 }, entry("b", "tick")]));
-    expect(readOutbox(storage).map((e) => e.itemId)).toEqual(["b"]);
+    storage.map.set(
+      OUTBOX_KEY,
+      JSON.stringify([
+        { id: "e", itemId: "a", kind: "explode", at },
+        { id: 1 },
+        { id: "e", itemId: "z", kind: "add", at },
+        entry("b", "tick"),
+        added("x", "Milk"),
+      ])
+    );
+    expect(readOutbox(storage).map((e) => e.itemId)).toEqual(["b", "x"]); // an add without its text is no add
     expect(parseOutbox({ nope: true })).toEqual([]);
   });
 
@@ -220,6 +272,14 @@ describe("createOutbox", () => {
       ["a", "tick"],
       ["b", "remove"],
     ]);
+  });
+
+  test("an add persists with its text, and a tick on it lands in the stored add", () => {
+    const storage = memoryStorage();
+    const outbox = createOutbox(storage, ids(), () => at);
+    outbox.add("x", "Milk");
+    outbox.push("x", "tick");
+    expect(readOutbox(storage)).toEqual([{ id: "e1", itemId: "x", kind: "add", text: "Milk", ticked: true, at }]);
   });
 
   test("a push coalesces through the stored queue", () => {

@@ -242,13 +242,35 @@ describe("an offline tick", () => {
     expect(readOutbox(storage).map((entry) => [entry.itemId, entry.kind])).toEqual([[lemon.id, "tick"]]);
   });
 
-  test("offline, adding a line and clearing the ticked are refused: they are not tick writes", () => {
+  test("offline, clearing the ticked is refused, but the add box stays open: a typed line queues", () => {
     const html = renderToString(
       <ShoppingListView items={[item({ quantity: 3, food: lemons, ticked: true })]} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} offline />
     );
-    expect(elementHtml(html, "shopping-add")).toMatch(/\sdisabled(=""|\s|>)/);
+    expect(elementHtml(html, "shopping-add")).not.toMatch(/\sdisabled(=""|\s|>)/);
     const clear = html.match(/<button[^>]*>Clear ticked</)?.[0] ?? "";
     expect(clear).toMatch(/\sdisabled(=""|\s|>)/);
+  });
+
+  test("a line typed offline shows on the list at once, unassigned, and counts as waiting", () => {
+    const lemon = item({ quantity: 3, food: lemons });
+    const storage = memoryStorage();
+    const outbox = createOutbox(storage);
+    outbox.add("local-id", "Batteries");
+    const html = renderToString(
+      <ShoppingListView
+        items={applyOutbox([lemon], outbox.list())}
+        onAdd={noop}
+        onTick={noop}
+        onRemove={noop}
+        onClearTicked={noop}
+        pending={outbox.list().length}
+        offline
+      />
+    );
+    expect(html).toContain("Batteries");
+    expect(html).toContain("1 change waiting");
+    expect(html).toContain("2 items to buy");
+    expect(readOutbox(storage)).toMatchObject([{ itemId: "local-id", kind: "add", text: "Batteries", ticked: false }]);
   });
 });
 
@@ -267,6 +289,13 @@ describe("sendOutboxEntry", () => {
 
     await sendOutboxEntry({ id: "e3", itemId: milk!.id, kind: "remove", at: stamp });
     expect((await listShoppingItems()).map((row) => row.id)).toEqual([batteries!.id]);
+  });
+
+  test("a queued line lands as a hand-typed row under the server's own id, ticked as it was queued", async () => {
+    await sendOutboxEntry({ id: "e4", itemId: "local-id", kind: "add", text: "Candles", ticked: true, at: stamp });
+    const candles = (await listShoppingItems()).find((row) => row.text === "Candles");
+    expect(candles).toMatchObject({ ticked: true, food: null, sources: [] });
+    expect(candles?.id).not.toBe("local-id");
   });
 });
 

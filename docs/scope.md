@@ -16,7 +16,7 @@
 
 Stages 7 to 13, in the order they were built. The argument for each is in [decisions.md](decisions.md); how they were built is in [plan.md](plan.md).
 
-- Shopping list (stage 7). One household list, merged by food and unit, expandable to its sources, grouped by aisle, added to from the recipe at the page's scale. Opens and ticks offline through the outbox, the app's first queued write.
+- Shopping list (stage 7). One household list, merged by food and unit, expandable to its sources, grouped by aisle, added to from the recipe at the page's scale. Opens, ticks and takes a typed line offline through the outbox, the app's first queued write (decisions rows 68 and 104).
 - Sub-recipes and conversions (stage 8). Conversions per food, so 1 cup flour and 300 g flour merge; a food made by a recipe links to it and scales through it. See Open, below, for what is left.
 - Meal plan (stage 9). A week of days, a recipe or a plain line on each, the week addable to the list in one tap.
 - Out and in (stage 10). JSON and Cooklang export; import from Mealie and Tandoor backups, the adoption path neither incumbent offers.

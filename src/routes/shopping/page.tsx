@@ -1,8 +1,9 @@
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { randomUuid } from "../../lib/id";
 import { useMutate } from "../../lib/mutate";
 import { notify, notifyError } from "../../lib/notify";
-import { applyOutbox, type OutboxKind } from "../../lib/outbox";
+import { applyOutbox } from "../../lib/outbox";
 import { useOnline } from "../../lib/useOnline";
 import { useOutbox } from "../../lib/useOutbox";
 import { addShoppingItems, clearTickedShoppingItems, removeShoppingItem, tickShoppingItem } from "../../server/fns/shopping";
@@ -13,10 +14,10 @@ import { Route } from "./route";
 /**
  * The route's own wiring. Reads are the loader's (the service worker's data
  * cache answers them offline); writes are server-first as everywhere else,
- * with one exception: a tick, an untick or a remove made with no network — or
- * one whose write fails anyway, `navigator.onLine` being optimistic — goes
- * into the outbox instead and is applied to the rendered list at once. The
- * header says how many are waiting until they land.
+ * with one exception: a tick, an untick, a remove or a typed line made with
+ * no network — or one whose write fails anyway, `navigator.onLine` being
+ * optimistic — goes into the outbox instead and is applied to the rendered
+ * list at once. The header says how many are waiting until they land.
  */
 export function ShoppingPage() {
   const { items, aisles } = Route.useLoaderData();
@@ -24,7 +25,7 @@ export function ShoppingPage() {
   const router = useRouter();
   const online = useOnline();
   const [busy, setBusy] = useState(false);
-  const { queue, push } = useOutbox({ send: sendOutboxEntry, online, onFlushed: () => void router.invalidate() });
+  const { queue, push, add } = useOutbox({ send: sendOutboxEntry, online, onFlushed: () => void router.invalidate() });
 
   const write = async (what: string, run: () => Promise<unknown>) => {
     setBusy(true);
@@ -37,10 +38,10 @@ export function ShoppingPage() {
     }
   };
 
-  /** A tick or a remove: straight through when there is a network, queued when there is not or when it fails. */
-  const queued = (itemId: string, kind: OutboxKind, run: () => Promise<unknown>) => {
+  /** A tick, a remove or a typed line: straight through when there is a network, queued (`enqueue`) when there is not or when it fails. */
+  const queued = (enqueue: () => void, run: () => Promise<unknown>) => {
     if (!online) {
-      push(itemId, kind);
+      enqueue();
       return;
     }
     void (async () => {
@@ -48,12 +49,21 @@ export function ShoppingPage() {
       try {
         await mutate(run);
       } catch {
-        push(itemId, kind);
+        enqueue();
         notify({ intent: "warning", title: "Saved for when you're back online" });
       } finally {
         setBusy(false);
       }
     })();
+  };
+
+  /** A typed line gets its id on this device, so a tick on it before it lands has something to name. */
+  const addLine = (text: string) => {
+    const id = randomUuid();
+    queued(
+      () => add(id, text),
+      () => addShoppingItems({ data: { items: [{ text }] } })
+    );
   };
 
   return (
@@ -63,9 +73,19 @@ export function ShoppingPage() {
       busy={busy}
       pending={queue.length}
       offline={!online}
-      onAdd={(text) => void write("Couldn't add the item", () => addShoppingItems({ data: { items: [{ text }] } }))}
-      onTick={(id, ticked) => queued(id, ticked ? "tick" : "untick", () => tickShoppingItem({ data: { id, ticked } }))}
-      onRemove={(id) => queued(id, "remove", () => removeShoppingItem({ data: { id } }))}
+      onAdd={addLine}
+      onTick={(id, ticked) =>
+        queued(
+          () => push(id, ticked ? "tick" : "untick"),
+          () => tickShoppingItem({ data: { id, ticked } })
+        )
+      }
+      onRemove={(id) =>
+        queued(
+          () => push(id, "remove"),
+          () => removeShoppingItem({ data: { id } })
+        )
+      }
       onClearTicked={() =>
         void write("Couldn't clear the ticked items", async () => {
           const { removed } = await clearTickedShoppingItems();

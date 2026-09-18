@@ -42,7 +42,7 @@ export function ShoppingListView({
         }
       />
 
-      <AddItemForm onAdd={onAdd} busy={busy || offline} />
+      <AddItemForm onAdd={onAdd} busy={busy} />
 
       <EmptyBoundary
         isEmpty={items.length === 0}
@@ -93,9 +93,10 @@ export type ShoppingListViewProps = {
   /** How many ticks are queued for the server. Shown in the header; 0 shows nothing. */
   pending?: number;
   /**
-   * No network: adding a line and clearing the ticked are refused (they create
-   * and destroy rows), while ticking and removing queue. The one exception to
-   * the editor's "writes are never attempted offline".
+   * No network: clearing the ticked is refused (it destroys rows the page
+   * cannot name one by one), while ticking, removing and adding a line
+   * queue. The one exception to the editor's "writes are never attempted
+   * offline".
    */
   offline?: boolean;
 };
