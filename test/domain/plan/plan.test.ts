@@ -2,9 +2,10 @@
 // write schemas accept and refuse.
 import { describe, expect, test } from "vitest";
 import { addDays, isToday, mondayOf, todayIso, weekDates, weekMonday } from "../../../src/domain/plan/dates";
-import { dayLabel, dayParts, entryLabel, servingsLabel, weekLabel } from "../../../src/domain/plan/labels";
+import { dayLabel, dayParts, entryLabel, mealLabel, servingsLabel, weekLabel } from "../../../src/domain/plan/labels";
 import {
   isoDate,
+  MEALS,
   type PlanDay,
   type PlanEntry,
   planDaySchema,
@@ -22,7 +23,7 @@ const ids = {
 };
 
 function entry(date: string, position: number, over: Partial<PlanEntry> = {}): PlanEntry {
-  return { id: ids.a, date, position, recipe: null, text: "Leftovers", servings: null, ...over };
+  return { id: ids.a, date, position, recipe: null, text: "Leftovers", servings: null, meal: null, ...over };
 }
 
 // --- Dates -------------------------------------------------------------------
@@ -109,7 +110,40 @@ test("an input defaults to a plain line with no recipe and no servings", () => {
     recipeId: null,
     text: "Leftovers",
     servings: null,
+    meal: null,
   });
+});
+
+// --- The meal (M39.1) --------------------------------------------------------
+
+test("an entry names one of three meals, or none", () => {
+  expect(MEALS).toEqual(["breakfast", "lunch", "dinner"]);
+  // Absent means none: a hand-typed line lands with no slot, as it always did.
+  expect(planEntryInputSchema.parse({ date: "2026-09-14", text: "Leftovers" }).meal).toBeNull();
+  expect(planEntryInputSchema.parse({ date: "2026-09-14", text: "Toast", meal: "breakfast" }).meal).toBe("breakfast");
+  expect(planEntryInputSchema.safeParse({ date: "2026-09-14", text: "x", meal: "side" }).success).toBe(false);
+  expect(planEntryInputSchema.safeParse({ date: "2026-09-14", text: "x", meal: "supper" }).success).toBe(false);
+  expect(planEntrySchema.parse({ id: ids.a, date: "2026-09-14", position: 0, text: "Leftovers" }).meal).toBeNull();
+});
+
+test("a patch may set a meal, clear it, or leave it alone", () => {
+  expect(planEntryPatchSchema.parse({ meal: "lunch" })).toEqual({ meal: "lunch" });
+  expect(planEntryPatchSchema.parse({ meal: null })).toEqual({ meal: null });
+  // The one that matters: a patch about something else must not wipe the meal.
+  expect(planEntryPatchSchema.parse({ servings: 2 })).toEqual({ servings: 2 });
+  expect(planEntryPatchSchema.safeParse({ meal: "side" }).success).toBe(false);
+});
+
+test.each([
+  ["breakfast", "Breakfast"],
+  ["lunch", "Lunch"],
+  ["dinner", "Dinner"],
+] as const)("mealLabel(%s) is %s", (meal, expected) => {
+  expect(mealLabel(meal)).toBe(expected);
+});
+
+test("mealLabel of no meal is null, not an empty label", () => {
+  expect(mealLabel(null)).toBeNull();
 });
 
 test("an entry needs a recipe or some text", () => {

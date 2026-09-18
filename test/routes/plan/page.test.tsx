@@ -11,6 +11,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { groupByDay, type PlanDay, type PlanEntry, planEntrySchema, weekDates } from "../../../src/domain/plan";
 import type { RecipeSummary } from "../../../src/domain/recipe";
+import { nextMeal } from "../../../src/routes/plan/components/MealPicker";
 import { PlanAddRow } from "../../../src/routes/plan/components/PlanAddRow";
 import { PlanSearchResult } from "../../../src/routes/plan/components/PlanSearchResult";
 import { PlanWeekView } from "../../../src/routes/plan/components/PlanWeekView";
@@ -126,6 +127,20 @@ describe("an entry of each kind", () => {
     expect(row).not.toContain("serves"); // the recipe's own servings stand
   });
 
+  test("an entry that names a meal says so quietly, beside the servings", async () => {
+    const html = await render(weekOf([entry(TODAY, { recipe: tart, text: tart.name, meal: "dinner", servings: 6 })]));
+    const row = elementHtml(html, "plan-entry");
+    expect(row).toContain("Dinner");
+    expect(row).toContain("serves 6");
+    // The meal comes before the servings badge, and is not a badge itself.
+    expect(row.indexOf("Dinner")).toBeLessThan(row.indexOf("serves 6"));
+  });
+
+  test("an entry with no meal draws no label at all", async () => {
+    const html = await render(weekOf([entry(TODAY, { text: "Leftovers" })]));
+    expect(elementHtml(html, "plan-entry")).not.toContain("plan-entry-meal");
+  });
+
   test("a recipe entry with its own servings says so", async () => {
     const html = await render(weekOf([entry(TODAY, { recipe: tart, text: tart.name, servings: 6 })]));
     expect(elementHtml(html, "plan-entry")).toContain("serves 6");
@@ -180,6 +195,26 @@ describe("the add row", () => {
     expect(html).toContain('placeholder="Add a recipe"');
     // Nothing typed, so no results list yet.
     expect(html).not.toContain('role="listbox"');
+  });
+
+  test("the picker is three small chips, none of them pressed", () => {
+    const html = renderToString(<PlanAddRow date={MONDAY} onAddText={noop} onAddRecipe={noop} />);
+    const picker = elementHtml(html, "plan-meal-picker");
+    expect(picker).toContain("Breakfast");
+    expect(picker).toContain("Lunch");
+    expect(picker).toContain("Dinner");
+    expect(picker).toContain('aria-label="Meal for Mon 14 Sep"');
+    // Naming a meal is optional, so nothing is chosen until something is pressed.
+    expect(picker.match(/aria-pressed="false"/g)).toHaveLength(3);
+    expect(picker).not.toContain('aria-pressed="true"');
+  });
+
+  test("nextMeal takes the chip just pressed, and none when the pressed one is pressed again", () => {
+    expect(nextMeal(null, ["lunch"])).toBe("lunch");
+    expect(nextMeal("lunch", [])).toBeNull();
+    expect(nextMeal("lunch", ["lunch", "dinner"])).toBe("dinner");
+    expect(nextMeal("lunch", ["lunch"])).toBeNull();
+    expect(nextMeal(null, ["side"])).toBeNull();
   });
 
   test("a result is the recipe's picture and name, and not a link — it is picked, not opened", () => {

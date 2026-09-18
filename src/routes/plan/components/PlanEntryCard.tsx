@@ -1,14 +1,17 @@
 import { Badge } from "@sixthshift/design-system/badge";
+import { Caption } from "@sixthshift/design-system/caption";
 import { Link } from "@tanstack/react-router";
 import { Menu } from "../../../components/ui/Menu";
-import { dayLabel, entryLabel, type PlanDay, type PlanEntry, servingsLabel } from "../../../domain/plan";
+import { dayLabel, entryLabel, mealLabel, type PlanDay, type PlanEntry, servingsLabel } from "../../../domain/plan";
 import { recipeImageUrl } from "../../../lib/images";
 import { EntryImage } from "./EntryImage";
 
 /**
  * One entry: the recipe's picture and name (a link to it) or the plain line,
- * its servings when they differ from the recipe's own, and the row menu that
- * moves it to another day or takes it off the plan.
+ * its meal and its servings when it names them, and the row menu that moves it
+ * to another day or takes it off the plan. The meal is a caption rather than a
+ * second badge: most entries have none, and the ones that do are labelled, not
+ * slotted (decisions.md row 100).
  */
 export function PlanEntryCard({
   entry,
@@ -25,6 +28,7 @@ export function PlanEntryCard({
 }) {
   const label = entryLabel(entry);
   const serves = servingsLabel(entry.servings);
+  const meal = mealLabel(entry.meal);
   return (
     <div className="flex items-center gap-2 rounded-md p-1 hover:bg-bg-subtle" data-testid="plan-entry" data-kind={entry.recipe === null ? "text" : "recipe"}>
       {entry.recipe === null ? (
@@ -34,6 +38,11 @@ export function PlanEntryCard({
           <EntryImage src={recipeImageUrl(entry.recipe.image)} />
           <span className="min-w-0 flex-1 truncate text-sm">{label}</span>
         </Link>
+      )}
+      {meal !== null && (
+        <Caption className="shrink-0" data-testid="plan-entry-meal">
+          {meal}
+        </Caption>
       )}
       {serves !== "" && (
         <Badge variant="soft" intent="muted" className="shrink-0">

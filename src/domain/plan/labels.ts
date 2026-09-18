@@ -1,5 +1,5 @@
 import { addDays, utc } from "./dates";
-import type { PlanEntry } from "./schema";
+import type { Meal, PlanEntry } from "./schema";
 
 // Written out rather than `Intl`: these strings name a calendar day with no zone, and ICU's short month names shift between builds ("Sep" vs "Sept" in en-AU).
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
@@ -45,6 +45,17 @@ export function weekLabel(monday: string): string {
 export function entryLabel(entry: Pick<PlanEntry, "recipe" | "text">): string {
   const name = entry.recipe?.name ?? "";
   return name !== "" ? name : entry.text;
+}
+
+const MEAL_LABELS: Record<Meal, string> = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner" };
+
+/**
+ * What a meal reads as beside an entry, or null when the entry names none —
+ * null rather than "", so a caller has to decide what to draw for an untyped
+ * entry rather than rendering an empty label by accident.
+ */
+export function mealLabel(meal: Meal | null): string | null {
+  return meal === null ? null : MEAL_LABELS[meal];
 }
 
 /** "serves 4" under an entry, or nothing when the recipe's own servings stand. */

@@ -22,6 +22,15 @@ const text = z.string().default("");
 const servings = z.number().positive().nullable().default(null);
 
 /**
+ * The three meals an entry may name, Mealie's `entry_type` minus `side`: a
+ * side or a snack is an untyped entry (decisions.md row 100). NULL is the
+ * normal case — a day holds what it holds — and the meal is what stage 14's
+ * proposal needs so a slot can be a fact rather than a guess.
+ */
+export const MEALS = ["breakfast", "lunch", "dinner"] as const;
+export const mealSchema = z.enum(MEALS).nullable().default(null);
+
+/**
  * What a planned recipe shows on the week: its name, its picture and the slug
  * to open it. Not the full `recipeSummarySchema` — the plan does not draw
  * ratings, times or tags, and a week of days should not cost a week of tag
@@ -42,6 +51,7 @@ export const planEntrySchema = z.object({
   recipe: planRecipeSchema.nullable().default(null),
   text, // the whole entry when there is no recipe; '' on a recipe entry
   servings, // null: the recipe's own servings
+  meal: mealSchema, // null: an entry with no slot, which is most of them
 });
 
 /** One day of the week, entries in position order. Empty is a normal day. */
@@ -61,6 +71,7 @@ export const planEntryInputSchema = z
     recipeId: id.nullable().default(null),
     text,
     servings,
+    meal: mealSchema,
   })
   .refine((entry) => entry.recipeId !== null || entry.text.trim() !== "", {
     message: "an entry needs a recipe or some text",
@@ -71,10 +82,14 @@ export const planEntryPatchSchema = z.object({
   recipeId: id.nullable().optional(),
   text: z.string().optional(),
   servings: z.number().positive().nullable().optional(),
+  // Optional rather than defaulted, as every other field in a patch is:
+  // absent leaves the meal alone, `null` clears it.
+  meal: z.enum(MEALS).nullable().optional(),
 });
 
 // --- Types ------------------------------------------------------------------
 
+export type Meal = (typeof MEALS)[number];
 export type PlanRecipe = z.infer<typeof planRecipeSchema>;
 export type PlanEntry = z.infer<typeof planEntrySchema>;
 export type PlanDay = z.infer<typeof planDaySchema>;

@@ -66,6 +66,30 @@ test("a plain line round-trips with no recipe", () => {
   expect(labels()).toEqual([["Leftovers"], [], [], [], [], [], []]);
 });
 
+test("an entry carries its meal, or none, and the order is still position (M39.1)", () => {
+  const breakfast = repo.add(parse({ date: MONDAY, text: "Porridge", meal: "breakfast" }));
+  const untyped = repo.add(parse({ date: MONDAY, text: "Leftovers" }));
+
+  expect(breakfast.meal).toBe("breakfast");
+  expect(planEntrySchema.safeParse(breakfast).success).toBe(true);
+  // An entry with no chip pressed is what a hand-typed line has always been.
+  expect(untyped.meal).toBeNull();
+  expect(repo.get(breakfast.id)).toEqual(breakfast);
+  expect(repo.week(MONDAY)[0]!.entries).toEqual([breakfast, untyped]);
+  // The meal labels; it does not sort. Both entries sit in the order they were added.
+  expect(repo.week(MONDAY)[0]!.entries.map((e) => e.position)).toEqual([0, 1]);
+
+  // The patch sets it, clears it, and is left out without disturbing it.
+  expect(repo.update(untyped.id, { meal: "dinner" })).toMatchObject({ meal: "dinner", text: "Leftovers" });
+  expect(repo.update(untyped.id, { servings: 2 })).toMatchObject({ meal: "dinner" });
+  expect(repo.update(untyped.id, { meal: null })).toMatchObject({ meal: null });
+});
+
+test("the meal column refuses anything but the three meals", () => {
+  const entry = repo.add(parse({ date: MONDAY, text: "Snack" }));
+  expect(() => db.query("UPDATE meal_plan_entry SET meal = 'side' WHERE id = ?").run(entry.id)).toThrow();
+});
+
 test("entries append to the end of their own day, each day numbered from zero", () => {
   repo.add(parse({ date: MONDAY, text: "One" }));
   repo.add(parse({ date: TUESDAY, text: "Two" }));

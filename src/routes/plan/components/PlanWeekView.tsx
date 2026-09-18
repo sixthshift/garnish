@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Page, PageHeader } from "../../../components/shell/Page";
-import { addDays, type PlanDay, type PlanEntry, todayIso, weekLabel } from "../../../domain/plan";
+import { addDays, type Meal, type PlanDay, type PlanEntry, todayIso, weekLabel } from "../../../domain/plan";
 import type { RecipeSummary } from "../../../domain/recipe";
 import { AddWeekToShoppingButton } from "./AddWeekToShoppingButton";
 import { PlanDayRow } from "./PlanDayRow";
@@ -10,10 +10,10 @@ export type PlanWeekViewProps = {
   days: readonly PlanDay[];
   /** Today's date, injected so a render test does not move with the clock. */
   today?: string;
-  /** A plain line was typed and Enter pressed on text that matched nothing. */
-  onAddText: (date: string, text: string) => void;
-  /** A recipe was picked from the add row's results. */
-  onAddRecipe: (date: string, recipe: RecipeSummary) => void;
+  /** A plain line was typed and Enter pressed on text that matched nothing. `meal` is null unless a chip was pressed. */
+  onAddText: (date: string, text: string, meal: Meal | null) => void;
+  /** A recipe was picked from the add row's results, with the chip pressed at the time. */
+  onAddRecipe: (date: string, recipe: RecipeSummary, meal: Meal | null) => void;
   /** An entry was dragged, or moved from its row menu, to `date` at `position`. */
   onMove: (entry: PlanEntry, date: string, position: number) => void;
   onRemove: (entry: PlanEntry) => void;

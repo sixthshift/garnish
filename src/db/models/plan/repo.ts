@@ -32,6 +32,7 @@ export function planRepository(db: Database) {
       recipe: (row.recipeId && recipes.get(row.recipeId)) || null,
       text: row.text,
       servings: row.servings,
+      meal: row.meal,
     }));
   }
 
@@ -91,6 +92,7 @@ export function planRepository(db: Database) {
           recipeId: input.recipeId,
           text: input.text,
           servings: input.servings,
+          meal: input.meal,
         })
         .run();
       return get(id)!;

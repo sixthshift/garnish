@@ -433,8 +433,8 @@ test("meal_plan_entry holds a recipe or a plain line on a calendar day", () => {
   db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES (?, ?, ?, ?)", ["mp-2", "2026-09-14", 1, "Leftovers"]);
 
   expect(db.query<Record<string, unknown>, []>("SELECT * FROM meal_plan_entry ORDER BY position").all()).toEqual([
-    { id: "mp-1", date: "2026-09-14", position: 0, recipe_id: ids.recipe, text: "", servings: 6 },
-    { id: "mp-2", date: "2026-09-14", position: 1, recipe_id: null, text: "Leftovers", servings: null },
+    { id: "mp-1", date: "2026-09-14", position: 0, recipe_id: ids.recipe, text: "", servings: 6, meal: null },
+    { id: "mp-2", date: "2026-09-14", position: 1, recipe_id: null, text: "Leftovers", servings: null, meal: null },
   ]);
 
   // Two entries may share a day and a position: a move rewrites a day in one
@@ -443,6 +443,10 @@ test("meal_plan_entry holds a recipe or a plain line on a calendar day", () => {
   expect(count("meal_plan_entry")).toBe(3);
 
   expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES ('mp-4', '14 Sep 2026', 0, 'x')")).toThrow(/CHECK/);
+
+  // 012_planner: the meal is one of three, or nothing at all.
+  db.run("INSERT INTO meal_plan_entry (id, date, position, text, meal) VALUES ('mp-5', '2026-09-14', 2, 'Porridge', 'breakfast')");
+  expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, text, meal) VALUES ('mp-6', '2026-09-14', 3, 'Chips', 'side')")).toThrow(/CHECK/);
   expect(() => db.run("INSERT INTO meal_plan_entry (id, position, text) VALUES ('mp-5', 0, 'x')")).toThrow(/NOT NULL/);
   expect(() => db.run("INSERT INTO meal_plan_entry (id, date, text) VALUES ('mp-6', '2026-09-14', 'x')")).toThrow(/NOT NULL/);
   expect(() => db.run("INSERT INTO meal_plan_entry (id, date, position, recipe_id) VALUES ('mp-7', '2026-09-14', 0, 'missing')")).toThrow(/FOREIGN KEY/);
