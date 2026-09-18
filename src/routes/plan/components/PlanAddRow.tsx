@@ -100,7 +100,7 @@ export function PlanAddRow({
     <div className="flex min-w-0 max-w-sm flex-col gap-1" data-testid="plan-add">
       <SearchInput
         value={query}
-        onChange={setQuery}
+        onValueChange={setQuery}
         onKeyDown={onKeyDown}
         disabled={busy}
         name="entry"

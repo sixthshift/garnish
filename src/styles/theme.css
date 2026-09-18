@@ -1,7 +1,7 @@
 /**
  * Garnish theme — the app's re-skin of @sixthshift/design-system.
  *
- * Imported from `src/styles.css` *after* `@sixthshift/design-system/theme.css`,
+ * Imported from `src/styles.css` *after* `@sixthshift/design-system/themes/linen.css`,
  * and deliberately **unlayered**: the cascade compares layers before
  * specificity, so unlayered author CSS outranks the library's layered rules
  * without an `!important`. Never wrap anything here in `@layer`.
@@ -18,9 +18,11 @@
  *                        collide visually, re-point --bg-success* at a new scale.
  *   warning   topaz, danger ruby — unchanged.
  *
- * The palette tier is untouched: no new hues, so every value below points at a
- * scale the library already ships. Mode selectors mirror the library's own, so
- * the `data-theme` toggle keeps working unchanged.
+ * The palette tier: the library's Linen theme (0.6.0) ships its own warm
+ * scales (sand, blue, green) and no longer carries emerald or earth, so the
+ * two scales garnish's semantic tokens point at are declared here, with the
+ * values the library shipped up to 0.5.0. Mode selectors mirror the
+ * library's own, so the `data-theme` toggle keeps working unchanged.
  */
 
 /* The three faces the tokens below name. Loaded here rather than from the app
@@ -60,6 +62,38 @@ h3 {
   font-family: var(--font-display);
   font-optical-sizing: auto;
   letter-spacing: -0.01em;
+}
+
+/* =============================================================================
+   PALETTE — the two scales the semantic tokens below name
+   ============================================================================= */
+
+:root {
+  /* emerald: the herb green, brand and success */
+  --color-emerald-50: #f2fafb;
+  --color-emerald-100: #d6eef0;
+  --color-emerald-200: #addde0;
+  --color-emerald-300: #7cc4c8;
+  --color-emerald-400: #4ba5a9;
+  --color-emerald-500: #368086;
+  --color-emerald-600: #2c666c;
+  --color-emerald-700: #234e53;
+  --color-emerald-800: #19393d;
+  --color-emerald-900: #11292c;
+  --color-emerald-950: #0a1a1d;
+
+  /* earth: warm paper, the neutrals */
+  --color-earth-50: #fefcfb;
+  --color-earth-100: #faf6f4;
+  --color-earth-200: #f2ebe7;
+  --color-earth-300: #e8ddd6;
+  --color-earth-400: #d4c4b9;
+  --color-earth-500: #b8a192;
+  --color-earth-600: #9a816f;
+  --color-earth-700: #7d6555;
+  --color-earth-800: #5e4b40;
+  --color-earth-900: #3d302a;
+  --color-earth-950: #211916;
 }
 
 /* =============================================================================

@@ -38,7 +38,7 @@ export function GlobalSearchContent({ query, onQueryChange, results, loading = f
           <SearchInput
             autoFocus
             value={query}
-            onChange={onQueryChange}
+            onValueChange={onQueryChange}
             onKeyDown={onKeyDown}
             placeholder="Search recipes"
             aria-label="Search recipes"

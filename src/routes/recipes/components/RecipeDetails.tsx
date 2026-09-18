@@ -99,7 +99,7 @@ export function RecipeDetails({ draft, errors, saving, units, knownTags, default
           id={tagsId}
           value={draft.tags.map((tag) => tag.name)}
           placeholder="Add a tag and press Enter"
-          onChange={(names) => onPatch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
+          onValueChange={(names) => onPatch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
         />
       </div>
 

@@ -62,7 +62,7 @@ export function RecipesPage() {
             void navigate({ search: (prev) => ({ ...prev, q: searchParam(query) }) });
           }}
         >
-          <SearchInput value={query} onChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
+          <SearchInput value={query} onValueChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
         </form>
       </search>
       <FilterBar

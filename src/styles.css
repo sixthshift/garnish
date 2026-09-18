@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@sixthshift/design-system/theme.css";
+@import "@sixthshift/design-system/themes/linen.css";
 @source "../node_modules/@sixthshift/design-system";
 
 /* Garnish's own theme: re-points the design system's semantic tokens. Must come

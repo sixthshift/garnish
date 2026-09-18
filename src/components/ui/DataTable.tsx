@@ -68,7 +68,7 @@ export function DataTable<T>({
         <SearchInput
           className="min-w-40 flex-1"
           value={query}
-          onChange={(next) => setQuery(next)}
+          onValueChange={(next) => setQuery(next)}
           placeholder={`Search ${plural}`}
           aria-label={`Search ${plural}`}
           clearLabel="Clear search"
