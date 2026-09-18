@@ -125,7 +125,9 @@ describe("ErrorView and AppErrorFallback", () => {
 
   test("the app-wide fallback paints its own background so a shell-less page is not transparent", () => {
     const html = renderToString(<AppErrorFallback error={new Error("shell broke")} reset={() => {}} />);
-    expect(html).toContain("bg-bg-normal");
+    // The base surface, the same tone the shell paints: the fallback stands in
+    // for the whole page, so it is the page's background it has to supply.
+    expect(html).toContain("bg-bg-subtle");
     expect(html).toContain("shell broke");
     expect(html).toContain("Retry");
   });

@@ -1,4 +1,5 @@
 import { Button } from "@sixthshift/design-system/button";
+import { Card } from "@sixthshift/design-system/card";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
@@ -85,7 +86,7 @@ export function DataTable<T>({
         {selectedItems.length > 0 ? `, ${selectedItems.length} selected` : ""}
       </Muted>
 
-      <div className="overflow-x-auto">
+      <Card size="sm" className="min-w-0 overflow-x-auto p-0">
         <table className="w-full border-collapse text-left text-sm">
           <caption className="sr-only">{plural}</caption>
           <thead>
@@ -105,7 +106,7 @@ export function DataTable<T>({
                   <th
                     key={column.key}
                     scope="col"
-                    className={cn("p-2 font-medium", column.className)}
+                    className={cn("p-2 font-medium", column.secondary && "hidden md:table-cell", column.className)}
                     aria-sort={sorted === null ? "none" : sorted === "asc" ? "ascending" : "descending"}
                   >
                     {column.sortable === false ? (
@@ -147,7 +148,7 @@ export function DataTable<T>({
                     </td>
                   )}
                   {columns.map((column) => (
-                    <td key={column.key} className={cn("p-2", column.className)}>
+                    <td key={column.key} className={cn("p-2", column.secondary && "hidden md:table-cell", column.className)}>
                       {column.render ? column.render(item) : cellText(column.value(item))}
                     </td>
                   ))}
@@ -170,7 +171,7 @@ export function DataTable<T>({
             )}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

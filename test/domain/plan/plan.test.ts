@@ -2,7 +2,7 @@
 // write schemas accept and refuse.
 import { describe, expect, test } from "vitest";
 import { addDays, isToday, mondayOf, todayIso, weekDates, weekMonday } from "../../../src/domain/plan/dates";
-import { dayLabel, entryLabel, servingsLabel, weekLabel } from "../../../src/domain/plan/labels";
+import { dayLabel, dayParts, entryLabel, servingsLabel, weekLabel } from "../../../src/domain/plan/labels";
 import {
   isoDate,
   type PlanDay,
@@ -140,6 +140,15 @@ test.each([
   ["2027-01-01", "Fri 1 Jan"],
 ])("dayLabel(%s) is %s", (date, expected) => {
   expect(dayLabel(date)).toBe(expected);
+});
+
+// The plan's date rail stacks the two, so they have to be the two pieces the
+// whole label is made of — a rail reading "Mon" over "14 September" would be a
+// second answer to what a day is called.
+test("dayParts splits the same label the rail stacks", () => {
+  expect(dayParts("2026-09-14")).toEqual({ weekday: "Mon", day: "14 Sep" });
+  const parts = dayParts("2027-01-01");
+  expect(`${parts.weekday} ${parts.day}`).toBe(dayLabel("2027-01-01"));
 });
 
 test.each([

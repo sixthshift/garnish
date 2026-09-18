@@ -89,14 +89,14 @@ export function PlanAddRow({
   };
 
   return (
-    <div className="flex flex-col gap-1" data-testid="plan-add">
+    <div className="flex min-w-0 max-w-sm flex-col gap-1" data-testid="plan-add">
       <SearchInput
         value={query}
         onChange={setQuery}
         onKeyDown={onKeyDown}
         disabled={busy}
         name="entry"
-        placeholder="Add a recipe or a line"
+        placeholder="Add a recipe"
         aria-label={`Add to ${dayLabel(date)}`}
         enterKeyHint="done"
       />

@@ -1,5 +1,5 @@
-import { Heading } from "@sixthshift/design-system/heading";
 import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
+import { Page, PageHeader } from "../../components/shell/Page";
 import { Appearance } from "./components/Appearance";
 import { ExportTab } from "./components/tabs/ExportTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
@@ -17,12 +17,12 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 md:p-6">
-      <Heading as="h1">Settings</Heading>
+    <Page>
+      <PageHeader title="Settings" />
       <Tabs items={items} defaultValue="library">
-        <Tabs.List />
+        <Tabs.List className="max-w-full flex-wrap" />
         <Tabs.Panels />
       </Tabs>
-    </div>
+    </Page>
   );
 }

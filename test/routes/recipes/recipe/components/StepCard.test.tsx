@@ -90,10 +90,14 @@ describe("StepCard", () => {
       <StepCard recipeId={RECIPE_ID} step={step("Beat the **eggs** into the flour", [eggs.id, flour.id])} position={1} ingredients={part} />
     );
     expect(html).toContain('data-testid="step-card"');
-    // A quiet card: a border, no shadow of its own (the checkbox brings one).
+    // The design system's card surface, borrowed from `cardVariants` rather
+    // than restated: a step is an `<li>`, so it cannot be a `Card`, but it is
+    // the same surface as every other card on the page — tone and shadow
+    // together, which is what lifts it off the base background.
     const card = html.slice(0, html.indexOf(">"));
-    expect(card).toContain("rounded-xl border border-border-normal");
-    expect(card).not.toContain("shadow");
+    expect(card).toContain("card");
+    expect(card).toContain("bg-(--card-bg)");
+    expect(card).toContain("rounded-xl p-4");
     expect(html).toContain('aria-label="Ingredients for this step"');
     expect((html.match(/data-testid="ingredient-row"/g) ?? []).length).toBe(2);
     expect(html).toContain("2 eggs");

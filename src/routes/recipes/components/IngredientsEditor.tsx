@@ -1,7 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
+import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Message } from "@sixthshift/design-system/message";
-import { Muted } from "@sixthshift/design-system/muted";
 import { useEffect, useState } from "react";
 import { BulkAddSheet } from "../../../components/ui/bulk/BulkAddSheet";
 import { BulkInlineAdd } from "../../../components/ui/bulk/BulkInlineAdd";
@@ -22,6 +22,7 @@ import {
 import type { FoodRow, Unit } from "../../../domain/reference";
 import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
 import { listFoods } from "../../../server/fns/foods";
+import { EditorSectionHeader } from "./EditorSectionHeader";
 import { IngredientEditRow } from "./IngredientEditRow";
 import { confirmReviewedIngredients, ingredientReview } from "./ingredientReview";
 import { ParseAllSheet } from "./ParseAllSheet";
@@ -96,19 +97,20 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
 
   return (
     <div className="flex flex-col gap-2" data-ingredients={pi}>
-      <div className="flex items-center justify-between gap-3">
-        <Muted as="span" className="text-xs font-medium uppercase tracking-wide">
-          Ingredients
-        </Muted>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
-            Bulk add
-          </Button>
-          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addIngredient(draft, pi))}>
-            Add ingredient
-          </Button>
-        </div>
-      </div>
+      <EditorSectionHeader
+        actions={
+          <>
+            <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => setBulkOpen(true)}>
+              Bulk add
+            </Button>
+            <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={() => onChange(addIngredient(draft, pi))}>
+              Add ingredient
+            </Button>
+          </>
+        }
+      >
+        Ingredients
+      </EditorSectionHeader>
       {needsParseAll(part) && (
         <Message intent="info" title="Nothing here is parsed" data-testid="parse-all-banner">
           <div className="flex flex-col gap-2">
@@ -123,36 +125,38 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
       )}
       <ParseAllSheet open={parseAllOpen} onOpenChange={setParseAllOpen} draft={draft} pi={pi} units={units} disabled={disabled} onChange={onChange} />
       <BulkAddSheet<IngredientReview> open={bulkOpen} onOpenChange={setBulkOpen} itemName="ingredient" disabled={disabled} review={review} />
-      <EmptyBoundary
-        isEmpty={ingredients.length === 0}
-        fallback={<BulkInlineAdd<IngredientReview> itemName="ingredient" review={review} disabled={disabled} />}
-      >
-        <ReorderList
-          items={ingredients}
-          keyOf={(row) => row.id ?? "unsaved"}
-          itemName="ingredient"
-          group={INGREDIENT_DRAG_GROUP}
-          listKey={String(pi)}
-          onMoveOut={(_, ii, toPi, toIndex) => onChange(moveIngredientTo(draft, pi, ii, Number(toPi), toIndex))}
-          onReorder={(next) => onChange(withIngredients(draft, pi, next))}
-          onRemove={(_, ii) => onChange(removeIngredient(draft, pi, ii))}
-          renderItem={(row, ii) => (
-            <IngredientEditRow
-              key={row.id ?? ii}
-              ingredient={row}
-              pi={pi}
-              ii={ii}
-              units={units}
-              onEnter={() => enterOnRow(ii)}
-              parts={draft.parts.map((c, i) => ({ value: String(i), label: partLabel(c, i) })).filter((_, i) => i !== pi)}
-              errors={errors}
-              disabled={disabled}
-              onPatch={(patch) => onChange(updateIngredient(draft, pi, ii, patch))}
-              onMove={(toPi) => onChange(moveIngredient(draft, pi, ii, toPi))}
-            />
-          )}
-        />
-      </EmptyBoundary>
+      <Card size="sm">
+        <EmptyBoundary
+          isEmpty={ingredients.length === 0}
+          fallback={<BulkInlineAdd<IngredientReview> itemName="ingredient" review={review} disabled={disabled} />}
+        >
+          <ReorderList
+            items={ingredients}
+            keyOf={(row) => row.id ?? "unsaved"}
+            itemName="ingredient"
+            group={INGREDIENT_DRAG_GROUP}
+            listKey={String(pi)}
+            onMoveOut={(_, ii, toPi, toIndex) => onChange(moveIngredientTo(draft, pi, ii, Number(toPi), toIndex))}
+            onReorder={(next) => onChange(withIngredients(draft, pi, next))}
+            onRemove={(_, ii) => onChange(removeIngredient(draft, pi, ii))}
+            renderItem={(row, ii) => (
+              <IngredientEditRow
+                key={row.id ?? ii}
+                ingredient={row}
+                pi={pi}
+                ii={ii}
+                units={units}
+                onEnter={() => enterOnRow(ii)}
+                parts={draft.parts.map((c, i) => ({ value: String(i), label: partLabel(c, i) })).filter((_, i) => i !== pi)}
+                errors={errors}
+                disabled={disabled}
+                onPatch={(patch) => onChange(updateIngredient(draft, pi, ii, patch))}
+                onMove={(toPi) => onChange(moveIngredient(draft, pi, ii, toPi))}
+              />
+            )}
+          />
+        </EmptyBoundary>
+      </Card>
     </div>
   );
 }

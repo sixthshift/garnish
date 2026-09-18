@@ -3,6 +3,7 @@ import { Card } from "@sixthshift/design-system/card";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Link } from "@tanstack/react-router";
 import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
+import { Page } from "../../../components/shell/Page";
 import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingButton";
 import { PencilIcon } from "../../../components/ui/icons";
 import { mergeIngredients, scaledForServings } from "../../../domain/recipe";
@@ -60,7 +61,7 @@ export function RecipePage() {
   return (
     <QuickEditProvider recipe={stored}>
       <SubRecipesProvider subRecipes={subRecipes}>
-        <article className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6">
+        <Page as="article">
           <RecipeHeader
             recipe={recipe}
             madeCount={timeline.length}
@@ -114,7 +115,7 @@ export function RecipePage() {
             <aside
               data-testid="ingredients-column"
               data-print="keep"
-              className="flex flex-col gap-6 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
+              className="flex flex-col gap-4 md:sticky md:top-6 md:max-h-[calc(100dvh-3rem)] md:overflow-y-auto"
             >
               {/* The aside's own heading, as Mealie's ingredient list header has both the title and the servings stepper together. */}
               <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
@@ -138,9 +139,13 @@ export function RecipePage() {
                 </div>
               )}
 
-              {summary && hasIngredients && <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />}
+              {hasIngredients && (
+                <Card size="lg" className="flex flex-col gap-6">
+                  {summary && <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />}
 
-              {!summary && recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
+                  {!summary && recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
+                </Card>
+              )}
             </aside>
 
             <div className="flex max-w-prose flex-col gap-6 md:col-span-2" data-testid="method-column">
@@ -162,7 +167,7 @@ export function RecipePage() {
           <TimelineList events={timeline} />
 
           <RecipeMetaFooter recipe={recipe} />
-        </article>
+        </Page>
       </SubRecipesProvider>
     </QuickEditProvider>
   );

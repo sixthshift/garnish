@@ -57,7 +57,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
 /** Fallback for the design system `ErrorBoundary` around the whole shell. */
 export function AppErrorFallback({ error, reset }: ErrorFallbackProps) {
   return (
-    <div className="min-h-dvh bg-bg-normal text-fg-normal">
+    <div className="min-h-dvh bg-bg-subtle text-fg-normal">
       <ErrorView error={error} reset={reset} />
     </div>
   );

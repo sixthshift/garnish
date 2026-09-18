@@ -1,5 +1,5 @@
-import { Heading } from "@sixthshift/design-system/heading";
 import { useState } from "react";
+import { Page, PageHeader } from "../../../components/shell/Page";
 import { emptyDraft, type RecipeDraft } from "../../../domain/draft";
 import { recipeByName, recipeBySource } from "../../../server/fns/recipes";
 import { RecipeForm } from "../components/RecipeForm";
@@ -22,6 +22,7 @@ export function NewRecipePage() {
   if (imported !== null || source === "manual") {
     return (
       <Page>
+        <PageHeader title="New recipe" />
         <RecipeForm
           initial={imported?.draft ?? blank}
           units={units}
@@ -39,7 +40,8 @@ export function NewRecipePage() {
   }
 
   return (
-    <Page>
+    <Page width="focus">
+      <PageHeader title="New recipe" />
       <RecipeSource
         units={units}
         tags={tags}
@@ -75,13 +77,4 @@ async function findDuplicateByName(name: string): Promise<{ name: string; slug: 
   } catch {
     return null;
   }
-}
-
-function Page({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 md:p-6">
-      <Heading as="h1">New recipe</Heading>
-      {children}
-    </div>
-  );
 }

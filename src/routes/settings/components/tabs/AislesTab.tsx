@@ -1,4 +1,5 @@
 import { Button } from "@sixthshift/design-system/button";
+import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
@@ -64,25 +65,27 @@ export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
       {order.length === 0 ? (
         <Muted as="p">No aisles yet.</Muted>
       ) : (
-        <ReorderList
-          items={order}
-          keyOf={(aisle) => aisle.id}
-          itemName="aisle"
-          onReorder={(next) => void persistOrder(next)}
-          renderItem={(aisle) => (
-            <div className="flex items-center justify-between gap-2 rounded-md border border-border-normal px-3 py-2">
-              <span>{aisle.name}</span>
-              <div className="flex shrink-0 gap-1">
-                <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setEditing(aisle)}>
-                  Rename
-                </Button>
-                <Button type="button" variant="ghost" intent="danger" size="sm" onClick={() => setDeleting(aisle)}>
-                  Delete
-                </Button>
+        <Card size="sm">
+          <ReorderList
+            items={order}
+            keyOf={(aisle) => aisle.id}
+            itemName="aisle"
+            onReorder={(next) => void persistOrder(next)}
+            renderItem={(aisle) => (
+              <div className="flex items-center justify-between gap-2 rounded-md px-3 py-2 hover:bg-bg-subtle">
+                <span>{aisle.name}</span>
+                <div className="flex shrink-0 gap-1">
+                  <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setEditing(aisle)}>
+                    Rename
+                  </Button>
+                  <Button type="button" variant="ghost" intent="danger" size="sm" onClick={() => setDeleting(aisle)}>
+                    Delete
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        />
+            )}
+          />
+        </Card>
       )}
       {editing && (
         <EditSheet

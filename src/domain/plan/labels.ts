@@ -5,10 +5,20 @@ import type { PlanEntry } from "./schema";
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
-/** A day's column heading: "Mon 14 Sep". */
+/** A day's whole name: "Mon 14 Sep". What a menu, an aria-label or a shopping part is given. */
 export function dayLabel(date: string): string {
+  const parts = dayParts(date);
+  return `${parts.weekday} ${parts.day}`;
+}
+
+/**
+ * The same name in the two lines the plan's date rail stacks: "Mon" over
+ * "14 Sep". Split here rather than in the component so nothing outside this
+ * file takes a label apart again.
+ */
+export function dayParts(date: string): { weekday: string; day: string } {
   const at = utc(date);
-  return `${WEEKDAYS[at.getUTCDay()]} ${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}`;
+  return { weekday: WEEKDAYS[at.getUTCDay()] ?? "", day: `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}` };
 }
 
 /**

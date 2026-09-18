@@ -1,9 +1,9 @@
 import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
-import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { Page, PageHeader } from "../../../components/shell/Page";
 import type { Aisle } from "../../../domain/reference";
 import { groupByAisle, type ShoppingItem } from "../../../domain/shopping";
 import { pendingLabel } from "../../../lib/outbox";
@@ -27,18 +27,20 @@ export function ShoppingListView({
   const groups = groupByAisle(items);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 md:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <Heading as="h1">Shopping</Heading>
-        <div className="flex items-center gap-2">
-          {pending > 0 && (
-            <Badge intent="warning" data-testid="shopping-pending">
-              {pendingLabel(pending)}
-            </Badge>
-          )}
-          {items.length > 0 && <Muted as="p">{toBuyLabel(items)}</Muted>}
-        </div>
-      </div>
+    <Page width="focus">
+      <PageHeader
+        title="Shopping"
+        actions={
+          <>
+            {pending > 0 && (
+              <Badge intent="warning" data-testid="shopping-pending">
+                {pendingLabel(pending)}
+              </Badge>
+            )}
+            {items.length > 0 && <Muted as="p">{toBuyLabel(items)}</Muted>}
+          </>
+        }
+      />
 
       <AddItemForm onAdd={onAdd} busy={busy || offline} />
 
@@ -71,7 +73,7 @@ export function ShoppingListView({
           ))}
         </div>
       </EmptyBoundary>
-    </div>
+    </Page>
   );
 }
 

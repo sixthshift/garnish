@@ -1,3 +1,4 @@
+import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { useState } from "react";
 import { BulkAddSheet } from "../../../components/ui/bulk/BulkAddSheet";
@@ -103,50 +104,52 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
         disabled={disabled}
         onAdd={(lines) => onChange(addBulkSteps(draft, pi, lines))}
       />
-      <EmptyBoundary
-        isEmpty={steps.length === 0}
-        fallback={
-          <BulkInlineAdd
+      <Card size="sm">
+        <EmptyBoundary
+          isEmpty={steps.length === 0}
+          fallback={
+            <BulkInlineAdd
+              itemName="step"
+              disabled={disabled}
+              placeholder="The method, a blank line between steps"
+              splitLines={paragraphs}
+              onAdd={(lines) => onChange(addBulkSteps(draft, pi, lines))}
+            />
+          }
+        >
+          <ReorderList
+            items={steps}
+            keyOf={(step) => step.id ?? "unsaved"}
             itemName="step"
-            disabled={disabled}
-            placeholder="The method, a blank line between steps"
-            splitLines={paragraphs}
-            onAdd={(lines) => onChange(addBulkSteps(draft, pi, lines))}
+            onReorder={(next) => onChange(withSteps(draft, pi, next))}
+            renderItem={(step, si) => {
+              const id = step.id ?? "";
+              return (
+                <StepEditRow
+                  draft={draft}
+                  pi={pi}
+                  si={si}
+                  step={step}
+                  part={part}
+                  path={path}
+                  last={si === last}
+                  error={errors[`${path}.${si}.text`]}
+                  preview={previewing.has(id)}
+                  pickerText={picker[id] ?? ""}
+                  disabled={disabled}
+                  onChange={onChange}
+                  onTogglePreview={() => togglePreview(id)}
+                  onPickerText={(text) => setPicker((current) => ({ ...current, [id]: text }))}
+                  onEnter={() => enterOnStep(si)}
+                  onAddImage={(file) => {
+                    if (step.id !== undefined) void addImage(si, step.id, file);
+                  }}
+                />
+              );
+            }}
           />
-        }
-      >
-        <ReorderList
-          items={steps}
-          keyOf={(step) => step.id ?? "unsaved"}
-          itemName="step"
-          onReorder={(next) => onChange(withSteps(draft, pi, next))}
-          renderItem={(step, si) => {
-            const id = step.id ?? "";
-            return (
-              <StepEditRow
-                draft={draft}
-                pi={pi}
-                si={si}
-                step={step}
-                part={part}
-                path={path}
-                last={si === last}
-                error={errors[`${path}.${si}.text`]}
-                preview={previewing.has(id)}
-                pickerText={picker[id] ?? ""}
-                disabled={disabled}
-                onChange={onChange}
-                onTogglePreview={() => togglePreview(id)}
-                onPickerText={(text) => setPicker((current) => ({ ...current, [id]: text }))}
-                onEnter={() => enterOnStep(si)}
-                onAddImage={(file) => {
-                  if (step.id !== undefined) void addImage(si, step.id, file);
-                }}
-              />
-            );
-          }}
-        />
-      </EmptyBoundary>
+        </EmptyBoundary>
+      </Card>
     </div>
   );
 }

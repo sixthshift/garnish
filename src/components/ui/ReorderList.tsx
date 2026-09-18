@@ -98,8 +98,12 @@ export function ReorderList<T>({
               >
                 <Chevron direction="down" />
               </Button>
+              {/* Neutral, not danger: colour is for state, and a red glyph on
+                  every row of an eight-row list made delete the loudest thing
+                  in the editor. The consequence is carried by the confirm step,
+                  where danger intent belongs. */}
               {onRemove !== undefined && (
-                <Button type="button" variant="ghost" intent="danger" size="sm" iconOnly aria-label={`Remove ${name}`} onClick={() => onRemove(item, index)}>
+                <Button type="button" variant="ghost" intent="neutral" size="sm" iconOnly aria-label={`Remove ${name}`} onClick={() => onRemove(item, index)}>
                   <Cross />
                 </Button>
               )}

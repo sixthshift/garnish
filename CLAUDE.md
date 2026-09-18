@@ -9,6 +9,7 @@ A personal recipe manager. Single household, runs on the LAN, no public exposure
 - [`docs/decisions.md`](docs/decisions.md) — decision log; add a row to reverse one, don't edit
 - [`docs/scope.md`](docs/scope.md) — v1, later, open, never
 - [`docs/plan.md`](docs/plan.md) — implementation tasks and the per-task protocol. Run with `/ailoop`
+- [`docs/design-language.md`](docs/design-language.md) — the six rules for how it looks, and the divergences from the design system
 
 Keep the argument in `docs/`; keep operating constraints here.
 

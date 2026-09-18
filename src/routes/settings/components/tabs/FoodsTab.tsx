@@ -143,9 +143,9 @@ export function foodColumns(aisles: readonly Aisle[]): DataTableColumn<FoodRow>[
   const aisleName = (id: string | null) => aisles.find((aisle) => aisle.id === id)?.name ?? null;
   return [
     { key: "name", header: "Name", value: (food) => food.name },
-    { key: "pluralName", header: "Plural", value: (food) => food.pluralName },
+    { key: "pluralName", header: "Plural", value: (food) => food.pluralName, secondary: true },
     { key: "aisle", header: "Aisle", value: (food) => aisleName(food.aisleId) },
-    { key: "skipShopping", header: "Skip shopping", value: (food) => food.skipShopping },
-    { key: "aliases", header: "Aliases", value: (food) => food.aliases.length },
+    { key: "skipShopping", header: "Skip shopping", value: (food) => food.skipShopping, secondary: true },
+    { key: "aliases", header: "Aliases", value: (food) => food.aliases.length, secondary: true },
   ];
 }

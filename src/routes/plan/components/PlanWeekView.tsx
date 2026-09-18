@@ -1,9 +1,9 @@
-import { Heading } from "@sixthshift/design-system/heading";
 import { Link } from "@tanstack/react-router";
+import { Page, PageHeader } from "../../../components/shell/Page";
 import { addDays, type PlanDay, type PlanEntry, todayIso, weekLabel } from "../../../domain/plan";
 import type { RecipeSummary } from "../../../domain/recipe";
 import { AddWeekToShoppingButton } from "./AddWeekToShoppingButton";
-import { PlanDayColumn } from "./PlanDayColumn";
+import { PlanDayRow } from "./PlanDayRow";
 
 export type PlanWeekViewProps = {
   monday: string;
@@ -26,24 +26,26 @@ export type PlanWeekViewProps = {
 /** The week itself, writes injected. Rendered by the route and by the tests. */
 export function PlanWeekView({ monday, days, today = todayIso(), onAddText, onAddRecipe, onMove, onRemove, searchRecipes, busy = false }: PlanWeekViewProps) {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 p-4 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <Heading as="h1">Plan</Heading>
-          <AddWeekToShoppingButton monday={monday} />
-        </div>
-        <div className="flex items-center gap-2">
-          <WeekArrow monday={addDays(monday, -7)} label="Previous week" glyph="‹" />
-          <p className="min-w-40 text-center text-sm font-medium" data-testid="plan-week-label">
-            {weekLabel(monday)}
-          </p>
-          <WeekArrow monday={addDays(monday, 7)} label="Next week" glyph="›" />
-        </div>
-      </div>
+    <Page width="focus">
+      <PageHeader
+        title="Plan"
+        actions={
+          <>
+            <AddWeekToShoppingButton monday={monday} />
+            <div className="flex items-center gap-2">
+              <WeekArrow monday={addDays(monday, -7)} label="Previous week" glyph="‹" />
+              <p className="min-w-40 text-center font-medium text-sm" data-testid="plan-week-label">
+                {weekLabel(monday)}
+              </p>
+              <WeekArrow monday={addDays(monday, 7)} label="Next week" glyph="›" />
+            </div>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-7" data-testid="plan-week">
+      <div className="flex flex-col gap-2" data-testid="plan-week">
         {days.map((day) => (
-          <PlanDayColumn
+          <PlanDayRow
             key={day.date}
             day={day}
             days={days}
@@ -57,7 +59,7 @@ export function PlanWeekView({ monday, days, today = todayIso(), onAddText, onAd
           />
         ))}
       </div>
-    </div>
+    </Page>
   );
 }
 
@@ -69,7 +71,7 @@ function WeekArrow({ monday, label, glyph }: { monday: string; label: string; gl
       search={{ week: monday }}
       aria-label={label}
       title={label}
-      className="flex h-9 w-9 items-center justify-center rounded-md border border-border-normal text-fg-normal hover:bg-bg-normal-hovered"
+      className="flex h-9 w-9 items-center justify-center rounded-md border border-border-normal text-fg-normal hover:bg-bg-subtle-hovered"
     >
       <span aria-hidden="true">{glyph}</span>
     </Link>

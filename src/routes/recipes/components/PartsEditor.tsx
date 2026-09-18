@@ -2,12 +2,12 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
-import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { ReorderList } from "../../../components/ui/ReorderList";
 import { addPart, type DraftPart, type FieldErrors, hasContent, isBare, type RecipeDraft, removePart, renamePart } from "../../../domain/draft";
 import type { Unit } from "../../../domain/reference";
+import { EditorSectionHeader } from "./EditorSectionHeader";
 import { IngredientsEditor } from "./IngredientsEditor";
 import { StepsEditor } from "./StepsEditor";
 
@@ -52,10 +52,9 @@ export function PartsEditor({ draft, onChange, units = [], errors = {}, disabled
 
   return (
     <section className="flex flex-col gap-3" aria-label="Parts">
-      <div className="flex items-center justify-between gap-3">
-        <SectionTitle as="h2">Parts</SectionTitle>
-        {addButton}
-      </div>
+      <EditorSectionHeader as="h2" actions={addButton}>
+        Parts
+      </EditorSectionHeader>
 
       {/* A draft normally keeps at least one part (the schema requires it); the fallback covers a draft that lost it. */}
       <EmptyBoundary
@@ -80,7 +79,7 @@ export function PartsEditor({ draft, onChange, units = [], errors = {}, disabled
               : undefined
           }
           renderItem={(part, index) => (
-            <div className="flex flex-col gap-3 rounded-xl border border-border-normal p-3" data-part={index}>
+            <div className="flex flex-col gap-3 border-border-subtle border-l-2 pl-3" data-part={index}>
               <Input
                 name={`parts.${index}.name`}
                 value={part.name ?? ""}

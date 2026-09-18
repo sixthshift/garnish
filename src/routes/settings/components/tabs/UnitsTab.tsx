@@ -110,8 +110,8 @@ const UNIT_DELETE_EFFECT = "they will keep the ingredient or yield without a uni
 
 export const unitColumns: DataTableColumn<Unit>[] = [
   { key: "name", header: "Name", value: (unit) => unit.name },
-  { key: "pluralName", header: "Plural", value: (unit) => unit.pluralName },
+  { key: "pluralName", header: "Plural", value: (unit) => unit.pluralName, secondary: true },
   { key: "abbreviation", header: "Abbreviation", value: (unit) => unit.abbreviation },
-  { key: "useAbbreviation", header: "Use abbreviation", value: (unit) => unit.useAbbreviation },
-  { key: "fraction", header: "Fractions", value: (unit) => unit.fraction },
+  { key: "useAbbreviation", header: "Use abbreviation", value: (unit) => unit.useAbbreviation, secondary: true },
+  { key: "fraction", header: "Fractions", value: (unit) => unit.fraction, secondary: true },
 ];

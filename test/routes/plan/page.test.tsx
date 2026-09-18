@@ -77,15 +77,27 @@ describe("the week", () => {
     const html = await render(emptyWeek());
     const dates = [...html.matchAll(/data-testid="plan-day" data-date="([^"]+)"/g)].map((match) => match[1]);
     expect(dates).toEqual(weekDates(MONDAY));
-    expect(html).toContain("Mon 14 Sep");
-    expect(html).toContain("Sun 20 Sep");
+    // The rail stacks the label's two halves, and the `<h2>` around them is
+    // what names the day — the card is a plain `<div>`, so there is no
+    // `aria-label` and no seven-region landmark list behind it.
+    const rail = elementHtml(html, "plan-day");
+    expect(rail).toContain("<h2");
+    expect(rail).toContain(">Mon<");
+    expect(rail).toContain(">14 Sep<");
+    expect(html).toContain(">20 Sep<");
   });
 
   test("today is the only day marked", async () => {
     const html = await render(emptyWeek());
     expect(html.match(/data-today="true"/g)).toHaveLength(1);
     expect(html).toMatch(new RegExp(`data-date="${TODAY}" data-today="true"`));
-    expect(html.match(/>Today</g)).toHaveLength(1);
+    // The mark is a tint, which is colour alone, so the day also says it in
+    // the heading where only a screen reader hears it.
+    expect(html.match(/\(today\)/g)).toHaveLength(1);
+    // The mark is the brand foreground on the rail, and only there: nothing
+    // else on the card changes, so a tinted block does not read as the page's
+    // loudest thing.
+    expect(html.match(/text-fg-brand/g)).toHaveLength(2); // the weekday and the date
   });
 
   test("the arrows step a week either way and the label names the span", async () => {
@@ -162,7 +174,10 @@ describe("the add row", () => {
   test("a day's box is a search box that also takes a plain line", () => {
     const html = renderToString(<PlanAddRow date={MONDAY} onAddText={noop} onAddRecipe={noop} />);
     expect(html).toContain('aria-label="Add to Mon 14 Sep"');
-    expect(html).toContain("Add a recipe or a line");
+    // The day is named in the aria-label rather than in the placeholder:
+    // seven boxes reading "Add a recipe to Monday" down the week would say
+    // what the date rail beside each one already says.
+    expect(html).toContain('placeholder="Add a recipe"');
     // Nothing typed, so no results list yet.
     expect(html).not.toContain('role="listbox"');
   });

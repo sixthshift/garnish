@@ -1,4 +1,5 @@
 import { Button } from "@sixthshift/design-system/button";
+import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Switch } from "@sixthshift/design-system/switch";
@@ -109,50 +110,52 @@ export function StyleTab({ rules }: { rules: readonly StyleRule[] }) {
       {order.length === 0 ? (
         <Muted as="p">No statements yet.</Muted>
       ) : (
-        <ReorderList
-          items={order}
-          keyOf={(rule) => rule.id}
-          itemName="statement"
-          onReorder={(next) => void persistOrder(next)}
-          onRemove={(rule) => void remove(rule)}
-          renderItem={(rule) => {
-            const note = styleRuleNote(rule.text);
-            return (
-              <div className="flex flex-col gap-1 rounded-md border border-border-normal px-3 py-2">
-                <div className="flex items-start gap-3">
-                  <Switch
-                    checked={rule.enabled}
-                    aria-label={`Use "${rule.text}" by default`}
-                    className="mt-1"
-                    onCheckedChange={(enabled) => void toggle(rule, enabled)}
-                  />
-                  <Textarea
-                    defaultValue={rule.text}
-                    aria-label={`Statement: ${rule.text}`}
-                    rows={1}
-                    ref={(el) => {
-                      if (el) autosize(el);
-                    }}
-                    className="min-h-0 min-w-0 flex-1 resize-none overflow-hidden border-0 py-1 shadow-none"
-                    onInput={(event) => autosize(event.currentTarget)}
-                    onBlur={(event) => void saveText(rule, event.currentTarget.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        event.currentTarget.blur();
-                      }
-                    }}
-                  />
+        <Card size="sm">
+          <ReorderList
+            items={order}
+            keyOf={(rule) => rule.id}
+            itemName="statement"
+            onReorder={(next) => void persistOrder(next)}
+            onRemove={(rule) => void remove(rule)}
+            renderItem={(rule) => {
+              const note = styleRuleNote(rule.text);
+              return (
+                <div className="flex flex-col gap-1 rounded-md px-3 py-2">
+                  <div className="flex items-start gap-3">
+                    <Switch
+                      checked={rule.enabled}
+                      aria-label={`Use "${rule.text}" by default`}
+                      className="mt-1"
+                      onCheckedChange={(enabled) => void toggle(rule, enabled)}
+                    />
+                    <Textarea
+                      defaultValue={rule.text}
+                      aria-label={`Statement: ${rule.text}`}
+                      rows={1}
+                      ref={(el) => {
+                        if (el) autosize(el);
+                      }}
+                      className="min-h-0 min-w-0 flex-1 resize-none overflow-hidden border-0 py-1 shadow-none"
+                      onInput={(event) => autosize(event.currentTarget)}
+                      onBlur={(event) => void saveText(rule, event.currentTarget.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) {
+                          event.preventDefault();
+                          event.currentTarget.blur();
+                        }
+                      }}
+                    />
+                  </div>
+                  {note !== null && (
+                    <Muted as="p" className="text-sm">
+                      {note}
+                    </Muted>
+                  )}
                 </div>
-                {note !== null && (
-                  <Muted as="p" className="text-sm">
-                    {note}
-                  </Muted>
-                )}
-              </div>
-            );
-          }}
-        />
+              );
+            }}
+          />
+        </Card>
       )}
       <div className="flex items-start gap-2">
         <Textarea

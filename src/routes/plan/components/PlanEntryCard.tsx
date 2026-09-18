@@ -26,11 +26,7 @@ export function PlanEntryCard({
   const label = entryLabel(entry);
   const serves = servingsLabel(entry.servings);
   return (
-    <div
-      className="flex items-center gap-2 rounded-md border border-border-subtle bg-bg-normal p-1"
-      data-testid="plan-entry"
-      data-kind={entry.recipe === null ? "text" : "recipe"}
-    >
+    <div className="flex items-center gap-2 rounded-md p-1 hover:bg-bg-subtle" data-testid="plan-entry" data-kind={entry.recipe === null ? "text" : "recipe"}>
       {entry.recipe === null ? (
         <span className="min-w-0 flex-1 truncate py-1 text-sm">{label}</span>
       ) : (

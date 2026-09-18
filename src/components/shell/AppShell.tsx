@@ -24,7 +24,7 @@ export const navItems = [
 
 const itemClass =
   "flex flex-1 items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-fg-subtle " +
-  "hover:bg-bg-normal-hovered hover:text-fg-normal md:flex-none md:justify-start";
+  "hover:bg-bg-subtle-hovered hover:text-fg-normal md:flex-none md:justify-start";
 const activeClass = "bg-bg-brand-subtle text-fg-brand";
 
 /** `stacked` is the side nav, where a `footer` item is pushed to the bottom. */
@@ -48,13 +48,13 @@ export function AppShell() {
   const fullscreen = useMatches({ select: (matches) => matches.some((match) => match.staticData.fullscreen === true) });
   if (fullscreen) {
     return (
-      <div className="min-h-dvh bg-bg-normal text-fg-normal">
+      <div className="min-h-dvh bg-bg-subtle text-fg-normal">
         <Outlet />
       </div>
     );
   }
   return (
-    <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal md:flex-row">
+    <div className="flex min-h-dvh flex-col bg-bg-subtle text-fg-normal md:flex-row">
       {/* Sticky and exactly one screen tall: as a plain flex child the aside
           stretches to the content's height, so `mt-auto` would push Settings
           past the fold on a long page. */}

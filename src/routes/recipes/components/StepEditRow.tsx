@@ -95,6 +95,7 @@ export function StepEditRow({
             name={`${path}.${si}.text`}
             aria-label={`Step ${si + 1}`}
             aria-invalid={error !== undefined || undefined}
+            className="field-sizing-content"
             rows={2}
             placeholder="What to do"
             value={step.text ?? ""}

@@ -1,3 +1,4 @@
+import { cardVariants } from "@sixthshift/design-system/card";
 import { cn } from "@sixthshift/design-system/utils";
 import { useMemo } from "react";
 import { Markdown } from "../../../../components/ui/Markdown";
@@ -31,6 +32,13 @@ export type StepCardProps = {
   /** The owning part's id. Quick edit needs it to find the stored step; without it the card renders no pencil. */
   partId?: string;
   /**
+   * Whether the whole list reserves a column for linked ingredients, so a step
+   * without any still starts its text where its neighbours do. `StepList` sets
+   * it for the page; cook mode leaves it unset, where one card owns the screen
+   * and an empty gutter would cost a third of it for nothing.
+   */
+  gutter?: boolean;
+  /**
    * The parent recipe's slug, cook mode only: forwarded to each linked
    * row so a sub-recipe ingredient offers a link into the child's own cook
    * mode instead of the plain "Make N servings" hint. Absent on the recipe page.
@@ -38,7 +46,7 @@ export type StepCardProps = {
   cookFrom?: string;
 };
 
-export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId, cookFrom }: StepCardProps) {
+export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId, gutter, cookFrom }: StepCardProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
   // The corner "…" menu and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditStep(partId, step.id);
@@ -51,12 +59,19 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   // collapses to one line, so its photo goes with the rest of the detail.
   const photo = stepImageUrl(step.image);
   const scale = SCALE[size];
-  // Two columns from `md` only when there is a list to put in the first one.
-  const columns = rows.length > 0 && !done;
+  // Two columns from `md` when this list reserves the gutter — or, absent a
+  // list-wide answer, when this step alone has rows to put in it. A ticked step
+  // collapses to one line and gives the gutter back.
+  const columns = (gutter ?? rows.length > 0) && !done;
 
   return (
     <li
-      className={cn("group rounded-xl border border-border-normal p-4", done && "opacity-60")}
+      // `cardVariants` rather than the primitive: decision 66 keeps a step in a
+      // card, but Card renders a `<div>` and a step is an `<li>` in its part's
+      // list. Borrowing the recipe keeps the surface identical to every other
+      // card — including the `bg-bg-normal` that now lifts it off the base page
+      // — without restating the treatment here, where it would drift.
+      className={cn(cardVariants({ size: "md" }), "group", done && "opacity-60")}
       data-testid="step-card"
       data-size={size}
       data-ticked={done ? "true" : undefined}
@@ -74,14 +89,14 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className={cn("flex flex-col gap-3", columns && "md:grid md:grid-cols-3 md:items-start md:gap-4")}>
-            {columns && (
+            {columns && rows.length > 0 && (
               <ul className={cn("flex flex-col gap-2 md:col-span-1", scale.ingredients)} aria-label="Ingredients for this step" data-testid="step-ingredients">
                 {rows.map((ingredient) => (
                   <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} cookFrom={cookFrom} />
                 ))}
               </ul>
             )}
-            <div className={cn("flex flex-col gap-2", columns && "md:col-span-2")}>
+            <div className={cn("flex flex-col gap-2", columns && "md:col-span-2 md:col-start-2")}>
               {photo !== null && !done && (
                 <img
                   src={photo}

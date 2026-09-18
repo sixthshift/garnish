@@ -1,3 +1,4 @@
+import { Card } from "@sixthshift/design-system/card";
 import { Message } from "@sixthshift/design-system/message";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { SaveBar } from "../../../components/ui/SaveBar";
@@ -83,15 +84,17 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online, 
         <RecipeJsonView json={json} error={form.jsonError} disabled={saving} onChange={form.setJson} onApply={form.applyJson} />
       ) : (
         <>
-          <RecipeHead
-            draft={draft}
-            errors={errors}
-            saving={saving}
-            existing={existing !== undefined}
-            importedImageUrl={importedImageUrl}
-            onPatch={form.patch}
-            onFile={form.setFile}
-          />
+          <Card size="lg" className="flex flex-col gap-4">
+            <RecipeHead
+              draft={draft}
+              errors={errors}
+              saving={saving}
+              existing={existing !== undefined}
+              importedImageUrl={importedImageUrl}
+              onPatch={form.patch}
+              onFile={form.setFile}
+            />
+          </Card>
 
           <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
 

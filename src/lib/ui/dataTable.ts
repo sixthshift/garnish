@@ -13,6 +13,13 @@ export type DataTableColumn<T> = {
   sortable?: boolean;
   /** Default true. */
   searchable?: boolean;
+  /**
+   * A column the phone can do without: hidden below `md`, still searched and
+   * still sortable once the width is there. Reference tables run to six
+   * columns, which no phone can draw — without this the table's min-content
+   * width becomes the page's and the whole layout scrolls sideways.
+   */
+  secondary?: boolean;
   className?: string;
 };
 

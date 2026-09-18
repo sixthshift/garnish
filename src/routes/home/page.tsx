@@ -1,11 +1,11 @@
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
-import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CARD_MIN_WIDTH, RecipeCard } from "../../components/recipe/RecipeCard";
+import { Page, PageHeader } from "../../components/shell/Page";
 import { DiceIcon } from "../../components/ui/icons";
 import { resolveSort, type SortDir, type SortKey, selectedTags } from "../../domain/recipe";
 import { arrayParam, newSeed, pickRandom } from "../../lib/lists";
@@ -46,13 +46,15 @@ export function RecipesPage() {
   }, [query, q, navigate]);
 
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <div className="flex items-center justify-between gap-3">
-        <Heading as="h1">Recipes</Heading>
-        <Button asChild variant="solid" intent="brand" size="sm">
-          <Link to="/recipes/new">New recipe</Link>
-        </Button>
-      </div>
+    <Page>
+      <PageHeader
+        title="Recipes"
+        actions={
+          <Button asChild variant="solid" intent="brand" size="sm">
+            <Link to="/recipes/new">New recipe</Link>
+          </Button>
+        }
+      />
       <search>
         <form
           onSubmit={(e) => {
@@ -87,7 +89,7 @@ export function RecipesPage() {
           </div>
         </div>
         <ul
-          className={viewMode === "list" ? "flex max-w-5xl flex-col gap-3" : "grid gap-4"}
+          className={viewMode === "list" ? "flex flex-col gap-3" : "grid gap-4"}
           style={viewMode === "list" ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN_WIDTH}, 1fr))` }}
         >
           {recipes.map((recipe) => (
@@ -97,7 +99,7 @@ export function RecipesPage() {
           ))}
         </ul>
       </EmptyBoundary>
-    </div>
+    </Page>
   );
 }
 
