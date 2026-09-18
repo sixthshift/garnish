@@ -2,10 +2,10 @@
 // server snapshot), and the guard that keeps a stray string out of prefs.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { getTheme, type StorageLike, setTheme } from "../../../../src/lib/prefs";
-import { isTheme, ThemeToggle, themeOptions } from "../../../../src/routes/settings/components/ThemeToggle";
+import { prefs, readPref, type StorageLike, writePref } from "../../../../src/lib/prefs";
+import { ThemeToggle, themeOptions } from "../../../../src/routes/settings/components/ThemeToggle";
 
-describe("isTheme", () => {
+describe("the theme guard the toggle uses (prefs.theme.isValid)", () => {
   test.each([
     ["light", true],
     ["dark", true],
@@ -14,7 +14,7 @@ describe("isTheme", () => {
     ["Dark", false],
     ["auto", false],
   ])("%s -> %s", (value, expected) => {
-    expect(isTheme(value)).toBe(expected);
+    expect(prefs.theme.isValid(value)).toBe(expected);
   });
 });
 
@@ -38,10 +38,10 @@ describe("persistence", () => {
   test("a chosen theme round-trips through the key the boot script reads", () => {
     const map = new Map<string, string>();
     const storage: StorageLike = { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
-    setTheme(storage, "dark");
+    writePref(storage, prefs.theme, "dark");
     // The inline script in root.tsx and the design system both read "theme"
     // as JSON; a reload picks the choice up from there.
     expect(map.get("theme")).toBe('"dark"');
-    expect(getTheme(storage)).toBe("dark");
+    expect(readPref(storage, prefs.theme)).toBe("dark");
   });
 });

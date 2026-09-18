@@ -1,13 +1,13 @@
 import { useTheme as usePaintedTheme } from "@sixthshift/design-system/hooks";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
-import { type Theme, useTheme as useThemePref } from "../../../lib/prefs";
+import { prefs, useTheme as useThemePref } from "../../../lib/prefs";
 
 export function ThemeToggle() {
   const [theme, persist] = useThemePref();
   const { setTheme: paint } = usePaintedTheme();
 
   const choose = (value: string) => {
-    if (!isTheme(value)) return;
+    if (!prefs.theme.isValid(value)) return;
     // Both writers on purpose: prefs persists the choice, the design system repaints <html data-theme> now rather than on the next reload.
     persist(value);
     paint(value);
@@ -21,8 +21,3 @@ export const themeOptions = [
   { value: "dark", label: "Dark" },
   { value: "system", label: "System" },
 ] as const;
-
-/** Is this one of the three themes? Guards the string the toggle group hands back. Pure. */
-export function isTheme(value: string): value is Theme {
-  return themeOptions.some((option) => option.value === value);
-}

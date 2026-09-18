@@ -3,7 +3,7 @@
 // reload, same style as ThemeToggle.test.tsx's persistence check.
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { type StorageLike, setIngredientMode } from "../../../../../src/lib/prefs";
+import { prefs, type StorageLike, writePref } from "../../../../../src/lib/prefs";
 import { IngredientModeToggle } from "../../../../../src/routes/recipes/recipe/components/IngredientModeToggle";
 
 function fakeStorage(): StorageLike {
@@ -26,7 +26,7 @@ describe("IngredientModeToggle", () => {
 
   test("a stored summary preference survives a reload: the switch renders checked", () => {
     const storage = fakeStorage();
-    setIngredientMode(storage, "summary");
+    writePref(storage, prefs.ingredientMode, "summary");
     (globalThis as { window?: unknown }).window = { localStorage: storage };
 
     const html = renderToString(<IngredientModeToggle />);

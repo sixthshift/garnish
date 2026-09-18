@@ -3,7 +3,7 @@
 // check.
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { type StorageLike, setViewMode } from "../../../../src/lib/prefs";
+import { prefs, type StorageLike, writePref } from "../../../../src/lib/prefs";
 import { ViewModeToggle } from "../../../../src/routes/home/components/ViewModeToggle";
 
 function fakeStorage(): StorageLike {
@@ -24,7 +24,7 @@ describe("ViewModeToggle", () => {
 
   test("a stored list preference survives a reload: list renders checked", () => {
     const storage = fakeStorage();
-    setViewMode(storage, "list");
+    writePref(storage, prefs.viewMode, "list");
     (globalThis as { window?: unknown }).window = { localStorage: storage };
 
     const html = renderToString(<ViewModeToggle />);
