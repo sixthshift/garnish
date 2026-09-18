@@ -8,7 +8,7 @@ import { Route } from "./route";
 
 /** The route's wiring: the loader's week in, the server functions out. */
 export function PlanPage() {
-  const { monday, days } = Route.useLoaderData();
+  const { monday, days, plannerAvailable, plannerMeals } = Route.useLoaderData();
   const mutate = useMutate();
   const [busy, setBusy] = useState(false);
 
@@ -28,6 +28,8 @@ export function PlanPage() {
       monday={monday}
       days={days}
       busy={busy}
+      plannerAvailable={plannerAvailable}
+      plannerMeals={plannerMeals}
       searchRecipes={searchPlanRecipes}
       onAddText={(date, text, meal) => void write("Couldn't add the line", () => addPlanEntry({ data: { date, text, meal } }))}
       // The recipe's name travels with its id: the entry keeps reading as

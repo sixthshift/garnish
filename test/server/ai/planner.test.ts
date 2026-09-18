@@ -6,7 +6,17 @@
 import { afterEach, describe, expect, test } from "vitest";
 import type { RecipeInput } from "../../../src/domain/recipe";
 import { AiError, type AiRunner } from "../../../src/server/ai/client";
-import { createPlannerRunner, libraryRecipe, mergeRecent, plannerSettings, proposalInput, runProposal, weekSlots } from "../../../src/server/ai/planner";
+import {
+  createPlannerRunner,
+  libraryRecipe,
+  mergeRecent,
+  plannerSettings,
+  proposalInput,
+  proposeWeek,
+  resolveProposal,
+  runProposal,
+  weekSlots,
+} from "../../../src/server/ai/planner";
 import { addPlanEntry, listPlanWeek } from "../../../src/server/fns/plan";
 import { applyPlanProposal, plannerAvailable, proposePlanWeek, setPlannerMeals } from "../../../src/server/fns/planner";
 import { createRecipe, deleteRecipe } from "../../../src/server/fns/recipes";
@@ -291,5 +301,63 @@ describe("plannerAvailable", () => {
     expect(await callServerFn(plannerAvailable)).toEqual({ available: false });
     process.env.AI_API_KEY = "secret";
     expect(await callServerFn(plannerAvailable)).toEqual({ available: true });
+  });
+});
+
+// --- The answer the sheet reads (M39.5) ------------------------------------
+
+const OCTOBER = "2026-10-05"; // a Monday, four weeks clear of the fixtures above
+const OCTOBER_TUESDAY = "2026-10-06";
+
+describe("resolveProposal", () => {
+  const recipe = { id: IDS.open, slug: "beef-ragu", name: "Beef ragu", image: "ragu.jpg" };
+
+  test("each kept entry carries its recipe, and the taken slots come through as their own list", () => {
+    const week = resolveProposal(
+      {
+        entries: [{ date: MONDAY, meal: "dinner", recipeId: IDS.open, reason: "Quick." }],
+        dropped: [{ entry: { date: MONDAY, meal: "lunch", recipeId: "nope", reason: "" }, kind: "unknown-recipe", reason: "not in the library." }],
+        unfilled: [{ date: TUESDAY, meal: "lunch" }],
+      },
+      [
+        { date: MONDAY, meal: "dinner", taken: null },
+        { date: TUESDAY, meal: "dinner", taken: "Lemon tart" },
+      ],
+      [recipe]
+    );
+
+    expect(week.entries).toEqual([{ date: MONDAY, meal: "dinner", recipeId: IDS.open, reason: "Quick.", recipe }]);
+    expect(week.taken).toEqual([{ date: TUESDAY, meal: "dinner", name: "Lemon tart" }]);
+    expect(week.unfilled).toEqual([{ date: TUESDAY, meal: "lunch" }]);
+    expect(week.dropped).toHaveLength(1);
+  });
+
+  test("an entry whose recipe went away between the two reads is left out rather than drawn without a name", () => {
+    const week = resolveProposal({ entries: [{ date: MONDAY, meal: "dinner", recipeId: IDS.taken, reason: "" }], dropped: [], unfilled: [] }, [], [recipe]);
+    expect(week.entries).toEqual([]);
+  });
+});
+
+describe("proposeWeek", () => {
+  test("answers with the recipe to draw and the week's taken slots", async () => {
+    await callServerFn(setPlannerMeals, { meals: [{ meal: "dinner", enabled: true }] });
+    const laksa = await newRecipe("Laksa");
+    const congee = await newRecipe("Congee");
+    await callServerFn(addPlanEntry, { date: OCTOBER, recipeId: congee.id, text: congee.name, meal: "dinner" });
+
+    const run = fakeRunner(JSON.stringify({ entries: [{ date: OCTOBER_TUESDAY, meal: "dinner", recipeId: laksa.id, reason: "Nothing like it lately." }] }));
+    const week = await proposeWeek({ monday: OCTOBER, dates: [OCTOBER, OCTOBER_TUESDAY] }, { run });
+
+    expect(week.entries).toEqual([
+      {
+        date: OCTOBER_TUESDAY,
+        meal: "dinner",
+        recipeId: laksa.id,
+        reason: "Nothing like it lately.",
+        recipe: { id: laksa.id, slug: laksa.slug, name: "Laksa", image: null },
+      },
+    ]);
+    expect(week.taken).toEqual([{ date: OCTOBER, meal: "dinner", name: "Congee" }]);
+    expect(week.unfilled).toEqual([]);
   });
 });

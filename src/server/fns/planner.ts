@@ -7,7 +7,7 @@ import { isoDate, planEntryInputSchema, weekDates, weekMonday } from "../../doma
 import { mealName, PlannerMealsSet, PlannerRuleCreate, PlannerRuleId, PlannerRuleReorder, PlannerRuleUpdate } from "../../domain/planner";
 import { Id } from "../../domain/reference";
 import { aiConfigured } from "../ai/client";
-import { proposalInput, runProposal } from "../ai/planner";
+import { proposeWeek } from "../ai/planner";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
@@ -72,15 +72,16 @@ export const ProposePlanWeekInput = z
 /**
  * Propose a filling for the week's open slots. Reads the library, the week,
  * the last four weeks and the planner guide, asks the model once, and answers
- * with the checked week — the entries to review, the lines dropped and the
- * slots left empty. Nothing is written: `applyPlanProposal` is what writes.
+ * with the checked week — the entries to review (each carrying the recipe to
+ * draw), the lines dropped, the slots left empty and the ones the week already
+ * had. Nothing is written: `applyPlanProposal` is what writes.
  */
 export const proposePlanWeek = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(ProposePlanWeekInput)
   .handler(async ({ data }) => {
     const dates = weekDates(data.monday).filter((date) => data.dates.includes(date));
-    return runProposal(proposalInput({ monday: data.monday, dates }));
+    return proposeWeek({ monday: data.monday, dates });
   });
 
 /** The entries the household ticked, as the sheet sends them: a slot and the recipe that fills it. */

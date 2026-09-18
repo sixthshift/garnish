@@ -9,21 +9,24 @@ import plan from "../../db/models/plan/repo";
 import planner from "../../db/models/planner/repo";
 import recipes from "../../db/models/recipe/repo";
 import timeline from "../../db/models/timeline/repo";
-import { addDays, entryLabel, type PlanDay, todayIso } from "../../domain/plan";
+import { addDays, entryLabel, type PlanDay, type PlanRecipe, todayIso } from "../../domain/plan";
 import {
   checkProposal,
+  type DroppedEntry,
   enabledMeals,
   enabledRules,
   type LibraryRecipe,
   type Meal,
   PROPOSAL_JSON_SCHEMA,
   type ProposalCheck,
+  type ProposalEntry,
   ProposalError,
   type ProposalInput,
   type ProposalSlot,
   parseProposalAnswer,
   proposalPrompt,
   type RecentMeal,
+  type UnfilledSlot,
 } from "../../domain/planner";
 import type { RecipeSummary } from "../../domain/recipe";
 import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher } from "./client";
@@ -163,4 +166,49 @@ export function proposalInput({ monday, dates }: { monday: string; dates: string
     library,
     recent: mergeRecent(planned, timeline.recent(since)),
   };
+}
+
+// --- The proposal as the sheet reads it (M39.5) ----------------------------
+
+/** A proposed entry with the recipe to draw: the check answers in ids, and a row needs a picture and a name. */
+export type ProposedEntry = ProposalEntry & { recipe: PlanRecipe };
+
+/** A slot the week already had. Listed as taken rather than proposed, so a day that looks skipped says why. */
+export type TakenSlot = { date: string; meal: Meal; name: string };
+
+/** The whole answer the sheet renders: the rows to tick, the lines refused, the slots left empty, and the ones already taken. */
+export type ProposedWeek = { entries: ProposedEntry[]; dropped: DroppedEntry[]; unfilled: UnfilledSlot[]; taken: TakenSlot[] };
+
+/** A summary as the plan draws a recipe. Pure. */
+export function planRecipe(summary: RecipeSummary): PlanRecipe {
+  return { id: summary.id, slug: summary.slug, name: summary.name, image: summary.image };
+}
+
+/**
+ * The check dressed for the sheet: each kept entry carries its recipe, and the
+ * slots that were already taken come through as their own list. An entry whose
+ * recipe is not in `library` is left out — `checkProposal` has already dropped
+ * every id that was not in the library it was given, so this only fires if the
+ * recipe went away between the two reads. Pure.
+ */
+export function resolveProposal(check: ProposalCheck, slots: readonly ProposalSlot[], library: readonly PlanRecipe[]): ProposedWeek {
+  const byId = new Map(library.map((recipe) => [recipe.id, recipe]));
+  return {
+    entries: check.entries.flatMap((entry) => {
+      const recipe = byId.get(entry.recipeId);
+      return recipe === undefined ? [] : [{ ...entry, recipe }];
+    }),
+    dropped: check.dropped,
+    unfilled: check.unfilled,
+    taken: slots.flatMap((slot) => (slot.taken === null ? [] : [{ date: slot.date, meal: slot.meal, name: slot.taken }])),
+  };
+}
+
+/** Gather, ask, check, and resolve: the whole proposal behind one call, for the server function and its tests. Nothing is written. */
+export async function proposeWeek(week: { monday: string; dates: string[] }, options: { run?: AiRunner } = {}): Promise<ProposedWeek> {
+  const input = proposalInput(week);
+  const check = await runProposal(input, options);
+  // The library is only re-read when there is something to name.
+  const library = check.entries.length === 0 ? [] : recipes.query().map(planRecipe);
+  return resolveProposal(check, input.slots, library);
 }
