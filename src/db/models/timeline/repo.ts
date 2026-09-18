@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { desc, eq, max } from "drizzle-orm";
+import { desc, eq, gte, max } from "drizzle-orm";
 import type { TimelineEvent, TimelineEventInput } from "../../../domain/recipe";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
@@ -38,6 +38,20 @@ export function timelineRepository(db: Database) {
       dz.select().from(timelineEvent).where(eq(timelineEvent.recipeId, recipeId)).orderBy(desc(timelineEvent.occurredOn), desc(timelineEvent.createdAt)).all(),
 
     get,
+
+    /**
+     * Every logged cook on or after `since`, across every recipe, newest
+     * first: the date it happened and the name of what was cooked. What the
+     * proposal sends as RECENT (M39.4), beside the weeks of plan before it.
+     */
+    recent: (since: string): { date: string; name: string }[] =>
+      dz
+        .select({ date: timelineEvent.occurredOn, name: recipe.name })
+        .from(timelineEvent)
+        .innerJoin(recipe, eq(timelineEvent.recipeId, recipe.id))
+        .where(gte(timelineEvent.occurredOn, since))
+        .orderBy(desc(timelineEvent.occurredOn), desc(timelineEvent.createdAt))
+        .all(),
 
     /** Log a cook and pull recipe.last_made up to the recipe's latest date. */
     create(recipeId: string, input: TimelineEventInput): TimelineEvent {

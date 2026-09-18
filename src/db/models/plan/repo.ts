@@ -99,6 +99,33 @@ export function planRepository(db: Database) {
     },
 
     /**
+     * Append several entries in one transaction: an accepted proposal is a
+     * week, and half a week written is worse than none (M39.4). Each lands at
+     * the end of its own day, in the order given.
+     */
+    addMany(inputs: readonly ParsedPlanEntryInput[]): PlanEntry[] {
+      const ids: string[] = [];
+      dz.transaction((tx) => {
+        for (const input of inputs) {
+          const id = crypto.randomUUID();
+          tx.insert(mealPlanEntry)
+            .values({
+              id,
+              date: input.date,
+              position: nextPosition(input.date),
+              recipeId: input.recipeId,
+              text: input.text,
+              servings: input.servings,
+              meal: input.meal,
+            })
+            .run();
+          ids.push(id);
+        }
+      });
+      return ids.map((id) => get(id)!);
+    },
+
+    /**
      * Merge `patch` into an entry. Null when `id` is unknown. The day and the
      * order are `move`'s business, so they are not in the patch.
      */

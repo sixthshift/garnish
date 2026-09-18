@@ -23,6 +23,7 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
       AI_RESTYLE_MODEL: ${AI_RESTYLE_MODEL:-}
+      AI_PLANNER_MODEL: ${AI_PLANNER_MODEL:-}
     restart: unless-stopped
 
 volumes:

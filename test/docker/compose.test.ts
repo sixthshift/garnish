@@ -84,6 +84,11 @@ describe("compose file", () => {
     expect(envValue(garnish.environment, "AI_MODEL")).toBe("${AI_MODEL:-}");
   });
 
+  test("passes the per-pass model overrides through too", () => {
+    expect(envValue(garnish.environment, "AI_RESTYLE_MODEL")).toBe("${AI_RESTYLE_MODEL:-}");
+    expect(envValue(garnish.environment, "AI_PLANNER_MODEL")).toBe("${AI_PLANNER_MODEL:-}");
+  });
+
   test("restarts unless stopped", () => {
     expect(garnish.restart).toBe("unless-stopped");
   });
@@ -123,6 +128,7 @@ describe("README", () => {
     expect(readme).toContain("AI_API_KEY");
     expect(readme).toContain("AI_BASE_URL");
     expect(readme).toContain("AI_MODEL");
+    expect(readme).toContain("AI_PLANNER_MODEL");
   });
 
   test("dev instructions match package.json scripts and ports", () => {

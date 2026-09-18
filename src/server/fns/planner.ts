@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import plan from "../../db/models/plan/repo";
 import planner from "../../db/models/planner/repo";
-import { PlannerMealsSet, PlannerRuleCreate, PlannerRuleId, PlannerRuleReorder, PlannerRuleUpdate } from "../../domain/planner";
+import recipes from "../../db/models/recipe/repo";
+import { isoDate, planEntryInputSchema, weekDates, weekMonday } from "../../domain/plan";
+import { mealName, PlannerMealsSet, PlannerRuleCreate, PlannerRuleId, PlannerRuleReorder, PlannerRuleUpdate } from "../../domain/planner";
+import { Id } from "../../domain/reference";
+import { aiConfigured } from "../ai/client";
+import { proposalInput, runProposal } from "../ai/planner";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
@@ -47,3 +54,73 @@ export const setPlannerMeals = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(PlannerMealsSet)
   .handler(async ({ data }) => planner.meals.set(data.meals));
+
+// --- The proposal (M39.4) --------------------------------------------------
+
+/**
+ * The week to propose for: the Monday, and the days of that week that were
+ * ticked. At least one day, every one a day of that week — a proposal for a
+ * day the caller is not showing is a proposal nobody asked for.
+ */
+export const ProposePlanWeekInput = z
+  .object({ monday: isoDate, dates: z.array(isoDate).min(1, "tick at least one day") })
+  .refine(({ monday, dates }) => dates.every((date) => weekDates(monday).includes(date)), {
+    message: "every date must be a day of that week",
+    path: ["dates"],
+  });
+
+/**
+ * Propose a filling for the week's open slots. Reads the library, the week,
+ * the last four weeks and the planner guide, asks the model once, and answers
+ * with the checked week — the entries to review, the lines dropped and the
+ * slots left empty. Nothing is written: `applyPlanProposal` is what writes.
+ */
+export const proposePlanWeek = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(ProposePlanWeekInput)
+  .handler(async ({ data }) => {
+    const dates = weekDates(data.monday).filter((date) => data.dates.includes(date));
+    return runProposal(proposalInput({ monday: data.monday, dates }));
+  });
+
+/** The entries the household ticked, as the sheet sends them: a slot and the recipe that fills it. */
+export const ApplyPlanProposalInput = z.object({
+  entries: z
+    .array(
+      z.object({
+        date: isoDate,
+        meal: mealName,
+        recipeId: Id,
+      })
+    )
+    .default([]),
+});
+
+/**
+ * Write an accepted proposal. Each entry goes through the plan's own `add`
+ * with the recipe's name copied into `text`, exactly as the plan page's add
+ * row does, and all of them in one transaction: a recipe that has since been
+ * deleted is a not-found for the whole write rather than half a week on the
+ * calendar. Answers with the week, so the page redraws from one result.
+ */
+export const applyPlanProposal = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(ApplyPlanProposalInput)
+  .handler(async ({ data }) => {
+    // Every recipe is read first: a missing one fails before anything is written.
+    const inputs = data.entries.map((entry) => {
+      const recipe = required(recipes.getById(entry.recipeId), "recipe", entry.recipeId);
+      return planEntryInputSchema.parse({ date: entry.date, recipeId: recipe.id, text: recipe.name, meal: entry.meal });
+    });
+    plan.addMany(inputs);
+    return plan.week(weekMonday(data.entries[0]?.date));
+  });
+
+/**
+ * Whether a model is configured at all, for the Propose button. The same
+ * answer `aiImportAvailable` gives — one key is the whole of the setup — under
+ * its own name so the plan page does not read the import's gate.
+ */
+export const plannerAvailable = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .handler(() => ({ available: aiConfigured() }));
