@@ -1,4 +1,4 @@
-// `bun run propose [--week <monday>] [--days mon,tue] [--model <a,b>] [--rules <file>] [--prompt]`:
+// `bun run propose [--week <monday>] [--days mon,tue] [--meals breakfast,dinner] [--model <a,b>] [--rules <file>] [--prompt]`:
 // build a week's proposal from the live database, on one or more models, and print each one's table. Nothing is written.
 
 import { databasePath, openDatabase } from "../../db/connection/open";
@@ -7,7 +7,7 @@ import { plannerRepository } from "../../db/models/planner/repo";
 import { recipeRepository } from "../../db/models/recipe/repo";
 import { timelineRepository } from "../../db/models/timeline/repo";
 import { addDays, todayIso } from "../../domain/plan";
-import { enabledMeals, PROPOSAL_JSON_SCHEMA, type ProposalInput, proposalPrompt, type RecentMeal } from "../../domain/planner";
+import { PROPOSAL_JSON_SCHEMA, type ProposalInput, proposalPrompt, type RecentMeal } from "../../domain/planner";
 import { ensureDataDir } from "../core/boot";
 import { createFetchRunner } from "./client";
 import { libraryRecipe, mergeRecent, plannerSettings, RECENT_DAYS, weekSlots } from "./planner";
@@ -29,7 +29,7 @@ if (import.meta.main) {
     const recipes = recipeRepository(db);
     const timeline = timelineRepository(db);
 
-    const meals = enabledMeals(planner.meals.list());
+    const meals = flags.meals;
     const rules =
       flags.rulesFile === null
         ? planner.rules
@@ -64,7 +64,7 @@ if (import.meta.main) {
     };
 
     const open = slots.filter((slot) => slot.taken === null).length;
-    console.log(`# Week of ${monday}  (${rules.length} statements, ${dates.length} days, ${open} open slots)`);
+    console.log(`# Week of ${monday}  (${rules.length} statements, ${dates.length} days, ${meals.join(", ")}, ${open} open slots)`);
 
     if (flags.showPrompt) {
       console.log("", proposalPrompt(input), "");

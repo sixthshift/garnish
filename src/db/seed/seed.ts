@@ -33,9 +33,9 @@ export type SeedResult = {
  * reworded or retired on this run, so the CLI and the tests can say what a run
  * actually did.
  *
- * The planner's three meal rows are not seeded here: the migration writes
- * them, because a meal is a fixed row rather than a statement a household may
- * add to.
+ * The planner has nothing else to seed: which meals a week is planned for is a
+ * per-run choice on the proposal sheet, remembered on the device rather than
+ * in the database (decisions.md row 102).
  */
 export function seed(db: Database): SeedResult {
   const unitRepo = unitRepository(db);

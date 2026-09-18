@@ -1,7 +1,7 @@
 // The planner lab's pure half: the flags, the week they resolve to, and the report.
 
 import { addDays, dayLabel, weekDates, weekMonday } from "../../domain/plan";
-import type { LibraryRecipe, Meal, ProposalCheck, ProposalInput } from "../../domain/planner";
+import { type LibraryRecipe, MEALS, type Meal, type ProposalCheck, type ProposalInput } from "../../domain/planner";
 import type { AiRunner } from "./client";
 import { runProposal } from "./planner";
 
@@ -10,6 +10,8 @@ export type LabFlags = {
   week: string | null;
   /** The day tokens named by `--days` ("mon", "tue", ...), or null for all seven. */
   days: string[] | null;
+  /** The meals named by `--meals`, in the order a day eats them. Dinner when the flag is absent, as the sheet's default is. */
+  meals: Meal[];
   /** The models to ask, in order. */
   models: string[];
   /** A file of statements, one per line, instead of the guide's enabled rows. */
@@ -18,19 +20,22 @@ export type LabFlags = {
   showPrompt: boolean;
 };
 
-export const LAB_USAGE = "Usage: bun run propose [--week <monday>] [--days mon,tue] [--model <a,b>] [--rules <file>] [--prompt]";
+export const LAB_USAGE = "Usage: bun run propose [--week <monday>] [--days mon,tue] [--meals breakfast,dinner] [--model <a,b>] [--rules <file>] [--prompt]";
+
+/** What `--meals` falls back to: dinner, the same default the proposal sheet starts from (decisions.md row 102). */
+export const DEFAULT_LAB_MEALS: readonly Meal[] = ["dinner"];
 
 /** The seven day tokens `--days` reads, Monday first, in the order `weekDates` returns a week's dates. */
 export const DAY_TOKENS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
 /** The CLI's arguments. `defaultModel` is what `--model` falls back to. Unknown flags throw so a typo does not run a blank week. Pure. */
 export function parseLabFlags(argv: readonly string[], defaultModel: string): LabFlags {
-  const flags: LabFlags = { week: null, days: null, models: [defaultModel], rulesFile: null, showPrompt: false };
+  const flags: LabFlags = { week: null, days: null, meals: [...DEFAULT_LAB_MEALS], models: [defaultModel], rulesFile: null, showPrompt: false };
   const rest = [...argv];
   while (rest.length > 0) {
     const arg = rest.shift()!;
     if (arg === "--prompt") flags.showPrompt = true;
-    else if (arg === "--week" || arg === "--days" || arg === "--model" || arg === "--rules") {
+    else if (arg === "--week" || arg === "--days" || arg === "--meals" || arg === "--model" || arg === "--rules") {
       const value = rest.shift();
       if (value === undefined) throw new Error(`${arg} needs a value. ${LAB_USAGE}`);
       if (arg === "--week") flags.week = value;
@@ -45,6 +50,17 @@ export function parseLabFlags(argv: readonly string[], defaultModel: string): La
           if (!(DAY_TOKENS as readonly string[]).includes(day)) throw new Error(`Unknown day "${day}". Days are ${DAY_TOKENS.join(", ")}. ${LAB_USAGE}`);
         }
         flags.days = days;
+      } else if (arg === "--meals") {
+        const meals = value
+          .split(",")
+          .map((m) => m.trim().toLowerCase())
+          .filter((m) => m !== "");
+        if (meals.length === 0) throw new Error(`--meals needs at least one meal. ${LAB_USAGE}`);
+        for (const meal of meals) {
+          if (!(MEALS as readonly string[]).includes(meal)) throw new Error(`Unknown meal "${meal}". Meals are ${MEALS.join(", ")}. ${LAB_USAGE}`);
+        }
+        // Meal order is the day's, not the flag's, so the slots read breakfast, lunch, dinner.
+        flags.meals = MEALS.filter((meal) => meals.includes(meal));
       } else {
         flags.models = value
           .split(",")

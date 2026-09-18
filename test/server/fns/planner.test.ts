@@ -1,19 +1,12 @@
 // The planner server functions (M39.2). The database these run against is
-// seeded on open, so the guide starts with the seven default statements and
-// the meals with the migration's three rows.
+// seeded on open, so the guide starts with the seven default statements. The
+// meal switches went with M39.7: which meals a week plans for is chosen on the
+// proposal sheet now.
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { DEFAULT_PLANNER_RULES } from "../../../src/db/seed/planner";
 import type { NotFoundData } from "../../../src/server/core/fn";
-import {
-  createPlannerRule,
-  deletePlannerRule,
-  listPlannerMeals,
-  listPlannerRules,
-  reorderPlannerRules,
-  setPlannerMeals,
-  updatePlannerRule,
-} from "../../../src/server/fns/planner";
+import { createPlannerRule, deletePlannerRule, listPlannerRules, reorderPlannerRules, updatePlannerRule } from "../../../src/server/fns/planner";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
@@ -62,29 +55,4 @@ test("reorder sets positions from the given order and returns the guide in it", 
   const moved = await callServerFn(reorderPlannerRules, { ids: [ids.at(-1)!, ...ids.slice(0, -1)] });
   expect(moved.map((r) => r.text)).toEqual([DEFAULT_PLANNER_RULES.at(-1)!.text, ...DEFAULT_PLANNER_RULES.slice(0, -1).map((r) => r.text)]);
   expect(moved.map((r) => r.position)).toEqual(moved.map((_, i) => i));
-});
-
-test("the meals read back as the migration seeded them, and a write answers all three", async () => {
-  expect(await callServerFn(listPlannerMeals)).toEqual([
-    { meal: "breakfast", enabled: false },
-    { meal: "lunch", enabled: false },
-    { meal: "dinner", enabled: true },
-  ]);
-  const after = await callServerFn(setPlannerMeals, { meals: [{ meal: "lunch", enabled: true }] });
-  expect(after).toEqual([
-    { meal: "breakfast", enabled: false },
-    { meal: "lunch", enabled: true },
-    { meal: "dinner", enabled: true },
-  ]);
-  expect(await callServerFn(listPlannerMeals)).toEqual(after);
-});
-
-test("a meal that is not one of the three is rejected before anything is written", async () => {
-  const caught = await callServerFn(setPlannerMeals, { meals: [{ meal: "supper" as "lunch", enabled: true }] }).catch((e: unknown) => e);
-  expect(caught).toBeInstanceOf(Error);
-  expect(await callServerFn(listPlannerMeals)).toEqual([
-    { meal: "breakfast", enabled: false },
-    { meal: "lunch", enabled: false },
-    { meal: "dinner", enabled: true },
-  ]);
 });

@@ -5,18 +5,19 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { dayLabel, type Meal, mealLabel } from "../../../domain/plan";
-import type { PlannerMeal } from "../../../domain/planner";
+import { MEALS } from "../../../domain/planner";
 import { recipeImageUrl } from "../../../lib/images";
 import type { ProposedWeek } from "../../../server/ai/planner";
 import { EntryImage } from "./EntryImage";
-import { groupProposal, mealsLine, type ProposalDay, slotKey, tickedDates } from "./proposalSheet";
+import { groupProposal, type ProposalDay, slotKey, tickedDates } from "./proposalSheet";
 
 export type ProposeSheetContentProps = {
   /** The shown week's seven days, ticked, remembered and with the past ruled out. */
   days: readonly ProposalDay[];
   onToggleDay: (index: number) => void;
-  /** The three meals as Settings holds them: the line under the days says which are on. */
-  meals: readonly PlannerMeal[];
+  /** The meals this run fills, remembered on the device: at least one, or Propose cannot run. */
+  meals: readonly Meal[];
+  onToggleMeal: (meal: Meal) => void;
   /** The model's answer, or null while the sheet is still asking for one. */
   week: ProposedWeek | null;
   /** The slot keys whose row is accepted. */
@@ -31,8 +32,10 @@ export type ProposeSheetContentProps = {
 
 /**
  * The sheet's markup, every state of it, props only — the restyle sheet's
- * arrangement: a stage that asks (the seven days), a stage that answers (the
- * rows to tick), and one footer button that runs whichever is showing.
+ * arrangement: a stage that asks (the seven days and the three meals), a stage
+ * that answers (the rows to tick), and one footer button that runs whichever is
+ * showing. Propose needs a day and a meal: with either row empty there is no
+ * slot to fill, so it stays disabled rather than asking for nothing.
  */
 export function ProposeSheetContent(props: ProposeSheetContentProps) {
   const { days, meals, week, ticked, busy = false, error = null } = props;
@@ -48,7 +51,7 @@ export function ProposeSheetContent(props: ProposeSheetContentProps) {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3" data-testid="propose-days">
             <Muted as="p" className="text-sm">
-              The days to fill. Nothing is written until you add it.
+              The days and the meals to fill. Nothing is written until you add it.
             </Muted>
             <div className="flex flex-wrap gap-2">
               {days.map((day) => (
@@ -74,9 +77,18 @@ export function ProposeSheetContent(props: ProposeSheetContentProps) {
                 </div>
               ))}
             </div>
-            <Muted as="p" className="text-sm" data-testid="propose-meals">
-              {mealsLine(meals)}
-            </Muted>
+            <div className="flex flex-wrap gap-4" data-testid="propose-meals">
+              {MEALS.map((meal) => (
+                <Checkbox
+                  key={meal}
+                  checked={meals.includes(meal)}
+                  disabled={busy}
+                  label={mealLabel(meal)}
+                  data-meal={meal}
+                  onCheckedChange={() => props.onToggleMeal(meal)}
+                />
+              ))}
+            </div>
           </div>
 
           {busy && week === null && (
@@ -164,7 +176,7 @@ export function ProposeSheetContent(props: ProposeSheetContentProps) {
             type="button"
             variant="solid"
             intent="brand"
-            disabled={busy || tickedDates(days).length === 0}
+            disabled={busy || tickedDates(days).length === 0 || meals.length === 0}
             data-testid="propose-run"
             onClick={props.onPropose}
           >

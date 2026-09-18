@@ -1,6 +1,6 @@
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useState } from "react";
-import type { PlannerMeal } from "../../../domain/planner";
+import type { Meal } from "../../../domain/plan";
 import { useMutate } from "../../../lib/mutate";
 import { messageFrom, notify } from "../../../lib/notify";
 import type { StorageLike } from "../../../lib/prefs";
@@ -13,17 +13,19 @@ import {
   initialTicked,
   proposalDays,
   readProposalDays,
+  readProposalMeals,
   rememberedDays,
   tickedDates,
   toggleProposalDay,
+  toggleProposalMeal,
   writeProposalDays,
+  writeProposalMeals,
 } from "./proposalSheet";
 
 export type ProposeSheetProps = {
   open: boolean;
   /** The week being shown. The sheet is keyed by it, so walking the weeks starts a fresh one. */
   monday: string;
-  meals: readonly PlannerMeal[];
   onClose: () => void;
   /** Injected in tests, so neither the clock nor the browser's storage is a dependency. */
   today?: string;
@@ -36,15 +38,18 @@ function browserStorage(): StorageLike | undefined {
 }
 
 /**
- * The sheet itself: the day choice, the one call that proposes, and the one
- * that writes. Nothing is written until Add, and Add goes through `useMutate`
- * so the week behind the sheet redraws before it closes. A failure of either
- * call stays on screen with Try again beside it, as the restyle's does.
+ * The sheet itself: the day and meal choices — both per-run and both
+ * remembered on the device (decisions.md row 102) — the one call that
+ * proposes, and the one that writes. Nothing is written until Add, and Add
+ * goes through `useMutate` so the week behind the sheet redraws before it
+ * closes. A failure of either call stays on screen with Try again beside it,
+ * as the restyle's does.
  */
-export function ProposeSheet({ open, monday, meals, onClose, today, storage }: ProposeSheetProps) {
+export function ProposeSheet({ open, monday, onClose, today, storage }: ProposeSheetProps) {
   const mutate = useMutate();
   const store = storage ?? browserStorage();
   const [days, setDays] = useState(() => proposalDays(monday, readProposalDays(store), today));
+  const [meals, setMeals] = useState<Meal[]>(() => readProposalMeals(store));
   const [week, setWeek] = useState<ProposedWeek | null>(null);
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -54,6 +59,12 @@ export function ProposeSheet({ open, monday, meals, onClose, today, storage }: P
     const next = toggleProposalDay(days, index);
     setDays(next);
     writeProposalDays(store, rememberedDays(next));
+  };
+
+  const toggleMeal = (meal: Meal) => {
+    const next = toggleProposalMeal(meals, meal);
+    setMeals(next);
+    writeProposalMeals(store, next);
   };
 
   const toggleRow = (key: string) =>
@@ -75,7 +86,7 @@ export function ProposeSheet({ open, monday, meals, onClose, today, storage }: P
     setBusy(true);
     setError(null);
     try {
-      const answer = await proposePlanWeek({ data: { monday, dates: tickedDates(days) } });
+      const answer = await proposePlanWeek({ data: { monday, dates: tickedDates(days), meals } });
       setWeek(answer);
       setTicked(initialTicked(answer));
     } catch (cause) {
@@ -106,6 +117,7 @@ export function ProposeSheet({ open, monday, meals, onClose, today, storage }: P
         days={days}
         onToggleDay={toggleDay}
         meals={meals}
+        onToggleMeal={toggleMeal}
         week={week}
         ticked={ticked}
         onToggleRow={toggleRow}

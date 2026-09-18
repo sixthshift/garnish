@@ -4,7 +4,7 @@ import plan from "../../db/models/plan/repo";
 import planner from "../../db/models/planner/repo";
 import recipes from "../../db/models/recipe/repo";
 import { isoDate, planEntryInputSchema, weekDates, weekMonday } from "../../domain/plan";
-import { mealName, PlannerMealsSet, PlannerRuleCreate, PlannerRuleId, PlannerRuleReorder, PlannerRuleUpdate } from "../../domain/planner";
+import { MEALS, mealName, PlannerRuleCreate, PlannerRuleId, PlannerRuleReorder, PlannerRuleUpdate } from "../../domain/planner";
 import { Id } from "../../domain/reference";
 import { aiConfigured } from "../ai/client";
 import { proposeWeek } from "../ai/planner";
@@ -44,26 +44,21 @@ export const reorderPlannerRules = createServerFn({ method: "POST" })
   .validator(PlannerRuleReorder)
   .handler(async ({ data }) => planner.rules.reorder(data.ids));
 
-/** The three meals and whether a proposed week plans for each. */
-export const listPlannerMeals = createServerFn({ method: "GET" })
-  .middleware([notFoundMiddleware])
-  .handler(async () => planner.meals.list());
-
-/** Turn meals on or off; answers all three, so the settings tab redraws from one result. */
-export const setPlannerMeals = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(PlannerMealsSet)
-  .handler(async ({ data }) => planner.meals.set(data.meals));
-
 // --- The proposal (M39.4) --------------------------------------------------
 
 /**
- * The week to propose for: the Monday, and the days of that week that were
- * ticked. At least one day, every one a day of that week — a proposal for a
- * day the caller is not showing is a proposal nobody asked for.
+ * The week to propose for: the Monday, the days of that week that were ticked,
+ * and the meals. At least one day, every one a day of that week — a proposal
+ * for a day the caller is not showing is a proposal nobody asked for — and at
+ * least one meal, since both are the sheet's per-run choice (decisions.md row
+ * 102) rather than a setting with a default to fall back on.
  */
 export const ProposePlanWeekInput = z
-  .object({ monday: isoDate, dates: z.array(isoDate).min(1, "tick at least one day") })
+  .object({
+    monday: isoDate,
+    dates: z.array(isoDate).min(1, "tick at least one day"),
+    meals: z.array(mealName).min(1, "tick at least one meal"),
+  })
   .refine(({ monday, dates }) => dates.every((date) => weekDates(monday).includes(date)), {
     message: "every date must be a day of that week",
     path: ["dates"],
@@ -81,7 +76,9 @@ export const proposePlanWeek = createServerFn({ method: "POST" })
   .validator(ProposePlanWeekInput)
   .handler(async ({ data }) => {
     const dates = weekDates(data.monday).filter((date) => data.dates.includes(date));
-    return proposeWeek({ monday: data.monday, dates });
+    // Meal order is the day's, not the tick's, so the slots read breakfast, lunch, dinner.
+    const meals = MEALS.filter((meal) => data.meals.includes(meal));
+    return proposeWeek({ monday: data.monday, dates, meals });
   });
 
 /** The entries the household ticked, as the sheet sends them: a slot and the recipe that fills it. */

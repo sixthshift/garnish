@@ -1,16 +1,19 @@
-// The proposal sheet's pure half (M39.5): which days a run covers and how
-// that choice is remembered, the line that says which meals are on, and the
-// model's answer arranged by day, ticked, and turned into the payload
-// `applyPlanProposal` takes. No React and no IO beyond the storage handed in,
-// so every rule here is driven by a test rather than by a click.
+// The proposal sheet's pure half (M39.5): which days and which meals a run
+// covers and how those choices are remembered, and the model's answer arranged
+// by day, ticked, and turned into the payload `applyPlanProposal` takes. No
+// React and no IO beyond the storage handed in, so every rule here is driven
+// by a test rather than by a click.
 
-import { dayParts, type Meal, mealLabel, todayIso, weekDates } from "../../../domain/plan";
-import { enabledMeals, type PlannerMeal } from "../../../domain/planner";
+import { dayParts, type Meal, todayIso, weekDates } from "../../../domain/plan";
+import { MEALS } from "../../../domain/planner";
 import type { StorageLike } from "../../../lib/prefs";
 import type { ProposedWeek, TakenSlot } from "../../../server/ai/planner";
 
 /** Where the day choice is remembered between runs. */
 export const PLANNER_DAYS_KEY = "garnish.planner.days";
+
+/** Where the meal choice is remembered between runs, beside the days: both are per-run (decisions.md row 102). */
+export const PLANNER_MEALS_KEY = "garnish.planner.meals";
 
 /** The seven letters the checkboxes carry, Monday first. */
 export const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
@@ -18,37 +21,86 @@ export const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
 /** Every weekday index, which is what a household that has never touched the sheet gets. */
 export const ALL_DAYS: readonly number[] = [0, 1, 2, 3, 4, 5, 6];
 
-/** The hint under a Propose button that cannot run because the week has no meals to plan. */
-export const NO_MEALS_HINT = "No meals are on — turn one on in Settings.";
+/** What a household that has never touched the sheet plans: dinner, which is the week most of them fill. */
+export const DEFAULT_MEALS: readonly Meal[] = ["dinner"];
+
+/**
+ * One remembered list, read off the storage: the JSON array under `key`,
+ * keeping only the values `keep` accepts, deduplicated and in `order`. Missing,
+ * malformed or empty falls back to `fallback`, the way `lib/prefs` reads its
+ * preferences — the two choices on this sheet are remembered the same way, so
+ * they are read by the same function.
+ */
+function readRemembered<T>(
+  storage: StorageLike | undefined,
+  key: string,
+  order: readonly T[],
+  keep: (value: unknown) => value is T,
+  fallback: readonly T[]
+): T[] {
+  if (storage === undefined) return [...fallback];
+  try {
+    const raw = storage.getItem(key);
+    if (raw == null) return [...fallback];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [...fallback];
+    const chosen = new Set(parsed.filter(keep));
+    const values = order.filter((value) => chosen.has(value));
+    return values.length === 0 ? [...fallback] : values;
+  } catch {
+    return [...fallback];
+  }
+}
+
+/** Remember one list. A throwing storage just means the choice does not stick. */
+function writeRemembered<T>(storage: StorageLike | undefined, key: string, order: readonly T[], values: readonly T[]): void {
+  if (storage === undefined) return;
+  try {
+    storage.setItem(key, JSON.stringify(order.filter((value) => values.includes(value))));
+  } catch {
+    // ignored: see above
+  }
+}
 
 /**
  * The remembered days as weekday indices, 0 Monday to 6 Sunday. Indices rather
  * than dates: the choice is "we plan weekends" and outlives the week it was
- * made in. Anything missing, malformed or empty falls back to all seven, the
- * way `lib/prefs` reads its preferences.
+ * made in. Anything missing, malformed or empty falls back to all seven.
  */
 export function readProposalDays(storage: StorageLike | undefined): number[] {
-  if (storage === undefined) return [...ALL_DAYS];
-  try {
-    const raw = storage.getItem(PLANNER_DAYS_KEY);
-    if (raw == null) return [...ALL_DAYS];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [...ALL_DAYS];
-    const days = [...new Set(parsed.filter((value): value is number => Number.isInteger(value) && value >= 0 && value <= 6))].sort((a, b) => a - b);
-    return days.length === 0 ? [...ALL_DAYS] : days;
-  } catch {
-    return [...ALL_DAYS];
-  }
+  return readRemembered(storage, PLANNER_DAYS_KEY, ALL_DAYS, isDayIndex, ALL_DAYS);
 }
 
-/** Remember the ticked days. A throwing storage just means the choice does not stick. */
+/** Remember the ticked days. */
 export function writeProposalDays(storage: StorageLike | undefined, days: readonly number[]): void {
-  if (storage === undefined) return;
-  try {
-    storage.setItem(PLANNER_DAYS_KEY, JSON.stringify([...days].sort((a, b) => a - b)));
-  } catch {
-    // ignored: see above
-  }
+  writeRemembered(storage, PLANNER_DAYS_KEY, ALL_DAYS, days);
+}
+
+/**
+ * The remembered meals, in the order a day eats them. Dinner when nothing has
+ * been remembered: the household that never opens this row gets the week it
+ * would have got from the old Settings default.
+ */
+export function readProposalMeals(storage: StorageLike | undefined): Meal[] {
+  return readRemembered(storage, PLANNER_MEALS_KEY, MEALS, isMeal, DEFAULT_MEALS);
+}
+
+/** Remember the ticked meals, in meal order. */
+export function writeProposalMeals(storage: StorageLike | undefined, meals: readonly Meal[]): void {
+  writeRemembered(storage, PLANNER_MEALS_KEY, MEALS, meals);
+}
+
+function isDayIndex(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 6;
+}
+
+function isMeal(value: unknown): value is Meal {
+  return typeof value === "string" && (MEALS as readonly string[]).includes(value);
+}
+
+/** Tick or untick one meal, answering in meal order. Pure. */
+export function toggleProposalMeal(meals: readonly Meal[], meal: Meal): Meal[] {
+  return meals.includes(meal) ? meals.filter((m) => m !== meal) : MEALS.filter((m) => m === meal || meals.includes(m));
 }
 
 /** One of the seven checkboxes: its letter, its date, and whether it can be ticked at all. */
@@ -85,18 +137,6 @@ export function tickedDates(days: readonly ProposalDay[]): string[] {
 /** The indices to remember: what was ticked, plus the past days, so a week later they come back. Pure. */
 export function rememberedDays(days: readonly ProposalDay[]): number[] {
   return days.filter((day) => day.ticked || day.past).map((day) => day.index);
-}
-
-/**
- * Which meals a proposal plans for, and where to change it: "Dinner only —
- * change in Settings." for one, "Lunch and dinner — …" for two. Pure.
- */
-export function mealsLine(meals: readonly PlannerMeal[]): string {
-  const on = enabledMeals(meals).map((meal) => mealLabel(meal) ?? "");
-  if (on.length === 0) return NO_MEALS_HINT;
-  if (on.length === 1) return `${on[0]} only — change in Settings.`;
-  const cased = on.map((name, i) => (i === 0 ? name : name.toLowerCase()));
-  return `${cased.slice(0, -1).join(", ")} and ${cased.at(-1)} — change in Settings.`;
 }
 
 /** A slot and its meal together are the row's identity, and so its tick's key. Pure. */

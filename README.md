@@ -137,12 +137,12 @@ Each model's rewrite is printed with the facts check's verdict and the step coun
 To try the planner guide on a real week without writing anything:
 
 ```bash
-bun run propose                                                      # the coming week, all seven days, on AI_PLANNER_MODEL
-bun run propose --week 2026-09-21 --days mon,tue,wed --model gemini-flash-lite-latest,gemini-3.6-flash
+bun run propose                                                      # the coming week, all seven days, dinner, on AI_PLANNER_MODEL
+bun run propose --week 2026-09-21 --days mon,tue,wed --meals breakfast,dinner --model gemini-flash-lite-latest,gemini-3.6-flash
 bun run propose --rules my-statements.txt --prompt                   # one statement per line; print the prompt and stop
 ```
 
-`--week` takes any date in the week wanted, normalised to its Monday, and defaults to the coming week (the household is usually filling next week, not the one under way); `--days` picks which of its seven days to open, `mon` to `sun`, and defaults to all of them. Each model's proposal is printed as a table (day, meal, recipe, reason), with the check's dropped and unfilled counts and the time taken. Nothing is written either way.
+`--week` takes any date in the week wanted, normalised to its Monday, and defaults to the coming week (the household is usually filling next week, not the one under way); `--days` picks which of its seven days to open, `mon` to `sun`, and defaults to all of them; `--meals` picks which meals open a slot on each of those days and defaults to dinner, as the Propose sheet does. Each model's proposal is printed as a table (day, meal, recipe, reason), with the check's dropped and unfilled counts and the time taken. Nothing is written either way.
 
 The defaults are Google's Gemini free tier, so a key from [AI Studio](https://aistudio.google.com/apikey) is all that is needed. Any OpenAI-compatible provider works instead — Mistral, Groq, OpenRouter, or an Ollama on the LAN (`AI_BASE_URL=http://ollama.lan:11434/v1`, any non-empty key):
 

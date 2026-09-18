@@ -1,6 +1,7 @@
 // The planner repository (M39.2): the guide, which is the house style guide's
 // list again — read in position order, edited in place, moved and deleted —
-// and the three meal rows the migration seeds.
+// and nothing else: the meals a week is planned for moved to the proposal
+// sheet in M39.7.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
@@ -62,30 +63,10 @@ test("reorder sets positions from the given order and returns the guide in it", 
   expect(repo.rules.reorder([one.id, "missing", two.id, three.id]).map((r) => r.text)).toEqual(["one", "two", "three"]);
 });
 
-test("the migration seeds the three meals, dinner on, in the order a day eats them", () => {
-  expect(repo.meals.list()).toEqual([
-    { meal: "breakfast", enabled: false },
-    { meal: "lunch", enabled: false },
-    { meal: "dinner", enabled: true },
-  ]);
-});
-
-test("set writes the meals given, leaves the others alone and answers all three", () => {
-  expect(repo.meals.set([{ meal: "lunch", enabled: true }])).toEqual([
-    { meal: "breakfast", enabled: false },
-    { meal: "lunch", enabled: true },
-    { meal: "dinner", enabled: true },
-  ]);
-  expect(
-    repo.meals.set([
-      { meal: "dinner", enabled: false },
-      { meal: "breakfast", enabled: true },
-    ])
-  ).toEqual([
-    { meal: "breakfast", enabled: true },
-    { meal: "lunch", enabled: true },
-    { meal: "dinner", enabled: false },
-  ]);
-  // Setting the same value again is not an error and changes nothing.
-  expect(repo.meals.set([{ meal: "lunch", enabled: true }])).toEqual(repo.meals.list());
+test("the meals table is gone: which meals a week plans for is a per-run choice now (M39.7)", () => {
+  const tables = db
+    .query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table'")
+    .all()
+    .map((row) => row.name);
+  expect(tables).not.toContain("planner_meal");
 });

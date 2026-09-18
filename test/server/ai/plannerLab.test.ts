@@ -21,13 +21,17 @@ const TUESDAY = "2026-09-22";
 
 describe("parseLabFlags", () => {
   test("no flags runs the default model over the coming week, all seven days", () => {
-    expect(parseLabFlags([], "lite")).toEqual({ week: null, days: null, models: ["lite"], rulesFile: null, showPrompt: false });
+    expect(parseLabFlags([], "lite")).toEqual({ week: null, days: null, meals: ["dinner"], models: ["lite"], rulesFile: null, showPrompt: false });
   });
 
   test("reads every flag, and splits the model and day lists", () => {
-    expect(parseLabFlags(["--week", MONDAY, "--days", "Mon, tue,", "--model", "a, b,", "--rules", "r.txt", "--prompt"], "lite")).toEqual({
+    expect(
+      parseLabFlags(["--week", MONDAY, "--days", "Mon, tue,", "--meals", "dinner, Breakfast,", "--model", "a, b,", "--rules", "r.txt", "--prompt"], "lite")
+    ).toEqual({
       week: MONDAY,
       days: ["mon", "tue"],
+      // The flag's order does not matter: the slots read in the order a day eats them.
+      meals: ["breakfast", "dinner"],
       models: ["a", "b"],
       rulesFile: "r.txt",
       showPrompt: true,
@@ -39,6 +43,8 @@ describe("parseLabFlags", () => {
     expect(() => parseLabFlags(["--week"], "lite")).toThrow(/--week needs a value/);
     expect(() => parseLabFlags(["--days", "mon,funday"], "lite")).toThrow(/Unknown day "funday"/);
     expect(() => parseLabFlags(["--model", " , "], "lite")).toThrow(/--model needs at least one model/);
+    expect(() => parseLabFlags(["--meals", "brunch"], "lite")).toThrow(/Unknown meal "brunch"/);
+    expect(() => parseLabFlags(["--meals", " , "], "lite")).toThrow(/--meals needs at least one meal/);
   });
 
   test("DAY_TOKENS is Monday first, the order weekDates gives a week's dates", () => {
@@ -48,6 +54,7 @@ describe("parseLabFlags", () => {
   test("LAB_USAGE names every flag", () => {
     expect(LAB_USAGE).toContain("--week");
     expect(LAB_USAGE).toContain("--days");
+    expect(LAB_USAGE).toContain("--meals");
     expect(LAB_USAGE).toContain("--model");
     expect(LAB_USAGE).toContain("--rules");
     expect(LAB_USAGE).toContain("--prompt");

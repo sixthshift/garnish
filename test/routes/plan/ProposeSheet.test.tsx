@@ -1,11 +1,11 @@
-// The proposal sheet (M39.5): its pure half — the remembered days, the past-day
-// rule, the meals line and the payload Add sends — and what the sheet's content
-// draws in each of its two stages. Static render only, as the restyle sheet's
+// The proposal sheet (M39.5, M39.7): its pure half — the remembered days and
+// meals, the past-day rule and the payload Add sends — and what the sheet's
+// content draws in each of its two stages. Static render only, as the restyle sheet's
 // tests do; the DOM file beside this one is the one that presses anything.
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import type { PlannerMeal } from "../../../src/domain/planner";
+import type { Meal } from "../../../src/domain/plan";
 import { PlanWeekView } from "../../../src/routes/plan/components/PlanWeekView";
 import { ProposeSheetContent } from "../../../src/routes/plan/components/ProposeSheetContent";
 import {
@@ -14,15 +14,18 @@ import {
   applyPayload,
   groupProposal,
   initialTicked,
-  mealsLine,
   PLANNER_DAYS_KEY,
+  PLANNER_MEALS_KEY,
   proposalDays,
   readProposalDays,
+  readProposalMeals,
   rememberedDays,
   slotKey,
   tickedDates,
   toggleProposalDay,
+  toggleProposalMeal,
   writeProposalDays,
+  writeProposalMeals,
 } from "../../../src/routes/plan/components/proposalSheet";
 import type { ProposedWeek } from "../../../src/server/ai/planner";
 
@@ -53,11 +56,7 @@ const week: ProposedWeek = {
   taken: [{ date: WEDNESDAY, meal: "lunch", name: "Leftovers" }],
 };
 
-const MEALS: PlannerMeal[] = [
-  { meal: "breakfast", enabled: false },
-  { meal: "lunch", enabled: false },
-  { meal: "dinner", enabled: true },
-];
+const DINNER: Meal[] = ["dinner"];
 
 /** The content with everything defaulted, so a test only says what it cares about. */
 function content(overrides: Partial<Parameters<typeof ProposeSheetContent>[0]> = {}): string {
@@ -65,7 +64,8 @@ function content(overrides: Partial<Parameters<typeof ProposeSheetContent>[0]> =
     <ProposeSheetContent
       days={proposalDays(MONDAY, ALL_DAYS, WEDNESDAY)}
       onToggleDay={() => {}}
-      meals={MEALS}
+      meals={DINNER}
+      onToggleMeal={() => {}}
       week={null}
       ticked={new Set()}
       onToggleRow={() => {}}
@@ -75,6 +75,11 @@ function content(overrides: Partial<Parameters<typeof ProposeSheetContent>[0]> =
       {...overrides}
     />
   );
+}
+
+/** The three meal checkboxes, as `[meal, checked]`, in the order they are drawn. */
+function mealCells(html: string): { meal: string; checked: boolean }[] {
+  return [...html.matchAll(/data-state="(checked|unchecked)"[^>]*?data-meal="([a-z]+)"/g)].map((m) => ({ meal: m[2]!, checked: m[1] === "checked" }));
 }
 
 /** The `<label>` wrappers of the seven day checkboxes, as `[date, ticked, past]`. */
@@ -135,13 +140,55 @@ describe("the day checkboxes", () => {
   });
 });
 
-describe("the meals line", () => {
-  test("says which meals are on and where to change them", () => {
-    expect(mealsLine(MEALS)).toBe("Dinner only — change in Settings.");
-    expect(mealsLine([{ meal: "lunch", enabled: true }, ...MEALS.slice(2)])).toBe("Lunch and dinner — change in Settings.");
-    expect(mealsLine(MEALS.map((meal) => ({ ...meal, enabled: true })))).toBe("Breakfast, lunch and dinner — change in Settings.");
-    expect(mealsLine([])).toBe("No meals are on — turn one on in Settings.");
-    expect(content()).toContain("Dinner only — change in Settings.");
+describe("the remembered meals", () => {
+  test("nothing stored is dinner alone", () => {
+    expect(readProposalMeals(memory())).toEqual(["dinner"]);
+    expect(readProposalMeals(undefined)).toEqual(["dinner"]);
+  });
+
+  test("a stored choice comes back in meal order; rubbish falls back to dinner", () => {
+    expect(readProposalMeals(memory({ [PLANNER_MEALS_KEY]: '["dinner","breakfast"]' }))).toEqual(["breakfast", "dinner"]);
+    expect(readProposalMeals(memory({ [PLANNER_MEALS_KEY]: "not json" }))).toEqual(["dinner"]);
+    expect(readProposalMeals(memory({ [PLANNER_MEALS_KEY]: "[]" }))).toEqual(["dinner"]);
+    expect(readProposalMeals(memory({ [PLANNER_MEALS_KEY]: '["supper"]' }))).toEqual(["dinner"]);
+  });
+
+  test("writing puts the meals under garnish.planner.meals, in meal order", () => {
+    const storage = memory();
+    writeProposalMeals(storage, ["dinner", "breakfast"]);
+    expect(storage.map.get(PLANNER_MEALS_KEY)).toBe('["breakfast","dinner"]');
+  });
+
+  test("toggling adds and removes one meal, keeping meal order", () => {
+    expect(toggleProposalMeal(["dinner"], "breakfast")).toEqual(["breakfast", "dinner"]);
+    expect(toggleProposalMeal(["breakfast", "dinner"], "dinner")).toEqual(["breakfast"]);
+    expect(toggleProposalMeal(["dinner"], "dinner")).toEqual([]);
+  });
+});
+
+describe("the meal checkboxes", () => {
+  test("from the default, dinner alone is ticked", () => {
+    expect(mealCells(content())).toEqual([
+      { meal: "breakfast", checked: false },
+      { meal: "lunch", checked: false },
+      { meal: "dinner", checked: true },
+    ]);
+    expect(content()).toContain("Breakfast");
+  });
+
+  test("from storage, the remembered meals are ticked", () => {
+    const html = content({ meals: readProposalMeals(memory({ [PLANNER_MEALS_KEY]: '["breakfast","dinner"]' })) });
+    expect(mealCells(html)).toEqual([
+      { meal: "breakfast", checked: true },
+      { meal: "lunch", checked: false },
+      { meal: "dinner", checked: true },
+    ]);
+  });
+
+  test("Propose needs a day and a meal: with either row empty it is disabled", () => {
+    expect(content()).not.toMatch(/disabled=""[^>]*data-testid="propose-run"/);
+    expect(content({ meals: [] })).toMatch(/disabled=""[^>]*data-testid="propose-run"/);
+    expect(content({ days: proposalDays(MONDAY, [], MONDAY) })).toMatch(/disabled=""[^>]*data-testid="propose-run"/);
   });
 });
 
@@ -221,10 +268,10 @@ describe("the Propose button on the plan header", () => {
     expect(await renderWeek()).not.toContain('data-testid="plan-propose"');
   });
 
-  test("is there when one is, and disabled with a hint when no meal is on", async () => {
-    expect(await renderWeek({ plannerAvailable: true, plannerMeals: MEALS })).toContain('data-testid="plan-propose"');
-    const off = await renderWeek({ plannerAvailable: true, plannerMeals: MEALS.map((meal) => ({ ...meal, enabled: false })) });
-    expect(off).toContain("No meals are on — turn one on in Settings.");
-    expect(off).toMatch(/disabled=""[^>]*data-testid="plan-propose"/);
+  test("is there when one is, and a model is the whole of the gate (M39.7)", async () => {
+    const html = await renderWeek({ plannerAvailable: true });
+    expect(html).toContain('data-testid="plan-propose"');
+    expect(html).not.toMatch(/disabled=""[^>]*data-testid="plan-propose"/);
+    expect(html).not.toContain("Settings");
   });
 });

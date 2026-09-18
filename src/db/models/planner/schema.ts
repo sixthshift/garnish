@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import { check, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { MEALS } from "../../../domain/planner";
 import { nowUtc } from "../columns";
 
 /**
@@ -21,18 +20,4 @@ export const plannerRule = sqliteTable(
     updatedAt: text("updated_at").notNull().default(nowUtc),
   },
   (t) => [check("enabled_flag", sql`${t.enabled} IN (0, 1)`)]
-);
-
-/**
- * Which meals a proposed week plans for: one row per meal, forever, seeded by
- * the migration with dinner on and the other two off. The meal is the key
- * because there is nothing else to say about it.
- */
-export const plannerMeal = sqliteTable(
-  "planner_meal",
-  {
-    meal: text("meal", { enum: MEALS }).primaryKey(),
-    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
-  },
-  (t) => [check("meal_is_a_meal", sql`${t.meal} IN ('breakfast', 'lunch', 'dinner')`), check("meal_enabled_flag", sql`${t.enabled} IN (0, 1)`)]
 );

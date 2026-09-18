@@ -4,7 +4,7 @@
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
-import type { PlannerMeal, PlannerRule } from "../../src/domain/planner";
+import type { PlannerRule } from "../../src/domain/planner";
 import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../src/domain/reference";
 import type { StyleRule } from "../../src/domain/style";
@@ -673,7 +673,6 @@ describe("loader data types match the domain schemas", () => {
       recipes: RecipeSummary[];
       styleRules: StyleRule[];
       plannerRules: PlannerRule[];
-      plannerMeals: PlannerMeal[];
     }>();
     // Search params are typed from their zod schemas.
     expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{

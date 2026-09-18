@@ -18,7 +18,7 @@ import {
   weekSlots,
 } from "../../../src/server/ai/planner";
 import { addPlanEntry, listPlanWeek } from "../../../src/server/fns/plan";
-import { applyPlanProposal, plannerAvailable, proposePlanWeek, setPlannerMeals } from "../../../src/server/fns/planner";
+import { applyPlanProposal, plannerAvailable, proposePlanWeek } from "../../../src/server/fns/planner";
 import { createRecipe, deleteRecipe } from "../../../src/server/fns/recipes";
 import { createTimelineEvent } from "../../../src/server/fns/timeline";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
@@ -218,7 +218,6 @@ describe("weekSlots and mergeRecent", () => {
 
 describe("proposalInput", () => {
   test("a typed dinner closes its slot, an untyped entry does not, and the library and recent come through", async () => {
-    await callServerFn(setPlannerMeals, { meals: [{ meal: "dinner", enabled: true }] });
     const ragu = await newRecipe("Beef ragu");
     const tart = await newRecipe("Lemon tart");
     await callServerFn(addPlanEntry, { date: MONDAY, recipeId: tart.id, text: tart.name, meal: "dinner" });
@@ -227,7 +226,7 @@ describe("proposalInput", () => {
     await callServerFn(addPlanEntry, { date: "2026-09-14", recipeId: ragu.id, text: ragu.name, meal: "dinner" });
     await callServerFn(createTimelineEvent, { recipeId: tart.id, event: { occurredOn: "2026-09-08", message: "" } });
 
-    const input = proposalInput({ monday: MONDAY, dates: [MONDAY, TUESDAY, WEDNESDAY] });
+    const input = proposalInput({ monday: MONDAY, dates: [MONDAY, TUESDAY, WEDNESDAY], meals: ["dinner"] });
 
     expect(input.meals).toEqual(["dinner"]);
     expect(input.week).toEqual({ monday: MONDAY, dates: [MONDAY, TUESDAY, WEDNESDAY] });
@@ -244,17 +243,34 @@ describe("proposalInput", () => {
     ]);
     expect(input.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
+
+  test("only the meals the run was asked for open a slot (M39.7)", async () => {
+    const ragu = await newRecipe("Beef ragu");
+    await callServerFn(addPlanEntry, { date: MONDAY, recipeId: ragu.id, text: ragu.name, meal: "dinner" });
+
+    const breakfast = proposalInput({ monday: MONDAY, dates: [MONDAY], meals: ["breakfast"] });
+    expect(breakfast.meals).toEqual(["breakfast"]);
+    // The dinner that is taken is not even a slot: it was not asked for.
+    expect(breakfast.slots).toEqual([{ date: MONDAY, meal: "breakfast", taken: null }]);
+
+    const both = proposalInput({ monday: MONDAY, dates: [MONDAY], meals: ["breakfast", "dinner"] });
+    expect(both.slots).toEqual([
+      { date: MONDAY, meal: "breakfast", taken: null },
+      { date: MONDAY, meal: "dinner", taken: "Beef ragu" },
+    ]);
+  });
 });
 
 describe("proposePlanWeek", () => {
-  test("refuses no days and a day outside the week", async () => {
-    await expect(callServerFn(proposePlanWeek, { monday: MONDAY, dates: [] })).rejects.toThrow();
-    await expect(callServerFn(proposePlanWeek, { monday: MONDAY, dates: ["2026-09-30"] })).rejects.toThrow();
+  test("refuses no days, a day outside the week, and no meals", async () => {
+    await expect(callServerFn(proposePlanWeek, { monday: MONDAY, dates: [], meals: ["dinner"] })).rejects.toThrow();
+    await expect(callServerFn(proposePlanWeek, { monday: MONDAY, dates: ["2026-09-30"], meals: ["dinner"] })).rejects.toThrow();
+    await expect(callServerFn(proposePlanWeek, { monday: MONDAY, dates: [MONDAY], meals: [] })).rejects.toThrow();
   });
 
   test("with no key configured the pass is unavailable rather than silently empty", async () => {
     delete process.env.AI_API_KEY;
-    const caught = await callServerFn(proposePlanWeek, { monday: MONDAY, dates: [MONDAY] }).catch((cause: unknown) => cause);
+    const caught = await callServerFn(proposePlanWeek, { monday: MONDAY, dates: [MONDAY], meals: ["dinner"] }).catch((cause: unknown) => cause);
     expect((caught as AiError).kind).toBe("unavailable");
   });
 });
@@ -340,13 +356,12 @@ describe("resolveProposal", () => {
 
 describe("proposeWeek", () => {
   test("answers with the recipe to draw and the week's taken slots", async () => {
-    await callServerFn(setPlannerMeals, { meals: [{ meal: "dinner", enabled: true }] });
     const laksa = await newRecipe("Laksa");
     const congee = await newRecipe("Congee");
     await callServerFn(addPlanEntry, { date: OCTOBER, recipeId: congee.id, text: congee.name, meal: "dinner" });
 
     const run = fakeRunner(JSON.stringify({ entries: [{ date: OCTOBER_TUESDAY, meal: "dinner", recipeId: laksa.id, reason: "Nothing like it lately." }] }));
-    const week = await proposeWeek({ monday: OCTOBER, dates: [OCTOBER, OCTOBER_TUESDAY] }, { run });
+    const week = await proposeWeek({ monday: OCTOBER, dates: [OCTOBER, OCTOBER_TUESDAY], meals: ["dinner"] }, { run });
 
     expect(week.entries).toEqual([
       {

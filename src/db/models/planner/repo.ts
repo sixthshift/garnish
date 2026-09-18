@@ -1,11 +1,10 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, max } from "drizzle-orm";
-import type { Meal } from "../../../domain/planner";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { nowUtc } from "../columns";
-import { plannerMeal, plannerRule } from "./schema";
+import { plannerRule } from "./schema";
 
 export type PlannerRule = {
   id: string;
@@ -18,15 +17,14 @@ export type PlannerRule = {
 
 export type PlannerRuleInput = { text: string; enabled?: boolean; position?: number };
 
-export type PlannerMeal = { meal: Meal; enabled: boolean };
-
 // Ties fall back to created_at so a list seeded in one transaction reads in the order it was written.
 const order = [asc(plannerRule.position), asc(plannerRule.createdAt)];
 
 /**
- * The planner guide and the meals a week is planned for. One factory for the
- * pair, because they are one setting screen and one read: the proposal asks
- * for both every time.
+ * The planner guide: the statements read out to the model that proposes a
+ * week. Which meals a week is planned for used to live here too; it is a
+ * per-run choice on the proposal sheet now, remembered on the device rather
+ * than in the database (decisions.md row 102).
  */
 export function plannerRepository(db: Database) {
   const dz = orm(db);
@@ -107,34 +105,8 @@ export function plannerRepository(db: Database) {
     },
   };
 
-  const meals = {
-    /** The three rows the migration seeded, in the order a day eats them. */
-    list: (): PlannerMeal[] => dz.select().from(plannerMeal).orderBy(asc(plannerMeal.meal)).all().sort(byMealOrder),
-
-    /**
-     * Turn the given meals on or off, in one transaction, and answer all three
-     * afterwards. A meal the migration did not seed is inserted rather than
-     * lost, so the three rows are always there.
-     */
-    set(changes: readonly PlannerMeal[]): PlannerMeal[] {
-      dz.transaction((tx) => {
-        for (const change of changes) {
-          tx.insert(plannerMeal)
-            .values({ meal: change.meal, enabled: change.enabled })
-            .onConflictDoUpdate({ target: plannerMeal.meal, set: { enabled: change.enabled } })
-            .run();
-        }
-      });
-      return meals.list();
-    },
-  };
-
-  return { rules, meals };
+  return { rules };
 }
-
-// breakfast, lunch, dinner rather than the alphabet.
-const MEAL_ORDER: Record<Meal, number> = { breakfast: 0, lunch: 1, dinner: 2 };
-const byMealOrder = (a: PlannerMeal, b: PlannerMeal) => MEAL_ORDER[a.meal] - MEAL_ORDER[b.meal];
 
 export type PlannerRepository = ReturnType<typeof plannerRepository>;
 

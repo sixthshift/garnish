@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { plannerMealSchema } from "./meals";
 
 const id = z.uuid();
 const timestamp = z.iso.datetime();
@@ -41,10 +40,6 @@ export type PlannerRuleReorder = z.infer<typeof PlannerRuleReorder>;
 
 export const PlannerRuleId = z.object({ id: z.string().min(1) });
 export type PlannerRuleId = z.infer<typeof PlannerRuleId>;
-
-/** One or more meal switches, written together: the three checkboxes send whichever changed. */
-export const PlannerMealsSet = z.object({ meals: z.array(plannerMealSchema).min(1) });
-export type PlannerMealsSet = z.infer<typeof PlannerMealsSet>;
 
 /** The statements a proposal would read out, in order: the enabled ones. Pure. */
 export function enabledRules(rules: readonly PlannerRule[]): PlannerRule[] {

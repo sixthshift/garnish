@@ -1,13 +1,12 @@
-// The proposal sheet, pressed rather than read (M39.5). The node suite asserts
-// what the two stages draw; only a DOM can untick a day, press Propose and see
-// which dates went to the server. The server functions are mocked: a test that
+// The proposal sheet, pressed rather than read (M39.5, M39.7). The node suite
+// asserts what the two stages draw; only a DOM can untick a day, tick a meal,
+// press Propose and see what went to the server. The server functions are mocked: a test that
 // asks a model is not a test.
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import type { PlannerMeal } from "../../../src/domain/planner";
 import { ProposeSheet } from "../../../src/routes/plan/components/ProposeSheet";
-import { PLANNER_DAYS_KEY } from "../../../src/routes/plan/components/proposalSheet";
+import { PLANNER_DAYS_KEY, PLANNER_MEALS_KEY } from "../../../src/routes/plan/components/proposalSheet";
 import { applyPlanProposal, proposePlanWeek } from "../../../src/server/fns/planner";
 import { renderInRouter } from "../../helpers/dom";
 
@@ -26,12 +25,6 @@ vi.mock("../../../src/server/fns/planner", () => ({
   applyPlanProposal: vi.fn(async () => []),
 }));
 
-const MEALS: PlannerMeal[] = [
-  { meal: "breakfast", enabled: false },
-  { meal: "lunch", enabled: false },
-  { meal: "dinner", enabled: true },
-];
-
 /** A `Storage`-shaped map, so the sheet's memory is the test's. */
 function memory(seed: Record<string, string> = {}) {
   const map = new Map(Object.entries(seed));
@@ -43,14 +36,14 @@ test("unticking a day leaves it out of the run, remembers it, and the answer's r
   vi.mocked(applyPlanProposal).mockClear();
   const user = userEvent.setup();
   const storage = memory();
-  await renderInRouter(<ProposeSheet open monday={MONDAY} meals={MEALS} today={TODAY} storage={storage} onClose={() => {}} />);
+  await renderInRouter(<ProposeSheet open monday={MONDAY} today={TODAY} storage={storage} onClose={() => {}} />);
 
   await user.click(screen.getByRole("checkbox", { name: "Wed 16 Sep" }));
   expect(storage.map.get(PLANNER_DAYS_KEY)).toBe("[0,1,3,4,5,6]");
 
   await user.click(screen.getByTestId("propose-run"));
   expect(proposePlanWeek).toHaveBeenCalledWith({
-    data: { monday: MONDAY, dates: ["2026-09-14", "2026-09-15", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20"] },
+    data: { monday: MONDAY, dates: ["2026-09-14", "2026-09-15", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20"], meals: ["dinner"] },
   });
 
   // The answer is on screen, ticked, and nothing has been written yet.
@@ -65,11 +58,34 @@ test("unticking a day leaves it out of the run, remembers it, and the answer's r
 test("unticking a proposed row leaves it out of what Add sends", async () => {
   vi.mocked(applyPlanProposal).mockClear();
   const user = userEvent.setup();
-  await renderInRouter(<ProposeSheet open monday={MONDAY} meals={MEALS} today={TODAY} storage={memory()} onClose={() => {}} />);
+  await renderInRouter(<ProposeSheet open monday={MONDAY} today={TODAY} storage={memory()} onClose={() => {}} />);
 
   await user.click(screen.getByTestId("propose-run"));
   await user.click(await screen.findByRole("checkbox", { name: "Dinner: Beef ragu" }));
   await user.click(screen.getByTestId("propose-add"));
 
   expect(applyPlanProposal).not.toHaveBeenCalled(); // nothing ticked: the button is disabled
+});
+
+test("ticking a meal remembers it and carries it to the run; unticking them all disables Propose", async () => {
+  vi.mocked(proposePlanWeek).mockClear();
+  const user = userEvent.setup();
+  const storage = memory();
+  await renderInRouter(<ProposeSheet open monday={MONDAY} today={TODAY} storage={storage} onClose={() => {}} />);
+
+  await user.click(screen.getByRole("checkbox", { name: "Breakfast" }));
+  expect(storage.map.get(PLANNER_MEALS_KEY)).toBe('["breakfast","dinner"]');
+
+  await user.click(screen.getByTestId("propose-run"));
+  expect(vi.mocked(proposePlanWeek).mock.calls[0]![0]!.data.meals).toEqual(["breakfast", "dinner"]);
+});
+
+test("with no meal ticked Propose cannot run", async () => {
+  vi.mocked(proposePlanWeek).mockClear();
+  const user = userEvent.setup();
+  await renderInRouter(<ProposeSheet open monday={MONDAY} today={TODAY} storage={memory()} onClose={() => {}} />);
+
+  await user.click(screen.getByRole("checkbox", { name: "Dinner" }));
+  await user.click(screen.getByTestId("propose-run"));
+  expect(proposePlanWeek).not.toHaveBeenCalled();
 });

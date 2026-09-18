@@ -8,7 +8,7 @@ import { StyleTab } from "./components/tabs/StyleTab";
 import { Route } from "./route";
 
 export function SettingsPage() {
-  const { aisles, units, foods, tags, recipes, styleRules, plannerRules, plannerMeals } = Route.useLoaderData();
+  const { aisles, units, foods, tags, recipes, styleRules, plannerRules } = Route.useLoaderData();
 
   const items: TabItem[] = [
     { value: "library", label: "Library", content: <LibraryTab foods={foods} aisles={aisles} units={units} tags={tags} recipes={recipes} /> },
@@ -17,7 +17,7 @@ export function SettingsPage() {
       value: "planner",
       label: "Planner",
       badge: plannerRules.filter((rule) => rule.enabled).length,
-      content: <PlannerTab rules={plannerRules} meals={plannerMeals} />,
+      content: <PlannerTab rules={plannerRules} />,
     },
     { value: "export", label: "Import and export", content: <ExportTab /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },

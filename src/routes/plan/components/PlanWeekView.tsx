@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Page, PageHeader } from "../../../components/shell/Page";
 import { addDays, type Meal, type PlanDay, type PlanEntry, todayIso, weekLabel } from "../../../domain/plan";
-import type { PlannerMeal } from "../../../domain/planner";
 import type { RecipeSummary } from "../../../domain/recipe";
 import { AddWeekToShoppingButton } from "./AddWeekToShoppingButton";
 import { PlanDayRow } from "./PlanDayRow";
@@ -25,8 +24,6 @@ export type PlanWeekViewProps = {
   busy?: boolean;
   /** A model is configured, so a week can be proposed. Off: no Propose button at all. */
   plannerAvailable?: boolean;
-  /** The three meals as Settings holds them; the proposal plans for the ones that are on. */
-  plannerMeals?: readonly PlannerMeal[];
 };
 
 /** The week itself, writes injected. Rendered by the route and by the tests. */
@@ -41,7 +38,6 @@ export function PlanWeekView({
   searchRecipes,
   busy = false,
   plannerAvailable = false,
-  plannerMeals = [],
 }: PlanWeekViewProps) {
   return (
     <Page width="focus">
@@ -49,7 +45,7 @@ export function PlanWeekView({
         title="Plan"
         actions={
           <>
-            {plannerAvailable && <ProposeButton monday={monday} meals={plannerMeals} today={today} />}
+            {plannerAvailable && <ProposeButton monday={monday} today={today} />}
             <AddWeekToShoppingButton monday={monday} />
             <div className="flex items-center gap-2">
               <WeekArrow monday={addDays(monday, -7)} label="Previous week" glyph="‹" />

@@ -13,7 +13,6 @@ import { addDays, entryLabel, type PlanDay, type PlanRecipe, todayIso } from "..
 import {
   checkProposal,
   type DroppedEntry,
-  enabledMeals,
   enabledRules,
   type LibraryRecipe,
   type Meal,
@@ -104,7 +103,7 @@ export function libraryRecipe(summary: RecipeSummary): LibraryRecipe {
 
 /**
  * The week's slots: every `(date, meal)` pair of the days being planned and
- * the meals that are on. A slot is taken when the day already holds an entry
+ * the meals the run was asked for. A slot is taken when the day already holds an entry
  * of that meal — an untyped entry blocks nothing, because a day holding a
  * snack or a side is not a day with its dinner decided. Pure.
  */
@@ -135,14 +134,14 @@ export function mergeRecent(planned: readonly RecentMeal[], cooked: readonly Rec
 }
 
 /**
- * Everything a proposal is built from, read off the database: the library, the
- * week's open and taken slots, what was eaten in the four weeks before this
+ * Everything a proposal is built from: the days and the meals the run was
+ * asked for (both chosen on the sheet, decisions.md row 102), and off the
+ * database the library, the week's open and taken slots, what was eaten in the four weeks before this
  * one, the statements that are on, and today from the clock. The four weeks
  * come from four `week` reads rather than a range query, because the week is
  * the plan's unit and four of them is the whole of "recently".
  */
-export function proposalInput({ monday, dates }: { monday: string; dates: string[] }): ProposalInput {
-  const meals = enabledMeals(planner.meals.list());
+export function proposalInput({ monday, dates, meals }: { monday: string; dates: string[]; meals: Meal[] }): ProposalInput {
   const rules = enabledRules(planner.rules.list()).map((rule) => rule.text);
   const library = recipes.query().map(libraryRecipe);
   const slots = weekSlots(plan.week(monday), dates, meals);
@@ -205,7 +204,7 @@ export function resolveProposal(check: ProposalCheck, slots: readonly ProposalSl
 }
 
 /** Gather, ask, check, and resolve: the whole proposal behind one call, for the server function and its tests. Nothing is written. */
-export async function proposeWeek(week: { monday: string; dates: string[] }, options: { run?: AiRunner } = {}): Promise<ProposedWeek> {
+export async function proposeWeek(week: { monday: string; dates: string[]; meals: Meal[] }, options: { run?: AiRunner } = {}): Promise<ProposedWeek> {
   const input = proposalInput(week);
   const check = await runProposal(input, options);
   // The library is only re-read when there is something to name.
