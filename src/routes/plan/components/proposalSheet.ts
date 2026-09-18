@@ -6,7 +6,7 @@
 
 import { dayParts, type Meal, todayIso, weekDates } from "../../../domain/plan";
 import { MEALS } from "../../../domain/planner";
-import type { StorageLike } from "../../../lib/prefs";
+import type { StorageLike } from "../../../lib/useLocalStorage";
 import type { ProposedWeek, TakenSlot } from "../../../server/ai/planner";
 
 /** Where the day choice is remembered between runs. */

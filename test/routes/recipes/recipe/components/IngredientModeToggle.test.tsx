@@ -3,7 +3,8 @@
 // reload, same style as ThemeToggle.test.tsx's persistence check.
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { prefs, type StorageLike, writePref } from "../../../../../src/lib/prefs";
+import { prefs, writePref } from "../../../../../src/lib/prefs";
+import type { StorageLike } from "../../../../../src/lib/useLocalStorage";
 import { IngredientModeToggle } from "../../../../../src/routes/recipes/recipe/components/IngredientModeToggle";
 
 function fakeStorage(): StorageLike {

@@ -1,15 +1,9 @@
-// The device's preferences: one table of what is kept, the read and write
-// over it, and one hook. A preference is what this phone was doing (view
-// mode, theme), not household data: it lives in localStorage, survives a
-// reload, and never reaches the server or another device.
+// The device's preferences: one table of what is kept, and a hook per entry
+// over useLocalStorage. A preference is what this phone was doing (view mode,
+// theme), not household data: it survives a reload and never reaches the
+// server or another device.
 
-import { useCallback, useEffect, useState } from "react";
-
-/** The slice of `Storage` the reads and writes use. */
-export type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-};
+import { readItem, type StorageLike, useLocalStorage, writeItem } from "./useLocalStorage";
 
 export type ViewMode = "grid" | "list";
 export type IngredientMode = "structured" | "summary";
@@ -27,8 +21,6 @@ function oneOf<T>(key: string, fallback: T, values: readonly T[]): Pref<T> {
   return { key, fallback, isValid: (value): value is T => (values as readonly unknown[]).includes(value) };
 }
 
-// --- The table ---------------------------------------------------------------
-
 /**
  * Every preference this device keeps. Keys are under `garnish.` except the
  * theme, which shares the design system's own key and encoding so its
@@ -42,79 +34,19 @@ export const prefs = {
   theme: oneOf<Theme>("theme", "system", ["light", "dark", "system"]),
 } as const;
 
-// --- Read and write ----------------------------------------------------------
-
-/**
- * `pref`'s value in `storage`, or its fallback whenever it is missing,
- * malformed, holds something `isValid` rejects, or the storage throws
- * (disabled, or a security error in a locked-down frame). Pure.
- */
+/** `pref`'s value in `storage`, or its fallback. Pure. */
 export function readPref<T>(storage: StorageLike, pref: Pref<T>): T {
-  try {
-    const raw = storage.getItem(pref.key);
-    if (raw == null) return pref.fallback;
-    const parsed: unknown = JSON.parse(raw);
-    return pref.isValid(parsed) ? parsed : pref.fallback;
-  } catch {
-    return pref.fallback;
-  }
+  return readItem(storage, pref.key, pref.fallback, pref.isValid);
 }
 
-/** JSON-encode and write `value` under `pref`'s key. A throwing storage (full, disabled) just means the preference does not stick. */
+/** Write `value` under `pref`'s key. */
 export function writePref<T>(storage: StorageLike, pref: Pref<T>, value: T): void {
-  try {
-    storage.setItem(pref.key, JSON.stringify(value));
-  } catch {
-    // ignored: see above
-  }
+  writeItem(storage, pref.key, value);
 }
 
-// --- The hook ----------------------------------------------------------------
-//
-// A preference is one process-wide value, not a component's: the view toggle
-// and the recipe grid both read it, and a press on one has to reach the other
-// at once. So every hook keeps the value in `useState` for its own render,
-// registers a refresh in one module-level set, and a write tells every
-// registered hook to re-read; a `storage` event from another tab does the
-// same. The usehooks-ts shape, with a set in place of a custom event.
-
-/** `window.localStorage`, or undefined on the server and where it is unavailable. */
-function browserStorage(): StorageLike | undefined {
-  return typeof window === "undefined" ? undefined : window.localStorage;
-}
-
-const listeners = new Set<() => void>();
-
-/** A `[value, setValue]` pair over one preference. Every reader re-renders on every write. */
+/** A `[value, setValue]` pair over one preference, shared by every reader of it. */
 export function usePref<T>(pref: Pref<T>): [T, (value: T) => void] {
-  const read = useCallback((): T => {
-    const storage = browserStorage();
-    return storage ? readPref(storage, pref) : pref.fallback;
-  }, [pref]);
-  const [value, setValue] = useState<T>(read);
-
-  useEffect(() => {
-    const refresh = () => setValue(read());
-    listeners.add(refresh);
-    // Any key: the theme lives under the design system's own key, and a re-read of an unchanged one costs nothing.
-    window.addEventListener("storage", refresh);
-    return () => {
-      listeners.delete(refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, [read]);
-
-  const update = useCallback(
-    (next: T) => {
-      const storage = browserStorage();
-      if (storage) writePref(storage, pref, next);
-      // Own state first, so a write with no storage still shows on the control that made it.
-      setValue(next);
-      for (const listener of [...listeners]) listener();
-    },
-    [pref]
-  );
-  return [value, update];
+  return useLocalStorage(pref.key, pref.fallback, pref.isValid);
 }
 
 export const useViewMode = () => usePref(prefs.viewMode);

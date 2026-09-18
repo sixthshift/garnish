@@ -2,7 +2,8 @@
 // server snapshot), and the guard that keeps a stray string out of prefs.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { prefs, readPref, type StorageLike, writePref } from "../../../../src/lib/prefs";
+import { prefs, readPref, writePref } from "../../../../src/lib/prefs";
+import type { StorageLike } from "../../../../src/lib/useLocalStorage";
 import { ThemeToggle, themeOptions } from "../../../../src/routes/settings/components/ThemeToggle";
 
 describe("the theme guard the toggle uses (prefs.theme.isValid)", () => {

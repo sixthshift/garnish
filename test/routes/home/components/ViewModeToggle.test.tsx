@@ -3,7 +3,8 @@
 // check.
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { prefs, type StorageLike, writePref } from "../../../../src/lib/prefs";
+import { prefs, writePref } from "../../../../src/lib/prefs";
+import type { StorageLike } from "../../../../src/lib/useLocalStorage";
 import { ViewModeToggle } from "../../../../src/routes/home/components/ViewModeToggle";
 
 function fakeStorage(): StorageLike {

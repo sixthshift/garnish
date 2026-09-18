@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Meal } from "../../../domain/plan";
 import { useMutate } from "../../../lib/mutate";
 import { messageFrom, notify } from "../../../lib/notify";
-import type { StorageLike } from "../../../lib/prefs";
+import type { StorageLike } from "../../../lib/useLocalStorage";
 import type { ProposedWeek } from "../../../server/ai/planner";
 import { applyPlanProposal, proposePlanWeek } from "../../../server/fns/planner";
 import { ProposeSheetContent } from "./ProposeSheetContent";

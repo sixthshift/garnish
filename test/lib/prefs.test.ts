@@ -2,7 +2,8 @@
 // storage and one that throws on every access. The hooks share the table and
 // are pressed in test/routes/home/components/ViewModeToggle.dom.test.tsx.
 import { describe, expect, test } from "vitest";
-import { prefs, readPref, type StorageLike, writePref } from "../../src/lib/prefs";
+import { prefs, readPref, writePref } from "../../src/lib/prefs";
+import type { StorageLike } from "../../src/lib/useLocalStorage";
 
 /** A plain in-memory Storage-like, for round-trip tests. */
 function memoryStorage(): StorageLike & { size: () => number } {
