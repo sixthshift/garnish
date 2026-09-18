@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 /** The slice of `Storage` the controller uses. */
 export type StorageLike = {
@@ -111,40 +111,85 @@ function browserStorage(): StorageLike | undefined {
   return typeof window === "undefined" ? undefined : window.localStorage;
 }
 
-/** A `[value, setValue]` pair backed by one localStorage-shaped preference. Reads once on mount; writes through on every set. */
-function usePref<T>(get: (storage: StorageLike) => T, set: (storage: StorageLike, value: T) => void, fallback: T): [T, (value: T) => void] {
-  const [value, setValue] = useState<T>(() => {
-    const storage = browserStorage();
-    return storage ? get(storage) : fallback;
-  });
+// --- The hooks ---------------------------------------------------------------
+//
+// A preference is one process-wide value, not a component's: the view toggle
+// and the recipe grid both read it, and a press on one has to reach the other
+// at once. So the hooks read through `useSyncExternalStore` and every write
+// tells every listener, as ticks.ts does; a `storage` event from another tab
+// does the same. The snapshot is cached per key by the raw string stored, so
+// an object preference (sort) keeps its identity between reads and React sees
+// a change only when the stored value changed.
+
+const listeners = new Set<() => void>();
+
+function notify(): void {
+  for (const listener of [...listeners]) listener();
+}
+
+/** Listen for any preference write, here or in another tab. Returns the unsubscribe. */
+export function subscribePrefs(listener: () => void): () => void {
+  listeners.add(listener);
+  // Any key: the theme lives under the design system's own key, and a re-read of an unchanged one costs nothing.
+  if (typeof window !== "undefined") window.addEventListener("storage", listener);
+  return () => {
+    listeners.delete(listener);
+    if (typeof window !== "undefined") window.removeEventListener("storage", listener);
+  };
+}
+
+/** The last parse per key: what was stored and what it read as. */
+const snapshots = new Map<string, { raw: string | null; value: unknown }>();
+
+/** `key`'s value, the same object as last time while the stored string is unchanged. */
+function snapshot<T>(key: string, fallback: T, isValid: (value: unknown) => value is T): T {
+  const storage = browserStorage();
+  let raw: string | null = null;
+  try {
+    raw = storage ? storage.getItem(key) : null;
+  } catch {
+    raw = null;
+  }
+  const last = snapshots.get(key);
+  if (last !== undefined && last.raw === raw) return last.value as T;
+  const value = storage ? readPref(storage, key, fallback, isValid) : fallback;
+  snapshots.set(key, { raw, value });
+  return value;
+}
+
+/** A `[value, setValue]` pair over one preference. Every reader re-renders on every write. */
+function usePref<T>(key: string, fallback: T, isValid: (value: unknown) => value is T): [T, (value: T) => void] {
+  const read = () => snapshot(key, fallback, isValid);
+  const value = useSyncExternalStore(subscribePrefs, read, read);
   const update = useCallback(
     (next: T) => {
       const storage = browserStorage();
-      if (storage) set(storage, next);
-      setValue(next);
+      if (storage) writePref(storage, key, next);
+      else snapshots.set(key, { raw: null, value: next });
+      notify();
     },
-    [set]
+    [key]
   );
   return [value, update];
 }
 
 export function useViewMode(): [ViewMode, (mode: ViewMode) => void] {
-  return usePref(getViewMode, setViewMode, DEFAULT_VIEW_MODE);
+  return usePref(KEY_VIEW_MODE, DEFAULT_VIEW_MODE, oneOf(VIEW_MODES));
 }
 
 export function useSort(): [Sort, (sort: Sort) => void] {
-  return usePref(getSort, setSort, DEFAULT_SORT);
+  return usePref(KEY_SORT, DEFAULT_SORT, isSort);
 }
 
 export function useIngredientMode(): [IngredientMode, (mode: IngredientMode) => void] {
-  return usePref(getIngredientMode, setIngredientMode, DEFAULT_INGREDIENT_MODE);
+  return usePref(KEY_INGREDIENT_MODE, DEFAULT_INGREDIENT_MODE, oneOf(INGREDIENT_MODES));
 }
 
 /** Mirrors the design system's `useTheme` for API consistency with the other preferences; see the header comment. */
 export function useTheme(): [Theme, (theme: Theme) => void] {
-  return usePref(getTheme, setTheme, DEFAULT_THEME);
+  return usePref(KEY_THEME, DEFAULT_THEME, oneOf(THEMES));
 }
 
 export function useScreenAwake(): [boolean, (awake: boolean) => void] {
-  return usePref(getScreenAwake, setScreenAwake, DEFAULT_SCREEN_AWAKE);
+  return usePref(KEY_SCREEN_AWAKE, DEFAULT_SCREEN_AWAKE, isBoolean);
 }
