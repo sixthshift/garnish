@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "backup": "bun run src/db/backup/cli.ts",
     "restyle": "bun run src/server/ai/restyleLabCli.ts",
+    "propose": "bun run src/server/ai/plannerLabCli.ts",
     "icons": "bun run scripts/icons.tsx"
   },
   "dependencies": {

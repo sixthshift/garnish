@@ -78,7 +78,7 @@ test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests; *.dom
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `test`, `migrate`, `seed`, `dev:seed`, `db:generate`, `backup`, `icons`. README.md says how to use them. `lint` and `format` are Biome (`biome.json`, the design system's configuration: two spaces, double quotes, semicolons, a 160-column line, imports organised); the devcontainer sets it as the editor's formatter on save.
+Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `test`, `migrate`, `seed`, `dev:seed`, `db:generate`, `backup`, `icons`, `restyle`, `propose`. README.md says how to use them. `lint` and `format` are Biome (`biome.json`, the design system's configuration: two spaces, double quotes, semicolons, a 160-column line, imports organised); the devcontainer sets it as the editor's formatter on save.
 
 ## Stack
 
@@ -208,6 +208,7 @@ The household's own rules for what a good week looks like (decisions.md row 101)
 - **The meals** are `planner_meal`: one row per meal, `breakfast`, `lunch` and `dinner`, each on or off, written by the migration with dinner on and the other two off. Three checkboxes in the tab, each writing on the spot. They are rows rather than statements because the proposal is *built* from them — it fills the open slots of the meals that are on — rather than asked to weigh them, and they share their vocabulary with `meal_plan_entry.meal` (decisions.md row 100) so a slot means one thing throughout.
 - **What is sent**: the enabled statements, numbered in order (`enabledRules`), plus the fixed lines of the run — today's date, the southern hemisphere, and the week's open slots, which are the enabled meals on each day that has no entry for them. The facts of a run are not statements, for the same reason the restyle's "temperatures, times and quantities are never changed" is not one: nobody should be able to switch off the date.
 - **What is checked**: the proposal is a proposal. Every recipe it names must be a real recipe, every slot it fills must be one of the open slots it was given, and the week is shown for review — the model proposes and the household accepts; nothing is written to `meal_plan_entry` until it does. The plan is the household's, and a model never edits it behind them.
+- `bun run propose [--week <monday>] [--days mon,tue] [--model <a,b>] [--rules <file>] [--prompt]` builds the same input from the live database and tries it on one or more models, printing each one's week as a table (day, meal, recipe, reason) with the check's dropped and unfilled counts and the time taken, writing nothing — the restyle lab's shape, over the planner's gathering rather than one recipe's steps.
 
 ## API
 
