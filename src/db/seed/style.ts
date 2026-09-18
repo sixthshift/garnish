@@ -1,13 +1,4 @@
-import type { StyleRuleInput } from "../models/style/repo";
-
-/**
- * A seeded statement. `was` lists the sentences it absorbed: on the next seed
- * the first of them still in the guide is reworded to this text in place,
- * keeping its switch and position, and any other is removed, since what it
- * said is now said here. A row the household has edited matches none of them
- * and is left alone.
- */
-export type SeededStyleRule = StyleRuleInput & { was?: readonly string[] };
+import type { SeededStatement } from "./statements";
 
 /**
  * The starting guide, in reading order, all eight on: one statement per theme
@@ -18,7 +9,7 @@ export type SeededStyleRule = StyleRuleInput & { was?: readonly string[] };
  * ingredient row a step links to rather than in its text. Try a change here
  * with `bun run restyle` on two models before it lands.
  */
-export const DEFAULT_STYLE_RULES: readonly SeededStyleRule[] = [
+export const DEFAULT_STYLE_RULES: readonly SeededStatement[] = [
   {
     text: 'One stage per step, in the author\'s order: a step is everything done at one pan or bowl until the next wait or the next pan. The author\'s paragraph is usually one stage, so keep it whole; fragments of one stage ("Add the onion." "Stir." "Cook 5 minutes.") become one step.',
     enabled: true,

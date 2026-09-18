@@ -2,8 +2,10 @@ import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
+import { plannerRepository } from "../../../src/db/models/planner/repo";
 import { styleRuleRepository } from "../../../src/db/models/style/repo";
 import { unitRepository } from "../../../src/db/models/unit/repo";
+import { DEFAULT_PLANNER_RULES } from "../../../src/db/seed/planner";
 import { seed } from "../../../src/db/seed/seed";
 import { DEFAULT_STYLE_RULES } from "../../../src/db/seed/style";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
@@ -16,6 +18,7 @@ beforeEach(async () => {
 
 const count = () => db.query<{ n: number }, []>("SELECT count(*) AS n FROM unit").get()!.n;
 const styleCount = () => db.query<{ n: number }, []>("SELECT count(*) AS n FROM style_rule").get()!.n;
+const plannerCount = () => db.query<{ n: number }, []>("SELECT count(*) AS n FROM planner_rule").get()!.n;
 
 test("seeds the default units once", () => {
   const first = seed(db);
@@ -34,13 +37,62 @@ test("seeding twice leaves the count unchanged", () => {
   seed(db);
   const before = count();
   const beforeRules = styleCount();
+  const beforePlanner = plannerCount();
   const second = seed(db);
   expect(second.units).toEqual([]);
   expect(second.styleRules).toEqual([]);
   expect(second.rewordedStyleRules).toEqual([]);
   expect(second.retiredStyleRules).toEqual([]);
+  expect(second.plannerRules).toEqual([]);
+  expect(second.rewordedPlannerRules).toEqual([]);
+  expect(second.retiredPlannerRules).toEqual([]);
   expect(count()).toBe(before);
   expect(styleCount()).toBe(beforeRules);
+  expect(plannerCount()).toBe(beforePlanner);
+});
+
+// The planner guide goes through the same `seedStatements` helper as the house
+// style, so what is checked here is that it is wired to it, seeded in order,
+// and that an edited row survives a re-seed the same way.
+test("seeds the planner guide once, in order, five of seven on", () => {
+  const first = seed(db);
+  expect(first.plannerRules).toHaveLength(DEFAULT_PLANNER_RULES.length);
+  expect(first.rewordedPlannerRules).toEqual([]);
+  expect(first.retiredPlannerRules).toEqual([]);
+  const guide = plannerRepository(db).rules.list();
+  expect(guide.map((r) => r.text)).toEqual(DEFAULT_PLANNER_RULES.map((r) => r.text));
+  expect(guide.map((r) => r.position)).toEqual(DEFAULT_PLANNER_RULES.map((_, i) => i));
+  expect(guide.filter((r) => r.enabled).map((r) => r.position)).toEqual([0, 1, 2, 3, 4]);
+  expect(guide.filter((r) => !r.enabled).map((r) => r.text)).toEqual([
+    "Two vegetarian dinners a week.",
+    "A big-batch dinner may be the next day's lunch as leftovers.",
+  ]);
+});
+
+test("a planner statement is matched by its whole text case-insensitively, so an edited row is kept and never duplicated", () => {
+  const rules = plannerRepository(db).rules;
+  const mine = rules.create({ text: DEFAULT_PLANNER_RULES[3]!.text.toUpperCase(), enabled: false });
+  const own = rules.create({ text: "No takeaway on a Thursday." });
+  const { plannerRules: made } = seed(db);
+
+  expect(rules.get(mine.id)).toEqual(mine);
+  expect(rules.get(own.id)).toEqual(own);
+  expect(made.map((r) => r.text)).not.toContain(DEFAULT_PLANNER_RULES[3]!.text);
+  expect(plannerCount()).toBe(DEFAULT_PLANNER_RULES.length + 1);
+  expect(seed(db).plannerRules).toEqual([]);
+});
+
+test("the two guides are seeded separately: neither's statements land in the other's table", () => {
+  seed(db);
+  const planner = plannerRepository(db)
+    .rules.list()
+    .map((r) => r.text);
+  const style = styleRuleRepository(db)
+    .list()
+    .map((r) => r.text);
+  expect(planner.some((text) => style.includes(text))).toBe(false);
+  expect(styleCount()).toBe(DEFAULT_STYLE_RULES.length);
+  expect(plannerCount()).toBe(DEFAULT_PLANNER_RULES.length);
 });
 
 test("seeds the house style guide once, in order, all eight on", () => {

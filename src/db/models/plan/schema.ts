@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { MEALS } from "../../../domain/plan";
+import { MEALS } from "../../../domain/planner";
 import { recipe } from "../recipe/schema";
 
 /**

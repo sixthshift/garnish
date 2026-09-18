@@ -1,9 +1,11 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import type { PlannerMeal, PlannerRule } from "../../domain/planner";
 import type { RecipeSummary } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
 import type { StyleRule } from "../../domain/style";
 import { listAisles } from "../../server/fns/aisles";
 import { listFoods } from "../../server/fns/foods";
+import { listPlannerMeals, listPlannerRules } from "../../server/fns/planner";
 import { listRecipes } from "../../server/fns/recipes";
 import { listStyleRules } from "../../server/fns/style";
 import { listTags } from "../../server/fns/tags";
@@ -20,13 +22,15 @@ export type SettingsData = {
   tags: Tag[];
   recipes: RecipeSummary[];
   styleRules: StyleRule[];
+  plannerRules: PlannerRule[];
+  plannerMeals: PlannerMeal[];
 };
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   loader: async (): Promise<SettingsData> => {
-    const [aisles, units, foods, tags, recipes, styleRules] = await Promise.all([
+    const [aisles, units, foods, tags, recipes, styleRules, plannerRules, plannerMeals] = await Promise.all([
       listAisles({ data: {} }),
       listUnits({ data: {} }),
       listFoods({ data: {} }),
@@ -34,8 +38,10 @@ export const Route = createRoute({
       // For the food sheet's "Made by a recipe".
       listRecipes({ data: { sort: "name", dir: "asc" } }),
       listStyleRules(),
+      listPlannerRules(),
+      listPlannerMeals(),
     ]);
-    return { aisles, units, foods, tags, recipes, styleRules };
+    return { aisles, units, foods, tags, recipes, styleRules, plannerRules, plannerMeals };
   },
   component: lazyRouteComponent(() => import("./page"), "SettingsPage"),
 });

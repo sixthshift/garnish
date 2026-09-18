@@ -13,12 +13,14 @@ import { createMemoryHistory, createRootRoute, createRoute, createRouter, Router
 import type { ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
+import type { PlannerMeal, PlannerRule } from "../../../src/domain/planner";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../../src/domain/reference";
 import type { StyleRule } from "../../../src/domain/style";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
 import { AislesTab } from "../../../src/routes/settings/components/tabs/AislesTab";
 import { ExportTab } from "../../../src/routes/settings/components/tabs/ExportTab";
+import { PlannerTab } from "../../../src/routes/settings/components/tabs/PlannerTab";
 import { StyleTab } from "../../../src/routes/settings/components/tabs/StyleTab";
 import { TagsTab } from "../../../src/routes/settings/components/tabs/TagsTab";
 import { groupTagsAZ } from "../../../src/routes/settings/components/tagGroups";
@@ -220,6 +222,61 @@ describe("StyleTab render", () => {
 
   test("an empty guide says so instead of an empty list, and still offers the add box", () => {
     const html = renderToString(<StyleTab rules={[]} />);
+    expect(html).toContain("No statements yet.");
+    expect(html).toContain('aria-label="New statement"');
+  });
+});
+
+function plannerRule(id: string, text: string, enabled: boolean, position: number): PlannerRule {
+  return { id, position, text, enabled, createdAt: "2026-09-18T00:00:00.000Z", updatedAt: "2026-09-18T00:00:00.000Z" };
+}
+
+/** How many of the meal checkboxes are ticked. The statements' switches carry `aria-checked` too, so the role is part of the match. */
+function checkedMeals(html: string): number {
+  return html.match(/role="checkbox"[^>]*aria-checked="true"/g)?.length ?? 0;
+}
+
+describe("PlannerTab render", () => {
+  const RULES = [
+    plannerRule("p1", "Nothing we ate in the last three weeks, unless it is a favourite.", true, 0),
+    plannerRule("p2", "Two vegetarian dinners a week.", false, 1),
+  ];
+  const MEALS_OFF_BUT_DINNER: PlannerMeal[] = [
+    { meal: "breakfast", enabled: false },
+    { meal: "lunch", enabled: false },
+    { meal: "dinner", enabled: true },
+  ];
+
+  test("draws a checkbox per meal, showing which the week is planned for", () => {
+    const html = renderToString(<PlannerTab rules={RULES} meals={MEALS_OFF_BUT_DINNER} />);
+    expect(html.match(/role="checkbox"/g)?.length).toBe(3);
+    for (const label of ["Breakfast", "Lunch", "Dinner"]) expect(html).toContain(`>${label}<`);
+    // Dinner is the one that is on.
+    expect(checkedMeals(html)).toBe(1);
+    expect(html.match(/role="checkbox"[^>]*aria-checked="false"/g)?.length).toBe(2);
+  });
+
+  test("a meal with no row at all reads as off rather than failing", () => {
+    const html = renderToString(<PlannerTab rules={RULES} meals={[]} />);
+    expect(checkedMeals(html)).toBe(0);
+  });
+
+  test("the statements are the same list the Style tab renders: switch, editable text, move, remove and an add box", () => {
+    const html = renderToString(<PlannerTab rules={RULES} meals={MEALS_OFF_BUT_DINNER} />);
+    expect(html).toContain("Nothing we ate in the last three weeks");
+    expect(html).toContain("Two vegetarian dinners a week.");
+    expect(html.match(/role="switch"/g)?.length).toBe(2);
+    expect(html).toContain('aria-label="Statement: Two vegetarian dinners a week."');
+    expect(html).toContain('aria-label="Move statement 1 down"');
+    expect(html).toContain('aria-label="Remove statement 2"');
+    expect(html).toContain('aria-label="New statement"');
+    expect(html).toContain(">Add<");
+    // The style guide's caveat belongs to the style guide only.
+    expect(html).not.toContain("until it understands them");
+  });
+
+  test("an empty guide says so instead of an empty list, and still offers the add box", () => {
+    const html = renderToString(<PlannerTab rules={[]} meals={MEALS_OFF_BUT_DINNER} />);
     expect(html).toContain("No statements yet.");
     expect(html).toContain('aria-label="New statement"');
   });

@@ -4,6 +4,7 @@
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
+import type { PlannerMeal, PlannerRule } from "../../src/domain/planner";
 import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../src/domain/reference";
 import type { StyleRule } from "../../src/domain/style";
@@ -33,6 +34,7 @@ vi.mock("../../src/server/fns/tags", local);
 vi.mock("../../src/server/fns/aisles", local);
 vi.mock("../../src/server/fns/foods", local);
 vi.mock("../../src/server/fns/style", local);
+vi.mock("../../src/server/fns/planner", local);
 
 useTempDataDir();
 
@@ -623,7 +625,10 @@ describe("/settings", () => {
     const foods = await callServerFn(listFoods, {});
     const html = await renderRoute("/settings");
     expect(html).toContain("Settings");
-    for (const label of ["Foods", "Units", "Aisles", "Tags", "Style", "Appearance"]) expect(html).toContain(`>${label}<`);
+    for (const label of ["Foods", "Units", "Aisles", "Tags", "Style", "Planner", "Appearance"]) expect(html).toContain(`>${label}<`);
+    // Each guide's tab is badged with the number of its statements that are on.
+    expect(html).toMatch(/Style<span[^>]*>8</);
+    expect(html).toMatch(/Planner<span[^>]*>5</);
     // Foods is the default tab: its table, its search box, its column headers.
     expect(html).toContain('data-table="food"');
     expect(html).toContain('aria-label="Search foods"');
@@ -667,6 +672,8 @@ describe("loader data types match the domain schemas", () => {
       tags: Tag[];
       recipes: RecipeSummary[];
       styleRules: StyleRule[];
+      plannerRules: PlannerRule[];
+      plannerMeals: PlannerMeal[];
     }>();
     // Search params are typed from their zod schemas.
     expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{

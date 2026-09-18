@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MEALS, type Meal } from "../planner";
 
 /**
  * True when `date` is a real `YYYY-MM-DD` day. A round trip rather than
@@ -22,12 +23,13 @@ const text = z.string().default("");
 const servings = z.number().positive().nullable().default(null);
 
 /**
- * The three meals an entry may name, Mealie's `entry_type` minus `side`: a
- * side or a snack is an untyped entry (decisions.md row 100). NULL is the
- * normal case — a day holds what it holds — and the meal is what stage 14's
- * proposal needs so a slot can be a fact rather than a guess.
+ * The meal an entry may name, Mealie's `entry_type` minus `side`: a side or a
+ * snack is an untyped entry (decisions.md row 100). NULL is the normal case —
+ * a day holds what it holds — and the meal is what stage 14's proposal needs
+ * so a slot can be a fact rather than a guess. The enum itself belongs to the
+ * planner, which is what decides the meals a week is planned for; the plan
+ * only labels an entry with one, so it reads it from there.
  */
-export const MEALS = ["breakfast", "lunch", "dinner"] as const;
 export const mealSchema = z.enum(MEALS).nullable().default(null);
 
 /**
@@ -89,7 +91,8 @@ export const planEntryPatchSchema = z.object({
 
 // --- Types ------------------------------------------------------------------
 
-export type Meal = (typeof MEALS)[number];
+export type { Meal };
+export { MEALS };
 export type PlanRecipe = z.infer<typeof planRecipeSchema>;
 export type PlanEntry = z.infer<typeof planEntrySchema>;
 export type PlanDay = z.infer<typeof planDaySchema>;

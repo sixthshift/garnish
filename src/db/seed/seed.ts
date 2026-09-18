@@ -2,38 +2,45 @@ import type { Database } from "bun:sqlite";
 import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { slugify } from "../../lib/names";
 import { orm } from "../connection/client";
+import { type PlannerRule, plannerRepository } from "../models/planner/repo";
 import { recipeRepository } from "../models/recipe/repo";
 import { type StyleRule, styleRuleRepository } from "../models/style/repo";
 import { timelineRepository } from "../models/timeline/repo";
 import { type Unit, unitRepository } from "../models/unit/repo";
+import { DEFAULT_PLANNER_RULES } from "./planner";
 import { SAMPLE_RECIPES } from "./recipes";
+import { seedStatements } from "./statements";
 import { DEFAULT_STYLE_RULES } from "./style";
 import { SAMPLE_TIMELINE } from "./timeline";
 import { DEFAULT_UNITS } from "./units";
 
-export type SeedResult = { units: Unit[]; styleRules: StyleRule[]; rewordedStyleRules: StyleRule[]; retiredStyleRules: StyleRule[] };
+export type SeedResult = {
+  units: Unit[];
+  styleRules: StyleRule[];
+  rewordedStyleRules: StyleRule[];
+  retiredStyleRules: StyleRule[];
+  plannerRules: PlannerRule[];
+  rewordedPlannerRules: PlannerRule[];
+  retiredPlannerRules: PlannerRule[];
+};
 
 /**
  * Insert any default unit not already present (name compared
- * case-insensitively) and any house style statement whose text is not already
- * there (compared the same way). Runs in one transaction. Returns only the rows
- * created or reworded on this run, so the CLI and the tests can say what a run
+ * case-insensitively), and any statement of the two guides — the house style
+ * and the planner — that is not already there. Both guides go through the same
+ * `seedStatements` helper, which owns the match-by-text and `was` logic and is
+ * documented there. Runs in one transaction. Returns only the rows created,
+ * reworded or retired on this run, so the CLI and the tests can say what a run
  * actually did.
  *
- * A statement the household has edited no longer matches its seeded text and so
- * comes back as a new row on the next start; that is the trade the text-match
- * makes, and it is the same one the units seed makes with a renamed unit. A
- * statement that was deleted outright returns for the same reason, at the foot
- * of the guide, where it can be switched off. The one exception is a sentence
- * this project has itself reworded or folded into another: a row still
- * carrying an old sentence (listed in the statement's `was`) is given the new
- * one in place, keeping the household's switch and order, and any further old
- * sentence the same statement absorbed is removed, since what it said is now
- * said there. A rewording here is a fix rather than a new statement.
+ * The planner's three meal rows are not seeded here: the migration writes
+ * them, because a meal is a fixed row rather than a statement a household may
+ * add to.
  */
 export function seed(db: Database): SeedResult {
   const unitRepo = unitRepository(db);
   const styleRepo = styleRuleRepository(db);
+  const planner = plannerRepository(db);
   return orm(db).transaction((): SeedResult => {
     const existingUnits = new Set(unitRepo.list().map((u) => u.name.toLowerCase()));
     const madeUnits: Unit[] = [];
@@ -42,26 +49,18 @@ export function seed(db: Database): SeedResult {
       madeUnits.push(unitRepo.create(input));
     }
 
-    const fold = (text: string) => text.trim().toLowerCase();
-    const existingRules = new Map(styleRepo.list().map((r) => [fold(r.text), r]));
-    const madeRules: StyleRule[] = [];
-    const rewordedRules: StyleRule[] = [];
-    const retiredRules: StyleRule[] = [];
-    for (const input of DEFAULT_STYLE_RULES) {
-      const olds = (input.was ?? []).flatMap((text) => existingRules.get(fold(text)) ?? []);
-      if (!existingRules.has(fold(input.text))) {
-        const first = olds.shift();
-        if (first === undefined) {
-          madeRules.push(styleRepo.create({ text: input.text, enabled: input.enabled, position: input.position }));
-        } else {
-          const reworded = styleRepo.update(first.id, { text: input.text });
-          if (reworded !== null) rewordedRules.push(reworded);
-        }
-      }
-      for (const old of olds) if (styleRepo.remove(old.id)) retiredRules.push(old);
-    }
+    const style = seedStatements(styleRepo, DEFAULT_STYLE_RULES);
+    const plan = seedStatements(planner.rules, DEFAULT_PLANNER_RULES);
 
-    return { units: madeUnits, styleRules: madeRules, rewordedStyleRules: rewordedRules, retiredStyleRules: retiredRules };
+    return {
+      units: madeUnits,
+      styleRules: style.made,
+      rewordedStyleRules: style.reworded,
+      retiredStyleRules: style.retired,
+      plannerRules: plan.made,
+      rewordedPlannerRules: plan.reworded,
+      retiredPlannerRules: plan.retired,
+    };
   });
 }
 

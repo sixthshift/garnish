@@ -22,11 +22,22 @@ if (import.meta.main) {
   const db = openDatabase(path);
   try {
     await migrate(db);
-    const { units: added, styleRules: rules, rewordedStyleRules: reworded, retiredStyleRules: retired } = seed(db);
+    const {
+      units: added,
+      styleRules: rules,
+      rewordedStyleRules: reworded,
+      retiredStyleRules: retired,
+      plannerRules: plannerMade,
+      rewordedPlannerRules: plannerReworded,
+      retiredPlannerRules: plannerRetired,
+    } = seed(db);
     console.log(added.length === 0 ? `${path}: units already seeded` : `${path}: seeded ${added.length} units (${added.map((u) => u.name).join(", ")})`);
     console.log(rules.length === 0 ? `${path}: house style already seeded` : `${path}: seeded ${rules.length} house style statements`);
     if (reworded.length > 0) console.log(`${path}: reworded ${reworded.length} house style statements in place`);
     if (retired.length > 0) console.log(`${path}: removed ${retired.length} house style statements now said by another`);
+    console.log(plannerMade.length === 0 ? `${path}: planner guide already seeded` : `${path}: seeded ${plannerMade.length} planner statements`);
+    if (plannerReworded.length > 0) console.log(`${path}: reworded ${plannerReworded.length} planner statements in place`);
+    if (plannerRetired.length > 0) console.log(`${path}: removed ${plannerRetired.length} planner statements now said by another`);
     if (flags.sample) {
       const { recipes: created } = seedSample(db);
       console.log(
