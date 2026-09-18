@@ -153,7 +153,7 @@ describe("runProposal", () => {
     expect(run.calls[0]!.timeoutMs).toBe(60_000);
     expect(run.calls[0]!.prompt).toContain(`${MONDAY} dinner — OPEN`);
     expect(run.calls[0]!.prompt).toContain(`${TUESDAY} dinner — TAKEN: Lemon tart`);
-    expect(run.calls[0]!.prompt).toContain("1. Weeknights are quick.");
+    expect(run.calls[0]!.prompt).toContain("- Weeknights are quick.");
   });
 
   test("a foreign id and a taken slot are dropped, and the open slot is reported unfilled", async () => {

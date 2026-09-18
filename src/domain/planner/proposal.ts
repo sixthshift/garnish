@@ -150,7 +150,7 @@ const ANSWER_RULES = [
   "- A slot marked TAKEN is already planned. It is shown so you can read the week as a whole; never answer for one.",
   "- `recipeId` must be an id from the LIBRARY below, copied exactly. Never invent an id, and never name a recipe that is not in the library.",
   "- A recipe may appear once in the week, unless a statement below allows leftovers.",
-  "- `reason` is one short sentence naming the statement number or the fact that chose that recipe.",
+  '- `reason` is one short sentence to the household, in plain words, saying what about the recipe or the week chose it: "not made since June", "quick for a Tuesday", "asparagus is in season", "a favourite you have not had lately". Never refer to a statement by its position or number; say what it asks for.',
   "- Answer with the JSON only.",
 ];
 
@@ -158,9 +158,10 @@ const ANSWER_RULES = [
  * What the model is asked. The fixed lines first — the date and the
  * hemisphere, which are facts of the run rather than statements, so nobody can
  * switch them off — then the week's slots, then the rules for the answer, then
- * the household's statements numbered as the guide writes them (numbered so a
- * `reason` can cite one and so a test can assert that statement (3) reached
- * the prompt), then what was eaten lately, then the library. Pure.
+ * the household's statements as a plain list in the guide's order — not
+ * numbered, because a numbered list is what the model cites back ("statement
+ * 5"), which means nothing on the sheet — then what was eaten lately, then the
+ * library. Pure.
  */
 export function proposalPrompt(input: ProposalInput): string {
   const { recipes, cut } = libraryForPrompt(input.library);
@@ -178,7 +179,7 @@ export function proposalPrompt(input: ProposalInput): string {
 
   lines.push("", "Rules for the answer:", ...ANSWER_RULES, "", "HOUSE STATEMENTS:");
   if (input.rules.length === 0) lines.push("(no statements are on: choose sensibly and vary the week)");
-  else for (const [index, rule] of input.rules.entries()) lines.push(`${index + 1}. ${rule}`);
+  else for (const rule of input.rules) lines.push(`- ${rule}`);
 
   lines.push("", "RECENT (what was eaten lately, most of a month back):");
   if (input.recent.length === 0) lines.push("(nothing recorded)");

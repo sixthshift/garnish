@@ -58,14 +58,18 @@ describe("the prompt", () => {
     expect(prompt).toMatch(/never two for the same slot/);
     expect(prompt).toMatch(/may appear once in the week, unless a statement/);
     expect(prompt).toMatch(/must be an id from the LIBRARY/);
-    expect(prompt).toMatch(/`reason` is one short sentence/);
+    expect(prompt).toMatch(/`reason` is one short sentence to the household, in plain words/);
+    expect(prompt).toMatch(/Never refer to a statement by its position or number/);
     expect(prompt).toMatch(/never answer for one/);
   });
 
-  test("numbers the statements, in the order the guide gives them", () => {
+  test("lists the statements in the guide's order, unnumbered so the reason cannot cite a number", () => {
     const prompt = proposalPrompt(INPUT);
-    expect(prompt).toContain("1. Nothing we ate in the last three weeks.");
-    expect(prompt).toContain("2. Weeknights are quick.");
+    const first = prompt.indexOf("- Nothing we ate in the last three weeks.");
+    const second = prompt.indexOf("- Weeknights are quick.");
+    expect(first).toBeGreaterThan(-1);
+    expect(second).toBeGreaterThan(first);
+    expect(prompt).not.toMatch(/^\d+\. /m);
   });
 
   test("carries the recent meals and the library, one compact line per recipe", () => {
