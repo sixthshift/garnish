@@ -13,7 +13,7 @@ import type { Ingredient, Part, Step } from "../../../src/domain/recipe/recipe";
 import { SWIPE_MAX_MS, SWIPE_MIN_PX, SWIPE_RATIO, swipeIntent } from "../../../src/lib/swipe";
 
 const uuid = () => crypto.randomUUID();
-const step = (text: string, ingredientIds: string[] = []): Step => ({ id: uuid(), text, ingredientIds, image: null });
+const step = (text: string, ingredientIds: string[] = []): Step => ({ id: uuid(), text, title: "", summary: "", ingredientIds, image: null });
 const ingredient = (note: string, fixed = false): Ingredient => ({ id: uuid(), quantity: 1, unit: null, food: null, note, originalText: "", fixed });
 const part = (name: string, ingredients: Ingredient[], steps: Step[]): Part => ({ id: uuid(), name, ingredients, steps });
 

@@ -72,6 +72,27 @@ const UNIT_WORDS: ReadonlyMap<string, string> = new Map([
   ["c", "c"],
   ["fahrenheit", "f"],
   ["f", "f"],
+  // Imperial, recognised so that "800g / 28oz" reads as one quantity written
+  // twice rather than a gram fact and a bare 28: `pairedImperial` needs to see
+  // the unit to know the pair.
+  ["ounces", "oz"],
+  ["ounce", "oz"],
+  ["oz", "oz"],
+  ["pounds", "lb"],
+  ["pound", "lb"],
+  ["lbs", "lb"],
+  ["lb", "lb"],
+  ["inches", "in"],
+  ["inch", "in"],
+  ["fl", "fl"],
+]);
+
+/** The imperial units, each with the metric ones it is written beside. */
+const PAIRS: ReadonlyMap<string, readonly string[]> = new Map([
+  ["f", ["c"]],
+  ["oz", ["g", "kg", "ml", "l"]],
+  ["lb", ["g", "kg"]],
+  ["in", ["cm", "mm"]],
 ]);
 
 const GLYPHS = [...GLYPH_FRACTIONS.keys()].join("");
@@ -95,6 +116,15 @@ const FACT = new RegExp(String.raw`(${NUMBER})(?:\s*(?:-|–|—|to)\s*(${NUMBER
  * quantity. Matched before the facts are read and blanked out of the text.
  */
 const REFERENCE = /\b(?:note|notes|step|steps)\s+\d+(?:\s*(?:-|–|—|to|and|&)\s*\d+)*\b/giu;
+
+/**
+ * A step that begins with its own number — "1. For the miso marinade…", "2) Coat
+ * the fish" — as an import leaves it when the source numbered its method. The
+ * prompt asks for steps with no numbering of their own, so the rewrite strips
+ * it, and the check must not then report the recipe as having lost a quantity.
+ * The punctuation is required: "2 tbsp of the oil" opens with a real fact.
+ */
+const ENUMERATOR = /^\s*\d+\s*[.)]\s+/u;
 
 /** A parenthetical with no nesting: what an author's aside looks like. */
 const PARENTHETICAL = /\(([^()]*)\)/gu;
@@ -150,7 +180,7 @@ function normaliseUnit(raw: string | undefined): string | null {
 export function factsOf(steps: readonly string[]): string[] {
   const facts: string[] = [];
   for (const step of steps) {
-    const withoutReferences = withoutAsides(step).replace(REFERENCE, " ");
+    const withoutReferences = withoutAsides(step.replace(ENUMERATOR, "")).replace(REFERENCE, " ");
     for (const match of withoutReferences.matchAll(FACT)) {
       const unit = normaliseUnit(match[3]) ?? "";
       facts.push(normaliseNumber(match[1]!) + unit);
@@ -158,6 +188,35 @@ export function factsOf(steps: readonly string[]): string[] {
     }
   }
   return facts;
+}
+
+/**
+ * The imperial facts that are one half of a conversion pair: an imperial figure
+ * written in the same step as a metric one it could be, as "800g / 28oz" and
+ * "Heat the oven to 350°F (180°C)" both are. The metric statement drops these on
+ * purpose, and the figure is not a second quantity but the first said again, so
+ * the check must not report the recipe as having lost one.
+ *
+ * Within one string rather than across the recipe, because a recipe that gives
+ * grams in one step and ounces in another is giving two quantities. Pure.
+ */
+export function pairedImperial(prose: readonly string[]): Set<string> {
+  const paired = new Set<string>();
+  for (const text of prose) {
+    const units = new Set<string>();
+    const found: { token: string; unit: string }[] = [];
+    for (const match of withoutAsides(text.replace(ENUMERATOR, "")).replace(REFERENCE, " ").matchAll(FACT)) {
+      const unit = normaliseUnit(match[3]);
+      if (unit === null) continue;
+      units.add(unit);
+      found.push({ token: normaliseNumber(match[1]!) + unit, unit });
+      if (match[2] !== undefined) found.push({ token: normaliseNumber(match[2]) + unit, unit });
+    }
+    for (const fact of found) {
+      if (PAIRS.get(fact.unit)?.some((name) => units.has(name))) paired.add(fact.token);
+    }
+  }
+  return paired;
 }
 
 /** Whether `name` appears in `text` as a whole word, case insensitively. Pure. */

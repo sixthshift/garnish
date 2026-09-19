@@ -95,7 +95,7 @@ test("the two guides are seeded separately: neither's statements land in the oth
   expect(plannerCount()).toBe(DEFAULT_PLANNER_RULES.length);
 });
 
-test("seeds the house style guide once, in order, all eight on", () => {
+test("seeds the house style guide once, in order, all eleven on", () => {
   const first = seed(db);
   expect(first.styleRules).toHaveLength(DEFAULT_STYLE_RULES.length);
   expect(first.rewordedStyleRules).toEqual([]);
@@ -103,20 +103,20 @@ test("seeds the house style guide once, in order, all eight on", () => {
   const guide = styleRuleRepository(db).list();
   expect(guide.map((r) => r.text)).toEqual(DEFAULT_STYLE_RULES.map((r) => r.text));
   expect(guide.map((r) => r.position)).toEqual(DEFAULT_STYLE_RULES.map((_, i) => i));
-  expect(guide.filter((r) => r.enabled).map((r) => r.position)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+  expect(guide.filter((r) => r.enabled).map((r) => r.position)).toEqual(DEFAULT_STYLE_RULES.map((_, i) => i));
 });
 
 test("a statement is matched by its whole text case-insensitively, so an edit is kept and a rewording is a new row", () => {
   const repo = styleRuleRepository(db);
   // The household's own wording of the plating statement, switched on.
-  const mine = repo.create({ text: 'MOVE PLATING AND GARNISH STEPS TO A PART NAMED "TO SERVE".', enabled: true });
+  const mine = repo.create({ text: "PREFER METRIC: WHERE A STEP GIVES BOTH, KEEP ONLY METRIC.", enabled: true });
   const reworded = repo.create({ text: "No chatter at all.", enabled: false });
   const { styleRules: made } = seed(db);
 
   expect(repo.get(mine.id)).toEqual(mine);
-  expect(made.map((r) => r.text)).not.toContain(DEFAULT_STYLE_RULES[5]!.text);
+  expect(made.map((r) => r.text)).not.toContain(DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Prefer metric"))!.text);
   // The reworded one did not match anything, so the statement it replaced comes back.
-  expect(made.map((r) => r.text)).toContain(DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("No chatter"))!.text);
+  expect(made.map((r) => r.text)).toContain(DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Drop what is about"))!.text);
   expect(styleCount()).toBe(DEFAULT_STYLE_RULES.length + 1);
   expect(repo.get(reworded.id)).toEqual(reworded);
 });
@@ -124,7 +124,7 @@ test("a statement is matched by its whole text case-insensitively, so an edit is
 test("a row still carrying a sentence this project reworded is given the new one in place, keeping its switch and position", () => {
   const repo = styleRuleRepository(db);
   const voice = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Imperative"))!;
-  const timing = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Timing"))!;
+  const timing = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Flag parallel work"))!;
   // The old sentences as a database seeded before the rewording holds them: one switched on and moved, one switched off.
   const oldVoice = repo.create({ text: voice.was![0]!.toUpperCase(), enabled: true });
   const oldTiming = repo.create({ text: timing.was![0]!, enabled: false });

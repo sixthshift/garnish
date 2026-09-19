@@ -60,7 +60,10 @@ export function authorRecipe(recipe: Recipe, authorSteps: ReadonlyMap<string, re
       if (texts === undefined) return part;
       return {
         ...part,
-        steps: texts.map((text, index) => ({ ...(part.steps[index] ?? { id: `${part.id}:author:${index}`, ingredientIds: [], image: null }), text })),
+        steps: texts.map((text, index) => ({
+          ...(part.steps[index] ?? { id: `${part.id}:author:${index}`, title: "", summary: "", ingredientIds: [], image: null }),
+          text,
+        })),
       };
     }),
   };
@@ -94,14 +97,28 @@ export function reportLines(model: string, seconds: number, before: Recipe, resu
   const lines = [`## ${model}  ${seconds.toFixed(1)}s  ${check.ok ? "check ok" : "check FAILED"}`];
   if (check.missingFacts.length > 0) lines.push(`   dropped: ${check.missingFacts.join(", ")}`);
   if (check.missingFoods.length > 0) lines.push(`   no longer mentions: ${check.missingFoods.join(", ")}`);
+  if (check.missingConditions.length > 0) lines.push(`   lost conditions: ${check.missingConditions.map((phrase) => `"${phrase}"`).join(", ")}`);
+  if (check.rowMismatch) lines.push("   notes do not line up with the ingredient rows");
   if (check.addedNumbers.length > 0) lines.push(`   added numbers: ${check.addedNumbers.join(", ")}`);
+  if (check.droppedWords.length > 0) lines.push(`   dropped words: ${check.droppedWords.join(" ")}`);
   parts.forEach((part, index) => {
     const original = before.parts[index];
     if (original === undefined || original.steps.length === 0) return;
     lines.push("", `--- ${heading(part.name)}  ${original.steps.length} -> ${part.steps.length} steps`);
-    for (const [n, step] of part.steps.entries()) lines.push(`${n + 1}. ${step}`);
+    for (const [n, step] of part.steps.entries()) lines.push(`${n + 1}. ${labelled(step)}`);
+    // The notes only print where the rewrite wrote one, so an unprepared list costs no lines.
+    part.notes.forEach((note, n) => {
+      if (note.trim() !== "") lines.push(`   note ${n + 1}: ${note}`);
+    });
   });
   return lines;
+}
+
+/** One step as the report prints it: the label, the text, then the supporting line, each only where it has something. Pure. */
+function labelled(step: { title: string; text: string; summary: string }): string {
+  const label = step.title.trim() === "" ? "" : `${step.title.trim()} — `;
+  const support = step.summary.trim() === "" ? "" : `  [${step.summary.trim()}]`;
+  return `${label}${step.text}${support}`;
 }
 
 /** One model's failure as a line. Pure. */

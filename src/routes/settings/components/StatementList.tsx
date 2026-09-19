@@ -159,7 +159,7 @@ export function StatementList({ statements, ops, guideName, noteFor }: Statement
                     />
                   </div>
                   {note !== null && (
-                    <Muted as="p" className="text-sm">
+                    <Muted as="p" className="text-sm" data-statement-note="">
                       {note}
                     </Muted>
                   )}

@@ -468,26 +468,32 @@ test("deleting a planned recipe empties the entry's recipe, not the day", () => 
 
 // --- 011_restyle -------------------------------------------------------------
 
-test("a part keeps its original steps as JSON, and a recipe carries the restyle stamp", () => {
+test("a part keeps the whole of itself as JSON, and a recipe carries the restyle stamp", () => {
   seedRecipe();
 
   // NULL until a restyle: the steps a recipe came with are the ones it has.
-  expect(db.query<{ source_steps: string | null }, [string]>("SELECT source_steps FROM part WHERE id = ?").get(ids.pasta)!.source_steps).toBeNull();
+  expect(db.query<{ source_part: string | null }, [string]>("SELECT source_part FROM part WHERE id = ?").get(ids.pasta)!.source_part).toBeNull();
   expect(db.query<{ restyled_at: string | null }, [string]>("SELECT restyled_at FROM recipe WHERE id = ?").get(ids.recipe)!.restyled_at).toBeNull();
 
-  const original = JSON.stringify(["Boil the pasta.", "Toss together and serve."]);
-  db.run("UPDATE part SET source_steps = ? WHERE id = ?", [original, ids.pasta]);
+  const original = JSON.stringify({
+    steps: [
+      { title: "", text: "Boil the pasta.", summary: "" },
+      { title: "", text: "Toss together and serve.", summary: "" },
+    ],
+    notes: ["", "to taste"],
+  });
+  db.run("UPDATE part SET source_part = ? WHERE id = ?", [original, ids.pasta]);
   db.run("UPDATE recipe SET restyled_at = ? WHERE id = ?", ["2026-09-14T02:30:00.000Z", ids.recipe]);
 
-  expect(db.query<{ source_steps: string }, [string]>("SELECT source_steps FROM part WHERE id = ?").get(ids.pasta)!.source_steps).toBe(original);
+  expect(db.query<{ source_part: string }, [string]>("SELECT source_part FROM part WHERE id = ?").get(ids.pasta)!.source_part).toBe(original);
   expect(db.query<{ restyled_at: string }, [string]>("SELECT restyled_at FROM recipe WHERE id = ?").get(ids.recipe)!.restyled_at).toBe(
     "2026-09-14T02:30:00.000Z"
   );
 
   // Both go back to NULL: a restore is not a different state from never restyled.
-  db.run("UPDATE part SET source_steps = NULL WHERE id = ?", [ids.pasta]);
+  db.run("UPDATE part SET source_part = NULL WHERE id = ?", [ids.pasta]);
   db.run("UPDATE recipe SET restyled_at = NULL WHERE id = ?", [ids.recipe]);
-  expect(count("part", "source_steps IS NOT NULL")).toBe(0);
+  expect(count("part", "source_part IS NOT NULL")).toBe(0);
   expect(count("recipe", "restyled_at IS NOT NULL")).toBe(0);
 
   // The kept steps go with the part, which goes with the recipe.

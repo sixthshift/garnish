@@ -39,7 +39,7 @@ const ingredient = (quantity: number | null, f: Food): Ingredient => ({
   fixed: false,
 });
 
-const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, ingredientIds, image: null });
+const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, title: "", summary: "", ingredientIds, image: null });
 
 /** An in-memory sessionStorage, so the tick hooks read what a test seeds. */
 function fakeStorage(): StorageLike {
@@ -296,5 +296,38 @@ describe("StepCard's quick-edit menu (M29.4)", () => {
     const html = await renderInProvider();
     expect(html).not.toContain('role="menu"');
     expect(html).not.toContain(">Edit step<");
+  });
+});
+
+describe("the label and the supporting line", () => {
+  const titled = (title: string, summary: string): Step => ({
+    id: STEP_ID,
+    title,
+    text: "Heat 1 tbsp of the olive oil and sear the beef.",
+    summary,
+    ingredientIds: [],
+    image: null,
+  });
+
+  test("a step with a label reads it before its text", () => {
+    const html = renderToString(<StepCard recipeId={RECIPE_ID} step={titled("Sear beef", "")} position={1} />);
+    expect(html).toContain("Sear beef");
+    expect(html).toMatch(/Sear beef[\s\S]*Heat 1 tbsp/);
+  });
+
+  test("a step without one renders no label", () => {
+    const html = renderToString(<StepCard recipeId={RECIPE_ID} step={titled("", "")} position={1} />);
+    expect(html).not.toContain('data-testid="step-title"');
+  });
+
+  test("the supporting line renders quieter, after the text", () => {
+    const html = renderToString(<StepCard recipeId={RECIPE_ID} step={titled("", "Well marbled meat will cook faster.")} position={1} />);
+    expect(html).toContain("Well marbled meat will cook faster.");
+    expect(html).toMatch(/Heat 1 tbsp[\s\S]*Well marbled meat/);
+    expect(html).toContain("text-fg-subtle");
+  });
+
+  test("whitespace is not a label", () => {
+    expect(renderToString(<StepCard recipeId={RECIPE_ID} step={titled("   ", "  ")} position={1} />)).not.toContain('data-testid="step-title"');
   });
 });

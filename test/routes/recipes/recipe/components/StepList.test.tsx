@@ -36,7 +36,7 @@ const ingredient = (quantity: number | null, f: Food): Ingredient => ({
   fixed: false,
 });
 
-const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, ingredientIds, image: null });
+const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, title: "", summary: "", ingredientIds, image: null });
 
 function fakeStorage(): StorageLike {
   const map = new Map<string, string>();

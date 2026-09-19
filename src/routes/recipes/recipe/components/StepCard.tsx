@@ -59,6 +59,8 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   // collapses to one line, so its photo goes with the rest of the detail.
   const photo = stepImageUrl(step.image);
   const scale = SCALE[size];
+  const label = step.title.trim();
+  const support = step.summary.trim();
   // Two columns from `md` when this list reserves the gutter — or, absent a
   // list-wide answer, when this step alone has rows to put in it. A ticked step
   // collapses to one line and gives the gutter back.
@@ -108,8 +110,24 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
               )}
               <button type="button" onClick={toggle} aria-pressed={done} className={cn("text-left", done && "text-fg-subtle")} data-testid="step-toggle">
                 <span className="sr-only">{`Step ${position}. ${done ? "Done. " : ""}`}</span>
+                {/* The label reads as the step's heading, so it sits inside the
+                    toggle rather than above it: tapping the words that name the
+                    step is the same gesture as tapping the step. */}
+                {label !== "" && !done && (
+                  <span className={cn("block font-semibold text-fg-strong", size === "cook" ? "text-xl" : "text-sm")} data-testid="step-title">
+                    {label}
+                  </span>
+                )}
                 <Markdown source={step.text} className={cn(scale.text, done && "line-clamp-1")} />
               </button>
+              {/* The supporting line is not an instruction — recovery, reassurance,
+                  why a time is a range — so it reads quieter and outside the toggle,
+                  and a ticked step gives it back with the rest of the detail. */}
+              {support !== "" && !done && (
+                <div className={cn("text-fg-subtle", size === "cook" ? "text-lg" : "text-sm")} data-testid="step-summary">
+                  <Markdown source={support} />
+                </div>
+              )}
             </div>
           </div>
           {/* The footer stays on a ticked step: a running timer has to be reachable after its step is done. */}

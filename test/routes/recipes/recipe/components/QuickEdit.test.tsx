@@ -98,13 +98,13 @@ const stored: Recipe = {
       id: PASTRY,
       name: "Pastry",
       ingredients: [ingredient(PASTRY_FLOUR, flour, 200)],
-      steps: [{ id: PASTRY_STEP, text: "Rub the butter in", ingredientIds: [], image: null }],
+      steps: [{ id: PASTRY_STEP, text: "Rub the butter in", title: "", summary: "", ingredientIds: [], image: null }],
     },
     {
       id: FILLING,
       name: "Filling",
       ingredients: [ingredient(FILLING_SUGAR, sugar, 100)],
-      steps: [{ id: FILLING_STEP, text: "Whisk **well**", ingredientIds: [], image: null }],
+      steps: [{ id: FILLING_STEP, text: "Whisk **well**", title: "", summary: "", ingredientIds: [], image: null }],
     },
   ],
   restyledAt: null,
@@ -148,9 +148,11 @@ describe("withIngredientReplaced", () => {
   });
 });
 
+const patch = (text: string, title = "", summary = "") => ({ title, text, summary });
+
 describe("withStepReplaced", () => {
   test("replaces one step's text, keeping its place and every id", () => {
-    const draft = withStepReplaced(stored, FILLING, FILLING_STEP, "Whisk until pale");
+    const draft = withStepReplaced(stored, FILLING, FILLING_STEP, patch("Whisk until pale"));
 
     expect(draft.parts[1]!.steps[0]!.text).toBe("Whisk until pale");
     expect(draft.parts[0]!.steps[0]!.text).toBe("Rub the butter in");
@@ -159,8 +161,14 @@ describe("withStepReplaced", () => {
   });
 
   test("an unknown part or step changes nothing", () => {
-    expect(withStepReplaced(stored, PASTRY, FILLING_STEP, "x").parts[1]!.steps[0]!.text).toBe("Whisk **well**");
-    expect(withStepReplaced(stored, "nope", FILLING_STEP, "x").parts[1]!.steps[0]!.text).toBe("Whisk **well**");
+    expect(withStepReplaced(stored, PASTRY, FILLING_STEP, patch("x")).parts[1]!.steps[0]!.text).toBe("Whisk **well**");
+    expect(withStepReplaced(stored, "nope", FILLING_STEP, patch("x")).parts[1]!.steps[0]!.text).toBe("Whisk **well**");
+  });
+
+  test("the label and the supporting line ride with the text, so one save can move a sentence between them", () => {
+    const draft = withStepReplaced(stored, FILLING, FILLING_STEP, patch("Whisk until pale", "Whisk", "It will look grainy first."));
+
+    expect(draft.parts[1]!.steps[0]).toMatchObject({ title: "Whisk", text: "Whisk until pale", summary: "It will look grainy first." });
   });
 });
 
@@ -210,7 +218,7 @@ describe("saveQuickEdit", () => {
     setStepTicked(storage, stored.id, FILLING_STEP, true);
     const before = getTicks(storage, stored.id);
 
-    await saveQuickEdit(withStepReplaced(stored, FILLING, FILLING_STEP, "Whisk until pale"), (write) => write());
+    await saveQuickEdit(withStepReplaced(stored, FILLING, FILLING_STEP, patch("Whisk until pale")), (write) => write());
 
     expect(getTicks(storage, stored.id)).toEqual(before);
     // And the ticked ids are still in the document that was sent.
@@ -264,7 +272,7 @@ describe("QuickEditIngredientBody", () => {
 
 describe("QuickEditStepBody", () => {
   test("renders the step's text in a textarea, with the preview toggle", () => {
-    const html = renderToString(<QuickEditStepBody text="Whisk **well**" onSave={() => {}} onCancel={() => {}} />);
+    const html = renderToString(<QuickEditStepBody step={patch("Whisk **well**")} onSave={() => {}} onCancel={() => {}} />);
 
     expect(html).toContain("Edit step");
     expect(html).toContain("<textarea");
@@ -272,17 +280,26 @@ describe("QuickEditStepBody", () => {
     expect(html).toContain('aria-label="Preview step"');
     expect(html).toContain(">Save<");
     expect(html).toContain(">Cancel<");
+    expect(html).toContain(">Label<");
+    expect(html).toContain(">Supporting line<");
+  });
+
+  test("a step that has a label and a supporting line shows both", () => {
+    const html = renderToString(<QuickEditStepBody step={patch("Whisk", "Whisk it", "It looks grainy first.")} onSave={() => {}} onCancel={() => {}} />);
+
+    expect(html).toContain('value="Whisk it"');
+    expect(html).toContain('value="It looks grainy first."');
   });
 
   test("previewing swaps the textarea for the rendered markdown", () => {
-    const html = renderToString(<QuickEditStepBody text="Whisk **well**" preview onSave={() => {}} onCancel={() => {}} />);
+    const html = renderToString(<QuickEditStepBody step={patch("Whisk **well**")} preview onSave={() => {}} onCancel={() => {}} />);
 
     expect(html).not.toContain("<textarea");
     expect(html).toMatch(/<strong[^>]*>well<\/strong>/);
   });
 
   test("while saving the buttons are disabled, and a failure shows", () => {
-    const html = renderToString(<QuickEditStepBody text="Whisk" busy error="Nope" onSave={() => {}} onCancel={() => {}} />);
+    const html = renderToString(<QuickEditStepBody step={patch("Whisk")} busy error="Nope" onSave={() => {}} onCancel={() => {}} />);
     expect(html).toContain("Saving…");
     expect(html).toContain("disabled");
     expect(html).toContain("Nope");

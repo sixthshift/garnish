@@ -655,7 +655,7 @@ describe("/settings", () => {
     expect(html).toContain("Settings");
     for (const label of ["Foods", "Units", "Aisles", "Tags", "Style", "Planner", "Appearance"]) expect(html).toContain(`>${label}<`);
     // Each guide's tab is badged with the number of its statements that are on.
-    expect(html).toMatch(/Style<span[^>]*>8</);
+    expect(html).toMatch(/Style<span[^>]*>11</);
     expect(html).toMatch(/Planner<span[^>]*>5</);
     // Foods is the default tab: its table, its search box, its column headers.
     expect(html).toContain('data-table="food"');

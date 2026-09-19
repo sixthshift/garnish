@@ -11,11 +11,11 @@ useTempDataDir();
 
 const MISSING = "00000000-0000-4000-8000-000000000000";
 
-test("the guide reads back as the seeded statements, in order, all eight on", async () => {
+test("the guide reads back as the seeded statements, in order, all eleven on", async () => {
   const rules = await callServerFn(listStyleRules);
   expect(rules.map((r) => r.text)).toEqual(DEFAULT_STYLE_RULES.map((r) => r.text));
   expect(rules.map((r) => r.position)).toEqual(DEFAULT_STYLE_RULES.map((_, i) => i));
-  expect(rules.filter((r) => r.enabled)).toHaveLength(8);
+  expect(rules.filter((r) => r.enabled)).toHaveLength(DEFAULT_STYLE_RULES.length);
 });
 
 test("create adds a statement at the foot, on by default and trimmed", async () => {

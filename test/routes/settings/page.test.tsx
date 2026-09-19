@@ -204,10 +204,9 @@ describe("StyleTab render", () => {
     expect(html).toContain('aria-label="Statement: One action per step: split a paragraph that does several things."');
   });
 
-  test("the metric statement prints the facts-check caveat and the others do not", () => {
+  test("no statement prints a caveat: none needs one any more", () => {
     const html = renderToString(<StyleTab rules={RULES} />);
-    expect(html).toContain("until it understands them");
-    expect(html.match(/until it understands them/g)?.length).toBe(1);
+    expect(html).not.toContain("data-statement-note");
   });
 
   test("every row can be moved and removed, and there is an add box at the foot", () => {

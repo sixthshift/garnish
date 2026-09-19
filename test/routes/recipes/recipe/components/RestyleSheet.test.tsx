@@ -17,11 +17,12 @@ import {
   partHeading,
   type RestyleAnswer,
 } from "../../../../../src/routes/recipes/recipe/components/restylePayload";
+import { restyledPart, restyledStep } from "../../../../helpers/restyle";
 
 let n = 0;
 function step(text: string): Step {
   n += 1;
-  return { id: `step-${n}`, text, ingredientIds: [], image: null };
+  return { id: `step-${n}`, title: "", text, summary: "", ingredientIds: [], image: null };
 }
 
 function part(name: string, steps: string[]): Part {
@@ -107,11 +108,14 @@ describe("initialTicked", () => {
       ok: false,
       missingFacts: ["180c"],
       missingFoods: [],
+      missingConditions: [],
+      droppedWords: [],
       addedNumbers: [],
+      rowMismatch: false,
       parts: [
-        { name: "", ok: true, missingFacts: [], missingFoods: [], addedNumbers: [] },
-        { name: "Sauce", ok: false, missingFacts: ["180c"], missingFoods: [], addedNumbers: [] },
-        { name: "To serve", ok: true, missingFacts: [], missingFoods: [], addedNumbers: [] },
+        { name: "", ok: true, missingFacts: [], missingFoods: [], missingConditions: [], addedNumbers: [], droppedWords: [], rowMismatch: false },
+        { name: "Sauce", ok: false, missingFacts: ["180c"], missingFoods: [], missingConditions: [], addedNumbers: [], droppedWords: [], rowMismatch: false },
+        { name: "To serve", ok: true, missingFacts: [], missingFoods: [], missingConditions: [], addedNumbers: [], droppedWords: [], rowMismatch: false },
       ],
     };
     expect([...initialTicked(check)].sort()).toEqual([0, 2]);
@@ -120,41 +124,39 @@ describe("initialTicked", () => {
 
 describe("applyPayload", () => {
   const original = [part("", ["Heat the oven to 180°C.", "Bake for 30 minutes."]), part("Sauce", ["Fry the onion.", "Simmer."])];
-  const restyled = [
-    { name: "", steps: ["Heat the oven to 180°C, then bake for 30 minutes."] },
-    { name: "Sauce", steps: ["Fry the onion, then simmer."] },
-  ];
+  const restyled = [restyledPart("", ["Heat the oven to 180°C, then bake for 30 minutes."]), restyledPart("Sauce", ["Fry the onion, then simmer."])];
 
   test("a ticked part takes the rewrite whole, even where the step counts differ", () => {
     expect(applyPayload(original, restyled, new Set([0, 1]))).toEqual<ApplyPart[]>([
-      { name: "", steps: ["Heat the oven to 180°C, then bake for 30 minutes."] },
-      { name: "Sauce", steps: ["Fry the onion, then simmer."] },
+      { name: "", notes: [], steps: [restyledStep("Heat the oven to 180°C, then bake for 30 minutes.")] },
+      { name: "Sauce", notes: [], steps: [restyledStep("Fry the onion, then simmer.")] },
     ]);
   });
 
   test("an unticked part keeps its own steps, and is still sent", () => {
     expect(applyPayload(original, restyled, new Set([1]))).toEqual<ApplyPart[]>([
-      { name: "", steps: ["Heat the oven to 180°C.", "Bake for 30 minutes."] },
-      { name: "Sauce", steps: ["Fry the onion, then simmer."] },
+      { name: "", notes: [], steps: [restyledStep("Heat the oven to 180°C."), restyledStep("Bake for 30 minutes.")] },
+      { name: "Sauce", notes: [], steps: [restyledStep("Fry the onion, then simmer.")] },
     ]);
   });
 
   test("nothing ticked sends the recipe back unchanged", () => {
     expect(applyPayload(original, restyled, new Set())).toEqual<ApplyPart[]>([
-      { name: "", steps: ["Heat the oven to 180°C.", "Bake for 30 minutes."] },
-      { name: "Sauce", steps: ["Fry the onion.", "Simmer."] },
+      { name: "", notes: [], steps: [restyledStep("Heat the oven to 180°C."), restyledStep("Bake for 30 minutes.")] },
+      { name: "Sauce", notes: [], steps: [restyledStep("Fry the onion."), restyledStep("Simmer.")] },
     ]);
   });
 
   test("a part the answer has no rewrite for keeps its own steps", () => {
-    expect(applyPayload(original, restyled.slice(0, 1), new Set([0, 1]))[1]).toEqual({ name: "Sauce", steps: ["Fry the onion.", "Simmer."] });
+    expect(applyPayload(original, restyled.slice(0, 1), new Set([0, 1]))[1]).toEqual({
+      name: "Sauce",
+      notes: [],
+      steps: [restyledStep("Fry the onion."), restyledStep("Simmer.")],
+    });
   });
 
   test("the part's name is always the recipe's own, never the answer's", () => {
-    const renamed = [
-      { name: "MAIN", steps: ["One."] },
-      { name: "sauce", steps: ["Two."] },
-    ];
+    const renamed = [restyledPart("MAIN", ["One."]), restyledPart("sauce", ["Two."])];
     expect(applyPayload(original, renamed, new Set([0, 1])).map((p) => p.name)).toEqual(["", "Sauce"]);
   });
 });
@@ -166,10 +168,33 @@ describe("partHeading and missingLine", () => {
   });
 
   test("names the dropped numbers and the dropped foods", () => {
-    const line = missingLine({ name: "", ok: false, missingFacts: ["180c", "30min"], missingFoods: ["onion"], addedNumbers: [] });
+    const line = missingLine({
+      name: "",
+      ok: false,
+      missingFacts: ["180c", "30min"],
+      missingFoods: ["onion"],
+      missingConditions: [],
+      addedNumbers: [],
+      droppedWords: [],
+      rowMismatch: false,
+    });
     expect(line).toContain("180c");
     expect(line).toContain("30min");
     expect(line).toContain("onion");
+  });
+
+  test("quotes a lost condition in the author's words", () => {
+    const line = missingLine({
+      name: "",
+      ok: false,
+      missingFacts: [],
+      missingFoods: [],
+      missingConditions: ["if the sauce is a bit sour"],
+      addedNumbers: [],
+      droppedWords: ["sour"],
+      rowMismatch: false,
+    });
+    expect(line).toBe('The rewrite no longer says "if the sauce is a bit sour".');
   });
 });
 
@@ -218,10 +243,7 @@ describe("the rules stage", () => {
 describe("the diff stage", () => {
   const recipe = recipeWith([part("", ["Heat the oven to 180°C.", "Bake for 30 minutes."]), part("Sauce", ["Fry the onion for 5 minutes."])]);
   // The second part's rewrite drops the 5 minutes, so M37.3 fails it.
-  const restyled = [
-    { name: "", steps: ["Heat the oven to 180°C, then bake for 30 minutes."] },
-    { name: "Sauce", steps: ["Fry the onion until soft."] },
-  ];
+  const restyled = [restyledPart("", ["Heat the oven to 180°C, then bake for 30 minutes."]), restyledPart("Sauce", ["Fry the onion until soft."])];
   const answer: RestyleAnswer = { parts: restyled, check: checkRestyle(recipe.parts, restyled) };
 
   test("shows every part's original beside its rewrite", () => {
@@ -251,8 +273,8 @@ describe("the diff stage", () => {
     props.onApply(applyPayload(recipe.parts, answer.parts, initialTicked(answer.check)));
     expect(sent).toEqual([
       [
-        { name: "", steps: ["Heat the oven to 180°C, then bake for 30 minutes."] },
-        { name: "Sauce", steps: ["Fry the onion for 5 minutes."] },
+        { name: "", notes: [], steps: [restyledStep("Heat the oven to 180°C, then bake for 30 minutes.")] },
+        { name: "Sauce", notes: [], steps: [restyledStep("Fry the onion for 5 minutes.")] },
       ],
     ]);
   });

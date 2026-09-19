@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import type { Recipe } from "../../../src/domain/recipe";
 import type { RestyleResult } from "../../../src/server/ai/restyle";
 import { authorRecipe, failureLine, LAB_USAGE, onlyPart, parseLabFlags, reportLines, rulesFromText } from "../../../src/server/ai/restyleLab";
+import { restyledPart } from "../../helpers/restyle";
 
 const step = (id: string, text: string) => ({ id, text, ingredientIds: [], image: null });
 const recipe = {
@@ -49,7 +50,9 @@ describe("authorRecipe", () => {
 
   test("a part whose current steps are gone still gets its author's steps", () => {
     const bare = { ...recipe, parts: [{ ...recipe.parts[1]!, steps: [] }] } as Recipe;
-    expect(authorRecipe(bare, new Map([["p1", ["Sear."]]])).parts[0]!.steps).toEqual([{ id: "p1:author:0", text: "Sear.", ingredientIds: [], image: null }]);
+    expect(authorRecipe(bare, new Map([["p1", ["Sear."]]])).parts[0]!.steps).toEqual([
+      { id: "p1:author:0", title: "", text: "Sear.", summary: "", ingredientIds: [], image: null },
+    ]);
   });
 });
 
@@ -67,16 +70,15 @@ test("rulesFromText is one statement per line, blanks and comments dropped", () 
 
 describe("the report", () => {
   const result: RestyleResult = {
-    parts: [
-      { name: "", steps: [] },
-      { name: "Full recipe", steps: ["Pat beef dry and sear."] },
-      { name: "To Serve", steps: ["Boil the pasta."] },
-    ],
+    parts: [restyledPart("", []), restyledPart("Full recipe", ["Pat beef dry and sear."]), restyledPart("To Serve", ["Boil the pasta."])],
     check: {
       ok: false,
       missingFacts: ["2"],
       missingFoods: [],
+      missingConditions: ["if it looks dry"],
       addedNumbers: ["1tbsp"],
+      droppedWords: ["pooled", "juices"],
+      rowMismatch: false,
       parts: [],
     },
   };
@@ -85,7 +87,9 @@ describe("the report", () => {
     expect(reportLines("lite", 2.345, recipe, result)).toEqual([
       "## lite  2.3s  check FAILED",
       "   dropped: 2",
+      '   lost conditions: "if it looks dry"',
       "   added numbers: 1tbsp",
+      "   dropped words: pooled juices",
       "",
       "--- Full recipe  2 -> 1 steps",
       "1. Pat beef dry and sear.",
@@ -96,7 +100,10 @@ describe("the report", () => {
   });
 
   test("a passing check is one line before the parts", () => {
-    const ok = { ...result, check: { ...result.check, ok: true, missingFacts: [], addedNumbers: [] } };
+    const ok = {
+      ...result,
+      check: { ...result.check, ok: true, missingFacts: [], missingConditions: [], addedNumbers: [], droppedWords: [], rowMismatch: false },
+    };
     expect(reportLines("lite", 1, recipe, ok)[0]).toBe("## lite  1.0s  check ok");
     expect(reportLines("lite", 1, recipe, ok)[1]).toBe("");
   });

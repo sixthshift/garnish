@@ -23,7 +23,7 @@ Stages 7 to 13, in the order they were built. The argument for each is in [decis
 - Small parity items (stage 11). Step photos, servings on a logged cook, an ingredient preview on the card, and a second browser profile for a fetch that meets a bot wall.
 - Import as one pipeline (stage 12). Fetch the page, extract what the rules can (JSON-LD, OpenGraph, readable text), read it with a hosted model over an OpenAI-compatible endpoint using the JSON-LD as an anchor, check the answer against that anchor word for word, review it before anything is saved. The model supplies the parts the markup cannot; the page keeps the words. With no key configured the rules result is the whole of it, and pasted prose goes through the same read.
 - Share to garnish. The installed app is a share target: a URL shared from the phone's browser opens the import on it and reads the page at once (decisions row 103).
-- The house style (stage 13). A guide of short statements in Settings and a Restyle pass that rewrites steps into the household's voice, held to a facts check and approved per part.
+- The house style (stage 13). A guide of short statements in Settings and a Restyle pass that rewrites a recipe's method into the household's voice — its steps' labels, texts and supporting lines, and its ingredients' notes — held to a conservation check and approved per part.
 - Timer alerts. A device switched on in Settings › Alerts is woken by a push when a timer ends, screen off or app closed; iPhone from the home screen, Android installed or in Chrome (decisions row 111).
 
 ## Later, in rough order

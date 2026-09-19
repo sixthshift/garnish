@@ -4,6 +4,7 @@
 import { describe, expect, test } from "vitest";
 import { factsOf, foodsMentioned } from "../../../src/domain/style/facts";
 import { checkPart, checkRestyle, type OriginalPart, type RestyledPart } from "../../../src/domain/style/restyleCheck";
+import { restyledPart } from "../../helpers/restyle";
 
 function food(name: string, pluralName: string | null = null) {
   return { food: { name, pluralName }, originalText: name };
@@ -16,16 +17,14 @@ const ORIGINAL: OriginalPart = {
 };
 
 /** The three steps as one: statement (2) of the style guide, and it must pass. */
-const MERGED: RestyledPart = {
-  name: "",
-  steps: ["Heat the oven to 180C. Melt 125g butter with 2 tbsp golden syrup, add the onion and bake 20 min."],
-};
+const MERGED: RestyledPart = restyledPart("", ["Heat the oven to 180C. Melt 125g butter with 2 tbsp golden syrup, add the onion and bake 20 min."], 4);
 
 /** The same content as six micro-steps: statement (1), and it must pass too. */
-const SPLIT: RestyledPart = {
-  name: "",
-  steps: ["Heat the oven to 180°C.", "Melt 125 g butter.", "Stir in 2 tbsp golden syrup.", "Add the onions.", "Bake for 20 minutes."],
-};
+const SPLIT: RestyledPart = restyledPart(
+  "",
+  ["Heat the oven to 180°C.", "Melt 125 g butter.", "Stir in 2 tbsp golden syrup.", "Add the onions.", "Bake for 20 minutes."],
+  4
+);
 
 describe("factsOf", () => {
   const cases: [string, string, string[]][] = [
@@ -68,30 +67,35 @@ describe("foodsMentioned", () => {
 
 describe("checkRestyle", () => {
   const cases: [string, RestyledPart, Partial<ReturnType<typeof checkRestyle>["parts"][number]>][] = [
-    ["the original against itself passes", { name: "", steps: ORIGINAL.steps.map((s) => s.text) }, { ok: true }],
+    [
+      "the original against itself passes",
+      restyledPart(
+        "",
+        ORIGINAL.steps.map((s) => s.text),
+        4
+      ),
+      { ok: true },
+    ],
     ["a merged step passes, and 180C matches 180°C", MERGED, { ok: true, missingFacts: [], missingFoods: [] }],
     ["a split step passes", SPLIT, { ok: true, missingFacts: [], missingFoods: [] }],
     [
       "a dropped temperature fails, naming the fact",
-      { name: "", steps: ["Heat the oven.", "Melt 125 g butter with 2 tbsp golden syrup.", "Add the onions and bake 20 min."] },
+      restyledPart("", ["Heat the oven.", "Melt 125 g butter with 2 tbsp golden syrup.", "Add the onions and bake 20 min."], 4),
       { ok: false, missingFacts: ["180c"] },
     ],
     [
       "a changed time fails",
-      { name: "", steps: ["Heat to 180°C.", "Melt 125 g butter with 2 tbsp golden syrup.", "Add the onions and bake 25 minutes."] },
+      restyledPart("", ["Heat to 180°C.", "Melt 125 g butter with 2 tbsp golden syrup.", "Add the onions and bake 25 minutes."], 4),
       { ok: false, missingFacts: ["20min"], addedNumbers: ["25min"] },
     ],
     [
       "a renamed food fails, naming the food",
-      { name: "", steps: ["Heat to 180°C.", "Melt 125 g butter with 2 tbsp golden syrup.", "Add the vegetables and bake 20 min."] },
+      restyledPart("", ["Heat to 180°C.", "Melt 125 g butter with 2 tbsp golden syrup.", "Add the vegetables and bake 20 min."], 4),
       { ok: false, missingFoods: ["onion"] },
     ],
     [
       "an extra number is listed, not failed",
-      {
-        name: "",
-        steps: ["Heat to 180°C.", "Melt 125 g butter with 1 of the 2 tbsp golden syrup.", "Add the onions and bake 20 min."],
-      },
+      restyledPart("", ["Heat to 180°C.", "Melt 125 g butter with 1 of the 2 tbsp golden syrup.", "Add the onions and bake 20 min."], 4),
       { ok: true, addedNumbers: ["1"] },
     ],
   ];
@@ -111,12 +115,12 @@ describe("checkRestyle", () => {
       ingredients: [food("butter"), food("salt")],
       steps: [{ text: "Melt the butter." }],
     };
-    expect(checkRestyle([original], [{ name: "", steps: ["Melt the butter."] }]).ok).toBe(true);
+    expect(checkRestyle([original], [restyledPart("", ["Melt the butter."], 2)]).ok).toBe(true);
   });
 
   test("the recipe's verdict is the conjunction, with the parts' lists concatenated", () => {
     const other: OriginalPart = { name: "Sauce", ingredients: [], steps: [{ text: "Simmer 10 minutes." }] };
-    const result = checkRestyle([ORIGINAL, other], [MERGED, { name: "Sauce", steps: ["Simmer gently."] }]);
+    const result = checkRestyle([ORIGINAL, other], [MERGED, restyledPart("Sauce", ["Simmer gently."], 0)]);
     expect(result.ok).toBe(false);
     expect(result.missingFacts).toEqual(["10min"]);
     expect(result.parts.map((part) => part.ok)).toEqual([true, false]);
@@ -146,9 +150,9 @@ test("a bracketed remark with no unit is chatter, not a fact; a bracketed quanti
   expect(factsOf(["Add the garlic (2 cloves) and the eggs (about 3)."])).toEqual(["2", "3"]);
   expect(factsOf(["Cover (Note 5 for slow cooker and pressure cooker) and cook 2 hours."])).toEqual(["2h"]);
   const cloves: OriginalPart = { name: "", ingredients: [], steps: [{ text: "Add the garlic (2 cloves)." }] };
-  expect(checkPart(cloves, { name: "", steps: ["Add the garlic."] }).ok).toBe(false);
+  expect(checkPart(cloves, restyledPart("", ["Add the garlic."])).ok).toBe(false);
   const original: OriginalPart = { name: "", ingredients: [], steps: [{ text: "Toss (I use 2 wooden spoons) for 1 to 2 minutes." }] };
-  expect(checkPart(original, { name: "", steps: ["Toss for 1 to 2 minutes."] }).ok).toBe(true);
+  expect(checkPart(original, restyledPart("", ["Toss for 1 to 2 minutes."])).ok).toBe(true);
 });
 
 test("a number the author repeated in a step's title and body survives being said once", () => {
@@ -157,6 +161,6 @@ test("a number the author repeated in a step's title and body survives being sai
     ingredients: [],
     steps: [{ text: "Slow cook 2 - 2 1/2 hrs - Cover the pot and let it cook for 2 - 2 1/2 hours, checking at 2 hours." }],
   };
-  const restyled = { name: "", steps: ["Cover the pot and cook for 2 - 2 1/2 hours, checking first at 2 hours."] };
+  const restyled = restyledPart("", ["Cover the pot and cook for 2 - 2 1/2 hours, checking first at 2 hours."]);
   expect(checkPart(original, restyled).ok).toBe(true);
 });

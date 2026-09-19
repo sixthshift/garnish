@@ -44,14 +44,15 @@ export type StyleRuleId = z.infer<typeof StyleRuleId>;
 /**
  * Notes the Settings tab prints under a statement that needs a caveat. The
  * table has no help column on purpose — a statement is its own sentence and
- * the model is told nothing else — so the one caveat there is lives here,
- * keyed by the seeded text and matched case-insensitively so an untouched row
- * keeps its note. An edited or hand-written statement simply has none. Pure.
+ * the model is told nothing else — so a caveat lives here, keyed by the seeded
+ * text and matched case-insensitively so an untouched row keeps its note. An
+ * edited or hand-written statement simply has none.
+ *
+ * Empty at present: the metric statement's caveat is gone, because the check
+ * reads a pair as one quantity written twice (decisions.md row 114) rather than
+ * as two facts, one of which went missing. Pure.
  */
-const NOTES: Record<string, string> = {
-  "prefer metric: where a step gives both, keep only metric.":
-    "The facts check counts numbers, not pairs, so it will flag the dropped imperial figures until it understands them.",
-};
+const NOTES: Record<string, string> = {};
 
 /** The note for this statement, or null. Matched on the whole sentence, case-insensitively. Pure. */
 export function styleRuleNote(text: string): string | null {

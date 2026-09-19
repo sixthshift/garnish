@@ -2,8 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import recipes from "../../db/models/recipe/repo";
 import styleRules from "../../db/models/style/repo";
-import type { Recipe } from "../../domain/recipe";
-import { checkRestyle, type RestyleCheck, type RestyledPart } from "../../domain/style";
+import { formatIngredient } from "../../domain/ingredient";
+import type { Part, Recipe } from "../../domain/recipe";
+import { checkRestyle, type OriginalPart, type RestyleCheck, type RestyledPart } from "../../domain/style";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher } from "./client";
@@ -16,6 +17,18 @@ export function restyleSettings(): { apiKey: string; baseUrl: string; model: str
   const settings = aiSettings();
   const model = (process.env.AI_RESTYLE_MODEL ?? "").trim();
   return model === "" ? settings : { ...settings, model };
+}
+
+/**
+ * The recipe's parts as the check reads them: each ingredient row carrying the
+ * line the page renders, so a quantity the rewrite moved out of a step's text
+ * is still found in the document it moved into. Pure.
+ */
+function checkedParts(parts: readonly Part[]): OriginalPart[] {
+  return parts.map((part) => ({
+    ...part,
+    ingredients: part.ingredients.map((row) => ({ ...row, line: formatIngredient(row).trim() || row.originalText })),
+  }));
 }
 
 /** What `runRestyle` hands back: the rewritten parts and the facts check over them. Nothing is written. */
@@ -47,8 +60,8 @@ export async function runRestyle(recipe: Recipe, rules: readonly string[], optio
   const asked = partsWithSteps(recipe.parts);
   if (asked.length === 0) {
     // A recipe with no steps at all has nothing to rewrite: the answer is the recipe, and the model is not called.
-    const parts = recipe.parts.map((part) => ({ name: part.name, steps: [] }));
-    return { parts, check: checkRestyle(recipe.parts, parts) };
+    const parts = recipe.parts.map((part) => ({ name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] }));
+    return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
   }
   const prompt = restylePrompt({ rules, parts: promptParts(asked) });
 
@@ -62,7 +75,7 @@ export async function runRestyle(recipe: Recipe, rules: readonly string[], optio
 
   const parts = withEmptyParts(recipe.parts, parseRestyleAnswer(content));
   matchParts(recipe.parts, parts);
-  return { parts, check: checkRestyle(recipe.parts, parts) };
+  return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
 }
 
 // --- Server functions ------------------------------------------------------
@@ -100,7 +113,16 @@ export const ApplyRestyleInput = z.object({
    * Names ride along so a caller reads as the answer does; the pairing is by
    * position, and a count that does not match the recipe's parts is refused.
    */
-  parts: z.array(z.object({ name: z.string().default(""), steps: z.array(z.string()).default([]) })).default([]),
+  parts: z
+    .array(
+      z.object({
+        name: z.string().default(""),
+        /** One note per ingredient row of that part, in the part's order. A count that does not match the part's rows is refused. */
+        notes: z.array(z.string()).default([]),
+        steps: z.array(z.object({ title: z.string().default(""), text: z.string().default(""), summary: z.string().default("") })).default([]),
+      })
+    )
+    .default([]),
 });
 
 /**

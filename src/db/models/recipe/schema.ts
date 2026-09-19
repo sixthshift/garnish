@@ -5,6 +5,9 @@ import { food } from "../food/schema";
 import { tag } from "../tag/schema";
 import { unit } from "../unit/schema";
 
+/** What `part.source_part` holds: the part before its first restyle. */
+export type SourcePart = { steps: { title: string; text: string; summary: string }[]; notes: string[] };
+
 export const recipe = sqliteTable(
   "recipe",
   {
@@ -68,12 +71,13 @@ export const part = sqliteTable(
     /** '' is the unnamed part: the flat recipe, or the main body beside named parts. */
     name: text("name").notNull().default(""),
     /**
-     * 011_restyle.sql: the step texts this part had before its first restyle,
-     * as a JSON array in position order; NULL until one happens. Written once
-     * and cleared by a restore, so it is always the author's words or nothing
-     *. `{ mode: "json" }` parses and serialises it, as `food.aliases` does.
+     * 017_source_part.sql: the part as the author left it — its steps with
+     * their labels and supporting lines, and one note per ingredient row in
+     * position order — as JSON; NULL until the first restyle. Written once and
+     * cleared by a restore, so it is always the author's words or nothing.
+     * `{ mode: "json" }` parses and serialises it, as `food.aliases` does.
      */
-    sourceSteps: text("source_steps", { mode: "json" }).$type<string[]>(),
+    sourcePart: text("source_part", { mode: "json" }).$type<SourcePart>(),
   },
   (t) => [unique().on(t.recipeId, t.position)]
 );
@@ -129,6 +133,12 @@ export const step = sqliteTable(
     text: text("text").notNull().default(""),
     /** File name under `data/images/steps/`, or NULL for a step with no photo. */
     image: text("image"),
+    // 016_step_fields.sql added the next two, so they sit after `image` here:
+    // `ALTER TABLE` appends, and `drift.test.ts` holds this order to the table's.
+    /** The step's label, '' when it has none. Mealie's `RecipeStep.title`. */
+    title: text("title").notNull().default(""),
+    /** The step's supporting line — recovery, reassurance, why a time is a range. '' when it has none. Mealie's `RecipeStep.summary`. */
+    summary: text("summary").notNull().default(""),
   },
   (t) => [unique().on(t.partId, t.position)]
 );

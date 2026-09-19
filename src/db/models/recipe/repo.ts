@@ -219,7 +219,7 @@ export function recipeRepository(db: Database) {
     }
 
     const stepRows = dz
-      .select({ id: step.id, partId: step.partId, text: step.text, image: step.image })
+      .select({ id: step.id, partId: step.partId, title: step.title, text: step.text, summary: step.summary, image: step.image })
       .from(step)
       .innerJoin(part, eq(part.id, step.partId))
       .where(eq(part.recipeId, row.id))
@@ -247,7 +247,7 @@ export function recipeRepository(db: Database) {
     const stepsByPart = new Map<string, Step[]>();
     for (const s of stepRows) {
       const list = stepsByPart.get(s.partId) ?? [];
-      list.push({ id: s.id, text: s.text, ingredientIds: linksByStep.get(s.id) ?? [], image: s.image });
+      list.push({ id: s.id, title: s.title, text: s.text, summary: s.summary, ingredientIds: linksByStep.get(s.id) ?? [], image: s.image });
       stepsByPart.set(s.partId, list);
     }
 
@@ -337,19 +337,18 @@ export function recipeRepository(db: Database) {
   }
 
   function writeChildren(tx: Executor, recipeId: string, doc: ParsedRecipeInput): void {
-    // A part's kept original steps are not in the document, and a save
-    // rewrites every part row, so they are carried across by part id: the
+    // A part's kept original content is not in the document, and a save
+    // rewrites every part row, so it is carried across by part id: the
     // editor sends back the ids of the parts it loaded, and a part that keeps
     // its id keeps the author's words with it. A part the save invented has no
     // id to match and starts with none, which is right — it has no original.
-    const keptSourceSteps = new Map(
+    const keptSourceParts = new Map(
       tx
-        .select({ id: part.id, sourceSteps: part.sourceSteps })
+        .select({ id: part.id, sourcePart: part.sourcePart })
         .from(part)
         .where(eq(part.recipeId, recipeId))
         .all()
-        .filter((row): row is { id: string; sourceSteps: string[] } => row.sourceSteps !== null)
-        .map((row) => [row.id, row.sourceSteps] as const)
+        .flatMap((row) => (row.sourcePart === null ? [] : [[row.id, row.sourcePart] as const]))
     );
 
     tx.delete(recipeTag).where(eq(recipeTag.recipeId, recipeId)).run();
@@ -372,7 +371,7 @@ export function recipeRepository(db: Database) {
     doc.parts.forEach((p, position) => {
       const partId = p.id ?? crypto.randomUUID();
       tx.insert(part)
-        .values({ id: partId, recipeId, position, name: p.name, sourceSteps: keptSourceSteps.get(partId) ?? null })
+        .values({ id: partId, recipeId, position, name: p.name, sourcePart: keptSourceParts.get(partId) ?? null })
         .run();
       // Ingredients first: their ids are what the part's steps may link to.
       // A line the document gave no id gets a fresh one, which nothing can name.
@@ -399,7 +398,7 @@ export function recipeRepository(db: Database) {
       // is never rejected over a stale link.
       p.steps.forEach((s, i) => {
         const stepId = s.id ?? crypto.randomUUID();
-        tx.insert(step).values({ id: stepId, partId, position: i, text: s.text, image: s.image }).run();
+        tx.insert(step).values({ id: stepId, partId, position: i, title: s.title, text: s.text, summary: s.summary, image: s.image }).run();
         const seen = new Set<string>();
         for (const ingredientId of s.ingredientIds) {
           if (!linkable.has(ingredientId) || seen.has(ingredientId)) continue;

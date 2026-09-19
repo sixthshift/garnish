@@ -21,7 +21,21 @@ const ingredientFields = {
 };
 
 const stepFields = {
+  /**
+   * The step's label: two to four words naming what the step accomplishes,
+   * shown before its text. '' is no label, which is most steps — it earns its
+   * place only where the step opens on a setup verb ("Heat", "Bring to the
+   * boil") and so does not say what it is for.
+   */
+  title: text,
   text,
+  /**
+   * The one sentence of a step that is not an instruction: why a time is a
+   * range, what to do if it goes wrong, what will happen that might worry you.
+   * '' is none. It has a field of its own because written into the text it
+   * reads as decoration and the house style's chatter rule kept cutting it.
+   */
+  summary: text,
   /**
    * The ingredients this step uses, in link order. Ids of
    * rows in the step's own part; a link naming anything else is dropped on save.

@@ -108,7 +108,7 @@ const fullRead: Recipe = {
           fixed: false,
         },
       ],
-      steps: [{ id: ids.step1, text: "Melt the butter over low heat.", ingredientIds: [], image: null }],
+      steps: [{ id: ids.step1, text: "Melt the butter over low heat.", title: "", summary: "", ingredientIds: [], image: null }],
     },
     {
       id: ids.pasta,
@@ -125,8 +125,8 @@ const fullRead: Recipe = {
         },
       ],
       steps: [
-        { id: ids.step2, text: "Boil until al dente.", ingredientIds: [], image: null },
-        { id: ids.step3, text: "Toss the pasta through the butter and serve.", ingredientIds: [], image: null },
+        { id: ids.step2, text: "Boil until al dente.", title: "", summary: "", ingredientIds: [], image: null },
+        { id: ids.step3, text: "Toss the pasta through the butter and serve.", title: "", summary: "", ingredientIds: [], image: null },
       ],
     },
   ],

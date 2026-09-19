@@ -8,7 +8,7 @@ import { toastError } from "../../../../lib/toast";
 import { listUnits } from "../../../../server/fns/units";
 import { useQuickEditContext } from "./QuickEditContext";
 import { QuickEditIngredientSheet } from "./QuickEditIngredient";
-import { QuickEditStepSheet } from "./QuickEditStep";
+import { QuickEditStepSheet, type StepPatch } from "./QuickEditStep";
 import { saveQuickEdit } from "./saveQuickEdit";
 
 // --- The trigger a row renders ------------------------------------------------
@@ -127,11 +127,11 @@ export function useQuickEditStep(partId: string | undefined, stepId: string): Re
   const stored = part?.steps.find((candidate) => candidate.id === stepId);
   if (stored === undefined) return null;
 
-  const save = async (text: string) => {
+  const save = async (patch: StepPatch) => {
     setBusy(true);
     setError(null);
     try {
-      await saveQuickEdit(withStepReplaced(context.recipe, partId, stepId, text), context.run);
+      await saveQuickEdit(withStepReplaced(context.recipe, partId, stepId, patch), context.run);
       toast({ intent: "success", title: "Step saved" });
       setOpen(false);
     } catch (cause) {
@@ -145,7 +145,14 @@ export function useQuickEditStep(partId: string | undefined, stepId: string): Re
   return (
     <>
       {stepMenu(() => setOpen(true))}
-      <QuickEditStepSheet open={open} text={stored.text} busy={busy} error={error} onSave={(text) => void save(text)} onCancel={() => setOpen(false)} />
+      <QuickEditStepSheet
+        open={open}
+        step={{ title: stored.title, text: stored.text, summary: stored.summary }}
+        busy={busy}
+        error={error}
+        onSave={(patch) => void save(patch)}
+        onCancel={() => setOpen(false)}
+      />
     </>
   );
 }

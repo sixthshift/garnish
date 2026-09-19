@@ -21,32 +21,63 @@ export const RESTYLE_JSON_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "steps"],
+        required: ["name", "notes", "steps"],
         properties: {
           name: { type: "string" },
-          steps: { type: "array", items: { type: "string" } },
+          notes: { type: "array", items: { type: "string" } },
+          steps: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["title", "text", "summary"],
+              properties: {
+                title: { type: "string" },
+                text: { type: "string" },
+                summary: { type: "string" },
+              },
+            },
+          },
         },
       },
     },
   },
 } as const;
 
+/** One step as the model answers it: all three fields required, "" for the two it chose not to write. */
+export const RestyledStepSchema = z.object({
+  title: z.string().default(""),
+  text: z.string().default(""),
+  summary: z.string().default(""),
+});
+
 /** One part as the model answers it. */
 export const RestyledPartSchema = z.object({
   name: z.string().default(""),
-  steps: z.array(z.string()).default([]),
+  notes: z.array(z.string()).default([]),
+  steps: z.array(RestyledStepSchema).default([]),
 });
 
 /** The whole answer. Nothing else is read off it, so nothing else is declared. */
 export const RestyleAnswerSchema = z.object({ parts: z.array(RestyledPartSchema).default([]) });
 export type RestyleAnswer = z.infer<typeof RestyleAnswerSchema>;
 
-/** A part as the prompt shows it: the name, the ingredient lines as the app renders them, and the steps. */
-export type PromptPart = { name: string; ingredients: string[]; steps: string[] };
+/** A part as the prompt shows it: the name, the ingredient lines as the app renders them, and the steps as three fields each. */
+export type PromptPart = { name: string; ingredients: string[]; steps: { title: string; text: string; summary: string }[] };
 
-/** The marker after an ingredient line that names its food: what a step is told to call the ingredient. Pure. */
+/**
+ * The marker after an ingredient line that names its food: what a step is told
+ * to call the ingredient.
+ *
+ * Lower cased, because the model copies the marker verbatim into the middle of
+ * a sentence and a library of Title Case foods then reads as "melt Unsalted
+ * Butter". Saying so in the statement did not hold on either model; the marker
+ * is the one place it can be made true rather than asked for. Nothing is lost:
+ * the step linker matches case-insensitively, and lower case is what a recipe
+ * writes mid-sentence anyway. Pure.
+ */
 export function foodMarker(name: string): string {
-  return `(food: ${name.trim()})`;
+  return `(food: ${name.trim().toLowerCase()})`;
 }
 
 /**
@@ -67,7 +98,7 @@ export function promptParts(parts: readonly Part[]): PromptPart[] {
       const line = formatted === "" ? row.originalText.trim() : formatted;
       return row.food ? `${line} ${foodMarker(row.food.name)}` : line;
     }),
-    steps: part.steps.map((step) => step.text),
+    steps: part.steps.map((step) => ({ title: step.title, text: step.text, summary: step.summary })),
   }));
 }
 
@@ -97,15 +128,25 @@ export function withEmptyParts(original: readonly Part[], answered: readonly Res
     );
   }
   let next = 0;
-  return original.map((part) => (part.steps.length === 0 ? { name: part.name, steps: [] } : answered[next++]!));
+  // An empty part keeps its rows' notes as they are, since nothing was asked about it.
+  return original.map((part) => (part.steps.length === 0 ? { name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] } : answered[next++]!));
 }
 
 /**
- * The line that is not a style statement and never becomes one: the facts are
- * the recipe's, whatever the household's voice. It leads the prompt because a
- * model reads the top of it best, and the facts check enforces it afterwards regardless.
+ * The line that is not a style statement and never becomes one: what the recipe
+ * tells you is the recipe's, whatever the household's voice. It leads the
+ * prompt because a model reads the top of it best, and the conservation check
+ * enforces it afterwards regardless.
+ *
+ * It says the whole rule rather than the numbers alone because the numbers were
+ * never what went missing: the lab found a rewrite that kept every quantity and
+ * still turned "add sugar if the sauce is sour" into "add sugar". And it lives
+ * here rather than among the statements because a guide half made of guards
+ * asks for nothing — written as statements, the same words returned the recipe
+ * unchanged on both models.
  */
-export const FIXED_RESTYLE_LINE = "Temperatures, times and quantities are copied exactly, never converted, rounded or dropped.";
+export const FIXED_RESTYLE_LINE =
+  "Temperatures, times and quantities are copied exactly, never converted, rounded or dropped. Nothing else the recipe tells you may be lost either: every instruction, condition, cue, warning, shortcut, storage note and description of how to do something must still be there afterwards, including any in brackets at the end of a step. Reword, reorder and regroup freely; do not drop.";
 
 /** How a part is headed in the prompt. The unnamed part is the main body and says so. Pure. */
 function partHeading(name: string): string {
@@ -142,8 +183,9 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     "",
     "Rules for the answer:",
     "- Answer with the same parts, in the same order, with their names copied exactly as given below. Do not add, drop, merge, rename or reorder a part.",
-    "- Rewrite `steps` only. The ingredient lines are shown so you know what is used and what it is called; never answer with them, and never change a quantity, a unit or an ingredient.",
-    "- Split or merge steps only where a house style statement asks for it; otherwise keep the author's step boundaries. Everything the original steps said must still be said.",
+    '- Each step is three fields. `text` is the instruction. `title` is a short label, or "" for no label. `summary` is the one sentence of the step that is not an instruction — why a time is a range, what to do if it goes wrong, what will happen that might worry you — or "" for none.',
+    '- `notes` is one string per ingredient line of that part, in the order the lines are given below, saying how that ingredient is prepared ("finely diced", "at room temperature") or "" for nothing. Answer with exactly as many as there are lines. Never change a quantity, a unit or a food: you are not given them to rewrite, only the note.',
+    "- Split or merge steps only where a house style statement asks for it; otherwise keep the author's step boundaries. Everything the original said must still be said, in one of these fields.",
     "- Keep every number, temperature and time exactly as written, including its unit. Do not convert between metric and imperial, do not round, and do not drop one.",
     "- Keep every ingredient the original steps named, called by the food name marked `(food: …)` after its ingredient line, never by the whole line.",
     "- Do not invent an ingredient, a step, a time or a quantity, and do not add advice the recipe does not give.",
@@ -156,13 +198,24 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
   for (const part of parts) {
     lines.push("", partHeading(part.name), "INGREDIENTS:");
     if (part.ingredients.length === 0) lines.push("(none)");
-    else for (const line of part.ingredients) lines.push(`- ${line}`);
+    else for (const [index, line] of part.ingredients.entries()) lines.push(`${index + 1}. ${line}`);
     lines.push("STEPS:");
     if (part.steps.length === 0) lines.push("(none)");
-    else for (const [index, step] of part.steps.entries()) lines.push(`${index + 1}. ${step}`);
+    else for (const [index, step] of part.steps.entries()) lines.push(`${index + 1}. ${promptStep(step)}`);
   }
 
   return lines.join("\n");
+}
+
+/**
+ * One step as the prompt shows it. A step that already carries a label or a
+ * supporting line is shown with them marked, so a second restyle reads what the
+ * first wrote rather than finding a sentence it cannot place. Pure.
+ */
+function promptStep(step: PromptPart["steps"][number]): string {
+  const label = step.title.trim() === "" ? "" : `[label: ${step.title.trim()}] `;
+  const support = step.summary.trim() === "" ? "" : ` [supporting line: ${step.summary.trim()}]`;
+  return `${label}${step.text}${support}`;
 }
 
 /**

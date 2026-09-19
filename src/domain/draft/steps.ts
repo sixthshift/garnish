@@ -185,15 +185,17 @@ export function stepsPath(pi: number): string {
 
 /**
  * The stored recipe as a draft with one step's text replaced: part `partId`'s
- * `stepId` keeps its id and its place and gets `text`. An unknown part or step
+ * `stepId` keeps its id and its place and gets `patch`. The patch is the three
+ * prose fields a step has, so a quick edit can move a sentence between the
+ * label, the text and the supporting line in one save. An unknown part or step
  * returns the document unchanged. Pure.
  */
-export function withStepReplaced(recipe: Recipe, partId: string, stepId: string, text: string): RecipeDraft {
+export function withStepReplaced(recipe: Recipe, partId: string, stepId: string, patch: { title: string; text: string; summary: string }): RecipeDraft {
   const draft = draftFromRecipe(recipe);
   return {
     ...draft,
     parts: draft.parts.map((part) =>
-      part.id !== partId ? part : { ...part, steps: part.steps.map((step) => (step.id === stepId ? { ...step, text } : step)) }
+      part.id !== partId ? part : { ...part, steps: part.steps.map((step) => (step.id === stepId ? { ...step, ...patch } : step)) }
     ),
   };
 }

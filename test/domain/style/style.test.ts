@@ -56,15 +56,11 @@ describe("input schemas", () => {
 });
 
 describe("styleRuleNote", () => {
-  test("the metric statement carries the facts-check caveat, matched case- and space-insensitively", () => {
-    const metric = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Prefer metric"))!.text;
-    expect(styleRuleNote(metric)).toMatch(/imperial/);
-    expect(styleRuleNote(`  ${metric.toUpperCase()}  `)).toBe(styleRuleNote(metric));
+  test("no seeded statement needs a caveat: the metric one's went when the check learned to read a pair", () => {
+    expect(DEFAULT_STYLE_RULES.filter((r) => styleRuleNote(r.text) !== null)).toEqual([]);
   });
 
-  test("every other seeded statement, and anything reworded, has none", () => {
-    const noted = DEFAULT_STYLE_RULES.filter((r) => styleRuleNote(r.text) !== null);
-    expect(noted).toHaveLength(1);
+  test("anything hand-written or reworded has none either", () => {
     expect(styleRuleNote("Prefer metric, mostly.")).toBeNull();
     expect(styleRuleNote("")).toBeNull();
   });
@@ -79,18 +75,21 @@ describe("enabledRules", () => {
 });
 
 describe("the seeded guide", () => {
-  test("is eight statements, one per theme, all on, all distinct", () => {
-    expect(DEFAULT_STYLE_RULES).toHaveLength(8);
-    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual(Array(8).fill(true));
+  test("is eleven statements, one per theme, all on, all distinct", () => {
+    expect(DEFAULT_STYLE_RULES).toHaveLength(11);
+    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual(Array(11).fill(true));
     expect(DEFAULT_STYLE_RULES.map((r) => r.text.split(/[:,]/)[0])).toEqual([
       "One stage per step",
       "Imperative",
-      "No chatter",
+      "Drop what is about the author or the reader",
       "Ingredients by their food name",
-      "Timing",
-      'Move plating and garnish steps to a part named "To serve".',
-      "Drop the author's alternative methods",
+      'Flag parallel work with "Meanwhile".',
+      "A run of steps belonging to a different phase or a different method becomes its own part",
       "Prefer metric",
+      'Start a step with a short label and an em dash where its first verb is setup ("Heat"',
+      "Normalise emphasis",
+      "The one sentence of a step that is not an instruction — why a time is a range",
+      "Preparation belongs to the ingredient",
     ]);
     const texts = DEFAULT_STYLE_RULES.map((r) => r.text.toLowerCase());
     expect(new Set(texts).size).toBe(texts.length);

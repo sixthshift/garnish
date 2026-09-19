@@ -5,7 +5,7 @@ import type { Db, Executor } from "../../connection/client";
 import { nowUtc } from "../columns";
 import type { FoodRepository } from "../food/repo";
 import { food } from "../food/schema";
-import { ingredient, part, recipe, step, stepIngredient } from "./schema";
+import { ingredient, part, recipe, type SourcePart, step, stepIngredient } from "./schema";
 
 /** What the repository lends a record: its handle and the document read and write it already knows how to do. */
 export type RecipeStorage = {
@@ -35,20 +35,27 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
   // would want a whole recipe and rewrite ingredients, notes and tags on the way.
   // ===========================================================================
 
-  /** The recipe's parts in position order, with whatever original steps they kept. */
+  /** The recipe's parts in position order, with whatever original content they kept. */
   function partRows() {
-    return dz.select({ id: part.id, name: part.name, sourceSteps: part.sourceSteps }).from(part).where(eq(part.recipeId, id)).orderBy(asc(part.position)).all();
+    return dz.select({ id: part.id, name: part.name, sourcePart: part.sourcePart }).from(part).where(eq(part.recipeId, id)).orderBy(asc(part.position)).all();
   }
 
-  /** One part's step texts in position order: what `source_steps` is made of. */
-  function stepTexts(partId: string): string[] {
-    return dz
-      .select({ text: step.text })
+  /** One part as it stands: what `source_part` is made of, and what a restore puts back. */
+  function partContent(partId: string): SourcePart {
+    const steps = dz
+      .select({ title: step.title, text: step.text, summary: step.summary })
       .from(step)
       .where(eq(step.partId, partId))
       .orderBy(asc(step.position))
+      .all();
+    const notes = dz
+      .select({ note: ingredient.note })
+      .from(ingredient)
+      .where(eq(ingredient.partId, partId))
+      .orderBy(asc(ingredient.position))
       .all()
-      .map((row) => row.text);
+      .map((row) => row.note);
+    return { steps, notes };
   }
 
   /**
@@ -66,24 +73,41 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
    * across: photos on replaced steps are lost. That is accepted — the restyle
    * is shown as a diff and approved before it runs.
    */
-  function replaceSteps(tx: Executor, partId: string, texts: readonly string[]): void {
+  function replacePart(tx: Executor, partId: string, content: SourcePart): void {
     tx.delete(step).where(eq(step.partId, partId)).run(); // links cascade from the step
 
-    const ingredients = dz
+    const rows = dz
       .select({ id: ingredient.id, foodId: ingredient.foodId })
       .from(ingredient)
       .where(eq(ingredient.partId, partId))
       .orderBy(asc(ingredient.position))
-      .all()
-      .map((row) => ({ id: row.id, food: row.foodId === null ? null : (foods.get(row.foodId) ?? null) }));
+      .all();
 
+    // The notes are positional: one per row, in the part's order. A shorter
+    // answer leaves the rest alone rather than blanking them, which is what a
+    // model that stopped early should cost.
+    rows.forEach((row, index) => {
+      const note = content.notes[index];
+      if (note === undefined) return;
+      tx.update(ingredient).set({ note }).where(eq(ingredient.id, row.id)).run();
+    });
+
+    const ingredients = rows.map((row) => ({ id: row.id, food: row.foodId === null ? null : (foods.get(row.foodId) ?? null) }));
+
+    // The linker reads the label and the supporting line with the text: a row
+    // named only in a step's label is still a row that step uses.
     const linked = suggestLinks({
       ingredients,
-      steps: texts.map((text) => ({ id: crypto.randomUUID(), text, ingredientIds: [] as string[] })),
+      steps: content.steps.map((s) => ({
+        id: crypto.randomUUID(),
+        text: [s.title, s.text, s.summary].filter((part) => part.trim() !== "").join(" "),
+        ingredientIds: [] as string[],
+      })),
     });
 
     linked.forEach((s, position) => {
-      tx.insert(step).values({ id: s.id, partId, position, text: s.text, image: null }).run();
+      const written = content.steps[position]!;
+      tx.insert(step).values({ id: s.id, partId, position, title: written.title, text: written.text, summary: written.summary, image: null }).run();
       s.ingredientIds.forEach((ingredientId, i) => {
         tx.insert(stepIngredient).values({ stepId: s.id, ingredientId, position: i }).run();
       });
@@ -139,7 +163,7 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
      * there, so "the original" stays the author's rather than becoming the
      * last rewrite. Then the steps themselves are replaced.
      */
-    restyle(parts: readonly { name: string; steps: readonly string[] }[]): Recipe | null {
+    restyle(parts: readonly { name: string; notes: readonly string[]; steps: readonly { title: string; text: string; summary: string }[] }[]): Recipe | null {
       const current = rowById(id);
       if (!current) return null;
       const rows = partRows();
@@ -148,15 +172,15 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
       }
       dz.transaction((tx) => {
         rows.forEach((row, index) => {
+          const answered = parts[index]!;
+          const content: SourcePart = { steps: answered.steps.map((s) => ({ ...s })), notes: [...answered.notes] };
+          const before = partContent(row.id);
           // An empty part answered with nothing was never sent to the model: leave it, or it would be stamped as restyled.
-          if (parts[index]!.steps.length === 0 && row.sourceSteps === null && stepTexts(row.id).length === 0) return;
-          if (row.sourceSteps === null) {
-            tx.update(part)
-              .set({ sourceSteps: stepTexts(row.id) })
-              .where(eq(part.id, row.id))
-              .run();
+          if (content.steps.length === 0 && row.sourcePart === null && before.steps.length === 0) return;
+          if (row.sourcePart === null) {
+            tx.update(part).set({ sourcePart: before }).where(eq(part.id, row.id)).run();
           }
-          replaceSteps(tx, row.id, parts[index]!.steps);
+          replacePart(tx, row.id, content);
         });
         tx.update(recipe).set({ restyledAt: nowUtc, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
       });
@@ -170,7 +194,7 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
      * from, so a rewrite is always tried against the original words.
      */
     authorSteps(): Map<string, string[]> {
-      return new Map(partRows().flatMap((row) => (row.sourceSteps === null ? [] : [[row.id, row.sourceSteps] as const])));
+      return new Map(partRows().flatMap((row) => (row.sourcePart === null ? [] : [[row.id, row.sourcePart.steps.map((s) => s.text)] as const])));
     },
 
     /**
@@ -186,9 +210,9 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
       if (!current) return null;
       dz.transaction((tx) => {
         for (const row of partRows()) {
-          if (row.sourceSteps === null) continue;
-          replaceSteps(tx, row.id, row.sourceSteps);
-          tx.update(part).set({ sourceSteps: null }).where(eq(part.id, row.id)).run();
+          if (row.sourcePart === null) continue;
+          replacePart(tx, row.id, row.sourcePart);
+          tx.update(part).set({ sourcePart: null }).where(eq(part.id, row.id)).run();
         }
         tx.update(recipe).set({ restyledAt: null, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
       });
