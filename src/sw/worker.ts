@@ -1,6 +1,8 @@
 // Fetch policy: navigations go network-first with the cached shell as fallback, built assets cache-first, GET server functions and images network-first into a data cache that survives deploys, anything else untouched.
+// Push: a timer's push shows a notification; a tap on it focuses the app's window on the timer's page, or opens one.
 
 import { isSkipWaiting } from "./message";
+import { isTimerPush, timerNotification } from "./push";
 
 export type SwConfig = {
   /** Build hash. Names the precache; a new one evicts the old on activate. */
@@ -35,6 +37,13 @@ export type FetchEventLike = ExtendableEventLike & {
   request: RequestLike;
   respondWith: (response: Promise<Response> | Response) => void;
 };
+/** The slice of a `push` event: the payload, decoded as JSON, or nothing. */
+export type PushEventLike = ExtendableEventLike & { data: { json: () => unknown } | null };
+/** The slice of a `notificationclick` event: the notification tapped, with what the push put on it. */
+export type NotificationEventLike = ExtendableEventLike & { notification: { data?: unknown; close: () => void } };
+
+/** The slice of a window `Client` the click handler uses. */
+export type WindowClientLike = { url: string; focus: () => Promise<unknown>; navigate: (url: string) => Promise<unknown> };
 
 /** The slice of `ServiceWorkerGlobalScope` used. */
 export type ServiceWorkerScopeLike = {
@@ -42,12 +51,19 @@ export type ServiceWorkerScopeLike = {
   caches: CacheStorageLike;
   fetch: (request: RequestLike | string) => Promise<Response>;
   skipWaiting: () => Promise<void>;
-  clients: { claim: () => Promise<void> };
+  clients: {
+    claim: () => Promise<void>;
+    matchAll: (options: { type: "window"; includeUncontrolled: boolean }) => Promise<WindowClientLike[]>;
+    openWindow: (url: string) => Promise<unknown>;
+  };
+  registration: { showNotification: (title: string, options: { body: string; tag: string; icon: string; data: unknown }) => Promise<void> };
   addEventListener: {
     (type: "install", listener: (event: ExtendableEventLike) => void): void;
     (type: "activate", listener: (event: ExtendableEventLike) => void): void;
     (type: "fetch", listener: (event: FetchEventLike) => void): void;
     (type: "message", listener: (event: MessageEventLike) => void): void;
+    (type: "push", listener: (event: PushEventLike) => void): void;
+    (type: "notificationclick", listener: (event: NotificationEventLike) => void): void;
   };
 };
 
@@ -78,12 +94,27 @@ export function classifyRequest(request: RequestLike, origin: string, precache: 
   return "passthrough";
 }
 
+/** The same-origin path a tapped notification opens: what the push put on it, or the root when it carried nothing usable. Pure. */
+export function notificationUrl(data: unknown): string {
+  const url = typeof data === "object" && data !== null ? (data as { url?: unknown }).url : undefined;
+  return typeof url === "string" && url.startsWith("/") && !url.startsWith("//") ? url : "/";
+}
+
+/** The JSON a push event carries, or null when it has none or it is not JSON. Never throws. */
+function pushPayload(event: PushEventLike): unknown {
+  try {
+    return event.data?.json() ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** A same-origin 503 for when neither the network nor a cache can answer. */
 function offlineResponse(): Response {
   return new Response("offline", { status: 503, statusText: "Service Unavailable", headers: { "content-type": "text/plain" } });
 }
 
-/** Wire the install, activate and fetch handlers onto `scope`. */
+/** Wire the install, activate, fetch, push and notification handlers onto `scope`. */
 export function installServiceWorker(scope: ServiceWorkerScopeLike, config: SwConfig): void {
   const precache = new Set(config.precache);
   const precacheCache = precacheName(config.version);
@@ -154,5 +185,35 @@ export function installServiceWorker(scope: ServiceWorkerScopeLike, config: SwCo
       case "passthrough":
         return;
     }
+  });
+
+  // Every push shows a notification, whether or not the app is open: a push
+  // that shows nothing costs the subscription on iOS and earns Chrome's own
+  // "updated in the background" notice. Anything that is not a timer's is
+  // ignored.
+  scope.addEventListener("push", (event) => {
+    const payload = pushPayload(event);
+    if (!isTimerPush(payload)) return;
+    const { title, options } = timerNotification(payload);
+    event.waitUntil(scope.registration.showNotification(title, options));
+  });
+
+  // A tap lands on the timer's page: a window already there is focused, any
+  // other window of the app is sent there, and with none open one is opened.
+  scope.addEventListener("notificationclick", (event) => {
+    event.notification.close();
+    const target = new URL(notificationUrl(event.notification.data), scope.location.origin).href;
+    event.waitUntil(
+      scope.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (windows) => {
+        const there = windows.find((client) => client.url === target);
+        if (there) return there.focus();
+        const open = windows[0];
+        if (open) {
+          await open.navigate(target);
+          return open.focus();
+        }
+        return scope.clients.openWindow(target);
+      })
+    );
   });
 }

@@ -102,6 +102,8 @@ test("the migrations create every table in architecture.md", () => {
     "migration",
     "part",
     "planner_rule",
+    "push_subscription",
+    "push_vapid",
     "recipe",
     "recipe_note",
     "recipe_tag",
@@ -112,6 +114,7 @@ test("the migrations create every table in architecture.md", () => {
     "style_rule",
     "tag",
     "timeline_event",
+    "timer_alarm",
     "unit",
   ]);
   expect(db.query<{ ok: string | null }, []>("PRAGMA foreign_key_check").all()).toEqual([]);

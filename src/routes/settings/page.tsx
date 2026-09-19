@@ -1,6 +1,7 @@
 import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
 import { Page, PageHeader } from "../../components/shell/Page";
 import { Appearance } from "./components/Appearance";
+import { TimerAlerts } from "./components/TimerAlerts";
 import { ExportTab } from "./components/tabs/ExportTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { PlannerTab } from "./components/tabs/PlannerTab";
@@ -21,6 +22,7 @@ export function SettingsPage() {
     },
     { value: "export", label: "Import and export", content: <ExportTab /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
+    { value: "alerts", label: "Alerts", content: <TimerAlerts /> },
   ];
 
   return (

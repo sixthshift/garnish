@@ -24,6 +24,9 @@ services:
       AI_MODEL: ${AI_MODEL:-}
       AI_RESTYLE_MODEL: ${AI_RESTYLE_MODEL:-}
       AI_PLANNER_MODEL: ${AI_PLANNER_MODEL:-}
+      # Timer alerts (decisions.md row 111) need nothing set; this is the
+      # optional contact the push services see, a mailto: or https: URL.
+      PUSH_CONTACT: ${PUSH_CONTACT:-}
     restart: unless-stopped
 
 volumes:

@@ -6,6 +6,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { SKIP_WAITING } from "../../src/sw/message";
 import { buildServiceWorker, precacheList, SHELL_URL, stampVersion, versionOf } from "../../src/sw/plugin";
+import { isTimerPush, TIMER_TITLE, timerNotification, timerPush } from "../../src/sw/push";
 import {
   type CacheLike,
   classifyRequest,
@@ -14,9 +15,13 @@ import {
   type FetchEventLike,
   installServiceWorker,
   type MessageEventLike,
+  type NotificationEventLike,
+  notificationUrl,
+  type PushEventLike,
   precacheName,
   type RequestLike,
   type ServiceWorkerScopeLike,
+  type WindowClientLike,
 } from "../../src/sw/worker";
 
 const ORIGIN = "http://garnish.local";
@@ -33,8 +38,13 @@ function fakeScope() {
     activate: [] as Listener<ExtendableEventLike>[],
     fetch: [] as Listener<FetchEventLike>[],
     message: [] as Listener<MessageEventLike>[],
+    push: [] as Listener<PushEventLike>[],
+    notificationclick: [] as Listener<NotificationEventLike>[],
   };
   const fetch = vi.fn<(request: RequestLike | string) => Promise<Response>>();
+  const shown: { title: string; options: unknown }[] = [];
+  const opened: string[] = [];
+  let windows: WindowClientLike[] = [];
 
   const openCache = (name: string): CacheLike => {
     const store = stores.get(name) ?? new Map<string, Response>();
@@ -61,10 +71,15 @@ function fakeScope() {
     },
     fetch,
     skipWaiting: vi.fn(async () => {}),
-    clients: { claim: vi.fn(async () => {}) },
+    clients: {
+      claim: vi.fn(async () => {}),
+      matchAll: async () => windows,
+      openWindow: async (url) => void opened.push(url),
+    },
+    registration: { showNotification: async (title, options) => void shown.push({ title, options }) },
     addEventListener: ((type: keyof typeof listeners, listener: Listener<never>) => {
       listeners[type].push(listener as never);
-    }) as ServiceWorkerScopeLike["addEventListener"],
+    }) as unknown as ServiceWorkerScopeLike["addEventListener"],
   };
 
   const extendable = () => {
@@ -87,11 +102,36 @@ function fakeScope() {
       for (const listener of listeners.activate) listener(event);
       await settle();
     },
-    /** Dispatch a fetch event; resolves to the response handed to respondWith, or null when none was. */
     /** Dispatch a message event, as `postMessage` from a page does. */
     post(data: unknown) {
       for (const listener of listeners.message) listener({ data });
     },
+    shown,
+    opened,
+    /** The app's open windows, for the click handler to find. */
+    setWindows(next: WindowClientLike[]) {
+      windows = next;
+    },
+    /** Dispatch a push event carrying `data` as its JSON, or no data at all. */
+    async push(data: unknown, present = true) {
+      const { event, settle } = extendable();
+      const pushEvent: PushEventLike = { ...event, data: present ? { json: () => data } : null };
+      for (const listener of listeners.push) listener(pushEvent);
+      await settle();
+    },
+    /** Dispatch a tap on a notification carrying `data`. Resolves to whether it was closed. */
+    async click(data: unknown) {
+      let closed = false;
+      const { event, settle } = extendable();
+      const close = () => {
+        closed = true;
+      };
+      const clickEvent: NotificationEventLike = { ...event, notification: { data, close } };
+      for (const listener of listeners.notificationclick) listener(clickEvent);
+      await settle();
+      return closed;
+    },
+    /** Dispatch a fetch event; resolves to the response handed to respondWith, or null when none was. */
     async dispatch(request: RequestLike): Promise<Response | null> {
       let handled: Promise<Response> | Response | null = null;
       const { event, settle } = extendable();
@@ -307,6 +347,70 @@ describe("fetch: writes pass through", () => {
   test("a cross-origin GET is not handled either", async () => {
     const world = installedScope();
     expect(await world.dispatch({ method: "GET", url: "https://fonts.example/a.woff2", mode: "cors" })).toBeNull();
+  });
+});
+
+describe("push", () => {
+  const push = timerPush({ timerId: "step#0#20 minutes", label: "Simmer the sauce", url: "/recipes/ragu/cook" });
+
+  test("the payload round-trips its guard, and anything else is refused", () => {
+    expect(isTimerPush(push)).toBe(true);
+    expect(isTimerPush({ ...push, type: "other" })).toBe(false);
+    expect(isTimerPush({ type: "garnish:timer", label: "x" })).toBe(false);
+    expect(isTimerPush(null)).toBe(false);
+    expect(isTimerPush("garnish:timer")).toBe(false);
+  });
+
+  test("the notification says the step, is tagged by the timer so a restart replaces it, and carries the page", () => {
+    expect(timerNotification(push)).toEqual({
+      title: TIMER_TITLE,
+      options: { body: "Simmer the sauce", tag: "timer:step#0#20 minutes", icon: "/icons/icon-192.png", data: { url: "/recipes/ragu/cook" } },
+    });
+  });
+
+  test("a timer push shows its notification; an empty, malformed or foreign push shows nothing", async () => {
+    const world = installedScope();
+    await world.push(push);
+    expect(world.shown).toEqual([{ title: TIMER_TITLE, options: timerNotification(push).options }]);
+    await world.push(undefined, false);
+    await world.push({ type: "someone-else" });
+    await world.push({ type: "garnish:timer" });
+    expect(world.shown).toHaveLength(1);
+  });
+
+  test("notificationUrl keeps a same-origin path and falls back to the root", () => {
+    expect(notificationUrl({ url: "/recipes/ragu" })).toBe("/recipes/ragu");
+    expect(notificationUrl({ url: "//evil.example/" })).toBe("/");
+    expect(notificationUrl({ url: "https://evil.example/" })).toBe("/");
+    expect(notificationUrl({})).toBe("/");
+    expect(notificationUrl(undefined)).toBe("/");
+  });
+
+  test("a tap closes the notification and focuses the window already on the page", async () => {
+    const world = installedScope();
+    const focus = vi.fn(async () => {});
+    const navigate = vi.fn(async () => {});
+    world.setWindows([
+      { url: url("/shopping"), focus: vi.fn(async () => {}), navigate: vi.fn(async () => {}) },
+      { url: url("/recipes/ragu/cook"), focus, navigate },
+    ]);
+    expect(await world.click({ url: "/recipes/ragu/cook" })).toBe(true);
+    expect(focus).toHaveBeenCalledTimes(1);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(world.opened).toEqual([]);
+  });
+
+  test("a tap sends another open window of the app to the page, and with none open opens one", async () => {
+    const world = installedScope();
+    const focus = vi.fn(async () => {});
+    const navigate = vi.fn(async () => {});
+    world.setWindows([{ url: url("/shopping"), focus, navigate }]);
+    await world.click({ url: "/recipes/ragu" });
+    expect(navigate).toHaveBeenCalledWith(url("/recipes/ragu"));
+    expect(focus).toHaveBeenCalledTimes(1);
+    world.setWindows([]);
+    await world.click({ url: "/recipes/ragu" });
+    expect(world.opened).toEqual([url("/recipes/ragu")]);
   });
 });
 

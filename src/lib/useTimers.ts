@@ -1,5 +1,7 @@
 import { toast } from "@sixthshift/design-system/overlay";
 import { useCallback, useEffect, useState } from "react";
+import { clearTimerAlarm, setTimerAlarm } from "../server/fns/push";
+import { currentEndpoint } from "./push";
 import {
   dismissTimer,
   getTimers,
@@ -50,6 +52,34 @@ export function tickTimersNow(recipeId: string, now: number = Date.now()): void 
   for (const timer of expired) announce(timer);
 }
 
+/**
+ * Tell the server about a timer, when this device has alerts on: a running
+ * one is an alarm to fire at its end, a paused or dismissed one is an alarm
+ * to drop. Fire and forget — the page's own tick still rings the toast, and
+ * a device without a subscription (alerts off, dev, no push) sends nothing.
+ * Never rejects.
+ */
+export async function syncAlarm(recipeId: string, id: string, navigatorLike: Parameters<typeof currentEndpoint>[0], url: string): Promise<void> {
+  try {
+    const endpoint = await currentEndpoint(navigatorLike);
+    if (endpoint === null) return;
+    const storage = browserStorage();
+    const timer = storage ? getTimers(storage, recipeId).find((candidate) => candidate.id === id) : undefined;
+    if (timer && !timer.done && timer.endsAt !== null) {
+      await setTimerAlarm({ data: { endpoint, timerId: id, label: timer.label, url, endsAt: timer.endsAt } });
+    } else {
+      await clearTimerAlarm({ data: { endpoint, timerId: id } });
+    }
+  } catch {
+    // The page's own clock is the one that must not fail; the push is a courtesy.
+  }
+}
+
+/** The page to open from a notification: this one. Server-safe. */
+function currentPath(): string {
+  return typeof location === "undefined" ? "/" : location.pathname + location.search;
+}
+
 /** One timer as a reader sees it: the record, plus the seconds left and the m:ss at this moment. */
 export type RunningTimer = Timer & { remainingSeconds: number; text: string };
 
@@ -90,17 +120,22 @@ export function useTimers(recipeId: string): TimersApi {
     return () => clearInterval(handle);
   }, [recipeId, running]);
 
-  const write = useCallback((change: (storage: StorageLike, at: number) => void) => {
-    const storage = browserStorage();
-    if (!storage) return;
-    change(storage, Date.now());
-    setNow(Date.now());
-  }, []);
+  // Every write also tells the server, so a phone with alerts on is woken at zero.
+  const write = useCallback(
+    (id: string, change: (storage: StorageLike, at: number) => void) => {
+      const storage = browserStorage();
+      if (!storage) return;
+      change(storage, Date.now());
+      setNow(Date.now());
+      void syncAlarm(recipeId, id, typeof navigator === "undefined" ? undefined : navigator, currentPath());
+    },
+    [recipeId]
+  );
 
-  const start = useCallback((input: TimerInput) => write((storage, at) => startTimer(storage, recipeId, input, at)), [recipeId, write]);
-  const pause = useCallback((id: string) => write((storage, at) => pauseTimer(storage, recipeId, id, at)), [recipeId, write]);
-  const resume = useCallback((id: string) => write((storage, at) => resumeTimer(storage, recipeId, id, at)), [recipeId, write]);
-  const dismiss = useCallback((id: string) => write((storage) => dismissTimer(storage, recipeId, id)), [recipeId, write]);
+  const start = useCallback((input: TimerInput) => write(input.id, (storage, at) => startTimer(storage, recipeId, input, at)), [recipeId, write]);
+  const pause = useCallback((id: string) => write(id, (storage, at) => pauseTimer(storage, recipeId, id, at)), [recipeId, write]);
+  const resume = useCallback((id: string) => write(id, (storage, at) => resumeTimer(storage, recipeId, id, at)), [recipeId, write]);
+  const dismiss = useCallback((id: string) => write(id, (storage) => dismissTimer(storage, recipeId, id)), [recipeId, write]);
 
   const timers: RunningTimer[] = stored.map((timer) => ({ ...timer, ...timerDisplay(timer, now) }));
   const find = (id: string) => timers.find((timer) => timer.id === id);

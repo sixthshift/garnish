@@ -82,7 +82,7 @@ The sample recipes also carry a favourite, a source URL and two logged cooks, so
 - **A recipe** — tick ingredients and steps off as you go, switch between the per-part and merged ingredient lists, scale by servings, and use the ⋯ menu for Edit, Cook, Duplicate, Copy link, Copy ingredients, Copy as Cooklang, Print and Delete.
 - **Made this** — the button beside "last made" logs a cook: date, comment and an optional photo. Logged cooks appear as a timeline under the notes, and the newest one sets the recipe's last-made date. Cook mode's final card offers the same button.
 - **Cook** — one card at a time, full screen, with part pills, swipe or arrow keys, and the screen kept awake.
-- **Settings** (`/settings`) — tabs for Foods, Units, Aisles, Tags, Export and Appearance. The first four are editable tables with search, merge and a delete that lists the recipes it affects; Export downloads every recipe as JSON (images referenced by URL, not included); Appearance holds the light / dark / system theme toggle.
+- **Settings** (`/settings`) — tabs for Foods, Units, Aisles, Tags, Export, Appearance and Alerts. The first four are editable tables with search, merge and a delete that lists the recipes it affects; Export downloads every recipe as JSON (images referenced by URL, not included); Appearance holds the light / dark / system theme toggle; Alerts switches on timer alerts for this device (see [Timer alerts](#timer-alerts)).
 
 - **A step's photo** — the editor's ⋮ menu on a step row has "Add image": it uploads to `POST /api/steps/:id/image` and shows on the step's card on the recipe page and in cook mode. Save the recipe first if the step is new — a step that has never been saved has nothing to attach a photo to.
 
@@ -153,6 +153,16 @@ AI_API_KEY=sk-... AI_BASE_URL=https://api.groq.com/openai/v1 AI_MODEL=llama-3.3-
 `docker/docker-compose.yml` passes all five through from the host, so `AI_API_KEY=... docker compose up -d` from `docker/` is enough.
 
 Note that Gemini's free tier may train on what is sent to it. What is sent is the recipe text you pasted, which for a public recipe page costs nothing; use a paid tier or a local model for anything you would not publish.
+
+## Timer alerts
+
+A timer's toast and buzz only reach a page that is open: the phone freezes a backgrounded app, so with the screen off nothing rings at zero. Settings › Alerts turns on Web Push for the device it is opened on — the browser asks once, and from then on the server wakes the phone when a timer ends, screen off or app closed, and a tap on the notification opens the recipe. Each device is switched on from its own Settings.
+
+What it needs:
+
+- HTTPS, as every service worker does. On an iPhone, add Garnish to the home screen first (Safari in a tab cannot receive push); on Android, Chrome works installed or not.
+- The server able to reach the push services outbound (`web.push.apple.com`, `fcm.googleapis.com`). Nothing comes in from the internet.
+- Nothing to configure: the signing key pair is made on first use and kept in the database. `PUSH_CONTACT` (a `mailto:` or `https:` URL) overrides the contact the push services see, which defaults to this project's page.
 
 ## Run with Docker
 
