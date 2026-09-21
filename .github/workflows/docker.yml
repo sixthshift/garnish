@@ -104,5 +104,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "chore(release): v$VERSION [skip ci]"
-          git tag "v$VERSION"
-          git push --follow-tags origin HEAD:main
+          # Annotated, and both refs named on the push: --follow-tags alone
+          # silently leaves a lightweight tag behind on the runner.
+          git tag -a "v$VERSION" -m "garnish v$VERSION"
+          git push origin HEAD:main "refs/tags/v$VERSION"

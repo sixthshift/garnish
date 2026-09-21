@@ -104,8 +104,10 @@ describe("version bump", () => {
   test("writes the commit and its v tag back to main, skipping CI so it does not loop", () => {
     expect(record.if).toBe("steps.bump.outputs.version != ''");
     expect(record.run).toContain("[skip ci]");
-    expect(record.run).toContain('git tag "v$VERSION"');
-    expect(record.run).toContain("git push --follow-tags origin HEAD:main");
+    // Annotated and named on the push: a lightweight tag is not pushed by
+    // --follow-tags, which is how v1.0.1 shipped an image but no tag.
+    expect(record.run).toContain('git tag -a "v$VERSION"');
+    expect(record.run).toContain('git push origin HEAD:main "refs/tags/v$VERSION"');
   });
 
   test("may write to the repository, and only one release runs at a time", () => {
