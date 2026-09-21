@@ -1,5 +1,6 @@
 {
   "name": "garnish",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,7 +18,8 @@
     "backup": "bun run src/db/backup/cli.ts",
     "restyle": "bun run src/server/ai/restyleLabCli.ts",
     "propose": "bun run src/server/ai/plannerLabCli.ts",
-    "icons": "bun run scripts/icons.tsx"
+    "icons": "bun run scripts/icons.tsx",
+    "version:next": "bun run scripts/version.ts"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",

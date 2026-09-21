@@ -1,9 +1,15 @@
 # Builds the image and publishes it to GitHub's registry as
-# ghcr.io/<owner>/<repo> on every push to main (tagged latest and by commit)
-# and every v* tag (tagged by version). Pull requests build without pushing.
+# ghcr.io/<owner>/<repo> on every push to main (tagged latest, by the new
+# version and by commit) and every v* tag (tagged by version). Pull requests
+# build without pushing.
 # The test job gates the image: nothing ships that does not pass
 # `bun run check`, `bun run test` and `bun run lint` on the same Bun the image
 # runs.
+# A push to main also bumps package.json's version before the build, by what
+# the commits since the last tag ask for (scripts/version.ts, Conventional
+# Commits). The image carries that version, and the bumped package.json is
+# committed back to main with a matching v tag once the image is published —
+# `[skip ci]` so the bot's own commit does not start this again.
 # docker/docker-compose.yml pulls the latest tag. test/docker/workflow.test.ts
 # asserts this contract.
 name: docker
@@ -18,6 +24,12 @@ on:
 permissions:
   contents: read
   packages: write
+
+# One release at a time: two runs bumping and pushing at once would race for
+# the version and for main.
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   test:
@@ -35,8 +47,24 @@ jobs:
   image:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      # The bump commit and its tag go back to main.
+      contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          # scripts/version.ts reads the commits since the last v* tag.
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      # Writes the new version into package.json so the build inlines it, and
+      # outputs it. Only on a push to main: a pull request and a hand-made tag
+      # build the version already committed.
+      - id: bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bun run version:next
       # arm64 is built under emulation so one image runs on an x86 box and an
       # Apple-silicon Mac alike. If the build proves too slow, a matrix on
       # native ubuntu-24.04-arm runners is the next step.
@@ -54,6 +82,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.bump.outputs.version }},enable=${{ steps.bump.outputs.version != '' }}
             type=semver,pattern={{version}}
             type=sha
       - uses: docker/build-push-action@v6
@@ -66,3 +95,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # Last, so a version is only spent on an image that published.
+      - name: commit the version and tag it
+        if: steps.bump.outputs.version != ''
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore(release): v$VERSION [skip ci]"
+          git tag "v$VERSION"
+          git push --follow-tags origin HEAD:main

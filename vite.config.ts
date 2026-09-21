@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import { rootRoute } from "@tanstack/virtual-file-routes";
@@ -11,7 +12,12 @@ import { serviceWorkerPlugin } from "./src/sw/plugin.ts";
 // runner ("module is not defined"), so it is left out of the test config.
 const testing = Boolean(process.env.VITEST);
 
+// package.json's version, bumped on every push to main by the release workflow
+// and inlined into both bundles as __GARNISH_VERSION__ (src/lib/version.ts).
+const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
+
 export default defineConfig({
+  define: { __GARNISH_VERSION__: JSON.stringify(version) },
   plugins: [
     tanstackStart({
       spa: { enabled: true },

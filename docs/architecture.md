@@ -80,7 +80,7 @@ test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests; *.dom
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `test`, `migrate`, `seed`, `dev:seed`, `db:generate`, `backup`, `icons`, `restyle`, `propose`. README.md says how to use them. `lint` and `format` are Biome (`biome.json`, the design system's configuration: two spaces, double quotes, semicolons, a 160-column line, imports organised); the devcontainer sets it as the editor's formatter on save.
+Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `test`, `migrate`, `seed`, `dev:seed`, `db:generate`, `backup`, `icons`, `restyle`, `propose`, `version:next`. README.md says how to use them. `lint` and `format` are Biome (`biome.json`, the design system's configuration: two spaces, double quotes, semicolons, a 160-column line, imports organised); the devcontainer sets it as the editor's formatter on save.
 
 ## Stack
 
@@ -233,7 +233,7 @@ The household's own rules for what a good week looks like (decisions.md row 101)
   - Every chain carries `notFoundMiddleware` (`src/server/core/fn.ts`), which rethrows a repository `NotFound` as the router's `notFound()`; loaders render it through `notFoundComponent`. It is a middleware rather than a wrapper around `createServerFn` because Start's compiler must see the literal chain (decisions.md row 36).
   - Deletes return the removed row, as Mealie does.
 - **Server routes** under `/api/*` only for callers outside the app, and later import hooks. Field names follow Mealie where the concept exists.
-  - `GET /api/health` → `{ "ok": true }`. The Docker healthcheck probes it.
+  - `GET /api/health` → `{ "ok": true, "version": "1.2.3" }`. The Docker healthcheck probes it; the version is the build's (`src/lib/version.ts`).
   - `POST /api/recipes/:id/image`: multipart, file in the `image` field, png/jpeg/webp/gif sniffed from the bytes, 20 MB cap. Replaces the recipe's file and answers `{ image: "<id>.<ext>" }`.
   - `GET /api/images/:file`: the stored bytes. Names that are not `<uuid>.<ext>` are rejected before touching the filesystem.
   - `POST /api/timeline/:id/image` and `GET /api/images/timeline/:file`: the same pair for a logged cook's photo, under `images/timeline/`.
@@ -298,7 +298,9 @@ The household's own rules for what a good week looks like (decisions.md row 101)
 - Two-stage `docker/Dockerfile` on `oven/bun:1.4.2` (install and `bun run build`) then `oven/bun:1.4.2-slim` with only `.output/`. `bun:sqlite` is built into Bun, so nothing else is installed at runtime. The build context is the repo root; `docker/Dockerfile.dockerignore` beside it trims the context (BuildKit reads the ignore file named after the Dockerfile).
 - `DATA_DIR=/data` is the volume; `PORT=3000`, `HOST=0.0.0.0`. Runs as root, like Mealie's default, so a bind-mounted host directory needs no ownership setup.
 - `HEALTHCHECK` fetches `/api/health` with Bun itself (the slim image has no curl).
-- `.github/workflows/docker.yml` publishes the image to `ghcr.io/<owner>/<repo>` on every push to `main` (tagged `latest` and by commit sha) and every `v*` tag (tagged by version); pull requests build without pushing. A `test` job (`bun install --frozen-lockfile`, `bun run check`, `bun run test`, on the Bun the image is pinned to) gates the `image` job, which builds `linux/amd64` and `linux/arm64` under QEMU with the Actions cache. `test/docker/workflow.test.ts` holds the contract.
+- `.github/workflows/docker.yml` publishes the image to `ghcr.io/<owner>/<repo>` on every push to `main` (tagged `latest`, by the new version and by commit sha) and every `v*` tag (tagged by version); pull requests build without pushing. A `test` job (`bun install --frozen-lockfile`, `bun run check`, `bun run test`, `bun run lint`, on the Bun the image is pinned to) gates the `image` job, which builds `linux/amd64` and `linux/arm64` under QEMU with the Actions cache. `test/docker/workflow.test.ts` holds the contract.
+- Versions are the workflow's, not a hand edit: on a push to `main` the `image` job runs `bun run version:next` before the build, which reads the commit messages since the last `v*` tag and advances `package.json`'s version by what they ask for — `feat` a minor, a `!` header or a `BREAKING CHANGE` footer a major, anything else a patch (`scripts/version.ts`, pure and tested). The build inlines that version, and once the image is published the bumped `package.json` is committed back to `main` as `chore(release): vX.Y.Z [skip ci]` with a matching `vX.Y.Z` tag. `[skip ci]` keeps the bot's own commit from starting the workflow again, and a `concurrency` group keeps two runs from racing for the version. A version is only spent on an image that published.
+- The version reaches the code through `vite.config.ts`'s `define`, inlined as `__GARNISH_VERSION__` and read as `VERSION` from `src/lib/version.ts` — no `package.json` in the server bundle to keep in step, and `0.0.0-dev` outside a vite build. `GET /api/health` answers with it and Settings prints it at the foot. The service worker is unaffected: it still compares its own content hash (decisions.md row 94), not this string.
 - `docker/docker-compose.yml`: one service `garnish` on `image: ${GARNISH_IMAGE:-ghcr.io/sixthshift/garnish:latest}` — nothing is built on the running machine; set `GARNISH_IMAGE` to run a local build — port 3000 published, named volume `garnish-data` at `/data`, `restart: unless-stopped`.
 
 ## Non-goals

@@ -17,6 +17,7 @@ import type { PlannerRule } from "../../../src/domain/planner";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../../src/domain/reference";
 import type { StyleRule } from "../../../src/domain/style";
+import { VERSION } from "../../../src/lib/version";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
 import { AislesTab } from "../../../src/routes/settings/components/tabs/AislesTab";
 import { ExportTab } from "../../../src/routes/settings/components/tabs/ExportTab";
@@ -24,6 +25,7 @@ import { PlannerTab } from "../../../src/routes/settings/components/tabs/Planner
 import { StyleTab } from "../../../src/routes/settings/components/tabs/StyleTab";
 import { TagsTab } from "../../../src/routes/settings/components/tabs/TagsTab";
 import { groupTagsAZ } from "../../../src/routes/settings/components/tagGroups";
+import { Version } from "../../../src/routes/settings/components/Version";
 import type { FoodRow } from "../../../src/routes/settings/route";
 
 function summary(id: string, name: string): RecipeSummary {
@@ -261,4 +263,9 @@ describe("PlannerTab render", () => {
     expect(html).toContain("No statements yet.");
     expect(html).toContain('aria-label="New statement"');
   });
+});
+
+test("the Settings footer names the version this build was stamped with", () => {
+  const html = renderToString(<Version />);
+  expect(html).toContain(`Garnish ${VERSION}`);
 });

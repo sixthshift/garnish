@@ -108,7 +108,7 @@ Both apply to every `bun run` command here (`start`, `seed`, `migrate`, `backup`
 DATA_DIR=/srv/garnish PORT=8080 bun run start
 ```
 
-`GET /api/health` answers `{"ok":true}` while the server is up.
+`GET /api/health` answers `{"ok":true,"version":"1.2.3"}` while the server is up — the version is the build's, and Settings prints it at the foot of the page too.
 
 ## AI import
 
@@ -166,7 +166,7 @@ What it needs:
 
 ## Run with Docker
 
-Everything Docker lives in `docker/`: the `Dockerfile`, its ignore file, and the compose file, which is the canonical way to run Garnish. The compose file pulls the image GitHub Actions publishes to `ghcr.io/sixthshift/garnish` on every push to `main` (`.github/workflows/docker.yml`: the tests gate the build, and the image is built for amd64 and arm64). Nothing is built on the machine that runs it:
+Everything Docker lives in `docker/`: the `Dockerfile`, its ignore file, and the compose file, which is the canonical way to run Garnish. The compose file pulls the image GitHub Actions publishes to `ghcr.io/sixthshift/garnish` on every push to `main` (`.github/workflows/docker.yml`: the tests gate the build, and the image is built for amd64 and arm64). Each push is tagged `latest`, its new version (see Versions below) and its commit sha, so `:latest` is the rolling one and `:1.2.3` pins. Nothing is built on the machine that runs it:
 
 ```bash
 cd docker
@@ -184,6 +184,13 @@ docker compose up -d
 
 `docker compose down` stops and removes the container. The volume survives; only `docker compose down -v` deletes it.
 
+To pin a version rather than follow `latest`:
+
+```bash
+GARNISH_IMAGE=ghcr.io/sixthshift/garnish:1.2.3 docker compose up -d
+```
+
+
 To run something other than the published image, say a local build, point `GARNISH_IMAGE` at it. The build context is the repo root:
 
 ```bash
@@ -192,6 +199,20 @@ GARNISH_IMAGE=garnish:local docker compose up -d
 ```
 
 The commands in the next two sections are run from `docker/` too.
+
+## Versions
+
+Nobody edits the version by hand. Every push to `main` bumps `package.json` before the image is built, by what the commits since the last tag ask for:
+
+| In a commit message | Bump |
+|---|---|
+| `feat: …` or `feat(scope): …` | minor — `1.2.3` → `1.3.0` |
+| `feat!: …`, `fix(db)!: …`, or a `BREAKING CHANGE: …` footer | major — `1.2.3` → `2.0.0` |
+| anything else, prose subjects included | patch — `1.2.3` → `1.2.4` |
+
+Once the image publishes, the workflow commits the bumped `package.json` back to `main` as `chore(release): vX.Y.Z [skip ci]` and pushes a matching `vX.Y.Z` tag, so the repository, the git tags and the registry all say the same number. A failed build spends no version.
+
+The build inlines the number, so a running container can be asked what it is: `curl http://localhost:3000/api/health`, or read it at the foot of Settings. `bun run version:next` is the same bump run locally; it writes `package.json` and prints the new version.
 
 ## Backup
 

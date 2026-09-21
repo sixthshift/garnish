@@ -6,6 +6,7 @@ import { ExportTab } from "./components/tabs/ExportTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { PlannerTab } from "./components/tabs/PlannerTab";
 import { StyleTab } from "./components/tabs/StyleTab";
+import { Version } from "./components/Version";
 import { Route } from "./route";
 
 export function SettingsPage() {
@@ -32,6 +33,7 @@ export function SettingsPage() {
         <Tabs.List className="max-w-full flex-wrap" />
         <Tabs.Panels />
       </Tabs>
+      <Version />
     </Page>
   );
 }
