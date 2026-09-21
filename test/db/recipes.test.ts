@@ -557,8 +557,14 @@ test("list sort random is stable for a given seed, reshuffles for a different on
   expect(again).toEqual(first);
   expect(first.slice().sort()).toEqual(created.map((r) => r.id).sort());
 
-  const other = repo.query({ by: "filter", sort: "random", seed: "seed-b" }).map((r) => r.id);
-  expect(other).not.toEqual(first);
+  // The ids here are fresh UUIDs, so which permutation a seed lands on differs
+  // every run and two seeds collide on five rows about once in 120. That a
+  // given seed reshuffles a given sample is pinned deterministically over
+  // fixed ids in test/domain/recipe/sort.test.ts; what matters here is that
+  // the seed reaches the query at all, so it is enough that one of several
+  // seeds reorders.
+  const others = ["seed-b", "seed-c", "seed-d"].map((seed) => repo.query({ by: "filter", sort: "random", seed }).map((r) => r.id));
+  expect(others.some((order) => order.join() !== first.join())).toBe(true);
 
   // A filter still applies before the shuffle.
   expect(repo.query({ by: "filter", sort: "random", seed: "seed-a", q: "alp" }).map((r) => r.slug)).toEqual(["alpha"]);
