@@ -29,6 +29,7 @@ const build = stepUsing(image!.steps, "docker/build-push-action")!;
 const meta = stepUsing(image!.steps, "docker/metadata-action")!;
 const bump = image!.steps.find((step) => step.id === "bump")!;
 const record = image!.steps.find((step) => step.name?.startsWith("commit the version"))!;
+const release = image!.steps.find((step) => step.name === "publish the release")!;
 
 describe("triggers", () => {
   test("runs on pushes to main and v* tags, and on pull requests", () => {
@@ -108,6 +109,14 @@ describe("version bump", () => {
     // --follow-tags, which is how v1.0.1 shipped an image but no tag.
     expect(record.run).toContain('git tag -a "v$VERSION"');
     expect(record.run).toContain('git push origin HEAD:main "refs/tags/v$VERSION"');
+  });
+
+  test("publishes the tag as a release, with notes generated from the commits", () => {
+    expect(release.if).toBe("steps.bump.outputs.version != ''");
+    expect(release.run).toContain('gh release create "v$VERSION"');
+    expect(release.run).toContain("--generate-notes");
+    expect(release.env?.GH_TOKEN).toBe("${{ secrets.GITHUB_TOKEN }}");
+    expect(image!.steps.indexOf(release)).toBeGreaterThan(image!.steps.indexOf(record));
   });
 
   test("may write to the repository, and only one release runs at a time", () => {

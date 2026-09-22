@@ -9,7 +9,9 @@
 # the commits since the last tag ask for (scripts/version.ts, Conventional
 # Commits). The image carries that version, and the bumped package.json is
 # committed back to main with a matching v tag once the image is published —
-# `[skip ci]` so the bot's own commit does not start this again.
+# `[skip ci]` so the bot's own commit does not start this again — and the tag
+# is published as a GitHub release, its notes generated from the commits since
+# the last one.
 # docker/docker-compose.yml pulls the latest tag. test/docker/workflow.test.ts
 # asserts this contract.
 name: docker
@@ -108,3 +110,9 @@ jobs:
           # silently leaves a lightweight tag behind on the runner.
           git tag -a "v$VERSION" -m "garnish v$VERSION"
           git push origin HEAD:main "refs/tags/v$VERSION"
+      - name: publish the release
+        if: steps.bump.outputs.version != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: gh release create "v$VERSION" --title "v$VERSION" --generate-notes --verify-tag

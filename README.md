@@ -210,7 +210,7 @@ Nobody edits the version by hand. Every push to `main` bumps `package.json` befo
 | `feat!: …`, `fix(db)!: …`, or a `BREAKING CHANGE: …` footer | major — `1.2.3` → `2.0.0` |
 | anything else, prose subjects included | patch — `1.2.3` → `1.2.4` |
 
-Once the image publishes, the workflow commits the bumped `package.json` back to `main` as `chore(release): vX.Y.Z [skip ci]` and pushes a matching `vX.Y.Z` tag, so the repository, the git tags and the registry all say the same number. A failed build spends no version.
+Once the image publishes, the workflow commits the bumped `package.json` back to `main` as `chore(release): vX.Y.Z [skip ci]`, pushes a matching `vX.Y.Z` tag and publishes it on the [releases page](https://github.com/sixthshift/garnish/releases) with notes generated from the commits since the last one, so the repository, the git tags, the releases and the registry all say the same number. A failed build spends no version.
 
 The build inlines the number, so a running container can be asked what it is: `curl http://localhost:3000/api/health`, or read it at the foot of Settings. `bun run version:next` is the same bump run locally; it writes `package.json` and prints the new version.
 
