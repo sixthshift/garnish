@@ -99,7 +99,8 @@ describe("version bump", () => {
   });
 
   test("tags the image with the new version as well as latest", () => {
-    expect(meta.with?.tags).toContain("type=raw,value=${{ steps.bump.outputs.version }},enable=${{ steps.bump.outputs.version != '' }}");
+    // priority=1000 outranks latest's default 200, so org.opencontainers.image.version is the number, not "latest".
+    expect(meta.with?.tags).toContain("type=raw,value=${{ steps.bump.outputs.version }},priority=1000,enable=${{ steps.bump.outputs.version != '' }}");
   });
 
   test("writes the commit and its v tag back to main, skipping CI so it does not loop", () => {

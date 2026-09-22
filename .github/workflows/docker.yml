@@ -84,7 +84,9 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ steps.bump.outputs.version }},enable=${{ steps.bump.outputs.version != '' }}
+            # priority beats latest's, so the image's own version label and
+            # the summary read 1.2.3 rather than "latest".
+            type=raw,value=${{ steps.bump.outputs.version }},priority=1000,enable=${{ steps.bump.outputs.version != '' }}
             type=semver,pattern={{version}}
             type=sha
       - uses: docker/build-push-action@v7
