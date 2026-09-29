@@ -20,6 +20,7 @@ import type { StyleRule } from "../../../src/domain/style";
 import { VERSION } from "../../../src/lib/version";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
 import { AislesTab } from "../../../src/routes/settings/components/tabs/AislesTab";
+import { AiTab } from "../../../src/routes/settings/components/tabs/AiTab";
 import { ExportTab } from "../../../src/routes/settings/components/tabs/ExportTab";
 import { PlannerTab } from "../../../src/routes/settings/components/tabs/PlannerTab";
 import { StyleTab } from "../../../src/routes/settings/components/tabs/StyleTab";
@@ -172,16 +173,35 @@ describe("ExportTab render", () => {
     // The per-recipe endpoint is named so a reader can find it.
     expect(html).toContain("/api/recipes/");
   });
+});
 
-  test("the AI import note names the three variables and the free tier's catch (M36.1)", async () => {
-    const html = await renderWithRouter(() => <ExportTab />);
-    expect(html).toContain('data-testid="ai-import-note"');
-    expect(html).toContain("AI_API_KEY");
-    expect(html).toContain("AI_BASE_URL");
-    expect(html).toContain("AI_MODEL");
-    expect(html).not.toContain("setup-token");
-    expect(html).toMatch(/only appears when/);
+describe("AiTab render", () => {
+  const status = {
+    configured: true,
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+    isDefaultProvider: true,
+    models: [
+      { use: "import" as const, model: "gemini-flash-lite-latest" },
+      { use: "restyle" as const, model: "gemini-flash-lite-latest" },
+      { use: "planner" as const, model: "gemini-pro-latest" },
+    ],
+  };
+
+  test("shows the configuration as rows, naming each variable, and never the key", () => {
+    const html = renderToString(<AiTab status={status} />);
+    for (const name of ["AI_API_KEY", "AI_BASE_URL", "AI_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL"]) expect(html).toContain(name);
+    expect(html).toContain("gemini-pro-latest");
+    expect(html).toMatch(/data-testid="ai-key-status"[^>]*>.*●●●●.*>Set</);
+    expect(html).not.toContain("Not set");
     expect(html).toMatch(/may train on what is sent/);
+    expect(html).toContain("Test");
+  });
+
+  test("without a key it says so, drops the free-tier caveat for another provider, and the test is disabled", () => {
+    const html = renderToString(<AiTab status={{ ...status, configured: false, isDefaultProvider: false, baseUrl: "http://llm.lan/v1" }} />);
+    expect(html).toMatch(/data-testid="ai-key-status"[^>]*>Not set</);
+    expect(html).not.toMatch(/may train on what is sent/);
+    expect(html).toMatch(/<button[^>]*disabled/);
   });
 });
 

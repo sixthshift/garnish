@@ -3,6 +3,8 @@ import type { PlannerRule } from "../../domain/planner";
 import type { RecipeSummary } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
 import type { StyleRule } from "../../domain/style";
+import type { AiStatus } from "../../server/ai/check";
+import { getAiStatus } from "../../server/fns/ai";
 import { listAisles } from "../../server/fns/aisles";
 import { listFoods } from "../../server/fns/foods";
 import { listPlannerRules } from "../../server/fns/planner";
@@ -23,13 +25,14 @@ export type SettingsData = {
   recipes: RecipeSummary[];
   styleRules: StyleRule[];
   plannerRules: PlannerRule[];
+  ai: AiStatus;
 };
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   loader: async (): Promise<SettingsData> => {
-    const [aisles, units, foods, tags, recipes, styleRules, plannerRules] = await Promise.all([
+    const [aisles, units, foods, tags, recipes, styleRules, plannerRules, ai] = await Promise.all([
       listAisles({ data: {} }),
       listUnits({ data: {} }),
       listFoods({ data: {} }),
@@ -38,8 +41,9 @@ export const Route = createRoute({
       listRecipes({ data: { sort: "name", dir: "asc" } }),
       listStyleRules(),
       listPlannerRules(),
+      getAiStatus(),
     ]);
-    return { aisles, units, foods, tags, recipes, styleRules, plannerRules };
+    return { aisles, units, foods, tags, recipes, styleRules, plannerRules, ai };
   },
   component: lazyRouteComponent(() => import("./page"), "SettingsPage"),
 });

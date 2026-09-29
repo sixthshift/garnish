@@ -2,6 +2,7 @@ import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
 import { Page, PageHeader } from "../../components/shell/Page";
 import { Appearance } from "./components/Appearance";
 import { TimerAlerts } from "./components/TimerAlerts";
+import { AiTab } from "./components/tabs/AiTab";
 import { ExportTab } from "./components/tabs/ExportTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { PlannerTab } from "./components/tabs/PlannerTab";
@@ -10,7 +11,7 @@ import { Version } from "./components/Version";
 import { Route } from "./route";
 
 export function SettingsPage() {
-  const { aisles, units, foods, tags, recipes, styleRules, plannerRules } = Route.useLoaderData();
+  const { aisles, units, foods, tags, recipes, styleRules, plannerRules, ai } = Route.useLoaderData();
 
   const items: TabItem[] = [
     { value: "library", label: "Library", content: <LibraryTab foods={foods} aisles={aisles} units={units} tags={tags} recipes={recipes} /> },
@@ -21,7 +22,8 @@ export function SettingsPage() {
       badge: plannerRules.filter((rule) => rule.enabled).length,
       content: <PlannerTab rules={plannerRules} />,
     },
-    { value: "export", label: "Import and export", content: <ExportTab /> },
+    { value: "export", label: "Export", content: <ExportTab /> },
+    { value: "ai", label: "AI", content: <AiTab status={ai} /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
     { value: "alerts", label: "Alerts", content: <TimerAlerts /> },
   ];

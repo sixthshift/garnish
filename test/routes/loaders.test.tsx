@@ -14,6 +14,7 @@ import type { Route as NewRoute } from "../../src/routes/recipes/new/route";
 import type { Route as EditRoute } from "../../src/routes/recipes/recipe/edit/route";
 import type { RecipeViewData, Route as ViewRoute } from "../../src/routes/recipes/recipe/route";
 import type { FoodRow, SettingsData, Route as SettingsRoute } from "../../src/routes/settings/route";
+import type { AiStatus } from "../../src/server/ai/check";
 import { createFood, listFoods } from "../../src/server/fns/foods";
 import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/server/fns/recipes";
 import type { listTags } from "../../src/server/fns/tags";
@@ -35,6 +36,7 @@ vi.mock("../../src/server/fns/aisles", local);
 vi.mock("../../src/server/fns/foods", local);
 vi.mock("../../src/server/fns/style", local);
 vi.mock("../../src/server/fns/planner", local);
+vi.mock("../../src/server/fns/ai", local);
 
 useTempDataDir();
 
@@ -701,6 +703,7 @@ describe("loader data types match the domain schemas", () => {
       recipes: RecipeSummary[];
       styleRules: StyleRule[];
       plannerRules: PlannerRule[];
+      ai: AiStatus;
     }>();
     // Search params are typed from their zod schemas.
     expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{

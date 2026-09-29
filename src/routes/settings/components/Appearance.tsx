@@ -1,17 +1,14 @@
-import { Muted } from "@sixthshift/design-system/muted";
-import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { SettingRow, SettingsColumn, SettingsPanel } from "./SettingsPanel";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Appearance() {
   return (
-    <section className="flex flex-col gap-2" aria-label="Appearance">
-      <SectionTitle as="h2">Theme</SectionTitle>
-      <Muted as="p" className="text-sm">
-        System follows the device's light or dark setting.
-      </Muted>
-      <div>
-        <ThemeToggle />
-      </div>
-    </section>
+    <SettingsColumn>
+      <SettingsPanel title="Appearance">
+        <SettingRow label="Theme" description="System follows the device's light or dark setting.">
+          <ThemeToggle />
+        </SettingRow>
+      </SettingsPanel>
+    </SettingsColumn>
   );
 }

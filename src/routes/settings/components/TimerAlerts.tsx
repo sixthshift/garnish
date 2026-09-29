@@ -1,9 +1,9 @@
-import { Muted } from "@sixthshift/design-system/muted";
-import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { Message } from "@sixthshift/design-system/message";
 import { Switch } from "@sixthshift/design-system/switch";
 import { usePushAlerts } from "../../../lib/usePushAlerts";
+import { SettingRow, SettingsColumn, SettingsPanel } from "./SettingsPanel";
 
-/** What the section says under the switch for each state. Pure. */
+/** What the section says for each state. Pure. */
 export function timerAlertsNote(state: "unsupported" | "off" | "on" | "denied"): string {
   switch (state) {
     case "unsupported":
@@ -17,33 +17,34 @@ export function timerAlertsNote(state: "unsupported" | "off" | "on" | "denied"):
   }
 }
 
-/** The Alerts tab: one switch, for this device, and what it means. */
+/** The Alerts tab: one switch, for this device. A state that stops it working is a warning above it, not helper text. */
 export function TimerAlerts() {
   const { state, pending, error, setEnabled } = usePushAlerts();
+  const blocked = state === "unsupported" || state === "denied";
   return (
-    <section className="flex flex-col gap-2" aria-label="Timer alerts">
-      <SectionTitle as="h2">Timer alerts</SectionTitle>
-      <Muted as="p" className="text-sm">
-        {timerAlertsNote(state)}
-      </Muted>
-      <div>
-        <Switch
-          label="Timer alerts on this device"
-          checked={state === "on"}
-          pending={pending}
-          disabled={state === "unsupported" || state === "denied"}
-          onCheckedChange={setEnabled}
-          data-testid="timer-alerts-switch"
-        />
-      </div>
-      {error !== null && (
-        <p className="text-sm text-fg-danger" role="alert">
-          {error}
-        </p>
+    <SettingsColumn>
+      {blocked && (
+        <Message intent="warning" size="sm">
+          {timerAlertsNote(state)}
+        </Message>
       )}
-      <Muted as="p" className="text-sm">
-        Timers still show on the page as they do now. Each device is switched on from its own Settings.
-      </Muted>
-    </section>
+      <SettingsPanel title="Timer alerts" foot="Timers still show on the page either way. Each device is switched on from its own Settings.">
+        <SettingRow label="Timer alerts on this device" description={blocked ? undefined : timerAlertsNote(state)}>
+          <Switch
+            aria-label="Timer alerts on this device"
+            checked={state === "on"}
+            pending={pending}
+            disabled={blocked}
+            onCheckedChange={setEnabled}
+            data-testid="timer-alerts-switch"
+          />
+        </SettingRow>
+      </SettingsPanel>
+      {error !== null && (
+        <Message intent="danger" size="sm">
+          {error}
+        </Message>
+      )}
+    </SettingsColumn>
   );
 }
