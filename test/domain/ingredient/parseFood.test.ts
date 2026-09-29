@@ -92,6 +92,27 @@ describe("parseFood", () => {
     test("an empty parenthetical contributes nothing to the note", () => {
       expect(parseFood("flour ()", FOODS)).toEqual({ food: FLOUR, foodText: "", note: "" });
     });
+
+    test("doubled brackets, as a recipe plugin wraps a note the author already bracketed, are one aside", () => {
+      expect(parseFood("chicken breast ((cut into 3/4-inch/2cm cubes))", FOODS)).toEqual({
+        food: CHICKEN_BREAST,
+        foodText: "",
+        note: "cut into 3/4-inch/2cm cubes",
+      });
+      expect(parseFood("raw peanuts ((shelled, with or without the skin))", FOODS)).toEqual({
+        food: null,
+        foodText: "raw peanuts",
+        note: "shelled, with or without the skin",
+      });
+    });
+
+    test("a bracket that is never closed takes the rest of the line as its aside", () => {
+      expect(parseFood("spring onions ((white portions only, cut into 3/4-inch/2cm pieces", FOODS)).toEqual({
+        food: SCALLION,
+        foodText: "",
+        note: "white portions only, cut into 3/4-inch/2cm pieces",
+      });
+    });
   });
 
   describe("the unmatched-adjective case", () => {

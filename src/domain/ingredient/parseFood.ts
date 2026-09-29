@@ -50,15 +50,33 @@ export function parseFood<F extends FoodCandidate>(rest: string, foods: readonly
  * Lifts every parenthetical aside out of `text` (in the order they appear),
  * leaving `stripped` with each `(...)` removed. An empty or whitespace-only
  * aside — "()" — is dropped rather than joined into the note as blank text.
+ * Nested brackets are lifted innermost first until none are left, so a note
+ * a recipe plugin wrapped in brackets the author had already typed —
+ * "raw peanuts ((shelled))" — is one aside, not a food named "raw peanuts ( )".
+ * A bracket that is never closed takes the rest of the line as its aside.
  */
 function extractParentheticals(text: string): { stripped: string; asides: string[] } {
   const asides: string[] = [];
-  const stripped = text.replace(/\(([^()]*)\)/g, (_match, inner: string) => {
-    const trimmed = inner.trim();
-    if (trimmed !== "") asides.push(trimmed);
-    return " ";
-  });
-  return { stripped, asides };
+  let stripped = text;
+  let previous: string;
+  do {
+    previous = stripped;
+    stripped = stripped.replace(/\(([^()]*)\)/g, (_match, inner: string) => {
+      const trimmed = inner.trim();
+      if (trimmed !== "") asides.push(trimmed);
+      return " ";
+    });
+  } while (stripped !== previous);
+  const open = stripped.indexOf("(");
+  if (open !== -1) {
+    const rest = stripped
+      .slice(open + 1)
+      .replace(/[()]/g, " ")
+      .trim();
+    if (rest !== "") asides.push(rest);
+    stripped = stripped.slice(0, open);
+  }
+  return { stripped: stripped.replace(/\)/g, " "), asides };
 }
 
 /**

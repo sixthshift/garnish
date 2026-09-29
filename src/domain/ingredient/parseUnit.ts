@@ -52,7 +52,9 @@ export function parseUnit<U extends UnitCandidate>(rest: string, units: readonly
   }
 
   if (best === null) return { unit: null, rest };
-  return { unit: best.unit, rest: trimmed.slice(best.length).trim() };
+  // An abbreviation's full stop belongs to it: "12 oz. chicken" is ounces of chicken, not ounces of ". chicken".
+  const end = trimmed[best.length] === "." && /^\.(\s|$)/.test(trimmed.slice(best.length)) ? best.length + 1 : best.length;
+  return { unit: best.unit, rest: trimmed.slice(end).trim() };
 }
 
 /**

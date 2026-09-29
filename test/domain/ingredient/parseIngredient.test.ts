@@ -299,4 +299,11 @@ describe("round trip over the seed corpus", () => {
 
     expect(failures).toEqual([]);
   });
+
+  test("an abbreviation's full stop belongs to the unit, not the food", () => {
+    const parsed = parseIngredient("2 tbsp. plain flour", { units: [TABLESPOON], foods: [FLOUR] });
+    expect(parsed.unit).toBe(TABLESPOON);
+    expect(parsed.food).toBe(FLOUR);
+    expect(parsed.foodText).toBe("");
+  });
 });
