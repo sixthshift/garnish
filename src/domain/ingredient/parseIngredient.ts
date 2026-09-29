@@ -39,7 +39,9 @@ export function parseIngredient<U extends UnitCandidate, F extends FoodCandidate
 
   const unit = takesUnit ? matched.unit : null;
   let unitText = takesUnit ? consumed(head, matched.rest) : "";
-  const afterUnit = takesUnit ? matched.rest : head;
+  // "2 cloves of garlic": the "of" joins the unit to the food and is neither.
+  // Only after a unit, so a food whose name starts with the word keeps it.
+  const afterUnit = takesUnit ? matched.rest.replace(/^\s*of\s+/i, "") : head;
 
   const parsed = parseFood(afterUnit, vocabulary.foods);
   let food = parsed.food;

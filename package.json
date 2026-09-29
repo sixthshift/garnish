@@ -13,6 +13,7 @@
     "test": "bun --bun vitest run",
     "migrate": "bun run src/db/migrations/migrate.ts",
     "seed": "bun run src/db/seed/cli.ts",
+    "bench:ingredients": "bun run scripts/ingredientBench.ts",
     "dev:seed": "bun run src/db/dev/cli.ts",
     "db:generate": "drizzle-kit generate",
     "backup": "bun run src/db/backup/cli.ts",
