@@ -35,16 +35,16 @@ COPY --from=build /app/.output ./.output
 # HOST=0.0.0.0 so the Nitro bun preset listens beyond the container loopback.
 ENV DATA_DIR=/data \
     NODE_ENV=production \
-    PORT=3000 \
+    PORT=9988 \
     HOST=0.0.0.0
 
 # garnish.db, images/ and backups/ all live here. Runs as root, like Mealie's
 # default, so a bind-mounted host directory works without ownership setup.
 VOLUME /data
-EXPOSE 3000
+EXPOSE 9988
 
 # The slim image has no curl; Bun's own fetch probes the liveness route.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD ["bun", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+  CMD ["bun", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || 9988) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
 
 CMD ["bun", "run", ".output/server/index.mjs"]

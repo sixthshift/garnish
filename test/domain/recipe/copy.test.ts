@@ -100,7 +100,7 @@ describe("ingredientsText", () => {
 
 describe("recipeUrl", () => {
   test("is the recipe's page on this host", () => {
-    expect(recipeUrl("http://garnish.local:3000", "lemon-tart")).toBe("http://garnish.local:3000/recipes/lemon-tart");
+    expect(recipeUrl("http://garnish.local:9988", "lemon-tart")).toBe("http://garnish.local:9988/recipes/lemon-tart");
   });
 
   test("a trailing slash on the origin does not double up", () => {

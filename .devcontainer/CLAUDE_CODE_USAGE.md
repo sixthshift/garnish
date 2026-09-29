@@ -50,7 +50,7 @@ Forwarded ports:
 
 | Port | What |
 |---|---|
-| 3000 | Garnish API / app (`Bun.serve` default) |
+| 9988 | Garnish dev server (`bun run dev`). With the machine-wide Traefik (`LocalWorkspace/devproxy`) running, also http://garnish.localhost on port 80, via the `traefik.*` labels in `docker-compose.dev.yml` |
 | 5173 | Vite dev server — only if a separate Vite server is ever added; Bun's HTML-import bundler doesn't need it |
 | 4983 | Drizzle Studio — forwarded on request; drizzle isn't a dependency yet, and `drizzle-kit` is **not** installed globally (the skill installs it only alongside the Postgres block) |
 

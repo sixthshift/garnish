@@ -18,6 +18,10 @@ const { version } = JSON.parse(readFileSync(new URL("./package.json", import.met
 
 export default defineConfig({
   define: { __GARNISH_VERSION__: JSON.stringify(version) },
+  // 9988 is garnish's port everywhere — dev, `bun run start` and the image
+  // (decisions.md row 118). strictPort fails loud rather than hopping to a
+  // port the devcontainer does not publish.
+  server: { port: 9988, strictPort: true },
   plugins: [
     tanstackStart({
       spa: { enabled: true },

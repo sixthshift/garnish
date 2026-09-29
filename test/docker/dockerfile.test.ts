@@ -70,10 +70,10 @@ describe("runtime contract", () => {
     expect(lines).toContainEqual(expect.stringMatching(/^VOLUME\s+\/data$/));
   });
 
-  test("listens on 3000 on every interface", () => {
-    expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bPORT=3000\b/));
+  test("listens on 9988 on every interface", () => {
+    expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bPORT=9988\b/));
     expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bHOST=0\.0\.0\.0\b/));
-    expect(lines).toContainEqual(expect.stringMatching(/^EXPOSE\s+3000$/));
+    expect(lines).toContainEqual(expect.stringMatching(/^EXPOSE\s+9988$/));
   });
 
   test("healthcheck probes /api/health", () => {

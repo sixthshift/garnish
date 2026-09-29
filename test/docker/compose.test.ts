@@ -1,5 +1,5 @@
 // docker/docker-compose.yml and the README's Docker sections are text, so their
-// contract is asserted here: one `garnish` service pulling the published image, on port 3000 with the
+// contract is asserted here: one `garnish` service pulling the published image, on port 9988 with the
 // `garnish-data` volume at DATA_DIR=/data plus the three AI variables, and a
 // README that documents run, backup, restore and the AI import. Docker itself is not run under vitest.
 import { readFileSync } from "node:fs";
@@ -64,9 +64,9 @@ describe("compose file", () => {
     expect(garnish.build).toBeUndefined();
   });
 
-  test("publishes 3000, the Dockerfile's EXPOSE", () => {
-    expect(garnish.ports).toEqual(["3000:3000"]);
-    expect(dockerfile).toMatch(/^EXPOSE\s+3000$/m);
+  test("publishes 9988, the Dockerfile's EXPOSE", () => {
+    expect(garnish.ports).toEqual(["9988:9988"]);
+    expect(dockerfile).toMatch(/^EXPOSE\s+9988$/m);
   });
 
   test("mounts the named volume at /data and declares it", () => {
@@ -133,7 +133,7 @@ describe("README", () => {
 
   test("dev instructions match package.json scripts and ports", () => {
     expect(readme).toContain("bun run dev");
-    expect(readme).toContain("3000");
+    expect(readme).toContain("9988");
     expect(readme).toContain("bun run build");
     expect(readme).toContain("bun run start");
     expect(readme).toContain("DATA_DIR");

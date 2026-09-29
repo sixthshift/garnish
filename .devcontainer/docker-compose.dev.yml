@@ -40,9 +40,18 @@ services:
       - NODE_ENV=development
       - TZ=Australia/Sydney
     ports:
-      - '3000:3000' # Garnish API
+      - '9988:9988' # Garnish dev server, garnish's port everywhere
       - '5173:5173' # Vite dev server
       - '4983:4983' # Drizzle Studio
+    # Optional: the machine-wide Traefik (LocalWorkspace/devproxy) routes
+    # http://garnish.localhost on port 80 to the published 9988 above. Without
+    # it these do nothing, and garnish.localhost:9988 or localhost:9988 still
+    # work: browsers send any *.localhost name to this machine, and Vite
+    # accepts those hosts by default.
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.garnish.rule: Host(`garnish.localhost`)
+      traefik.http.services.garnish.loadbalancer.server.port: '9988'
     # The start hook lives here, not in devcontainer.json's `postStartCommand`,
     # because only the compose command fires on a plain `docker compose up`.
     # `exec` so the idle process is the container's main process (PID 2 under

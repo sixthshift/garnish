@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "bun --bun vite dev --host",
     "build": "NODE_ENV=production bun --bun vite build",
-    "start": "bun run .output/server/index.mjs",
+    "start": "PORT=${PORT:-9988} bun run .output/server/index.mjs",
     "check": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome format --write .",

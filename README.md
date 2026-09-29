@@ -19,7 +19,7 @@ Install dependencies:
 bun install
 ```
 
-Run the dev server (Vite via Nitro, on http://localhost:3000, bound to all interfaces so it is reachable from the host through the dev container's published port):
+Run the dev server (Vite via Nitro, on http://localhost:9988, bound to all interfaces so it is reachable from the host through the dev container's published port). 9988 is garnish's port everywhere: dev, `bun run start` and the Docker image. `http://garnish.localhost:9988` works too, and with the machine-wide Traefik proxy running so does `http://garnish.localhost` (see `.devcontainer/CLAUDE_CODE_USAGE.md`):
 
 ```bash
 bun run dev
@@ -90,7 +90,7 @@ Photos live on disk under `DATA_DIR/images/` (logged-cook photos under `images/t
 
 ## Run
 
-Build, then start the production server (on http://localhost:3000):
+Build, then start the production server (on http://localhost:9988):
 
 ```bash
 bun run build
@@ -100,7 +100,7 @@ bun run start
 Environment:
 
 - `DATA_DIR` — where `garnish.db`, `images/` and `backups/` live. Defaults to `./data`. Created if missing.
-- `PORT` — the production server's port. Defaults to 3000.
+- `PORT` — the production server's port. Defaults to 9988.
 
 Both apply to every `bun run` command here (`start`, `seed`, `migrate`, `backup`), for example:
 
@@ -173,7 +173,7 @@ cd docker
 docker compose up -d
 ```
 
-Garnish is then on http://localhost:3000 (the compose file publishes port 3000). All state lives in the named volume `garnish-data`, mounted at `/data` inside the container: `garnish.db`, `images/` and `backups/`. Migrations run on every start, so a fresh volume is set up on first boot.
+Garnish is then on http://localhost:9988 (the compose file publishes port 9988). All state lives in the named volume `garnish-data`, mounted at `/data` inside the container: `garnish.db`, `images/` and `backups/`. Migrations run on every start, so a fresh volume is set up on first boot.
 
 To update, pull the new image and restart; the volume is untouched:
 
@@ -212,7 +212,7 @@ Nobody edits the version by hand. Every push to `main` bumps `package.json` befo
 
 Once the image publishes, the workflow commits the bumped `package.json` back to `main` as `chore(release): vX.Y.Z [skip ci]`, pushes a matching `vX.Y.Z` tag and publishes it on the [releases page](https://github.com/sixthshift/garnish/releases) with notes generated from the commits since the last one, so the repository, the git tags, the releases and the registry all say the same number. A failed build spends no version.
 
-The build inlines the number, so a running container can be asked what it is: `curl http://localhost:3000/api/health`, or read it at the foot of Settings. `bun run version:next` is the same bump run locally; it writes `package.json` and prints the new version.
+The build inlines the number, so a running container can be asked what it is: `curl http://localhost:9988/api/health`, or read it at the foot of Settings. `bun run version:next` is the same bump run locally; it writes `package.json` and prints the new version.
 
 ## Backup
 

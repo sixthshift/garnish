@@ -10,7 +10,7 @@ services:
   garnish:
     image: ${GARNISH_IMAGE:-ghcr.io/sixthshift/garnish:latest}
     ports:
-      - "3000:3000"
+      - "9988:9988"
     volumes:
       # garnish.db, images/ and backups/ all live in the volume.
       - garnish-data:/data
