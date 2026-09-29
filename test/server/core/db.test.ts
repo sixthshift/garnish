@@ -3,12 +3,15 @@ import { join } from "node:path";
 import { expect, test } from "vitest";
 import { DB_FILE } from "../../../src/db/connection/open";
 import { listMigrations, MIGRATIONS_DIR } from "../../../src/db/migrations/migrate";
+import { foodRepository } from "../../../src/db/models/food/repo";
 import { unitRepository } from "../../../src/db/models/unit/repo";
+import { STARTER_FOODS } from "../../../src/db/seed/foods";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { bundledMigrations, closeDb, getDb } from "../../../src/server/core/db";
 import { useTempDataDir } from "../../helpers/server";
 
-const temp = useTempDataDir();
+// A real first start: the file does not exist until getDb makes it, and the starter foods come with it.
+const temp = useTempDataDir({ starterFoods: true });
 
 test("first getDb creates the file under DATA_DIR, migrates and seeds", async () => {
   expect(existsSync(join(temp.dir, DB_FILE))).toBe(false);
@@ -17,6 +20,7 @@ test("first getDb creates the file under DATA_DIR, migrates and seeds", async ()
   const applied = db.query<{ n: number }, []>("SELECT count(*) AS n FROM migration").get()!.n;
   expect(applied).toBeGreaterThan(0);
   expect(unitRepository(db).list()).toHaveLength(DEFAULT_UNITS.length);
+  expect(foodRepository(db).list()).toHaveLength(STARTER_FOODS.length);
 });
 
 test("getDb caches the handle and does not re-seed", async () => {

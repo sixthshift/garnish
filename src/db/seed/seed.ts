@@ -2,6 +2,8 @@ import type { Database } from "bun:sqlite";
 import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { slugify } from "../../lib/names";
 import { orm } from "../connection/client";
+import type { Aisle } from "../models/aisle/repo";
+import type { Food } from "../models/food/repo";
 import { type PlannerRule, plannerRepository } from "../models/planner/repo";
 import { recipeRepository } from "../models/recipe/repo";
 import { type StyleRule, styleRuleRepository } from "../models/style/repo";
@@ -9,6 +11,7 @@ import { timelineRepository } from "../models/timeline/repo";
 import { type Unit, unitRepository } from "../models/unit/repo";
 import { DEFAULT_PLANNER_RULES } from "./planner";
 import { SAMPLE_RECIPES } from "./recipes";
+import { seedStarterFoods } from "./starter";
 import { seedStatements } from "./statements";
 import { DEFAULT_STYLE_RULES } from "./style";
 import { SAMPLE_TIMELINE } from "./timeline";
@@ -16,6 +19,9 @@ import { DEFAULT_UNITS } from "./units";
 
 export type SeedResult = {
   units: Unit[];
+  aisles: Aisle[];
+  foods: Food[];
+  aliasedFoods: Food[];
   styleRules: StyleRule[];
   rewordedStyleRules: StyleRule[];
   retiredStyleRules: StyleRule[];
@@ -26,8 +32,10 @@ export type SeedResult = {
 
 /**
  * Insert any default unit not already present (name compared
- * case-insensitively), and any statement of the two guides — the house style
- * and the planner — that is not already there. Both guides go through the same
+ * case-insensitively), the starter aisles and foods if this database has
+ * never had them (`starter.ts`, once per database rather than on every start,
+ * so a food the household deletes stays deleted), and any statement of the two
+ * guides — the house style and the planner — that is not already there. Both guides go through the same
  * `seedStatements` helper, which owns the match-by-text and `was` logic and is
  * documented there. Runs in one transaction. Returns only the rows created,
  * reworded or retired on this run, so the CLI and the tests can say what a run
@@ -49,11 +57,15 @@ export function seed(db: Database): SeedResult {
       madeUnits.push(unitRepo.create(input));
     }
 
+    const starter = seedStarterFoods(db);
     const style = seedStatements(styleRepo, DEFAULT_STYLE_RULES);
     const plan = seedStatements(planner.rules, DEFAULT_PLANNER_RULES);
 
     return {
       units: madeUnits,
+      aisles: starter.aisles,
+      foods: starter.foods,
+      aliasedFoods: starter.aliasedFoods,
       styleRules: style.made,
       rewordedStyleRules: style.reworded,
       retiredStyleRules: style.retired,

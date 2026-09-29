@@ -50,8 +50,8 @@ if (import.meta.main) {
   try {
     await migrate(db);
     // The production seed, on purpose: dev looks at the reference data a real install has.
-    const { units } = seed(db);
-    console.log(`${path}: migrated, seeded ${units.length} units`);
+    const { units, foods } = seed(db);
+    console.log(`${path}: migrated, seeded ${units.length} units and ${foods.length} starter foods`);
 
     const dataset = generateDevRecipes(flags.seed, flags.count);
     const { created, images } = await applyDevData(db, dataset);

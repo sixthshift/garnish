@@ -3,9 +3,14 @@ export const AISLES: readonly string[] = ["Fruit & veg", "Butcher", "Seafood", "
 
 export type FoodEntry = { name: string; plural?: string; aisle: string };
 
-/** ~80 foods across the aisles above. Plurals only where the food is countable. */
+/**
+ * ~80 foods across the aisles above. Plurals only where the food is countable.
+ * Every name is a starter food's (`src/db/seed/foods.ts`), so a generated
+ * recipe links to the food the seed already made rather than a second one
+ * beside it.
+ */
 export const FOODS: readonly FoodEntry[] = [
-  { name: "brown onion", plural: "brown onions", aisle: "Fruit & veg" },
+  { name: "onion", plural: "onions", aisle: "Fruit & veg" },
   { name: "red onion", plural: "red onions", aisle: "Fruit & veg" },
   { name: "garlic", aisle: "Fruit & veg" },
   { name: "ginger", aisle: "Fruit & veg" },
@@ -13,7 +18,7 @@ export const FOODS: readonly FoodEntry[] = [
   { name: "celery", aisle: "Fruit & veg" },
   { name: "kent pumpkin", aisle: "Fruit & veg" },
   { name: "sweet potato", plural: "sweet potatoes", aisle: "Fruit & veg" },
-  { name: "desiree potato", plural: "desiree potatoes", aisle: "Fruit & veg" },
+  { name: "potato", plural: "potatoes", aisle: "Fruit & veg" },
   { name: "roma tomato", plural: "roma tomatoes", aisle: "Fruit & veg" },
   { name: "cherry tomato", plural: "cherry tomatoes", aisle: "Fruit & veg" },
   { name: "lebanese cucumber", plural: "lebanese cucumbers", aisle: "Fruit & veg" },
@@ -43,10 +48,10 @@ export const FOODS: readonly FoodEntry[] = [
   { name: "lamb shoulder", aisle: "Butcher" },
   { name: "lamb shank", plural: "lamb shanks", aisle: "Butcher" },
   { name: "pork belly", aisle: "Butcher" },
-  { name: "streaky bacon", aisle: "Butcher" },
+  { name: "bacon", aisle: "Butcher" },
   { name: "chorizo", plural: "chorizos", aisle: "Butcher" },
 
-  { name: "green prawn", plural: "green prawns", aisle: "Seafood" },
+  { name: "prawn", plural: "prawns", aisle: "Seafood" },
   { name: "barramundi fillet", plural: "barramundi fillets", aisle: "Seafood" },
   { name: "salmon fillet", plural: "salmon fillets", aisle: "Seafood" },
   { name: "squid", aisle: "Seafood" },
@@ -58,12 +63,12 @@ export const FOODS: readonly FoodEntry[] = [
   { name: "greek yoghurt", aisle: "Dairy & eggs" },
   { name: "parmesan", aisle: "Dairy & eggs" },
   { name: "cheddar", aisle: "Dairy & eggs" },
-  { name: "fetta", aisle: "Dairy & eggs" },
+  { name: "feta", aisle: "Dairy & eggs" },
   { name: "egg", plural: "eggs", aisle: "Dairy & eggs" },
 
-  { name: "sourdough loaf", plural: "sourdough loaves", aisle: "Bakery" },
+  { name: "sourdough", aisle: "Bakery" },
   { name: "burger bun", plural: "burger buns", aisle: "Bakery" },
-  { name: "tortilla", plural: "tortillas", aisle: "Bakery" },
+  { name: "flour tortilla", plural: "flour tortillas", aisle: "Bakery" },
   { name: "panko breadcrumbs", aisle: "Bakery" },
 
   { name: "plain flour", aisle: "Pantry" },
@@ -79,11 +84,11 @@ export const FOODS: readonly FoodEntry[] = [
   { name: "sesame oil", aisle: "Pantry" },
   { name: "soy sauce", aisle: "Pantry" },
   { name: "fish sauce", aisle: "Pantry" },
-  { name: "rice wine vinegar", aisle: "Pantry" },
+  { name: "rice vinegar", aisle: "Pantry" },
   { name: "red wine vinegar", aisle: "Pantry" },
   { name: "dijon mustard", aisle: "Pantry" },
   { name: "tomato paste", aisle: "Pantry" },
-  { name: "tinned tomatoes", aisle: "Pantry" },
+  { name: "canned tomatoes", aisle: "Pantry" },
   { name: "coconut milk", aisle: "Pantry" },
   { name: "chickpeas", aisle: "Pantry" },
   { name: "red lentils", aisle: "Pantry" },
@@ -96,13 +101,13 @@ export const FOODS: readonly FoodEntry[] = [
   { name: "dark chocolate", aisle: "Pantry" },
   { name: "honey", aisle: "Pantry" },
 
-  { name: "sea salt", aisle: "Spices" },
+  { name: "salt", aisle: "Spices" },
   { name: "black pepper", aisle: "Spices" },
   { name: "ground cumin", aisle: "Spices" },
   { name: "ground coriander", aisle: "Spices" },
   { name: "smoked paprika", aisle: "Spices" },
   { name: "ground turmeric", aisle: "Spices" },
-  { name: "cinnamon", aisle: "Spices" },
+  { name: "ground cinnamon", aisle: "Spices" },
   { name: "dried oregano", aisle: "Spices" },
   { name: "chilli flakes", aisle: "Spices" },
   { name: "bay leaf", plural: "bay leaves", aisle: "Spices" },
@@ -110,7 +115,7 @@ export const FOODS: readonly FoodEntry[] = [
   { name: "baking powder", aisle: "Spices" },
   { name: "bicarbonate of soda", aisle: "Spices" },
 
-  { name: "frozen peas", aisle: "Freezer" },
+  { name: "peas", aisle: "Freezer" },
   { name: "puff pastry", aisle: "Freezer" },
   { name: "vanilla ice cream", aisle: "Freezer" },
 ];

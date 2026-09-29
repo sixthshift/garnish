@@ -107,6 +107,7 @@ test("the migrations create every table in architecture.md", () => {
     "recipe",
     "recipe_note",
     "recipe_tag",
+    "seed_batch",
     "shopping_item",
     "shopping_item_source",
     "step",

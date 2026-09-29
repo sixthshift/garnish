@@ -12,13 +12,23 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runWithStartContext, type StartStorageContext } from "@tanstack/start-storage-context";
 import { afterEach, beforeEach } from "vitest";
+import { databasePath, openDatabase } from "../../src/db/connection/open";
+import { migrate } from "../../src/db/migrations/migrate";
+import { seedBatchRepository } from "../../src/db/models/seed/repo";
+import { STARTER_BATCH } from "../../src/db/seed/starter";
 import { closeDb } from "../../src/server/core/db";
 
 /**
  * Point DATA_DIR at a fresh temp directory for every test in the file and
  * close the cached database between them. Call at a test file's top level.
+ *
+ * The database starts as if it had already had the starter foods
+ * (`src/db/seed/starter.ts`) and the household had cleared them, so a test
+ * sees only the foods and aisles it makes itself, and does not pay for seven
+ * hundred inserts it never reads. Pass `starterFoods: true` for the database a
+ * real first start makes.
  */
-export function useTempDataDir(): { readonly dir: string } {
+export function useTempDataDir(options: { starterFoods?: boolean } = {}): { readonly dir: string } {
   let dir = "";
   let previous: string | undefined;
   beforeEach(async () => {
@@ -26,6 +36,12 @@ export function useTempDataDir(): { readonly dir: string } {
     previous = process.env.DATA_DIR;
     dir = mkdtempSync(join(tmpdir(), "garnish-test-"));
     process.env.DATA_DIR = dir;
+    if (!options.starterFoods) {
+      const db = openDatabase(databasePath(dir));
+      migrate(db);
+      seedBatchRepository(db).record(STARTER_BATCH);
+      db.close();
+    }
   });
   afterEach(async () => {
     closeDb();
