@@ -57,7 +57,8 @@ export function RecipeSource(props: RecipeSourceProps) {
   return (
     <div className="flex flex-col gap-6">
       <ImportSteps current={imported !== null ? "Review" : "Source"} />
-      {stage()}
+      {/* The chooser and the review lay themselves out across the page; a source's one form keeps to a reading width. */}
+      {source === null || imported !== null ? stage() : <div className="w-full max-w-3xl">{stage()}</div>}
     </div>
   );
 

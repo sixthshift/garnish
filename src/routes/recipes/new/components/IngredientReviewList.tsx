@@ -144,13 +144,16 @@ export const STEPS_SHOWN = 3;
 /**
  * The steps as the page wrote them, read-only: the review is about what the
  * page said, and the words are the Style stage's to change. Folded after the
- * first few so the ingredients stay the review's subject.
+ * first few on a narrow screen, so the ingredients stay the review's subject.
  */
 export function ReviewSteps({ parts, styledNext }: { parts: ScrapedRecipe["parts"]; styledNext: boolean }) {
   const [all, setAll] = useState(false);
   const withSteps = parts.filter((part) => part.steps.length > 0);
   const total = withSteps.reduce((sum, part) => sum + part.steps.length, 0);
-  let shown = 0;
+  // Every step is rendered; below `lg` those past the first few are hidden until asked for,
+  // and from `lg` the column beside the ingredients has room for them all. CSS alone, so the
+  // server render and the first client render agree.
+  const folded = (n: number) => !all && n > STEPS_SHOWN;
   let n = 0;
 
   return (
@@ -164,30 +167,28 @@ export function ReviewSteps({ parts, styledNext }: { parts: ScrapedRecipe["parts
       </div>
       <Card size="sm" className="flex flex-col gap-3">
         {withSteps.map((part, index) => {
-          if (!all && shown >= STEPS_SHOWN) return null;
-          const visible = all ? part.steps : part.steps.slice(0, STEPS_SHOWN - shown);
-          shown += visible.length;
+          const first = n + 1;
+          const numbered = part.steps.map((step) => {
+            n += 1;
+            return { step, number: n };
+          });
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: a scraped draft has no ids yet; this preview is read-only and never reordered.
-            <div key={`${index}-${part.name}`} className="flex flex-col gap-1.5" data-import-part={part.name}>
+            <div key={`${index}-${part.name}`} className={cn("flex flex-col gap-1.5", folded(first) && "max-lg:hidden")} data-import-part={part.name}>
               {part.name !== "" && <span className="text-sm font-medium">{part.name}</span>}
               <ol className="flex flex-col gap-1.5">
-                {visible.map((step, si) => {
-                  n += 1;
-                  return (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: a scraped draft's steps are plain strings in order; this preview is read-only.
-                    <li key={`${si}-${step.slice(0, 24)}`} className="flex gap-3 text-sm leading-relaxed">
-                      <span className="w-4 shrink-0 text-right font-display font-semibold text-fg-subtle">{n}</span>
-                      <span>{step}</span>
-                    </li>
-                  );
-                })}
+                {numbered.map(({ step, number }) => (
+                  <li key={number} className={cn("flex gap-3 text-sm leading-relaxed", folded(number) && "max-lg:hidden")}>
+                    <span className="w-4 shrink-0 text-right font-display font-semibold text-fg-subtle">{number}</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
               </ol>
             </div>
           );
         })}
         {total > STEPS_SHOWN && (
-          <div>
+          <div className="lg:hidden">
             <Button type="button" size="sm" variant="ghost" intent="neutral" aria-expanded={all} onClick={() => setAll(!all)}>
               {all ? "Show fewer" : `Show all ${total} steps`}
             </Button>

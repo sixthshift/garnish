@@ -68,7 +68,7 @@ export function NewRecipePage() {
   }
 
   return (
-    <Page width="focus">
+    <Page>
       <PageHeader title="New recipe" />
       <RecipeSource
         units={units}

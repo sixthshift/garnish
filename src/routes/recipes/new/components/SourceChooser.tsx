@@ -78,7 +78,7 @@ export function SourceChooser({ onChoose, onReadUrl, disabled, aiAvailable = fal
   };
 
   return (
-    <div className="flex flex-col gap-6" data-source-stage="choose">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start" data-source-stage="choose">
       <Card size="lg">
         <form className="flex flex-col gap-3" onSubmit={submit} data-source="url">
           <label htmlFor="source-url" className="font-medium">

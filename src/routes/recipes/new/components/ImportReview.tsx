@@ -141,9 +141,15 @@ export function ImportReview(props: ImportReviewProps) {
         </div>
       </Card>
 
-      {rows.length > 0 && <IngredientReviewList rows={rows} units={units} searchFoods={searchFoods} busy={busy} onRowsChange={onRowsChange} />}
-
-      {stepCount(recipe) > 0 && <ReviewSteps parts={recipe.parts} styledNext={aiAvailable} />}
+      {/* Side by side from `lg`, as the recipe page lays a recipe out; one column below it. */}
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        {rows.length > 0 && <IngredientReviewList rows={rows} units={units} searchFoods={searchFoods} busy={busy} onRowsChange={onRowsChange} />}
+        {stepCount(recipe) > 0 && (
+          <div className="lg:sticky lg:top-6">
+            <ReviewSteps parts={recipe.parts} styledNext={aiAvailable} />
+          </div>
+        )}
+      </div>
 
       <div
         className="sticky bottom-20 z-10 -mx-4 flex flex-col gap-2 border-t border-border-normal bg-bg-normal px-4 py-3 md:bottom-0 md:mx-0 md:rounded-t-lg"
