@@ -165,7 +165,8 @@ export function ReviewSteps({ parts, styledNext }: { parts: ScrapedRecipe["parts
           {styledNext ? ", as the page wrote them. The house style comes next." : ", as the page wrote them."}
         </Muted>
       </div>
-      <Card size="sm" className="flex flex-col gap-3">
+      {/* A card per step, as the recipe page and cook mode show them (design-language rule 2's exception). */}
+      <div className="flex flex-col gap-3">
         {withSteps.map((part, index) => {
           const first = n + 1;
           const numbered = part.steps.map((step) => {
@@ -174,13 +175,17 @@ export function ReviewSteps({ parts, styledNext }: { parts: ScrapedRecipe["parts
           });
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: a scraped draft has no ids yet; this preview is read-only and never reordered.
-            <div key={`${index}-${part.name}`} className={cn("flex flex-col gap-1.5", folded(first) && "max-lg:hidden")} data-import-part={part.name}>
+            <div key={`${index}-${part.name}`} className={cn("flex flex-col gap-2", folded(first) && "max-lg:hidden")} data-import-part={part.name}>
               {part.name !== "" && <span className="text-sm font-medium">{part.name}</span>}
-              <ol className="flex flex-col gap-1.5">
+              <ol className="flex flex-col gap-2">
                 {numbered.map(({ step, number }) => (
-                  <li key={number} className={cn("flex gap-3 text-sm leading-relaxed", folded(number) && "max-lg:hidden")}>
-                    <span className="w-4 shrink-0 text-right font-display font-semibold text-fg-subtle">{number}</span>
-                    <span>{step}</span>
+                  <li key={number} className={cn(folded(number) && "max-lg:hidden")}>
+                    <Card size="sm" className="flex gap-3 text-sm leading-relaxed">
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-bg-brand-subtle text-xs font-semibold text-fg-brand">
+                        {number}
+                      </span>
+                      <span>{step}</span>
+                    </Card>
                   </li>
                 ))}
               </ol>
@@ -194,7 +199,7 @@ export function ReviewSteps({ parts, styledNext }: { parts: ScrapedRecipe["parts
             </Button>
           </div>
         )}
-      </Card>
+      </div>
     </section>
   );
 }
