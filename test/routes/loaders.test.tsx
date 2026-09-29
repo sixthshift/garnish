@@ -617,7 +617,7 @@ describe("/recipes/new", () => {
   test("opens on the source chooser, not the form (M23.6)", async () => {
     const html = await renderRoute("/recipes/new");
     expect(html).toContain('data-source-stage="choose"');
-    expect(html).toContain("Where is this recipe from?");
+    expect(html).toContain("Import from a web page");
     expect(html).toContain('data-source="url"');
     expect(html).toContain('data-source="manual"');
     expect(html).not.toContain('aria-label="New recipe"'); // the form is not mounted yet

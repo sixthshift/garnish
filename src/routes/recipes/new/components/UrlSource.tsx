@@ -1,9 +1,6 @@
-import { Button } from "@sixthshift/design-system/button";
-import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
-import { Message } from "@sixthshift/design-system/message";
-import { SectionTitle } from "@sixthshift/design-system/section-title";
-import type { FormEvent } from "react";
+import { Muted } from "@sixthshift/design-system/muted";
+import { SourceStage } from "./SourceStage";
 
 export type UrlSourceProps = {
   url: string;
@@ -14,41 +11,34 @@ export type UrlSourceProps = {
   onBack: () => void;
 };
 
-/** The second stage: one address. */
+/** A web page's stage: one address. Reached from the chooser's field, or a share, once reading has begun. */
 export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack }: UrlSourceProps) {
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (url.trim() !== "") onFetch();
-  };
   return (
-    <form className="flex flex-col gap-4" data-source-stage="url" onSubmit={submit}>
-      <SectionTitle as="h2">From a web page</SectionTitle>
-      <FormField label="Address">
-        <Input
-          name="url"
-          type="url"
-          inputMode="url"
-          autoComplete="off"
-          placeholder="https://"
-          aria-label="Recipe address"
-          value={url}
-          disabled={busy}
-          onChange={(event) => onUrlChange(event.target.value)}
-        />
-      </FormField>
-      {error != null && (
-        <Message intent="danger" title="That page could not be read" data-testid="import-error">
-          {error}
-        </Message>
-      )}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="solid" intent="brand" disabled={busy || url.trim() === ""}>
-          {busy ? "Reading…" : "Read the page"}
-        </Button>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
-          Back
-        </Button>
-      </div>
-    </form>
+    <SourceStage
+      stage="url"
+      title="Import from a web page"
+      errorTitle="That page could not be read"
+      error={error}
+      busy={busy}
+      action="Read the page"
+      canSubmit={url.trim() !== ""}
+      onSubmit={onFetch}
+      onBack={onBack}
+    >
+      <Input
+        name="url"
+        type="url"
+        inputMode="url"
+        autoComplete="off"
+        placeholder="https://"
+        aria-label="Recipe address"
+        value={url}
+        disabled={busy}
+        onChange={(event) => onUrlChange(event.target.value)}
+      />
+      <Muted as="p" className="text-sm">
+        {busy ? "Reading the page…" : "The recipe is read off the page and shown to you before anything is saved."}
+      </Muted>
+    </SourceStage>
   );
 }

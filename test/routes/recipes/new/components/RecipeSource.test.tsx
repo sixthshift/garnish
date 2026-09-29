@@ -82,21 +82,6 @@ const reviewProps = {
   onCreate: () => {},
 };
 
-/** The first element in `node` carrying `prop` set to `value`. */
-function elementWithProp(node: ReactNode, prop: string, value: string): ReactElement<Record<string, any>> | null {
-  if (Array.isArray(node)) {
-    for (const child of node) {
-      const found = elementWithProp(child as ReactNode, prop, value);
-      if (found) return found;
-    }
-    return null;
-  }
-  if (!isValidElement(node)) return null;
-  const element = node as ReactElement<Record<string, any>>;
-  if (element.props[prop] === value) return element;
-  return elementWithProp(element.props.children as ReactNode, prop, value);
-}
-
 /** The first element in `node` whose `children` prop is exactly `text`. */
 function elementWithChildren(node: ReactNode, text: string): ReactElement<Record<string, any>> | null {
   if (Array.isArray(node)) {
@@ -133,29 +118,19 @@ describe("yieldLabel, stepCount and importSummary", () => {
 });
 
 describe("SourceChooser", () => {
-  test("offers the two sources", () => {
+  test("leads with the web page's address and lists the other ways in", () => {
     const html = renderToString(<SourceChooser onChoose={() => {}} />);
     expect(html).toContain('data-source-stage="choose"');
-    expect(html).toContain("Where is this recipe from?");
-    expect(html).toContain('data-source="url"');
-    expect(html).toContain('data-source="manual"');
-    expect(html).toContain("A web page");
-    expect(html).toContain("My own");
+    expect(html).toContain("Import from a web page");
+    expect(html).toMatch(/<input[^>]*type="url"/);
+    for (const kind of ["url", "paste", "file", "manual"]) expect(html).toContain(`data-source="${kind}"`);
+    expect(html).toContain("Start from scratch");
   });
 
-  test("choosing reports which one", () => {
-    const chosen: string[] = [];
-    const node = SourceChooser({ onChoose: (kind) => chosen.push(kind) });
-    elementWithProp(node, "data-source", "url")?.props.onClick();
-    expect(chosen).toEqual(["url"]);
-    elementWithProp(node, "data-source", "manual")?.props.onClick();
-    expect(chosen).toEqual(["url", "manual"]);
-  });
-
-  test("disabled locks both", () => {
-    const node = SourceChooser({ onChoose: () => {}, disabled: true });
-    expect(elementWithProp(node, "data-source", "url")?.props.disabled).toBe(true);
-    expect(elementWithProp(node, "data-source", "manual")?.props.disabled).toBe(true);
+  test("disabled locks the field and every way in", () => {
+    const html = renderToString(<SourceChooser onChoose={() => {}} disabled />);
+    expect(html).toMatch(/<input[^>]*disabled=""/);
+    expect(html.match(/<button[^>]*disabled=""[^>]*data-source=/g)).toHaveLength(3);
   });
 });
 
@@ -201,7 +176,7 @@ describe("ImportReview", () => {
     // One review row per ingredient line, in the shape bulk add reviews.
     expect(html.match(/data-review-row=""/g)).toHaveLength(2);
     expect(html).toContain('data-status="matched"');
-    expect(html).toContain("Unknown food “almond meal”");
+    expect(html).toMatch(/almond meal<\/span><\/span><\/div><span[^>]*>Unknown food</);
     // The page's sections survive as named parts (decision 59).
     expect(html).toContain("Icing");
     expect(html).toContain("Heat the oven.");

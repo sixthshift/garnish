@@ -9,7 +9,11 @@ export function ImportSteps({ current }: { current: ImportStep }) {
   const at = STEPS.indexOf(current);
   return (
     <nav aria-label="Import steps" data-testid="import-steps">
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-subtle">
+      {/* A phone has room for where you are, not for the whole line of stages. */}
+      <p className="text-sm text-fg-subtle sm:hidden" aria-hidden="true">
+        Step {at + 1} of {STEPS.length} · <span className="font-semibold text-fg-normal">{current}</span>
+      </p>
+      <ol className="hidden flex-wrap items-center gap-x-2 gap-y-1 text-sm text-fg-subtle sm:flex">
         {STEPS.map((step, index) => (
           <li key={step} className="flex items-center gap-2" aria-current={index === at ? "step" : undefined}>
             {index > 0 && (

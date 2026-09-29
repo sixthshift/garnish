@@ -4,6 +4,7 @@ import type { FoodRow, Tag, Unit } from "../../../../domain/reference";
 import { listFoods } from "../../../../server/fns/foods";
 import { FileSource } from "./FileSource";
 import { ImportReview } from "./ImportReview";
+import { ImportSteps } from "./ImportSteps";
 import type { ModelReader, SourceKind } from "./importSummary";
 import { PasteSource } from "./PasteSource";
 import { RecipePicker } from "./RecipePicker";
@@ -53,44 +54,75 @@ export function RecipeSource(props: RecipeSourceProps) {
   const state = useRecipeSource(props);
   const { url, text, file, choices, imported, rows, busy, error, reading, readError } = state;
 
-  if (source === null) return <SourceChooser disabled={busy} aiAvailable={aiAvailable} onChoose={onChoose} />;
+  return (
+    <div className="flex flex-col gap-6">
+      <ImportSteps current={imported !== null ? "Review" : "Source"} />
+      {stage()}
+    </div>
+  );
 
-  if (imported !== null) {
-    return (
-      <ImportReview
-        imported={imported}
-        rows={rows}
-        units={units}
-        searchFoods={(q) => listFoods({ data: { q } })}
-        busy={busy}
-        error={error}
-        duplicate={state.duplicate}
-        duplicateBy={imported.from === "schema" || imported.from === "stub" ? "url" : "name"}
-        aiAvailable={aiAvailable}
-        reading={reading}
-        readError={readError}
-        onRetryRead={state.retryRead}
-        onUseRejected={state.useRejected}
-        onRowsChange={state.setRows}
-        onBack={state.leaveReview}
-        onCreate={() => void state.create()}
-      />
-    );
+  function stage() {
+    if (source === null) {
+      return (
+        <SourceChooser
+          disabled={busy}
+          aiAvailable={aiAvailable}
+          onChoose={onChoose}
+          onReadUrl={(address) => {
+            onChoose("url");
+            void state.read(address);
+          }}
+        />
+      );
+    }
+
+    if (imported !== null) {
+      return (
+        <ImportReview
+          imported={imported}
+          rows={rows}
+          units={units}
+          searchFoods={(q) => listFoods({ data: { q } })}
+          busy={busy}
+          error={error}
+          duplicate={state.duplicate}
+          duplicateBy={imported.from === "schema" || imported.from === "stub" ? "url" : "name"}
+          aiAvailable={aiAvailable}
+          reading={reading}
+          readError={readError}
+          onRetryRead={state.retryRead}
+          onUseRejected={state.useRejected}
+          onRowsChange={state.setRows}
+          onBack={state.leaveReview}
+          onCreate={() => void state.create()}
+        />
+      );
+    }
+
+    if (choices !== null) {
+      return <RecipePicker recipes={choices} busy={busy} onPick={state.pickUploaded} onBack={state.leavePicker} />;
+    }
+
+    if (source === "paste") {
+      return (
+        <PasteSource
+          text={text}
+          busy={busy}
+          error={error}
+          aiAvailable={aiAvailable}
+          onTextChange={state.changeText}
+          onRead={() => void state.readText()}
+          onBack={state.leaveSource}
+        />
+      );
+    }
+
+    if (source === "file") {
+      return (
+        <FileSource file={file} busy={busy} error={error} onFileChange={state.changeFile} onRead={() => void state.readFile()} onBack={state.leaveSource} />
+      );
+    }
+
+    return <UrlSource url={url} busy={busy} error={error} onUrlChange={state.setUrl} onFetch={() => void state.read()} onBack={state.leaveSource} />;
   }
-
-  if (choices !== null) {
-    return <RecipePicker recipes={choices} busy={busy} onPick={state.pickUploaded} onBack={state.leavePicker} />;
-  }
-
-  if (source === "paste") {
-    return (
-      <PasteSource text={text} busy={busy} error={error} onTextChange={state.changeText} onRead={() => void state.readText()} onBack={state.leaveSource} />
-    );
-  }
-
-  if (source === "file") {
-    return <FileSource file={file} busy={busy} error={error} onFileChange={state.changeFile} onRead={() => void state.readFile()} onBack={state.leaveSource} />;
-  }
-
-  return <UrlSource url={url} busy={busy} error={error} onUrlChange={state.setUrl} onFetch={() => void state.read()} onBack={state.leaveSource} />;
 }

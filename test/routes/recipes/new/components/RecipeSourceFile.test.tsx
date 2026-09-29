@@ -81,16 +81,7 @@ describe("the chooser", () => {
   test("offers the export beside the web page and your own", () => {
     const html = renderToString(<SourceChooser onChoose={() => {}} />);
     expect(html).toContain('data-source="file"');
-    expect(html).toContain("A Mealie or Tandoor export");
-  });
-
-  test("choosing the export reports it up, the way the route's ?source expects", () => {
-    const chosen: string[] = [];
-    const element = SourceChooser({ onChoose: (kind) => chosen.push(kind) });
-    const button = elementWithProp(element, "data-source", "file");
-    expect(button).not.toBeNull();
-    (button!.props.onClick as () => void)();
-    expect(chosen).toEqual(["file"]);
+    expect(html).toContain("A Mealie or Tandoor backup");
   });
 });
 
@@ -98,7 +89,7 @@ describe("FileSource", () => {
   test("renders the picker, the file's name and the read button", () => {
     const html = renderToString(<FileSource file={new File(["{}"], "backup.zip")} onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />);
     expect(html).toContain('data-source-stage="file"');
-    expect(html).toContain("From a Mealie or Tandoor export");
+    expect(html).toContain("Upload an export");
     expect(html).toContain("backup.zip");
     expect(html).toContain("Read the file");
   });

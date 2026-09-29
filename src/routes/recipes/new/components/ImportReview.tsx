@@ -3,11 +3,10 @@ import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
-import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { filterUnits, type IngredientReview } from "../../../../domain/draft";
+import type { IngredientReview } from "../../../../domain/draft";
 import type { ImportedRecipe } from "../../../../domain/import";
 import type { FoodRow, Unit } from "../../../../domain/reference";
-import { IngredientReviewRow } from "../../components/IngredientReviewRow";
+import { IngredientReviewList, ReviewSteps } from "./IngredientReviewList";
 import { changedLines, type DuplicateBy, duplicateMessage, importSummary, ingredientCount, rejectionMessage, stepCount, yieldLabel } from "./importSummary";
 
 export type ImportReviewProps = {
@@ -108,8 +107,17 @@ export function ImportReview(props: ImportReviewProps) {
         </Message>
       )}
 
-      <Card title={recipe.name === "" ? "Untitled" : recipe.name}>
-        <div className="flex flex-col gap-2">
+      <Card size="md" className="flex flex-row gap-4">
+        {recipe.image !== null && (
+          <img
+            src={recipe.image}
+            alt=""
+            className="aspect-square w-20 shrink-0 self-start rounded-md object-cover sm:aspect-[4/3] sm:w-44"
+            data-testid="review-image"
+          />
+        )}
+        <div className="flex min-w-0 flex-col gap-2">
+          <h2 className="font-display text-xl font-semibold leading-tight">{recipe.name === "" ? "Untitled" : recipe.name}</h2>
           {recipe.description !== "" && <p className="text-sm text-fg-subtle">{recipe.description}</p>}
           <div className="flex flex-wrap items-center gap-1.5">
             {label !== "" && (
@@ -119,78 +127,44 @@ export function ImportReview(props: ImportReviewProps) {
             )}
             {recipe.prepMinutes !== null && <Badge variant="soft" intent="neutral">{`Prep ${recipe.prepMinutes} min`}</Badge>}
             {recipe.cookMinutes !== null && <Badge variant="soft" intent="neutral">{`Cook ${recipe.cookMinutes} min`}</Badge>}
-            {recipe.image !== null && (
-              <Badge variant="outline" intent="neutral">
-                Image
-              </Badge>
-            )}
             {recipe.tags.map((tag) => (
               <Badge key={tag} variant="outline" intent="brand">
                 {tag}
               </Badge>
             ))}
           </div>
-          <Muted as="p" className="text-xs" data-source-url="">
-            {imported.url}
-          </Muted>
+          {imported.url !== "" && (
+            <Muted as="p" className="truncate text-xs" data-source-url="">
+              {imported.url}
+            </Muted>
+          )}
         </div>
       </Card>
 
-      {rows.length > 0 && (
-        <section className="flex flex-col gap-3" aria-label="Ingredients to review">
-          <SectionTitle as="h2">Ingredients</SectionTitle>
-          <ul className="flex flex-col gap-3">
-            {rows.map((row, index) => (
-              <li key={row.key} className="rounded-lg border border-border-normal p-3">
-                <IngredientReviewRow
-                  row={row}
-                  label={`Line ${index + 1}`}
-                  disabled={busy}
-                  unitMatches={(text) => filterUnits(units, text)}
-                  searchFoods={searchFoods}
-                  onChange={(next) => onRowsChange(rows.map((current, i) => (i === index ? next : current)))}
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {rows.length > 0 && <IngredientReviewList rows={rows} units={units} searchFoods={searchFoods} busy={busy} onRowsChange={onRowsChange} />}
 
-      {stepCount(recipe) > 0 && (
-        <section className="flex flex-col gap-3" aria-label="Steps to review">
-          <SectionTitle as="h2">Steps</SectionTitle>
-          {recipe.parts
-            .filter((part) => part.steps.length > 0)
-            .map((part, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: a scraped draft has no ids yet; this preview is read-only and never reordered.
-              <div key={`${index}-${part.name}`} className="flex flex-col gap-1" data-import-part={part.name}>
-                {part.name !== "" && <span className="text-sm font-medium">{part.name}</span>}
-                <ol className="flex list-decimal flex-col gap-1 pl-6">
-                  {part.steps.map((step, si) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: a scraped draft's steps are plain strings in order; this preview is read-only.
-                    <li key={`${si}-${step.slice(0, 24)}`} className="text-sm">
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
-        </section>
-      )}
+      {stepCount(recipe) > 0 && <ReviewSteps parts={recipe.parts} styledNext={aiAvailable} />}
 
-      {error != null && (
-        <p className="text-sm text-fg-danger" role="alert">
-          {error}
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={onCreate}>
-          {busy ? "Working…" : aiAvailable ? "Continue" : "Create"}
-        </Button>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
-          Back
-        </Button>
+      <div
+        className="sticky bottom-20 z-10 -mx-4 flex flex-col gap-2 border-t border-border-normal bg-bg-normal px-4 py-3 md:bottom-0 md:mx-0 md:rounded-t-lg"
+        data-testid="review-footer"
+      >
+        {error != null && (
+          <p className="text-sm text-fg-danger" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
+            Back
+          </Button>
+          <Muted as="span" className="grow text-right text-sm">
+            {aiAvailable ? "Next, the house style." : "Next, the full recipe to check before it is saved."}
+          </Muted>
+          <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={onCreate}>
+            {busy ? "Working…" : aiAvailable ? "Continue" : "Create"}
+          </Button>
+        </div>
       </div>
     </div>
   );

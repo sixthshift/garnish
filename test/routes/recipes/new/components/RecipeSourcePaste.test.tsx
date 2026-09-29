@@ -2,7 +2,6 @@
 // only (no jsdom in this project's vitest config), so the markup is checked
 // with `renderToString` and the decisions by calling the stage components
 // directly. The importer's own tests are in test/domain/import.
-import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
@@ -35,48 +34,17 @@ const flour: FoodRow = {
   conversions: [],
 };
 
-/** The first element in `node` carrying `prop` set to `value`. */
-function elementWithProp(node: ReactNode, prop: string, value: string): ReactElement<Record<string, any>> | null {
-  if (Array.isArray(node)) {
-    for (const child of node) {
-      const found = elementWithProp(child as ReactNode, prop, value);
-      if (found) return found;
-    }
-    return null;
-  }
-  if (!isValidElement(node)) return null;
-  const element = node as ReactElement<Record<string, any>>;
-  if (element.props[prop] === value) return element;
-  return elementWithProp(element.props.children as ReactNode, prop, value);
-}
-
-describe("the chooser gates the AI rung on the binary", () => {
-  test("a missing `claude` hides the option entirely", () => {
+describe("the chooser always offers Paste, since a page's HTML needs no model", () => {
+  test("without a model it says it takes a page's HTML", () => {
     const html = renderToString(<SourceChooser onChoose={() => {}} />);
-    expect(html).not.toContain('data-source="paste"');
-    expect(html).not.toContain("Pasted text");
-    // The rungs that need nothing installed are still there.
-    expect(html).toContain('data-source="url"');
-    expect(html).toContain('data-source="file"');
-    expect(html).toContain('data-source="manual"');
+    expect(html).toContain('data-source="paste"');
+    expect(html).toContain("Plain text needs a model");
   });
 
-  test("with the binary installed it sits beside the others and reports itself", () => {
+  test("with a model it offers plain text too", () => {
     const html = renderToString(<SourceChooser aiAvailable onChoose={() => {}} />);
     expect(html).toContain('data-source="paste"');
-    expect(html).toContain("Pasted text");
-
-    const chosen: string[] = [];
-    const element = SourceChooser({ aiAvailable: true, onChoose: (kind) => chosen.push(kind) });
-    const button = elementWithProp(element, "data-source", "paste");
-    expect(button).not.toBeNull();
-    (button!.props.onClick as () => void)();
-    expect(chosen).toEqual(["paste"]);
-  });
-
-  test("busy locks the paste option with the rest", () => {
-    const element = SourceChooser({ aiAvailable: true, disabled: true, onChoose: () => {} });
-    expect(elementWithProp(element, "data-source", "paste")?.props.disabled).toBe(true);
+    expect(html).toContain("Text from an email or a photo");
   });
 });
 
@@ -84,7 +52,7 @@ describe("PasteSource", () => {
   test("renders the box and will not read a blank one", () => {
     const html = renderToString(<PasteSource text="" onTextChange={() => {}} onRead={() => {}} onBack={() => {}} />);
     expect(html).toContain('data-source-stage="paste"');
-    expect(html).toContain("From pasted text");
+    expect(html).toContain("Paste the recipe");
     expect(html).toContain("Read the text");
     expect(html).toContain("disabled");
   });

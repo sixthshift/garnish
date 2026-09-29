@@ -34,8 +34,12 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Read at call time rather than closed over: an address typed on the chooser
+  // is read in the same press that sets it, before a render has caught up.
+  const urlRef = useRef(url);
+  urlRef.current = url;
   const reader: ModelReader = (pageText, anchor) =>
-    loadText ? loadText(pageText, anchor) : importFromText({ data: { text: pageText, sourceUrl: url, anchor } });
+    loadText ? loadText(pageText, anchor) : importFromText({ data: { text: pageText, sourceUrl: urlRef.current, anchor } });
 
   const model = useModelPass({
     aiAvailable,
@@ -57,12 +61,15 @@ export function useRecipeSource(props: RecipeSourceProps) {
     setVocabulary(foods);
   };
 
-  const read = async () => {
+  /** Read a page: the stage's own address, or one handed in by the chooser's field. */
+  const read = async (address: string = url) => {
+    setUrl(address);
+    urlRef.current = address;
     setBusy(true);
     setError(null);
     model.clearError();
     try {
-      const [found, foods] = await Promise.all([load ? load(url) : importFromUrl({ data: { url } }), fetchFoods()]);
+      const [found, foods] = await Promise.all([load ? load(address) : importFromUrl({ data: { url: address } }), fetchFoods()]);
       showReview(found, foods);
       setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
       model.readWithModel(found, foods);

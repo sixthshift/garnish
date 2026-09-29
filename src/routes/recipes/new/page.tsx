@@ -31,8 +31,8 @@ export function NewRecipePage() {
   if (imported !== null && aiAvailable && imported.stage === "style") {
     return (
       <Page>
-        <ImportSteps current="Style" />
         <PageHeader title={imported.draft.name.trim() || "New recipe"} />
+        <ImportSteps current="Style" />
         <ImportStyle
           draft={imported.draft}
           imageUrl={imported.imageUrl}
@@ -46,8 +46,8 @@ export function NewRecipePage() {
   if (imported !== null || source === "manual") {
     return (
       <Page>
-        {imported !== null && aiAvailable && <ImportSteps current="Style" />}
         <PageHeader title="New recipe" />
+        {imported !== null && aiAvailable && <ImportSteps current="Style" />}
         <RecipeForm
           initial={imported?.draft ?? blank}
           units={units}
