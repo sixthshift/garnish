@@ -3,12 +3,21 @@ import { z } from "zod";
 import recipes from "../../db/models/recipe/repo";
 import styleRules from "../../db/models/style/repo";
 import { formatIngredient } from "../../domain/ingredient";
-import type { Part, Recipe } from "../../domain/recipe";
+import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { checkRestyle, type OriginalPart, type RestyleCheck, type RestyledPart } from "../../domain/style";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher } from "./client";
-import { matchParts, parseRestyleAnswer, partsWithSteps, promptParts, RESTYLE_JSON_SCHEMA, restylePrompt, withEmptyParts } from "./restylePrompt";
+import {
+  matchParts,
+  parseRestyleAnswer,
+  partsWithSteps,
+  promptParts,
+  RESTYLE_JSON_SCHEMA,
+  restylePrompt,
+  type StylablePart,
+  withEmptyParts,
+} from "./restylePrompt";
 
 export { AiError } from "./client";
 
@@ -24,7 +33,7 @@ export function restyleSettings(): { apiKey: string; baseUrl: string; model: str
  * line the page renders, so a quantity the rewrite moved out of a step's text
  * is still found in the document it moved into. Pure.
  */
-function checkedParts(parts: readonly Part[]): OriginalPart[] {
+function checkedParts(parts: readonly StylablePart[]): OriginalPart[] {
   return parts.map((part) => ({
     ...part,
     ingredients: part.ingredients.map((row) => ({ ...row, line: formatIngredient(row).trim() || row.originalText })),
@@ -55,7 +64,11 @@ export function createRestyleRunner(fetcher: Fetcher = fetch): AiRunner {
  * is something the household is shown, not an error. Only parts with steps are
  * sent; an empty part comes back as itself.
  */
-export async function runRestyle(recipe: Recipe, rules: readonly string[], options: { run?: AiRunner } = {}): Promise<RestyleResult> {
+export async function runRestyle(
+  recipe: { parts: readonly StylablePart[] },
+  rules: readonly string[],
+  options: { run?: AiRunner } = {}
+): Promise<RestyleResult> {
   const { run = restyleRunner } = options;
   const asked = partsWithSteps(recipe.parts);
   if (asked.length === 0) {
@@ -96,13 +109,32 @@ export const restyleSteps = createServerFn({ method: "POST" })
   .validator(RestyleStepsInput)
   .handler(async ({ data }): Promise<RestyleResult> => {
     const recipe = required(recipes.getById(data.id), "recipe", data.id);
-    const wanted = new Set(data.ruleIds);
-    const rules = styleRules
-      .list()
-      .filter((rule) => wanted.has(rule.id))
-      .map((rule) => rule.text);
-    return runRestyle(recipe, rules);
+    return runRestyle(recipe, ruleTexts(data.ruleIds));
   });
+
+/** The ticked statements' texts, in the guide's order. Unknown ids are ignored. */
+function ruleTexts(ids: readonly string[]): string[] {
+  const wanted = new Set(ids);
+  return styleRules
+    .list()
+    .filter((rule) => wanted.has(rule.id))
+    .map((rule) => rule.text);
+}
+
+export const RestyleDraftInput = z.object({
+  /** The recipe as the import would create it: nothing is stored yet, so there is no id to name. */
+  doc: recipeInputSchema,
+  ruleIds: z.array(z.string().min(1)).default([]),
+});
+
+/**
+ * The same rewrite over an import that is not saved yet, so the Style stage
+ * comes before Save and a recipe lands in the library already in the house
+ * style. Nothing is written.
+ */
+export const restyleDraft = createServerFn({ method: "POST" })
+  .validator(RestyleDraftInput)
+  .handler(async ({ data }): Promise<RestyleResult> => runRestyle(data.doc, ruleTexts(data.ruleIds)));
 
 export const ApplyRestyleInput = z.object({
   /** The recipe's id, as `restyleSteps` takes it. */
@@ -136,6 +168,31 @@ export const applyRestyle = createServerFn({ method: "POST" })
   .validator(ApplyRestyleInput)
   .handler(async ({ data }): Promise<Recipe> => {
     return required(recipes.ref(data.id).restyle(data.parts), "recipe", data.id);
+  });
+
+export const CreateRestyledRecipeInput = z.object({
+  /** The recipe as the author wrote it: what is created, and so what Restore brings back. */
+  doc: recipeInputSchema,
+  /** The parts as the household accepted them, paired with `doc.parts` by position, as `applyRestyle` takes them. */
+  parts: ApplyRestyleInput.shape.parts,
+});
+
+/**
+ * Save an import in the house style: the author's recipe is created, then the
+ * accepted parts are applied over it, so the original is kept exactly as a
+ * restyle of a saved recipe keeps it. A restyle that is refused takes the new
+ * recipe with it, so a failed save leaves nothing half-written behind.
+ */
+export const createRestyledRecipe = createServerFn({ method: "POST" })
+  .validator(CreateRestyledRecipeInput)
+  .handler(async ({ data }): Promise<Recipe> => {
+    const created = recipes.create(data.doc);
+    try {
+      return required(recipes.ref(created.id).restyle(data.parts), "recipe", created.id);
+    } catch (cause) {
+      recipes.remove(created.id);
+      throw cause;
+    }
   });
 
 export const RestoreStepsInput = z.object({ id: z.string().min(1) });

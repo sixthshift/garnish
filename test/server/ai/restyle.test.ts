@@ -8,7 +8,16 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import recipes from "../../../src/db/models/recipe/repo";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipe";
 import { AiError, type AiRunner } from "../../../src/server/ai/client";
-import { applyRestyle, createRestyleRunner, restoreSteps, restyleSettings, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
+import {
+  applyRestyle,
+  createRestyledRecipe,
+  createRestyleRunner,
+  restoreSteps,
+  restyleDraft,
+  restyleSettings,
+  restyleSteps,
+  runRestyle,
+} from "../../../src/server/ai/restyle";
 import {
   FIXED_RESTYLE_LINE,
   foodMarker,
@@ -21,7 +30,7 @@ import {
   restylePrompt,
   withEmptyParts,
 } from "../../../src/server/ai/restylePrompt";
-import { createRecipe, getRecipe } from "../../../src/server/fns/recipes";
+import { createRecipe, getRecipe, listRecipes } from "../../../src/server/fns/recipes";
 import { listStyleRules } from "../../../src/server/fns/style";
 import { restyledPart } from "../../helpers/restyle";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
@@ -459,5 +468,36 @@ describe("the food marker", () => {
   test("is lower cased, so a Title Case library does not read as 'melt Unsalted Butter' mid-sentence", () => {
     expect(foodMarker(" Unsalted Butter ")).toBe("(food: unsalted butter)");
     expect(foodMarker("beef")).toBe("(food: beef)");
+  });
+});
+
+describe("before the recipe is saved", () => {
+  /** The accepted answer as `applyRestyle` takes it: plain copies, so a test cannot mutate GOOD. */
+  const accepted = () => GOOD.parts.map((part) => ({ ...part, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) }));
+
+  test("restyleDraft rewrites a document that has no id, and writes nothing", async () => {
+    process.env.AI_API_KEY = "secret";
+    vi.stubGlobal("fetch", fakeFetch(200, completion(JSON.stringify(GOOD))));
+
+    const result = await callServerFn(restyleDraft, { doc: doc(), ruleIds: [] });
+    expect(result.check.ok).toBe(true);
+    expect(result.parts.map((part) => part.steps.map((step) => step.text))).toEqual(GOOD.parts.map((part) => part.steps.map((step) => step.text)));
+    expect(await callServerFn(listRecipes, {})).toEqual([]);
+  });
+
+  test("createRestyledRecipe saves the styled steps and keeps the author's, so Restore brings them back", async () => {
+    const created = await callServerFn(createRestyledRecipe, { doc: doc(), parts: accepted() });
+    expect(created.restyledAt).not.toBeNull();
+    expect(created.parts.map((part) => part.steps.map((step) => step.text))).toEqual(GOOD.parts.map((part) => part.steps.map((step) => step.text)));
+
+    const restored = await callServerFn(restoreSteps, { id: created.id });
+    expect(restored.parts.map((part) => part.steps.map((step) => step.text))).toEqual(doc().parts.map((part) => (part.steps ?? []).map((step) => step.text)));
+    expect(restored.restyledAt).toBeNull();
+  });
+
+  test("a refused restyle leaves no recipe behind", async () => {
+    const caught = await callServerFn(createRestyledRecipe, { doc: doc(), parts: accepted().slice(0, 1) }).catch((cause: unknown) => cause);
+    expect(String(caught)).toContain("1 part where the recipe has 2");
+    expect(await callServerFn(listRecipes, {})).toEqual([]);
   });
 });

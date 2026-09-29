@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { formatIngredient } from "../../domain/ingredient";
-import type { Part } from "../../domain/recipe";
+import type { ParsedRecipeInput } from "../../domain/recipe";
 import type { RestyledPart } from "../../domain/style";
 import { AiError, stripFence } from "./client";
 
@@ -63,6 +63,9 @@ export const RestyleAnswerSchema = z.object({ parts: z.array(RestyledPartSchema)
 export type RestyleAnswer = z.infer<typeof RestyleAnswerSchema>;
 
 /** A part as the prompt shows it: the name, the ingredient lines as the app renders them, and the steps as three fields each. */
+/** A part the restyle can read: a saved one, or one of an unsaved draft's, whose rows have no ids yet. */
+export type StylablePart = ParsedRecipeInput["parts"][number];
+
 export type PromptPart = { name: string; ingredients: string[]; steps: { title: string; text: string; summary: string }[] };
 
 /**
@@ -90,7 +93,7 @@ export function foodMarker(name: string): string {
  * by its food name"), which is also the name the step linker matches on, so a
  * rewrite that obeys links better than the author's steps did. Pure.
  */
-export function promptParts(parts: readonly Part[]): PromptPart[] {
+export function promptParts(parts: readonly StylablePart[]): PromptPart[] {
   return parts.map((part) => ({
     name: part.name,
     ingredients: part.ingredients.map((row) => {
@@ -119,7 +122,7 @@ export function partsWithSteps<P extends { steps: readonly unknown[] }>(parts: r
  * with no steps, so what comes out pairs with the recipe by index. An answer
  * with the wrong count for the parts that were asked is `malformed`. Pure.
  */
-export function withEmptyParts(original: readonly Part[], answered: readonly RestyledPart[]): RestyledPart[] {
+export function withEmptyParts(original: readonly StylablePart[], answered: readonly RestyledPart[]): RestyledPart[] {
   const asked = partsWithSteps(original).length;
   if (answered.length !== asked) {
     throw new AiError(
@@ -251,7 +254,7 @@ export function parseRestyleAnswer(content: string): RestyledPart[] {
  * case-insensitively: a model that title-cases a heading has still answered
  * about the right part. Pure.
  */
-export function matchParts(original: readonly Part[], restyled: readonly RestyledPart[]): void {
+export function matchParts(original: readonly StylablePart[], restyled: readonly RestyledPart[]): void {
   if (original.length !== restyled.length) {
     throw new AiError(
       "malformed",
