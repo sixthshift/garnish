@@ -4,18 +4,18 @@ import { type FormEvent, useEffect, useState } from "react";
 import { draftFromInput, draftFromJson, draftToJson, type FieldErrors, hasDetails, isDirty, type RecipeDraft, validateDraft } from "../../../domain/draft";
 import { browserStorage, clearDraft, draftNoticeText, getDraft, putDraft } from "../../../lib/drafts";
 import { messageFrom } from "../../../lib/errors";
-import { dataUrlFile, fetchedImageFile, uploadRecipeImage } from "../../../lib/images";
+import { uploadRecipeImage } from "../../../lib/images";
 import { useMutate } from "../../../lib/mutate";
 import { toastError } from "../../../lib/toast";
 import { useOnline } from "../../../lib/useOnline";
 import { createRecipe, updateRecipe } from "../../../server/fns/recipes";
-import { fetchImage } from "../../../server/import/imageFetch";
+import { imageFromUrl } from "./importedImage";
 import type { RecipeFormProps } from "./RecipeForm";
 import { saveNotice } from "./recipeFormText";
 
-export type UseRecipeFormOptions = Pick<RecipeFormProps, "initial" | "existing" | "online" | "importedImageUrl" | "storage" | "afterSaveSearch">;
+export type UseRecipeFormOptions = Pick<RecipeFormProps, "initial" | "existing" | "online" | "importedImageUrl" | "storage" | "continueWith">;
 
-export function useRecipeForm({ initial, existing, online: onlineOverride, importedImageUrl, storage: storageProp, afterSaveSearch }: UseRecipeFormOptions) {
+export function useRecipeForm({ initial, existing, online: onlineOverride, importedImageUrl, storage: storageProp, continueWith }: UseRecipeFormOptions) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const detectedOnline = useOnline();
@@ -53,19 +53,12 @@ export function useRecipeForm({ initial, existing, online: onlineOverride, impor
     if (isDirty(initial, draft) || file !== null) putDraft(storage, existing?.id, draft, file !== null);
   }, [storage, pending, saving, initial, draft, file, existing?.id]);
 
-  // A `data:` URL is already the bytes — an image out of an uploaded Mealie
-  // backup — so it is rebuilt here rather than fetched through the
-  // server, which only reads http(s).
-  const fetchFromUrl = async (url: string): Promise<File> =>
-    url.trim().startsWith("data:") ? dataUrlFile(url) : fetchedImageFile(await fetchImage({ data: { url } }));
-
   // An imported image is a URL on someone else's server. Fetch it once, into
   // the same `file` a picked one lands in, so Save stores it here.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchFromUrl is rebuilt every render; depending on it would refetch the image on every keystroke. The URL is the only trigger.
   useEffect(() => {
     if (importedImageUrl == null || importedImageUrl === "") return;
     let stale = false;
-    fetchFromUrl(importedImageUrl)
+    imageFromUrl(importedImageUrl)
       .then((fetched) => {
         if (!stale) setFile(fetched);
       })
@@ -124,6 +117,12 @@ export function useRecipeForm({ initial, existing, online: onlineOverride, impor
       return;
     }
     setErrors({});
+    if (continueWith) {
+      // Nothing is written here: the draft goes back to the stage that saves it.
+      clearStoredDraft();
+      continueWith.onContinue(draft, file);
+      return;
+    }
     setSaving(true);
     // A failed image does not fail the save: the document is stored either way and the notice says so.
     const image: { error: string | null } = { error: null };
@@ -141,7 +140,7 @@ export function useRecipeForm({ initial, existing, online: onlineOverride, impor
       });
       clearStoredDraft();
       toast(saveNotice({ existing: existing !== undefined, imageError: image.error }));
-      await navigate({ to: "/recipes/$slug", params: { slug: saved.slug }, search: afterSaveSearch ?? {} });
+      await navigate({ to: "/recipes/$slug", params: { slug: saved.slug }, search: {} });
     } catch (error) {
       toastError(existing ? "Could not save changes" : "Could not create recipe", error);
       setSaving(false);

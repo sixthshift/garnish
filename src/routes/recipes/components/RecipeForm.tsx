@@ -1,3 +1,4 @@
+import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Message } from "@sixthshift/design-system/message";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
@@ -13,6 +14,13 @@ import { RecipeFormCancel, RecipeFormToolbar } from "./RecipeFormToolbar";
 import { RecipeHead } from "./RecipeHead";
 import { RecipeJsonView } from "./RecipeJsonView";
 import { useRecipeForm } from "./useRecipeForm";
+
+/** The import's "Edit details": the form checks the draft and hands it back rather than saving it. */
+export type ContinueWith = {
+  label: string;
+  onContinue: (draft: RecipeDraft, file: File | null) => void;
+  onBack: () => void;
+};
 
 export type RecipeFormProps = {
   initial: RecipeDraft;
@@ -39,13 +47,11 @@ export type RecipeFormProps = {
    */
   importedImageUrl?: string | null;
   /**
-   * Search params the navigation after a successful Create carries.
-   * The new recipe page sets `{ restyle: true }` after an import when a model
-   * is configured, so the recipe opens with the restyle sheet already up; a
-   * recipe typed in by hand gets nothing, because there is no imported voice
-   * to rewrite.
+   * Hand the checked draft back instead of saving it: the import's "Edit
+   * details", which returns to the Style stage, where Save lives. `label`
+   * names the button that does it, and `onBack` replaces Cancel.
    */
-  afterSaveSearch?: { restyle?: boolean };
+  continueWith?: ContinueWith;
   /**
    * Forwarded to the JSON toggle's `Menu` (tests). The menu is closed by
    * default and opens on click, like every other `Menu` in the app; there is
@@ -55,10 +61,17 @@ export type RecipeFormProps = {
   jsonMenuOpen?: boolean;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing, online, importedImageUrl, storage, afterSaveSearch, jsonMenuOpen }: RecipeFormProps) {
-  const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, afterSaveSearch });
+export function RecipeForm({ initial, units, tags: knownTags, existing, online, importedImageUrl, storage, continueWith, jsonMenuOpen }: RecipeFormProps) {
+  const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, continueWith });
   const { draft, errors, saving, dirty, json, blocker } = form;
-  const cancelLink = <RecipeFormCancel existing={existing} disabled={saving} />;
+  const cancelLink = continueWith ? (
+    <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={continueWith.onBack}>
+      Back
+    </Button>
+  ) : (
+    <RecipeFormCancel existing={existing} disabled={saving} />
+  );
+  const saveLabel = continueWith?.label ?? (existing ? "Save changes" : "Create recipe");
 
   return (
     <form onSubmit={(event) => void form.submit(event)} noValidate className="flex flex-col gap-6" aria-label={existing ? "Edit recipe" : "New recipe"}>
@@ -71,6 +84,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online, 
       <RecipeFormToolbar
         title={draft.name}
         existing={existing !== undefined}
+        label={saveLabel}
         saving={saving}
         online={form.online}
         dirty={dirty}
@@ -115,7 +129,7 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online, 
       {/* The phone's footer save; from `md` the toolbar above carries it. */}
       <SaveBar
         className="md:hidden"
-        label={existing ? "Save changes" : "Create recipe"}
+        label={saveLabel}
         busyLabel="Saving…"
         busy={saving}
         disabled={!form.online}

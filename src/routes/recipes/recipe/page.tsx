@@ -28,8 +28,7 @@ import { Route } from "./route";
 /** A pencil, drawn the way RecipeHeader.tsx draws its own icons. */
 export function RecipePage() {
   const { recipe: stored, timeline, subRecipes, aiAvailable } = Route.useLoaderData();
-  const { servings: requested, restyle } = Route.useSearch();
-  const navigate = Route.useNavigate();
+  const { servings: requested } = Route.useSearch();
   // The stored document, scaled here rather than on the server, so a tap on
   // plus or minus is a re-render and not a round trip. Everything below reads
   // `recipe`, never `stored`.
@@ -83,12 +82,7 @@ export function RecipePage() {
                 </Button>
                 {/* Takes the scaled document, so what the sheet offers is what the page is showing. */}
                 <AddToShoppingButton recipe={recipe} />
-                <RecipeActions
-                  recipe={recipe}
-                  aiAvailable={aiAvailable}
-                  restyleOpen={aiAvailable && restyle === true}
-                  onRestyleClose={() => void navigate({ search: (prev) => ({ ...prev, restyle: undefined }), replace: true })}
-                />
+                <RecipeActions recipe={recipe} aiAvailable={aiAvailable} />
               </>
             }
           />

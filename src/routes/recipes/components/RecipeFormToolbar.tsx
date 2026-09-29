@@ -28,6 +28,8 @@ export function RecipeFormCancel({ existing, disabled }: RecipeFormCancelProps) 
 export type RecipeFormToolbarProps = {
   title: string;
   existing: boolean;
+  /** The save button's text: "Create recipe", "Save changes", or the import's "Continue to Style". */
+  label: string;
   saving: boolean;
   online: boolean;
   dirty: boolean;
@@ -40,12 +42,12 @@ export type RecipeFormToolbarProps = {
 };
 
 /** The editor toolbar above the form: name, save, cancel, the dirty note, and the one-item editor menu. */
-export function RecipeFormToolbar({ title, existing, saving, online, dirty, cancel, jsonOpen, jsonMenuOpen, onToggleJson }: RecipeFormToolbarProps) {
+export function RecipeFormToolbar({ title, existing, label, saving, online, dirty, cancel, jsonOpen, jsonMenuOpen, onToggleJson }: RecipeFormToolbarProps) {
   return (
     <EditorToolbar
       title={title}
       placeholder={existing ? "Untitled recipe" : "New recipe"}
-      label={existing ? "Save changes" : "Create recipe"}
+      label={label}
       busyLabel="Saving…"
       busy={saving}
       disabled={!online}

@@ -29,7 +29,11 @@ export function stepKey(part: number, step: number): string {
   return `${part}.${step}`;
 }
 
-/** A part as the check reads it, from a saved recipe or a draft: each row carrying the line the page renders. */
+/**
+ * A part as the check reads it, from a saved recipe or a draft: each row
+ * carrying its line without the note, since the note is what the restyle may
+ * rewrite and is read, and shown, on its own.
+ */
 export function styleOriginal(
   parts: readonly {
     name: string;
@@ -39,7 +43,7 @@ export function styleOriginal(
 ): OriginalPart[] {
   return parts.map((part) => ({
     name: part.name,
-    ingredients: part.ingredients.map((row) => ({ ...row, line: formatIngredient(row).trim() || row.originalText })),
+    ingredients: part.ingredients.map((row) => ({ ...row, line: formatIngredient({ ...row, note: "" }).trim() || row.originalText })),
     steps: part.steps.map((step) => ({ title: step.title ?? "", text: step.text, summary: step.summary ?? "" })),
   }));
 }
@@ -226,4 +230,14 @@ export function choiceCounts(original: readonly OriginalPart[], answer: StyleAns
     }
   });
   return { total, kept, flagged };
+}
+
+/** A part's heading: its name, or "Method" for the unnamed main body. */
+export function partHeading(name: string): string {
+  return name.trim() === "" ? "Method" : name.trim();
+}
+
+/** The assembled parts as the save calls take them: plain copies, since the answer's lists are read-only. */
+export function forSaving(parts: readonly RestyledPart[]): { name: string; notes: string[]; steps: RestyledStep[] }[] {
+  return parts.map((part) => ({ name: part.name, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) }));
 }

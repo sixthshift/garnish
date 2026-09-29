@@ -37,6 +37,7 @@ vi.mock("../../src/server/fns/foods", local);
 vi.mock("../../src/server/fns/style", local);
 vi.mock("../../src/server/fns/planner", local);
 vi.mock("../../src/server/fns/ai", local);
+vi.mock("../../src/server/fns/import", local);
 
 useTempDataDir();
 
@@ -441,6 +442,36 @@ describe("nextServings", () => {
   });
 });
 
+describe("/recipes/$slug/style", () => {
+  const tart = { name: "Lemon tart", parts: [{ name: "", ingredients: [], steps: [{ text: "Blind bake the case until golden." }] }] };
+
+  test("without a model it says what is missing, and offers no restyle", async () => {
+    delete process.env.AI_API_KEY;
+    await callServerFn(createRecipe, tart);
+    const html = await renderRoute("/recipes/lemon-tart/style");
+    expect(html).toContain("Lemon tart");
+    expect(html).toContain('data-testid="style-unavailable"');
+    expect(html).not.toContain('data-testid="style-space"');
+  });
+
+  test("with a model it opens the Style space on the recipe's own steps, and Restore only once restyled", async () => {
+    process.env.AI_API_KEY = "secret";
+    try {
+      await callServerFn(createRecipe, tart);
+      const html = await renderRoute("/recipes/lemon-tart/style");
+      expect(html).toContain('data-testid="style-space"');
+      expect(html).toContain("Blind bake the case until golden.");
+      expect(html).not.toContain('data-testid="style-restore"');
+    } finally {
+      delete process.env.AI_API_KEY;
+    }
+  });
+
+  test("a missing slug renders the not-found view", async () => {
+    expect(await renderRoute("/recipes/nothing-here/style")).toContain("Not found");
+  });
+});
+
 describe("/recipes/$slug/edit", () => {
   test("renders the form populated from the loaded recipe, with the unit list in the yield picker", async () => {
     const units = await callServerFn(listUnits, {});
@@ -717,7 +748,7 @@ describe("loader data types match the domain schemas", () => {
       dir?: "asc" | "desc" | undefined;
       seed?: string | undefined;
     }>();
-    expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined; restyle?: boolean | undefined }>();
+    expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
     expectTypeOf<(typeof EditRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
   });
 });

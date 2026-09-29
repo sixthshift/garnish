@@ -186,7 +186,7 @@ export function ImportReview(props: ImportReviewProps) {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={onCreate}>
-          {busy ? "Working…" : "Create"}
+          {busy ? "Working…" : aiAvailable ? "Continue" : "Create"}
         </Button>
         <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
           Back

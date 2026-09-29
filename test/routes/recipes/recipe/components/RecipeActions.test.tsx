@@ -46,12 +46,10 @@ async function render(recipe: Recipe, props: Partial<RecipeActionsProps> = {}): 
   return renderToString(<RouterProvider router={router} />);
 }
 
-test("takes the recipe, and M37.6's model flag and restyle-on-arrival pair", () => {
+test("takes the recipe and M37.6's model flag", () => {
   expectTypeOf<RecipeActionsProps>().toEqualTypeOf<{
     recipe: Recipe;
     aiAvailable?: boolean;
-    restyleOpen?: boolean;
-    onRestyleClose?: () => void;
   }>();
 });
 
@@ -146,13 +144,5 @@ describe("Restyle steps (M37.6)", () => {
   test("the closed menu shows no Restyle item, with a model or without one", async () => {
     expect(await render(base)).not.toContain("Restyle steps");
     expect(await render(base, { aiAvailable: true })).not.toContain("Restyle steps");
-  });
-
-  test("the sheet paints nothing until it is open on the client", async () => {
-    // `Sheet` mounts through a portal, so even `restyleOpen` renders nothing
-    // here; test/routes/recipe-view-restyle.test.tsx stubs it to check the
-    // `?restyle` wiring.
-    const html = await render(base, { aiAvailable: true, restyleOpen: true });
-    expect(html).not.toContain('data-testid="restyle-rules"');
   });
 });

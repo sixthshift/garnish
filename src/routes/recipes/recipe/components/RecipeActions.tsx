@@ -12,27 +12,19 @@ import { foodForRecipe } from "../../../../server/fns/foods";
 import { addPlanEntry } from "../../../../server/fns/plan";
 import { deleteRecipe, duplicateRecipe } from "../../../../server/fns/recipes";
 import { PlanPopover, planEntryFor } from "./PlanPopover";
-import { RestyleSheet } from "./RestyleSheet";
 
 export type RecipeActionsProps = {
   recipe: Recipe;
   /** Whether a model is configured. Without one, Restyle steps is not offered. */
   aiAvailable?: boolean;
-  /** Open the restyle sheet on mount: the page's `?restyle` param, after an import's Create. */
-  restyleOpen?: boolean;
-  /** Called when the restyle sheet closes, so the page can drop `?restyle`. */
-  onRestyleClose?: () => void;
 };
 
-export function RecipeActions({ recipe, aiAvailable = false, restyleOpen = false, onRestyleClose }: RecipeActionsProps) {
+export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [planning, setPlanning] = useState(false);
-  // Seeded from the prop rather than driven by it: `?restyle` only ever
-  // arrives on the first render, and the sheet owns its life after that.
-  const [restyling, setRestyling] = useState(restyleOpen);
 
   const copy = async (text: string, what: string) => {
     if (text.trim() === "") {
@@ -96,7 +88,7 @@ export function RecipeActions({ recipe, aiAvailable = false, restyleOpen = false
           <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
           <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>
           <Menu.Item onSelect={() => setPlanning(true)}>Plan</Menu.Item>
-          {aiAvailable && <Menu.Item onSelect={() => setRestyling(true)}>Restyle steps</Menu.Item>}
+          {aiAvailable && <Menu.Item onSelect={() => void navigate({ to: "/recipes/$slug/style", params: { slug: recipe.slug } })}>Restyle steps</Menu.Item>}
           <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
           <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
           <Menu.Item onSelect={() => void copy(toCooklang(recipe), "Cooklang")}>Copy as Cooklang</Menu.Item>
@@ -106,14 +98,6 @@ export function RecipeActions({ recipe, aiAvailable = false, restyleOpen = false
             Delete
           </Menu.Item>
         </Menu>
-        <RestyleSheet
-          open={restyling}
-          recipe={recipe}
-          onClose={() => {
-            setRestyling(false);
-            onRestyleClose?.();
-          }}
-        />
         <PlanPopover recipe={recipe} open={planning} onOpenChange={setPlanning} onChoose={(date, servings) => void planTo(date, servings)} />
       </div>
       {confirming && (

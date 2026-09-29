@@ -188,7 +188,7 @@ describe("the review while the read runs", () => {
     expect(html.match(/data-review-row=""/g)).toHaveLength(2);
   });
 
-  test("Create is not blocked while the read runs, and it commits the rules result", async () => {
+  test("Continue (Create, with a model) is not blocked while the read runs, and it commits the rules result", async () => {
     // A read that never answers: the review must not be waiting on it.
     let creates = 0;
     const node = ImportReview({
@@ -199,7 +199,8 @@ describe("the review while the read runs", () => {
       reading: true,
       onCreate: () => (creates += 1),
     });
-    const create = elementWithChildren(node, "Create");
+    // With a model the review's button leads to the Style stage, so it reads Continue.
+    const create = elementWithChildren(node, "Continue");
     expect(create?.props.disabled).toBeFalsy();
     create?.props.onClick();
     expect(creates).toBe(1);
@@ -254,7 +255,7 @@ describe("a read that failed", () => {
     expect(html).toContain("Try again");
     // Nothing was lost: the page's own reading is still what is offered.
     expect(html).toContain("Read 2 ingredients and 2 steps");
-    expect(html).toContain(">Create<");
+    expect(html).toContain(">Continue<");
   });
 
   test("Try again asks for the read again", () => {

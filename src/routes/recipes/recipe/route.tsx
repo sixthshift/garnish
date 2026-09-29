@@ -8,13 +8,6 @@ import { Route as rootRoute } from "../../root";
 
 export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),
-  /**
-   * Open the restyle sheet on arrival. The new recipe page sets it
-   * after an import's Create when a model is configured, and the sheet clears
-   * it again on dismiss, so a reload does not re-offer a rewrite nobody asked
-   * for twice.
-   */
-  restyle: z.boolean().optional(),
 });
 
 /**

@@ -3,9 +3,14 @@ import { Page, PageHeader } from "../../../components/shell/Page";
 import { emptyDraft, type RecipeDraft } from "../../../domain/draft";
 import { recipeByName, recipeBySource } from "../../../server/fns/recipes";
 import { RecipeForm } from "../components/RecipeForm";
+import { ImportSteps } from "./components/ImportSteps";
+import { ImportStyle } from "./components/ImportStyle";
 import type { SourceKind } from "./components/importSummary";
 import { RecipeSource } from "./components/RecipeSource";
 import { Route } from "./route";
+
+/** An imported draft in flight: the Style stage over it, or Edit details, with a picture picked there kept for Save. */
+type Imported = { draft: RecipeDraft; imageUrl: string | null; file: File | null; stage: "style" | "details" };
 
 export function NewRecipePage() {
   const { units, tags, aiAvailable } = Route.useLoaderData();
@@ -14,26 +19,49 @@ export function NewRecipePage() {
   // An imported draft has no URL of its own, and the form must not be
   // remounted under an edit in progress. The blank one is made once per mount
   // so the form's dirty comparison has a stable object to compare against.
-  const [imported, setImported] = useState<{ draft: RecipeDraft; imageUrl: string | null } | null>(null);
+  const [imported, setImported] = useState<Imported | null>(null);
   const [blank] = useState(emptyDraft);
 
   const choose = (kind: SourceKind | null) => void navigate({ search: kind === null ? {} : { source: kind }, replace: true });
 
+  // With a model, an import goes Review, Style, Save: the Style stage comes
+  // before anything is stored, and the full form is a detour from it ("Edit
+  // details") rather than a stop on the way. Without one it goes straight to
+  // the form, as a recipe typed in by hand does.
+  if (imported !== null && aiAvailable && imported.stage === "style") {
+    return (
+      <Page>
+        <ImportSteps current="Style" />
+        <PageHeader title={imported.draft.name.trim() || "New recipe"} />
+        <ImportStyle
+          draft={imported.draft}
+          imageUrl={imported.imageUrl}
+          file={imported.file}
+          onEditDetails={() => setImported({ ...imported, stage: "details" })}
+        />
+      </Page>
+    );
+  }
+
   if (imported !== null || source === "manual") {
     return (
       <Page>
+        {imported !== null && aiAvailable && <ImportSteps current="Style" />}
         <PageHeader title="New recipe" />
         <RecipeForm
           initial={imported?.draft ?? blank}
           units={units}
           tags={tags}
           importedImageUrl={imported?.imageUrl ?? null}
-          /* An imported recipe lands on its page with the restyle sheet open
-             when there is a model to rewrite with: the import keeps
-             the author's words on purpose, so the offer to put them in the
-             household's voice belongs at the end of the import and nowhere
-             else. "My own" skips it. */
-          afterSaveSearch={imported !== null && aiAvailable ? { restyle: true } : undefined}
+          continueWith={
+            imported !== null && aiAvailable
+              ? {
+                  label: "Continue to Style",
+                  onContinue: (draft, file) => setImported({ ...imported, draft, file: file ?? imported.file, stage: "style" }),
+                  onBack: () => setImported({ ...imported, stage: "style" }),
+                }
+              : undefined
+          }
         />
       </Page>
     );
@@ -49,7 +77,7 @@ export function NewRecipePage() {
         initialUrl={url ?? null}
         aiAvailable={aiAvailable}
         onChoose={choose}
-        onDraft={(draft, imageUrl) => setImported({ draft, imageUrl })}
+        onDraft={(draft, imageUrl) => setImported({ draft, imageUrl, file: null, stage: "style" })}
         findDuplicate={findDuplicateBySource}
         findDuplicateByName={findDuplicateByName}
       />
