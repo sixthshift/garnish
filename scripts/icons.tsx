@@ -4,7 +4,7 @@
  * renders. Run with `bun run icons` after changing src/components/Logo.tsx.
  *
  * Three shapes come out of one drawing:
- *   icon.svg, icon-192, icon-512   rounded, purpose "any"
+ *   icon.svg, icon-192, icon-512   circular, purpose "any"
  *   maskable-512                   full-bleed square; Android crops it to a
  *                                  circle of 80% width, which the mark clears
  *   apple-touch-icon               full-bleed square at 180; iOS rounds it
@@ -12,7 +12,7 @@
  */
 import { Resvg } from "@resvg/resvg-js";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ICON_GROUND, ICON_MARK, LogoIcon } from "../src/components/shell/Logo";
+import { ICON_GROUND, ICON_MARK, ICON_RADIUS, LogoIcon } from "../src/components/shell/Logo";
 
 const OUT = new URL("../public/", import.meta.url);
 
@@ -25,7 +25,7 @@ function png(source: string, width: number): Buffer {
   return new Resvg(source, { fitTo: { mode: "width", value: width } }).render().asPng();
 }
 
-const rounded = svg(512 * 0.2);
+const rounded = svg(ICON_RADIUS);
 const maskable = svg(0, true);
 const appleTouch = svg(0);
 

@@ -9,8 +9,12 @@ import type { CSSProperties } from "react";
 export const ICON_GROUND = "#d6eef0"; // emerald-100
 export const ICON_MARK = "#234e53"; // emerald-700
 
-/** The rounded app icon's corner radius, 20% of 512, as the PWA icons use. */
-export const ICON_RADIUS = 102.4;
+/**
+ * The app icon's corner radius: half of 512, so the ground is a circle. The
+ * sprig's furthest point at SCALE_FULL is about 231 from the centre, inside
+ * the circle's 256 with room to spare.
+ */
+export const ICON_RADIUS = 256;
 
 /**
  * How large the sprig is drawn inside the 512 box, as a scale on the artwork.
@@ -90,7 +94,7 @@ export type LogoIconProps = LogoMarkProps & {
   /** The sprig's colour. Defaults to `currentColor` so CSS can drive it. */
   mark?: string;
   /**
-   * Corner radius in the 512 viewBox. Rounded by default; pass 0 for a
+   * Corner radius in the 512 viewBox. A circle by default; pass 0 for a
    * maskable or apple-touch icon, where the platform applies its own mask and
    * a radius here would show as a double-rounded edge.
    */
@@ -102,7 +106,7 @@ export type LogoIconProps = LogoMarkProps & {
   maskable?: boolean;
 };
 
-/** The app-icon treatment: the sprig on a square ground. */
+/** The app-icon treatment: the sprig on a round ground. */
 export function LogoIcon({ size, ground = ICON_GROUND, mark, cornerRadius = ICON_RADIUS, maskable = false, className, style }: LogoIconProps) {
   return (
     <svg
