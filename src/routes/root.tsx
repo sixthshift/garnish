@@ -79,7 +79,8 @@ function RootDocument({ children }: { children: ReactNode }) {
         <meta name="theme-color" content={themeColorLight} media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content={themeColorDark} media="(prefers-color-scheme: dark)" />
       </head>
-      <body>
+      {/* The theme's colours on the body, not only the shell: sheets, dialogs and toasts portal here, outside the shell's box. */}
+      <body className="bg-bg-subtle text-fg-normal">
         {children}
         <Scripts />
       </body>
