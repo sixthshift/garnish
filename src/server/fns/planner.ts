@@ -6,7 +6,6 @@ import recipes from "../../db/models/recipe/repo";
 import { isoDate, planEntryInputSchema, weekDates, weekMonday } from "../../domain/plan";
 import { MEALS, mealName, PlannerRuleCreate, PlannerRuleId, PlannerRuleReorder, PlannerRuleUpdate } from "../../domain/planner";
 import { Id } from "../../domain/reference";
-import { aiConfigured } from "../ai/client";
 import { proposeWeek } from "../ai/planner";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
@@ -81,7 +80,11 @@ export const proposePlanWeek = createServerFn({ method: "POST" })
     return proposeWeek({ monday: data.monday, dates, meals });
   });
 
-/** The entries the household ticked, as the sheet sends them: a slot and the recipe that fills it. */
+/**
+ * The entries the household ticked, as the sheet sends them: a slot and the
+ * recipe that fills it, and how many are eating across the run. `servings`
+ * null leaves each entry at its recipe's own, as a hand-added entry is.
+ */
 export const ApplyPlanProposalInput = z.object({
   entries: z
     .array(
@@ -92,12 +95,13 @@ export const ApplyPlanProposalInput = z.object({
       })
     )
     .default([]),
+  servings: z.number().positive().nullable().default(null),
 });
 
 /**
  * Write an accepted proposal. Each entry goes through the plan's own `add`
  * with the recipe's name copied into `text`, exactly as the plan page's add
- * row does, and all of them in one transaction: a recipe that has since been
+ * row does, and the run's head count as its servings, and all of them in one transaction: a recipe that has since been
  * deleted is a not-found for the whole write rather than half a week on the
  * calendar. Answers with the week, so the page redraws from one result.
  */
@@ -108,17 +112,8 @@ export const applyPlanProposal = createServerFn({ method: "POST" })
     // Every recipe is read first: a missing one fails before anything is written.
     const inputs = data.entries.map((entry) => {
       const recipe = required(recipes.getById(entry.recipeId), "recipe", entry.recipeId);
-      return planEntryInputSchema.parse({ date: entry.date, recipeId: recipe.id, text: recipe.name, meal: entry.meal });
+      return planEntryInputSchema.parse({ date: entry.date, recipeId: recipe.id, text: recipe.name, meal: entry.meal, servings: data.servings });
     });
     plan.addMany(inputs);
     return plan.week(weekMonday(data.entries[0]?.date));
   });
-
-/**
- * Whether a model is configured at all, for the Propose button. The same
- * answer `aiImportAvailable` gives — one key is the whole of the setup — under
- * its own name so the plan page does not read the import's gate.
- */
-export const plannerAvailable = createServerFn({ method: "GET" })
-  .middleware([notFoundMiddleware])
-  .handler(() => ({ available: aiConfigured() }));

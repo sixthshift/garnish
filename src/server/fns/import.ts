@@ -1,18 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { ScrapedRecipeSchema } from "../../domain/import";
-import { aiConfigured } from "../ai/client";
 import { notFoundMiddleware } from "../core/fn";
 import { importer } from "../import/importer";
-
-/**
- * Whether a model is configured, for the paste option and the Settings note.
- * Read on the server every time rather than cached: giving the container a key
- * should not need the app restarted.
- */
-export const aiImportAvailable = createServerFn({ method: "GET" })
-  .middleware([notFoundMiddleware])
-  .handler(() => ({ available: aiConfigured() }));
 
 export const ImportFromUrlInput = z.object({ url: z.string().trim().min(1) });
 

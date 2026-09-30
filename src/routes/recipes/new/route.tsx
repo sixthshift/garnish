@@ -2,7 +2,7 @@ import { createRoute, lazyRouteComponent, redirect } from "@tanstack/react-route
 import { z } from "zod";
 import type { Tag, Unit } from "../../../domain/reference";
 import { sharedUrl } from "../../../lib/urls";
-import { aiImportAvailable } from "../../../server/fns/import";
+import { aiAvailable } from "../../../server/fns/ai";
 import { listTags } from "../../../server/fns/tags";
 import { listUnits } from "../../../server/fns/units";
 import { Route as rootRoute } from "../../root";
@@ -40,7 +40,7 @@ export const Route = createRoute({
     // Whether the AI rung can run is asked here rather than in the component,
     // so the chooser never flashes an option that is about to disappear
     //. A failed ask is "not installed": the other rungs still work.
-    const [units, tags, ai] = await Promise.all([listUnits({ data: {} }), listTags({ data: {} }), aiImportAvailable().catch(() => ({ available: false }))]);
+    const [units, tags, ai] = await Promise.all([listUnits({ data: {} }), listTags({ data: {} }), aiAvailable().catch(() => ({ available: false }))]);
     return { units, tags, aiAvailable: ai.available };
   },
   component: lazyRouteComponent(() => import("./page"), "NewRecipePage"),

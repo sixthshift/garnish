@@ -1,7 +1,7 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
 import type { Recipe, SubRecipe, TimelineEvent } from "../../../domain/recipe";
-import { aiImportAvailable } from "../../../server/fns/import";
+import { aiAvailable } from "../../../server/fns/ai";
 import { getRecipe, subRecipesOf } from "../../../server/fns/recipes";
 import { listTimeline } from "../../../server/fns/timeline";
 import { Route as rootRoute } from "../../root";
@@ -30,7 +30,7 @@ export const Route = createRoute({
     const [timeline, subRecipes, ai] = await Promise.all([
       listTimeline({ data: { recipeId: recipe.id } }),
       subRecipesOf({ data: { id: recipe.id } }),
-      aiImportAvailable().catch(() => ({ available: false })),
+      aiAvailable().catch(() => ({ available: false })),
     ]);
     return { recipe, timeline, subRecipes, aiAvailable: ai.available };
   },

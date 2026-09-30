@@ -16,9 +16,11 @@ import {
   initialTicked,
   PLANNER_DAYS_KEY,
   PLANNER_MEALS_KEY,
+  PLANNER_SERVINGS_KEY,
   proposalDays,
   readProposalDays,
   readProposalMeals,
+  readProposalServings,
   rememberedDays,
   slotKey,
   tickedDates,
@@ -26,6 +28,7 @@ import {
   toggleProposalMeal,
   writeProposalDays,
   writeProposalMeals,
+  writeProposalServings,
 } from "../../../src/routes/plan/components/proposalSheet";
 import type { ProposedWeek } from "../../../src/server/ai/planner";
 
@@ -66,6 +69,8 @@ function content(overrides: Partial<Parameters<typeof ProposeSheetContent>[0]> =
       onToggleDay={() => {}}
       meals={DINNER}
       onToggleMeal={() => {}}
+      servings={4}
+      onServingsChange={() => {}}
       week={null}
       ticked={new Set()}
       onToggleRow={() => {}}
@@ -163,6 +168,30 @@ describe("the remembered meals", () => {
     expect(toggleProposalMeal(["dinner"], "breakfast")).toEqual(["breakfast", "dinner"]);
     expect(toggleProposalMeal(["breakfast", "dinner"], "dinner")).toEqual(["breakfast"]);
     expect(toggleProposalMeal(["dinner"], "dinner")).toEqual([]);
+  });
+});
+
+describe("how many are eating", () => {
+  test("nothing stored is four, the yield most recipes are written at", () => {
+    expect(readProposalServings(undefined)).toBe(4);
+    expect(readProposalServings(memory())).toBe(4);
+  });
+
+  test("a stored count comes back; rubbish, zero and negatives fall back to four", () => {
+    expect(readProposalServings(memory({ [PLANNER_SERVINGS_KEY]: "6" }))).toBe(6);
+    for (const bad of ["{", '"six"', "0", "-2", "null"]) expect(readProposalServings(memory({ [PLANNER_SERVINGS_KEY]: bad }))).toBe(4);
+  });
+
+  test("writing puts the count under garnish.planner.servings", () => {
+    const storage = memory();
+    writeProposalServings(storage, 3);
+    expect(storage.map.get(PLANNER_SERVINGS_KEY)).toBe("3");
+  });
+
+  test("the stepper is on the asking stage with the count in it", () => {
+    const html = content({ servings: 6 });
+    expect(html).toContain("How many are eating");
+    expect(html).toContain('value="6"');
   });
 });
 

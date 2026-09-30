@@ -4,6 +4,7 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Sheet } from "@sixthshift/design-system/sheet";
+import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { dayLabel, type Meal, mealLabel } from "../../../domain/plan";
 import { MEALS } from "../../../domain/planner";
 import { recipeImageUrl } from "../../../lib/images";
@@ -18,6 +19,9 @@ export type ProposeSheetContentProps = {
   /** The meals this run fills, remembered on the device: at least one, or Propose cannot run. */
   meals: readonly Meal[];
   onToggleMeal: (meal: Meal) => void;
+  /** How many are eating: written onto every entry Add writes, so the week's shopping is for them. */
+  servings: number;
+  onServingsChange: (servings: number) => void;
   /** The model's answer, or null while the sheet is still asking for one. */
   week: ProposedWeek | null;
   /** The slot keys whose row is accepted. */
@@ -38,7 +42,7 @@ export type ProposeSheetContentProps = {
  * slot to fill, so it stays disabled rather than asking for nothing.
  */
 export function ProposeSheetContent(props: ProposeSheetContentProps) {
-  const { days, meals, week, ticked, busy = false, error = null } = props;
+  const { days, meals, servings, week, ticked, busy = false, error = null } = props;
   const groups = week === null ? [] : groupProposal(week);
   const nothing = week !== null && week.entries.length === 0;
 
@@ -51,7 +55,7 @@ export function ProposeSheetContent(props: ProposeSheetContentProps) {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-3" data-testid="propose-days">
             <Muted as="p" className="text-sm">
-              The days and the meals to fill. Nothing is written until you add it.
+              The days and the meals to fill, and how many are eating. Nothing is written until you add it.
             </Muted>
             <div className="flex flex-wrap gap-2">
               {days.map((day) => (
@@ -89,6 +93,7 @@ export function ProposeSheetContent(props: ProposeSheetContentProps) {
                 />
               ))}
             </div>
+            <NumberStepper label="How many are eating" value={servings} min={1} disabled={busy} onChange={props.onServingsChange} className="max-w-48" />
           </div>
 
           {busy && week === null && (

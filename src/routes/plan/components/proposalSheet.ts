@@ -1,5 +1,5 @@
 // The proposal sheet's pure half (M39.5): which days and which meals a run
-// covers and how those choices are remembered, and the model's answer arranged
+// covers, how many are eating, and how those choices are remembered, and the model's answer arranged
 // by day, ticked, and turned into the payload `applyPlanProposal` takes. No
 // React and no IO beyond the storage handed in, so every rule here is driven
 // by a test rather than by a click.
@@ -14,6 +14,15 @@ export const PLANNER_DAYS_KEY = "garnish.planner.days";
 
 /** Where the meal choice is remembered between runs, beside the days: both are per-run (decisions.md row 102). */
 export const PLANNER_MEALS_KEY = "garnish.planner.meals";
+
+/** Where "how many are eating" is remembered: a household's size outlives the week, as its days do. */
+export const PLANNER_SERVINGS_KEY = "garnish.planner.servings";
+
+/**
+ * What a household that has never touched the stepper cooks for: four, the
+ * yield most recipes are written at, so a first run scales little or nothing.
+ */
+export const DEFAULT_SERVINGS = 4;
 
 /** The seven letters the checkboxes carry, Monday first. */
 export const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"] as const;
@@ -88,6 +97,27 @@ export function readProposalMeals(storage: StorageLike | undefined): Meal[] {
 /** Remember the ticked meals, in meal order. */
 export function writeProposalMeals(storage: StorageLike | undefined, meals: readonly Meal[]): void {
   writeRemembered(storage, PLANNER_MEALS_KEY, MEALS, meals);
+}
+
+/** The remembered head count: a positive number, or the default when missing or malformed. */
+export function readProposalServings(storage: StorageLike | undefined): number {
+  if (storage === undefined) return DEFAULT_SERVINGS;
+  try {
+    const parsed: unknown = JSON.parse(storage.getItem(PLANNER_SERVINGS_KEY) ?? "null");
+    return typeof parsed === "number" && Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SERVINGS;
+  } catch {
+    return DEFAULT_SERVINGS;
+  }
+}
+
+/** Remember the head count. A throwing storage just means it does not stick. */
+export function writeProposalServings(storage: StorageLike | undefined, servings: number): void {
+  if (storage === undefined) return;
+  try {
+    storage.setItem(PLANNER_SERVINGS_KEY, JSON.stringify(servings));
+  } catch {
+    // ignored: see above
+  }
 }
 
 function isDayIndex(value: unknown): value is number {

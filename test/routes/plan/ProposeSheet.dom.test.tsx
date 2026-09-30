@@ -1,12 +1,12 @@
 // The proposal sheet, pressed rather than read (M39.5, M39.7). The node suite
-// asserts what the two stages draw; only a DOM can untick a day, tick a meal,
+// asserts what the two stages draw; only a DOM can untick a day, tick a meal, step the head count,
 // press Propose and see what went to the server. The server functions are mocked: a test that
 // asks a model is not a test.
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { ProposeSheet } from "../../../src/routes/plan/components/ProposeSheet";
-import { PLANNER_DAYS_KEY, PLANNER_MEALS_KEY } from "../../../src/routes/plan/components/proposalSheet";
+import { PLANNER_DAYS_KEY, PLANNER_MEALS_KEY, PLANNER_SERVINGS_KEY } from "../../../src/routes/plan/components/proposalSheet";
 import { applyPlanProposal, proposePlanWeek } from "../../../src/server/fns/planner";
 import { renderInRouter } from "../../helpers/dom";
 
@@ -52,7 +52,7 @@ test("unticking a day leaves it out of the run, remembers it, and the answer's r
   expect(applyPlanProposal).not.toHaveBeenCalled();
 
   await user.click(screen.getByTestId("propose-add"));
-  expect(applyPlanProposal).toHaveBeenCalledWith({ data: { entries: [{ date: "2026-09-16", meal: "dinner", recipeId: ragu.id }] } });
+  expect(applyPlanProposal).toHaveBeenCalledWith({ data: { entries: [{ date: "2026-09-16", meal: "dinner", recipeId: ragu.id }], servings: 4 } });
 });
 
 test("unticking a proposed row leaves it out of what Add sends", async () => {
@@ -88,4 +88,19 @@ test("with no meal ticked Propose cannot run", async () => {
   await user.click(screen.getByRole("checkbox", { name: "Dinner" }));
   await user.click(screen.getByTestId("propose-run"));
   expect(proposePlanWeek).not.toHaveBeenCalled();
+});
+
+test("stepping how many are eating remembers it and writes it onto what Add sends", async () => {
+  vi.mocked(applyPlanProposal).mockClear();
+  const user = userEvent.setup();
+  const storage = memory({ [PLANNER_SERVINGS_KEY]: "2" });
+  await renderInRouter(<ProposeSheet open monday={MONDAY} today={TODAY} storage={storage} onClose={() => {}} />);
+
+  await user.click(screen.getByRole("button", { name: "Increase How many are eating" }));
+  expect(storage.map.get(PLANNER_SERVINGS_KEY)).toBe("3");
+
+  await user.click(screen.getByTestId("propose-run"));
+  await screen.findByText("Beef ragu");
+  await user.click(screen.getByTestId("propose-add"));
+  expect(vi.mocked(applyPlanProposal).mock.calls[0]![0]!.data.servings).toBe(3);
 });

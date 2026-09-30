@@ -18,7 +18,7 @@ import {
   weekSlots,
 } from "../../../src/server/ai/planner";
 import { addPlanEntry, listPlanWeek } from "../../../src/server/fns/plan";
-import { applyPlanProposal, plannerAvailable, proposePlanWeek } from "../../../src/server/fns/planner";
+import { applyPlanProposal, proposePlanWeek } from "../../../src/server/fns/planner";
 import { createRecipe, deleteRecipe } from "../../../src/server/fns/recipes";
 import { createTimelineEvent } from "../../../src/server/fns/timeline";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
@@ -292,6 +292,16 @@ describe("applyPlanProposal", () => {
     expect(week[1]!.entries).toMatchObject([{ date: TUESDAY, meal: "lunch", text: "Lemon tart" }]);
   });
 
+  test("the run's head count is every entry's servings; without one each keeps its recipe's own", async () => {
+    const ragu = await newRecipe("Beef ragu");
+
+    const counted = await callServerFn(applyPlanProposal, { entries: [{ date: WEDNESDAY, meal: "dinner", recipeId: ragu.id }], servings: 3 });
+    expect(counted[2]!.entries.find((entry) => entry.recipe?.id === ragu.id && entry.meal === "dinner")).toMatchObject({ servings: 3 });
+
+    const uncounted = await callServerFn(applyPlanProposal, { entries: [{ date: WEDNESDAY, meal: "lunch", recipeId: ragu.id }] });
+    expect(uncounted[2]!.entries.find((entry) => entry.recipe?.id === ragu.id && entry.meal === "lunch")).toMatchObject({ servings: null });
+  });
+
   test("a recipe that has since been deleted fails the whole write: no half week", async () => {
     const ragu = await newRecipe("Beef ragu");
     const gone = await newRecipe("Gone");
@@ -308,15 +318,6 @@ describe("applyPlanProposal", () => {
 
     const week = await callServerFn(listPlanWeek, { monday: MONDAY });
     expect(week.every((day) => day.entries.length === 0)).toBe(true);
-  });
-});
-
-describe("plannerAvailable", () => {
-  test("is the same gate the import reads: a key and nothing else", async () => {
-    delete process.env.AI_API_KEY;
-    expect(await callServerFn(plannerAvailable)).toEqual({ available: false });
-    process.env.AI_API_KEY = "secret";
-    expect(await callServerFn(plannerAvailable)).toEqual({ available: true });
   });
 });
 

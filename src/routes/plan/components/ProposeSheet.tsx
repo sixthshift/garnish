@@ -15,12 +15,14 @@ import {
   proposalDays,
   readProposalDays,
   readProposalMeals,
+  readProposalServings,
   rememberedDays,
   tickedDates,
   toggleProposalDay,
   toggleProposalMeal,
   writeProposalDays,
   writeProposalMeals,
+  writeProposalServings,
 } from "./proposalSheet";
 
 export type ProposeSheetProps = {
@@ -40,7 +42,8 @@ function browserStorage(): StorageLike | undefined {
 
 /**
  * The sheet itself: the day and meal choices — both per-run and both
- * remembered on the device (decisions.md row 102) — the one call that
+ * remembered on the device (decisions.md row 102) — and how many are eating,
+ * remembered the same way and written onto every entry Add writes; the one call that
  * proposes, and the one that writes. Nothing is written until Add, and Add
  * goes through `useMutate` so the week behind the sheet redraws before it
  * closes. A failure of either call stays on screen with Try again beside it,
@@ -51,6 +54,7 @@ export function ProposeSheet({ open, monday, onClose, today, storage }: ProposeS
   const store = storage ?? browserStorage();
   const [days, setDays] = useState(() => proposalDays(monday, readProposalDays(store), today));
   const [meals, setMeals] = useState<Meal[]>(() => readProposalMeals(store));
+  const [servings, setServings] = useState(() => readProposalServings(store));
   const [week, setWeek] = useState<ProposedWeek | null>(null);
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -66,6 +70,11 @@ export function ProposeSheet({ open, monday, onClose, today, storage }: ProposeS
     const next = toggleProposalMeal(meals, meal);
     setMeals(next);
     writeProposalMeals(store, next);
+  };
+
+  const changeServings = (next: number) => {
+    setServings(next);
+    writeProposalServings(store, next);
   };
 
   const toggleRow = (key: string) =>
@@ -103,7 +112,7 @@ export function ProposeSheet({ open, monday, onClose, today, storage }: ProposeS
     setBusy(true);
     setError(null);
     try {
-      await mutate(() => applyPlanProposal({ data: { entries } }));
+      await mutate(() => applyPlanProposal({ data: { entries, servings } }));
       toast({ intent: "success", title: addedMealsMessage(entries.length) });
       close();
     } catch (cause) {
@@ -119,6 +128,8 @@ export function ProposeSheet({ open, monday, onClose, today, storage }: ProposeS
         onToggleDay={toggleDay}
         meals={meals}
         onToggleMeal={toggleMeal}
+        servings={servings}
+        onServingsChange={changeServings}
         week={week}
         ticked={ticked}
         onToggleRow={toggleRow}
