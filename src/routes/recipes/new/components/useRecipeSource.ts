@@ -8,18 +8,22 @@ import type { FoodRow } from "../../../../domain/reference";
 import { messageFrom } from "../../../../lib/errors";
 import { postImportFile } from "../../../../lib/importFile";
 import { listFoods } from "../../../../server/fns/foods";
-import { importFromText, importFromUrl } from "../../../../server/fns/import";
+import { importFromPage, importFromText, importFromUrl } from "../../../../server/fns/import";
+import type { SentPage } from "./bookmarklet";
 import { type ModelReader, withRejectedAnswer } from "./importSummary";
 import type { RecipeSourceProps } from "./RecipeSource";
 import { draftFromReview, reviewOfUpload } from "./reviewFlows";
 import { useModelPass } from "./useModelPass";
+import { useSentPage } from "./useSentPage";
 
 export function useRecipeSource(props: RecipeSourceProps) {
-  const { units, tags, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadFile, linkSubRecipeFood } = props;
+  const { units, tags, source, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadPage, loadFile, linkSubRecipeFood } = props;
   const { aiAvailable = false, loadText, initialUrl = null } = props;
   const [url, setUrl] = useState(initialUrl ?? "");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  // The page the Save to Garnish bookmark sent, kept so Back from the review can read it again.
+  const [sent, setSent] = useState<SentPage | null>(null);
   const [choices, setChoices] = useState<FileRecipe[] | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
   const [rows, setRows] = useState<IngredientReview[]>([]);
@@ -62,14 +66,28 @@ export function useRecipeSource(props: RecipeSourceProps) {
   };
 
   /** Read a page: the stage's own address, or one handed in by the chooser's field. */
-  const read = async (address: string = url) => {
+  const read = (address: string = url) => readPageAt(address, () => (load ? load(address) : importFromUrl({ data: { url: address } })));
+
+  /** Read the page the bookmark sent: the address's road from the fetch on. */
+  const readSent = (page: SentPage | null = sent) => {
+    if (page === null) return Promise.resolve();
+    return readPageAt(page.url, () => (loadPage ? loadPage(page) : importFromPage({ data: { html: page.html, url: page.url } })));
+  };
+
+  const sentStatus = useSentPage(source === "page", (page) => {
+    setSent(page);
+    void readSent(page);
+  });
+
+  /** A page's rules result onto the review, then the model's pass over it. */
+  const readPageAt = async (address: string, fetchPage: () => Promise<ImportedRecipe>) => {
     setUrl(address);
     urlRef.current = address;
     setBusy(true);
     setError(null);
     model.clearError();
     try {
-      const [found, foods] = await Promise.all([load ? load(address) : importFromUrl({ data: { url: address } }), fetchFoods()]);
+      const [found, foods] = await Promise.all([fetchPage(), fetchFoods()]);
       showReview(found, foods);
       setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
       model.readWithModel(found, foods);
@@ -205,6 +223,8 @@ export function useRecipeSource(props: RecipeSourceProps) {
     url,
     text,
     file,
+    sent,
+    sentStatus,
     choices,
     imported,
     rows,
@@ -218,6 +238,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
     changeText,
     changeFile,
     read,
+    readSent,
     readText,
     readFile,
     create,

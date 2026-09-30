@@ -2,10 +2,13 @@ import type { RecipeDraft } from "../../../../domain/draft";
 import type { FileRecipe, ImportedRecipe } from "../../../../domain/import";
 import type { FoodRow, Tag, Unit } from "../../../../domain/reference";
 import { listFoods } from "../../../../server/fns/foods";
+import { BrowserSource } from "./BrowserSource";
+import type { SentPage } from "./bookmarklet";
 import { FileSource } from "./FileSource";
 import { ImportReview } from "./ImportReview";
 import { ImportSteps } from "./ImportSteps";
 import type { ModelReader, SourceKind } from "./importSummary";
+import { PageSource } from "./PageSource";
 import { PasteSource } from "./PasteSource";
 import { RecipePicker } from "./RecipePicker";
 import { SourceChooser } from "./SourceChooser";
@@ -31,6 +34,8 @@ export type RecipeSourceProps = {
   loadFoods?: () => Promise<FoodRow[]>;
   /** Override the fetch (tests). */
   load?: (url: string) => Promise<ImportedRecipe>;
+  /** Override the read of a page the bookmark sent (tests). */
+  loadPage?: (page: SentPage) => Promise<ImportedRecipe>;
   /** Override the upload (tests); otherwise `postImportFile` does it. */
   loadFile?: (file: File) => Promise<FileRecipe[]>;
   /** Whether a model is configured on the server; false hides the paste option and leaves every page unsorted. */
@@ -113,6 +118,22 @@ export function RecipeSource(props: RecipeSourceProps) {
           aiAvailable={aiAvailable}
           onTextChange={state.changeText}
           onRead={() => void state.readText()}
+          onBack={state.leaveSource}
+        />
+      );
+    }
+
+    if (source === "browser") return <BrowserSource onBack={state.leaveSource} />;
+
+    if (source === "page") {
+      return (
+        <PageSource
+          sent={state.sent}
+          status={state.sentStatus}
+          busy={busy}
+          error={error}
+          onRead={() => void state.readSent()}
+          onPaste={() => onChoose("paste")}
           onBack={state.leaveSource}
         />
       );

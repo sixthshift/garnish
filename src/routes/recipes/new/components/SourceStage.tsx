@@ -5,7 +5,7 @@ import type { FormEvent, ReactNode } from "react";
 
 export type SourceStageProps = {
   /** Which source this is, for `data-source-stage`. */
-  stage: "url" | "paste" | "file";
+  stage: "url" | "paste" | "file" | "page";
   title: string;
   /** The title of the error message, when there is one. */
   errorTitle: string;

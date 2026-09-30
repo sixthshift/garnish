@@ -49,6 +49,12 @@ function otherWays(aiAvailable: boolean): { kind: SourceKind; title: string; blu
       ),
     },
     {
+      kind: "browser",
+      title: "Save from your browser",
+      blurb: "A bookmark that sends the page you are on, for sites that block the import.",
+      icon: icon(<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />),
+    },
+    {
       kind: "file",
       title: "Upload an export",
       blurb: "A Mealie or Tandoor backup, or a single recipe file.",

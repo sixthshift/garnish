@@ -9,7 +9,7 @@ import { Route as rootRoute } from "../../root";
 
 export const NewRecipeSearch = z.object({
   /** Where the recipe is from. Absent shows the chooser. */
-  source: z.enum(["url", "manual", "file", "paste"]).optional(),
+  source: z.enum(["url", "manual", "file", "paste", "browser", "page"]).optional(),
   /** The address the URL stage opens on and reads at once; a share sheet's landing. */
   url: z.string().optional(),
   /**

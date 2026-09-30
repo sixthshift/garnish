@@ -2,7 +2,7 @@ import { type ImportCheck, type ImportedRecipe, type ImportSource, review, type 
 import { messageFrom } from "../../../../lib/errors";
 
 /** Which source the chooser is on. `paste` is the AI rung and only appears when `claude` is installed. */
-export type SourceKind = "url" | "manual" | "file" | "paste";
+export type SourceKind = "url" | "manual" | "file" | "paste" | "browser" | "page";
 
 /** The AI read as the review needs it: the page's text, and the rules result as the anchor when it had one. */
 export type ModelReader = (text: string, anchor?: ScrapedRecipe) => Promise<ImportedRecipe>;

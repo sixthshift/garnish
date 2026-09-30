@@ -54,6 +54,13 @@ export type Source =
       /** The rules' own reading of the same page, when there was one: the lines the model may only sort, never change. */
       anchor?: AnchorInput | null;
     }
+  | {
+      kind: "page";
+      /** The page's markup as the reader's own browser holds it: what the Save to Garnish bookmark sends. */
+      html: string;
+      /** The address the browser had it at. */
+      url: string;
+    }
   | { kind: "file"; file: ImportFile };
 
 /** The pasted text as an http(s) URL, or null for anything else. Pure. */
@@ -74,6 +81,8 @@ export class Importer {
   import(source: { kind: "url"; url: string }): Promise<ImportedRecipe>;
   /** A recipe out of text: the model's read, anchored when the text is a page the rules already read. */
   import(source: { kind: "text"; text: string; sourceUrl?: string; anchor?: AnchorInput | null }): Promise<ImportedRecipe>;
+  /** A recipe out of a page the reader's browser already has: the rules' result, exactly as a fetch of it would give. */
+  import(source: { kind: "page"; html: string; url: string }): Promise<ImportedRecipe>;
   /** The recipes in another app's export file. Many, because a backup holds a collection; the review picks one. */
   import(source: { kind: "file"; file: ImportFile }): Promise<FileRecipe[]>;
   async import(source: Source): Promise<ImportedRecipe | FileRecipe[]> {
@@ -82,6 +91,8 @@ export class Importer {
         return this.fromUrl(source.url);
       case "text":
         return this.read(source.text, { sourceUrl: source.sourceUrl ?? "", anchor: source.anchor == null ? null : normaliseScraped(source.anchor) });
+      case "page":
+        return this.fromPage(source.html, source.url);
       case "file":
         return readExport(source.file);
     }
@@ -108,14 +119,33 @@ export class Importer {
     if (page.status === 403) {
       throw new ImportError(
         "failed",
-        `${url.hostname} is blocking automated requests. Try pasting the recipe text, or the page's HTML (view source, select all, copy), instead.`
+        `${url.hostname} is blocking automated requests. Open the page in your browser and press the Save to Garnish bookmark, or paste the page's HTML (view source, select all, copy), instead.`
       );
     }
     if (page.status < 200 || page.status >= 300) throw new ImportError("failed", `${url.hostname} returned ${page.status}`);
     if (page.bytes.length === 0) throw new ImportError("failed", `${url.hostname} returned an empty page`);
     if (page.bytes.length > MAX_PAGE_BYTES) throw new ImportError("failed", "That page is too large to read");
 
-    const found = extractRecipe(new TextDecoder().decode(page.bytes), page.url || url.href);
+    return this.readPage(new TextDecoder().decode(page.bytes), page.url || url.href);
+  }
+
+  /**
+   * A page the reader's browser fetched instead of this server: the way past
+   * a bot wall that no set of headers gets through. From here on it is the
+   * fetched page's road exactly, so the review shows the rules' result at
+   * once and the model reads it after, as it does for an address.
+   */
+  private fromPage(html: string, raw: string): ImportedRecipe {
+    const url = parsePageUrl(raw);
+    if (!url) throw new ImportError("failed", "The page's address is not an http or https one");
+    if (html.trim() === "") throw new ImportError("failed", "The page sent nothing to read");
+    if (new TextEncoder().encode(html).length > MAX_PAGE_BYTES) throw new ImportError("failed", "That page is too large to read");
+    return this.readPage(html, url.href);
+  }
+
+  /** The rules over a page's markup, however it arrived. */
+  private readPage(html: string, url: string): ImportedRecipe {
+    const found = extractRecipe(html, url);
     if (found === null) throw new ImportError("failed", "No recipe data on that page. You can still start a blank recipe and type it in.");
     return found;
   }

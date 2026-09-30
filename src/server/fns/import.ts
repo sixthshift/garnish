@@ -21,6 +21,13 @@ export const importFromUrl = createServerFn({ method: "POST" })
   .validator(ImportFromUrlInput)
   .handler(async ({ data }) => importer.import({ kind: "url", url: data.url }));
 
+export const ImportFromPageInput = z.object({ html: z.string().min(1), url: z.string().trim().min(1) });
+
+/** Read a recipe from a page the reader's own browser sent (the Save to Garnish bookmark): the same result an address gives. */
+export const importFromPage = createServerFn({ method: "POST" })
+  .validator(ImportFromPageInput)
+  .handler(async ({ data }) => importer.import({ kind: "page", html: data.html, url: data.url }));
+
 export const ImportFromTextInput = z.object({
   text: z.string().trim().min(1),
   /** The address the text came from, when it came from one; becomes the recipe's `sourceUrl`. */

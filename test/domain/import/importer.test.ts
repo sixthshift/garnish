@@ -126,7 +126,7 @@ describe('import({ kind: "url" })', () => {
 
   test("a 403 the fetch could not get past names the site and suggests the paste box", async () => {
     await expect(fetching(fakePage("", 403)).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow(
-      /example\.test is blocking automated requests.*pasting the recipe text, or the page's HTML \(view source, select all, copy\)/
+      /example\.test is blocking automated requests.*Save to Garnish bookmark, or paste the page's HTML \(view source, select all, copy\)/
     );
   });
 
@@ -167,6 +167,42 @@ describe('import({ kind: "url" })', () => {
       .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("failed");
+  });
+});
+
+describe('import({ kind: "page" })', () => {
+  /** An importer that may reach neither port: a sent page is read by the rules alone. */
+  const sealed = () => new Importer({ fetchPage: noFetch, model: () => Promise.reject(new Error("model was called")) });
+
+  test("reads the page the browser sent with the rules, fetching nothing and asking no model", async () => {
+    const found = await sealed().import({ kind: "page", html: SCHEMA_PAGE, url: URL_UNDER_TEST });
+    expect(found.from).toBe("schema");
+    expect(found.recipe.name).toBe("Anzac biscuits");
+    expect(found.url).toBe(URL_UNDER_TEST);
+  });
+
+  test("gives exactly what a fetch of the same page gives", async () => {
+    const sent = await sealed().import({ kind: "page", html: SCHEMA_PAGE, url: URL_UNDER_TEST });
+    const fetched = await fetching(fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST });
+    expect(sent).toEqual(fetched);
+  });
+
+  test("falls back to the stub", async () => {
+    expect((await sealed().import({ kind: "page", html: STUB_PAGE, url: URL_UNDER_TEST })).from).toBe("stub");
+  });
+
+  test("a page with neither says so", async () => {
+    await expect(sealed().import({ kind: "page", html: BARE_PAGE, url: URL_UNDER_TEST })).rejects.toThrow(/No recipe data on that page/);
+  });
+
+  test.each(["", "file:///etc/passwd", "javascript:alert(1)"])("refuses the address %j", async (url) => {
+    await expect(sealed().import({ kind: "page", html: SCHEMA_PAGE, url })).rejects.toThrow(/http or https/);
+  });
+
+  test("refuses an empty page and an oversized one", async () => {
+    await expect(sealed().import({ kind: "page", html: "  ", url: URL_UNDER_TEST })).rejects.toThrow("sent nothing");
+    const huge = `<html>${"x".repeat(MAX_PAGE_BYTES + 1)}</html>`;
+    await expect(sealed().import({ kind: "page", html: huge, url: URL_UNDER_TEST })).rejects.toThrow("too large");
   });
 });
 

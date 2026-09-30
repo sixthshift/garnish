@@ -123,14 +123,14 @@ describe("SourceChooser", () => {
     expect(html).toContain('data-source-stage="choose"');
     expect(html).toContain("Import from a web page");
     expect(html).toMatch(/<input[^>]*type="url"/);
-    for (const kind of ["url", "paste", "file", "manual"]) expect(html).toContain(`data-source="${kind}"`);
+    for (const kind of ["url", "paste", "browser", "file", "manual"]) expect(html).toContain(`data-source="${kind}"`);
     expect(html).toContain("Start from scratch");
   });
 
   test("disabled locks the field and every way in", () => {
     const html = renderToString(<SourceChooser onChoose={() => {}} disabled />);
     expect(html).toMatch(/<input[^>]*disabled=""/);
-    expect(html.match(/<button[^>]*disabled=""[^>]*data-source=/g)).toHaveLength(3);
+    expect(html.match(/<button[^>]*disabled=""[^>]*data-source=/g)).toHaveLength(4);
   });
 });
 
