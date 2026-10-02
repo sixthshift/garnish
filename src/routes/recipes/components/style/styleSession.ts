@@ -22,7 +22,7 @@ export type StyleChoices = {
 };
 
 /** One thing the check found, worded for the step or part it is shown on. */
-export type Finding = { kind: "condition" | "fact" | "food" | "rows"; item: string; message: string };
+export type Finding = { kind: "condition" | "added" | "fact" | "food" | "rows"; item: string; message: string };
 
 /** The key of step `step` of part `part` in `StyleChoices`. */
 export function stepKey(part: number, step: number): string {
@@ -64,6 +64,8 @@ export function findingMessage(kind: Finding["kind"], item: string): string {
   switch (kind) {
     case "condition":
       return `“${item}” is in the original but not in the rewrite.`;
+    case "added":
+      return `The rewrite adds “${item}”, which the recipe never says.`;
     case "fact":
       return `The original’s “${item}” is not in the rewrite.`;
     case "food":
@@ -79,12 +81,19 @@ function stepProse(step: OriginalPart["steps"][number]): string {
 }
 
 /**
- * The part's findings placed on the author's step each came from, so the
- * warning sits beside the words it is about. The check is over the whole part
- * — content may move between steps and into notes — so a finding no step
- * contains, one in a part chosen whole, and a row mismatch stay on the part.
+ * The part's findings placed on the step each came from, so the warning sits
+ * beside the words it is about: a lost one on the author's step that said it,
+ * an invented one on the step whose rewrite says it. The check is over the
+ * whole part — content may move between steps and into notes — so a finding
+ * no step contains, one in a part chosen whole, and a row mismatch stay on the
+ * part.
  */
-export function partFindings(original: OriginalPart, check: PartRestyleCheck, aligned: boolean): { steps: Finding[][]; part: Finding[] } {
+export function partFindings(
+  original: OriginalPart,
+  check: PartRestyleCheck,
+  aligned: boolean,
+  rewrite?: RestyledPart
+): { steps: Finding[][]; part: Finding[] } {
   const steps: Finding[][] = original.steps.map(() => []);
   const part: Finding[] = [];
   const items: [Finding["kind"], string][] = [
@@ -95,6 +104,12 @@ export function partFindings(original: OriginalPart, check: PartRestyleCheck, al
   for (const [kind, item] of items) {
     const finding = { kind, item, message: findingMessage(kind, item) };
     const at = aligned ? original.steps.findIndex((step) => stepProse(step).includes(item.toLowerCase())) : -1;
+    if (at === -1) part.push(finding);
+    else steps[at]!.push(finding);
+  }
+  for (const item of check.addedConditions) {
+    const finding = { kind: "added" as const, item, message: findingMessage("added", item) };
+    const at = aligned && rewrite ? rewrite.steps.findIndex((step) => stepProse(step).includes(item.toLowerCase())) : -1;
     if (at === -1) part.push(finding);
     else steps[at]!.push(finding);
   }
@@ -123,7 +138,7 @@ export function initialChoices(original: readonly OriginalPart[], answer: StyleA
   original.forEach((part, p) => {
     const rewrite = answer.parts[p]!;
     const aligned = isAligned(part, rewrite);
-    const findings = partFindings(part, answer.check.parts[p]!, aligned);
+    const findings = partFindings(part, answer.check.parts[p]!, aligned, rewrite);
     const whole: Choice = findings.part.length > 0 ? "original" : "rewrite";
     parts[p] = whole;
     if (aligned) {
@@ -215,7 +230,7 @@ export function choiceCounts(original: readonly OriginalPart[], answer: StyleAns
     const rewrite = answer.parts[p]!;
     if (rewrite.steps.length === 0) return;
     const aligned = isAligned(part, rewrite);
-    const findings = partFindings(part, answer.check.parts[p]!, aligned);
+    const findings = partFindings(part, answer.check.parts[p]!, aligned, rewrite);
     if (aligned) {
       part.steps.forEach((step, s) => {
         if (sameStep(step, rewrite.steps[s]!)) return;

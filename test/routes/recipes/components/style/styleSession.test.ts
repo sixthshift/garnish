@@ -77,6 +77,16 @@ describe("where a finding is shown", () => {
     expect(findings.part.map((finding) => finding.item)).toEqual(["until fragrant"]);
   });
 
+  test("an invented condition sits on the step whose rewrite says it", () => {
+    const parts = droppingCondition();
+    parts[0]!.steps[2] = restyledStep("Add the peanuts and toss until glossy, then serve.");
+    parts[0]!.steps[1] = restyledStep("Add the garlic and cook for a minute or two until fragrant.");
+    const answer = answerFor(parts);
+    const findings = partFindings(original()[0]!, answer.check.parts[0]!, true, parts[0]);
+    expect(findings.steps.map((list) => list.map((finding) => finding.kind))).toEqual([[], [], ["added"]]);
+    expect(findings.steps[2]![0]!.message).toBe("The rewrite adds “until glossy, then serve”, which the recipe never says.");
+  });
+
   test("dropped words are placed on the step that used them", () => {
     const answer = answerFor(droppingCondition());
     expect(stepDroppedWords(original()[0]!, answer.check.parts[0]!)[2]).toContain("finally");

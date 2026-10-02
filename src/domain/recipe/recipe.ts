@@ -30,8 +30,9 @@ const stepFields = {
   title: text,
   text,
   /**
-   * The one sentence of a step that is not an instruction: why a time is a
-   * range, what to do if it goes wrong, what will happen that might worry you.
+   * What a step says that is not an instruction on the main path: why a time
+   * is a range, what to expect, what to do if it goes wrong, storage, another
+   * appliance, in as many sentences as it takes.
    * '' is none. It has a field of its own because written into the text it
    * reads as decoration and the house style's chatter rule kept cutting it.
    */

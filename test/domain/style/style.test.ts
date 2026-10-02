@@ -75,20 +75,21 @@ describe("enabledRules", () => {
 });
 
 describe("the seeded guide", () => {
-  test("is eleven statements, one per theme, all on, all distinct", () => {
-    expect(DEFAULT_STYLE_RULES).toHaveLength(11);
-    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual(Array(11).fill(true));
+  test("is twelve statements, one per theme, all on, all distinct", () => {
+    expect(DEFAULT_STYLE_RULES).toHaveLength(12);
+    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual(Array(12).fill(true));
     expect(DEFAULT_STYLE_RULES.map((r) => r.text.split(/[:,]/)[0])).toEqual([
       "One stage per step",
       "Imperative",
-      "Drop what is about the author or the reader",
+      "Drop the author and the reader but keep what they said",
       "Ingredients by their food name",
-      'Flag parallel work with "Meanwhile".',
-      "A run of steps belonging to a different phase or a different method becomes its own part",
+      "When the author gives a time and a cue",
+      "Give every step a label",
+      "What is not an instruction on the main path — why a time is a range",
       "Prefer metric",
-      'Start a step with a short label and an em dash where its first verb is setup ("Heat"',
+      "Write numbers one way throughout",
       "Normalise emphasis",
-      "The one sentence of a step that is not an instruction — why a time is a range",
+      'Drop a bare pointer to a numbered note ("(Note 7)")',
       "Preparation belongs to the ingredient",
     ]);
     const texts = DEFAULT_STYLE_RULES.map((r) => r.text.toLowerCase());

@@ -106,32 +106,33 @@ export function promptParts(parts: readonly StylablePart[]): PromptPart[] {
 }
 
 /**
- * The parts worth asking about: those with a step. An empty part (an import
- * sometimes leaves the main body with no steps when every step sits under a
- * heading) is not sent, because a model given nothing to rewrite tends to
- * leave it out of its answer, and the pairing would then fail. `withEmptyParts`
- * puts them back. Pure.
+ * The parts with a step: the ones the restyle has something to rewrite in.
+ * Every part is sent — a recipe whose ingredients all sit in a stepless main
+ * body would otherwise reach the model with no ingredients at all, and the
+ * food names and notes the guide asks for could not be written — but a model
+ * may still answer only these, which `withEmptyParts` accepts. Pure.
  */
 export function partsWithSteps<P extends { steps: readonly unknown[] }>(parts: readonly P[]): P[] {
   return parts.filter((part) => part.steps.length > 0);
 }
 
 /**
- * The answer's parts back in the recipe's positions: `answered` pairs with the
- * parts `partsWithSteps` kept, and every empty part is spliced in as itself,
- * with no steps, so what comes out pairs with the recipe by index. An answer
- * with the wrong count for the parts that were asked is `malformed`. Pure.
+ * The answer's parts in the recipe's positions. A full answer is taken as it
+ * is. An answer naming only the parts with steps — what a model given nothing
+ * to rewrite in a part tends to send — has every stepless part spliced in as
+ * itself, with its notes as they are. Any other count is `malformed`. Pure.
  */
 export function withEmptyParts(original: readonly StylablePart[], answered: readonly RestyledPart[]): RestyledPart[] {
+  if (answered.length === original.length) return [...answered];
   const asked = partsWithSteps(original).length;
   if (answered.length !== asked) {
     throw new AiError(
       "malformed",
-      `The model answered with ${answered.length} part${answered.length === 1 ? "" : "s"} where the recipe has ${asked} with steps, so nothing was changed.`
+      `The model answered with ${answered.length} part${answered.length === 1 ? "" : "s"} where the recipe has ${original.length}, so nothing was changed.`
     );
   }
   let next = 0;
-  // An empty part keeps its rows' notes as they are, since nothing was asked about it.
+  // A stepless part left out of the answer keeps its rows' notes as they are.
   return original.map((part) => (part.steps.length === 0 ? { name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] } : answered[next++]!));
 }
 
@@ -149,7 +150,7 @@ export function withEmptyParts(original: readonly StylablePart[], answered: read
  * unchanged on both models.
  */
 export const FIXED_RESTYLE_LINE =
-  "Temperatures, times and quantities are copied exactly, never converted, rounded or dropped. Nothing else the recipe tells you may be lost either: every instruction, condition, cue, warning, shortcut, storage note and description of how to do something must still be there afterwards, including any in brackets at the end of a step. Reword, reorder and regroup freely; do not drop.";
+  "Temperatures, times and quantities keep their values: never converted, rounded or dropped, though how a number is written may follow the house style. Nothing else the recipe tells you may be lost either: every instruction, condition, cue, warning, shortcut, storage note and description of how to do something must still be there afterwards, including any in brackets at the end of a step. Reword, reorder and regroup freely; do not drop.";
 
 /** How a part is headed in the prompt. The unnamed part is the main body and says so. Pure. */
 function partHeading(name: string): string {
@@ -186,10 +187,11 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     "",
     "Rules for the answer:",
     "- Answer with the same parts, in the same order, with their names copied exactly as given below. Do not add, drop, merge, rename or reorder a part.",
-    '- Each step is three fields. `text` is the instruction. `title` is a short label, or "" for no label. `summary` is the one sentence of the step that is not an instruction — why a time is a range, what to do if it goes wrong, what will happen that might worry you — or "" for none.',
+    "- A part whose STEPS are (none) holds ingredients the other parts' steps use: answer it with no steps, and with its notes.",
+    '- Each step is three fields. `text` is the instruction. `title` is a short label, or "" for no label. `summary` is what the step says that is not an instruction on the main path — why a time is a range, what to expect, what to do if it goes wrong — in as many sentences as it takes, or "" for none.',
     '- `notes` is one string per ingredient line of that part, in the order the lines are given below, saying how that ingredient is prepared ("finely diced", "at room temperature") or "" for nothing. Answer with exactly as many as there are lines. Never change a quantity, a unit or a food: you are not given them to rewrite, only the note.',
     "- Split or merge steps only where a house style statement asks for it; otherwise keep the author's step boundaries. Everything the original said must still be said, in one of these fields.",
-    "- Keep every number, temperature and time exactly as written, including its unit. Do not convert between metric and imperial, do not round, and do not drop one.",
+    '- Keep every number, temperature and time with its value and its unit. Do not convert between metric and imperial, do not round, and do not drop one; writing it differently ("2 - 2 1/2 hrs" as "2–2½ hours") is allowed.',
     "- Keep every ingredient the original steps named, called by the food name marked `(food: …)` after its ingredient line, never by the whole line.",
     "- Do not invent an ingredient, a step, a time or a quantity, and do not add advice the recipe does not give.",
     "- Steps carry no numbering of their own: one entry per step, plain sentences.",

@@ -61,8 +61,9 @@ export function createRestyleRunner(fetcher: Fetcher = fetch): AiRunner {
  * over it. The rules arrive as their texts rather than as ids so this stays
  * free of the database — `restyleSteps` below does the lookups — and the
  * result is returned whether or not the check passed, because a failed check
- * is something the household is shown, not an error. Only parts with steps are
- * sent; an empty part comes back as itself.
+ * is something the household is shown, not an error. Every part is sent, so
+ * the model reads the whole recipe, ingredients included, whichever part holds
+ * them.
  */
 export async function runRestyle(
   recipe: { parts: readonly StylablePart[] },
@@ -70,13 +71,12 @@ export async function runRestyle(
   options: { run?: AiRunner } = {}
 ): Promise<RestyleResult> {
   const { run = restyleRunner } = options;
-  const asked = partsWithSteps(recipe.parts);
-  if (asked.length === 0) {
+  if (partsWithSteps(recipe.parts).length === 0) {
     // A recipe with no steps at all has nothing to rewrite: the answer is the recipe, and the model is not called.
     const parts = recipe.parts.map((part) => ({ name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] }));
     return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
   }
-  const prompt = restylePrompt({ rules, parts: promptParts(asked) });
+  const prompt = restylePrompt({ rules, parts: promptParts(recipe.parts) });
 
   let content: string;
   try {

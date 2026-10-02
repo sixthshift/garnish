@@ -39,11 +39,19 @@ export function statusLine(counts: { total: number; kept: number; flagged: numbe
   return counts.flagged === 0 ? kept : `${kept} · ${counts.flagged} ${counts.flagged === 1 ? "needs" : "need"} a look`;
 }
 
-/** "Saving this mix drops “until fragrant”." — what the check over the choices lost, as one sentence. Pure. */
-export function saveWarning(check: { missingConditions: readonly string[]; missingFacts: readonly string[]; missingFoods: readonly string[] }): string | null {
+/** "Saving this mix drops “if the sauce is sour” and adds “until fragrant”." — what the check over the choices found, as one sentence. Pure. */
+export function saveWarning(check: {
+  missingConditions: readonly string[];
+  missingFacts: readonly string[];
+  missingFoods: readonly string[];
+  addedConditions?: readonly string[];
+}): string | null {
+  const quote = (items: readonly string[]) => items.map((item) => `“${item}”`).join(", ");
   const lost = [...check.missingConditions, ...check.missingFacts, ...check.missingFoods];
-  if (lost.length === 0) return null;
-  return `Saving this mix drops ${lost.map((item) => `“${item}”`).join(", ")}.`;
+  const added = check.addedConditions ?? [];
+  const clauses = [lost.length > 0 ? `drops ${quote(lost)}` : "", added.length > 0 ? `adds ${quote(added)}` : ""].filter((clause) => clause !== "");
+  if (clauses.length === 0) return null;
+  return `Saving this mix ${clauses.join(" and ")}.`;
 }
 
 /**

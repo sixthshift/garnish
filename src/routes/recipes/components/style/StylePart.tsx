@@ -51,7 +51,7 @@ export function StylePart(props: StylePartProps) {
   const check = answer?.check.parts[p];
   const styled = view === "styled";
   const aligned = rewrite !== undefined && isAligned(part, rewrite);
-  const findings = rewrite && check ? partFindings(part, check, aligned) : null;
+  const findings = rewrite && check ? partFindings(part, check, aligned, rewrite) : null;
   const dropped = check ? stepDroppedWords(part, check) : null;
   const choosable = rewrite !== undefined && choices !== null && rewrite.steps.length > 0;
   const wholeChoice = choices?.parts[p] ?? "original";

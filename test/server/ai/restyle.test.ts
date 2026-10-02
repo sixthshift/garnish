@@ -212,17 +212,26 @@ describe("empty parts", () => {
   const sauce = withSteps("Sauce", "Simmer 10 minutes.");
   const topping = withSteps("Topping", "Melt the butter.");
 
-  test("are not sent: only parts with steps go in the prompt", () => {
+  test("partsWithSteps names the parts with something to rewrite", () => {
     expect(partsWithSteps([body, sauce, topping]).map((part) => part.name)).toEqual(["Sauce", "Topping"]);
   });
 
-  test("come back as themselves, in the recipe's positions", () => {
+  test("a full answer is taken as it is, stepless parts included", () => {
+    const answered = [
+      { name: "", notes: [], steps: [] },
+      restyledPart("Sauce", ["Simmer for 10 minutes."]),
+      restyledPart("Topping", ["Melt the butter gently."]),
+    ];
+    expect(withEmptyParts([body, sauce, topping], answered)).toEqual(answered);
+  });
+
+  test("an answer naming only the parts with steps has the stepless ones spliced back, in the recipe's positions", () => {
     const answered = [restyledPart("Sauce", ["Simmer for 10 minutes."]), restyledPart("Topping", ["Melt the butter gently."])];
     expect(withEmptyParts([body, sauce, topping], answered)).toEqual([{ name: "", notes: [], steps: [] }, answered[0], answered[1]]);
     expect(withEmptyParts([sauce, body], [answered[0]!])).toEqual([answered[0], { name: "", notes: [], steps: [] }]);
   });
 
-  test("an answer with the wrong count for the parts asked is malformed, and says how many were asked", () => {
+  test("an answer with any other count is malformed, and says how many parts the recipe has", () => {
     let caught: unknown;
     try {
       withEmptyParts([body, sauce, topping], [restyledPart("Sauce", [])]);
@@ -231,7 +240,7 @@ describe("empty parts", () => {
     }
     expect(caught).toBeInstanceOf(AiError);
     expect((caught as AiError).kind).toBe("malformed");
-    expect((caught as AiError).message).toMatch(/1 part where the recipe has 2 with steps/);
+    expect((caught as AiError).message).toMatch(/1 part where the recipe has 3/);
   });
 
   test("a recipe with no steps at all is its own answer, and the model is not called", async () => {
@@ -256,7 +265,9 @@ describe("empty parts", () => {
     });
     const run = fakeRunner(JSON.stringify({ parts: [GOOD.parts[1], restyledPart("Topping", ["Melt the butter slowly."])] }));
     const { parts, check } = await runRestyle(recipe, ["Plain words."], { run });
-    expect(run.calls[0]!.prompt).not.toContain("main body");
+    // The stepless main body is still sent, so the model reads the ingredients it holds.
+    expect(run.calls[0]!.prompt).toContain('PART "" (the recipe\'s main body)');
+    expect(run.calls[0]!.prompt).toContain("a pinch of salt");
     expect(parts.map((part) => part.name)).toEqual(["", "Golden syrup mixture", "Topping"]);
     expect(parts[0]).toEqual({ name: "", notes: ["", "a pinch of salt"], steps: [] });
     expect(check.ok).toBe(true);
@@ -270,6 +281,22 @@ describe("empty parts", () => {
     expect(written.restyledAt).not.toBeNull();
     const kept = recipes.ref(recipe.id).authorSteps();
     expect([...kept.keys()]).toEqual([recipe.parts[1]!.id, recipe.parts[2]!.id]);
+  });
+  test("notes answered on a stepless main body are written, and its original notes kept", async () => {
+    const input = doc();
+    const recipe = await callServerFn(createRecipe, { ...input, parts: [{ ...input.parts[0]!, steps: [] }, input.parts[1]!] });
+    const body = { name: "", notes: ["sifted", "a pinch of salt"], steps: [] };
+    const run = fakeRunner(JSON.stringify({ parts: [body, GOOD.parts[1]] }));
+    const { parts } = await runRestyle(recipe, ["Plain words."], { run });
+    expect(parts[0]).toEqual(body);
+
+    const written = await callServerFn(applyRestyle, {
+      id: recipe.id,
+      parts: parts.map((part) => ({ name: part.name, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) })),
+    });
+    expect(written.parts[0]!.ingredients.map((row) => row.note)).toEqual(["sifted", "a pinch of salt"]);
+    const restored = await callServerFn(restoreSteps, { id: recipe.id });
+    expect(restored.parts[0]!.ingredients.map((row) => row.note)).toEqual(recipe.parts[0]!.ingredients.map((row) => row.note));
   });
 });
 

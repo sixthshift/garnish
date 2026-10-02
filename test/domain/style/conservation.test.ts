@@ -3,9 +3,9 @@
 // the ones the lab found on a real ragu, where every number survived and the
 // method still changed.
 import { describe, expect, test } from "vitest";
-import { conditionsOf, contentWordsOf, droppedWords, missingConditions } from "../../../src/domain/style/conservation";
+import { addedConditions, conditionsOf, contentWordsOf, droppedWords, missingConditions } from "../../../src/domain/style/conservation";
 import { factsOf } from "../../../src/domain/style/facts";
-import { checkPart, type OriginalPart, type RestyledPart } from "../../../src/domain/style/restyleCheck";
+import { checkPart, checkRestyle, type OriginalPart, type RestyledPart, recipeWords } from "../../../src/domain/style/restyleCheck";
 import { restyledPart } from "../../helpers/restyle";
 
 const markers = (prose: string[]) => conditionsOf(prose).map((condition) => condition.marker);
@@ -51,8 +51,12 @@ describe("missingConditions", () => {
     expect(lost(["Add 1/2 tsp sugar if the sauce is sour."], ["Add 1/2 tsp sugar."])).toEqual(["if the sauce is sour"]);
   });
 
-  test("an or until narrowed to an until is a lost condition", () => {
-    expect(lost(["Cook for 2 hours or until tender."], ["Cook for 2 hours until tender."])).toEqual(["or until tender"]);
+  test("an or until is carried by an until, so a cue-first rewrite keeps it", () => {
+    expect(lost(["Cook for 2 hours or until tender."], ["Cook until tender, 2 hours."])).toEqual([]);
+  });
+
+  test("an until is not carried by an or until", () => {
+    expect(lost(["Cook until tender."], ["Cook for 2 hours or until tender."])).toEqual(["until tender"]);
   });
 
   test("two conditions need two back", () => {
@@ -61,6 +65,41 @@ describe("missingConditions", () => {
 
   test("a condition the rewrite adds is not a loss", () => {
     expect(lost(["Cook the beef."], ["Cook the beef until tender."])).toEqual([]);
+  });
+});
+
+describe("addedConditions", () => {
+  // Haiku's abbreviated ragu: "Cook the soffrito" came back as "cook the garlic and onion until fragrant", a cue the recipe never gives.
+  const invented = (original: string[], restyled: string[], also: string[] = []) =>
+    addedConditions(conditionsOf(original), conditionsOf(restyled), new Set(contentWordsOf([...original, ...also]).map((word) => word.key)));
+
+  test("a cue the recipe never gives is invented", () => {
+    expect(invented(["Cook the soffrito."], ["Cook the garlic and onion until fragrant."])).toEqual(["until fragrant"]);
+  });
+
+  test("a cue rephrased from the author's own words is not", () => {
+    expect(invented(["Sauté slowly for 5 minutes (they will sweeten)."], ["Sauté slowly until they sweeten, 5 minutes."])).toEqual([]);
+  });
+
+  test("a cue carried from elsewhere in the recipe is not", () => {
+    expect(invented(["Season beef, sear to brown."], ["Sear the beef until very browned."], ["Sear until very browned."])).toEqual([]);
+  });
+
+  test("a condition that answers one of the author's is not, even reworded", () => {
+    expect(invented(["Cook for 2 hours or until tender."], ["Cook until it falls apart, 2 hours."])).toEqual([]);
+    expect(invented(["Add sugar if the sauce is sour."], ["If it tastes sharp, add the sugar."])).toEqual([]);
+  });
+
+  test("fails the part, and a cue moved between parts passes the whole recipe", () => {
+    const short: OriginalPart = { name: "Abbreviated", ingredients: [], steps: [{ text: "Season beef, sear, remove." }] };
+    const full: OriginalPart = { name: "Full", ingredients: [], steps: [{ text: "Sear until very browned, then remove." }] };
+    const made = restyledPart("Abbreviated", ["Sear the beef until very browned, then remove it."]);
+    expect(checkPart(short, made).addedConditions).toEqual(["until very browned, then remove it"]);
+    expect(checkPart(short, made).ok).toBe(false);
+    const check = checkRestyle([short, full], [made, restyledPart("Full", ["Sear until very browned, then remove."])]);
+    expect(check.addedConditions).toEqual([]);
+    expect(check.ok).toBe(true);
+    expect(recipeWords([full]).has("brown")).toBe(true);
   });
 });
 

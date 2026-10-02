@@ -98,6 +98,7 @@ export function reportLines(model: string, seconds: number, before: Recipe, resu
   if (check.missingFacts.length > 0) lines.push(`   dropped: ${check.missingFacts.join(", ")}`);
   if (check.missingFoods.length > 0) lines.push(`   no longer mentions: ${check.missingFoods.join(", ")}`);
   if (check.missingConditions.length > 0) lines.push(`   lost conditions: ${check.missingConditions.map((phrase) => `"${phrase}"`).join(", ")}`);
+  if (check.addedConditions.length > 0) lines.push(`   invented conditions: ${check.addedConditions.map((phrase) => `"${phrase}"`).join(", ")}`);
   if (check.rowMismatch) lines.push("   notes do not line up with the ingredient rows");
   if (check.addedNumbers.length > 0) lines.push(`   added numbers: ${check.addedNumbers.join(", ")}`);
   if (check.droppedWords.length > 0) lines.push(`   dropped words: ${check.droppedWords.join(" ")}`);

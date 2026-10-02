@@ -1,5 +1,5 @@
 export type { Condition, Word } from "./conservation";
-export { conditionsOf, contentWordsOf, droppedWords, missingConditions } from "./conservation";
+export { addedConditions, conditionsOf, contentWordsOf, droppedWords, missingConditions } from "./conservation";
 export type { OriginalPart, PartRestyleCheck, RestyleCheck, RestyledPart, RestyledStep } from "./restyleCheck";
 export { checkRestyle, proseOfOriginal, proseOfRestyled } from "./restyleCheck";
 export type { StyleRule } from "./style";

@@ -31,8 +31,8 @@ if (import.meta.main) {
         : rulesFromText(await Bun.file(flags.rulesFile).text());
     const recipe = onlyPart(authorRecipe(found, recipes.ref(found.id).authorSteps()), flags.part);
 
-    console.log(`# ${found.name}  (${rules.length} statements, ${partsWithSteps(recipe.parts).length} parts with steps)`);
-    if (flags.showPrompt) console.log("", restylePrompt({ rules, parts: promptParts(partsWithSteps(recipe.parts)) }), "");
+    console.log(`# ${found.name}  (${rules.length} statements, ${recipe.parts.length} parts, ${partsWithSteps(recipe.parts).length} with steps)`);
+    if (flags.showPrompt) console.log("", restylePrompt({ rules, parts: promptParts(recipe.parts) }), "");
 
     for (const model of flags.models) {
       const run = createFetchRunner(fetch, { schema: RESTYLE_JSON_SCHEMA, schemaName: "restyle", model });

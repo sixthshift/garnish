@@ -76,6 +76,7 @@ describe("the report", () => {
       missingFacts: ["2"],
       missingFoods: [],
       missingConditions: ["if it looks dry"],
+      addedConditions: [],
       addedNumbers: ["1tbsp"],
       droppedWords: ["pooled", "juices"],
       rowMismatch: false,

@@ -1,6 +1,6 @@
-// A restyle may change words but not what they tell you: every number token, food mention and condition in an original part must survive into the restyled one; added numbers and dropped words are listed, never failed.
+// A restyle may change words but not what they tell you: every number token, food mention and condition in an original part must survive into the restyled one, and no condition may be invented; added numbers and dropped words are listed, never failed.
 
-import { conditionsOf, contentWordsOf, droppedWords, missingConditions } from "./conservation";
+import { addedConditions, conditionsOf, contentWordsOf, droppedWords, missingConditions } from "./conservation";
 import { factsOf, foodsMentioned, pairedImperial } from "./facts";
 
 /** A part as this check reads it: enough of the saved `Part` and the editor's `DraftPart` to serve both. */
@@ -91,6 +91,13 @@ export type PartRestyleCheck = {
    * "add sugar" passed every check this one did not exist beside.
    */
   missingConditions: string[];
+  /**
+   * Conditions the rewrite states that the author never did, as the rewrite's
+   * own clauses. A gate, because an invented cue changes when you stop — "cook
+   * the garlic until fragrant" in a recipe that never says so — and adds no
+   * number or food for the other checks to see.
+   */
+  addedConditions: string[];
   /** Numbers the rewrite has beyond the original's. Reported, never failed. */
   addedNumbers: string[];
   /** Words the author used that the rewrite does not. Reported, never failed: a house style rewords by design. */
@@ -110,6 +117,7 @@ export type RestyleCheck = {
   missingFacts: string[];
   missingFoods: string[];
   missingConditions: string[];
+  addedConditions: string[];
   addedNumbers: string[];
   droppedWords: string[];
   rowMismatch: boolean;
@@ -131,6 +139,11 @@ function factDiff(original: readonly string[], restyled: readonly string[]): { m
   return { missing, added };
 }
 
+/** Every content word the author's recipe uses, prose and ingredient lines, as `contentWordsOf` folds them: what an added condition is measured against. Pure. */
+export function recipeWords(parts: readonly OriginalPart[]): Set<string> {
+  return new Set(contentWordsOf(parts.flatMap((part) => [...proseOfOriginal(part), ...linesOf(part)])).map((word) => word.key));
+}
+
 /**
  * One part's verdict: its numbers and conditions survived, the foods it named
  * are still named, and its ingredient rows still line up. Both sides are read
@@ -138,7 +151,7 @@ function factDiff(original: readonly string[], restyled: readonly string[]): { m
  * between a step's label, its supporting line and an ingredient's note is
  * conserved rather than reported lost. Pure.
  */
-export function checkPart(original: OriginalPart, restyled: RestyledPart): PartRestyleCheck {
+export function checkPart(original: OriginalPart, restyled: RestyledPart, known: ReadonlySet<string> = recipeWords([original])): PartRestyleCheck {
   const before = proseOfOriginal(original);
   const after = proseOfRestyled(restyled);
   // The rows join the facts alone. They cannot change, so they are the same on
@@ -151,15 +164,17 @@ export function checkPart(original: OriginalPart, restyled: RestyledPart): PartR
   const kept = foodsMentioned(after, original.ingredients);
   const missingFoods = required.filter((name) => !kept.includes(name));
   const lostConditions = missingConditions(conditionsOf(before), conditionsOf(after)).filter((phrase) => !movedToOptional(phrase, restyled));
+  const invented = addedConditions(conditionsOf(before), conditionsOf(after), known);
   const lostWords = droppedWords(contentWordsOf(before), contentWordsOf(after));
   const rowMismatch = restyled.notes.length !== original.ingredients.length;
 
   return {
     name: original.name,
-    ok: missing.length === 0 && missingFoods.length === 0 && lostConditions.length === 0 && !rowMismatch,
+    ok: missing.length === 0 && missingFoods.length === 0 && lostConditions.length === 0 && invented.length === 0 && !rowMismatch,
     missingFacts: missing,
     missingFoods,
     missingConditions: lostConditions,
+    addedConditions: invented,
     addedNumbers: added,
     droppedWords: lostWords,
     rowMismatch,
@@ -176,12 +191,15 @@ export function checkRestyle(original: readonly OriginalPart[], restyled: readon
   if (original.length !== restyled.length) {
     throw new Error(`restyle check: ${original.length} original parts against ${restyled.length} restyled`);
   }
-  const parts = original.map((part, index) => checkPart(part, restyled[index]!));
+  // A cue the rewrite moved from one part into another is the author's, not invented.
+  const known = recipeWords(original);
+  const parts = original.map((part, index) => checkPart(part, restyled[index]!, known));
   return {
     ok: parts.every((part) => part.ok),
     missingFacts: parts.flatMap((part) => part.missingFacts),
     missingFoods: parts.flatMap((part) => part.missingFoods),
     missingConditions: parts.flatMap((part) => part.missingConditions),
+    addedConditions: parts.flatMap((part) => part.addedConditions),
     addedNumbers: parts.flatMap((part) => part.addedNumbers),
     droppedWords: parts.flatMap((part) => part.droppedWords),
     rowMismatch: parts.some((part) => part.rowMismatch),

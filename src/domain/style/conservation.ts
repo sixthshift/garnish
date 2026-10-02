@@ -5,12 +5,21 @@ export type Condition = { marker: string; phrase: string };
 
 /**
  * The words that open a clause deciding whether, or how long, something is
- * done. Longest first, because "or until" is a different condition from
- * "until" — "cook for 2 hours or until tender" offers two stopping points and
- * "cook until tender" offers one, so a rewrite that drops the "or" has changed
- * the method without dropping a word the other checks can see.
+ * done. Longest first, so "or until" is read as itself rather than as an
+ * "until" — though an "until" answers it (`answers`).
  */
 const MARKERS = ["as soon as", "or until", "in case", "otherwise", "unless", "until", "while", "once", "when", "if"] as const;
+
+/**
+ * Whether a rewritten marker carries an original one: the same marker, or an
+ * "until" for an "or until". "Cook for 2 hours or until tender" rewritten cue
+ * first is "cook until tender, 2 hours" — the house style's order — and the
+ * second stopping point is the time, which the facts check already holds the
+ * rewrite to. Pure.
+ */
+function answers(original: string, rewritten: string): boolean {
+  return rewritten === original || (original === "or until" && rewritten === "until");
+}
 
 /** How many words of the author's clause the report shows after the marker. */
 const PHRASE_WORDS = 6;
@@ -78,7 +87,7 @@ export function missingConditions(original: readonly Condition[], restyled: read
   const pairs: { from: number; to: number; score: number }[] = [];
   original.forEach((condition, from) => {
     restyled.forEach((answer, to) => {
-      if (answer.marker !== condition.marker) return;
+      if (!answers(condition.marker, answer.marker)) return;
       pairs.push({ from, to, score: overlap(condition.phrase, answer.phrase) });
     });
   });
@@ -92,6 +101,42 @@ export function missingConditions(original: readonly Condition[], restyled: read
     claimed.add(pair.to);
   }
   return original.flatMap((condition, index) => (matched.has(index) ? [] : [condition.phrase]));
+}
+
+/**
+ * The conditions the rewrite states that the author never did: a cue invented
+ * rather than carried, as the rewrite's own phrase. Each rewritten condition
+ * is paired with an original one it answers (`answers`, the same pairing
+ * `missingConditions` makes, from the other side); one left over is invented
+ * only if its clause uses a word the recipe never does — `known` is every
+ * content word of the author's recipe, all parts and ingredient lines, as
+ * `contentWordsOf` folds them. So "(they will sweeten)" rewritten as "until
+ * they sweeten" passes, because the author said "sweeten", and so does a cue
+ * the rewrite copied from another part; "until fragrant" in a recipe that
+ * never says "fragrant" does not. Pure.
+ */
+export function addedConditions(original: readonly Condition[], restyled: readonly Condition[], known: ReadonlySet<string>): string[] {
+  const pairs: { from: number; to: number; score: number }[] = [];
+  restyled.forEach((answer, from) => {
+    original.forEach((condition, to) => {
+      if (!answers(condition.marker, answer.marker)) return;
+      pairs.push({ from, to, score: overlap(answer.phrase, condition.phrase) });
+    });
+  });
+  pairs.sort((a, b) => b.score - a.score || a.from - b.from || a.to - b.to);
+
+  const matched = new Set<number>();
+  const claimed = new Set<number>();
+  for (const pair of pairs) {
+    if (matched.has(pair.from) || claimed.has(pair.to)) continue;
+    matched.add(pair.from);
+    claimed.add(pair.to);
+  }
+  return restyled.flatMap((condition, index) => {
+    if (matched.has(index)) return [];
+    const clause = condition.phrase.slice(condition.marker.length);
+    return contentWordsOf([clause]).some((word) => !known.has(word.key)) ? [condition.phrase] : [];
+  });
 }
 
 /**

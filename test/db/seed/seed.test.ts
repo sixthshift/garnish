@@ -108,15 +108,16 @@ test("seeds the house style guide once, in order, all eleven on", () => {
 
 test("a statement is matched by its whole text case-insensitively, so an edit is kept and a rewording is a new row", () => {
   const repo = styleRuleRepository(db);
-  // The household's own wording of the plating statement, switched on.
-  const mine = repo.create({ text: "PREFER METRIC: WHERE A STEP GIVES BOTH, KEEP ONLY METRIC.", enabled: true });
+  // The emphasis statement in the household's own capitals, switched on.
+  const emphasis = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Normalise emphasis"))!.text;
+  const mine = repo.create({ text: emphasis.toUpperCase(), enabled: true });
   const reworded = repo.create({ text: "No chatter at all.", enabled: false });
   const { styleRules: made } = seed(db);
 
   expect(repo.get(mine.id)).toEqual(mine);
-  expect(made.map((r) => r.text)).not.toContain(DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Prefer metric"))!.text);
+  expect(made.map((r) => r.text)).not.toContain(emphasis);
   // The reworded one did not match anything, so the statement it replaced comes back.
-  expect(made.map((r) => r.text)).toContain(DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Drop what is about"))!.text);
+  expect(made.map((r) => r.text)).toContain(DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Drop the author and the reader"))!.text);
   expect(styleCount()).toBe(DEFAULT_STYLE_RULES.length + 1);
   expect(repo.get(reworded.id)).toEqual(reworded);
 });
@@ -124,7 +125,7 @@ test("a statement is matched by its whole text case-insensitively, so an edit is
 test("a row still carrying a sentence this project reworded is given the new one in place, keeping its switch and position", () => {
   const repo = styleRuleRepository(db);
   const voice = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Imperative"))!;
-  const timing = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Flag parallel work"))!;
+  const timing = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("When the author gives a time"))!;
   // The old sentences as a database seeded before the rewording holds them: one switched on and moved, one switched off.
   const oldVoice = repo.create({ text: voice.was![0]!.toUpperCase(), enabled: true });
   const oldTiming = repo.create({ text: timing.was![0]!, enabled: false });

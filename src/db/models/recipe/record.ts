@@ -175,8 +175,9 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
           const answered = parts[index]!;
           const content: SourcePart = { steps: answered.steps.map((s) => ({ ...s })), notes: [...answered.notes] };
           const before = partContent(row.id);
-          // An empty part answered with nothing was never sent to the model: leave it, or it would be stamped as restyled.
-          if (content.steps.length === 0 && row.sourcePart === null && before.steps.length === 0) return;
+          // A stepless part whose notes came back unchanged has nothing to keep: leave it, or it would be stamped as restyled.
+          const sameNotes = before.notes.every((note, i) => (content.notes[i] ?? note).trim() === note.trim());
+          if (content.steps.length === 0 && row.sourcePart === null && before.steps.length === 0 && sameNotes) return;
           if (row.sourcePart === null) {
             tx.update(part).set({ sourcePart: before }).where(eq(part.id, row.id)).run();
           }
