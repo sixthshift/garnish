@@ -78,9 +78,17 @@ describe("where a finding is shown", () => {
   });
 
   test("an invented condition sits on the step whose rewrite says it", () => {
-    const parts = droppingCondition();
-    parts[0]!.steps[2] = restyledStep("Add the peanuts and toss until glossy, then serve.");
-    parts[0]!.steps[1] = restyledStep("Add the garlic and cook for a minute or two until fragrant.");
+    const [first] = droppingCondition();
+    const parts = [
+      {
+        ...first!,
+        steps: [
+          first!.steps[0]!,
+          restyledStep("Add the garlic and cook for a minute or two until fragrant."),
+          restyledStep("Add the peanuts and toss until glossy, then serve."),
+        ],
+      },
+    ];
     const answer = answerFor(parts);
     const findings = partFindings(original()[0]!, answer.check.parts[0]!, true, parts[0]);
     expect(findings.steps.map((list) => list.map((finding) => finding.kind))).toEqual([[], [], ["added"]]);
