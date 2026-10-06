@@ -32,3 +32,36 @@ test("Change opens one row's full fields and Done folds it again", async () => {
   await user.click(within(row).getByRole("button", { name: "Done with line 1" }));
   expect(screen.queryByLabelText("Line 1 food")).not.toBeInTheDocument();
 });
+
+test("a food the parser misread is corrected by typing part of its name and picking it", async () => {
+  const beans = {
+    id: "44444444-4444-4444-8444-444444444444",
+    name: "green beans",
+    pluralName: null,
+    aliases: [],
+    aisleId: null,
+    recipeId: null,
+    skipShopping: false,
+    conversions: [],
+  };
+  const library = [beans, { ...beans, id: "55555555-5555-4555-8555-555555555555", name: "butter" }];
+  // `listFoods` as the server answers it: every food for no text, else those whose name contains it.
+  const searchFoods = async (q: string) => library.filter((food) => food.name.includes(q.trim().toLowerCase()));
+  function Beans() {
+    // No "oz" unit here, so the parser takes it as part of the food: "oz green beans".
+    const [rows, setRows] = useState<IngredientReview[]>(reviewRows(["8 oz green beans"], { units: [], foods: [] }));
+    return <IngredientReviewList rows={rows} units={[]} searchFoods={searchFoods} onRowsChange={setRows} />;
+  }
+  const user = userEvent.setup();
+  render(<Beans />);
+  expect(screen.getByText("Unknown food")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "Change line 1" }));
+  const field = screen.getByLabelText("Line 1 food");
+  await user.clear(field);
+  await user.type(field, "green");
+  await user.click(await screen.findByRole("option", { name: "green beans" }));
+
+  expect(screen.getByTestId("review-counts")).toHaveTextContent("1 matched");
+  expect(screen.queryByText("Unknown food")).not.toBeInTheDocument();
+});

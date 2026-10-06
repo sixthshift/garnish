@@ -6,6 +6,37 @@ import { IngredientReviewFields } from "./IngredientReviewFields";
 /** How long the food picker waits after the last keystroke before querying. */
 export const REVIEW_FOOD_DEBOUNCE_MS = 200;
 
+/** The words of a food phrase worth searching on their own: "caster sugar, sifted" → caster, sugar, sifted. Pure. */
+export function foodSearchWords(text: string): string[] {
+  const words = text
+    .toLowerCase()
+    .split(/[^\p{L}]+/u)
+    .filter((word) => word.length >= 3);
+  return [...new Set(words)];
+}
+
+/**
+ * The foods a picker's text suggests. Empty text lists every food, so a picker
+ * can be browsed; text lists the foods whose name contains it; and when the
+ * page's whole phrase matches nothing, the foods matching any of its words,
+ * those matching the most first — "caster sugar, sifted" still offers "sugar".
+ */
+export async function suggestFoods(searchFoods: (q: string) => Promise<FoodRow[]>, text: string): Promise<FoodRow[]> {
+  const q = text.trim();
+  const whole = await searchFoods(q);
+  const words = foodSearchWords(q);
+  if (whole.length > 0 || words.length < 2) return whole;
+  const hits = new Map<string, { food: FoodRow; count: number }>();
+  for (const rows of await Promise.all(words.map((word) => searchFoods(word)))) {
+    for (const food of rows) {
+      const hit = hits.get(food.id);
+      if (hit) hit.count += 1;
+      else hits.set(food.id, { food, count: 1 });
+    }
+  }
+  return [...hits.values()].sort((a, b) => b.count - a.count || a.food.name.localeCompare(b.food.name)).map((hit) => hit.food);
+}
+
 export type IngredientReviewRowProps = {
   row: IngredientReview;
   /** Label prefix for every control, e.g. "Line 2". */
@@ -26,14 +57,13 @@ export function IngredientReviewRow({ row, label, unitMatches, searchFoods, disa
 
   // Query foods while the picker has focus, a beat after the last keystroke.
   useEffect(() => {
-    const q = foodQuery.trim();
-    if (!foodFocused || q === "") {
+    if (!foodFocused) {
       setFoodRows([]);
       return;
     }
     let stale = false;
     const timer = setTimeout(() => {
-      searchFoods(q)
+      suggestFoods(searchFoods, foodQuery)
         .then((rows) => {
           if (!stale) setFoodRows(rows);
         })

@@ -13,7 +13,7 @@ import { BulkReviewList } from "../../../../src/components/ui/bulk/BulkReviewLis
 import { type IngredientReview, isTextOnly, reviewedIngredient } from "../../../../src/domain/draft";
 import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
 import { IngredientReviewFields, type IngredientReviewFieldsProps } from "../../../../src/routes/recipes/components/IngredientReviewFields";
-import { IngredientReviewRow } from "../../../../src/routes/recipes/components/IngredientReviewRow";
+import { foodSearchWords, IngredientReviewRow, suggestFoods } from "../../../../src/routes/recipes/components/IngredientReviewRow";
 import { amountChip, chipText } from "../../../../src/routes/recipes/components/reviewChips";
 
 const gram = {
@@ -199,5 +199,38 @@ describe("deciding an unknown unit", () => {
     expect(declined.unit).toEqual({ kind: "none" });
     // The row is still structured: only the unit went.
     expect(rowCommit(declined)).toMatchObject({ textOnly: false, quantity: 2, unit: null });
+  });
+});
+
+describe("suggesting an existing food", () => {
+  const sugar = { ...flour, id: "22222222-2222-4222-8222-222222222222", name: "sugar" };
+  const casterSugar = { ...flour, id: "33333333-3333-4333-8333-333333333333", name: "caster sugar" };
+  const library = [casterSugar, flour, sugar];
+  const calls: string[] = [];
+  /** `listFoods` as the server answers it: every food for no text, else those whose name contains it. */
+  const searchFoods = async (q: string) => {
+    calls.push(q);
+    const key = q.trim().toLowerCase();
+    return library.filter((food) => food.name.includes(key));
+  };
+
+  test("an empty picker lists every food, so it can be browsed", async () => {
+    expect((await suggestFoods(searchFoods, "  ")).map((food) => food.name)).toEqual(["caster sugar", "flour", "sugar"]);
+  });
+
+  test("text a name contains is searched as it is", async () => {
+    calls.length = 0;
+    expect((await suggestFoods(searchFoods, "sug")).map((food) => food.name)).toEqual(["caster sugar", "sugar"]);
+    expect(calls).toEqual(["sug"]);
+  });
+
+  test("the page's phrase that matches nothing falls back to its words, the most matched first", async () => {
+    // "caster sugar" matches two words, "sugar" one; "white" and "sifted" match nothing.
+    expect((await suggestFoods(searchFoods, "white caster sugar, sifted")).map((food) => food.name)).toEqual(["caster sugar", "sugar"]);
+    expect((await suggestFoods(searchFoods, "raw sugar")).map((food) => food.name)).toEqual(["caster sugar", "sugar"]);
+  });
+
+  test("short words and repeats are not searched on their own", () => {
+    expect(foodSearchWords("2 x of Sugar, sugar & flour")).toEqual(["sugar", "flour"]);
   });
 });
