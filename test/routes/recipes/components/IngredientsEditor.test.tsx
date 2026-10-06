@@ -765,10 +765,10 @@ describe("the phone sheet's fields", () => {
     elementWithLabel(tree, "Ingredient 2 fixed").props.onCheckedChange(true);
     expect(next!.parts[0]!.ingredients[1]!.fixed).toBe(true);
 
-    elementWithLabel(tree, "Ingredient 2 unit").props.onCreate("handful");
+    elementWithLabel(tree, "Ingredient 2 unit").props.onSubmit("handful");
     expect(next!.parts[0]!.ingredients[1]!.unit).toMatchObject({ name: "handful" });
 
-    elementWithLabel(tree, "Ingredient 2 food").props.onCreate("butter");
+    elementWithLabel(tree, "Ingredient 2 food").props.onSubmit("butter");
     expect(next!.parts[0]!.ingredients[1]!.food).toMatchObject({ name: "butter" });
     expect(validateDraft(next!).ok).toBe(true);
   });

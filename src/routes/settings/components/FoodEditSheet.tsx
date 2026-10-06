@@ -2,13 +2,14 @@ import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
+import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
-import { Combobox } from "../../../components/ui/Combobox";
 import type { Food } from "../../../db/models/food/repo";
 import type { Unit } from "../../../db/models/unit/repo";
 import type { Aisle, FoodConversionInput } from "../../../domain/reference";
+import { picker } from "../../../lib/ui/picker";
 import { ConversionRows } from "./ConversionRows";
 import { aliasesText, type ConversionDraft, conversionDraft, parseAliases, parseConversions } from "./foodEditDraft";
 
@@ -99,44 +100,50 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
             <Input value={pluralName} disabled={busy} onChange={(event) => setPluralName(event.target.value)} />
           </FormField>
           <FormField label="Aisle" description="Type to pick one, or create a new one.">
-            <Combobox
+            <SearchInput
               value={aisleText}
-              options={aisles.map((aisle) => ({ value: aisle.id, label: aisle.name }))}
               disabled={busy}
               aria-label="Aisle"
               placeholder="None"
-              onChange={(text) => {
+              onValueChange={(text) => {
                 setAisleText(text);
                 if (text.trim() === "") setAisleId(null);
               }}
-              onSelect={(option) => {
-                setAisleId(option.value);
-                setAisleText(option.label);
-              }}
-              onCreate={(text) => {
-                void onCreateAisle(text).then((aisle) => {
-                  setAisleId(aisle.id);
-                  setAisleText(aisle.name);
-                });
-              }}
+              {...picker({
+                options: aisles.map((aisle) => ({ value: aisle.id, label: aisle.name })),
+                text: aisleText,
+                onSelect: (option) => {
+                  setAisleId(option.value);
+                  setAisleText(option.label);
+                },
+                onCreate: (text) => {
+                  void onCreateAisle(text).then((aisle) => {
+                    setAisleId(aisle.id);
+                    setAisleText(aisle.name);
+                  });
+                },
+              })}
             />
           </FormField>
           {recipes.length > 0 && (
             <FormField label="Made by a recipe" description="This food is the result of another recipe; leave it blank for an ordinary ingredient.">
-              <Combobox
+              <SearchInput
                 value={recipeText}
-                options={recipes.map((recipe) => ({ value: recipe.id, label: recipe.name }))}
                 disabled={busy}
                 aria-label="Made by a recipe"
                 placeholder="None"
-                onChange={(text) => {
+                onValueChange={(text) => {
                   setRecipeText(text);
                   if (text.trim() === "") setRecipeId(null);
                 }}
-                onSelect={(option) => {
-                  setRecipeId(option.value);
-                  setRecipeText(option.label);
-                }}
+                {...picker({
+                  options: recipes.map((recipe) => ({ value: recipe.id, label: recipe.name })),
+                  text: recipeText,
+                  onSelect: (option) => {
+                    setRecipeId(option.value);
+                    setRecipeText(option.label);
+                  },
+                })}
               />
             </FormField>
           )}

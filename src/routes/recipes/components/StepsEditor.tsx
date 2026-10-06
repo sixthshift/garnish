@@ -34,7 +34,7 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
   // index, so inserting a step above does not move the preview to another one.
   const [previewing, setPreviewing] = useState<ReadonlySet<string>>(() => new Set(previewSteps ?? []));
   // What has been typed into each step's ingredient picker, keyed by step id:
-  // the Combobox is a controlled text field and picking a row clears it.
+  // the ingredient picker is a controlled text field and picking a row clears it.
   const [picker, setPicker] = useState<Record<string, string>>({});
   const steps = stepsOf(draft, pi);
   const part = draft.parts[pi];

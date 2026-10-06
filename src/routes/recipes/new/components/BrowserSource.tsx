@@ -1,4 +1,4 @@
-import { Button, buttonRecipe } from "@sixthshift/design-system/button";
+import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
@@ -42,10 +42,12 @@ export function BrowserSource({ onBack }: BrowserSourceProps) {
         <li>
           <span>Drag this to your bookmarks bar:</span>
           <div className="mt-2">
-            <a ref={link} href="#bookmark" data-testid="bookmarklet" {...buttonRecipe({ variant: "outline", intent: "brand" })}>
-              {/* The text becomes the bookmark's name when dragged, and a bookmarklet can have no icon of its own, so the sprig stands in for one. */}
-              <span aria-hidden="true">🌿</span> Save to Garnish
-            </a>
+            <Button asChild variant="outline" intent="brand">
+              <a ref={link} href="#bookmark" data-testid="bookmarklet">
+                {/* The text becomes the bookmark's name when dragged, and a bookmarklet can have no icon of its own, so the sprig stands in for one. */}
+                <span aria-hidden="true">🌿</span> Save to Garnish
+              </a>
+            </Button>
           </div>
           {pressed && (
             <Muted as="p" className="mt-2 text-sm">

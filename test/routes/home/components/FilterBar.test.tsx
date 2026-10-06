@@ -1,5 +1,5 @@
 // The recipe list's filter bar (M12.3): tag chips (any/all switch), the food
-// picker built on Combobox, and the favourites toggle. Static render only
+// picker (SearchInput with picker()), and the favourites toggle. Static render only
 // (no jsdom in this project's vitest config), so these check markup and
 // selected state, not click behaviour — the pure helpers behind the
 // callbacks are covered in test/domain/recipeFilters.test.ts.

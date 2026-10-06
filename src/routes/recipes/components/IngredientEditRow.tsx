@@ -8,7 +8,7 @@ import { useState } from "react";
 import { ChevronRight } from "../../../components/ui/icons";
 import { type DraftIngredient, type FieldErrors, ingredientSummary } from "../../../domain/draft";
 import type { Unit } from "../../../domain/reference";
-import type { ComboboxOption } from "../../../lib/ui/combobox";
+import type { PickerOption } from "../../../lib/ui/picker";
 import { EMPTY_INGREDIENT_SUMMARY, IngredientFields } from "./IngredientFields";
 import { useIngredientEditRow } from "./useIngredientEditRow";
 
@@ -18,7 +18,7 @@ export type IngredientEditRowProps = {
   ii: number;
   units: readonly Unit[];
   /** The other parts, as "move to" options (value is the part index). */
-  parts: ComboboxOption[];
+  parts: PickerOption[];
   errors: FieldErrors;
   disabled?: boolean;
   onPatch: (patch: Partial<DraftIngredient>) => void;

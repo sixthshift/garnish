@@ -1,8 +1,8 @@
 import { Badge } from "@sixthshift/design-system/badge";
 import { Muted } from "@sixthshift/design-system/muted";
+import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useRef } from "react";
-import { Combobox } from "../../../components/ui/Combobox";
 import { Markdown } from "../../../components/ui/Markdown";
 import { Menu } from "../../../components/ui/Menu";
 import {
@@ -23,6 +23,7 @@ import {
 } from "../../../domain/draft";
 import { paragraphs } from "../../../domain/ingredient";
 import { stepImageUrl } from "../../../lib/images";
+import { picker } from "../../../lib/ui/picker";
 
 type DraftStep = DraftPart["steps"][number];
 
@@ -132,19 +133,22 @@ export function StepEditRow({
           </div>
         )}
         {linkable.length > 0 && !preview && (
-          <Combobox
+          <SearchInput
             name={`${path}.${si}.ingredients`}
             aria-label={`Step ${si + 1} ingredients`}
             placeholder="Ingredients"
             className="max-w-80"
             value={pickerText}
-            options={linkable.map((row) => ({ value: row.id!, label: ingredientLine(row) }))}
             disabled={disabled}
-            onChange={onPickerText}
-            onSelect={(option) => {
-              onPickerText("");
-              onChange(linkIngredient(draft, pi, si, option.value));
-            }}
+            onValueChange={onPickerText}
+            {...picker({
+              options: linkable.map((row) => ({ value: row.id!, label: ingredientLine(row) })),
+              text: pickerText,
+              onSelect: (option) => {
+                onPickerText("");
+                onChange(linkIngredient(draft, pi, si, option.value));
+              },
+            })}
           />
         )}
         {step.image != null && step.image !== "" && (

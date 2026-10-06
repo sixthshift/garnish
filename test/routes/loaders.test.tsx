@@ -86,7 +86,7 @@ describe("/ (list)", () => {
     expect(html).toContain('src="/api/images/lemon%20tart.webp"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
     // Tag chips on the card, and the tag filter offers every tag, none selected.
-    expect(html).toContain(" tag-chip ");
+    expect(html).toMatch(/class="(?:[^"]* )?tag-chip /);
     expect(html).toContain(">Weeknight</span>");
     expect(html).toContain('aria-label="Filter by tag"');
     expect(html).not.toContain(">All<");

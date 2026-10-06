@@ -1,13 +1,13 @@
+import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Switch } from "@sixthshift/design-system/switch";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
-import { Combobox } from "../../../components/ui/Combobox";
 import type { Food } from "../../../db/models/food/repo";
 import type { TagMatch } from "../../../domain/recipe";
 import type { Tag } from "../../../domain/reference";
 import { addUnique, withoutId } from "../../../lib/lists";
-import type { ComboboxOption } from "../../../lib/ui/combobox";
+import { type PickerOption, picker } from "../../../lib/ui/picker";
 
 export type FilterBarProps = {
   allTags: readonly Tag[];
@@ -26,7 +26,7 @@ export function FilterBar({ allTags, allFoods, tags, match, foods, favourite, on
   const [foodText, setFoodText] = useState("");
   const foodById = new Map(allFoods.map((food) => [food.id, food]));
   const q = foodText.trim().toLowerCase();
-  const options: ComboboxOption[] = allFoods
+  const options: PickerOption[] = allFoods
     .filter((food) => !foods.includes(food.id) && (q === "" || food.name.toLowerCase().includes(q)))
     .map((food) => ({ value: food.id, label: food.name }));
 
@@ -50,17 +50,20 @@ export function FilterBar({ allTags, allFoods, tags, match, foods, favourite, on
         </div>
       )}
       <div className="flex flex-col gap-2">
-        <Combobox
+        <SearchInput
           value={foodText}
-          onChange={setFoodText}
-          options={options}
+          onValueChange={setFoodText}
           aria-label="Filter by food"
           placeholder="Filter by food"
-          onSelect={(option) => {
-            onFoodsChange(addUnique(foods, option.value));
-            setFoodText("");
-          }}
           className="max-w-xs"
+          {...picker({
+            options,
+            text: foodText,
+            onSelect: (option) => {
+              onFoodsChange(addUnique(foods, option.value));
+              setFoodText("");
+            },
+          })}
         />
         {foods.length > 0 && (
           <ul className="flex flex-wrap gap-1" aria-label="Food filters">

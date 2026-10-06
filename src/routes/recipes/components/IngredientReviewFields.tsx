@@ -1,10 +1,11 @@
 import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
-import { Combobox } from "../../../components/ui/Combobox";
+import { SearchInput } from "@sixthshift/design-system/search-input";
 import type { IngredientReview } from "../../../domain/draft";
 import { rowStatus } from "../../../domain/ingredient";
-import type { ComboboxOption } from "../../../lib/ui/combobox";
+import type { PickerOption } from "../../../lib/ui/picker";
+import { picker } from "../../../lib/ui/picker";
 import { amountChip, chipIntent, chipText } from "./reviewChips";
 
 export type IngredientReviewFieldsProps = {
@@ -12,9 +13,9 @@ export type IngredientReviewFieldsProps = {
   /** Label prefix for every control, e.g. "Line 2". */
   label: string;
   /** Unit suggestions for the typed text. */
-  unitOptions: readonly ComboboxOption[];
+  unitOptions: readonly PickerOption[];
   /** Food suggestions the row has fetched. */
-  foodOptions: readonly ComboboxOption[];
+  foodOptions: readonly PickerOption[];
   /** The text in each picker while it is being typed. */
   unitQuery: string;
   foodQuery: string;
@@ -24,8 +25,8 @@ export type IngredientReviewFieldsProps = {
   onFoodFocus: () => void;
   onFoodBlur: () => void;
   /** A suggestion was picked; the row resolves it to a vocabulary row. */
-  onPickUnit: (option: ComboboxOption) => void;
-  onPickFood: (option: ComboboxOption) => void;
+  onPickUnit: (option: PickerOption) => void;
+  onPickFood: (option: PickerOption) => void;
   onChange: (row: IngredientReview) => void;
 };
 
@@ -61,15 +62,14 @@ export function IngredientReviewFields(props: IngredientReviewFieldsProps) {
         <div className="flex flex-col gap-1" data-unknown="unit">
           <Muted as="span" className="text-xs">{`Unknown unit “${row.unitText}”`}</Muted>
           <div className="flex flex-wrap items-center gap-2">
-            <Combobox
+            <SearchInput
               aria-label={`${label} unit`}
               placeholder="Pick an existing unit"
               className="min-w-40 grow"
               value={unitQuery}
               disabled={disabled}
-              options={unitOptions}
-              onChange={props.onUnitQuery}
-              onSelect={props.onPickUnit}
+              onValueChange={props.onUnitQuery}
+              {...picker({ options: unitOptions, text: unitQuery, onSelect: props.onPickUnit })}
             />
             <Button
               type="button"
@@ -94,17 +94,16 @@ export function IngredientReviewFields(props: IngredientReviewFieldsProps) {
         <div className="flex flex-col gap-1" data-unknown="food">
           <Muted as="span" className="text-xs">{`Unknown food “${row.foodText}”`}</Muted>
           <div className="flex flex-wrap items-center gap-2">
-            <Combobox
+            <SearchInput
               aria-label={`${label} food`}
               placeholder="Pick an existing food"
               className="min-w-40 grow"
               value={foodQuery}
               disabled={disabled}
-              options={foodOptions}
-              onChange={props.onFoodQuery}
+              onValueChange={props.onFoodQuery}
               onFocus={props.onFoodFocus}
               onBlur={props.onFoodBlur}
-              onSelect={props.onPickFood}
+              {...picker({ options: foodOptions, text: foodQuery, onSelect: props.onPickFood })}
             />
             <Button
               type="button"
