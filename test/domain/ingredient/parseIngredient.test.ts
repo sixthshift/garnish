@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { generateDevRecipes } from "../../../src/db/dev/generate";
-import { SAMPLE_RECIPES } from "../../../src/db/seed/recipes";
+import { SAMPLE_RECIPES } from "../../../src/db/dev/sampleRecipes";
 import { type DisplayIngredient, formatIngredient } from "../../../src/domain/ingredient/format";
 import type { FoodCandidate } from "../../../src/domain/ingredient/parseFood";
 import { parseIngredient, type Vocabulary } from "../../../src/domain/ingredient/parseIngredient";

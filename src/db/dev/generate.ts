@@ -1,10 +1,9 @@
 import type { z } from "zod";
 import { type ingredientInputSchema, type RecipeInput, suggestLinks, type TimelineEventInput } from "../../domain/recipe";
-import type { Food, Tag, Unit } from "../../domain/reference";
-import { slugify } from "../../lib/names";
-import { DEFAULT_UNITS } from "../seed/units";
+import type { Food, Tag } from "../../domain/reference";
 import { type Random, random } from "./random";
-import { AISLES, DESCRIPTIONS, DOUBLE_STEPS, FOODS, type FoodEntry, NOTES, SHAPES, SOURCES, STEPS, TAGS, UNITS } from "./vocabulary";
+import { foodRef, SEEDED_FOOD_NAMES, SEEDED_UNIT_NAMES, tagRef, unitRef } from "./references";
+import { DESCRIPTIONS, DOUBLE_STEPS, NOTES, SHAPES, SOURCES, STEPS, TAGS } from "./vocabulary";
 
 /** The seed the dataset is built from. Changing it changes every recipe. */
 export const DEV_SEED = "garnish-dev-data-v1";
@@ -30,10 +29,6 @@ export type DevRecipe = {
   imageHue: number | null;
 };
 
-// Reference rows are resolved by name (case-insensitive) and created when
-// missing, so the documents carry no real ids. Same convention as the seed.
-const NEW = "00000000-0000-4000-8000-000000000000";
-
 type Ing = z.input<typeof ingredientInputSchema>;
 
 /**
@@ -45,34 +40,6 @@ type LinkableIngredient = Omit<Ing, "id" | "food"> & { id: string; food: Food | 
 
 /** A generated step, settled enough to pass through `suggestLinks`. */
 type LinkableStep = { id: string; text: string; ingredientIds: string[] };
-
-function unitRef(name: string): Unit {
-  const known = DEFAULT_UNITS.find((u) => u.name === name);
-  return {
-    id: NEW,
-    name,
-    pluralName: known?.pluralName ?? null,
-    abbreviation: known?.abbreviation ?? "",
-    useAbbreviation: known?.useAbbreviation ?? false,
-    fraction: known?.fraction ?? true,
-    portion: known?.portion ?? false,
-    standardQuantity: null,
-    standardUnitId: null,
-  };
-}
-
-function foodRef(entry: FoodEntry): Food {
-  return {
-    id: NEW,
-    name: entry.name,
-    pluralName: entry.plural ?? null,
-    aliases: [],
-    aisle: { id: NEW, name: entry.aisle, position: AISLES.indexOf(entry.aisle) },
-    recipeId: null,
-    skipShopping: false,
-    conversions: [],
-  };
-}
 
 /** An ISO timestamp `days` before the epoch. */
 function daysBefore(days: number): string {
@@ -105,16 +72,16 @@ function quantityFor(rng: Random, unitName: string): number {
   }
 }
 
-function ingredient(rng: Random, entry: FoodEntry): LinkableIngredient {
+function ingredient(rng: Random, foodName: string): LinkableIngredient {
   // A few lines carry no amount at all ("salt, to taste"), and a few are fixed
   // so they do not scale with servings.
   const noAmount = rng.chance(0.1);
-  const unitName = rng.pick(UNITS);
+  const unitName = rng.pick(SEEDED_UNIT_NAMES);
   return {
     id: devId(rng),
     quantity: noAmount ? null : quantityFor(rng, unitName),
     unit: noAmount ? null : unitRef(unitName),
-    food: foodRef(entry),
+    food: foodRef(foodName),
     note: rng.chance(0.25) ? rng.pick(["finely chopped", "roughly torn", "at room temperature", "plus extra to serve", "drained and rinsed"]) : "",
     fixed: rng.chance(0.08),
     originalText: "",
@@ -126,9 +93,9 @@ function rawIngredient(rng: Random, text: string): LinkableIngredient {
   return { id: devId(rng), quantity: null, unit: null, food: null, note: "", originalText: text, fixed: false };
 }
 
-function stepText(rng: Random, pool: readonly FoodEntry[]): string {
+function stepText(rng: Random, pool: readonly string[]): string {
   const template = rng.pick(STEPS);
-  return template.replace(/\{food\}/g, () => rng.pick(pool).name);
+  return template.replace(/\{food\}/g, () => rng.pick(pool));
 }
 
 /**
@@ -136,14 +103,14 @@ function stepText(rng: Random, pool: readonly FoodEntry[]): string {
  * `suggestLinks` always has something to link twice over. `pool` must have
  * at least two entries; callers check `foods.length >= 2` first.
  */
-function doubleStepText(rng: Random, pool: readonly FoodEntry[]): string {
-  const [a, b] = rng.sample(pool, 2) as [FoodEntry, FoodEntry];
+function doubleStepText(rng: Random, pool: readonly string[]): string {
+  const [a, b] = rng.sample(pool, 2) as [string, string];
   const template = rng.pick(DOUBLE_STEPS);
   let first = true;
   return template.replace(/\{food\}/g, () => {
     const chosen = first ? a : b;
     first = false;
-    return chosen.name;
+    return chosen;
   });
 }
 
@@ -159,7 +126,7 @@ function pickTags(rng: Random, shapeTags: readonly string[]): Tag[] {
     const draw = rng.next() ** 2;
     names.add(TAGS[Math.floor(draw * TAGS.length)]!);
   }
-  return [...names].map((name) => ({ id: NEW, name, slug: slugify(name) }));
+  return [...names].map(tagRef);
 }
 
 /**
@@ -208,7 +175,8 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
     const longName = i === 3;
     const finalName = longName ? `${name} with Charred Corn, Pickled Onion and a Whipped Fetta That Is Frankly the Best Part` : name;
 
-    const pantry = rng.shuffle(FOODS);
+    // Any seeded food can turn up: dev recipes are made of what a real database has.
+    const pantry = rng.shuffle(SEEDED_FOOD_NAMES);
     const partCount = shape.parts.length;
 
     // Deliberate outliers: one single-ingredient recipe, one very long one.
@@ -218,7 +186,7 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
     const parts = shape.parts.map((partName) => {
       const foods = pantry.slice(cursor, cursor + perPart);
       cursor += perPart;
-      const ingredients: LinkableIngredient[] = foods.map((entry) => ingredient(rng, entry));
+      const ingredients: LinkableIngredient[] = foods.map((name) => ingredient(rng, name));
       // One recipe in six has a verbatim line the parser never touched.
       if (rng.chance(0.16)) ingredients.push(rawIngredient(rng, "a good splash of whatever wine is open"));
 

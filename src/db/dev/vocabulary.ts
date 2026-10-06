@@ -1,124 +1,8 @@
-/** Aisles, in the order a supermarket walks them. Position follows this order. */
-export const AISLES: readonly string[] = ["Fruit & veg", "Butcher", "Seafood", "Dairy & eggs", "Bakery", "Pantry", "Spices", "Freezer"];
-
-export type FoodEntry = { name: string; plural?: string; aisle: string };
-
 /**
- * ~80 foods across the aisles above. Plurals only where the food is countable.
- * Every name is a starter food's (`src/db/seed/foods.ts`), so a generated
- * recipe links to the food the seed already made rather than a second one
- * beside it.
+ * The recipe content dev recipes are made from: dish shapes, tags, step
+ * sentences, notes, descriptions and sources. Recipes are the only dev-only
+ * data; the units and foods they use are the seed's (`references.ts`).
  */
-export const FOODS: readonly FoodEntry[] = [
-  { name: "onion", plural: "onions", aisle: "Fruit & veg" },
-  { name: "red onion", plural: "red onions", aisle: "Fruit & veg" },
-  { name: "garlic", aisle: "Fruit & veg" },
-  { name: "ginger", aisle: "Fruit & veg" },
-  { name: "carrot", plural: "carrots", aisle: "Fruit & veg" },
-  { name: "celery", aisle: "Fruit & veg" },
-  { name: "kent pumpkin", aisle: "Fruit & veg" },
-  { name: "sweet potato", plural: "sweet potatoes", aisle: "Fruit & veg" },
-  { name: "potato", plural: "potatoes", aisle: "Fruit & veg" },
-  { name: "roma tomato", plural: "roma tomatoes", aisle: "Fruit & veg" },
-  { name: "cherry tomato", plural: "cherry tomatoes", aisle: "Fruit & veg" },
-  { name: "lebanese cucumber", plural: "lebanese cucumbers", aisle: "Fruit & veg" },
-  { name: "baby spinach", aisle: "Fruit & veg" },
-  { name: "rocket", aisle: "Fruit & veg" },
-  { name: "broccoli", aisle: "Fruit & veg" },
-  { name: "cauliflower", aisle: "Fruit & veg" },
-  { name: "zucchini", plural: "zucchini", aisle: "Fruit & veg" },
-  { name: "red capsicum", plural: "red capsicums", aisle: "Fruit & veg" },
-  { name: "green bean", plural: "green beans", aisle: "Fruit & veg" },
-  { name: "lemon", plural: "lemons", aisle: "Fruit & veg" },
-  { name: "lime", plural: "limes", aisle: "Fruit & veg" },
-  { name: "granny smith apple", plural: "granny smith apples", aisle: "Fruit & veg" },
-  { name: "banana", plural: "bananas", aisle: "Fruit & veg" },
-  { name: "flat-leaf parsley", aisle: "Fruit & veg" },
-  { name: "coriander", aisle: "Fruit & veg" },
-  { name: "basil", aisle: "Fruit & veg" },
-  { name: "mint", aisle: "Fruit & veg" },
-  { name: "spring onion", plural: "spring onions", aisle: "Fruit & veg" },
-
-  { name: "chicken thigh", plural: "chicken thighs", aisle: "Butcher" },
-  { name: "chicken breast", plural: "chicken breasts", aisle: "Butcher" },
-  { name: "whole chicken", plural: "whole chickens", aisle: "Butcher" },
-  { name: "beef mince", aisle: "Butcher" },
-  { name: "pork mince", aisle: "Butcher" },
-  { name: "beef chuck", aisle: "Butcher" },
-  { name: "lamb shoulder", aisle: "Butcher" },
-  { name: "lamb shank", plural: "lamb shanks", aisle: "Butcher" },
-  { name: "pork belly", aisle: "Butcher" },
-  { name: "bacon", aisle: "Butcher" },
-  { name: "chorizo", plural: "chorizos", aisle: "Butcher" },
-
-  { name: "prawn", plural: "prawns", aisle: "Seafood" },
-  { name: "barramundi fillet", plural: "barramundi fillets", aisle: "Seafood" },
-  { name: "salmon fillet", plural: "salmon fillets", aisle: "Seafood" },
-  { name: "squid", aisle: "Seafood" },
-
-  { name: "butter", aisle: "Dairy & eggs" },
-  { name: "milk", aisle: "Dairy & eggs" },
-  { name: "thickened cream", aisle: "Dairy & eggs" },
-  { name: "sour cream", aisle: "Dairy & eggs" },
-  { name: "greek yoghurt", aisle: "Dairy & eggs" },
-  { name: "parmesan", aisle: "Dairy & eggs" },
-  { name: "cheddar", aisle: "Dairy & eggs" },
-  { name: "feta", aisle: "Dairy & eggs" },
-  { name: "egg", plural: "eggs", aisle: "Dairy & eggs" },
-
-  { name: "sourdough", aisle: "Bakery" },
-  { name: "burger bun", plural: "burger buns", aisle: "Bakery" },
-  { name: "flour tortilla", plural: "flour tortillas", aisle: "Bakery" },
-  { name: "panko breadcrumbs", aisle: "Bakery" },
-
-  { name: "plain flour", aisle: "Pantry" },
-  { name: "self-raising flour", aisle: "Pantry" },
-  { name: "caster sugar", aisle: "Pantry" },
-  { name: "brown sugar", aisle: "Pantry" },
-  { name: "icing sugar", aisle: "Pantry" },
-  { name: "rolled oats", aisle: "Pantry" },
-  { name: "desiccated coconut", aisle: "Pantry" },
-  { name: "golden syrup", aisle: "Pantry" },
-  { name: "olive oil", aisle: "Pantry" },
-  { name: "extra virgin olive oil", aisle: "Pantry" },
-  { name: "sesame oil", aisle: "Pantry" },
-  { name: "soy sauce", aisle: "Pantry" },
-  { name: "fish sauce", aisle: "Pantry" },
-  { name: "rice vinegar", aisle: "Pantry" },
-  { name: "red wine vinegar", aisle: "Pantry" },
-  { name: "dijon mustard", aisle: "Pantry" },
-  { name: "tomato paste", aisle: "Pantry" },
-  { name: "canned tomatoes", aisle: "Pantry" },
-  { name: "coconut milk", aisle: "Pantry" },
-  { name: "chickpeas", aisle: "Pantry" },
-  { name: "red lentils", aisle: "Pantry" },
-  { name: "arborio rice", aisle: "Pantry" },
-  { name: "jasmine rice", aisle: "Pantry" },
-  { name: "spaghetti", aisle: "Pantry" },
-  { name: "risoni", aisle: "Pantry" },
-  { name: "chicken stock", aisle: "Pantry" },
-  { name: "vegetable stock", aisle: "Pantry" },
-  { name: "dark chocolate", aisle: "Pantry" },
-  { name: "honey", aisle: "Pantry" },
-
-  { name: "salt", aisle: "Spices" },
-  { name: "black pepper", aisle: "Spices" },
-  { name: "ground cumin", aisle: "Spices" },
-  { name: "ground coriander", aisle: "Spices" },
-  { name: "smoked paprika", aisle: "Spices" },
-  { name: "ground turmeric", aisle: "Spices" },
-  { name: "ground cinnamon", aisle: "Spices" },
-  { name: "dried oregano", aisle: "Spices" },
-  { name: "chilli flakes", aisle: "Spices" },
-  { name: "bay leaf", plural: "bay leaves", aisle: "Spices" },
-  { name: "vanilla extract", aisle: "Spices" },
-  { name: "baking powder", aisle: "Spices" },
-  { name: "bicarbonate of soda", aisle: "Spices" },
-
-  { name: "peas", aisle: "Freezer" },
-  { name: "puff pastry", aisle: "Freezer" },
-  { name: "vanilla ice cream", aisle: "Freezer" },
-];
 
 /**
  * Tags, heaviest first../generate.ts weights its picks towards the front of
@@ -152,23 +36,6 @@ export const TAGS: readonly string[] = [
   "Picnic",
   "Leftovers",
   "Camping",
-];
-
-/** Units the generator draws from; all are in DEFAULT_UNITS so plurals resolve. */
-export const UNITS: readonly string[] = [
-  "gram",
-  "kilogram",
-  "millilitre",
-  "litre",
-  "teaspoon",
-  "tablespoon",
-  "cup",
-  "pinch",
-  "piece",
-  "slice",
-  "clove",
-  "can",
-  "bunch",
 ];
 
 /**

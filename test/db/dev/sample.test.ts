@@ -1,14 +1,15 @@
-// Sample recipes: three documents through the repository, idempotent by slug,
+// Sample recipes (dev only): three documents through the repository, idempotent by slug,
 // and visible through the listRecipes server function.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../../src/db/connection/open";
+import { foodRef, unitRef } from "../../../src/db/dev/references";
+import { parseSampleArgs, seedSample } from "../../../src/db/dev/sample";
+import { SAMPLE_RECIPES } from "../../../src/db/dev/sampleRecipes";
 import { migrate } from "../../../src/db/migrations/migrate";
 import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { timelineRepository } from "../../../src/db/models/timeline/repo";
-import { parseSeedFlags } from "../../../src/db/seed/cli";
-import { SAMPLE_RECIPES } from "../../../src/db/seed/recipes";
-import { seed, seedSample } from "../../../src/db/seed/seed";
+import { seed } from "../../../src/db/seed/seed";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipe";
 import { getDb } from "../../../src/server/core/db";
@@ -195,8 +196,19 @@ test("listRecipes shows the three sample recipes", async () => {
   expect((await callServerFn(listRecipes, { tag: "baking" })).map((r) => r.slug).sort()).toEqual(["anzac-biscuits", "lemon-tart"]);
 });
 
-test("parseSeedFlags reads --sample and rejects anything else", () => {
-  expect(parseSeedFlags([])).toEqual({ sample: false });
-  expect(parseSeedFlags(["--sample"])).toEqual({ sample: true });
-  expect(() => parseSeedFlags(["--smaple"])).toThrow(/Unknown argument --smaple/);
+test("dev:sample takes no arguments", () => {
+  expect(() => parseSampleArgs([])).not.toThrow();
+  expect(() => parseSampleArgs(["--sample"])).toThrow(/Unknown argument --sample/);
+});
+
+test("the samples make no unit or food of their own: every one is the seed's", () => {
+  const before = { unit: count("unit"), food: count("food") };
+  seedSample(db);
+  expect({ unit: count("unit"), food: count("food") }).toEqual(before);
+});
+
+test("a reference to a name the seed does not have throws", () => {
+  expect(() => foodRef("boiling water")).toThrow(/not a seeded food/);
+  expect(() => unitRef("handful")).toThrow(/not a seeded unit/);
+  expect(foodRef("tea bag")).toMatchObject({ name: "tea bag", pluralName: "tea bags", aisle: { name: "Drinks" } });
 });

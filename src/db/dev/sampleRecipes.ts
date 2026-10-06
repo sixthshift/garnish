@@ -1,52 +1,16 @@
 import type { z } from "zod";
 import type { ingredientInputSchema, RecipeInput } from "../../domain/recipe";
-import type { Food, Tag, Unit } from "../../domain/reference";
-import { slugify } from "../../lib/names";
-import { DEFAULT_UNITS } from "./units";
-
-// Reference rows are resolved by name (case-insensitive) when this id is not
-// found, and a name nobody has yet is inserted, so the documents carry no real
-// ids of their own. The repository never keeps this id for a new row.
-const NEW = "00000000-0000-4000-8000-000000000000";
-
-/** A unit reference by name, copying the default unit's attributes when it is one. */
-function unit(name: string): Unit {
-  const known = DEFAULT_UNITS.find((u) => u.name === name);
-  return {
-    id: NEW,
-    name,
-    pluralName: known?.pluralName ?? null,
-    abbreviation: known?.abbreviation ?? "",
-    useAbbreviation: known?.useAbbreviation ?? false,
-    fraction: known?.fraction ?? true,
-    portion: known?.portion ?? false,
-    standardQuantity: null,
-    standardUnitId: null,
-  };
-}
-
-function food(name: string, pluralName: string | null = null): Food {
-  return { id: NEW, name, pluralName, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
-}
-
-function tag(name: string): Tag {
-  return { id: NEW, name, slug: slugify(name) };
-}
+import { foodRef, tagRef as tag, unitRef as unit } from "./references";
 
 type Ing = z.input<typeof ingredientInputSchema>;
 
 /** `quantity unit food, note`. Unit and note optional. */
-function ing(
-  quantity: number | null,
-  unitName: string | null,
-  foodName: string,
-  opts: { plural?: string; note?: string; fixed?: boolean; id?: string } = {}
-): Ing {
+function ing(quantity: number | null, unitName: string | null, foodName: string, opts: { note?: string; fixed?: boolean; id?: string } = {}): Ing {
   return {
     id: opts.id,
     quantity,
     unit: unitName ? unit(unitName) : null,
-    food: food(foodName, opts.plural ?? null),
+    food: foodRef(foodName),
     note: opts.note ?? "",
     fixed: opts.fixed ?? false,
   };
@@ -139,7 +103,7 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
           ing(125, "gram", "butter", { note: "chopped", id: ANZAC_BUTTER }),
           ing(2, "tablespoon", "golden syrup", { id: ANZAC_SYRUP }),
           ing(1, "teaspoon", "bicarbonate of soda", { id: ANZAC_BICARB }),
-          ing(2, "tablespoon", "boiling water", { id: ANZAC_WATER }),
+          ing(2, "tablespoon", "water", { note: "boiling", id: ANZAC_WATER }),
         ],
         steps: [
           step("Preheat the oven to 160°C fan-forced. Line two trays with baking paper."),
@@ -175,11 +139,11 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       {
         name: "Soup",
         ingredients: [
-          ing(1.2, "kilogram", "Kent pumpkin", { note: "peeled, seeded and cut into 3 cm chunks", id: SOUP_PUMPKIN }),
-          ing(1, null, "brown onion", { plural: "brown onions", note: "roughly chopped", id: SOUP_ONION }),
+          ing(1.2, "kilogram", "kent pumpkin", { note: "peeled, seeded and cut into 3 cm chunks", id: SOUP_PUMPKIN }),
+          ing(1, null, "onion", { note: "brown, roughly chopped", id: SOUP_ONION }),
           ing(3, "clove", "garlic", { note: "unpeeled", id: SOUP_GARLIC }),
           ing(2, "tablespoon", "olive oil", { id: SOUP_OIL }),
-          ing(1, null, "bay leaf", { plural: "bay leaves", fixed: true, id: SOUP_BAY_LEAF }),
+          ing(1, null, "bay leaf", { fixed: true, id: SOUP_BAY_LEAF }),
           ing(1, "litre", "vegetable stock", { id: SOUP_STOCK }),
           ing(100, "millilitre", "thickened cream", { id: SOUP_CREAM }),
           ing(null, null, "salt", { note: "to taste" }),
@@ -243,9 +207,9 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
           ing(200, "gram", "plain flour", { id: PASTRY_FLOUR }),
           ing(100, "gram", "butter", { note: "cold, cubed", id: PASTRY_BUTTER }),
           ing(50, "gram", "icing sugar", { id: PASTRY_ICING_SUGAR }),
-          ing(1, null, "egg yolk", { plural: "egg yolks", id: PASTRY_YOLK }),
+          ing(1, null, "egg yolk", { id: PASTRY_YOLK }),
           ing(1, "pinch", "salt", { fixed: true, id: PASTRY_SALT }),
-          ing(1, "tablespoon", "cold water", { note: "if needed", id: PASTRY_WATER }),
+          ing(1, "tablespoon", "water", { note: "cold, if needed", id: PASTRY_WATER }),
         ],
         steps: [
           step("Rub the butter into the flour, icing sugar and salt until it looks like breadcrumbs. Add the yolk and enough water to bring it together.", [
@@ -263,7 +227,7 @@ export const SAMPLE_RECIPES: readonly RecipeInput[] = [
       {
         name: "Filling",
         ingredients: [
-          ing(4, null, "egg", { plural: "eggs", id: FILLING_EGG }),
+          ing(4, null, "egg", { id: FILLING_EGG }),
           ing(150, "gram", "caster sugar", { id: FILLING_SUGAR }),
           ing(150, "millilitre", "lemon juice", { note: "about 4 lemons", id: FILLING_LEMON_JUICE }),
           raw("Finely grated zest of 2 lemons", FILLING_ZEST),

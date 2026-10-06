@@ -25,7 +25,7 @@ Run the dev server (Vite via Nitro, on http://localhost:9988, bound to all inter
 bun run dev
 ```
 
-`bun run dev` does not touch the database. The first start creates `./data/`, migrates `garnish.db` and seeds the default units, so a fresh clone opens on an empty recipe list; see [Seed](#seed) for the three demo recipes that ship. Recipes you add or import stay put across restarts.
+`bun run dev` does not touch the database. The first start creates `./data/`, migrates `garnish.db` and seeds the default units, so a fresh clone opens on an empty recipe list; see [Seed](#seed) for the three demo recipes. Recipes you add or import stay put across restarts.
 
 To throw the database away and start from a known state:
 
@@ -65,11 +65,11 @@ Both must pass. `bun run test` is the only way to run the tests; `bun test` is a
 
 ## Seed
 
-The server seeds the default units itself on every start, so this is optional. `bun run seed` migrates and seeds the database in `DATA_DIR` without starting the server; `--sample` also adds three demo recipes, one with three parts:
+The server seeds the default units itself on every start, so this is optional. `bun run seed` migrates and seeds the database in `DATA_DIR` without starting the server; `bun run dev:sample` also adds three demo recipes, one with three parts:
 
 ```bash
 bun run seed
-bun run seed --sample
+bun run dev:sample
 ```
 
 Both are idempotent: existing units and recipes are left alone. `bun run migrate` applies pending migrations only.

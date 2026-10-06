@@ -20,7 +20,7 @@ export const REQUIRED_COMMANDS = [
   "bun run check",
   "bun run test",
   "bun run seed",
-  "bun run seed --sample",
+  "bun run dev:sample",
   "bun run build",
   "bun run start",
   "docker compose up",

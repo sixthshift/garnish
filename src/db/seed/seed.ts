@@ -1,20 +1,14 @@
 import type { Database } from "bun:sqlite";
-import { type Recipe, recipeInputSchema } from "../../domain/recipe";
-import { slugify } from "../../lib/names";
 import { orm } from "../connection/client";
 import type { Aisle } from "../models/aisle/repo";
 import type { Food } from "../models/food/repo";
 import { type PlannerRule, plannerRepository } from "../models/planner/repo";
-import { recipeRepository } from "../models/recipe/repo";
 import { type StyleRule, styleRuleRepository } from "../models/style/repo";
-import { timelineRepository } from "../models/timeline/repo";
 import { type Unit, unitRepository } from "../models/unit/repo";
 import { DEFAULT_PLANNER_RULES } from "./planner";
-import { SAMPLE_RECIPES } from "./recipes";
 import { seedFoodPlurals, seedStarterFoods } from "./starter";
 import { seedStatements } from "./statements";
 import { DEFAULT_STYLE_RULES } from "./style";
-import { SAMPLE_TIMELINE } from "./timeline";
 import { DEFAULT_UNITS } from "./units";
 
 export type SeedResult = {
@@ -79,37 +73,4 @@ export function seed(db: Database): SeedResult {
       retiredPlannerRules: plan.retired,
     };
   });
-}
-
-export type SampleResult = { recipes: Recipe[] };
-
-/**
- * Insert every sample recipe whose slug is not already taken, through the
- * recipe repository, in one transaction. Returns only the recipes created on
- * this run. Units, foods and tags the samples name are matched to existing
- * rows case-insensitively and created when missing, so this works with or
- * without the units seed (the CLI runs that first).
- *
- * A newly created recipe named in SAMPLE_TIMELINE also gets its "made this"
- * events, which pulls its `lastMade` up to the latest one.
- */
-export function seedSample(db: Database): SampleResult {
-  const repo = recipeRepository(db);
-  const events = timelineRepository(db);
-  const created = orm(db).transaction((): Recipe[] => {
-    const made: Recipe[] = [];
-    for (const doc of SAMPLE_RECIPES) {
-      if (repo.get(slugify(doc.name)) !== null) continue;
-      const recipe = repo.create(recipeInputSchema.parse(doc));
-      const inputs = SAMPLE_TIMELINE[doc.name];
-      if (!inputs) {
-        made.push(recipe);
-        continue;
-      }
-      for (const input of inputs) events.create(recipe.id, input);
-      made.push(repo.get(recipe.slug)!);
-    }
-    return made;
-  });
-  return { recipes: created };
 }

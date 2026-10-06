@@ -2,7 +2,7 @@ import type { TimelineEventInput } from "../../domain/recipe";
 
 /**
  * "Made this" entries for the timeline demo, keyed by recipe name. Applied
- * only to a recipe this run creates for the first time (see seedSample), so
+ * only to a recipe this run creates for the first time (see `seedSample` in sample.ts), so
  * a re-seed never adds a duplicate and a same-named recipe of the user's own
  * is never touched.
  */

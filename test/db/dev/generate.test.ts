@@ -4,21 +4,12 @@ import { expect, test } from "vitest";
 import { DEV_RECIPE_COUNT, devIds, generateDevRecipes } from "../../../src/db/dev/generate";
 import { hslToRgb, placeholderPng } from "../../../src/db/dev/png";
 import { random, seedFrom } from "../../../src/db/dev/random";
-import { FOODS } from "../../../src/db/dev/vocabulary";
-import { correctedStarterFoods } from "../../../src/db/seed/foodPlurals";
 import { recipeInputSchema } from "../../../src/domain/recipe";
 import { slugify } from "../../../src/lib/names";
 
 test("the same seed produces byte-identical data, a different seed does not", () => {
   expect(generateDevRecipes()).toEqual(generateDevRecipes());
   expect(generateDevRecipes("other-seed")).not.toEqual(generateDevRecipes());
-});
-
-// dev:seed runs the real seed first, and a recipe links its foods by name, so
-// a dev food the starter list calls something else would be a second food.
-test("every dev food is a starter food, by name", () => {
-  const starter = new Set(correctedStarterFoods().map((food) => food.name));
-  expect(FOODS.filter((food) => !starter.has(food.name)).map((food) => food.name)).toEqual([]);
 });
 
 test("every document is valid RecipeInput", () => {
