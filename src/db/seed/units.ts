@@ -1,6 +1,6 @@
 import type { UnitInput } from "../models/unit/repo";
 
-/** Default units, en-AU spelling. Fraction off for weights and volumes measured on a scale or jug. */
+/** Default units, en-AU spelling. Fraction off for weights and volumes measured on a scale or jug; portion on for the two that cut one item. */
 export const DEFAULT_UNITS: readonly UnitInput[] = [
   // metric
   { name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false },
@@ -16,8 +16,8 @@ export const DEFAULT_UNITS: readonly UnitInput[] = [
   { name: "pound", pluralName: "pounds", abbreviation: "lb", useAbbreviation: true, fraction: false },
   // counts
   { name: "pinch", pluralName: "pinches", abbreviation: "pinch", useAbbreviation: false, fraction: true },
-  { name: "piece", pluralName: "pieces", abbreviation: "pc", useAbbreviation: false, fraction: true },
-  { name: "slice", pluralName: "slices", abbreviation: "slice", useAbbreviation: false, fraction: true },
+  { name: "piece", pluralName: "pieces", abbreviation: "pc", useAbbreviation: false, fraction: true, portion: true },
+  { name: "slice", pluralName: "slices", abbreviation: "slice", useAbbreviation: false, fraction: true, portion: true },
   { name: "clove", pluralName: "cloves", abbreviation: "clove", useAbbreviation: false, fraction: true },
   { name: "can", pluralName: "cans", abbreviation: "can", useAbbreviation: false, fraction: true },
   { name: "bunch", pluralName: "bunches", abbreviation: "bunch", useAbbreviation: false, fraction: true },

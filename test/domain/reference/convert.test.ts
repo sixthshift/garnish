@@ -11,6 +11,7 @@ const gram: Unit = {
   abbreviation: "g",
   useAbbreviation: true,
   fraction: false,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };
@@ -22,6 +23,7 @@ const kilogram: Unit = {
   abbreviation: "kg",
   useAbbreviation: true,
   fraction: false,
+  portion: false,
   standardQuantity: 1000,
   standardUnitId: gram.id,
 };
@@ -33,6 +35,7 @@ const cup: Unit = {
   abbreviation: "cup",
   useAbbreviation: false,
   fraction: true,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };
@@ -44,6 +47,7 @@ const teaspoon: Unit = {
   abbreviation: "tsp",
   useAbbreviation: true,
   fraction: true,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };

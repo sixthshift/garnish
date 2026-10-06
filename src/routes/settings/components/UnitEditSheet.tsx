@@ -14,6 +14,7 @@ export type UnitPatch = {
   abbreviation: string;
   useAbbreviation: boolean;
   fraction: boolean;
+  portion: boolean;
 };
 
 export type UnitEditSheetContentProps = {
@@ -29,6 +30,7 @@ export function UnitEditSheetContent({ unit, onSave, onCancel, busy = false }: U
   const [abbreviation, setAbbreviation] = useState(unit.abbreviation);
   const [useAbbreviation, setUseAbbreviation] = useState(unit.useAbbreviation);
   const [fraction, setFraction] = useState(unit.fraction);
+  const [portion, setPortion] = useState(unit.portion);
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
@@ -37,7 +39,7 @@ export function UnitEditSheetContent({ unit, onSave, onCancel, busy = false }: U
       setError("Name is required.");
       return;
     }
-    onSave({ id: unit.id, name: trimmed, pluralName: pluralName.trim() || null, abbreviation: abbreviation.trim(), useAbbreviation, fraction });
+    onSave({ id: unit.id, name: trimmed, pluralName: pluralName.trim() || null, abbreviation: abbreviation.trim(), useAbbreviation, fraction, portion });
   };
 
   return (
@@ -64,6 +66,7 @@ export function UnitEditSheetContent({ unit, onSave, onCancel, busy = false }: U
           </FormField>
           <Checkbox label="Use abbreviation" checked={useAbbreviation} disabled={busy} onCheckedChange={setUseAbbreviation} />
           <Checkbox label="Fractions" checked={fraction} disabled={busy} onCheckedChange={setFraction} />
+          <Checkbox label="Portion, food stays singular" checked={portion} disabled={busy} onCheckedChange={setPortion} />
         </form>
       </Sheet.Body>
       <Sheet.Footer>

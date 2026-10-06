@@ -51,7 +51,7 @@ function food(id: string, name: string): FoodRow {
 }
 
 function unit(id: string, name: string): Unit {
-  return { id, name, pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null };
+  return { id, name, pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, portion: false, standardQuantity: null, standardUnitId: null };
 }
 
 function aisle(id: string, name: string, position: number): Aisle {

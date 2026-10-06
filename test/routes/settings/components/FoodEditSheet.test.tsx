@@ -53,6 +53,7 @@ const unit = (id: string, name: string): Unit => ({
   abbreviation: "",
   useAbbreviation: false,
   fraction: true,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 });

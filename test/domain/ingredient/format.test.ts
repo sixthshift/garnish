@@ -8,17 +8,18 @@ const unit = (overrides: Partial<DisplayUnit>): DisplayUnit => ({
   abbreviation: "cup",
   useAbbreviation: false,
   fraction: true,
+  portion: false,
   ...overrides,
 });
 
 const cup = unit({});
-const gram = unit({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false });
+const gram = unit({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false, portion: false });
 const tbsp = unit({ name: "tablespoon", pluralName: "tablespoons", abbreviation: "tbsp", useAbbreviation: true });
-const litre = unit({ name: "litre", pluralName: "litres", abbreviation: "l", useAbbreviation: true, fraction: false });
+const litre = unit({ name: "litre", pluralName: "litres", abbreviation: "l", useAbbreviation: true, fraction: false, portion: false });
 const pinch = unit({ name: "pinch", pluralName: "pinches", abbreviation: "pinch" });
 const noPlural = unit({ name: "dash", pluralName: null, abbreviation: "" });
-const abbreviationFlagNoText = unit({ name: "each", pluralName: "each", abbreviation: "", useAbbreviation: true, fraction: false });
-const decimalWithPlural = unit({ name: "bottle", pluralName: "bottles", abbreviation: "", useAbbreviation: false, fraction: false });
+const abbreviationFlagNoText = unit({ name: "each", pluralName: "each", abbreviation: "", useAbbreviation: true, fraction: false, portion: false });
+const decimalWithPlural = unit({ name: "bottle", pluralName: "bottles", abbreviation: "", useAbbreviation: false, fraction: false, portion: false });
 
 describe("formatQuantity", () => {
   describe("with unit.fraction", () => {

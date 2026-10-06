@@ -132,6 +132,7 @@ export function recipeRepository(db: Database) {
       abbreviation: ref.abbreviation,
       useAbbreviation: ref.useAbbreviation,
       fraction: ref.fraction,
+      portion: ref.portion,
       standardQuantity: ref.standardQuantity,
       standardUnitId: ref.standardUnitId && units.get(ref.standardUnitId) ? ref.standardUnitId : null,
     }).id;

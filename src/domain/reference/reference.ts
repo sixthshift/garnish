@@ -55,6 +55,7 @@ const UnitFields = z.object({
   abbreviation: z.string(),
   useAbbreviation: z.boolean(),
   fraction: z.boolean(),
+  portion: z.boolean(),
   standardQuantity: z.number().nonnegative().nullable(),
   standardUnitId: Id.nullable(),
 });
@@ -107,6 +108,7 @@ export const unitSchema = z.object({
   abbreviation: text,
   useAbbreviation: z.boolean().default(false),
   fraction: z.boolean().default(true),
+  portion: z.boolean().default(false),
   standardQuantity: z.number().nonnegative().nullable().default(null),
   standardUnitId: id.nullable().default(null),
 });

@@ -39,6 +39,7 @@ const gram = {
   abbreviation: "g",
   useAbbreviation: true,
   fraction: false,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };

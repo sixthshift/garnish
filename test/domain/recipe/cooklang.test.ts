@@ -23,6 +23,7 @@ function unit(name: string, over: Partial<Unit> = {}): Unit {
     abbreviation: "",
     useAbbreviation: false,
     fraction: true,
+    portion: false,
     standardQuantity: null,
     standardUnitId: null,
     ...over,

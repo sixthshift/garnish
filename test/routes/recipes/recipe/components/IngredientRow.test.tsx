@@ -1,12 +1,12 @@
-// IngredientRow: its pure line-splitting helper, and the rendered row for the
-// three cases the task calls out — ticked, scaled and fixed.
+// IngredientRow: the rendered row for the three cases the task calls out —
+// ticked, scaled and fixed.
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { SubRecipesProvider } from "../../../../../src/components/recipe/SubRecipes";
 import type { Ingredient, SubRecipe } from "../../../../../src/domain/recipe";
 import { type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
-import { IngredientRow, ingredientLineParts } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
+import { IngredientRow } from "../../../../../src/routes/recipes/recipe/components/IngredientRow";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -15,6 +15,7 @@ const gram = {
   abbreviation: "g",
   useAbbreviation: true,
   fraction: false,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };
@@ -41,24 +42,6 @@ const ingredient = (overrides: Partial<Ingredient> = {}): Ingredient => ({
   originalText: "",
   fixed: false,
   ...overrides,
-});
-
-describe("ingredientLineParts", () => {
-  test("amount and bold-able food, split apart", () => {
-    expect(ingredientLineParts(ingredient())).toEqual({ amount: "250 g", food: "flour", raw: false });
-  });
-
-  test("no quantity: no amount, just the food", () => {
-    expect(ingredientLineParts(ingredient({ quantity: null, unit: null }))).toEqual({ amount: "", food: "flour", raw: false });
-  });
-
-  test("no food but an originalText: the raw line, unstyled", () => {
-    expect(ingredientLineParts(ingredient({ food: null, originalText: "a handful of basil" }))).toEqual({
-      amount: "",
-      food: "a handful of basil",
-      raw: true,
-    });
-  });
 });
 
 /** A window whose sessionStorage is real (an in-memory StorageLike), so useIngredientTick reads what a test seeds. */

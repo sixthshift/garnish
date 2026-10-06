@@ -1,7 +1,7 @@
 import type { Food, Unit } from "../reference";
 
 /** The unit fields display needs. A full `Unit` satisfies it. */
-export type DisplayUnit = Pick<Unit, "name" | "pluralName" | "abbreviation" | "useAbbreviation" | "fraction">;
+export type DisplayUnit = Pick<Unit, "name" | "pluralName" | "abbreviation" | "useAbbreviation" | "fraction" | "portion">;
 
 /** The food fields display needs. A full `Food` satisfies it. */
 export type DisplayFood = Pick<Food, "name" | "pluralName">;
@@ -57,26 +57,59 @@ export function formatAmount(quantity: number | null, unit: DisplayUnit | null):
   return [formatQuantity(quantity, unit), formatUnit(quantity, unit)].filter((part) => part !== "").join(" ");
 }
 
-/** Food label: plural when the quantity is null, 0 or above 1 and a plural exists; else the name. Empty for no food. */
-export function formatFood(quantity: number | null, food: DisplayFood | null): string {
-  if (food === null) return "";
-  const plural = quantity === null || quantity === 0 || quantity > 1;
-  if (plural && food.pluralName !== null && food.pluralName.trim() !== "") return food.pluralName;
-  return food.name;
+/**
+ * The line's words, inflected and not yet joined. `raw` is a row with no food
+ * whose original text stands in for the whole line; otherwise each piece is
+ * its final display text, "" when the row has none.
+ */
+export type IngredientTokens = { raw: false; quantity: string; unit: string; food: string; note: string } | { raw: true; text: string };
+
+/**
+ * An ingredient as display tokens, with the food agreeing in number with what
+ * measures it: "1 lemon", "2 lemons", "1 cup blueberries", "2 slices lemon".
+ * `formatIngredient` is these tokens joined; a consumer that styles the pieces
+ * apart takes them from here. Builds from a row, not from a line: parsing is
+ * `parseIngredient`. Pure.
+ */
+export function inflectIngredient(ingredient: DisplayIngredient): IngredientTokens {
+  const { quantity, unit, food, note, originalText } = ingredient;
+  if (food === null && originalText.trim() !== "") return { raw: true, text: originalText.trim() };
+
+  const hasQuantity = quantity !== null && quantity !== 0;
+  return {
+    raw: false,
+    quantity: formatQuantity(quantity, unit),
+    unit: hasQuantity ? formatUnit(quantity, unit) : "",
+    food: formatFood(quantity, hasQuantity ? unit : null, food),
+    note: note.trim(),
+  };
 }
 
 /**
  * One ingredient line: "1½ cups flour, sifted", "2 eggs", "salt, to taste".
- * No food but an originalText: the originalText verbatim. No quantity: the
- * unit is skipped. Nothing to show: "".
+ * `inflectIngredient`'s tokens joined: no food but an originalText gives the
+ * originalText verbatim; no quantity skips the unit. Nothing to show: "".
  */
 export function formatIngredient(ingredient: DisplayIngredient): string {
-  const { quantity, unit, food, note, originalText } = ingredient;
-  if (food === null && originalText.trim() !== "") return originalText.trim();
+  const tokens = inflectIngredient(ingredient);
+  if (tokens.raw) return tokens.text;
+  const head = [tokens.quantity, tokens.unit, tokens.food].filter((part) => part !== "").join(" ");
+  return [head, tokens.note].filter((part) => part !== "").join(", ");
+}
 
-  const hasQuantity = quantity !== null && quantity !== 0;
-  const head = [hasQuantity ? formatAmount(quantity, unit) : "", formatFood(quantity, food)].filter((part) => part !== "").join(" ");
-  return [head, note.trim()].filter((part) => part !== "").join(", ");
+/**
+ * Food label, agreeing in number with what measures it. A measure (cup,
+ * gram, can, bunch) takes the plural whatever the amount: "1 cup
+ * blueberries". A portion unit (slice, piece) cuts one item, so the food
+ * stays singular: "2 slices lemon". A bare count is singular at 1 or below
+ * and plural above: "½ lemon", "2 lemons"; no amount at all reads as plural.
+ * The name when the food has no plural. Empty for no food.
+ */
+function formatFood(quantity: number | null, unit: DisplayUnit | null, food: DisplayFood | null): string {
+  if (food === null) return "";
+  const plural = unit !== null ? !unit.portion : quantity === null || quantity === 0 || quantity > 1;
+  if (plural && food.pluralName !== null && food.pluralName.trim() !== "") return food.pluralName;
+  return food.name;
 }
 
 /** Decimals to 2 places with trailing zeros trimmed: 1.5 -> "1.5", 2 -> "2", 0.125 -> "0.13". */

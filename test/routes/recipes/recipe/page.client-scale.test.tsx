@@ -6,9 +6,8 @@
 // `getRecipe` is wrapped in the mock factory with a counter, so "makes no
 // server call" is a call count that does not move across a servings change.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { formatIngredient } from "../../../../src/domain/ingredient";
+import { formatIngredient, inflectIngredient } from "../../../../src/domain/ingredient";
 import type { Recipe } from "../../../../src/domain/recipe";
-import { ingredientLineParts } from "../../../../src/routes/recipes/recipe/components/IngredientRow";
 import { Route as CookRoute } from "../../../../src/routes/recipes/recipe/cook/route";
 import { Route as ViewRoute } from "../../../../src/routes/recipes/recipe/route";
 import { createRecipe, getRecipe } from "../../../../src/server/fns/recipes";
@@ -74,9 +73,15 @@ function amountsInHtml(html: string): string[] {
   return [...html.matchAll(/data-testid="ingredient-amount">([^<]*)</g)].map((match) => (match[1] ?? "").trim());
 }
 
+/** The amount a row renders: its quantity and unit tokens. */
+function amountOf(ingredient: Recipe["parts"][number]["ingredients"][number]): string {
+  const tokens = inflectIngredient(ingredient);
+  return tokens.raw ? "" : [tokens.quantity, tokens.unit].filter((part) => part !== "").join(" ");
+}
+
 /** Every amount the given document would render, in document order. */
 function amountsInDoc(doc: Recipe): string[] {
-  return doc.parts.flatMap((part) => part.ingredients.map((i) => ingredientLineParts(i).amount)).filter((amount) => amount !== "");
+  return doc.parts.flatMap((part) => part.ingredients.map((i) => amountOf(i))).filter((amount) => amount !== "");
 }
 
 describe("the page scales the stored document the way the server would", () => {

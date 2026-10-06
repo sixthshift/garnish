@@ -22,6 +22,7 @@ const unit = (name: string, pluralName: string | null = null) => ({
   abbreviation: "",
   useAbbreviation: false,
   fraction: true,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 });

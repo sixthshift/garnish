@@ -58,6 +58,7 @@ function selectIngredientPreview(dz: Db, recipeId: string): string[] {
       unitAbbreviation: unit.abbreviation,
       unitUseAbbreviation: unit.useAbbreviation,
       unitFraction: unit.fraction,
+      unitPortion: unit.portion,
       foodName: food.name,
       foodPluralName: food.pluralName,
     })
@@ -81,6 +82,7 @@ function selectIngredientPreview(dz: Db, recipeId: string): string[] {
                 abbreviation: row.unitAbbreviation!,
                 useAbbreviation: row.unitUseAbbreviation!,
                 fraction: row.unitFraction!,
+                portion: row.unitPortion!,
               },
         food: row.foodName === null ? null : { name: row.foodName, pluralName: row.foodPluralName },
         note: row.note,

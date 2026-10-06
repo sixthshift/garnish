@@ -56,10 +56,20 @@ const gram = {
   abbreviation: "g",
   useAbbreviation: true,
   fraction: false,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };
-const cup = { ...gram, id: "ffffffff-ffff-4fff-8fff-ffffffffffff", name: "cup", pluralName: "cups", abbreviation: "", useAbbreviation: false, fraction: true };
+const cup = {
+  ...gram,
+  id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+  name: "cup",
+  pluralName: "cups",
+  abbreviation: "",
+  useAbbreviation: false,
+  fraction: true,
+  portion: false,
+};
 const units = [gram, cup];
 
 /** Two components, Pastry (two rows) and Filling (one row), built with the helpers. */
@@ -170,6 +180,7 @@ describe("foodReference and unitReference", () => {
       abbreviation: "",
       useAbbreviation: false,
       fraction: true,
+      portion: false,
       standardQuantity: null,
       standardUnitId: null,
     });

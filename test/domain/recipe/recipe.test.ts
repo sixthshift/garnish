@@ -35,6 +35,7 @@ const gram = {
   abbreviation: "g",
   useAbbreviation: true,
   fraction: false,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };
@@ -66,6 +67,7 @@ const fullRead: Recipe = {
     abbreviation: "",
     useAbbreviation: false,
     fraction: true,
+    portion: false,
     standardQuantity: null,
     standardUnitId: null,
   },

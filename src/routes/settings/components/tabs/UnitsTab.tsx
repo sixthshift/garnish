@@ -115,4 +115,5 @@ export const unitColumns: DataTableColumn<Unit>[] = [
   { key: "abbreviation", header: "Abbreviation", value: (unit) => unit.abbreviation },
   { key: "useAbbreviation", header: "Use abbreviation", value: (unit) => unit.useAbbreviation, secondary: true },
   { key: "fraction", header: "Fractions", value: (unit) => unit.fraction, secondary: true },
+  { key: "portion", header: "Portion", value: (unit) => unit.portion, secondary: true },
 ];

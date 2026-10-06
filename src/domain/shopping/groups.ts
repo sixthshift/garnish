@@ -1,4 +1,4 @@
-import { formatAmount, formatFood, formatQuantity } from "../ingredient";
+import { formatIngredient, formatQuantity } from "../ingredient";
 import type { Aisle } from "../reference";
 import type { ShoppingItem, ShoppingItemSource } from "./schema";
 
@@ -67,8 +67,7 @@ export function groupByAisle(items: readonly ShoppingItem[]): ShoppingAisleGroup
  */
 export function shoppingItemLabel(item: Pick<ShoppingItem, "quantity" | "unit" | "food" | "text">): string {
   if (item.food === null) return item.text.trim();
-  const amount = item.quantity === null || item.quantity === 0 ? "" : formatAmount(item.quantity, item.unit);
-  return [amount, formatFood(item.quantity, item.food)].filter((part) => part !== "").join(" ");
+  return formatIngredient({ quantity: item.quantity, unit: item.unit, food: item.food, note: "", originalText: "" });
 }
 
 /**

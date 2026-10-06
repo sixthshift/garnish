@@ -116,6 +116,7 @@ export function ingredientSummary(ingredient: DraftIngredient): string {
             abbreviation: unit.abbreviation ?? "",
             useAbbreviation: unit.useAbbreviation ?? false,
             fraction: unit.fraction ?? true,
+            portion: unit.portion ?? false,
           },
     food: food === null ? null : { name: food.name, pluralName: food.pluralName ?? null },
     note: ingredient.note ?? "",

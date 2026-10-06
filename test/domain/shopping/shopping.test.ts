@@ -97,6 +97,7 @@ const gram = {
   abbreviation: "g",
   useAbbreviation: true,
   fraction: false,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };
@@ -108,6 +109,7 @@ const cup = {
   abbreviation: "cup",
   useAbbreviation: false,
   fraction: true,
+  portion: false,
   standardQuantity: null,
   standardUnitId: null,
 };

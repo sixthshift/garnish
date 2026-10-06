@@ -14,6 +14,7 @@ export type Unit = {
   abbreviation: string;
   useAbbreviation: boolean;
   fraction: boolean;
+  portion: boolean;
   standardQuantity: number | null;
   standardUnitId: string | null;
 };
@@ -37,6 +38,7 @@ export function unitRepository(db: Database) {
         abbreviation: input.abbreviation ?? "",
         useAbbreviation: input.useAbbreviation ?? false,
         fraction: input.fraction ?? true,
+        portion: input.portion ?? false,
         standardQuantity: input.standardQuantity ?? null,
         standardUnitId: input.standardUnitId ?? null,
       })

@@ -19,6 +19,7 @@ function unit(name: string): Unit {
     abbreviation: known?.abbreviation ?? "",
     useAbbreviation: known?.useAbbreviation ?? false,
     fraction: known?.fraction ?? true,
+    portion: known?.portion ?? false,
     standardQuantity: null,
     standardUnitId: null,
   };

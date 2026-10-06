@@ -7,7 +7,7 @@ import { mergeTargets } from "../../../../src/lib/lists";
 import { UnitMergeDialogContent } from "../../../../src/routes/settings/components/UnitMergeDialog";
 
 function unit(id: string, name: string): Unit {
-  return { id, name, pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, standardQuantity: null, standardUnitId: null };
+  return { id, name, pluralName: null, abbreviation: "", useAbbreviation: false, fraction: true, portion: false, standardQuantity: null, standardUnitId: null };
 }
 
 const gram = unit("u1", "gram");

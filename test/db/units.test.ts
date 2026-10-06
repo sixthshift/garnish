@@ -22,6 +22,7 @@ test("create applies Mealie defaults and list returns by name", () => {
     abbreviation: "",
     useAbbreviation: false,
     fraction: true,
+    portion: false,
     standardQuantity: null,
     standardUnitId: null,
   });

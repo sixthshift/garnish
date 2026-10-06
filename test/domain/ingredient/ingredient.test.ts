@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { type DisplayFood, type DisplayIngredient, type DisplayUnit, formatFood, formatIngredient } from "../../../src/domain/ingredient/format";
+import { type DisplayFood, type DisplayIngredient, type DisplayUnit, formatIngredient, inflectIngredient } from "../../../src/domain/ingredient/format";
 
 const unit = (overrides: Partial<DisplayUnit>): DisplayUnit => ({
   name: "cup",
@@ -7,6 +7,7 @@ const unit = (overrides: Partial<DisplayUnit>): DisplayUnit => ({
   abbreviation: "cup",
   useAbbreviation: false,
   fraction: true,
+  portion: false,
   ...overrides,
 });
 
@@ -14,11 +15,14 @@ const cup = unit({});
 const gram = unit({ name: "gram", pluralName: "grams", abbreviation: "g", useAbbreviation: true, fraction: false });
 const tsp = unit({ name: "teaspoon", pluralName: "teaspoons", abbreviation: "tsp", useAbbreviation: true });
 const clove = unit({ name: "clove", pluralName: "cloves", abbreviation: "clove" });
+const slice = unit({ name: "slice", pluralName: "slices", abbreviation: "slice", portion: true });
 
 const flour: DisplayFood = { name: "flour", pluralName: null };
 const egg: DisplayFood = { name: "egg", pluralName: "eggs" };
 const salt: DisplayFood = { name: "salt", pluralName: "" }; // empty plural falls back to the name
 const garlic: DisplayFood = { name: "garlic", pluralName: null };
+const blueberry: DisplayFood = { name: "blueberry", pluralName: "blueberries" };
+const lemon: DisplayFood = { name: "lemon", pluralName: "lemons" };
 
 const ingredient = (overrides: Partial<DisplayIngredient>): DisplayIngredient => ({
   quantity: null,
@@ -29,27 +33,78 @@ const ingredient = (overrides: Partial<DisplayIngredient>): DisplayIngredient =>
   ...overrides,
 });
 
-describe("formatFood", () => {
-  test.each([
-    // plural when the quantity is null, 0 or above 1 and a plural exists
-    [2, egg, "eggs"],
-    [1.5, egg, "eggs"],
-    [12, egg, "eggs"],
-    [0, egg, "eggs"],
-    [null, egg, "eggs"],
-    // singular at exactly 1 and below 1
-    [1, egg, "egg"],
-    [0.5, egg, "egg"],
-    // no plural: the name
-    [2, flour, "flour"],
-    [null, flour, "flour"],
-    [2, salt, "salt"],
-    [null, salt, "salt"],
-    // no food
-    [2, null, ""],
-    [null, null, ""],
-  ])("%s x %o -> %s", (quantity, food, expected) => {
-    expect(formatFood(quantity, food)).toBe(expected);
+describe("inflectIngredient", () => {
+  const food = (quantity: number | null, u: DisplayUnit | null, f: DisplayFood | null) => {
+    const tokens = inflectIngredient(ingredient({ quantity, unit: u, food: f }));
+    return tokens.raw ? tokens.text : tokens.food;
+  };
+
+  describe("a bare count: singular at 1 or below, plural above", () => {
+    test.each([
+      [2, egg, "eggs"],
+      [1.5, egg, "eggs"],
+      [12, egg, "eggs"],
+      [1, egg, "egg"],
+      [0.5, egg, "egg"],
+      // no amount reads as plural
+      [0, egg, "eggs"],
+      [null, egg, "eggs"],
+    ])("%s x %o -> %s", (quantity, f, expected) => {
+      expect(food(quantity, null, f)).toBe(expected);
+    });
+  });
+
+  describe("a measure: plural whatever the amount", () => {
+    test.each([
+      [1, cup, blueberry, "blueberries"],
+      [0.5, cup, blueberry, "blueberries"],
+      [2, cup, blueberry, "blueberries"],
+      [1, gram, egg, "eggs"],
+      [0.25, tsp, lemon, "lemons"],
+    ])("%s %o x %o -> %s", (quantity, u, f, expected) => {
+      expect(food(quantity, u, f)).toBe(expected);
+    });
+  });
+
+  describe("a portion: the food stays singular", () => {
+    test.each([
+      [1, lemon, "lemon"],
+      [2, lemon, "lemon"],
+      [0.5, lemon, "lemon"],
+    ])("%s slice x %o -> %s", (quantity, f, expected) => {
+      expect(food(quantity, slice, f)).toBe(expected);
+    });
+  });
+
+  test("a unit without an amount is skipped, so the food reads as a bare count", () => {
+    expect(food(null, slice, lemon)).toBe("lemons");
+    expect(food(0, cup, blueberry)).toBe("blueberries");
+  });
+
+  test("no plural: the name", () => {
+    expect(food(2, null, flour)).toBe("flour");
+    expect(food(null, null, flour)).toBe("flour");
+    expect(food(2, null, salt)).toBe("salt");
+    expect(food(1, cup, salt)).toBe("salt");
+  });
+
+  test("tokens: each piece formatted, none joined", () => {
+    expect(inflectIngredient(ingredient({ quantity: 1.5, unit: cup, food: blueberry, note: " washed " }))).toEqual({
+      raw: false,
+      quantity: "1½",
+      unit: "cups",
+      food: "blueberries",
+      note: "washed",
+    });
+    expect(inflectIngredient(ingredient({ unit: cup, food: flour }))).toEqual({ raw: false, quantity: "", unit: "", food: "flour", note: "" });
+    expect(inflectIngredient(ingredient({}))).toEqual({ raw: false, quantity: "", unit: "", food: "", note: "" });
+  });
+
+  test("no food but an originalText: the raw line, verbatim", () => {
+    expect(inflectIngredient(ingredient({ quantity: 2, unit: cup, note: "sifted", originalText: " a handful of basil " }))).toEqual({
+      raw: true,
+      text: "a handful of basil",
+    });
   });
 });
 
@@ -58,7 +113,9 @@ describe("formatIngredient", () => {
     test.each([
       [ingredient({ quantity: 1.5, unit: cup, food: flour, note: "sifted" }), "1½ cups flour, sifted"],
       [ingredient({ quantity: 250, unit: gram, food: flour }), "250 g flour"],
-      [ingredient({ quantity: 2, unit: cup, food: egg }), "2 cups eggs"], // Mealie pluralises the food beside a unit
+      [ingredient({ quantity: 2, unit: cup, food: egg }), "2 cups eggs"],
+      [ingredient({ quantity: 1, unit: cup, food: blueberry }), "1 cup blueberries"], // a measure takes the plural at 1
+      [ingredient({ quantity: 2, unit: slice, food: lemon }), "2 slices lemon"], // a portion keeps the food singular
       [ingredient({ quantity: 0.5, unit: tsp, food: salt }), "½ tsp salt"],
       [ingredient({ quantity: 2, unit: clove, food: garlic, note: "crushed" }), "2 cloves garlic, crushed"],
       [ingredient({ quantity: 1, unit: clove, food: garlic }), "1 clove garlic"],
