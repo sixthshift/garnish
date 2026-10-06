@@ -11,7 +11,7 @@ import { timelineRepository } from "../models/timeline/repo";
 import { type Unit, unitRepository } from "../models/unit/repo";
 import { DEFAULT_PLANNER_RULES } from "./planner";
 import { SAMPLE_RECIPES } from "./recipes";
-import { seedStarterFoods } from "./starter";
+import { seedFoodPlurals, seedStarterFoods } from "./starter";
 import { seedStatements } from "./statements";
 import { DEFAULT_STYLE_RULES } from "./style";
 import { SAMPLE_TIMELINE } from "./timeline";
@@ -22,6 +22,8 @@ export type SeedResult = {
   aisles: Aisle[];
   foods: Food[];
   aliasedFoods: Food[];
+  /** Starter foods the plurals batch renamed, gave a plural or new aliases (`foodPlurals.ts`). */
+  correctedFoods: Food[];
   styleRules: StyleRule[];
   rewordedStyleRules: StyleRule[];
   retiredStyleRules: StyleRule[];
@@ -34,7 +36,8 @@ export type SeedResult = {
  * Insert any default unit not already present (name compared
  * case-insensitively), the starter aisles and foods if this database has
  * never had them (`starter.ts`, once per database rather than on every start,
- * so a food the household deletes stays deleted), and any statement of the two
+ * so a food the household deletes stays deleted), then the plurals batch
+ * that corrects them, once likewise (`foodPlurals.ts`), and any statement of the two
  * guides — the house style and the planner — that is not already there. Both guides go through the same
  * `seedStatements` helper, which owns the match-by-text and `was` logic and is
  * documented there. Runs in one transaction. Returns only the rows created,
@@ -58,6 +61,7 @@ export function seed(db: Database): SeedResult {
     }
 
     const starter = seedStarterFoods(db);
+    const correctedFoods = seedFoodPlurals(db);
     const style = seedStatements(styleRepo, DEFAULT_STYLE_RULES);
     const plan = seedStatements(planner.rules, DEFAULT_PLANNER_RULES);
 
@@ -66,6 +70,7 @@ export function seed(db: Database): SeedResult {
       aisles: starter.aisles,
       foods: starter.foods,
       aliasedFoods: starter.aliasedFoods,
+      correctedFoods,
       styleRules: style.made,
       rewordedStyleRules: style.reworded,
       retiredStyleRules: style.retired,

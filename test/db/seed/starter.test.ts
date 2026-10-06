@@ -4,9 +4,10 @@ import { openDatabase } from "../../../src/db/connection/open";
 import { migrate } from "../../../src/db/migrations/migrate";
 import { aisleRepository } from "../../../src/db/models/aisle/repo";
 import { foodRepository } from "../../../src/db/models/food/repo";
-import { STARTER_AISLES, STARTER_FOODS } from "../../../src/db/seed/foods";
+import { correctedStarterFoods, FOOD_PLURALS } from "../../../src/db/seed/foodPlurals";
+import { STARTER_AISLES, STARTER_FOODS, type StarterFood } from "../../../src/db/seed/foods";
 import { seed } from "../../../src/db/seed/seed";
-import { seedStarterFoods } from "../../../src/db/seed/starter";
+import { seedFoodPlurals, seedStarterFoods } from "../../../src/db/seed/starter";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { parseIngredient } from "../../../src/domain/ingredient";
 
@@ -16,10 +17,12 @@ beforeEach(async () => {
   migrate(db);
 });
 
-const wordsOf = (food: (typeof STARTER_FOODS)[number]) =>
-  [food.name, food.plural, ...(food.aliases ?? [])].filter((word): word is string => word !== undefined);
+const wordsOf = (food: StarterFood) => [food.name, food.plural, ...(food.aliases ?? [])].filter((word): word is string => word !== undefined);
 
-describe("the list", () => {
+describe.each([
+  ["the first batch", STARTER_FOODS],
+  ["the list a new database ends up with", correctedStarterFoods()],
+] as const)("%s", (_label, STARTER_FOODS: readonly StarterFood[]) => {
   test("every food sits in a starter aisle, and every aisle has a food", () => {
     const aisles = new Set<string>(STARTER_AISLES);
     expect(STARTER_FOODS.filter((food) => !aisles.has(food.aisle))).toEqual([]);
@@ -53,7 +56,7 @@ describe("the list", () => {
 
 describe("reading lines against it", () => {
   const units = DEFAULT_UNITS.map((unit) => ({ name: unit.name, pluralName: unit.pluralName ?? null, abbreviation: unit.abbreviation ?? "" }));
-  const foods = STARTER_FOODS.map((food) => ({ name: food.name, pluralName: food.plural ?? null, aliases: [...(food.aliases ?? [])] }));
+  const foods = correctedStarterFoods().map((food) => ({ name: food.name, pluralName: food.plural ?? null, aliases: [...(food.aliases ?? [])] }));
   const foodOf = (line: string) => parseIngredient(line, { units, foods }).food?.name ?? null;
 
   // A compound is a food of its own so its head never swallows it: with only
@@ -141,6 +144,7 @@ describe("seeding", () => {
     expect(second.aisles).toEqual([]);
     expect(second.foods).toEqual([]);
     expect(second.aliasedFoods).toEqual([]);
+    expect(second.correctedFoods).toEqual([]);
     expect(repo.getByName("onion")).toBeNull();
     expect(repo.getByName("plain flour")).toBeNull();
     expect(repo.getByName("flour")!.id).toBe(flour.id);
@@ -199,5 +203,80 @@ describe("seeding", () => {
     expect(after.aliases).toContain("minced garlic");
     expect(after.aliases).not.toContain("garlic clove");
     expect(repo.get(clove.id)).toEqual(clove);
+  });
+});
+
+describe("the plurals batch", () => {
+  test("a new database ends up with the corrected list, word for word", () => {
+    seed(db);
+    const stored = foodRepository(db)
+      .list()
+      .map((food) => ({ name: food.name, plural: food.pluralName, aliases: [...food.aliases].sort() }));
+    const expected = correctedStarterFoods().map((food) => ({ name: food.name, plural: food.plural ?? null, aliases: [...(food.aliases ?? [])].sort() }));
+    const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+    expect(stored.sort(byName)).toEqual(expected.sort(byName));
+  });
+
+  test("a database that had only the first batch is corrected: renamed, given a plural, given aliases", () => {
+    seedStarterFoods(db);
+    const repo = foodRepository(db);
+    const teaBags = repo.getByName("tea bags")!;
+    const changed = seedFoodPlurals(db);
+
+    expect(changed.map((food) => food.name)).toEqual(expect.arrayContaining(["tea bag", "lobster", "beetroot", "long red chilli"]));
+    expect(repo.get(teaBags.id)).toMatchObject({ name: "tea bag", pluralName: "tea bags" });
+    expect(repo.get(teaBags.id)!.aliases).not.toContain("tea bag");
+    expect(repo.getByName("lobster")!.pluralName).toBe("lobsters");
+    expect(repo.getByName("beetroot")!.pluralName).toBeNull();
+    expect(repo.getByName("long red chilli")!.aliases).toContain("fresh chillies");
+    expect(parseIngredient("2 fresh chillies", { units: [], foods: repo.list() }).food?.name).toBe("long red chilli");
+  });
+
+  test("it goes in once", () => {
+    seed(db);
+    const repo = foodRepository(db);
+    const teaBag = repo.getByName("tea bag")!;
+    repo.update(teaBag.id, { name: "tea bags", pluralName: null });
+    expect(seedFoodPlurals(db)).toEqual([]);
+    expect(repo.get(teaBag.id)!.name).toBe("tea bags");
+  });
+
+  test("the household's choices win: a renamed, deleted or re-pluralled food is left as it is", () => {
+    seedStarterFoods(db);
+    const repo = foodRepository(db);
+    const gherkins = repo.getByName("gherkins")!;
+    repo.update(gherkins.id, { name: "pickles" });
+    repo.remove(repo.getByName("lobster")!.id);
+    const beetroot = repo.getByName("beetroot")!;
+    repo.update(beetroot.id, { pluralName: "beets" });
+    const marshmallows = repo.getByName("marshmallows")!;
+    repo.update(marshmallows.id, { pluralName: "mallows" });
+
+    seedFoodPlurals(db);
+    expect(repo.get(gherkins.id)).toMatchObject({ name: "pickles" });
+    expect(repo.getByName("lobster")).toBeNull();
+    expect(repo.get(beetroot.id)!.pluralName).toBe("beets");
+    // Renamed to the singular, but the household's own plural stays.
+    expect(repo.get(marshmallows.id)).toMatchObject({ name: "marshmallow", pluralName: "mallows" });
+  });
+
+  test("a rename another food already answers to is skipped, and so is an alias another food has", () => {
+    seedStarterFoods(db);
+    const repo = foodRepository(db);
+    const mine = repo.create({ name: "my tea", aliases: ["tea bag"] });
+    repo.update(repo.getByName("tea bags")!.id, { aliases: [] });
+    const chilli = repo.create({ name: "fresh chilli mix", aliases: ["fresh chillies"] });
+
+    seedFoodPlurals(db);
+    expect(repo.getByName("tea bags")).not.toBeNull();
+    expect(repo.getByName("tea bag")).toBeNull();
+    expect(repo.get(mine.id)).toEqual(mine);
+    expect(repo.getByName("long red chilli")!.aliases).not.toContain("fresh chillies");
+    expect(repo.get(chilli.id)).toEqual(chilli);
+  });
+
+  test("every correction names a first-batch food", () => {
+    const names = new Set(STARTER_FOODS.map((food) => food.name));
+    expect(FOOD_PLURALS.filter((correction) => !names.has(correction.name)).map((correction) => correction.name)).toEqual([]);
   });
 });

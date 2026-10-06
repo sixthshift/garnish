@@ -4,13 +4,13 @@
 // until the fix that mends it takes the mark off, so every change to the
 // parser shows in this file as lines moving from one side to the other.
 import { describe, expect, test } from "vitest";
-import { STARTER_FOODS } from "../../../src/db/seed/foods";
+import { correctedStarterFoods } from "../../../src/db/seed/foodPlurals";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { parseIngredient } from "../../../src/domain/ingredient";
 import { BENCHMARK, type BenchmarkLine } from "../../fixtures/ingredients/benchmark";
 
 const units = DEFAULT_UNITS.map((unit) => ({ name: unit.name, pluralName: unit.pluralName ?? null, abbreviation: unit.abbreviation ?? "" }));
-const foods = STARTER_FOODS.map((food) => ({ name: food.name, pluralName: food.plural ?? null, aliases: [...(food.aliases ?? [])] }));
+const foods = correctedStarterFoods().map((food) => ({ name: food.name, pluralName: food.plural ?? null, aliases: [...(food.aliases ?? [])] }));
 
 /** The three labelled slots as the parser reads them, in the fixture's terms. */
 function read(entry: BenchmarkLine) {

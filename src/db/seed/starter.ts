@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { type Aisle, aisleRepository } from "../models/aisle/repo";
 import { type Food, foodRepository } from "../models/food/repo";
 import { seedBatchRepository } from "../models/seed/repo";
+import { FOOD_PLURALS, FOOD_PLURALS_BATCH, type FoodCorrection } from "./foodPlurals";
 import { STARTER_AISLES, STARTER_FOODS, type StarterAisle, type StarterFood } from "./foods";
 
 /** The batch name `seed_batch` records. A later addition to the list is a new batch with a new name. */
@@ -93,4 +94,67 @@ export function seedStarterFoods(db: Database, foodsList: readonly StarterFood[]
 
   batches.record(STARTER_BATCH);
   return { aisles: madeAisles, foods: madeFoods, aliasedFoods };
+}
+
+/**
+ * Apply the plurals batch (`foodPlurals.ts`) once, after the starter batch.
+ * Each correction finds its food by the first batch's name and touches only
+ * what is still as that batch left it:
+ *
+ * - a rename goes ahead unless another food answers to the new name; the new
+ *   name leaves the aliases, and the old name becomes the plural when the
+ *   food has none of its own;
+ * - a plural replaces the first batch's plural, never one the household set;
+ * - an alias goes in when no food answers to it yet.
+ *
+ * A food that is gone, or renamed by the household, is skipped. Returns the
+ * foods it changed. The caller owns the transaction.
+ */
+export function seedFoodPlurals(
+  db: Database,
+  corrections: readonly FoodCorrection[] = FOOD_PLURALS,
+  firstBatch: readonly StarterFood[] = STARTER_FOODS
+): Food[] {
+  const batches = seedBatchRepository(db);
+  if (batches.applied(FOOD_PLURALS_BATCH)) return [];
+
+  const foodRepo = foodRepository(db);
+  const foods = foodRepo.list();
+  const byName = new Map(foods.map((food) => [fold(food.name), food]));
+  const owner = new Map<string, string>();
+  for (const food of foods) for (const word of wordsOf(food)) if (!owner.has(fold(word))) owner.set(fold(word), food.id);
+  const claimedByOther = (word: string, id: string) => {
+    const by = owner.get(fold(word));
+    return by !== undefined && by !== id;
+  };
+  const firstPlural = new Map(firstBatch.map((food) => [fold(food.name), food.plural ?? null]));
+
+  const changed: Food[] = [];
+  for (const correction of corrections) {
+    const food = byName.get(fold(correction.name));
+    if (food === undefined) continue;
+    let { name, pluralName, aliases } = food;
+
+    if (correction.rename !== undefined && !claimedByOther(correction.rename, food.id)) {
+      const singular = correction.rename;
+      aliases = aliases.filter((alias) => fold(alias) !== fold(singular));
+      if (pluralName === null || pluralName.trim() === "") pluralName = name;
+      name = singular;
+    }
+    if (correction.plural !== undefined && (food.pluralName ?? null) === (firstPlural.get(fold(correction.name)) ?? null)) {
+      if (correction.plural === null || !claimedByOther(correction.plural, food.id)) pluralName = correction.plural;
+    }
+    const known = new Set([name, pluralName ?? "", ...aliases].map(fold));
+    const added = (correction.aliases ?? []).filter((alias) => !known.has(fold(alias)) && !owner.has(fold(alias)));
+    aliases = [...aliases, ...added];
+
+    if (name === food.name && pluralName === food.pluralName && aliases.length === food.aliases.length) continue;
+    const updated = foodRepo.update(food.id, { name, pluralName, aliases });
+    if (updated === null) continue;
+    for (const word of wordsOf(updated)) if (!owner.has(fold(word))) owner.set(fold(word), updated.id);
+    changed.push(updated);
+  }
+
+  batches.record(FOOD_PLURALS_BATCH);
+  return changed;
 }
