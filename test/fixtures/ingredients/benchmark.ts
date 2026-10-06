@@ -116,16 +116,16 @@ export const BENCHMARK: readonly BenchmarkLine[] = [
   of("2-4 cloves of garlic", 2, "clove", "garlic"),
 
   // ── dual: two amounts for one ingredient
-  dual("30g / 2 tbsp unsalted butter", 30, "gram", "unsalted butter", "the second amount is read as the food"),
-  dual("1/3 cup / 75 g sour cream", 1 / 3, "cup", "sour cream", "the second amount is read as the food"),
-  dual("1 kg / 2 lb beef mince", 1, "kilogram", "beef mince", "the second amount is read as the food"),
-  dual("500 g / 1 lb squid tubes", 500, "gram", "squid", "the second amount is read as the food"),
-  dual("700g / 24oz tomato passata", 700, "gram", "passata", "the second amount is read as the food"),
-  dual("150g/5oz plain flour", 150, "gram", "plain flour", "the second amount is read as the food"),
-  dual("3.5 oz / 100g salted butter", 100, "gram", "butter", "the imperial amount is kept and the metric one read as the food"),
-  dual("1 lb / 500g dried pappardelle", 500, "gram", "pappardelle", "the imperial amount is kept and the metric one read as the food"),
-  dual("1 cup / 155g cornflour / cornstarch", 1, "cup", "cornflour", "the second amount is read as the food"),
-  dual("1.25kg / 2.5 lb chuck beef", 1.25, "kilogram", "beef chuck", "the second amount is read as the food, and chuck beef names it back to front"),
+  dual("30g / 2 tbsp unsalted butter", 30, "gram", "unsalted butter"),
+  dual("1/3 cup / 75 g sour cream", 1 / 3, "cup", "sour cream"),
+  dual("1 kg / 2 lb beef mince", 1, "kilogram", "beef mince"),
+  dual("500 g / 1 lb squid tubes", 500, "gram", "squid"),
+  dual("700g / 24oz tomato passata", 700, "gram", "passata"),
+  dual("150g/5oz plain flour", 150, "gram", "plain flour"),
+  dual("3.5 oz / 100g salted butter", 100, "gram", "butter"),
+  dual("1 lb / 500g dried pappardelle", 500, "gram", "pappardelle"),
+  dual("1 cup / 155g cornflour / cornstarch", 1, "cup", "cornflour"),
+  dual("1.25kg / 2.5 lb chuck beef", 1.25, "kilogram", "beef chuck"),
 
   // ── pack: a count of packs of a size
   pack("400g can black beans, drained and rinsed", 1, "can", "black beans", "the size is read as the amount and the pack stops the food being found"),

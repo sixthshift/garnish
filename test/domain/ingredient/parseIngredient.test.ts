@@ -160,6 +160,33 @@ describe("parseIngredient", () => {
     });
   });
 
+  describe("an amount in a second unit after a slash", () => {
+    const OUNCE = unit("ounce", "ounces", "oz");
+    const ML = unit("millilitre", "millilitres", "ml");
+    const MILK = food("milk");
+    const BEANS = food("green bean", "green beans");
+    const both = (line: string) => parseIngredient(line, { units: [...VOCABULARY.units, OUNCE, ML], foods: [...VOCABULARY.foods, MILK, BEANS] });
+
+    test("goes to the note, as a bracketed one does, ahead of the comma tail", () => {
+      expect(both("250g/ 8oz green beans, trimmed")).toMatchObject({ quantity: 250, unit: GRAM, food: BEANS, foodText: "", note: "8oz, trimmed" });
+      expect(both("500g (1 lb) green beans")).toMatchObject({ quantity: 500, unit: GRAM, food: BEANS, note: "1 lb" });
+    });
+
+    test("the metric one is the amount in either order, with or without spaces round the slash", () => {
+      expect(both("8 oz / 250 g green beans")).toMatchObject({ quantity: 250, unit: GRAM, unitText: "g", food: BEANS, note: "8 oz" });
+      // Both metric (a cup is, here): the first stays.
+      expect(both("1 cup/250ml milk")).toMatchObject({ quantity: 1, unit: CUP, food: MILK, note: "250ml" });
+      expect(both("=8 oz/250 ml milk")).toMatchObject({ quantity: 250, fixed: true, unit: ML, note: "8 oz" });
+    });
+
+    test("a slash with no amount and unit after it is left to the food", () => {
+      expect(both("1 cup / milk")).toMatchObject({ food: null, foodText: "/ milk", note: "" });
+      expect(both("1 cup / 2 milk")).toMatchObject({ food: null, foodText: "/ 2 milk" });
+      // An amount and unit that end the line measure nothing, so they are not a second amount.
+      expect(both("250 g / 8 oz")).toMatchObject({ foodText: "/ 8 oz" });
+    });
+  });
+
   describe("an amount-less line does not spend its last word on a unit", () => {
     test("pinch alone stays text", () => {
       expect(parse("pinch")).toMatchObject({ quantity: null, unit: null, unitText: "", food: null, foodText: "pinch" });
