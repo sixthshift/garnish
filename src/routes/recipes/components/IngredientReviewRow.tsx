@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { IngredientReview } from "../../../domain/draft";
 import type { FoodRow, Unit } from "../../../domain/reference";
-import { IngredientReviewFields } from "./IngredientReviewFields";
+import { asText, IngredientReviewFields, NO_UNIT, withoutUnit } from "./IngredientReviewFields";
 
 /** How long the food picker waits after the last keystroke before querying. */
 export const REVIEW_FOOD_DEBOUNCE_MS = 200;
@@ -50,8 +50,9 @@ export type IngredientReviewRowProps = {
 };
 
 export function IngredientReviewRow({ row, label, unitMatches, searchFoods, disabled, onChange }: IngredientReviewRowProps) {
-  const [unitQuery, setUnitQuery] = useState(row.unitText);
-  const [foodQuery, setFoodQuery] = useState(row.foodText);
+  // Each picker starts from what the row holds: the chosen row's name, the name to create, or the page's word.
+  const [unitQuery, setUnitQuery] = useState(choiceText(row.unit, row.unitText));
+  const [foodQuery, setFoodQuery] = useState(choiceText(row.food, row.foodText));
   const [foodFocused, setFoodFocused] = useState(false);
   const [foodRows, setFoodRows] = useState<FoodRow[]>([]);
 
@@ -93,6 +94,11 @@ export function IngredientReviewRow({ row, label, unitMatches, searchFoods, disa
       onFoodFocus={() => setFoodFocused(true)}
       onFoodBlur={() => setFoodFocused(false)}
       onPickUnit={(option) => {
+        if (option.value === NO_UNIT.value) {
+          setUnitQuery("");
+          onChange(withoutUnit(row));
+          return;
+        }
         const unit = units.find((candidate) => candidate.id === option.value);
         if (!unit) return;
         setUnitQuery(unit.name);
@@ -104,7 +110,17 @@ export function IngredientReviewRow({ row, label, unitMatches, searchFoods, disa
         setFoodQuery(food.name);
         onChange({ ...row, food: { kind: "existing", row: food } });
       }}
+      onLeaveAsText={() => {
+        setFoodQuery("");
+        onChange(asText(row));
+      }}
       onChange={onChange}
     />
   );
+}
+
+/** What a picker shows for a slot: the chosen row's name, the name to create, or the parser's text. Pure. */
+function choiceText(choice: IngredientReview["unit"] | IngredientReview["food"], text: string): string {
+  if (choice.kind === "existing") return choice.row.name;
+  return choice.kind === "create" ? choice.name : text;
 }

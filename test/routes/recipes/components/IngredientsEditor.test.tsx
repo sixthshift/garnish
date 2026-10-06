@@ -507,7 +507,7 @@ describe("Text-first ingredients (M27.2)", () => {
     expect(html).toContain('data-status="matched"');
     expect(html).toContain('data-status="review"');
     expect(html).toContain('aria-label="Line 2 food"');
-    expect(html).toContain("Unknown food “almond meal”");
+    expect(html).toContain("“almond meal” isn’t one of your foods");
     expect(html).toContain("flour");
   });
 

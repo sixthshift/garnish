@@ -11,8 +11,14 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { BulkReviewList } from "../../../../src/components/ui/bulk/BulkReviewList";
 import { type IngredientReview, isTextOnly, reviewedIngredient } from "../../../../src/domain/draft";
-import { pendingCreations, reviewRows, rowCommit } from "../../../../src/domain/ingredient";
-import { IngredientReviewFields, type IngredientReviewFieldsProps } from "../../../../src/routes/recipes/components/IngredientReviewFields";
+import { pendingCreations, reviewRows, rowCommit, rowStatus } from "../../../../src/domain/ingredient";
+import {
+  asText,
+  IngredientReviewFields,
+  type IngredientReviewFieldsProps,
+  NO_UNIT,
+  withoutUnit,
+} from "../../../../src/routes/recipes/components/IngredientReviewFields";
 import { foodSearchWords, IngredientReviewRow, suggestFoods } from "../../../../src/routes/recipes/components/IngredientReviewRow";
 import { amountChip, chipText } from "../../../../src/routes/recipes/components/reviewChips";
 
@@ -69,6 +75,27 @@ function elementWithChildren(node: ReactNode, text: string): ReactElement<Record
   }
 }
 
+/** The first element in `node` whose `aria-label` is `label`, without rendering it. */
+function withLabel(node: ReactNode, label: string): ReactElement<Record<string, any>> {
+  const found = tryLabel(node, label);
+  if (!found) throw new Error(`no element labelled ${JSON.stringify(label)}`);
+  return found;
+}
+
+function tryLabel(node: ReactNode, label: string): ReactElement<Record<string, any>> | null {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const hit = tryLabel(child as ReactNode, label);
+      if (hit) return hit;
+    }
+    return null;
+  }
+  if (!isValidElement(node)) return null;
+  const props = node.props as Record<string, unknown>;
+  if (props["aria-label"] === label) return node as ReactElement<Record<string, any>>;
+  return tryLabel(props.children as ReactNode, label);
+}
+
 function fields(row: IngredientReview, onChange: (next: IngredientReview) => void): IngredientReviewFieldsProps {
   return {
     row,
@@ -81,8 +108,11 @@ function fields(row: IngredientReview, onChange: (next: IngredientReview) => voi
     onFoodQuery: () => {},
     onFoodFocus: () => {},
     onFoodBlur: () => {},
-    onPickUnit: () => {},
+    onPickUnit: (option) => {
+      if (option.value === NO_UNIT.value) onChange(withoutUnit(row));
+    },
     onPickFood: () => {},
+    onLeaveAsText: () => onChange(asText(row)),
     onChange,
   };
 }
@@ -131,23 +161,21 @@ describe("a mixed paste in the review list", () => {
     expect(matched).toContain(">gram<");
     expect(matched).toContain(">flour<");
     expect(matched).toContain(">sifted<");
-    expect(matched).not.toContain("Unknown food");
-    expect(matched).not.toContain("Unknown unit");
+    expect(matched).not.toContain("isn’t one of your");
+    // A matched row still has its pickers, holding what was matched, to correct a wrong match.
+    expect(matched).toMatch(/aria-label="Line 1 food"[^>]*value="flour"|value="flour"[^>]*aria-label="Line 1 food"/);
   });
 
-  test("the unknown food is flagged, with create and pick-existing side by side", () => {
-    expect(html).toContain("Unknown food “almond meal”");
-    expect(html).toContain("Create “almond meal”");
-    expect(html).toContain('aria-label="Line 2 food"');
-    expect(html).toContain('placeholder="Pick an existing food"');
+  test("the unknown food is flagged under a picker holding the page's word", () => {
+    expect(html).toContain("“almond meal” isn’t one of your foods");
+    expect(html).toMatch(/aria-label="Line 2 food"[^>]*value="almond meal"|value="almond meal"[^>]*aria-label="Line 2 food"/);
     // Nothing is chosen yet, so the food chip reads as the text-only fallback.
     expect(html).toContain(">text only<");
   });
 
   test("the text-only line proposes nothing at all", () => {
     const textOnly = html.slice(html.indexOf('data-status="text"'));
-    expect(textOnly).not.toContain("Unknown food");
-    expect(textOnly).not.toContain("Create “");
+    expect(textOnly).not.toContain("isn’t one of your");
   });
 });
 
@@ -156,7 +184,8 @@ describe("deciding an unknown food", () => {
     const row = paste()[1]!;
     let next: IngredientReview | null = null;
     const tree = IngredientReviewFields(fields(row, (updated) => (next = updated)));
-    elementWithChildren(tree, "Create “almond meal”").props.onClick();
+    // Enter on the typed name, nothing of that name in the list: Create.
+    withLabel(tree, "Line 1 food").props.onSubmit("almond meal");
     const decided = next as unknown as IngredientReview;
     expect(decided.food).toEqual({ kind: "create", name: "almond meal" });
     expect(pendingCreations([decided])).toEqual({ foods: ["almond meal"], units: [] });
@@ -188,17 +217,35 @@ describe("deciding an unknown unit", () => {
     expect(row.unitText).toBe("sprigs");
     let next: IngredientReview | null = null;
     const tree = IngredientReviewFields(fields(row, (updated) => (next = updated)));
-    elementWithChildren(tree, "Create “sprigs”").props.onClick();
+    withLabel(tree, "Line 1 unit").props.onSubmit("sprigs");
     const approved = next as unknown as IngredientReview;
     expect(approved.unit).toEqual({ kind: "create", name: "sprigs" });
     expect(pendingCreations([approved])).toEqual({ foods: [], units: ["sprigs"] });
 
-    const dropped = elementWithChildren(IngredientReviewFields(fields(approved, (updated) => (next = updated))), "No unit");
-    dropped.props.onClick();
+    const unitField = withLabel(IngredientReviewFields(fields(approved, (updated) => (next = updated))), "Line 1 unit");
+    unitField.props.onSuggestionSelect(unitField.props.suggestions[0]);
     const declined = next as unknown as IngredientReview;
     expect(declined.unit).toEqual({ kind: "none" });
     // The row is still structured: only the unit went.
     expect(rowCommit(declined)).toMatchObject({ textOnly: false, quantity: 2, unit: null });
+  });
+
+  test("a word that is no unit is said so at once, and goes to the note", () => {
+    const carrot = { ...flour, id: "66666666-6666-4666-8666-666666666666", name: "carrot" };
+    const row = reviewRows(["1 small carrot, peeled"], { units, foods: [carrot] })[0]!;
+    expect(row).toMatchObject({ unitText: "small", note: "peeled" });
+    expect(rowStatus(row)).toBe("review");
+    let next: IngredientReview | null = null;
+    const unitField = withLabel(IngredientReviewFields(fields(row, (updated) => (next = updated))), "Line 1 unit");
+    // "No unit" is the picker's first row, ahead of the units and the create row.
+    expect(unitField.props.suggestions[0]).toMatchObject({ value: "No unit" });
+    expect(unitField.props.suggestions.at(-1)).toMatchObject({ label: "Create “small”" });
+    unitField.props.onSuggestionSelect(unitField.props.suggestions[0]);
+    const decided = next as unknown as IngredientReview;
+    expect(decided).toMatchObject({ unit: { kind: "none" }, unitText: "", note: "small, peeled" });
+    expect(rowStatus(decided)).toBe("matched");
+    expect(pendingCreations([decided])).toEqual({ foods: [], units: [] });
+    expect(rowCommit(decided)).toMatchObject({ textOnly: false, quantity: 1, unit: null, note: "small, peeled" });
   });
 });
 

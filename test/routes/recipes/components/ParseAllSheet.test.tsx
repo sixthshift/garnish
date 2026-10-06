@@ -160,7 +160,7 @@ describe("ParseAllSheetContent", () => {
     expect(html).toContain("3 lines read");
     expect(html.match(/data-review-row=""/g)).toHaveLength(3);
     expect(html).toContain('data-status="matched"');
-    expect(html).toContain("Unknown food “almond meal”");
+    expect(html).toContain("“almond meal” isn’t one of your foods");
     expect(html).toContain(">Apply<");
     expect(html).toContain(">Cancel<");
   });
