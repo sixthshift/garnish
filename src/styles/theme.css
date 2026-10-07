@@ -93,6 +93,9 @@ h3 {
   --color-earth-700: #7d6555;
   --color-earth-800: #5e4b40;
   --color-earth-900: #3d302a;
+  /* Half a step, for dark mode's elevated surface: 950 is the page, and a
+     card a full step up at 900 reads as a grey slab rather than a lift. */
+  --color-earth-925: #2f2520;
   --color-earth-950: #211916;
 }
 
@@ -216,14 +219,18 @@ h3 {
   --bg-strong-hovered: var(--color-earth-100);
   --bg-strong-pressed: var(--color-earth-50);
   --bg-strong-disabled: var(--color-earth-700);
-  --bg-normal: var(--color-earth-950);
+  /* Elevation goes *lighter* in dark, as light from above would make it: the
+     page (subtle) is the darkest surface and a card (normal) sits half a step
+     up, so the tone agrees with the border and shadow instead of fighting
+     them. Light mode gets the same order from the other end of the scale. */
+  --bg-normal: var(--color-earth-925);
   --bg-normal-hovered: var(--color-earth-900);
   --bg-normal-pressed: var(--color-earth-800);
-  --bg-normal-disabled: var(--color-earth-950);
-  --bg-subtle: var(--color-earth-900);
-  --bg-subtle-hovered: var(--color-earth-800);
-  --bg-subtle-pressed: var(--color-earth-700);
-  --bg-subtle-disabled: var(--color-earth-900);
+  --bg-normal-disabled: var(--color-earth-925);
+  --bg-subtle: var(--color-earth-950);
+  --bg-subtle-hovered: var(--color-earth-900);
+  --bg-subtle-pressed: var(--color-earth-800);
+  --bg-subtle-disabled: var(--color-earth-950);
   --bg-brand-subtle: var(--color-emerald-950);
   --bg-brand-subtle-hovered: var(--color-emerald-900);
   --bg-brand-subtle-pressed: var(--color-emerald-800);

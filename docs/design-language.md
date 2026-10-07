@@ -8,6 +8,7 @@ Compiled 2026-09-18 from screenshots of every page at 390px and 1440px, against 
 
 - Page body is **base**: `bg-bg-subtle`. Set once, in `AppShell`.
 - Anything holding the document's data is **elevated**: `Card` — tone, border and shadow together.
+- In dark mode elevation is *lighter*, as in light: the page is the darkest surface (`earth-950`) and a card, sheet or menu sits half a step up (`earth-925`). Decision 139.
 - A card never nests in a card. Group inside one with a rule, a heading or whitespace.
 - Where the element cannot be a `<div>` — an `<li>` step, a `<section>` plan day, a `<button>` import source — borrow `cardVariants` from the primitive rather than restating the classes.
 
