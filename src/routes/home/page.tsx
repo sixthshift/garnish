@@ -149,7 +149,7 @@ export function RecipesPage() {
   );
 }
 
-/** A six-sided die, for the "open a random recipe" button. */
+/** What the list shows when there is nothing to list: a search or filters that matched nothing, or no recipes yet. */
 function EmptyState({ filtered }: { filtered: boolean }) {
   if (filtered) {
     return (
