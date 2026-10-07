@@ -135,7 +135,7 @@ export function RecipesPage() {
       <EmptyBoundary isEmpty={recipes.length === 0} fallback={<EmptyState filtered={filtered} />}>
         <ul
           className={viewMode === "list" ? "flex flex-col gap-3" : "grid gap-4"}
-          style={viewMode === "list" ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN_WIDTH}, 1fr))` }}
+          style={viewMode === "list" ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(min(${CARD_MIN_WIDTH}, 100%), 1fr))` }}
         >
           {recipes.map((recipe) => (
             <li key={recipe.id}>

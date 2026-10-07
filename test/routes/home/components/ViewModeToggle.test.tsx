@@ -1,9 +1,9 @@
-// The grid/list view toggle: grid selected by default, and reflects whatever
+// The grid/list view toggle: grid selected by default (list on a phone), and reflects whatever
 // is already stored, same style as IngredientModeToggle.test.tsx's persistence
 // check.
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
-import { prefs, writePref } from "../../../../src/lib/prefs";
+import { prefs, VIEW_MODE_GRID_QUERY, writePref } from "../../../../src/lib/prefs";
 import type { StorageLike } from "../../../../src/lib/useLocalStorage";
 import { ViewModeToggle } from "../../../../src/routes/home/components/ViewModeToggle";
 
@@ -21,6 +21,16 @@ describe("ViewModeToggle", () => {
     const html = renderToString(<ViewModeToggle />);
     expect(html).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
     expect(html).toMatch(/aria-label="List view"[^>]*aria-checked="false"/);
+  });
+
+  test("on a phone with nothing stored it renders list selected, and a stored grid still wins there", () => {
+    const storage = fakeStorage();
+    const matchMedia = (query: string) => ({ matches: query !== VIEW_MODE_GRID_QUERY });
+    (globalThis as { window?: unknown }).window = { localStorage: storage, matchMedia };
+    expect(renderToString(<ViewModeToggle />)).toMatch(/aria-label="List view"[^>]*aria-checked="true"/);
+
+    writePref(storage, prefs.viewMode, "grid");
+    expect(renderToString(<ViewModeToggle />)).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
   });
 
   test("a stored list preference survives a reload: list renders checked", () => {

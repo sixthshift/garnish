@@ -167,6 +167,8 @@ describe("/ (list)", () => {
       expect(html).toContain('data-card-mode="grid"');
       expect(html).not.toContain('data-card-mode="list"');
       expect(html).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
+      // A track never wider than the list, so a phone under the card's minimum gets one full-width column, not a page that scrolls.
+      expect(html).toContain("grid-template-columns:repeat(auto-fill, minmax(min(22rem, 100%), 1fr))");
     });
 
     test("a stored list preference renders every card in list mode", async () => {

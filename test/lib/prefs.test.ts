@@ -1,8 +1,8 @@
 // The preference table and the read and write over it, against an in-memory
 // storage and one that throws on every access. The hooks share the table and
 // are pressed in test/routes/home/components/ViewModeToggle.dom.test.tsx.
-import { describe, expect, test } from "vitest";
-import { prefs, readPref, writePref } from "../../src/lib/prefs";
+import { afterEach, describe, expect, test } from "vitest";
+import { defaultViewMode, prefs, readPref, VIEW_MODE_GRID_QUERY, writePref } from "../../src/lib/prefs";
 import type { StorageLike } from "../../src/lib/useLocalStorage";
 
 /** A plain in-memory Storage-like, for round-trip tests. */
@@ -88,5 +88,32 @@ describe("readPref and writePref", () => {
     const storage = memoryStorage();
     writePref(storage, prefs.theme, "dark");
     expect(storage.getItem("theme")).toBe('"dark"');
+  });
+});
+
+describe("defaultViewMode", () => {
+  /** A window whose screen is `md` wide or not, answering only the grid's query. */
+  function screenOf(wide: boolean) {
+    (globalThis as { window?: unknown }).window = { matchMedia: (query: string) => ({ matches: query === VIEW_MODE_GRID_QUERY && wide }) };
+  }
+
+  afterEach(() => {
+    delete (globalThis as { window?: unknown }).window;
+  });
+
+  test("a phone opens on the list, where the index scans", () => {
+    screenOf(false);
+    expect(defaultViewMode()).toBe("list");
+  });
+
+  test("from md a screen opens on the grid", () => {
+    screenOf(true);
+    expect(defaultViewMode()).toBe("grid");
+  });
+
+  test("with no screen to ask it is the table's fallback", () => {
+    expect(defaultViewMode()).toBe(prefs.viewMode.fallback);
+    (globalThis as { window?: unknown }).window = {};
+    expect(defaultViewMode()).toBe(prefs.viewMode.fallback);
   });
 });
