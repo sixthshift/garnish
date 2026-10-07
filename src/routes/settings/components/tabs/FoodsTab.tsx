@@ -10,7 +10,6 @@ import type { DataTableColumn } from "../../../../lib/ui/dataTable";
 import { findOrCreateAisle } from "../../../../server/fns/aisles";
 import { deleteFood, mergeFood, updateFood, usingFood } from "../../../../server/fns/foods";
 import type { FoodRow } from "../../route";
-import { mergeColumn } from "../columns";
 import { FoodEditSheet, type FoodPatch } from "../FoodEditSheet";
 import { FoodMergeDialog } from "../FoodMergeDialog";
 import { dedupeSummaries, foodsLabel } from "../settingsLabels";
@@ -32,8 +31,6 @@ export function FoodsTab({
   const [deleteUsage, setDeleteUsage] = useState<RecipeSummary[]>([]);
   const [merging, setMerging] = useState<FoodRow | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const columns = [...foodColumns(aisles), mergeColumn<FoodRow>((food) => setMerging(food))];
 
   const askDelete = async (items: FoodRow[]) => {
     if (items.length === 0) return;
@@ -89,10 +86,13 @@ export function FoodsTab({
     <>
       <DataTable
         items={foods}
-        columns={columns}
+        columns={foodColumns(aisles)}
         keyOf={(food) => food.id}
         itemName="food"
-        onEdit={(food) => setEditing(food)}
+        rowActions={[
+          { label: "Edit", onSelect: (food) => setEditing(food) },
+          { label: "Merge", onSelect: (food) => setMerging(food) },
+        ]}
         onDelete={(selected) => void askDelete(selected)}
       />
       {editing && (

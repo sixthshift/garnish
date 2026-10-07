@@ -86,12 +86,11 @@ Recorded so they are not silently "fixed":
 ## Still open
 
 - **The plan's seven-column week.** At `max-w-6xl` each day is ~185px, which no recipe name fits and which forced the add row's placeholder down to "Add a recipe". Decision 71's own reasoning ("seven days of a vertical list is the shape that fits the screen") argues for a list at every width; the calendar strip argues for the grid. Undecided.
-- **Row actions in reference tables.** Every one of 85 food rows carries two text buttons, Merge and Edit. Decisions 54 and 65 put row actions in one `⋮` everywhere else; these tables predate that and were not revisited.
 - **`data-theme` hydration mismatch.** The server renders without it and the client adds it, so React logs a mismatch on every page and the first paint can flash light. `bootstrapTheme()` runs in an effect; it needs to run before hydration.
 
 ## Related
 
-- [`decisions.md`](decisions.md) — rows 97, 98, 99
+- [`decisions.md`](decisions.md) — rows 97, 98, 99, 137
 - [`ui-gap.md`](ui-gap.md) — what garnish borrowed from Mealie and Tandoor, feature by feature
 - `design-system/docs/visual-hierarchy.md` — the surface system and the axes
 - `design-system/docs/density.md` — the three density modes

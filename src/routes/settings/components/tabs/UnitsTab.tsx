@@ -8,7 +8,6 @@ import { useMutate } from "../../../../lib/mutate";
 import { toastError } from "../../../../lib/toast";
 import type { DataTableColumn } from "../../../../lib/ui/dataTable";
 import { deleteUnit, mergeUnit, updateUnit, usingUnit } from "../../../../server/fns/units";
-import { mergeColumn } from "../columns";
 import { dedupeSummaries, unitsLabel } from "../settingsLabels";
 import { UnitEditSheet, type UnitPatch } from "../UnitEditSheet";
 import { UnitMergeDialog } from "../UnitMergeDialog";
@@ -20,8 +19,6 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
   const [deleteUsage, setDeleteUsage] = useState<RecipeSummary[]>([]);
   const [merging, setMerging] = useState<Unit | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const columns = [...unitColumns, mergeColumn<Unit>((unit) => setMerging(unit))];
 
   const askDelete = async (items: Unit[]) => {
     if (items.length === 0) return;
@@ -75,10 +72,13 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
     <>
       <DataTable
         items={units}
-        columns={columns}
+        columns={unitColumns}
         keyOf={(unit) => unit.id}
         itemName="unit"
-        onEdit={(unit) => setEditing(unit)}
+        rowActions={[
+          { label: "Edit", onSelect: (unit) => setEditing(unit) },
+          { label: "Merge", onSelect: (unit) => setMerging(unit) },
+        ]}
         onDelete={(selected) => void askDelete(selected)}
       />
       {editing && <UnitEditSheet open unit={editing} busy={busy} onCancel={() => !busy && setEditing(null)} onSave={(patch) => void saveEdit(patch)} />}

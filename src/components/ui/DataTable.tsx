@@ -17,6 +17,7 @@ import {
   toggleAll,
   toggleKey,
 } from "../../lib/ui/dataTable";
+import { Menu } from "./Menu";
 
 export type DataTableProps<T> = {
   items: readonly T[];
@@ -26,12 +27,21 @@ export type DataTableProps<T> = {
   itemName: string;
   /** Plural of `itemName`; defaults to `itemName + "s"`. */
   itemNamePlural?: string;
-  /** When given, each row grows an Edit button. */
-  onEdit?: (item: T) => void;
+  /**
+   * What a row can do, gathered in one ⋯ menu at the row's end (decision 54):
+   * Edit, Merge. A menu per row rather than a button per action, so a phone
+   * row keeps its width for the name.
+   */
+  rowActions?: readonly RowAction<T>[];
   /** When given, a Delete button acts on the selected rows. */
   onDelete?: (items: T[]) => void;
   /** Rows carry checkboxes. Defaults to true when `onDelete` is given. */
   selectable?: boolean;
+  /**
+   * Rows drawn at once; "Show more" draws the next lot. Search, sort and
+   * select-all still act on every matching row, drawn or not.
+   */
+  pageSize?: number;
   /** Extra toolbar content, e.g. an Add button. */
   actions?: ReactNode;
   /** Shown instead of rows when there are none at all. */
@@ -39,15 +49,22 @@ export type DataTableProps<T> = {
   className?: string;
 };
 
+/** One entry in a row's ⋯ menu. */
+export type RowAction<T> = { label: string; onSelect: (item: T) => void; intent?: "neutral" | "danger" };
+
+/** Browse density's page: enough to scan, short of the 40,000px all 763 foods drew. */
+export const DATA_TABLE_PAGE_SIZE = 50;
+
 export function DataTable<T>({
   items,
   columns,
   keyOf,
   itemName,
   itemNamePlural,
-  onEdit,
+  rowActions,
   onDelete,
   selectable = onDelete !== undefined,
+  pageSize = DATA_TABLE_PAGE_SIZE,
   actions,
   emptyText,
   className,
@@ -55,12 +72,16 @@ export function DataTable<T>({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortState>(() => (columns[0] ? { key: columns[0].key, dir: "asc" } : null));
   const [selected, setSelected] = useState<readonly string[]>([]);
+  const [limit, setLimit] = useState(pageSize);
 
   const plural = itemNamePlural ?? `${itemName}s`;
   const visible = useMemo(() => sortItems(filterItems(items, columns, query), columns, sort), [items, columns, query, sort]);
   const visibleKeys = visible.map(keyOf);
   const selectedItems = visible.filter((item) => selected.includes(keyOf(item)));
-  const columnCount = columns.length + (selectable ? 1 : 0) + (onEdit ? 1 : 0);
+  const drawn = visible.slice(0, limit);
+  const hidden = visible.length - drawn.length;
+  const hasActions = rowActions !== undefined && rowActions.length > 0;
+  const columnCount = columns.length + (selectable ? 1 : 0) + (hasActions ? 1 : 0);
 
   return (
     <div className={cn("flex flex-col gap-3", className)} data-table={itemName}>
@@ -68,7 +89,10 @@ export function DataTable<T>({
         <SearchInput
           className="min-w-40 flex-1"
           value={query}
-          onValueChange={(next) => setQuery(next)}
+          onValueChange={(next) => {
+            setQuery(next);
+            setLimit(pageSize);
+          }}
           placeholder={`Search ${plural}`}
           aria-label={`Search ${plural}`}
           clearLabel="Clear search"
@@ -76,7 +100,8 @@ export function DataTable<T>({
         {actions}
         {onDelete !== undefined && (
           <Button type="button" variant="outline" intent="danger" size="sm" disabled={selectedItems.length === 0} onClick={() => onDelete(selectedItems)}>
-            Delete
+            {/* The count is on the button because a selection can reach rows not drawn. */}
+            {selectedItems.length === 0 ? "Delete" : `Delete ${selectedItems.length}`}
           </Button>
         )}
       </div>
@@ -86,7 +111,9 @@ export function DataTable<T>({
         {selectedItems.length > 0 ? `, ${selectedItems.length} selected` : ""}
       </Muted>
 
-      <Card size="sm" className="min-w-0 overflow-x-auto p-0">
+      {/* No overflow on the card: a row's menu hangs below the row and must not be clipped by it. The
+          table fits a phone because optional columns are `secondary` and the row's actions are one ⋯. */}
+      <Card size="sm" className="min-w-0 p-0">
         <table className="w-full border-collapse text-left text-sm">
           <caption className="sr-only">{plural}</caption>
           <thead>
@@ -94,7 +121,7 @@ export function DataTable<T>({
               {selectable && (
                 <th scope="col" className="w-8 p-2">
                   <Checkbox
-                    aria-label={`Select all ${plural}`}
+                    aria-label={hidden > 0 ? `Select all ${visible.length} ${plural}, including ${hidden} not shown` : `Select all ${plural}`}
                     checked={headerChecked(selected, visibleKeys)}
                     onCheckedChange={() => setSelected(toggleAll(selected, visibleKeys))}
                   />
@@ -125,15 +152,15 @@ export function DataTable<T>({
                   </th>
                 );
               })}
-              {onEdit !== undefined && (
-                <th scope="col" className="w-16 p-2">
+              {hasActions && (
+                <th scope="col" className="w-12 p-2">
                   <span className="sr-only">Actions</span>
                 </th>
               )}
             </tr>
           </thead>
           <tbody>
-            {visible.map((item) => {
+            {drawn.map((item) => {
               const key = keyOf(item);
               const rowName = cellText(columns[0]?.value(item) ?? key);
               return (
@@ -152,11 +179,15 @@ export function DataTable<T>({
                       {column.render ? column.render(item) : cellText(column.value(item))}
                     </td>
                   ))}
-                  {onEdit !== undefined && (
-                    <td className="p-2 text-right">
-                      <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => onEdit(item)}>
-                        Edit
-                      </Button>
+                  {hasActions && (
+                    <td className="p-1 text-right">
+                      <Menu label={`Actions for ${rowName}`} iconOnly className="inline-block">
+                        {rowActions.map((action) => (
+                          <Menu.Item key={action.label} intent={action.intent} onSelect={() => action.onSelect(item)}>
+                            {action.label}
+                          </Menu.Item>
+                        ))}
+                      </Menu>
                     </td>
                   )}
                 </tr>
@@ -172,6 +203,20 @@ export function DataTable<T>({
           </tbody>
         </table>
       </Card>
+
+      {hidden > 0 && (
+        <div className="flex flex-wrap items-center gap-2" data-table-more>
+          <Muted as="p" className="mr-auto text-sm">
+            Showing {drawn.length} of {visible.length}
+          </Muted>
+          <Button type="button" variant="outline" intent="neutral" size="sm" onClick={() => setLimit(limit + pageSize)}>
+            Show {Math.min(pageSize, hidden)} more
+          </Button>
+          <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setLimit(visible.length)}>
+            Show all {visible.length}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

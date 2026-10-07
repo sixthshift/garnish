@@ -1,4 +1,3 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { toast } from "@sixthshift/design-system/overlay";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
@@ -6,6 +5,7 @@ import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { EditSheet } from "../../../../components/ui/EditSheet";
+import { Menu } from "../../../../components/ui/Menu";
 import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../../domain/recipe";
 import type { Tag } from "../../../../domain/reference";
@@ -89,17 +89,14 @@ export function TagsTab({ tags }: { tags: readonly Tag[] }) {
                   <Link to="/" search={{ tag: tag.slug }} className="rounded-full focus-visible:outline-2 focus-visible:outline-border-brand">
                     <TagChip tag={tag.name} size="md" />
                   </Link>
-                  <div className="flex shrink-0 gap-1">
-                    <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setEditing(tag)}>
-                      Rename
-                    </Button>
-                    <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setMerging(tag)}>
-                      Merge
-                    </Button>
-                    <Button type="button" variant="ghost" intent="danger" size="sm" onClick={() => void askDelete(tag)}>
+                  <Menu label={`Actions for ${tag.name}`} iconOnly className="shrink-0">
+                    <Menu.Item onSelect={() => setEditing(tag)}>Rename</Menu.Item>
+                    <Menu.Item onSelect={() => setMerging(tag)}>Merge</Menu.Item>
+                    <Menu.Separator />
+                    <Menu.Item intent="danger" onSelect={() => void askDelete(tag)}>
                       Delete
-                    </Button>
-                  </div>
+                    </Menu.Item>
+                  </Menu>
                 </li>
               ))}
             </ul>

@@ -1,10 +1,10 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
 import { toast } from "@sixthshift/design-system/overlay";
 import { useEffect, useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { EditSheet } from "../../../../components/ui/EditSheet";
+import { Menu } from "../../../../components/ui/Menu";
 import { ReorderList } from "../../../../components/ui/ReorderList";
 import type { Aisle } from "../../../../domain/reference";
 import { useMutate } from "../../../../lib/mutate";
@@ -75,14 +75,13 @@ export function AislesTab({ aisles }: { aisles: readonly Aisle[] }) {
             renderItem={(aisle) => (
               <div className="flex items-center justify-between gap-2 rounded-md px-3 py-2 hover:bg-bg-subtle">
                 <span>{aisle.name}</span>
-                <div className="flex shrink-0 gap-1">
-                  <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={() => setEditing(aisle)}>
-                    Rename
-                  </Button>
-                  <Button type="button" variant="ghost" intent="danger" size="sm" onClick={() => setDeleting(aisle)}>
+                <Menu label={`Actions for ${aisle.name}`} iconOnly className="shrink-0">
+                  <Menu.Item onSelect={() => setEditing(aisle)}>Rename</Menu.Item>
+                  <Menu.Separator />
+                  <Menu.Item intent="danger" onSelect={() => setDeleting(aisle)}>
                     Delete
-                  </Button>
-                </div>
+                  </Menu.Item>
+                </Menu>
               </div>
             )}
           />

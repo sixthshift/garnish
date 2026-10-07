@@ -172,16 +172,26 @@ describe("DataTable render", () => {
     expect(html).toContain("<b>butter</b>");
   });
 
-  test("no checkboxes, no Edit and no Delete unless asked for", () => {
+  test("no checkboxes, no row menu and no Delete unless asked for", () => {
     const html = render();
     expect(html).not.toContain('role="checkbox"');
-    expect(html).not.toContain(">Edit<");
+    expect(html).not.toContain('aria-haspopup="menu"');
     expect(html).not.toContain(">Delete<");
   });
 
-  test("onEdit adds a row button, onDelete adds checkboxes and a disabled Delete", () => {
-    const html = render({ onEdit: () => {}, onDelete: () => {} });
-    expect(html.match(/>Edit</g)).toHaveLength(rows.length);
+  test("rowActions add one closed ⋯ menu per row, onDelete adds checkboxes and a disabled Delete", () => {
+    const html = render({
+      rowActions: [
+        { label: "Edit", onSelect: () => {} },
+        { label: "Merge", onSelect: () => {} },
+      ],
+      onDelete: () => {},
+    });
+    expect(html.match(/aria-haspopup="menu"/g)).toHaveLength(rows.length);
+    expect(html).toContain('aria-label="Actions for butter"');
+    // Closed: the actions are in the menu, not on the row.
+    expect(html).not.toContain(">Edit<");
+    expect(html).not.toContain(">Merge<");
     expect(html).toContain('aria-label="Select all foods"');
     expect(html).toContain('aria-label="Select butter"');
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Delete<\/button>/);
@@ -206,5 +216,22 @@ describe("DataTable render", () => {
 
   test("toolbar actions render beside the search box", () => {
     expect(render({ actions: <button type="button">Add food</button> })).toContain(">Add food<");
+  });
+
+  test("draws one page of rows and says how many more there are", () => {
+    const many = Array.from({ length: 60 }, (_, i) => ({ id: `r${i}`, name: `food ${String(i).padStart(2, "0")}`, aisle: null, aliases: 0, skip: false }));
+    const html = render({ items: many, onDelete: () => {} });
+    expect(html.match(/data-row=/g)).toHaveLength(50);
+    expect(html).toContain("60 foods");
+    expect(html).toContain("Showing <!-- -->50<!-- --> of <!-- -->60");
+    expect(html).toContain("Show <!-- -->10<!-- --> more");
+    expect(html).toContain("Show all <!-- -->60");
+    // Select-all reaches the rows not drawn, and says so.
+    expect(html).toContain('aria-label="Select all 60 foods, including 10 not shown"');
+  });
+
+  test("a table that fits one page has no Show more", () => {
+    expect(render()).not.toContain("data-table-more");
+    expect(render({ pageSize: 2 }).match(/data-row=/g)).toHaveLength(2);
   });
 });

@@ -126,14 +126,14 @@ describe("groupTagsAZ", () => {
 });
 
 describe("AislesTab render", () => {
-  test("lists aisles in order with a drag handle and rename/delete triggers, no dialog open", () => {
+  test("lists aisles in order with a drag handle and an actions menu (rename, delete), no dialog open", () => {
     const html = renderToString(<AislesTab aisles={[aisle("a1", "Frozen", 0), aisle("a2", "Dairy", 1)]} />);
     expect(html).toContain("Frozen");
     expect(html).toContain("Dairy");
     expect(html).toContain('aria-label="Drag aisle 1"');
     expect(html).toContain('aria-label="Drag aisle 2"');
-    expect(html.match(/>Rename</g)?.length).toBe(2);
-    expect(html.match(/>Delete</g)?.length).toBe(2);
+    expect(html).toContain('aria-label="Actions for Frozen"');
+    expect(html).toContain('aria-label="Actions for Dairy"');
     expect(html).not.toContain("will be deleted");
     expect(html).not.toContain('aria-label="Delete Frozen"');
   });
@@ -144,15 +144,14 @@ describe("AislesTab render", () => {
 });
 
 describe("TagsTab render", () => {
-  test("groups tags A–Z, each name links to the filtered recipe list, with rename/merge/delete triggers", async () => {
+  test("groups tags A–Z, each name links to the filtered recipe list, with an actions menu (rename, merge, delete)", async () => {
     const html = await renderWithRouter(() => <TagsTab tags={[tag("t1", "Weeknight"), tag("t2", "Baking")]} />);
     expect(html).toContain('aria-label="Tags starting with B"');
     expect(html).toContain('aria-label="Tags starting with W"');
     expect(html).toContain('href="/?tag=baking"');
     expect(html).toContain('href="/?tag=weeknight"');
-    expect(html.match(/>Rename</g)?.length).toBe(2);
-    expect(html.match(/>Merge</g)?.length).toBe(2);
-    expect(html.match(/>Delete</g)?.length).toBe(2);
+    expect(html).toContain('aria-label="Actions for Weeknight"');
+    expect(html).toContain('aria-label="Actions for Baking"');
     // No dialog is open by default.
     expect(html).not.toContain("will be deleted");
     expect(html).not.toContain("Merge into");

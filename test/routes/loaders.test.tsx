@@ -700,12 +700,12 @@ describe("/settings", () => {
     expect(html).toContain(`${foods.length} food`);
   });
 
-  test("each food row has an Edit and a Merge trigger, and no dialog is open by default", async () => {
+  test("each food row has one actions menu (Edit, Merge inside), and no dialog is open by default", async () => {
     await callServerFn(createFood, { name: "Butter" });
     await callServerFn(createFood, { name: "Salt" });
     const html = await renderRoute("/settings");
-    expect(html.match(/>Edit</g)?.length).toBe(2);
-    expect(html.match(/>Merge<\/button>/g)?.length).toBe(2);
+    expect(html).toContain('aria-label="Actions for Butter"');
+    expect(html).toContain('aria-label="Actions for Salt"');
     // The edit sheet, delete confirm and merge dialog all start closed.
     expect(html).not.toContain("Merge into");
     expect(html).not.toContain('aria-label="Edit Butter"');
