@@ -81,7 +81,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
       // list. Borrowing the recipe keeps the surface identical to every other
       // card — including the `bg-bg-normal` that now lifts it off the base page
       // — without restating the treatment here, where it would drift.
-      className={cn(cardVariants({ size: "md" }), "group", done && "opacity-60")}
+      className={cn(cardVariants({ size: "md" }), "group/quick-edit", done && "opacity-60")}
       data-testid="step-card"
       data-size={size}
       data-ticked={done ? "true" : undefined}

@@ -12,6 +12,7 @@ import { foodForRecipe } from "../../../../server/fns/foods";
 import { addPlanEntry } from "../../../../server/fns/plan";
 import { deleteRecipe, duplicateRecipe } from "../../../../server/fns/recipes";
 import { PlanPopover, planEntryFor } from "./PlanPopover";
+import { useQuickEditContext } from "./QuickEditContext";
 
 export type RecipeActionsProps = {
   recipe: Recipe;
@@ -25,6 +26,8 @@ export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProp
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [planning, setPlanning] = useState(false);
+  // Fixing lines shows every row's quick edit; on a touch screen it is the way to them. Only inside the page's provider.
+  const quickEdit = useQuickEditContext();
 
   const copy = async (text: string, what: string) => {
     if (text.trim() === "") {
@@ -88,6 +91,9 @@ export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProp
           <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
           <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>
           <Menu.Item onSelect={() => setPlanning(true)}>Plan</Menu.Item>
+          {quickEdit !== null && (
+            <Menu.Item onSelect={() => quickEdit.setFixing(!quickEdit.fixing)}>{quickEdit.fixing ? "Done fixing" : "Fix a line"}</Menu.Item>
+          )}
           {aiAvailable && <Menu.Item onSelect={() => void navigate({ to: "/recipes/$slug/style", params: { slug: recipe.slug } })}>Restyle steps</Menu.Item>}
           <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
           <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>

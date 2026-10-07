@@ -1,4 +1,5 @@
 import { toast } from "@sixthshift/design-system/overlay";
+import { cn } from "@sixthshift/design-system/utils";
 import { type ReactNode, useEffect, useState } from "react";
 import { PencilIcon } from "../../../../components/ui/icons";
 import { Menu } from "../../../../components/ui/Menu";
@@ -13,27 +14,46 @@ import { saveQuickEdit } from "./saveQuickEdit";
 
 // --- The trigger a row renders ------------------------------------------------
 
-/** A pencil, drawn the way the recipe route draws its own. */
-function pencil(label: string, onOpen: () => void) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      data-print="hide"
-      data-testid="quick-edit-trigger"
-      className="mt-0.5 shrink-0 rounded p-1 text-fg-subtle transition-opacity hover:text-fg-normal focus:opacity-100 md:opacity-0 md:group-hover:opacity-100"
-      onClick={onOpen}
-    >
-      <PencilIcon size={14} title="Edit" />
-    </button>
+/**
+ * How a row's trigger rests. Fixing lines (the recipe menu's "Fix a line"),
+ * it is simply there. Otherwise a page read or cooked from carries no edit
+ * mark per row (design-language rule 3): with a mouse the trigger keeps its
+ * place but shows only while its row is hovered, and on a touch screen it is
+ * visually hidden. In both it is still in the tab order and the accessibility
+ * tree, and shows once focus is inside it or its menu is open — the step
+ * menu's panel hangs inside the wrapper, so a clipped wrapper would clip it.
+ */
+export function triggerRest(fixing: boolean): string {
+  if (fixing) return "";
+  return cn(
+    "sr-only focus-within:not-sr-only has-[[aria-expanded=true]]:not-sr-only",
+    "[@media(hover:hover)]:not-sr-only [@media(hover:hover)]:opacity-0",
+    "group-hover/quick-edit:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100"
   );
 }
 
-/** The step card's own trigger: a quiet "…" menu in its corner, one item, "Edit step" — the pencil and the long press below `md` are gone. */
-function stepMenu(onOpen: () => void) {
+/** A pencil, drawn the way the recipe route draws its own: 44px square on a touch screen. */
+function pencil(label: string, fixing: boolean, onOpen: () => void) {
   return (
-    <div data-print="hide" className="mt-0.5 shrink-0">
-      <Menu label="Step actions" iconOnly>
+    <span data-print="hide" className={cn("shrink-0", triggerRest(fixing))}>
+      <button
+        type="button"
+        aria-label={label}
+        data-testid="quick-edit-trigger"
+        className="mt-0.5 flex items-center justify-center rounded p-1 text-fg-subtle hover:text-fg-normal pointer-coarse:-my-2.5 pointer-coarse:-mr-2.5 pointer-coarse:size-11"
+        onClick={onOpen}
+      >
+        <PencilIcon size={14} title="Edit" />
+      </button>
+    </span>
+  );
+}
+
+/** The step card's own trigger: an unboxed "…" menu in its corner, one item, "Edit step". */
+function stepMenu(fixing: boolean, onOpen: () => void) {
+  return (
+    <div data-print="hide" className={cn("-mt-1 -mr-1 shrink-0", triggerRest(fixing))}>
+      <Menu label="Step actions" iconOnly ghost>
         <Menu.Item onSelect={onOpen}>Edit step</Menu.Item>
       </Menu>
     </div>
@@ -41,12 +61,11 @@ function stepMenu(onOpen: () => void) {
 }
 
 /**
- * The quick edit for one ingredient row: the hover pencil (`md` and up) and
- * its sheet, or nothing outside the recipe page. Outside a
- * `QuickEditProvider`, or for a row whose part is unknown (the merged summary
- * list), there is nothing to render: the row is what it always was. Below
- * `md`, where there is no hover, an ingredient is edited from the editor
- * instead.
+ * The quick edit for one ingredient row: its pencil (resting as
+ * `triggerRest` says) and its sheet, or nothing outside the recipe page.
+ * Outside a `QuickEditProvider`, or for a row whose part is unknown (the
+ * merged summary list), there is nothing to render: the row is what it always
+ * was.
  */
 export function useQuickEditIngredient(partId: string | undefined, ingredientId: string): ReactNode {
   const context = useQuickEditContext();
@@ -96,7 +115,7 @@ export function useQuickEditIngredient(partId: string | undefined, ingredientId:
 
   return (
     <>
-      {pencil("Edit ingredient", () => setOpen(true))}
+      {pencil("Edit ingredient", context.fixing, () => setOpen(true))}
       <QuickEditIngredientSheet
         open={open}
         // The stored row, never the scaled one on screen: this is what a save writes back.
@@ -144,7 +163,7 @@ export function useQuickEditStep(partId: string | undefined, stepId: string): Re
 
   return (
     <>
-      {stepMenu(() => setOpen(true))}
+      {stepMenu(context.fixing, () => setOpen(true))}
       <QuickEditStepSheet
         open={open}
         step={{ title: stored.title, text: stored.text, summary: stored.summary }}

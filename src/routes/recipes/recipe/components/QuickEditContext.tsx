@@ -1,10 +1,14 @@
-import { createContext, type ReactNode, useContext } from "react";
+import { Button } from "@sixthshift/design-system/button";
+import { createContext, type ReactNode, useContext, useState } from "react";
 import type { Recipe } from "../../../../domain/recipe";
 import { useMutate } from "../../../../lib/mutate";
 import type { RunWrite } from "./saveQuickEdit";
 
-/** What a row needs to edit itself: the stored (unscaled) document, and the page's `mutate`. */
-export type QuickEditContext = { recipe: Recipe; run: RunWrite };
+/**
+ * What a row needs to edit itself: the stored (unscaled) document, and the page's `mutate`;
+ * and whether the page is fixing lines, the mode that shows every row's trigger at rest.
+ */
+export type QuickEditContext = { recipe: Recipe; run: RunWrite; fixing: boolean; setFixing: (fixing: boolean) => void };
 
 const Context = createContext<QuickEditContext | null>(null);
 
@@ -15,10 +19,32 @@ const Context = createContext<QuickEditContext | null>(null);
  */
 export function QuickEditProvider({ recipe, children }: { recipe: Recipe; children: ReactNode }) {
   const run = useMutate();
-  return <Context.Provider value={{ recipe, run }}>{children}</Context.Provider>;
+  const [fixing, setFixing] = useState(false);
+  return <Context.Provider value={{ recipe, run, fixing, setFixing }}>{children}</Context.Provider>;
 }
 
 /** The quick-edit context, or null outside a provider (cook mode, the editor). */
 export function useQuickEditContext(): QuickEditContext | null {
   return useContext(Context);
+}
+
+/**
+ * The row under the ingredients heading: the parts toggle, when the page has
+ * one, and while fixing lines the way out of the mode, where its pencils
+ * start. Nothing when there is neither.
+ */
+export function IngredientsToolbar({ toggle }: { toggle?: ReactNode }) {
+  const context = useContext(Context);
+  const fixing = context?.fixing === true;
+  if (!fixing && !toggle) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      {fixing && (
+        <Button variant="link" intent="neutral" size="sm" data-print="hide" className="mr-auto" onClick={() => context.setFixing(false)}>
+          Done fixing
+        </Button>
+      )}
+      {toggle}
+    </div>
+  );
 }

@@ -23,6 +23,8 @@ export type MenuProps = {
   label: string;
   /** Render the trigger as a compact "…" button with `label` as its aria-label. */
   iconOnly?: boolean;
+  /** An unboxed trigger: no border or fill until hovered, 44px square on a touch screen. For a menu repeated down a list. */
+  ghost?: boolean;
   /** What the trigger shows instead of `label`, which stays its accessible name (a shorter text on a phone). */
   display?: ReactNode;
   /** Controlled open state. Omit to let the menu keep its own. */
@@ -36,10 +38,24 @@ export type MenuProps = {
   children: ReactNode;
 };
 
+const GHOST_TRIGGER_CLASS =
+  "inline-flex size-8 items-center justify-center rounded-md text-fg-subtle hover:bg-bg-normal-hovered hover:text-fg-normal pointer-coarse:size-11";
+
 const TRIGGER_CLASS =
   "inline-flex items-center gap-1 rounded-md border border-border-normal bg-bg-normal px-3 py-1.5 text-sm font-medium text-fg-normal hover:bg-bg-normal-hovered";
 
-export function Menu({ label, iconOnly = false, display, open: openProp, defaultOpen = false, onOpenChange, align = "end", className, children }: MenuProps) {
+export function Menu({
+  label,
+  iconOnly = false,
+  ghost = false,
+  display,
+  open: openProp,
+  defaultOpen = false,
+  onOpenChange,
+  align = "end",
+  className,
+  children,
+}: MenuProps) {
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const open = openProp ?? uncontrolled;
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -83,7 +99,7 @@ export function Menu({ label, iconOnly = false, display, open: openProp, default
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-label={iconOnly || display !== undefined ? label : undefined}
-        className={cn(TRIGGER_CLASS, iconOnly && "px-2")}
+        className={ghost ? GHOST_TRIGGER_CLASS : cn(TRIGGER_CLASS, iconOnly && "px-2")}
         onClick={() => setOpen(!open)}
       >
         {iconOnly ? <span aria-hidden="true">⋯</span> : (display ?? label)}

@@ -16,7 +16,7 @@ import { IngredientList, PartIngredients } from "./components/IngredientList";
 import { IngredientModeToggle } from "./components/IngredientModeToggle";
 import { MadeThisButton } from "./components/MadeThisButton";
 import { PartSteps } from "./components/PartSteps";
-import { QuickEditProvider } from "./components/QuickEditContext";
+import { IngredientsToolbar, QuickEditProvider } from "./components/QuickEditContext";
 import { RecipeActions } from "./components/RecipeActions";
 import { RecipeHeader } from "./components/RecipeHeader";
 import { RecipeMetaFooter } from "./components/RecipeMetaFooter";
@@ -113,11 +113,7 @@ export function RecipePage() {
               {/* Structured vs. one merged list only means something once there is
                   more than one part to merge; a flat recipe has nothing to
                   toggle. */}
-              {recipe.parts.length > 1 && (
-                <div className="flex justify-end">
-                  <IngredientModeToggle />
-                </div>
-              )}
+              <IngredientsToolbar toggle={recipe.parts.length > 1 && <IngredientModeToggle />} />
 
               {hasIngredients && (
                 <Card size="lg" className="flex flex-col gap-6">

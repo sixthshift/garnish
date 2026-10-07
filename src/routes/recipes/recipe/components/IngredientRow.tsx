@@ -35,7 +35,7 @@ export type IngredientRowProps = {
 export function IngredientRow({ recipeId, ingredient, scaled = false, partId, cookFrom, size = "page" }: IngredientRowProps) {
   const cook = size === "cook";
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
-  // The hover pencil (from `md`) and its sheet, or nothing outside the recipe page.
+  // The quick-edit pencil and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditIngredient(partId, ingredient.id);
   // The recipe this row's food is made by, when the page fetched one.
   const child = useSubRecipe(ingredient.food);
@@ -82,7 +82,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
 
   return (
     <li
-      className={cn("group flex items-start gap-2.5", cook && "relative gap-3")}
+      className={cn("group/quick-edit flex items-start gap-2.5", cook && "relative gap-3")}
       data-testid="ingredient-row"
       data-ticked={done ? "true" : undefined}
       data-fixed={ingredient.fixed ? "true" : undefined}
