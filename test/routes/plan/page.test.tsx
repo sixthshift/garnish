@@ -111,6 +111,8 @@ describe("the week", () => {
     const today = elementHtml(html, "plan-today");
     expect(today).toContain("Today");
     expect(html.match(/data-testid="plan-today"/g)).toHaveLength(1);
+    // A step lighter than the card in dark and darker in light: never sunk below it (decision 139).
+    expect(/<li[^>]*data-today="true"[^>]*>/.exec(html)?.[0]).toContain("bg-bg-subtle-hovered");
     // Rule 5: brand is the primary action and state, not a mark.
     expect(html).not.toContain("text-fg-brand");
     expect(html).not.toContain("bg-bg-brand");

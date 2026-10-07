@@ -22,7 +22,9 @@ const DRAG_GROUP = "plan-week";
  *
  * Today takes a neutral tint across its row and says "Today" in words, so it
  * is found at a glance without the brand colour (rule 5), and without the
- * colour alone carrying it.
+ * colour alone carrying it. The tint is `bg-subtle-hovered`: a step darker
+ * than the card in light and a step lighter in dark, so in neither mode does
+ * the row read as sunk below the card (decision 139).
  */
 export function PlanDayRow({
   day,
@@ -53,7 +55,7 @@ export function PlanDayRow({
       data-date={day.date}
       data-today={marked ? "true" : "false"}
       aria-current={marked ? "date" : undefined}
-      className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-start py-1 pr-1 pl-4 first:rounded-t-xl last:rounded-b-xl", marked && "bg-bg-subtle")}
+      className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-start py-1 pr-1 pl-4 first:rounded-t-xl last:rounded-b-xl", marked && "bg-bg-subtle-hovered")}
     >
       {/* Sans on each part, not the display face the theme gives an h2 (an
           unlayered rule, so a utility on the h2 itself loses): this is a label

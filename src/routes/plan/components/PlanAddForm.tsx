@@ -12,6 +12,13 @@ import { MealPicker } from "./MealPicker";
 import { PlanSearchResult } from "./PlanSearchResult";
 
 /**
+ * How many results are drawn. With a phone's keyboard up the sheet shows about
+ * 500px, and the note row has to stay in sight under the results whatever was
+ * typed; a longer list is narrowed by typing, as the hint under it says.
+ */
+export const PLAN_RESULT_LIMIT = 4;
+
+/**
  * What the add sheet holds for one day, top to bottom: the meal chips, the
  * search box, its results directly under it, and the typed line as an entry of
  * its own. The chips sit above the box rather than between it and its results,
@@ -49,6 +56,8 @@ export function PlanAddForm({
   const input = useRef<HTMLInputElement | null>(null);
   const line = query.trim();
   const day = dayName(date);
+  const shown = results.slice(0, PLAN_RESULT_LIMIT);
+  const more = results.length - shown.length;
 
   const clear = () => {
     setQuery("");
@@ -82,7 +91,7 @@ export function PlanAddForm({
         .then((found) => {
           if (requestId.current !== id) return;
           setResults(found);
-          setSelected((current) => clampSelection(current, found.length));
+          setSelected((current) => clampSelection(current, Math.min(found.length, PLAN_RESULT_LIMIT)));
         })
         .catch((error: unknown) => {
           if (requestId.current !== id) return;
@@ -94,7 +103,7 @@ export function PlanAddForm({
   }, [query, searchRecipes]);
 
   const choose = (index: number) => {
-    const recipe = selectedResult(results, index);
+    const recipe = selectedResult(shown, index);
     if (recipe === null) return;
     onAddRecipe(date, recipe, meal);
     clear();
@@ -111,11 +120,11 @@ export function PlanAddForm({
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      if (selectedResult(results, selected) !== null) choose(selected);
+      if (selectedResult(shown, selected) !== null) choose(selected);
       else addLine();
       return;
     }
-    const next = nextSearchIndex(selected, results.length, event.key);
+    const next = nextSearchIndex(selected, shown.length, event.key);
     if (next === null) return;
     event.preventDefault();
     setSelected(next);
@@ -135,9 +144,9 @@ export function PlanAddForm({
         aria-label="Search recipes, or type a note"
         enterKeyHint="done"
       />
-      {results.length > 0 && (
+      {shown.length > 0 && (
         <SearchResultList
-          results={results}
+          results={shown}
           selected={selected}
           onSelect={setSelected}
           onChoose={choose}
@@ -155,6 +164,11 @@ export function PlanAddForm({
         <Button type="button" variant="ghost" intent="neutral" disabled={busy} className="justify-start" data-testid="plan-add-line" onClick={addLine}>
           <span className="min-w-0 truncate">Add “{line}” as a note</span>
         </Button>
+      )}
+      {more > 0 && (
+        <Muted as="p" className="text-sm" data-testid="plan-add-more">
+          {more === 1 ? "1 more recipe matches" : `${more} more recipes match`}: keep typing to narrow them.
+        </Muted>
       )}
     </div>
   );

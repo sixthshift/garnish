@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { groupByDay } from "../../../src/domain/plan";
 import type { RecipeSummary } from "../../../src/domain/recipe";
-import { PlanAddForm } from "../../../src/routes/plan/components/PlanAddForm";
+import { PLAN_RESULT_LIMIT, PlanAddForm } from "../../../src/routes/plan/components/PlanAddForm";
 import { PlanWeekView } from "../../../src/routes/plan/components/PlanWeekView";
 import { renderInRouter } from "../../helpers/dom";
 
@@ -81,6 +81,21 @@ test("Enter takes the highlighted result over the typed line", async () => {
   expect(onAddText).not.toHaveBeenCalled();
 });
 
+test("results stop at four, with the note row straight after them and a word on the rest", async () => {
+  const user = userEvent.setup();
+  const many = Array.from({ length: 7 }, (_, i) => ({ ...tart, id: `11111111-1111-4111-8111-00000000000${i}`, name: `Tart ${i}` }) as RecipeSummary);
+  const spies = { onAddText: vi.fn(), onAddRecipe: vi.fn() };
+  await renderInRouter(<PlanAddForm date={MONDAY} searchRecipes={async () => many} {...spies} />);
+
+  await user.type(screen.getByRole("textbox", { name: "Search recipes, or type a note" }), "a");
+  await screen.findAllByRole("option");
+  expect(screen.getAllByRole("option")).toHaveLength(PLAN_RESULT_LIMIT);
+  const note = screen.getByRole("button", { name: "Add “a” as a note" });
+  const list = screen.getByRole("listbox");
+  expect(list.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(screen.getByTestId("plan-add-more")).toHaveTextContent("3 more recipes match");
+});
+
 test("a day's + opens its sheet, one add closes it, and focus comes back to the +", async () => {
   const user = userEvent.setup();
   const onAddRecipe = vi.fn();
@@ -102,6 +117,8 @@ test("a day's + opens its sheet, one add closes it, and focus comes back to the 
   await user.click(plus);
   const dialog = await screen.findByRole("dialog");
   expect(dialog).toHaveTextContent("Tuesday 15 September");
+  // A fixed height on a phone, so the box does not move as results arrive.
+  expect(dialog.className).toContain("max-sm:h-[85dvh]");
   // The box takes focus once the sheet has settled, so typing goes straight into it.
   const input = screen.getByRole("textbox", { name: "Search recipes, or type a note" });
   await waitFor(() => expect(input).toHaveFocus());
