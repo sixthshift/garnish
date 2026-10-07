@@ -110,9 +110,9 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online, 
             />
           </Card>
 
-          <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
-
           <PartsEditor draft={draft} onChange={form.setDraft} units={units} errors={errors} disabled={saving} />
+
+          <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
 
           <RecipeDetails
             draft={draft}

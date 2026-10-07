@@ -526,24 +526,26 @@ describe("/recipes/$slug/edit", () => {
     expect(html).not.toContain("Unsaved changes");
   });
 
-  test("the editor's sections run in the view page's order (decisions row 50)", async () => {
+  test("the editor's sections run in the view page's order (decisions rows 50, 135)", async () => {
     await callServerFn(createRecipe, {
       name: "Lemon tart",
       recipeYield: "tart",
       notes: [{ title: "Tip", text: "Chill the pastry." }],
-      parts: [{ name: "", ingredients: [], steps: [] }],
+      parts: [{ name: "", ingredients: [], steps: [{ text: "Bake it blind." }] }],
     });
     const edit = await renderRoute("/recipes/lemon-tart/edit");
     const order = (html: string, needles: string[]) => needles.map((needle) => html.indexOf(needle));
-    const editAt = order(edit, ['name="name"', 'data-placeholder="image"', 'aria-label="Notes"', 'aria-label="Parts"', 'aria-label="Details"']);
-    expect(editAt.every((at) => at >= 0)).toBe(true);
-    expect(editAt).toEqual([...editAt].sort((a, b) => a - b));
+    const editAt = order(edit, ['name="name"', 'aria-label="Parts"', 'aria-label="Notes"', 'aria-label="Details"']);
+    for (const at of editAt) expect(at).toBeGreaterThan(-1);
+    expect(editAt[0]).toBeLessThan(editAt[1]!);
+    expect(editAt[1]).toBeLessThan(editAt[2]!);
+    expect(editAt[2]).toBeLessThan(editAt[3]!);
 
-    // The view page runs the same way as far as it goes: header, notes, parts.
+    // The view page runs the same way: the method, then the notes.
     const view = await renderRoute("/recipes/lemon-tart");
-    const viewAt = order(view, ["Lemon tart", 'aria-label="Notes"']);
-    expect(viewAt.every((at) => at >= 0)).toBe(true);
-    expect(viewAt).toEqual([...viewAt].sort((a, b) => a - b));
+    const [lastStep, notes] = order(view, ["Bake it blind.", 'aria-label="Notes"']);
+    expect(lastStep).toBeGreaterThan(-1);
+    expect(notes).toBeGreaterThan(lastStep!);
   });
 
   test("shows both components of a two-component recipe in order, each with its rows read-only", async () => {

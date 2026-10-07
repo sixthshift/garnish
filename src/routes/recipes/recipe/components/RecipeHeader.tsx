@@ -108,7 +108,7 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
                 )}
               </p>
               {onRate !== undefined && !showStars && (
-                <Button variant="link" intent="neutral" size="sm" data-print="hide" data-testid="rate" onClick={() => setRateOpen(true)}>
+                <Button variant="link" intent="neutral" size="sm" className="text-sm" data-print="hide" data-testid="rate" onClick={() => setRateOpen(true)}>
                   Rate
                 </Button>
               )}
