@@ -87,20 +87,6 @@ export function RecipePage() {
             }
           />
 
-          {/* Notes before the ingredients: they are the household's
-              amendments, read before you start, so they sit directly under the
-              header rather than after the steps. */}
-          {recipe.notes.length > 0 && (
-            <section className="flex flex-col gap-3" aria-label="Notes">
-              <SectionTitle as="h2">Notes</SectionTitle>
-              {recipe.notes.map((note) => (
-                <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
-                  <p className="whitespace-pre-line">{note.text}</p>
-                </Card>
-              ))}
-            </section>
-          )}
-
           {/* Two columns from `md`: the ingredients stick beside the
               method rather than scrolling away above it. A third for the list, two
               thirds for the steps; the aside scrolls itself when it is taller than
@@ -146,6 +132,21 @@ export function RecipePage() {
               {recipe.parts.map((part) => (
                 <PartSteps key={part.id} part={part} recipeId={recipe.id} />
               ))}
+
+              {/* Notes after the method, in its column: a cook opens the page
+                  for what to get out and what to do, and "Make ahead" or "Why
+                  it works" is read once that is in hand. Mealie's order; the
+                  ingredients stay stuck beside them from `md`. */}
+              {recipe.notes.length > 0 && (
+                <section className="flex flex-col gap-3" aria-label="Notes" data-testid="recipe-notes">
+                  <SectionTitle as="h2">Notes</SectionTitle>
+                  {recipe.notes.map((note) => (
+                    <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
+                      <p className="whitespace-pre-line">{note.text}</p>
+                    </Card>
+                  ))}
+                </section>
+              )}
 
               {/* Under the last step card, not above the History
                   disclosure — the button belongs to the method, not the log. */}

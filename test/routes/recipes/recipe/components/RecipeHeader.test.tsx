@@ -145,9 +145,13 @@ describe("RecipeHeader", () => {
     expect(html).toMatch(/<dt[^>]*>Makes<\/dt><dd[^>]*>1 tart<\/dd>/);
   });
 
-  test("no image gives the placeholder; no times or yield still leaves the strip for the last made line", async () => {
+  test("no image holds no space for one: the name leads; no times or yield still leaves the strip for the last made line", async () => {
     const html = await render({ ...base, image: null, prepTime: null, performTime: null, recipeYieldQuantity: 0, recipeYield: "" });
-    expect(html).toContain('data-placeholder="image"');
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain('data-placeholder="image"');
+    expect(html).not.toContain("md:w-2/5");
+    // The split's first child is the text column, headed by the name.
+    expect(html).toMatch(/data-layout="split"><div class="[^"]*flex-1[^"]*"><div[^>]*><h1/);
     expect(html).toContain('data-testid="stat-strip"');
     expect(html).not.toContain('data-stat="prep"');
     expect(html).not.toContain('data-testid="yield"');
@@ -214,15 +218,18 @@ describe("the header's stars (M25.3)", () => {
     expect(unrated).not.toContain("out of 5");
   });
 
-  test("with onRate every star is a button, and an unrated recipe still shows five to press", async () => {
+  test("with onRate every star of a rated recipe is a button, and there is no Rate", async () => {
     const html = await render(base, undefined, () => {});
     for (const star of [1, 2, 3, 4, 5]) expect(html).toContain(`aria-label="Rate ${star} out of 5"`);
     expect(html).toContain('aria-pressed="true"');
+    expect(html).not.toContain('data-testid="rate"');
+  });
 
+  test("with onRate an unrated recipe shows no empty stars, only a quiet Rate after the last made line, hidden from print", async () => {
     const unrated = await render({ ...base, rating: null }, undefined, () => {});
-    expect(unrated).toContain('aria-label="Rated 0 out of 5"');
-    expect(unrated).toContain('aria-label="Rate 1 out of 5"');
-    expect(unrated).not.toContain('aria-pressed="true"');
+    expect(unrated).not.toContain("out of 5");
+    expect(unrated).toMatch(/<button[^>]*data-print="hide"[^>]*data-testid="rate"[^>]*>Rate<\/button>/);
+    expect(unrated.indexOf('data-testid="last-made"')).toBeLessThan(unrated.indexOf('data-testid="rate"'));
   });
 
   test("pressing the star that is already the rating asks for 0, which clears it", () => {

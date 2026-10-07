@@ -191,6 +191,34 @@ describe("the ingredients heading's Clear link (M25.6)", () => {
   });
 });
 
+describe("notes come after the method (critique #4)", () => {
+  test("in the method column, after every step and before Made this; the header and the ingredients come first", async () => {
+    await callServerFn(createRecipe, {
+      name: "Lemon tart",
+      notes: [{ title: "Make ahead", text: "Keeps three days." }],
+      parts: [
+        { name: "Pastry", ingredients: [{ quantity: 200, unit: null, food: food("flour") }], steps: [{ text: "Rub the butter in." }] },
+        { name: "", ingredients: [], steps: [{ text: "Chill it overnight." }] },
+      ],
+    });
+    const html = await renderRoute("/recipes/lemon-tart");
+    const main = elementHtml(html, "method-column");
+
+    expect(elementHtml(html, "ingredients-column")).not.toContain('data-testid="recipe-notes"');
+    expect(main).toContain('data-testid="recipe-notes"');
+    expect(main.indexOf("Chill it overnight.")).toBeLessThan(main.indexOf('data-testid="recipe-notes"'));
+    expect(main.indexOf('data-testid="recipe-notes"')).toBeLessThan(main.indexOf('data-testid="made-this-row"'));
+    expect(html.indexOf('data-testid="ingredients-heading"')).toBeLessThan(html.indexOf('data-testid="recipe-notes"'));
+    expect(elementHtml(html, "recipe-notes")).toContain("Keeps three days.");
+  });
+
+  test("a recipe without notes renders no Notes section", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart");
+    expect(html).not.toContain('data-testid="recipe-notes"');
+  });
+});
+
 describe("the meta footer moves to the foot of the page (M24.3)", () => {
   test("recipe-meta renders after the timeline, as the page's last element", async () => {
     const tart = await seedTart();

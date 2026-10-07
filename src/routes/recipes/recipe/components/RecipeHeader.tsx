@@ -1,9 +1,10 @@
+import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
 import { Rating } from "../../../../components/ui/Rating";
 import { formatYield } from "../../../../domain/ingredient";
@@ -19,9 +20,8 @@ export type RecipeHeaderProps = {
   actions?: ReactNode;
   /**
    * When given, the stars are editable and this is called with the new rating
-   * (0 clears it). With it the row shows five empty stars on an unrated
-   * recipe, so it can be rated from the page; without it an unrated recipe
-   * shows nothing.
+   * (0 clears it). An unrated recipe shows no stars either way: with it, a
+   * quiet "Rate" after the last made line opens the five to press.
    */
   onRate?: (rating: number) => void;
   /**
@@ -32,42 +32,31 @@ export type RecipeHeaderProps = {
   madeCount?: number;
 };
 
-function ImagePlaceholder() {
-  return (
-    <div data-placeholder="image" aria-hidden="true" className="flex aspect-video w-full items-center justify-center rounded-xl bg-bg-subtle text-fg-subtle">
-      <svg
-        aria-hidden="true"
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="3" y="5" width="18" height="14" rx="2" />
-        <circle cx="8.5" cy="10" r="1.5" />
-        <path d="m21 16-4.5-4.5L9 19" />
-      </svg>
-    </div>
-  );
-}
-
 export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeaderProps) {
   const src = recipeImageUrl(recipe.image);
   const stats = timeStats(recipe);
   const yieldText = formatYield(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
   const lastMade = formatDateStamp(recipe.lastMade);
   const count = madeCount ?? 0;
+  // An unrated recipe keeps its stars folded behind "Rate" until asked for.
+  const [rateOpen, setRateOpen] = useState(false);
+  const stars = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    // "Rate" is gone once pressed, so focus moves to the first star rather than being dropped.
+    if (rateOpen) stars.current?.querySelector("button")?.focus();
+  }, [rateOpen]);
+  const showStars = recipe.rating !== null || (onRate !== undefined && rateOpen);
 
   return (
     <header className="flex flex-col gap-4" data-testid="recipe-header">
-      {/* Stacked below md, image beside the text from md up. */}
+      {/* Stacked below md, image beside the text from md up. No image, no
+          space held for one: the name leads, and the editor adds a photo. */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6" data-layout="split">
-        <div className="w-full md:w-2/5 md:shrink-0">
-          {src ? <img src={src} alt="" className="aspect-video w-full rounded-xl object-cover" /> : <ImagePlaceholder />}
-        </div>
+        {src && (
+          <div className="w-full md:w-2/5 md:shrink-0">
+            <img src={src} alt="" className="aspect-video w-full rounded-xl object-cover" />
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <Heading as="h1">{recipe.name}</Heading>
@@ -77,8 +66,10 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
               {actions}
             </div>
           </div>
-          {(recipe.rating !== null || onRate !== undefined) && (
-            <Rating value={recipe.rating ?? 0} onChange={onRate} className={onRate === undefined ? undefined : "-ml-0.5"} />
+          {showStars && (
+            <span ref={stars} className="flex">
+              <Rating value={recipe.rating ?? 0} onChange={onRate} className={onRate === undefined ? undefined : "-ml-0.5"} />
+            </span>
           )}
 
           {/* One strip: prep / cook / total, the yield, and the last made
@@ -104,17 +95,24 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
                 </div>
               </dl>
             )}
-            <p className="text-sm text-fg-subtle" data-testid="last-made">
-              {count > 0 && lastMade !== "" ? (
-                <>
-                  {"Last made "}
-                  <span className="font-medium text-fg-strong">{lastMade}</span>
-                  {` · ${count} ${count === 1 ? "time" : "times"}`}
-                </>
-              ) : (
-                "Never made"
+            <div className="flex flex-wrap items-center gap-x-3">
+              <p className="text-sm text-fg-subtle" data-testid="last-made">
+                {count > 0 && lastMade !== "" ? (
+                  <>
+                    {"Last made "}
+                    <span className="font-medium text-fg-strong">{lastMade}</span>
+                    {` · ${count} ${count === 1 ? "time" : "times"}`}
+                  </>
+                ) : (
+                  "Never made"
+                )}
+              </p>
+              {onRate !== undefined && !showStars && (
+                <Button variant="link" intent="neutral" size="sm" data-print="hide" data-testid="rate" onClick={() => setRateOpen(true)}>
+                  Rate
+                </Button>
               )}
-            </p>
+            </div>
           </div>
 
           {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}

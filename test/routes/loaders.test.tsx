@@ -324,7 +324,8 @@ describe("/recipes/$slug (view)", () => {
     // Edit and Cook are their own buttons beside the menu (M25.5); the trigger is what the closed menu shows.
     expect(html).toContain('aria-label="Edit"');
     expect(html).toContain('aria-label="Recipe actions"');
-    expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
+    // No image: no placeholder band holding the space for one (critique #4).
+    expect(html).not.toContain('data-placeholder="image"');
 
     // Two columns from md (M24.1): the parts' ingredients in the aside, their
     // steps in the main column, both in part order.
@@ -364,10 +365,10 @@ describe("/recipes/$slug (view)", () => {
     // "30 minutes" is its own timer chip (M26.2), so the sentence is no longer one contiguous string.
     expect(main.indexOf("Bake for")).toBeGreaterThan(main.indexOf("Whisk everything together."));
     expect(html).not.toContain(">To finish<");
-    // Notes sit before the ingredients/method grid (M24.4): read before you start.
+    // Notes follow the method, in its column (critique #4, reversing M24.4).
     const notes = html.indexOf(">Notes<");
     expect(notes).toBeGreaterThan(-1);
-    expect(notes).toBeLessThan(html.indexOf(">Pastry<"));
+    expect(notes).toBeGreaterThan(html.indexOf("Whisk everything together."));
     expect(html.indexOf(">Storage<")).toBeGreaterThan(notes);
     expect(html).toContain("Keeps two days in the fridge.");
   });
