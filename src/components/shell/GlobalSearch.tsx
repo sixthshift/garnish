@@ -85,7 +85,12 @@ export function GlobalSearch() {
   };
 
   return (
-    <Modal size="lg" aria-label="Search recipes" onOpenChange={(next) => !next && setOpen(false)}>
+    // Top-aligned at a fixed height on a phone, as the plan's add sheet is:
+    // content-sized, the empty sheet sat at the bottom with its box under the
+    // keyboard (input 703px down an 844px screen), then jumped to the top as
+    // results arrived. The keyboard covers the page on iOS rather than
+    // shrinking it, so the box has to sit high to be seen while typing.
+    <Modal size="lg" className="max-sm:h-[92dvh]" aria-label="Search recipes" onOpenChange={(next) => !next && setOpen(false)}>
       <GlobalSearchContent
         query={query}
         onQueryChange={setQuery}

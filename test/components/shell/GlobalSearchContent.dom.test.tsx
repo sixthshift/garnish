@@ -1,11 +1,14 @@
 // The global search dialog's keyboard, driven rather than read. The node
 // suite can assert the markup this renders; only a DOM can press a key in it.
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
+import { GlobalSearch } from "../../../src/components/shell/GlobalSearch";
 import { GlobalSearchContent } from "../../../src/components/shell/GlobalSearchContent";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import { renderInRouter } from "../../helpers/dom";
+
+vi.mock("../../../src/server/fns/recipes", () => ({ listRecipes: vi.fn(async () => []) }));
 
 const summary = (id: string, name: string): RecipeSummary =>
   ({
@@ -81,4 +84,24 @@ test("with no results the list is gone and the empty line explains why", () => {
 
   expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
   expect(screen.getByText("No recipes match.")).toBeInTheDocument();
+});
+
+test("the box takes focus once the dialog has settled, and closing hands focus back to where / was pressed", async () => {
+  const user = userEvent.setup();
+  await renderInRouter(
+    <>
+      <a href="/shopping">Shopping</a>
+      <GlobalSearch />
+    </>
+  );
+  const link = screen.getByRole("link", { name: "Shopping" });
+  link.focus();
+  await user.keyboard("/");
+  const input = await screen.findByRole("textbox", { name: "Search recipes" });
+  await waitFor(() => expect(input).toHaveFocus());
+  await user.keyboard("{Escape}");
+  // Escape plays the modal's exit and reports the close on `animationend`, which happy-dom never fires.
+  fireEvent.animationEnd(screen.getByRole("dialog"));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await waitFor(() => expect(link).toHaveFocus());
 });
