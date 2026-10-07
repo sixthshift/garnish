@@ -6,6 +6,7 @@ import { SaveBar } from "../../../components/ui/SaveBar";
 import type { RecipeDraft } from "../../../domain/draft";
 import type { Tag, Unit } from "../../../domain/reference";
 import type { StorageLike } from "../../../lib/drafts";
+import { DiscardImportDialog } from "./DiscardImport";
 import { DraftNotice } from "./DraftNotice";
 import { NotesEditor } from "./NotesEditor";
 import { PartsEditor } from "./PartsEditor";
@@ -53,6 +54,12 @@ export type RecipeFormProps = {
    */
   continueWith?: ContinueWith;
   /**
+   * The draft is an import's and is stored nowhere yet: leaving the form
+   * asks whether to discard the import, changed or not, as the import's
+   * other stages do.
+   */
+  isImport?: boolean;
+  /**
    * Forwarded to the JSON toggle's `Menu` (tests). The menu is closed by
    * default and opens on click, like every other `Menu` in the app; there is
    * no jsdom in this project's vitest config, so a render test cannot click
@@ -61,8 +68,19 @@ export type RecipeFormProps = {
   jsonMenuOpen?: boolean;
 };
 
-export function RecipeForm({ initial, units, tags: knownTags, existing, online, importedImageUrl, storage, continueWith, jsonMenuOpen }: RecipeFormProps) {
-  const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, continueWith });
+export function RecipeForm({
+  initial,
+  units,
+  tags: knownTags,
+  existing,
+  online,
+  importedImageUrl,
+  storage,
+  continueWith,
+  isImport = false,
+  jsonMenuOpen,
+}: RecipeFormProps) {
+  const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, continueWith, isImport });
   const { draft, errors, saving, dirty, json, blocker } = form;
   const cancelLink = continueWith ? (
     <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={continueWith.onBack}>
@@ -137,7 +155,16 @@ export function RecipeForm({ initial, units, tags: knownTags, existing, online, 
         cancel={cancelLink}
       />
 
-      {blocker.status === "blocked" && (
+      {blocker.status === "blocked" && isImport && (
+        <DiscardImportDialog
+          onStay={blocker.reset}
+          onDiscard={() => {
+            form.clearStoredDraft();
+            blocker.proceed();
+          }}
+        />
+      )}
+      {blocker.status === "blocked" && !isImport && (
         <ConfirmDialog
           title="Discard changes?"
           confirmLabel="Discard"

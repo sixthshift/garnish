@@ -57,6 +57,7 @@ export function NewRecipePage() {
           units={units}
           tags={tags}
           importedImageUrl={imported?.imageUrl ?? null}
+          isImport={imported !== null}
           continueWith={
             imported !== null && aiAvailable
               ? {

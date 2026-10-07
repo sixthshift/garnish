@@ -13,9 +13,17 @@ import { imageFromUrl } from "./importedImage";
 import type { RecipeFormProps } from "./RecipeForm";
 import { saveNotice } from "./recipeFormText";
 
-export type UseRecipeFormOptions = Pick<RecipeFormProps, "initial" | "existing" | "online" | "importedImageUrl" | "storage" | "continueWith">;
+export type UseRecipeFormOptions = Pick<RecipeFormProps, "initial" | "existing" | "online" | "importedImageUrl" | "storage" | "continueWith" | "isImport">;
 
-export function useRecipeForm({ initial, existing, online: onlineOverride, importedImageUrl, storage: storageProp, continueWith }: UseRecipeFormOptions) {
+export function useRecipeForm({
+  initial,
+  existing,
+  online: onlineOverride,
+  importedImageUrl,
+  storage: storageProp,
+  continueWith,
+  isImport = false,
+}: UseRecipeFormOptions) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const detectedOnline = useOnline();
@@ -41,7 +49,9 @@ export function useRecipeForm({ initial, existing, online: onlineOverride, impor
   });
 
   const dirty = (isDirty(initial, draft) || file !== null) && !saving;
-  const blocker = useBlocker({ shouldBlockFn: () => true, enableBeforeUnload: () => dirty, disabled: !dirty, withResolver: true });
+  // An import is held however little it has been changed: nothing stores it but this form.
+  const holding = dirty || (isImport && !saving);
+  const blocker = useBlocker({ shouldBlockFn: () => true, enableBeforeUnload: () => holding, disabled: !holding, withResolver: true });
 
   const patch = (fields: Partial<RecipeDraft>) => setDraft((current) => ({ ...current, ...fields }));
 

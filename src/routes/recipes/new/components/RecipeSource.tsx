@@ -2,6 +2,7 @@ import type { RecipeDraft } from "../../../../domain/draft";
 import type { FileRecipe, ImportedRecipe } from "../../../../domain/import";
 import type { FoodRow, Tag, Unit } from "../../../../domain/reference";
 import { listFoods } from "../../../../server/fns/foods";
+import { useImportGuard } from "../../components/DiscardImport";
 import { BrowserSource } from "./BrowserSource";
 import type { SentPage } from "./bookmarklet";
 import { FileSource } from "./FileSource";
@@ -58,12 +59,16 @@ export function RecipeSource(props: RecipeSourceProps) {
   const { units, source, onChoose, aiAvailable = false } = props;
   const state = useRecipeSource(props);
   const { url, text, file, choices, imported, rows, busy, error, reading, readError } = state;
+  // A recipe under review, or a pasted page, is work the browser's Back would
+  // drop unseen: the stages share one URL, so Back leaves /recipes/new.
+  const guard = useImportGuard(imported !== null || (source === "paste" && text.trim() !== ""));
 
   return (
     <div className="flex flex-col gap-6">
       <ImportSteps current={imported !== null ? "Review" : "Source"} />
       {/* The chooser and the review lay themselves out across the page; a source's one form keeps to a reading width. */}
       {source === null || imported !== null ? stage() : <div className="w-full max-w-3xl">{stage()}</div>}
+      {guard.dialog}
     </div>
   );
 

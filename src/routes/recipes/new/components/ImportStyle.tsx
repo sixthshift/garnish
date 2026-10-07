@@ -3,7 +3,6 @@ import { Message } from "@sixthshift/design-system/message";
 import { toast } from "@sixthshift/design-system/overlay";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { type RecipeDraft, validateDraft } from "../../../../domain/draft";
 import type { RestyledPart } from "../../../../domain/style";
 import { messageFrom } from "../../../../lib/errors";
@@ -11,6 +10,7 @@ import { uploadRecipeImage } from "../../../../lib/images";
 import { useMutate } from "../../../../lib/mutate";
 import { createRestyledRecipe, restyleDraft } from "../../../../server/ai/restyle";
 import { createRecipe } from "../../../../server/fns/recipes";
+import { DiscardImportDialog, useImportGuard } from "../../components/DiscardImport";
 import { imageFromUrl } from "../../components/importedImage";
 import { saveNotice } from "../../components/recipeFormText";
 import { StyleSpace } from "../../components/style/StyleSpace";
@@ -28,6 +28,7 @@ export type ImportStyleProps = {
    * Drop the import and go back to the chooser. Style and Edit details only
    * lead to each other, and from here the phone has no tab bar, so this is
    * the way out short of saving; it asks first, since nothing is stored yet.
+   * Leaving the page any other way (the browser's Back) asks the same.
    */
   onCancel: () => void;
 };
@@ -43,22 +44,18 @@ export function ImportStyle({ draft, imageUrl, file, onEditDetails, onCancel }: 
   const mutate = useMutate();
   const checked = useMemo(() => validateDraft(draft), [draft]);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const guard = useImportGuard(true);
 
   const cancel = (
     <Button type="button" variant="ghost" intent="neutral" onClick={() => setConfirmingCancel(true)}>
       Cancel
     </Button>
   );
-  const confirm = confirmingCancel && (
-    <ConfirmDialog
-      title="Discard this import?"
-      confirmLabel="Discard"
-      aria-label="Discard this import"
-      onCancel={() => setConfirmingCancel(false)}
-      onConfirm={onCancel}
-    >
-      <p>Nothing has been saved yet. Leaving now loses the recipe and any changes made to it.</p>
-    </ConfirmDialog>
+  const confirm = (
+    <>
+      {confirmingCancel && <DiscardImportDialog onStay={() => setConfirmingCancel(false)} onDiscard={onCancel} />}
+      {guard.dialog}
+    </>
   );
 
   if (!checked.ok) {
@@ -95,6 +92,7 @@ export function ImportStyle({ draft, imageUrl, file, onEditDetails, onCancel }: 
       return recipe;
     });
     toast(saveNotice({ existing: false, imageError: image.error }));
+    guard.release();
     await navigate({ to: "/recipes/$slug", params: { slug: saved.slug } });
   };
 
