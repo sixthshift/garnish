@@ -86,8 +86,10 @@ export function Menu({ label, iconOnly = false, open: openProp, defaultOpen = fa
       </button>
       {open && (
         <>
-          {/* Clicking anywhere else closes, without a document listener. */}
-          <div data-testid="menu-scrim" className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden="true" />
+          {/* Clicking anywhere else closes, without a document listener. Scrim and
+              panel share the popover layer, above the phone's tab bar; the panel
+              comes later in the DOM, so it paints over the scrim. */}
+          <div data-testid="menu-scrim" className="fixed inset-0 z-popover" onClick={() => setOpen(false)} aria-hidden="true" />
           <div
             ref={panelRef}
             id={panelId}
@@ -96,7 +98,7 @@ export function Menu({ label, iconOnly = false, open: openProp, defaultOpen = fa
             data-testid="menu-panel"
             onKeyDown={onKeyDown}
             className={cn(
-              "absolute top-full z-20 mt-1 flex min-w-48 flex-col rounded-lg border border-border-normal bg-bg-normal py-1 shadow-lg",
+              "absolute top-full z-popover mt-1 flex min-w-48 flex-col rounded-lg border border-border-normal bg-bg-normal py-1 shadow-lg",
               align === "end" ? "right-0" : "left-0"
             )}
           >

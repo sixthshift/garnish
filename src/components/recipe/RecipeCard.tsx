@@ -110,7 +110,8 @@ function ListBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: stri
   return (
     <Card className="flex flex-row items-stretch overflow-hidden p-0 transition-colors group-hover:border-border-normal-hovered">
       <CardImage src={src} className="aspect-square w-24 shrink-0 sm:w-28" />
-      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 p-3">
+      {/* `pr-14` keeps the text clear of the heart, which sits over this column's top-right corner. */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 p-3 pr-14">
         <span className="truncate font-semibold text-fg-strong group-hover:underline">{recipe.name}</span>
         <CardStats rating={recipe.rating} totalTime={totalTime} />
         <CardTags tags={recipe.tags} />
@@ -139,12 +140,6 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
 
   return (
     <div className="group relative h-full" data-card-mode={mode}>
-      {/* A sibling of the link, not a child: a <button> inside an <a> is invalid. */}
-      <FavouriteButton
-        id={recipe.id}
-        favourite={recipe.favourite}
-        className="absolute right-2 top-2 z-10 bg-bg-normal/80 backdrop-blur-sm hover:bg-bg-normal"
-      />
       {recipe.ingredientPreview.length > 0 ? (
         <Tooltip>
           <Tooltip.Trigger asChild>{link}</Tooltip.Trigger>
@@ -160,6 +155,15 @@ export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
       ) : (
         link
       )}
+      {/* A sibling of the link, not a child: a <button> inside an <a> is invalid.
+          After it in the DOM, so it paints on top without a z-index of its own
+          (one would lift it over the phone's tab bar). `size-11` is the 44px
+          tap target; `size="sm"` alone is 32px. */}
+      <FavouriteButton
+        id={recipe.id}
+        favourite={recipe.favourite}
+        className="absolute right-2 top-2 size-11 bg-bg-normal/80 backdrop-blur-sm hover:bg-bg-normal"
+      />
     </div>
   );
 }

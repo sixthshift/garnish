@@ -67,7 +67,10 @@ export function AppShell() {
       <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
-      <Nav className="fixed inset-x-0 bottom-0 flex gap-1 border-t border-border-normal bg-bg-normal p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden" />
+      {/* `z-app-bar` lifts the bar over page content (a card's heart is positioned
+          too, and would otherwise paint on top of it) and keeps it under sheets,
+          popovers and modals, which take the design system's higher layers. */}
+      <Nav className="fixed inset-x-0 bottom-0 z-app-bar flex gap-1 border-t border-border-normal bg-bg-normal p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden" />
     </div>
   );
 }

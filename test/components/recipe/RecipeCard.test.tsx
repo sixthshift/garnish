@@ -149,4 +149,21 @@ describe("RecipeCard view modes", () => {
     expect(html).not.toContain("Tag 4");
     expect(html).toContain("+1");
   });
+
+  // Critique #2: the heart once carried `z-10`, which lifted it over the
+  // phone's fixed tab bar, so tapping Settings could favourite a recipe.
+  test("the heart paints over its card by DOM order, not a z-index, and keeps a 44px target", async () => {
+    for (const mode of ["grid", "list"] as const) {
+      const html = await render(base, mode);
+      const heart = html.match(/<button[^>]*aria-label="Add to favourites"[^>]*>/)?.[0] ?? "";
+      expect(heart).toMatch(/\bsize-11\b/);
+      expect(heart).not.toMatch(/\bz-/);
+      expect(html.indexOf('href="/recipes/lemon-tart"')).toBeLessThan(html.indexOf('aria-label="Add to favourites"'));
+    }
+  });
+
+  test("list mode keeps the text column clear of the heart in its top-right corner", async () => {
+    const html = await render({ ...base, name: "A very long recipe title that would otherwise run under the heart" }, "list");
+    expect(html).toMatch(/class="[^"]*\bpr-14\b[^"]*"><span class="truncate/);
+  });
 });
