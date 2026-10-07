@@ -4,7 +4,7 @@
 // (src/lib/timers.ts `chipTimerId`) and looks its timer up.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
-import { TimerChip, timerPhrase } from "../../../../../src/routes/recipes/recipe/components/TimerChip";
+import { TimerChip, timerChipAction, timerPhrase } from "../../../../../src/routes/recipes/recipe/components/TimerChip";
 
 describe("TimerChip", () => {
   test("shows the matched text and carries the duration as data attributes", () => {
@@ -49,7 +49,15 @@ describe("TimerChip with a timer", () => {
     expect(html).toContain("4:32");
     expect(html).not.toContain("20 minutes<");
     expect(html).toContain('data-running="true"');
-    expect(html).toContain('aria-label="20 minutes: 4:32. Restart this timer"');
+    expect(html).toContain('aria-label="20 minutes: 4:32. Pause timer"');
+  });
+
+  test("a paused timer shows its held time and says a tap resumes it", () => {
+    const html = renderToString(<TimerChip seconds={1200} label="20 minutes" timer={{ text: "4:32", done: false, paused: true }} />);
+    expect(html).toContain("4:32 · paused");
+    expect(html).toContain('data-paused="true"');
+    expect(html).not.toContain('data-running="true"');
+    expect(html).toContain('aria-label="20 minutes: 4:32. Resume timer"');
   });
 
   test("a finished timer reads Done until it is dismissed", () => {
@@ -57,6 +65,39 @@ describe("TimerChip with a timer", () => {
     expect(html).toContain("Done");
     expect(html).toContain('data-done="true"');
     expect(html).not.toContain('data-running="true"');
+    expect(html).toContain('aria-label="20 minutes: Done. Restart timer"');
+  });
+});
+
+// Critique #5: one tap rule at both sizes — a tap never restarts a timer that is still going.
+describe.each(["page", "cook"] as const)("tapping a %s chip", (size) => {
+  const tap = (timer?: { text: string; done: boolean; paused?: boolean }) => {
+    const onStart = vi.fn();
+    const onPause = vi.fn();
+    const onResume = vi.fn();
+    const element = TimerChip({ seconds: 1200, label: "20 minutes", size, timer, onStart, onPause, onResume });
+    element.props.onClick();
+    return { onStart, onPause, onResume };
+  };
+
+  test("idle starts; running pauses; paused resumes; done restarts", () => {
+    expect(tap().onStart).toHaveBeenCalledWith(1200, "20 minutes");
+    const running = tap({ text: "4:32", done: false });
+    expect(running.onPause).toHaveBeenCalledTimes(1);
+    expect(running.onStart).not.toHaveBeenCalled();
+    const paused = tap({ text: "4:32", done: false, paused: true });
+    expect(paused.onResume).toHaveBeenCalledTimes(1);
+    expect(paused.onStart).not.toHaveBeenCalled();
+    expect(tap({ text: "Done", done: true }).onStart).toHaveBeenCalledWith(1200, "20 minutes");
+  });
+});
+
+describe("timerChipAction", () => {
+  test("is the tap rule", () => {
+    expect(timerChipAction(undefined)).toBe("start");
+    expect(timerChipAction({ text: "1:56", done: false })).toBe("pause");
+    expect(timerChipAction({ text: "1:56", done: false, paused: true })).toBe("resume");
+    expect(timerChipAction({ text: "Done", done: true })).toBe("restart");
   });
 });
 
@@ -76,7 +117,7 @@ describe("TimerChip at cook size", () => {
     const running = renderToString(<TimerChip seconds={1200} label="20 minutes" size="cook" timer={{ text: "4:32", done: false }} />);
     expect(running).toContain("4:32");
     expect(running).toContain('data-intent="brand"');
-    expect(running).toContain('aria-label="20 minutes: 4:32. Restart this timer"');
+    expect(running).toContain('aria-label="20 minutes: 4:32. Pause timer"');
     const done = renderToString(<TimerChip seconds={1200} label="20 minutes" size="cook" timer={{ text: "Done", done: true }} />);
     expect(done).toContain('data-intent="success"');
     expect(done).toContain('data-done="true"');

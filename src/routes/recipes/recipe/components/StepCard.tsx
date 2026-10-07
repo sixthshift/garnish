@@ -60,7 +60,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   const quickEdit = useQuickEditStep(partId, step.id);
   // `find` closes over the current timers, so it changes on every second's
   // tick; that is exactly when a running chip has to repaint.
-  const { start, find } = useTimers(recipeId);
+  const { start, pause, resume, find } = useTimers(recipeId);
   const rows = useMemo(() => linkedIngredients(step, ingredients), [step, ingredients]);
   const durations = useMemo(() => stepDurations(step.text), [step.text]);
   // The step's photo, above its text at both sizes. A ticked step
@@ -145,16 +145,19 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
             <div className="flex flex-wrap gap-2" data-testid="step-timers">
               {durations.map((duration) => {
                 const id = chipTimerId(step.id, duration.start, duration.text);
+                const timer = find(id);
                 return (
                   <TimerChip
                     key={id}
                     seconds={duration.seconds}
                     upperSeconds={duration.upperSeconds}
                     label={duration.text}
-                    timer={find(id)}
+                    timer={timer && { text: timer.text, done: timer.done, paused: !timer.done && timer.endsAt === null }}
                     size={size}
                     // The strip and the notification at zero name the step, not the duration.
                     onStart={(seconds, matched) => start({ id, label: step.text.trim() || matched, seconds })}
+                    onPause={() => pause(id)}
+                    onResume={() => resume(id)}
                   />
                 );
               })}

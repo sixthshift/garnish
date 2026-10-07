@@ -221,3 +221,13 @@ export function PlayIcon() {
     </svg>
   );
 }
+
+/** Two filled bars: a running timer, which a tap pauses. */
+export function PauseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="shrink-0">
+      <rect x="6" y="4.5" width="4" height="15" rx="1" />
+      <rect x="14" y="4.5" width="4" height="15" rx="1" />
+    </svg>
+  );
+}
