@@ -10,7 +10,7 @@ Compiled 2026-09-18 from screenshots of every page at 390px and 1440px, against 
 - Anything holding the document's data is **elevated**: `Card` — tone, border and shadow together.
 - In dark mode elevation is *lighter*, as in light: the page is the darkest surface (`earth-950`) and a card, sheet or menu sits half a step up (`earth-925`). Decision 139.
 - A card never nests in a card. Group inside one with a rule, a heading or whitespace.
-- Where the element cannot be a `<div>` — an `<li>` step, a `<section>` plan day, a `<button>` import source — borrow `cardVariants` from the primitive rather than restating the classes.
+- Where the element cannot be a `<div>` — an `<li>` step, a `<button>` import source — borrow `cardVariants` from the primitive rather than restating the classes.
 
 Base holds chrome, elevated holds data. The test: remove it, and if the page still works it is chrome.
 
@@ -18,13 +18,13 @@ Base holds chrome, elevated holds data. The test: remove it, and if the page sti
 |---|---|
 | Page title, section labels, row counts | Ingredient list, step cards, notes |
 | Search box, filter chips, sort and view toggles | Reference tables, style statements, aisles |
-| Nav, week arrows, scale stepper | Plan days, import source options, the editor's fields |
+| Nav, week arrows, scale stepper | The plan's week, import source options, the editor's fields |
 
 Decision 97. Before it the page and every card were the same tone, so nothing lifted.
 
 ## 2. A card contains data or is a target — never decoration
 
-- **Data container:** the ingredient list, the reference table, a plan day.
+- **Data container:** the ingredient list, the reference table, the plan's week (one card, its seven days rows inside it; decision 141).
 - **Target:** the four `/recipes/new` options, which take `cardVariants({ interactive: true })` and are the one thing on that page you are meant to press.
 - **Not a card:** a sequence of rows inside a container; a control; a form field; an empty state.
 
@@ -87,12 +87,11 @@ Recorded so they are not silently "fixed":
 
 ## Still open
 
-- **The plan's seven-column week.** At `max-w-6xl` each day is ~185px, which no recipe name fits and which forced the add row's placeholder down to "Add a recipe". Decision 71's own reasoning ("seven days of a vertical list is the shape that fits the screen") argues for a list at every width; the calendar strip argues for the grid. Undecided.
 - **`data-theme` hydration mismatch.** The server renders without it and the client adds it, so React logs a mismatch on every page and the first paint can flash light. `bootstrapTheme()` runs in an effect; it needs to run before hydration.
 
 ## Related
 
-- [`decisions.md`](decisions.md) — rows 97, 98, 99, 137
+- [`decisions.md`](decisions.md) — rows 97, 98, 99, 137, 141
 - [`ui-gap.md`](ui-gap.md) — what garnish borrowed from Mealie and Tandoor, feature by feature
 - `design-system/docs/visual-hierarchy.md` — the surface system and the axes
 - `design-system/docs/density.md` — the three density modes

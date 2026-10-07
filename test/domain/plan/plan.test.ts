@@ -2,7 +2,7 @@
 // write schemas accept and refuse.
 import { describe, expect, test } from "vitest";
 import { addDays, isToday, mondayOf, todayIso, weekDates, weekMonday } from "../../../src/domain/plan/dates";
-import { dayLabel, dayParts, entryLabel, mealLabel, servingsLabel, weekLabel } from "../../../src/domain/plan/labels";
+import { dayLabel, dayName, dayParts, entryLabel, mealLabel, servingsLabel, weekLabel } from "../../../src/domain/plan/labels";
 import {
   isoDate,
   MEALS,
@@ -174,6 +174,14 @@ test.each([
   ["2027-01-01", "Fri 1 Jan"],
 ])("dayLabel(%s) is %s", (date, expected) => {
   expect(dayLabel(date)).toBe(expected);
+});
+
+test.each([
+  ["2026-09-14", "Monday 14 September"],
+  ["2026-09-20", "Sunday 20 September"],
+  ["2027-01-01", "Friday 1 January"],
+])("dayName(%s) is %s", (date, expected) => {
+  expect(dayName(date)).toBe(expected);
 });
 
 // The plan's date rail stacks the two, so they have to be the two pieces the

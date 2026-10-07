@@ -4,11 +4,23 @@ import type { Meal, PlanEntry } from "./schema";
 // Written out rather than `Intl`: these strings name a calendar day with no zone, and ICU's short month names shift between builds ("Sep" vs "Sept" in en-AU).
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+const LONG_WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const LONG_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as const;
 
 /** A day's whole name: "Mon 14 Sep". What a menu, an aria-label or a shopping part is given. */
 export function dayLabel(date: string): string {
   const parts = dayParts(date);
   return `${parts.weekday} ${parts.day}`;
+}
+
+/**
+ * A day said in full: "Monday 14 September". What the plan's add sheet is
+ * titled and its "+" is named, where a screen reader reads it aloud and the
+ * sheet has the width a rail does not.
+ */
+export function dayName(date: string): string {
+  const at = utc(date);
+  return `${LONG_WEEKDAYS[at.getUTCDay()] ?? ""} ${at.getUTCDate()} ${LONG_MONTHS[at.getUTCMonth()] ?? ""}`;
 }
 
 /**

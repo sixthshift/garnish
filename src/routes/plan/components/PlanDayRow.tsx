@@ -1,80 +1,108 @@
+import { Badge } from "@sixthshift/design-system/badge";
+import { Button } from "@sixthshift/design-system/button";
 import { Caption } from "@sixthshift/design-system/caption";
-import { Card } from "@sixthshift/design-system/card";
-import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { cn } from "@sixthshift/design-system/utils";
+import { PlusIcon } from "../../../components/ui/icons";
 import { ReorderList } from "../../../components/ui/ReorderList";
-import { dayParts, isToday, type PlanDay, reorderMove } from "../../../domain/plan";
-import { PlanAddRow } from "./PlanAddRow";
-import { PlanEntryCard } from "./PlanEntryCard";
+import { dayName, dayParts, isToday, type PlanDay, reorderMove } from "../../../domain/plan";
+import { PlanEntryRow } from "./PlanEntryRow";
 import type { PlanWeekViewProps } from "./PlanWeekView";
 
 /** The lists sharing a cross-day drag. One group for the whole week. */
 const DRAG_GROUP = "plan-week";
 
 /**
- * One day, full width: a date rail on the left, then the day's entries and the
- * add row. A row rather than one of seven columns because that is what
- * decisions.md row 71 argued for — "seven days of a vertical list is the shape
- * that fits the screen" — and because the column it replaced was about 120px
- * wide inside its padding, which is narrower than the date it had to hold.
+ * One day of the week's list: the weekday and date on the left, one "+" on the
+ * right that opens the day's add sheet, and the day's entries beneath as rows.
+ * A row inside the week's one card rather than a card of its own (rule 2: a
+ * sequence of rows inside a container is not a card each), and no form: the
+ * search and the meal chips the day used to repeat seven times live in the
+ * sheet the "+" opens, so a week of empty days reads as seven short lines.
+ *
+ * Today takes a neutral tint across its row and says "Today" in words, so it
+ * is found at a glance without the brand colour (rule 5), and without the
+ * colour alone carrying it.
  */
 export function PlanDayRow({
   day,
   days,
   today,
   busy,
-  onAddText,
-  onAddRecipe,
+  onAdd,
   onMove,
   onRemove,
-  searchRecipes,
 }: {
   day: PlanDay;
   days: readonly PlanDay[];
   today: string;
   busy: boolean;
-} & Pick<PlanWeekViewProps, "onAddText" | "onAddRecipe" | "onMove" | "onRemove" | "searchRecipes">) {
+  /** The "+" was pressed: open this day's add sheet. */
+  onAdd: (date: string) => void;
+} & Pick<PlanWeekViewProps, "onMove" | "onRemove">) {
   const marked = isToday(day.date, today);
   const { weekday, day: dayOfMonth } = dayParts(day.date);
+  const empty = day.entries.length === 0;
   return (
-    // The primitive, not `cardVariants`: `Card` renders a `<div>` and nothing
-    // here needs another element. The day was a labelled `<section>` first,
-    // which made seven `region` landmarks on one page to say what the `<h2>`
-    // in the rail already says. Today is marked in the rail and nowhere else:
-    // a fill reads as a block of colour across a full-width card, so the mark
-    // is the brand foreground on the two words that name the day.
-    <Card size="sm" data-testid="plan-day" data-date={day.date} data-today={marked ? "true" : "false"} className="flex flex-col gap-1 sm:flex-row sm:gap-3">
-      {/* Left rail from `sm` up, fixed-width so every day's entries start on
-          the same vertical line and the date stacks rather than wrapping. On a
-          phone it goes back over the top in one line: 64px of rail beside a
-          drag handle, a thumbnail and three row buttons left a recipe's name
-          about ten characters. */}
-      <div className="flex shrink-0 items-baseline gap-1.5 sm:w-16 sm:flex-col sm:items-start sm:gap-0 sm:pt-0.5">
-        {/* The mark is colour alone, so the word rides along where only a
-            screen reader hears it rather than becoming a second thing on the
-            card saying what the rail already says. */}
-        <SectionTitle as="h2" className={cn(marked && "text-fg-brand")}>
+    // A grid so the "+" can span both lines of an empty day (its date and the
+    // dash) and keep to the first line of a day with entries, which then run
+    // the full width beneath it: a phone's entry row already holds a handle, a
+    // picture, the name, the meal and a menu.
+    <li
+      data-testid="plan-day"
+      data-date={day.date}
+      data-today={marked ? "true" : "false"}
+      aria-current={marked ? "date" : undefined}
+      className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-start py-1 pr-1 pl-4 first:rounded-t-xl last:rounded-b-xl", marked && "bg-bg-subtle")}
+    >
+      {/* Sans on each part, not the display face the theme gives an h2 (an
+          unlayered rule, so a utility on the h2 itself loses): this is a label
+          in a list, not a title. */}
+      <h2 className="col-start-1 row-start-1 flex min-w-0 items-baseline gap-1.5 pt-2.5">
+        <SectionTitle as="span" className={cn("font-sans", marked && "text-fg-normal")}>
           {weekday}
-          {marked && <span className="sr-only"> (today)</span>}
         </SectionTitle>
-        <Caption className={cn(marked && "text-fg-brand")}>{dayOfMonth}</Caption>
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {day.entries.length === 0 && (
-          <Muted as="p" className="px-1 text-sm" data-testid="plan-day-empty">
-            Nothing planned
-          </Muted>
+        <Caption className={cn("font-sans", marked && "font-medium text-fg-normal")}>{dayOfMonth}</Caption>
+        {marked && (
+          <Badge variant="soft" intent="muted" className="ml-1 self-center font-sans" data-testid="plan-today">
+            Today
+          </Badge>
         )}
+      </h2>
+      {/* Never disabled by a write in flight, unlike the rest of the page: an
+          add closes the sheet and starts its write in one render, and focus
+          has to come back to this button, which it cannot do to a disabled
+          one. The sheet's own controls wait for the write instead. */}
+      <Button
+        type="button"
+        variant="ghost"
+        intent="neutral"
+        iconOnly
+        aria-label={`Add to ${dayName(day.date)}`}
+        className={cn("col-start-2 row-start-1 h-11 w-11", empty && "row-span-2 self-center")}
+        onClick={() => onAdd(day.date)}
+      >
+        <PlusIcon />
+      </Button>
 
-        {/* Rendered even when empty: it is the drop target for a row dragged
-            from another day, and an empty <ol> has no height of its own. */}
+      {/* Rendered even when empty: it is the drop target for a row dragged from
+          another day, and an empty <ol> has no height of its own. The dash sits
+          over it, so an empty day costs one short line and still takes a drop. */}
+      <div className={cn("relative row-start-2", empty ? "col-start-1 pb-1.5" : "col-span-2 pr-3 pb-1")}>
+        {empty && (
+          <>
+            <span aria-hidden="true" className="pointer-events-none absolute top-0 left-0 text-fg-subtle text-sm leading-5" data-testid="plan-day-empty">
+              —
+            </span>
+            <span className="sr-only">Nothing planned</span>
+          </>
+        )}
         <ReorderList
           items={day.entries}
           keyOf={(entry) => entry.id}
           itemName="entry"
-          className={cn("gap-1", day.entries.length === 0 && "min-h-5")}
+          narrow="row"
+          className={cn("gap-1", empty && "min-h-5")}
           group={DRAG_GROUP}
           listKey={day.date}
           onReorder={(next) => {
@@ -87,11 +115,9 @@ export function PlanDayRow({
             if (moved !== undefined) onMove(moved, day.date, move.position);
           }}
           onMoveOut={(entry, _from, toList, toIndex) => onMove(entry, toList, toIndex)}
-          renderItem={(entry) => <PlanEntryCard entry={entry} days={days} busy={busy} onMove={onMove} onRemove={onRemove} />}
+          renderItem={(entry, _index, reorder) => <PlanEntryRow entry={entry} days={days} busy={busy} onMove={onMove} onRemove={onRemove} reorder={reorder} />}
         />
-
-        <PlanAddRow date={day.date} busy={busy} searchRecipes={searchRecipes} onAddText={onAddText} onAddRecipe={onAddRecipe} />
       </div>
-    </Card>
+    </li>
   );
 }
