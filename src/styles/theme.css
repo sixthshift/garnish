@@ -56,10 +56,11 @@
 
 /* Headings across the app, including the design system's <Heading>/<Display>,
    which render bare h1–h6 and inherit the family. Anything that wants the sans
-   face back says so with `font-sans`. */
-h1,
-h2,
-h3 {
+   face back says so with `font-sans`. Not `SectionTitle`, whose `uppercase` is
+   its mark: it is the letterspaced Inter label at any level, and this rule,
+   unlayered, would otherwise make it serif and untracked as an h2 or h3 but not
+   as an h4 or a span (critique #15b). */
+:is(h1, h2, h3):not(.uppercase) {
   font-family: var(--font-display);
   font-optical-sizing: auto;
   letter-spacing: -0.01em;
