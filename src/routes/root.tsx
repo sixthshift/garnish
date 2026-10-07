@@ -21,6 +21,11 @@ const themeColorDark = "#4ba5a9";
 
 // Paint the theme attribute before first render so the shell does not flash
 // light in a dark OS. Mirrors bootstrapTheme's storage key and resolution.
+// It runs from <head>, before the body is parsed and long before hydration,
+// so `data-theme` is on <html> when React arrives; the server cannot know
+// the household's choice, so <html> says `suppressHydrationWarning` for that
+// one attribute (React's flag covers the element's own attributes only, not
+// its children). `bootstrapTheme()` in AppShell then only follows changes.
 const themeScript = `try{var t=JSON.parse(localStorage.getItem("theme")||'"system"');document.documentElement.dataset.theme=t==="light"||t==="dark"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}`;
 
 export const Route = createRootRoute({
@@ -73,7 +78,7 @@ function RootDocument({ children }: { children: ReactNode }) {
     });
   }, []);
   return (
-    <html lang="en-AU">
+    <html lang="en-AU" suppressHydrationWarning>
       <head>
         <HeadContent />
         <meta name="theme-color" content={themeColorLight} media="(prefers-color-scheme: light)" />

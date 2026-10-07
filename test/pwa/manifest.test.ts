@@ -100,4 +100,12 @@ describe("root document head", () => {
     expect(source).toContain('name: "apple-mobile-web-app-capable", content: "yes"');
     expect(source).toContain('name: "apple-mobile-web-app-status-bar-style"');
   });
+
+  test("sets data-theme from <head> before hydration, and <html> lets that one attribute differ (critique #15c)", () => {
+    // A head script, so the attribute is on <html> before the body paints; the
+    // server cannot know the stored choice, so React must not report it.
+    expect(source).toContain("scripts: [{ children: themeScript }]");
+    expect(source).toMatch(/const themeScript = `try\{[^`]*localStorage\.getItem\("theme"\)[^`]*prefers-color-scheme: dark[^`]*`/);
+    expect(source).toContain('<html lang="en-AU" suppressHydrationWarning>');
+  });
 });

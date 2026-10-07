@@ -85,10 +85,6 @@ Recorded so they are not silently "fixed":
 - **Two-column recipe page.** The system's settled rule is single column, drill-in via routing. The recipe page keeps ingredients sticky beside the method from `lg`, and the print stylesheet depends on it. Decisions 99 and 145.
 - **`md:` as the breakpoint.** `responsive.md` names mobile / `sm:` / `lg:` as the adaptive vocabulary and calls `md:` outside it. Garnish is phone-first with one break at `md:`, used throughout the shell. The recipe page's two columns and its header's image-beside-title split are the exception: they break at `lg:`, because at `md` beside the side nav a third of the page is 144px, too narrow for the ingredient list (decision 145). Not worth churning; noted so the mismatch is known.
 
-## Still open
-
-- **`data-theme` hydration mismatch.** The server renders without it and the client adds it, so React logs a mismatch on every page and the first paint can flash light. `bootstrapTheme()` runs in an effect; it needs to run before hydration.
-
 ## Related
 
 - [`decisions.md`](decisions.md) — rows 97, 98, 99, 137, 141
