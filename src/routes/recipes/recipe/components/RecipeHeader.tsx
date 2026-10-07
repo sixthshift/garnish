@@ -61,7 +61,7 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
           <div className="flex flex-wrap items-start justify-between gap-3">
             <Heading as="h1">{recipe.name}</Heading>
             {/* Controls, not content: the print stylesheet drops them. */}
-            <div className="flex items-center gap-2" data-print="hide">
+            <div className="flex min-w-0 flex-wrap items-center gap-2" data-print="hide">
               <FavouriteButton id={recipe.id} favourite={recipe.favourite} />
               {actions}
             </div>

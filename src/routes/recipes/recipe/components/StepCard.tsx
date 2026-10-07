@@ -40,13 +40,6 @@ export type StepCardProps = {
   /** The owning part's id. Quick edit needs it to find the stored step; without it the card renders no pencil. */
   partId?: string;
   /**
-   * Whether the whole list reserves a column for linked ingredients, so a step
-   * without any still starts its text where its neighbours do. `StepList` sets
-   * it for the page; cook mode leaves it unset, where one card owns the screen
-   * and an empty gutter would cost a third of it for nothing.
-   */
-  gutter?: boolean;
-  /**
    * The parent recipe's slug, cook mode only: forwarded to each linked
    * row so a sub-recipe ingredient offers a link into the child's own cook
    * mode instead of the plain "Make N servings" hint. Absent on the recipe page.
@@ -54,7 +47,7 @@ export type StepCardProps = {
   cookFrom?: string;
 };
 
-export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId, gutter, cookFrom }: StepCardProps) {
+export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId, cookFrom }: StepCardProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
   // The corner "…" menu and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditStep(partId, step.id);
@@ -69,10 +62,14 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   const scale = SCALE[size];
   const label = step.title.trim();
   const support = step.summary.trim();
-  // Two columns from `md` when this list reserves the gutter — or, absent a
-  // list-wide answer, when this step alone has rows to put in it. A ticked step
-  // collapses to one line and gives the gutter back.
-  const columns = (gutter ?? rows.length > 0) && !done;
+  // A ticked step collapses to one line, so its rows go with the rest of the detail.
+  const showRows = rows.length > 0 && !done;
+  // On the page the rows sit above the text at every width, so every step's
+  // text starts at the same x and runs the card's width; a gutter beside it
+  // either went empty on the steps that link nothing or squeezed the text to
+  // a few words a line at `md` (critique #13). The deck puts them beside the
+  // text from `md`, where one card owns the screen and has the width for both.
+  const columns = size === "cook" && showRows;
 
   return (
     <li
@@ -102,7 +99,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className={cn("flex flex-col gap-3", columns && "md:grid md:grid-cols-3 md:items-start md:gap-4")}>
-            {columns && rows.length > 0 && (
+            {showRows && (
               <ul className={cn("flex flex-col gap-2 md:col-span-1", scale.ingredients)} aria-label="Ingredients for this step" data-testid="step-ingredients">
                 {rows.map((ingredient) => (
                   <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} cookFrom={cookFrom} size={size} />

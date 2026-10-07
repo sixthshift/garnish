@@ -129,7 +129,7 @@ export function RecipePage() {
               )}
             </aside>
 
-            <div className="flex max-w-prose flex-col gap-6 md:col-span-2" data-testid="method-column">
+            <div className="flex flex-col gap-6 md:col-span-2" data-testid="method-column">
               {recipe.parts.map((part) => (
                 <PartSteps key={part.id} part={part} recipeId={recipe.id} />
               ))}

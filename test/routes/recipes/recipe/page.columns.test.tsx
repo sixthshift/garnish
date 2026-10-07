@@ -141,6 +141,16 @@ describe("two columns from md (M24.1)", () => {
     expect(html).toMatch(/<article[^>]*class="[^"]*max-w-6xl/);
   });
 
+  test("the method column runs its track's full width, so its right edge meets the header's (critique #13)", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart");
+    const main = elementHtml(html, "method-column");
+    expect(main.slice(0, main.indexOf(">"))).toContain("md:col-span-2");
+    // The page's max-w-6xl already caps the step text near a reading measure;
+    // a second cap here left the steps 70px short of everything above them.
+    expect(main.slice(0, main.indexOf(">"))).not.toContain("max-w-");
+  });
+
   test("the ingredients aside opts out of the print rule that hides the shell's aside", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");

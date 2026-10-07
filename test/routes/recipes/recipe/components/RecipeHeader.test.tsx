@@ -201,6 +201,13 @@ describe("the favourite heart (M25.4)", () => {
     expect(heart).toBeLessThan(edit);
   });
 
+  test("the action row wraps rather than pushing past the viewport (critique #13, rule 6)", async () => {
+    const html = await render(base, <button type="button">Edit</button>);
+    const row = html.match(/<div class="([^"]*)" data-print="hide">/)?.[1] ?? "";
+    expect(row).toContain("flex-wrap");
+    expect(row).toContain("min-w-0");
+  });
+
   test("reflects a favourited recipe", async () => {
     const html = await render({ ...base, favourite: true });
     expect(html).toMatch(/aria-label="Remove from favourites"/);

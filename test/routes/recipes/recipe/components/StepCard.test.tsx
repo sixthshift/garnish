@@ -84,7 +84,7 @@ describe("StepCard", () => {
   const flour = ingredient(200, food("flour"));
   const part = [eggs, flour];
 
-  test("a card with two linked ingredients renders them as rows, in two columns from md", () => {
+  test("a card with two linked ingredients renders them as rows, above the text at every width", () => {
     withStorage(fakeStorage());
     const html = renderToString(
       <StepCard recipeId={RECIPE_ID} step={step("Beat the **eggs** into the flour", [eggs.id, flour.id])} position={1} ingredients={part} />
@@ -102,7 +102,10 @@ describe("StepCard", () => {
     expect((html.match(/data-testid="ingredient-row"/g) ?? []).length).toBe(2);
     expect(html).toContain("2 eggs");
     expect(html).toContain("200 flour");
-    expect(html).toContain("md:grid-cols-3");
+    // Critique #13: no gutter beside the text on the page, so every step's
+    // text starts at one x whether it links rows or not.
+    expect(html).not.toContain("md:grid");
+    expect(html.indexOf('data-testid="step-ingredients"')).toBeLessThan(html.indexOf('data-testid="step-toggle"'));
     expect(html).toMatch(/<strong[^>]*>eggs<\/strong>/);
     expect(html).toContain("Step 1. ");
   });
@@ -111,7 +114,7 @@ describe("StepCard", () => {
     withStorage(fakeStorage());
     const html = renderToString(<StepCard recipeId={RECIPE_ID} step={step("Rest it")} position={2} ingredients={part} />);
     expect(html).not.toContain('data-testid="step-ingredients"');
-    expect(html).not.toContain("md:grid-cols-3");
+    expect(html).not.toContain("md:grid");
     expect(html).toContain("Step 2. ");
   });
 
@@ -206,6 +209,10 @@ describe("StepCard", () => {
     expect(page).not.toContain("text-3xl");
     expect(cook).toContain('data-size="cook"');
     expect(cook).toContain("text-3xl");
+    // The deck, where one card owns the screen, sets its rows beside the text
+    // from md; the page stacks them (critique #13).
+    expect(cook).toContain("md:grid-cols-3");
+    expect(page).not.toContain("md:grid");
     // Critique #5: the deck counts steps once, in its footer, so the cook
     // card has no number bubble; its timer is a full button and its linked
     // rows are 48px targets edge to edge.
