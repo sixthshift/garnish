@@ -111,10 +111,14 @@ describe("README", () => {
     expect(sections).toContain("Restore");
   });
 
-  test("names the compose and backup commands", () => {
+  test("names the compose, backup and restore commands", () => {
     expect(readme).toContain("docker compose up");
-    expect(readme).toContain("docker compose exec garnish bun run backup");
+    // The runtime image holds only .output, so a running container is backed
+    // up and restored over HTTP; the bun scripts are for outside Docker.
+    expect(readme).toContain("http://localhost:9988/api/backup.zip");
+    expect(readme).toContain("http://localhost:9988/api/restore");
     expect(readme).toContain("bun run backup");
+    expect(readme).toContain("bun run restore");
   });
 
   test("restore removes the WAL sidecars", () => {

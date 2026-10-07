@@ -21,7 +21,7 @@ import { VERSION } from "../../../src/lib/version";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
 import { AislesTab } from "../../../src/routes/settings/components/tabs/AislesTab";
 import { AiTab } from "../../../src/routes/settings/components/tabs/AiTab";
-import { ExportTab } from "../../../src/routes/settings/components/tabs/ExportTab";
+import { BackupTab } from "../../../src/routes/settings/components/tabs/BackupTab";
 import { PlannerTab } from "../../../src/routes/settings/components/tabs/PlannerTab";
 import { StyleTab } from "../../../src/routes/settings/components/tabs/StyleTab";
 import { TagsTab } from "../../../src/routes/settings/components/tabs/TagsTab";
@@ -163,15 +163,21 @@ describe("TagsTab render", () => {
   });
 });
 
-describe("ExportTab render", () => {
-  test("links at the whole-database export as a download and says images are not in the file", async () => {
-    const html = await renderWithRouter(() => <ExportTab />);
-    expect(html).toContain('href="/api/export.json"');
+describe("BackupTab render", () => {
+  test("offers the backup as a download and a restore, and says export is per recipe", async () => {
+    const html = await renderWithRouter(() => <BackupTab />);
+    expect(html).toContain('href="/api/backup.zip"');
     expect(html).toContain("download");
-    expect(html).toContain('data-testid="export-download"');
-    expect(html).toMatch(/Images are referenced by their URLs, not included/);
-    // The per-recipe endpoint is named so a reader can find it.
-    expect(html).toContain("/api/recipes/");
+    expect(html).toContain('data-testid="backup-download"');
+    expect(html).toContain(">Back up<");
+    expect(html).toContain("Download backup");
+    expect(html).toContain(">Restore<");
+    expect(html).toContain("Choose backup…");
+    expect(html).toContain('accept=".zip,application/zip"');
+    expect(html).toMatch(/Export is per recipe/);
+    expect(html).not.toContain("/api/export.json");
+    // No confirm until a file has passed the check.
+    expect(html).not.toContain("I understand this replaces everything");
   });
 });
 

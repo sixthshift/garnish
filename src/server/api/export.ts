@@ -1,51 +1,9 @@
-import aisles from "../../db/models/aisle/repo";
-import foods, { type Food } from "../../db/models/food/repo";
+// Export is one recipe at a time, as a document or a Cooklang file; the whole
+// household is a backup (`src/server/backup/`, decisions.md row 131).
 import recipes from "../../db/models/recipe/repo";
-import tags from "../../db/models/tag/repo";
-import units from "../../db/models/unit/repo";
-import { EXPORT_VERSION, exportedRecipe, exportFileName, type Recipe, toCooklang } from "../../domain/recipe";
-import type { Aisle, Tag, Unit } from "../../domain/reference";
-
-/**
- * The whole-database export. Recipes carry their documents whole, including
- * the nested food and unit of every ingredient row; the four reference lists
- * are there so a reader can rebuild the tables a recipe only mentions in part
- * — a food's aisle, its conversions, a unit's `standard_*`, an unused tag.
- * Foods carry `aisleId` rather than a nested aisle, which is the repository's
- * shape and the one the `aisles` list beside them resolves.
- */
-export type GarnishExport = {
-  garnish: { version: number; exportedAt: string };
-  recipes: Recipe[];
-  foods: Food[];
-  units: Unit[];
-  aisles: Aisle[];
-  tags: Tag[];
-};
+import { exportedRecipe, toCooklang } from "../../domain/recipe";
 
 const notFound = (error: string): Response => Response.json({ error }, { status: 404 });
-
-/** Every recipe's full document, by name, with image URLs. */
-async function allRecipes(): Promise<Recipe[]> {
-  const documents: Recipe[] = [];
-  for (const summary of recipes.query({ by: "filter", sort: "name", dir: "asc" })) {
-    const doc = recipes.get(summary.slug);
-    if (doc) documents.push(exportedRecipe(doc));
-  }
-  return documents;
-}
-
-/** The export as an object, so the tests and the route read the same thing. */
-export async function buildExport(at: Date = new Date()): Promise<GarnishExport> {
-  return {
-    garnish: { version: EXPORT_VERSION, exportedAt: at.toISOString() },
-    recipes: await allRecipes(),
-    foods: foods.list(),
-    units: units.list(),
-    aisles: aisles.list(),
-    tags: tags.list(),
-  };
-}
 
 /**
  * GET /api/recipes/:slug.json — one recipe's document as the editor saves it,
@@ -57,17 +15,6 @@ export async function handleRecipeJson(slug: string): Promise<Response> {
   const doc = recipes.get(wanted);
   if (!doc) return notFound(`recipe ${wanted} not found`);
   return Response.json(exportedRecipe(doc));
-}
-
-/**
- * GET /api/export.json — every recipe plus the foods, units, aisles and tags,
- * offered as a download. Images are referenced, not included.
- */
-export async function handleExportJson(at: Date = new Date()): Promise<Response> {
-  const body = await buildExport(at);
-  return Response.json(body, {
-    headers: { "content-disposition": `attachment; filename="${exportFileName(at)}"` },
-  });
 }
 
 /**

@@ -2,7 +2,7 @@
 // serves it, everything else about the document is left alone, and the
 // download is named for the day it was taken.
 import { expect, test } from "vitest";
-import { EXPORT_VERSION, exportedRecipe, exportFileName, imageUrl } from "../../../src/domain/recipe/export";
+import { exportedRecipe, imageUrl } from "../../../src/domain/recipe/export";
 import type { Recipe } from "../../../src/domain/recipe/recipe";
 
 const recipe: Recipe = {
@@ -47,12 +47,4 @@ test("exportedRecipe rewrites the image and nothing else", () => {
 
 test("a recipe with no image exports a null image", () => {
   expect(exportedRecipe({ ...recipe, image: null }).image).toBeNull();
-});
-
-test("exportFileName names the day, not the instant", () => {
-  expect(exportFileName(new Date("2026-09-13T22:31:00.000Z"))).toBe("garnish-export-2026-09-13.json");
-});
-
-test("the envelope version is a number the reader can branch on", () => {
-  expect(EXPORT_VERSION).toBe(1);
 });

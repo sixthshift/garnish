@@ -3,7 +3,7 @@ import { Page, PageHeader } from "../../components/shell/Page";
 import { Appearance } from "./components/Appearance";
 import { TimerAlerts } from "./components/TimerAlerts";
 import { AiTab } from "./components/tabs/AiTab";
-import { ExportTab } from "./components/tabs/ExportTab";
+import { BackupTab } from "./components/tabs/BackupTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { PlannerTab } from "./components/tabs/PlannerTab";
 import { StyleTab } from "./components/tabs/StyleTab";
@@ -22,7 +22,7 @@ export function SettingsPage() {
       badge: plannerRules.filter((rule) => rule.enabled).length,
       content: <PlannerTab rules={plannerRules} />,
     },
-    { value: "export", label: "Export", content: <ExportTab /> },
+    { value: "backup", label: "Backup", content: <BackupTab /> },
     { value: "ai", label: "AI", content: <AiTab status={ai} /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
     { value: "alerts", label: "Alerts", content: <TimerAlerts /> },

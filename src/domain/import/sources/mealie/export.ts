@@ -1,5 +1,5 @@
+import { isZip, readZip, type ZipEntry } from "../../../../lib/zip";
 import { type ImportFile, imageDataUrl, parseJsonBytes } from "../file";
-import { isZip, readZip, type ZipEntry } from "../zip";
 import { mealieRecipesFrom } from "./database";
 import type { MealieRecipe } from "./types";
 

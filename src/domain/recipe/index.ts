@@ -4,7 +4,7 @@ export { toCooklang } from "./cooklang";
 export { ingredientsText, recipeUrl } from "./copy";
 export { duplicateInput } from "./duplicate";
 export { durationsIn } from "./durations";
-export { EXPORT_VERSION, exportedRecipe, exportFileName } from "./export";
+export { exportedRecipe } from "./export";
 export type { TagMatch } from "./filters";
 export { selectedTags } from "./filters";
 export { mergeIngredients } from "./mergeIngredients";

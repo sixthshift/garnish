@@ -1,6 +1,7 @@
 // The server routes (/api/*), added to the tree on the server only: their handlers import the store.
 
-import { exportJsonRoute, recipeCookRoute, recipeJsonRoute } from "./export";
+import { backupZipRoute, restoreRoute } from "./backup";
+import { recipeCookRoute, recipeJsonRoute } from "./export";
 import { healthRoute } from "./health";
 import { getImageRoute, uploadImageRoute } from "./images";
 import { importFileRoute } from "./importFile";
@@ -9,7 +10,6 @@ import { getTimelineImageRoute, uploadTimelineImageRoute } from "./timelineImage
 
 export const apiRoutes = [
   healthRoute,
-  exportJsonRoute,
   recipeJsonRoute,
   recipeCookRoute,
   getImageRoute,
@@ -19,4 +19,6 @@ export const apiRoutes = [
   getTimelineImageRoute,
   uploadTimelineImageRoute,
   importFileRoute,
+  backupZipRoute,
+  restoreRoute,
 ] as const;

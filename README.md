@@ -102,7 +102,7 @@ Environment:
 - `DATA_DIR` — where `garnish.db`, `images/` and `backups/` live. Defaults to `./data`. Created if missing.
 - `PORT` — the production server's port. Defaults to 9988.
 
-Both apply to every `bun run` command here (`start`, `seed`, `migrate`, `backup`), for example:
+Both apply to every `bun run` command here (`start`, `seed`, `migrate`, `backup`, `restore`), for example:
 
 ```bash
 DATA_DIR=/srv/garnish PORT=8080 bun run start
@@ -216,38 +216,44 @@ The build inlines the number, so a running container can be asked what it is: `c
 
 ## Backup
 
-Write a compacted snapshot of the live database into the volume's `backups/` directory. It uses `VACUUM INTO`, so it is safe while the server is running:
+A backup is the whole household in one zip: every recipe and its photos, the cook history, the meal plan, the shopping list and both guides (`garnish.json` plus `images/`). Take one from **Settings › Backup › Download backup**, which saves it to the device you are on, or from the host while the container runs:
 
 ```bash
-docker compose exec garnish bun run backup
+curl -fo garnish-backup.zip http://localhost:9988/api/backup.zip
 ```
 
-This prints the new file, named `garnish-YYYYMMDD-HHmmss.db` (UTC). Copy it out of the container onto the host:
-
-```bash
-docker compose cp garnish:/data/backups/garnish-20260910-093000.db ./garnish-20260910-093000.db
-```
-
-Images are not in the database. To keep them too, copy the whole directory: `docker compose cp garnish:/data/images ./images`.
-
-Outside Docker the same command works against `DATA_DIR` (default `./data`):
+Outside Docker, `bun run backup` writes one into `DATA_DIR/backups/` (default `./data/backups/`), named `garnish-backup-YYYYMMDD-HHmmss.zip` (UTC):
 
 ```bash
 bun run backup
 ```
 
+Export is something else: one recipe at a time, as its JSON (`/api/recipes/<slug>.json`) or a Cooklang file, from the recipe page's menu.
+
 ## Restore
 
-Stop the service, replace the database in the volume with the backup, remove the WAL sidecars, and start again. The one-off container mounts the volume so nothing has to be running:
+A restore **replaces** everything with the backup; it never merges. The file is checked in full first, and a file that fails changes nothing. Before replacing anything, the database as it was is kept as `backups/garnish-pre-restore-YYYYMMDD-HHmmss.db`, and its photos as the folder `garnish-pre-restore-YYYYMMDD-HHmmss-images/` beside it.
+
+From **Settings › Backup › Choose backup…**: the sheet shows what the backup holds beside what is here, and Restore stays off until you tick "I understand this replaces everything". From the host while the container runs:
+
+```bash
+curl -fF file=@garnish-backup.zip 'http://localhost:9988/api/restore?check=1'   # what it holds; writes nothing
+curl -fF file=@garnish-backup.zip http://localhost:9988/api/restore
+```
+
+Outside Docker:
+
+```bash
+bun run restore garnish-backup-20261007-091500.zip
+```
+
+To undo a restore, put the snapshot back by hand: stop the service, copy the `garnish-pre-restore-….db` over `garnish.db`, delete `garnish.db-wal` and `garnish.db-shm` beside it, put its `-images` folder back as `images/`, and start again.
 
 ```bash
 docker compose stop garnish
-docker compose cp garnish:/data/backups/garnish-20260910-093000.db ./restore.db
-docker compose run --rm --no-deps -v "$PWD/restore.db:/restore.db:ro" garnish \
-  sh -c 'cp /restore.db /data/garnish.db && rm -f /data/garnish.db-wal /data/garnish.db-shm'
+docker compose run --rm --no-deps garnish sh -c '
+  cd /data &&
+  cp backups/garnish-pre-restore-20261007-103000.db garnish.db && rm -f garnish.db-wal garnish.db-shm &&
+  rm -rf images && cp -r backups/garnish-pre-restore-20261007-103000-images images'
 docker compose start garnish
 ```
-
-If the backup is already on the host, skip the `cp` step and mount that file instead of `./restore.db`. Copy `images/` back the same way if it was backed up.
-
-Outside Docker, stop the server, then copy the backup over `$DATA_DIR/garnish.db` and delete `garnish.db-wal` and `garnish.db-shm` next to it before starting again.

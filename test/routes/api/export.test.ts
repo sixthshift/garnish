@@ -1,5 +1,6 @@
-// The two export routes (M34.1) against a temp DATA_DIR: one recipe's document
-// and the whole-database file, over a fixture that exercises the parts of the
+// The export routes (M34.1, M34.2) against a temp DATA_DIR: one recipe's
+// document and its Cooklang file — the whole database is a backup now
+// (test/server/backup, decisions.md row 131) — over a fixture that exercises the parts of the
 // document an export is most likely to lose — a step linked to its ingredient
 // rows, an ingredient whose food is made by another recipe, a food conversion,
 // an aisle, a tag, and an image.
@@ -10,8 +11,8 @@ import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { tagRepository } from "../../../src/db/models/tag/repo";
 import { unitRepository } from "../../../src/db/models/unit/repo";
 import { type Recipe, recipeInputSchema } from "../../../src/domain/recipe";
-import { exportJsonRoute as ExportRoute, recipeCookRoute as RecipeCookRoute, recipeJsonRoute as RecipeJsonRoute } from "../../../src/routes/api/export";
-import { buildExport, type GarnishExport, handleExportJson, handleRecipeCook, handleRecipeJson } from "../../../src/server/api/export";
+import { recipeCookRoute as RecipeCookRoute, recipeJsonRoute as RecipeJsonRoute } from "../../../src/routes/api/export";
+import { handleRecipeCook, handleRecipeJson } from "../../../src/server/api/export";
 import { getDb } from "../../../src/server/core/db";
 import { testRouter } from "../../helpers/routes";
 import { useTempDataDir } from "../../helpers/server";
@@ -125,48 +126,6 @@ test.each([
   expect(typeof ((await res.json()) as { error: string }).error).toBe("string");
 });
 
-// --- GET /api/export.json ---------------------------------------------------
-
-test("the whole export carries every recipe's document and the four reference lists", async () => {
-  const { tart, pastry } = await seed();
-  const res = await handleExportJson(new Date("2026-09-13T10:00:00.000Z"));
-  expect(res.status).toBe(200);
-  expect(res.headers.get("content-type")).toMatch(/application\/json/);
-  expect(res.headers.get("content-disposition")).toBe('attachment; filename="garnish-export-2026-09-13.json"');
-
-  const body = (await res.json()) as GarnishExport;
-  expect(body.garnish).toEqual({ version: 1, exportedAt: "2026-09-13T10:00:00.000Z" });
-  expect(body.recipes.map((r) => r.slug)).toEqual(["lemon-tart", "sweet-pastry"]); // by name
-  expect(body.recipes.find((r) => r.id === tart.id)?.image).toBe(`/api/images/${tart.id}.jpg`);
-
-  // The sub-recipe survives as a food pointing at a recipe that is also in the file.
-  const pastryFood = body.foods.find((f) => f.recipeId !== null);
-  expect(pastryFood?.name).toBe("Sweet pastry");
-  expect(body.recipes.some((r) => r.id === pastryFood?.recipeId)).toBe(true);
-  expect(pastryFood?.recipeId).toBe(pastry.id);
-
-  // The step links come through the documents, not a separate list.
-  expect(body.recipes.find((r) => r.slug === "lemon-tart")?.parts[0]!.steps[0]!.ingredientIds).toEqual([PASTRY_INGREDIENT, FLOUR_INGREDIENT]);
-
-  const flour = body.foods.find((f) => f.name === "Plain flour")!;
-  expect(flour.conversions).toHaveLength(1);
-  // A food names its aisle by id; the aisle list beside it resolves the name.
-  expect(body.aisles.find((a) => a.id === flour.aisleId)?.name).toBe("Baking");
-  expect(body.units.map((u) => u.name)).toContain("gram"); // the seeded reference list, whole
-  expect(body.tags.map((t) => t.slug)).toEqual(["dessert"]);
-});
-
-test("a database with no recipes still exports a well-formed envelope", async () => {
-  getDb();
-  const body = await buildExport(new Date("2026-09-13T10:00:00.000Z"));
-  expect(body.garnish).toEqual({ version: 1, exportedAt: "2026-09-13T10:00:00.000Z" });
-  expect(body.recipes).toEqual([]);
-  expect(body.foods).toEqual([]);
-  expect(body.aisles).toEqual([]);
-  expect(body.tags).toEqual([]);
-  expect(body.units.length).toBeGreaterThan(0); // seeded at boot, recipes or not
-});
-
 // --- GET /api/recipes/:slug.cook (M34.2) ------------------------------------
 
 test("one recipe comes back as a Cooklang file, plain text", async () => {
@@ -207,12 +166,6 @@ test("the routes wire GET to the handlers, with the slug as a path param", async
   });
   expect(((await one.json()) as Recipe).id).toBe(tart.id);
 
-  const exportGet = handlersOf(ExportRoute).GET!;
-  expect(typeof exportGet).toBe("function");
-  expect(handlersOf(ExportRoute).POST).toBeUndefined();
-  const all = await exportGet({ request: new Request("http://localhost/api/export.json"), params: {} });
-  expect(((await all.json()) as GarnishExport).recipes).toHaveLength(2);
-
   const cookGet = handlersOf(RecipeCookRoute).GET!;
   expect(typeof cookGet).toBe("function");
   expect(handlersOf(RecipeCookRoute).POST).toBeUndefined();
@@ -228,6 +181,5 @@ test("the route paths carry the .json and .cook suffixes, with the slug still it
   // `{$slug}` ends the param before the suffix, so `lemon-tart.json` is the
   // slug `lemon-tart` — the reason a fallback /json path was not needed.
   expect(RecipeJsonRoute.fullPath).toBe("/api/recipes/{$slug}.json");
-  expect(ExportRoute.fullPath).toBe("/api/export.json");
   expect(RecipeCookRoute.fullPath).toBe("/api/recipes/{$slug}.cook");
 });

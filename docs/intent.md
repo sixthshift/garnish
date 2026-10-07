@@ -57,7 +57,7 @@ See [decisions.md](decisions.md). The load-bearing ones:
 
 ## Known limits
 
-- **One maintainer who will get bored.** Recipe data is decade-scale. Backup is a file copy; export is a later feature and the mitigation when it lands.
+- **One maintainer who will get bored.** Recipe data is decade-scale. A backup is a zip of everything the household made, photos included, in garnish's own documented format, and a restore reads it back (decisions.md row 131).
 - **The phone is where DIY recipe apps die.** If the PWA is bad, the data model doesn't matter.
 - **The name is wrong on purpose.** A garnish is the least essential part of a dish. Chosen for sound.
 

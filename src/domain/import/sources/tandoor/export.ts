@@ -1,6 +1,6 @@
+import { isZip, readZip, type ZipEntry } from "../../../../lib/zip";
 import { type ImportFile, imageDataUrl, parseJsonBytes } from "../file";
 import type { Node } from "../json";
-import { isZip, readZip, type ZipEntry } from "../zip";
 import { namesIn, tandoorNodes, tandoorRecipesFrom } from "./detect";
 import { tandoorRecipe } from "./recipe";
 import type { TandoorRecipe } from "./types";

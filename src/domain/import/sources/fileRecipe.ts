@@ -1,10 +1,10 @@
+import { isZip } from "../../../lib/zip";
 import { type ImportFile, parseJsonBytes } from "./file";
 import { readMealieExport } from "./mealie/export";
 import type { MealieRecipe } from "./mealie/types";
 import { looksLikeTandoor } from "./tandoor/detect";
 import { readNestedZip, readTandoorExport } from "./tandoor/export";
 import type { TandoorRecipe } from "./tandoor/types";
-import { isZip } from "./zip";
 
 /** Either export's recipe: what the upload route answers with and the chooser reads. */
 export type FileRecipe = MealieRecipe | TandoorRecipe;

@@ -1,10 +1,14 @@
 // The zip reader behind the Mealie import (M34.3): stored and deflated
 // entries, directories dropped, and a readable message for anything it cannot
 // walk. Archives are built in memory by test/helpers/zip.ts, so there is no
-// binary fixture to trust.
+// binary fixture to trust — and since M40.2 they are the app's own writer's,
+// so the writer is checked here too, and once by `unzip` where it is installed.
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { findEndOfCentralDirectory, inflate, isZip, readZip } from "../../../../src/domain/import/sources/zip";
-import { makeZip, PNG_BYTES } from "../../../helpers/zip";
+import { crc32, findEndOfCentralDirectory, inflate, isZip, readZip, writeZip } from "../../src/lib/zip";
+import { makeZip, PNG_BYTES } from "../helpers/zip";
 
 const utf8 = (text: string) => new TextEncoder().encode(text);
 const decode = (bytes: Uint8Array) => new TextDecoder().decode(bytes);
@@ -72,4 +76,47 @@ test("findEndOfCentralDirectory finds the record even behind a comment", async (
   const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
   expect(findEndOfCentralDirectory(view)).toBe(zip.byteLength - 22);
   expect(findEndOfCentralDirectory(new DataView(utf8("x".repeat(40)).buffer))).toBe(-1);
+});
+
+describe("writeZip", () => {
+  test("crc32 matches the standard check value", () => {
+    expect(crc32(utf8("123456789"))).toBe(0xcbf43926);
+  });
+
+  test("what it writes the reader reads back, stored and compressed", async () => {
+    const text = utf8("Rub the butter into the flour. ".repeat(50));
+    const zip = await writeZip([
+      { name: "garnish.json", bytes: text, compress: true },
+      { name: "images/steps/crème.png", bytes: PNG_BYTES },
+    ]);
+    const entries = await readZip(zip);
+    expect(entries.map((entry) => entry.name)).toEqual(["garnish.json", "images/steps/crème.png"]);
+    expect(entries[0]!.bytes).toEqual(text);
+    expect(entries[1]!.bytes).toEqual(PNG_BYTES);
+    expect(zip.length).toBeLessThan(text.length);
+  });
+
+  test("the same files and date give the same bytes", async () => {
+    const files = [{ name: "a.txt", bytes: utf8("a"), compress: true }];
+    const at = new Date("2026-10-07T09:15:00Z");
+    expect(await writeZip(files, at)).toEqual(await writeZip(files, at));
+  });
+
+  test.skipIf(!Bun.which("unzip"))("unzip accepts it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "garnish-zip-"));
+    try {
+      const path = join(dir, "test.zip");
+      await Bun.write(
+        path,
+        await writeZip([
+          { name: "a.txt", bytes: utf8("hello"), compress: true },
+          { name: "b.png", bytes: PNG_BYTES },
+        ])
+      );
+      const result = Bun.spawnSync(["unzip", "-t", path]);
+      expect(result.exitCode).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

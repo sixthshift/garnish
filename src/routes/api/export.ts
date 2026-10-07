@@ -1,17 +1,6 @@
 import { createRoute } from "@tanstack/react-router";
-import { handleExportJson, handleRecipeCook, handleRecipeJson } from "../../server/api/export";
+import { handleRecipeCook, handleRecipeJson } from "../../server/api/export";
 import { Route as rootRoute } from "../root";
-
-/** GET /api/export.json — every recipe plus the reference tables. */
-export const exportJsonRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/api/export.json",
-  server: {
-    handlers: {
-      GET: () => handleExportJson(),
-    },
-  },
-});
 
 /**
  * GET /api/recipes/:slug.json — one recipe's document. `{$slug}` ends
