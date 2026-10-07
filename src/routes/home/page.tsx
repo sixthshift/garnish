@@ -11,7 +11,9 @@ import { resolveSort, type SortDir, type SortKey, selectedTags } from "../../dom
 import { arrayParam, newSeed, pickRandom } from "../../lib/lists";
 import { useViewMode } from "../../lib/prefs";
 import { SEARCH_DEBOUNCE_MS, searchParam } from "../../lib/search";
-import { FilterBar } from "./components/FilterBar";
+import { ActiveFilters, activeFilterCount } from "./components/ActiveFilters";
+import { FilterBar, type FilterBarProps } from "./components/FilterBar";
+import { FiltersSheet } from "./components/FiltersSheet";
 import { SortMenu } from "./components/SortMenu";
 import { ViewModeToggle } from "./components/ViewModeToggle";
 import { Route } from "./route";
@@ -30,6 +32,22 @@ export function RecipesPage() {
       search: (prev) => ({ ...prev, sort: nextSort, dir: nextDir, seed: nextSort === "random" ? newSeed() : undefined }),
     });
   };
+
+  const filterBar: FilterBarProps = {
+    allTags: tags,
+    allFoods: foods,
+    tags: selected,
+    match,
+    foods: foodsParam,
+    favourite,
+    onTagsChange: (next) => void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: arrayParam(next) }) }),
+    onMatchChange: (next) => void navigate({ search: (prev) => ({ ...prev, match: next === "any" ? undefined : next }) }),
+    onFoodsChange: (next) => void navigate({ search: (prev) => ({ ...prev, foods: arrayParam(next) }) }),
+    onFavouriteChange: (next) => void navigate({ search: (prev) => ({ ...prev, favourite: next ? true : undefined }) }),
+  };
+  const onClearFilters = () => void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: undefined, foods: undefined, favourite: undefined }) });
+  const filterCount = activeFilterCount(selected, foodsParam, favourite);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const onDice = () => {
     const pick = pickRandom(recipes);
@@ -55,39 +73,60 @@ export function RecipesPage() {
           </Button>
         }
       />
-      <search>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void navigate({ search: (prev) => ({ ...prev, q: searchParam(query) }) });
-          }}
-        >
-          <SearchInput value={query} onValueChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
-        </form>
-      </search>
-      <FilterBar
-        allTags={tags}
-        allFoods={foods}
-        tags={selected}
-        match={match}
-        foods={foodsParam}
-        favourite={favourite}
-        onTagsChange={(next) => void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: arrayParam(next) }) })}
-        onMatchChange={(next) => void navigate({ search: (prev) => ({ ...prev, match: next === "any" ? undefined : next }) })}
-        onFoodsChange={(next) => void navigate({ search: (prev) => ({ ...prev, foods: arrayParam(next) }) })}
-        onFavouriteChange={(next) => void navigate({ search: (prev) => ({ ...prev, favourite: next ? true : undefined }) })}
-      />
-      <EmptyBoundary isEmpty={recipes.length === 0} fallback={<EmptyState filtered={filtered} />}>
-        <div className="flex items-center justify-between gap-2">
-          <Muted as="p">{recipes.length === 1 ? "1 recipe" : `${recipes.length} recipes`}</Muted>
-          <div className="flex items-center gap-2">
-            <SortMenu sort={sort} dir={dir} onChange={onSortChange} />
-            <Button iconOnly variant="outline" intent="neutral" aria-label="Open a random recipe" onClick={onDice} disabled={recipes.length === 0}>
-              <DiceIcon />
-            </Button>
-            <ViewModeToggle />
-          </div>
+      {/* The chrome above the results, held close on a phone so the first card is above the fold. */}
+      <div className="flex flex-col gap-3 md:gap-6">
+        <search>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void navigate({ search: (prev) => ({ ...prev, q: searchParam(query) }) });
+            }}
+          >
+            <SearchInput value={query} onValueChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
+          </form>
+        </search>
+        {/* Inline from `md:` up; on a phone the same controls open in a sheet from the toolbar, and what is set shows as chips. */}
+        <div className="max-md:hidden">
+          <FilterBar {...filterBar} />
         </div>
+        <ActiveFilters {...filterBar} onClearAll={onClearFilters} className="md:hidden" />
+        {/* One line at 390px: no label here may wrap. Kept while a filter empties the list, so the sheet that set it can still be opened. */}
+        {(recipes.length > 0 || filtered) && (
+          <div className="flex items-center justify-between gap-2">
+            <Muted as="p" className="whitespace-nowrap">
+              {recipes.length === 1 ? "1 recipe" : `${recipes.length} recipes`}
+            </Muted>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                intent={filterCount > 0 ? "brand" : "neutral"}
+                size="sm"
+                className="whitespace-nowrap md:hidden"
+                aria-haspopup="dialog"
+                aria-label={filterCount > 0 ? `Filters, ${filterCount} active` : "Filters"}
+                onClick={() => setSheetOpen(true)}
+              >
+                {filterCount > 0 ? `Filters · ${filterCount}` : "Filters"}
+              </Button>
+              <SortMenu sort={sort} dir={dir} onChange={onSortChange} onRandom={recipes.length > 0 ? onDice : undefined} />
+              <Button
+                iconOnly
+                variant="outline"
+                intent="neutral"
+                className="max-md:hidden"
+                aria-label="Open a random recipe"
+                onClick={onDice}
+                disabled={recipes.length === 0}
+              >
+                <DiceIcon />
+              </Button>
+              <ViewModeToggle />
+            </div>
+          </div>
+        )}
+      </div>
+      <EmptyBoundary isEmpty={recipes.length === 0} fallback={<EmptyState filtered={filtered} />}>
         <ul
           className={viewMode === "list" ? "flex flex-col gap-3" : "grid gap-4"}
           style={viewMode === "list" ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN_WIDTH}, 1fr))` }}
@@ -99,6 +138,7 @@ export function RecipesPage() {
           ))}
         </ul>
       </EmptyBoundary>
+      {sheetOpen && <FiltersSheet {...filterBar} count={recipes.length} onClose={() => setSheetOpen(false)} />}
     </Page>
   );
 }

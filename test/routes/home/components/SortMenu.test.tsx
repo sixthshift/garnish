@@ -35,4 +35,18 @@ describe("SortMenu", () => {
     const html = renderToString(<SortMenu sort="random" dir="desc" onChange={noop} open />);
     expect(html).toMatch(/✓<\/span>Random/);
   });
+
+  test("the trigger shows only 'Sort' below md, keeping the full current sort as its name", () => {
+    const html = renderToString(<SortMenu sort="created" dir="desc" onChange={noop} />);
+    expect(html).toContain('aria-label="Sort: Newest created"');
+    expect(html).toMatch(/<span class="md:hidden">Sort<\/span>/);
+  });
+
+  test("given onRandom, the menu ends with a phone-only 'Open a random recipe'; without it, no such item", () => {
+    const withRandom = renderToString(<SortMenu sort="name" dir="asc" onChange={noop} onRandom={noop} open />);
+    expect(withRandom.match(/role="menuitem"/g)).toHaveLength(12);
+    expect(withRandom).toMatch(/md:hidden[^>]*>.*Open a random recipe/);
+    const without = renderToString(<SortMenu sort="name" dir="asc" onChange={noop} open />);
+    expect(without).not.toContain("Open a random recipe");
+  });
 });
