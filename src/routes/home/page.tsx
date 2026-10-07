@@ -2,6 +2,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
+import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CARD_MIN_WIDTH, RecipeCard } from "../../components/recipe/RecipeCard";
@@ -100,9 +101,14 @@ export function RecipesPage() {
               <Button
                 type="button"
                 variant="outline"
-                intent={filterCount > 0 ? "brand" : "neutral"}
-                size="sm"
-                className="whitespace-nowrap md:hidden"
+                intent="neutral"
+                // The Sort trigger's box (Menu's TRIGGER_CLASS), so the two sit at one size. While a filter is set it takes
+                // the view toggle's selected fill, never brand: the count carries the state, the fill only echoes it.
+                className={cn(
+                  "h-auto whitespace-nowrap px-3 py-1.5 md:hidden",
+                  filterCount > 0 &&
+                    "[--button-bg-hovered:var(--intent-tint-bg-pressed)] [--button-bg:var(--intent-tint-bg-pressed)] [--button-fg:var(--intent-tint-fg-pressed)]"
+                )}
                 aria-haspopup="dialog"
                 aria-label={filterCount > 0 ? `Filters, ${filterCount} active` : "Filters"}
                 onClick={() => setSheetOpen(true)}

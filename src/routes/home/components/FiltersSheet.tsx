@@ -21,7 +21,8 @@ export function FiltersSheet({ count, onClose, ...filters }: FiltersSheetProps) 
       <ModalBody>
         <FilterBar {...filters} />
       </ModalBody>
-      <ModalFooter>
+      {/* Clear of the home indicator, as the tab bar and cook footer are. */}
+      <ModalFooter className="max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <Button type="button" variant="solid" intent="brand" className="w-full" onClick={onClose}>
           {count === 1 ? "Show 1 recipe" : `Show ${count} recipes`}
         </Button>
