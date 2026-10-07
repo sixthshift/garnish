@@ -26,3 +26,18 @@ test("the step menu moves the step, and offers no move past either end", async (
   await user.click(screen.getByRole("menuitem", { name: "Move down" }));
   expect(texts(onChange.mock.calls[1]![0])).toEqual(["Rest.", "Mix.", "Bake."]);
 });
+
+test("the moves appear once at either width: the menu's on a narrow list, the buttons on a wide one", async () => {
+  const user = userEvent.setup();
+  render(<StepsEditor draft={three()} pi={0} onChange={() => {}} />);
+
+  // The two sets swap at the same container width (`@2xl`, the list's own), so exactly one shows.
+  const buttons = screen.getByRole("group", { name: "Reorder step 2" });
+  expect(buttons.className).toContain("@max-2xl:hidden");
+  expect(buttons.className).not.toContain("@2xl:hidden ");
+
+  await user.click(screen.getByRole("button", { name: "Step 2 actions" }));
+  for (const name of ["Move up", "Move down"]) expect(screen.getByRole("menuitem", { name }).className).toContain("@2xl:hidden");
+  // The rest of the menu is there at every width.
+  expect(screen.getByRole("menuitem", { name: "Insert below" }).className).not.toContain("hidden");
+});

@@ -33,7 +33,7 @@ export type StepEditRowProps = {
   pi: number;
   si: number;
   step: DraftStep;
-  /** The list's drag handle and moves, which this row places: the handle first, the moves in its menu. */
+  /** The list's drag handle and moves, which this row places: the handle first, the moves in its menu on a narrow list only (a wide one has its up and down buttons). */
   reorder?: ReorderRow;
   part: DraftPart;
   /** Field name prefix for the part's steps (`stepsPath(pi)`). */
@@ -187,10 +187,10 @@ export function StepEditRow({
         <Menu.Item onSelect={() => onChange(insertStepBelow(draft, pi, si))}>Insert below</Menu.Item>
         {reorder !== undefined && (
           <>
-            <Menu.Item disabled={!reorder.moveUp} onSelect={reorder.moveUp}>
+            <Menu.Item disabled={!reorder.moveUp} onSelect={reorder.moveUp} className="@2xl:hidden">
               Move up
             </Menu.Item>
-            <Menu.Item disabled={!reorder.moveDown} onSelect={reorder.moveDown}>
+            <Menu.Item disabled={!reorder.moveDown} onSelect={reorder.moveDown} className="@2xl:hidden">
               Move down
             </Menu.Item>
           </>

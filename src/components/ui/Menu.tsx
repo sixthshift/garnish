@@ -49,7 +49,9 @@ export function Menu({ label, iconOnly = false, open: openProp, defaultOpen = fa
     onOpenChange?.(next);
   };
 
-  const items = (): HTMLElement[] => Array.from(panelRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+  // An item a breakpoint hides (`display: none`) has no layout box and cannot take focus, so the arrows pass over it.
+  const items = (): HTMLElement[] =>
+    Array.from(panelRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []).filter((item) => item.checkVisibility?.() ?? true);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") {
@@ -117,15 +119,25 @@ export type MenuItemProps = {
   asChild?: boolean;
   /** Forwarded to the rendered button, so a caller can give an item a stable test hook. */
   "data-testid"?: string;
+  /** Extra classes for the item, e.g. a breakpoint that hides it. */
+  className?: string;
 };
 
 const ITEM_CLASS = "flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-bg-normal-hovered disabled:opacity-50";
 const INTENT_CLASS = { neutral: "text-fg-normal", danger: "text-fg-danger" } as const;
 
 /** One line in the menu. Choosing it runs `onSelect` and closes the menu. */
-export function MenuItem({ children, onSelect, intent = "neutral", disabled = false, asChild = false, "data-testid": dataTestId }: MenuItemProps) {
+export function MenuItem({
+  children,
+  onSelect,
+  intent = "neutral",
+  disabled = false,
+  asChild = false,
+  "data-testid": dataTestId,
+  className: extra,
+}: MenuItemProps) {
   const { close } = useContext(menuContext);
-  const className = cn(ITEM_CLASS, INTENT_CLASS[intent]);
+  const className = cn(ITEM_CLASS, INTENT_CLASS[intent], extra);
   const choose = () => {
     if (disabled) return;
     onSelect?.();
