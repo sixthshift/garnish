@@ -246,6 +246,14 @@ describe("StyleTab render", () => {
     expect(html).toContain(">Add<");
   });
 
+  test("on a narrow list the move and remove buttons take a line over the statement, after its number; the switch stays beside the text", () => {
+    const html = renderToString(<StyleTab rules={RULES} />);
+    expect(html).toContain('data-narrow="above"');
+    expect(html).toMatch(/aria-hidden="true">statement 1</);
+    // The switch is still named for its own statement.
+    expect(html).toContain('aria-label="Use &quot;Prefer metric: where a step gives both, keep only metric.&quot; by default"');
+  });
+
   test("an empty guide says so instead of an empty list, and still offers the add box", () => {
     const html = renderToString(<StyleTab rules={[]} />);
     expect(html).toContain("No statements yet.");
@@ -277,6 +285,7 @@ describe("PlannerTab render", () => {
     expect(html).toContain('aria-label="Statement: Two vegetarian dinners a week."');
     expect(html).toContain('aria-label="Move statement 1 down"');
     expect(html).toContain('aria-label="Remove statement 2"');
+    expect(html).toContain('data-narrow="above"');
     expect(html).toContain('aria-label="New statement"');
     expect(html).toContain(">Add<");
     // The style guide's caveat belongs to the style guide only.

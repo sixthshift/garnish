@@ -45,6 +45,9 @@ function autosize(el: HTMLTextAreaElement) {
  * voice is the wording and a modal to change one word would be in the way; a
  * switch for whether it is on; and the reorder list's own move and remove
  * controls, since the order is the order the statements are numbered in.
+ * On a narrow list those controls take a line of their own over the row,
+ * after its number ("Statement 2"), so the sentence gets the card's width and
+ * only the switch stays beside it.
  *
  * The switch writes straight through on toggle: there is nothing else on the
  * row to save with it, and a Save button for one boolean would be a step with
@@ -127,6 +130,7 @@ export function StatementList({ statements, ops, guideName, noteFor }: Statement
             items={order}
             keyOf={(rule) => rule.id}
             itemName="statement"
+            narrow="above"
             onReorder={(next) => void persistOrder(next)}
             onRemove={(rule) => void remove(rule)}
             renderItem={(rule) => {
