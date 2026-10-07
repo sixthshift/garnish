@@ -198,6 +198,16 @@ describe("StepCard", () => {
     expect(page).not.toContain("text-3xl");
     expect(cook).toContain('data-size="cook"');
     expect(cook).toContain("text-3xl");
+    // Critique #5: the deck counts steps once, in its footer, so the cook
+    // card has no number bubble; its timer is a full button and its linked
+    // rows are 48px targets edge to edge.
+    expect(page).toMatch(/<span class="[^"]*rounded-full[^"]*" aria-hidden="true">1<\/span>/);
+    expect(cook).not.toMatch(/<span class="[^"]*rounded-full[^"]*" aria-hidden="true">1<\/span>/);
+    expect(cook).toContain("Start 20 minute timer");
+    expect(page).not.toContain("Start 20 minute timer");
+    expect(cook).toMatch(/data-testid="ingredient-row"[^>]*>/);
+    expect(cook).toContain("after:inset-0");
+    expect(page).not.toContain("after:inset-0");
     // Same content at both sizes: the rows, the text and the timer chip.
     for (const html of [page, cook]) {
       expect(html).toContain('data-testid="ingredient-row"');

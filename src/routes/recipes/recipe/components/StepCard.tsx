@@ -14,9 +14,17 @@ import { useQuickEditStep } from "./useQuickEdit";
 /** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
 export type StepCardSize = "page" | "cook";
 
-const SCALE: Record<StepCardSize, { bubble: string; text: string; ingredients: string; image: string }> = {
-  page: { bubble: "size-6 text-xs", text: "", ingredients: "text-sm", image: "max-h-48" },
-  cook: { bubble: "size-8 text-sm", text: "text-3xl leading-snug", ingredients: "text-lg", image: "max-h-80" },
+// Cook steps up again from `lg`, where the deck is read from a laptop or tablet
+// across the bench; the deck's column (cook/page.tsx) keeps the measure.
+const SCALE: Record<StepCardSize, { text: string; title: string; summary: string; ingredients: string; image: string }> = {
+  page: { text: "", title: "text-sm", summary: "text-sm", ingredients: "text-sm", image: "max-h-48" },
+  cook: {
+    text: "text-3xl leading-snug lg:text-4xl",
+    title: "text-xl lg:text-2xl",
+    summary: "text-lg lg:text-xl",
+    ingredients: "text-lg lg:text-xl",
+    image: "max-h-80",
+  },
 };
 
 export type StepCardProps = {
@@ -79,22 +87,24 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
       data-ticked={done ? "true" : undefined}
     >
       <div className="flex gap-3">
-        <span
-          className={cn(
-            "mt-0.5 flex shrink-0 items-center justify-center rounded-full font-semibold",
-            scale.bubble,
-            done ? "bg-bg-subtle text-fg-subtle" : "bg-bg-brand-subtle text-fg-brand"
-          )}
-          aria-hidden="true"
-        >
-          {position}
-        </span>
+        {/* The page numbers its steps here; the deck counts them once, in its footer. */}
+        {size === "page" && (
+          <span
+            className={cn(
+              "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+              done ? "bg-bg-subtle text-fg-subtle" : "bg-bg-brand-subtle text-fg-brand"
+            )}
+            aria-hidden="true"
+          >
+            {position}
+          </span>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className={cn("flex flex-col gap-3", columns && "md:grid md:grid-cols-3 md:items-start md:gap-4")}>
             {columns && rows.length > 0 && (
               <ul className={cn("flex flex-col gap-2 md:col-span-1", scale.ingredients)} aria-label="Ingredients for this step" data-testid="step-ingredients">
                 {rows.map((ingredient) => (
-                  <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} cookFrom={cookFrom} />
+                  <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} cookFrom={cookFrom} size={size} />
                 ))}
               </ul>
             )}
@@ -114,7 +124,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
                     toggle rather than above it: tapping the words that name the
                     step is the same gesture as tapping the step. */}
                 {label !== "" && !done && (
-                  <span className={cn("block font-semibold text-fg-strong", size === "cook" ? "text-xl" : "text-sm")} data-testid="step-title">
+                  <span className={cn("block font-semibold text-fg-strong", scale.title)} data-testid="step-title">
                     {label}
                   </span>
                 )}
@@ -124,7 +134,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
                   why a time is a range — so it reads quieter and outside the toggle,
                   and a ticked step gives it back with the rest of the detail. */}
               {support !== "" && !done && (
-                <div className={cn("text-fg-subtle", size === "cook" ? "text-lg" : "text-sm")} data-testid="step-summary">
+                <div className={cn("text-fg-subtle", scale.summary)} data-testid="step-summary">
                   <Markdown source={support} />
                 </div>
               )}
@@ -142,6 +152,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
                     upperSeconds={duration.upperSeconds}
                     label={duration.text}
                     timer={find(id)}
+                    size={size}
                     // The strip and the notification at zero name the step, not the duration.
                     onStart={(seconds, matched) => start({ id, label: step.text.trim() || matched, seconds })}
                   />

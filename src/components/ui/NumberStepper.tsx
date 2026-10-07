@@ -16,10 +16,12 @@ export type NumberStepperProps = {
   label?: string;
   id?: string;
   disabled?: boolean;
+  /** `sm`, the default, for a form; `xl` gives each part a 48px target (cook mode). */
+  size?: "sm" | "xl";
   className?: string;
 };
 
-export function NumberStepper({ value, onChange, min, max, step = 1, label, id, disabled, className }: NumberStepperProps) {
+export function NumberStepper({ value, onChange, min, max, step = 1, label, id, disabled, size = "sm", className }: NumberStepperProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   // The text while the user is mid-edit; null means "show the committed value".
@@ -43,7 +45,7 @@ export function NumberStepper({ value, onChange, min, max, step = 1, label, id, 
           type="button"
           variant="outline"
           intent="neutral"
-          size="sm"
+          size={size}
           iconOnly
           aria-label={`Decrease ${what}`}
           disabled={disabled || atMin}
@@ -56,7 +58,7 @@ export function NumberStepper({ value, onChange, min, max, step = 1, label, id, 
           type="text"
           inputMode="decimal"
           autoComplete="off"
-          className="w-20 text-center"
+          className={cn("w-20 text-center", size === "xl" && "h-12 w-16 text-lg")}
           value={draft ?? String(value)}
           min={min}
           max={max}
@@ -68,7 +70,7 @@ export function NumberStepper({ value, onChange, min, max, step = 1, label, id, 
           type="button"
           variant="outline"
           intent="neutral"
-          size="sm"
+          size={size}
           iconOnly
           aria-label={`Increase ${what}`}
           disabled={disabled || atMax}

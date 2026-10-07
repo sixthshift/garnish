@@ -146,9 +146,3 @@ export function stepForKey(key: string, index: number, count: number): number | 
   if (key === "ArrowRight") return index < count - 1 ? index + 1 : null;
   return null;
 }
-
-/** "3 of 12", with the part name when the card has one. Pure. */
-export function positionLabel(index: number, count: number, part: string): string {
-  const position = `${index + 1} of ${count}`;
-  return part === "" ? position : `${position} · ${part}`;
-}

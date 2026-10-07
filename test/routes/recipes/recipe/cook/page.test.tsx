@@ -3,7 +3,7 @@
 // Stands in for the plan's phone-width manual check (no browser here): the
 // layout is a single column with no fixed widths, asserted below by class.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { positionLabel, stepForKey } from "../../../../../src/domain/recipe";
+import { stepForKey } from "../../../../../src/domain/recipe";
 import { type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
 import type { Route as CookRoute, CookRouteData } from "../../../../../src/routes/recipes/recipe/cook/route";
 import { createRecipe } from "../../../../../src/server/fns/recipes";
@@ -84,7 +84,10 @@ describe("/recipes/$slug/cook", () => {
     // The next step's text doesn't leak into the ingredient list; it appears
     // once, as the "Next: …" preview at the card's foot (M26.4).
     expect(html.match(/Rub the butter into the flour\./g)).toHaveLength(1);
-    expect(html).toContain("1 of 5 · Pastry");
+    // One surface: the list's own card, with no part card around it, and no
+    // step counter on an ingredients card (critique #5).
+    expect(html).toContain(">Ingredients</h3>");
+    expect(html).not.toContain("data-position");
     expect(isDisabled(html, "Prev")).toBe(true);
     expect(isDisabled(html, "Next")).toBe(false);
     // Full-screen: the shell's nav is gone, and the way out is the Exit link.
@@ -92,19 +95,20 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain('href="/recipes/lemon-tart"');
     expect(html).toContain(">Exit<");
     expect(html).toContain("Lemon tart");
-    // Scale control is present and bound to the loaded servings.
-    expect(html).toContain('aria-label="Serves"');
-    expect(html).toMatch(/aria-label="Serves".*?<input[^>]*value="4"/);
+    // Scale control is present and bound to the loaded servings: one
+    // "Serves 4" button in the header, opening the stepper (critique #5).
+    expect(html).toMatch(/data-serves[^>]*>Serves <!-- -->4</);
+    expect(html).toMatch(/data-cook-title="[^"]*">Lemon tart<\/h1>/);
     expect(html).toContain('role="progressbar"');
   });
 
-  // M26.4: "Screen on" becomes an icon in a tooltip, keeping the wake-lock hook.
-  test("the header's wake-lock indicator is an icon in a tooltip, not the words 'Screen on'", async () => {
+  // Critique #5 (reverses M26.4's lone icon): the wake lock is said in
+  // words, under the counter in the footer, leaving the header to the name.
+  test("the wake-lock indicator is the eye with the words 'Screen stays on', in the footer", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart/cook");
-    expect(html).not.toContain("Screen on");
-    expect(html).toMatch(/data-wake-lock[^>]*aria-label="The screen stays on while you cook"/);
-    expect(html).toMatch(/aria-label="The screen stays on while you cook"[^>]*>\s*<svg/);
+    expect(html).toMatch(/<footer[\s\S]*data-wake-lock[^>]*>\s*<svg[\s\S]*?<\/svg>Screen stays on</);
+    expect(html).not.toMatch(/<header[\s\S]*data-wake-lock[\s\S]*<\/header>/);
   });
 
   test("a step card shows the step alone in large type with its number within the component", async () => {
@@ -117,8 +121,10 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain('data-size="cook"');
     expect(html).toMatch(/<div class="[^"]*text-3xl[^"]*" data-testid="markdown">/);
     expect(html).toContain('<p class="whitespace-pre-line">Rub the butter into the flour.</p>');
-    expect(html).toContain("Step <!-- -->1<!-- --> of <!-- -->1");
-    expect(html).toContain("2 of 5 · Pastry");
+    // One counter, in the footer; no card around the step, and no number bubble on it (critique #5).
+    expect(html).toMatch(/data-position[^>]*>Step 1 of 1</);
+    expect(html.match(/Step 1 of 1/g)).toHaveLength(2); // the counter and the live region
+    expect(html).not.toMatch(/data-card="step"[^>]*class="[^"]*border/);
     // This step links nothing, so the part's list is not on the card either.
     expect(html).not.toContain('data-testid="cook-ingredient"');
     expect(html).not.toContain('data-testid="step-ingredients"');
@@ -185,8 +191,7 @@ describe("/recipes/$slug/cook", () => {
     expect(html).toContain("6 lemons");
     expect(html).toMatch(/data-fixed="true"[^>]*>(<[^>]*>)*1 vanilla pod/);
     expect(html).toContain(">fixed<");
-    expect(html).toContain("3 of 5 · Filling");
-    expect(html).toMatch(/aria-label="Serves".*?<input[^>]*value="8"/);
+    expect(html).toMatch(/data-serves[^>]*>Serves <!-- -->8</);
     // Exit keeps the scale.
     expect(html).toContain('href="/recipes/lemon-tart?servings=8"');
   });
@@ -197,7 +202,7 @@ describe("/recipes/$slug/cook", () => {
     // "30 minutes" is its own timer chip now (M26.2), so the sentence is no longer one contiguous string.
     expect(html).toContain("Bake for");
     expect(html).toContain("30 minutes");
-    expect(html).toContain("5 of 5");
+    expect(html).toMatch(/data-position[^>]*>Step 1 of 1</);
     expect(isDisabled(html, "Next")).toBe(false);
     expect(isDisabled(html, "Prev")).toBe(false);
   });
@@ -249,22 +254,23 @@ describe("/recipes/$slug/cook", () => {
     }
   });
 
-  test("no servings hides the scale control; an unnamed component has no heading in the indicator", async () => {
+  test("no servings hides the scale control; an unnamed part has no part heading", async () => {
     await callServerFn(createRecipe, {
       name: "Toast",
       parts: [{ name: "", ingredients: [{ quantity: 1, food: food("bread slice", "bread slices") }], steps: [{ text: "Toast it." }] }],
     });
     const html = await renderRoute("/recipes/toast/cook?step=1");
     expect(html).toContain("Toast it.");
-    expect(html).toContain(">2 of 2<");
-    expect(html).not.toContain('aria-label="Serves"');
+    expect(html).toMatch(/data-position[^>]*>Step 1 of 1</);
+    expect(html).not.toContain("data-serves");
+    expect(html).not.toContain("data-part-name");
   });
 
   test("a recipe with nothing to cook says so", async () => {
     await callServerFn(createRecipe, { name: "Air", parts: [{ name: "" }] });
     const html = await renderRoute("/recipes/air/cook");
     expect(html).toContain("Nothing to cook yet");
-    expect(html).toContain(">0 of 0<");
+    expect(html).not.toContain("data-position");
     expect(isDisabled(html, "Prev")).toBe(true);
     expect(isDisabled(html, "Next")).toBe(true);
   });
@@ -277,6 +283,37 @@ describe("/recipes/$slug/cook", () => {
     // The Filling card is showing, so only Filling's pill is current.
     expect(html).toMatch(/data-pill="Filling"[^>]*aria-current="true"|aria-current="true"[^>]*data-pill="Filling"/);
     expect(html).not.toMatch(/data-pill="Pastry"[^>]*aria-current/);
+  });
+
+  // Critique #5: every control on the deck is a 48px target, brand is Next's
+  // alone, and the progress track is quiet beside a strong fill.
+  test("every control is 48px tall, the current part is a neutral fill, and only Next is brand", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=2");
+    const buttons = [...html.matchAll(/<(?:button|a)\b[^>]*class="([^"]*)"[^>]*>/g)].map((m) => m[0]);
+    const controls = buttons.filter((tag) => /data-pill|data-serves|>$/.test(tag) && /\bbtn\b/.test(tag));
+    expect(controls.length).toBeGreaterThanOrEqual(6); // Exit, Serves, three pills, Prev, Next
+    for (const tag of controls) expect(tag).toMatch(/\bh-12\b/);
+    const current = buttons.find((tag) => tag.includes('data-pill="Filling"'));
+    expect(current).toContain('data-intent="neutral"');
+    expect(current).toContain('data-variant="solid"');
+    const brand = buttons.filter((tag) => tag.includes('data-intent="brand"'));
+    expect(brand).toHaveLength(1);
+    expect(brand[0]).toContain('data-variant="solid"');
+    // Ingredient rows: the text button's overlay covers the whole row.
+    expect(html).toMatch(/data-testid="cook-ingredient"[^>]*>/);
+    expect(html).toMatch(/<li class="relative[^"]*"[^>]*data-testid="cook-ingredient"/);
+    expect(html).toContain("after:inset-0");
+    expect(html).toContain("[--progress-bar-track-bg:var(--border-normal)]");
+  });
+
+  test("the finished card's buttons are 48px too", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart/cook?step=5");
+    const card = html.slice(html.indexOf('data-card="finished"'), html.indexOf("</footer>"));
+    const tags = [...card.matchAll(/<(?:button|a)\b[^>]*\bbtn\b[^>]*>/g)].map((m) => m[0]);
+    expect(tags.length).toBeGreaterThanOrEqual(3);
+    for (const tag of tags) expect(tag).toMatch(/\bh-12\b/);
   });
 
   test("a single-component recipe has no pill bar", async () => {
@@ -306,10 +343,12 @@ describe("/recipes/$slug/cook", () => {
   test("phone width: single column, no fixed widths on the page or its cards", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart/cook");
-    // Page column is fluid (w-full, max-w) and the header wraps.
+    // Page column is fluid (w-full, max-w), anchored to the top rather than
+    // centred, and the name may take two lines rather than truncating early.
     expect(html).toMatch(/<main class="[^"]*w-full max-w-3xl[^"]*flex-col/);
-    expect(html).toMatch(/<header class="[^"]*flex-wrap/);
-    // No fixed widths beyond the design system's controls (icon buttons w-8, the stepper input w-20).
+    expect(html).not.toMatch(/<main class="[^"]*justify-center/);
+    expect(html).toMatch(/<h1 class="[^"]*line-clamp-2[^"]*" data-cook-title/);
+    // No fixed widths beyond the design system's controls (a square 48px button is w-12).
     const wide = (html.match(/\bw-\d+\b/g) ?? []).filter((c) => Number(c.slice(2)) > 20);
     expect(wide).toEqual([]);
     expect(html).not.toMatch(/\b(?:min-)?w-\[/);
@@ -345,13 +384,6 @@ describe("stepForKey", () => {
     expect(stepForKey("ArrowRight", 4, 5)).toBeNull();
     expect(stepForKey("ArrowRight", 0, 0)).toBeNull();
     expect(stepForKey("Enter", 2, 5)).toBeNull();
-  });
-});
-
-describe("positionLabel", () => {
-  test("counts from one and appends the component name when there is one", () => {
-    expect(positionLabel(0, 5, "Pastry")).toBe("1 of 5 · Pastry");
-    expect(positionLabel(4, 5, "")).toBe("5 of 5");
   });
 });
 

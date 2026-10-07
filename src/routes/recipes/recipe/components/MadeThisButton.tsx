@@ -10,10 +10,14 @@ import { createTimelineEvent } from "../../../../server/fns/timeline";
 import { MadeThisSheet } from "./MadeThisSheet";
 import { saveCookAndClearTicks } from "./saveCook";
 
-export type MadeThisButtonProps = { recipe: Pick<Recipe, "id" | "name" | "recipeServings"> };
+export type MadeThisButtonProps = {
+  recipe: Pick<Recipe, "id" | "name" | "recipeServings">;
+  /** `xl` on cook mode's finish card, where every target is 48px. */
+  size?: "sm" | "xl";
+};
 
 /** Opens the sheet, logs the cook and uploads the photo, if one was given. */
-export function MadeThisButton({ recipe }: MadeThisButtonProps) {
+export function MadeThisButton({ recipe, size = "sm" }: MadeThisButtonProps) {
   const mutate = useMutate();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -41,7 +45,7 @@ export function MadeThisButton({ recipe }: MadeThisButtonProps) {
 
   return (
     <>
-      <Button type="button" variant="outline" intent="neutral" size="sm" data-testid="made-this" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" intent="neutral" size={size} data-testid="made-this" onClick={() => setOpen(true)}>
         Made this
       </Button>
       <MadeThisSheet

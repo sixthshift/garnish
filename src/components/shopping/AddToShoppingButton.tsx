@@ -14,7 +14,7 @@ export const SHOPPING_PATH = "/shopping";
 export type AddToShoppingButtonProps = {
   /** The recipe as the page is showing it: already scaled. */
   recipe: Recipe;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "xl";
 };
 
 /**

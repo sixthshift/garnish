@@ -1,8 +1,8 @@
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
+import { Popover } from "@sixthshift/design-system/popover";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
-import { Tooltip } from "@sixthshift/design-system/tooltip";
 import { Link } from "@tanstack/react-router";
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from "react";
 import { SubRecipesProvider } from "../../../../components/recipe/SubRecipes";
@@ -16,7 +16,6 @@ import {
   isFinishedIndex,
   nextPreview,
   partPills,
-  positionLabel,
   scaledForServings,
   stepForKey,
   totalWithFinish,
@@ -28,7 +27,27 @@ import { CookCardView } from "./components/CookCardView";
 import { FinishedCard } from "./components/FinishedCard";
 import { Route } from "./route";
 
-/** Eye: the screen is being watched, so it is being kept on. Same drawing style as RecipeHeader's stat icons. */
+/**
+ * "Serves 4" as one button that opens the stepper: the stepper itself is
+ * three 48px targets and would take the name's room in the header, and
+ * rescaling mid-cook is rare.
+ */
+function ServesControl({ servings, onChange }: { servings: number; onChange: (value: number) => void }) {
+  const value = Number(servings.toFixed(2));
+  return (
+    <Popover placement="bottom-end">
+      <Popover.Trigger asChild>
+        <Button variant="outline" intent="neutral" size="xl" className="shrink-0 px-4" data-serves>
+          Serves {value}
+        </Button>
+      </Popover.Trigger>
+      <Popover.Body className="p-3" aria-label="Set servings">
+        <NumberStepper label="Serves" value={value} min={1} onChange={onChange} size="xl" className="flex-row items-center gap-3" />
+      </Popover.Body>
+    </Popover>
+  );
+}
+
 export function CookPage() {
   const { recipe: stored, subRecipes, parentName } = Route.useLoaderData();
   const { step, servings: requested, from } = Route.useSearch();
@@ -87,39 +106,32 @@ export function CookPage() {
   return (
     <SubRecipesProvider subRecipes={subRecipes}>
       <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal">
-        <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border-normal bg-bg-normal px-4 py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Button asChild variant="outline" intent="neutral" size="sm">
+        <header className="sticky top-0 z-10 flex flex-col gap-2 border-b border-border-normal bg-bg-normal px-4 py-3">
+          {/* Exit, the name and Serves share the first row; the name gets the
+              room left and wraps to a second line before it truncates. */}
+          <div className="flex items-center gap-3">
+            <Button asChild variant="outline" intent="neutral" size="xl" className="shrink-0 px-4">
               <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested }}>
                 Exit
               </Link>
             </Button>
-            <span className="truncate font-semibold text-fg-strong">{recipe.name}</span>
-            {screenOn && (
-              <Tooltip>
-                <Tooltip.Trigger asChild>
-                  <span className="shrink-0 text-fg-subtle" data-wake-lock role="img" aria-label="The screen stays on while you cook">
-                    <WakeLockIcon />
-                  </span>
-                </Tooltip.Trigger>
-                <Tooltip.Body>The screen stays on while you cook</Tooltip.Body>
-              </Tooltip>
-            )}
+            <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong lg:text-lg" data-cook-title>
+              {recipe.name}
+            </h1>
+            {recipe.recipeServings > 0 && <ServesControl servings={recipe.recipeServings} onChange={scaleTo} />}
           </div>
-          {recipe.recipeServings > 0 && (
-            <NumberStepper label="Serves" value={Number(recipe.recipeServings.toFixed(2))} min={1} onChange={scaleTo} className="flex-row items-center gap-2" />
-          )}
           {pills.length > 1 && (
-            <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1 pb-1" aria-label="Parts">
+            <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1" aria-label="Parts">
               {pills.map((pill) => {
                 const current = card !== undefined && card.part === pill.name;
                 return (
                   <Button
                     key={pill.name}
+                    // The current part is a neutral fill: brand is Next's alone (rule 5).
                     variant={current ? "solid" : "outline"}
-                    intent={current ? "brand" : "neutral"}
-                    size="sm"
-                    className="shrink-0 rounded-full"
+                    intent="neutral"
+                    size="xl"
+                    className="shrink-0 rounded-full px-5"
                     aria-current={current ? "true" : undefined}
                     data-pill={pill.name}
                     onClick={() => goTo(pill.index)}
@@ -138,7 +150,10 @@ export function CookPage() {
         </p>
 
         <main
-          className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-4 p-4"
+          // Anchored to the top, under the header, so the step reads high on a
+          // phone. From `lg` the column widens with the step's type, keeping
+          // about the same measure.
+          className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4 lg:max-w-5xl lg:pt-8"
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerCancel={() => (swipe.current = null)}
@@ -155,7 +170,14 @@ export function CookPage() {
               }
             >
               {card !== undefined && (
-                <CookCardView card={card} recipeId={recipe.id} preview={nextPreview(cards, index)} onNext={() => goTo(index + 1)} cookFrom={recipe.slug} />
+                <CookCardView
+                  card={card}
+                  recipeId={recipe.id}
+                  preview={nextPreview(cards, index)}
+                  onNext={() => goTo(index + 1)}
+                  cookFrom={recipe.slug}
+                  partName={pills.length > 1 ? undefined : card.part}
+                />
               )}
             </EmptyBoundary>
           )}
@@ -164,16 +186,36 @@ export function CookPage() {
         <footer className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {/* Timers started from any card, above the progress bar: they outlive
               the card they were started on, so they follow you through the deck. */}
-          <TimerStrip recipeId={recipe.id} />
-          <ProgressBar completed={index + 1} total={total} showFraction={false} label="Cook progress" />
+          <TimerStrip recipeId={recipe.id} size="cook" />
+          <ProgressBar
+            completed={index + 1}
+            total={total}
+            showFraction={false}
+            label="Cook progress"
+            // A quiet track and a strong fill: what is done is the signal, not
+            // what is left. Neutral, since brand is Next's alone.
+            intent="neutral"
+            className="[--progress-bar-fill-bg:var(--fg-normal)] [--progress-bar-track-bg:var(--border-normal)]"
+          />
           <div className="flex items-center justify-between gap-3">
-            <Button variant="outline" intent="neutral" size="lg" disabled={index <= 0} onClick={() => goTo(index - 1)}>
+            <Button variant="outline" intent="neutral" size="xl" className="px-6" disabled={index <= 0} onClick={() => goTo(index - 1)}>
               Prev
             </Button>
-            <span className="min-w-0 flex-1 truncate text-center text-sm text-fg-subtle" data-position>
-              {finished ? "Finished" : cards.length === 0 ? "0 of 0" : positionLabel(index, cards.length, card?.part ?? "")}
-            </span>
-            <Button variant="solid" intent="brand" size="lg" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
+              {/* The deck's one counter, within the part; the bar shows the whole. */}
+              {card?.kind === "step" && (
+                <span className="truncate text-sm text-fg-normal" data-position>
+                  {cardAnnouncement(card)}
+                </span>
+              )}
+              {screenOn && (
+                <span className="flex items-center gap-1 text-xs text-fg-subtle" data-wake-lock>
+                  <WakeLockIcon />
+                  Screen stays on
+                </span>
+              )}
+            </div>
+            <Button variant="solid" intent="brand" size="xl" className="px-6" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
               Next
             </Button>
           </div>

@@ -129,6 +129,17 @@ describe("TimerStrip", () => {
     expect(renderToString(<TimerStrip recipeId={RECIPE} />)).not.toContain("bottom-20");
   });
 
+  test("at cook size Pause and dismiss are 48px targets; on the page they stay small", () => {
+    const storage = fakeStorage();
+    withStorage(storage);
+    startTimer(storage, RECIPE, { id: `${STEP}#0#20 minutes`, label: "Simmer", seconds: 1200 }, T0);
+    const cook = renderToString(<TimerStrip recipeId={RECIPE} size="cook" />);
+    expect(cook).toMatch(/class="[^"]*\bh-12\b[^"]*"[^>]*data-timer-toggle/);
+    expect(cook).toMatch(/class="[^"]*\bh-12\b[^"]*\bw-12\b[^"]*"[^>]*data-timer-dismiss/);
+    const page = renderToString(<TimerStrip recipeId={RECIPE} fixed />);
+    expect(page).not.toMatch(/\bh-12\b/);
+  });
+
   test("a timer that reaches zero notifies with the step's text, buzzes, and then reads Done", () => {
     const storage = fakeStorage();
     withStorage(storage);

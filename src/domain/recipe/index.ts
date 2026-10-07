@@ -1,5 +1,5 @@
 export type { CookCard } from "./cook";
-export { buildCookCards, cardAnnouncement, clampStep, isFinishedIndex, nextPreview, partPills, positionLabel, stepForKey, totalWithFinish } from "./cook";
+export { buildCookCards, cardAnnouncement, clampStep, isFinishedIndex, nextPreview, partPills, stepForKey, totalWithFinish } from "./cook";
 export { toCooklang } from "./cooklang";
 export { ingredientsText, recipeUrl } from "./copy";
 export { duplicateInput } from "./duplicate";

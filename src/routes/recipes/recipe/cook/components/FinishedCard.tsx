@@ -27,20 +27,21 @@ export function FinishedCard({
     <Card title={<span className="text-xl">Finished</span>} data-card="finished">
       <div className="flex flex-col items-center gap-4 py-6 text-center">
         <p className="text-2xl font-semibold text-fg-strong">Nice work, that's everything.</p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <MadeThisButton recipe={recipe} />
+        {/* One column of full-width 48px buttons on a phone, a row from `sm`. */}
+        <div className="flex w-full max-w-sm flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center">
+          <MadeThisButton recipe={recipe} size="xl" />
           {/* The same button the recipe page carries, on the scaled
               document the deck was built from: what you just cooked is what
               you need to replace. */}
-          <AddToShoppingButton recipe={recipe} />
+          <AddToShoppingButton recipe={recipe} size="xl" />
           {from !== undefined && parentName !== null && (
-            <Button asChild variant="outline" intent="neutral" size="sm">
+            <Button asChild variant="outline" intent="neutral" size="xl">
               <Link to="/recipes/$slug/cook" params={{ slug: from }} data-testid="back-to-parent">
                 Back to {parentName}
               </Link>
             </Button>
           )}
-          <Button asChild variant="outline" intent="neutral" size="sm">
+          <Button asChild variant="outline" intent="neutral" size="xl">
             <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings }}>
               Exit
             </Link>

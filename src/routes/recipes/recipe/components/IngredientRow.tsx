@@ -28,9 +28,12 @@ export type IngredientRowProps = {
    * servings instead of plain text, carrying this as `?from=`.
    */
   cookFrom?: string;
+  /** `cook` makes the whole row a 48px target, as cook mode's deck needs (`CookIngredientItem` does the same). */
+  size?: "page" | "cook";
 };
 
-export function IngredientRow({ recipeId, ingredient, scaled = false, partId, cookFrom }: IngredientRowProps) {
+export function IngredientRow({ recipeId, ingredient, scaled = false, partId, cookFrom, size = "page" }: IngredientRowProps) {
+  const cook = size === "cook";
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
   // The hover pencil (from `md`) and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditIngredient(partId, ingredient.id);
@@ -41,7 +44,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
   const tokens = inflectIngredient(ingredient);
   const amount = tokens.raw ? "" : [tokens.quantity, tokens.unit].filter((part) => part !== "").join(" ");
   const note = ingredient.note.trim();
-  const bodyClass = cn("flex flex-1 flex-col gap-0.5 text-left", done && "text-fg-subtle");
+  const bodyClass = cn("flex flex-1 flex-col gap-0.5 text-left", cook && "justify-center", done && "text-fg-subtle");
 
   const line = (
     <span className={cn(done && "line-through")}>
@@ -79,14 +82,19 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
 
   return (
     <li
-      className="group flex items-start gap-2.5"
+      className={cn("group flex items-start gap-2.5", cook && "relative gap-3")}
       data-testid="ingredient-row"
       data-ticked={done ? "true" : undefined}
       data-fixed={ingredient.fixed ? "true" : undefined}
       data-scaled={scaled ? "true" : undefined}
       data-sub-recipe={child !== null ? "true" : undefined}
     >
-      <Checkbox checked={done} onCheckedChange={toggle} className="mt-0.5" aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`} />
+      <Checkbox
+        checked={done}
+        onCheckedChange={toggle}
+        className={cook ? COOK_TICK : "mt-0.5"}
+        aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`}
+      />
       {child !== null ? (
         <div className={bodyClass}>
           {line}
@@ -109,7 +117,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
           )}
         </div>
       ) : (
-        <button type="button" onClick={toggle} className={bodyClass}>
+        <button type="button" onClick={toggle} className={cn(bodyClass, cook && COOK_ROW_BUTTON)}>
           {line}
           {noteLine}
         </button>
@@ -118,3 +126,13 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
     </li>
   );
 }
+
+/**
+ * Cook mode's row, a 48px target edge to edge: the text button's overlay
+ * (`COOK_ROW_BUTTON`) stretches over the whole `relative` row, and the tick
+ * box sits above it, its own press area grown to 48px square so a wet finger
+ * aimed at the box gets the box. The box's top is where the first line of a
+ * `min-h-12 py-2` text button is centred.
+ */
+export const COOK_TICK = "relative z-10 mt-4 shrink-0 after:absolute after:-inset-4 after:content-['']";
+export const COOK_ROW_BUTTON = "min-h-12 py-2 after:absolute after:inset-0 after:content-['']";

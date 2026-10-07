@@ -102,7 +102,8 @@ describe("the page scales the stored document the way the server would", () => {
       for (const ingredient of fromServer.parts[0]?.ingredients ?? []) {
         expect(html).toContain(`>${formatIngredient(ingredient)}<`);
       }
-      expect(html).toContain(`value="${Number(servings.toFixed(2))}"`);
+      // The header's "Serves N" button, which opens the stepper (critique #5).
+      expect(html).toContain(`>Serves <!-- -->${Number(servings.toFixed(2))}<`);
     });
   }
 
