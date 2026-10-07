@@ -31,20 +31,33 @@ function tsxFiles(dir = join(import.meta.dirname, "..", "..", "src")): string[] 
   });
 }
 
+/** True when `source` has a Button or Menu.Item whose props say `intent="danger"`; an arrow function's `=>` in an earlier prop does not end the tag. Pure. */
+export function hasRedAction(source: string): boolean {
+  return /<(Button|Menu\.Item)\b(?:=>|[^>])*?intent="danger"/.test(source);
+}
+
+test("hasRedAction reads past an arrow function in an earlier prop", () => {
+  expect(hasRedAction('<Button onClick={() => x()} intent="danger">')).toBe(true);
+  expect(hasRedAction('<Menu.Item\n  onSelect={() => setOpen(true)}\n  intent="danger"\n>')).toBe(true);
+  expect(hasRedAction('<Button onClick={() => x()} intent="neutral">Delete</Button> <Message intent="danger" />')).toBe(false);
+});
+
 // A favourited heart is red too, but that is state (`aria-pressed`), not an action, and its intent is an expression.
 test("red is the confirm's: a danger Button or menu item is a confirm, or a ⋯ item that opens one", () => {
-  const red = tsxFiles().filter((file) => /<(Button|Menu\.Item)\b[^>]*intent="danger"/.test(src(file)));
-  expect(red.sort()).toEqual([
-    "components/ui/ConfirmDialog.tsx", // the confirm itself
-    "routes/recipes/recipe/components/RecipeActions.tsx", // Delete recipe → ConfirmDialog
-    "routes/recipes/recipe/components/TimelineRow.tsx", // Delete entry → ConfirmDialog
-    "routes/recipes/recipe/style/page.tsx", // Restore, the inline confirm's second step
-    "routes/settings/components/RestoreSheet.tsx", // the backup restore's own confirm
-    "routes/settings/components/tabs/AislesTab.tsx", // Delete aisle → ConfirmDialog
-    "routes/settings/components/tabs/TagsTab.tsx", // Delete tag → confirm
-  ]);
-  for (const file of red.filter((file) => file.includes("Actions") || file.includes("Row") || file.includes("Tab"))) {
-    expect(src(file), file).toMatch(/ConfirmDialog|UsageConfirmDialog/);
+  // Each allowed file, and whether its red opens a dialog it must render (false: the red is the confirm step itself).
+  const allowed: Record<string, boolean> = {
+    "components/ui/ConfirmDialog.tsx": false, // the confirm itself
+    "routes/recipes/recipe/components/RecipeActions.tsx": true, // Delete recipe
+    "routes/recipes/recipe/components/TimelineRow.tsx": true, // Delete a cook-log entry
+    "routes/recipes/recipe/style/page.tsx": false, // Restore, the inline confirm's second step
+    "routes/settings/components/RestoreSheet.tsx": false, // the backup restore's own confirm
+    "routes/settings/components/tabs/AislesTab.tsx": true, // Delete aisle
+    "routes/settings/components/tabs/TagsTab.tsx": true, // Delete tag
+  };
+  const red = tsxFiles().filter((file) => hasRedAction(src(file)));
+  expect(red.sort()).toEqual(Object.keys(allowed).sort());
+  for (const [file, opensConfirm] of Object.entries(allowed)) {
+    if (opensConfirm) expect(src(file), file).toMatch(/<(ConfirmDialog|UsageConfirmDialog)\b/);
   }
 });
 

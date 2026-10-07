@@ -104,7 +104,19 @@ export function Menu({ label, iconOnly = false, display, open: openProp, default
               align === "end" ? "right-0" : "left-0"
             )}
           >
-            <menuContext.Provider value={{ close: () => setOpen(false) }}>{children}</menuContext.Provider>
+            {/* Choosing an item hands focus back to the trigger, as Escape does. An item that opens a dialog
+                needs it: the dialog's focus manager returns focus on close to whatever held it at open, and
+                that was the item itself, gone with the menu, so Cancel or Escape left focus on the body. */}
+            <menuContext.Provider
+              value={{
+                close: () => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                },
+              }}
+            >
+              {children}
+            </menuContext.Provider>
           </div>
         </>
       )}
