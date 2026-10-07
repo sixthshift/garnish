@@ -3,7 +3,9 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { useState } from "react";
 import { Page, PageHeader } from "../../../components/shell/Page";
+import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import type { Aisle } from "../../../domain/reference";
 import { groupByAisle, type ShoppingItem } from "../../../domain/shopping";
 import { pendingLabel } from "../../../lib/outbox";
@@ -25,6 +27,10 @@ export function ShoppingListView({
   offline = false,
 }: ShoppingListViewProps) {
   const groups = groupByAisle(items);
+  // Clearing deletes every ticked line at once and nothing brings them back, so it asks first;
+  // the button that opens the question is neutral and the dialog's is the red one (rule 5).
+  const [confirming, setConfirming] = useState(false);
+  const tickedCount = items.filter((item) => item.ticked).length;
 
   return (
     <Page width="focus">
@@ -59,7 +65,7 @@ export function ShoppingListView({
               <div className="flex items-center justify-between gap-3">
                 <SectionTitle as="h2">{group.name}</SectionTitle>
                 {group.ticked && (
-                  <Button type="button" variant="ghost" intent="danger" size="sm" disabled={busy || offline} onClick={onClearTicked}>
+                  <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={busy || offline} onClick={() => setConfirming(true)}>
                     Clear ticked
                   </Button>
                 )}
@@ -73,6 +79,20 @@ export function ShoppingListView({
           ))}
         </div>
       </EmptyBoundary>
+      {confirming && (
+        <ConfirmDialog
+          title={`Clear ${tickedCount} ticked ${tickedCount === 1 ? "item" : "items"}?`}
+          aria-label="Clear ticked items"
+          confirmLabel="Clear"
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            onClearTicked();
+          }}
+        >
+          They come off the list for good.
+        </ConfirmDialog>
+      )}
     </Page>
   );
 }

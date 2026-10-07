@@ -42,9 +42,8 @@ export function PlanDayRow({
     // here needs another element. The day was a labelled `<section>` first,
     // which made seven `region` landmarks on one page to say what the `<h2>`
     // in the rail already says. Today is marked in the rail and nowhere else:
-    // the nav's `bg-bg-brand-subtle` is sized for a nav pill and reads as a
-    // block of colour across a full-width card, so what carries over is the
-    // brand foreground on the two words that name the day.
+    // a fill reads as a block of colour across a full-width card, so the mark
+    // is the brand foreground on the two words that name the day.
     <Card size="sm" data-testid="plan-day" data-date={day.date} data-today={marked ? "true" : "false"} className="flex flex-col gap-1 sm:flex-row sm:gap-3">
       {/* Left rail from `sm` up, fixed-width so every day's entries start on
           the same vertical line and the date stacks rather than wrapping. On a

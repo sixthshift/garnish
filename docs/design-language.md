@@ -54,8 +54,9 @@ Cook mode is fullscreen and sets its own. Decision 98.
 
 ## 5. Colour is identity and state, nothing else
 
-- **Brand** (emerald) for the primary action only. Not emphasis, not decoration.
-- **Danger** for the confirmation step, not for the affordance that opens it — a red delete glyph on every row of an eight-row list makes delete the loudest thing on the page. Row removal is `intent="neutral"`.
+- **Brand** (teal: `#2c666c` fills in light, `#4ba5a9` in dark — the scale shipped as `emerald` and was always teal; decision 140) for the primary action only. Not emphasis, not decoration. A solid brand fill is each page's one primary action, or genuine state: a checked box or switch, a running timer, the focus ring. A primary action that cannot be pressed yet takes a neutral fill until it can.
+- **Selected** is one look everywhere: the neutral tint's pressed step (`bg-bg-subtle-pressed`, `text-fg-normal`) — the nav's current place, a toggle segment, the view toggle, the Filters button while a filter is set. Never brand. The one exception is the design system's `Tabs` (Settings), whose selected tab keeps the library's own `--bg-brand-pressed` fill: a primitive's look, not garnish's to restate.
+- **Danger** for the confirmation step, not for the affordance that opens it — a red delete glyph on every row of an eight-row list makes delete the loudest thing on the page. Row removal is `intent="neutral"`. An affordance that destroys at once and cannot be undone asks first (Clear ticked), and stays neutral. A red Delete *inside* a ⋯ menu that then opens a confirm is fine: the menu already hid it behind one press.
 - Warm earth neutrals carry all other hierarchy.
 
 When two axes could say the same thing, use the quieter one: typography and whitespace before depth, depth before colour.

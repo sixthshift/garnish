@@ -9,21 +9,21 @@
  * Only tier 2 (semantic) is re-pointed — the "what a colour means" tier — plus
  * a Tailwind `@theme` block for shape and the display face. Component tokens
  * (tier 3, `--button-bg` and friends) are left alone: nothing here re-wires a
- * component, it only changes what the meanings resolve to — with one
- * exception, the off Switch's track, at the end of the file.
+ * component, it only changes what the meanings resolve to — with three
+ * exceptions, the off Switch's track, the neutral soft Badge and the disabled
+ * brand Button, at the end of the file.
  *
- *   brand     emerald  (the system's own scale; herb green)
+ *   brand     teal     (a deep blue-green: #2c666c fills in light, #4ba5a9 in dark)
  *   neutrals  earth    (warm paper instead of cool slate)
- *   success   emerald  — same hue as brand, by choice. Success is used sparsely
- *                        (ticks, finish) and reads from context; if the two ever
- *                        collide visually, re-point --bg-success* at a new scale.
- *   warning   topaz, danger ruby — unchanged.
+ *   success, warning, danger — Linen's own green, amber and red, unchanged.
  *
  * The palette tier: the library's Linen theme (0.6.0) ships its own warm
- * scales (sand, blue, green) and no longer carries emerald or earth, so the
- * two scales garnish's semantic tokens point at are declared here, with the
- * values the library shipped up to 0.5.0. Mode selectors mirror the
- * library's own, so the `data-theme` toggle keeps working unchanged.
+ * scales (sand, blue, green) and no longer carries the two garnish's semantic
+ * tokens point at, so both are declared here, with the values the library
+ * shipped up to 0.5.0. The brand scale shipped under the name `emerald`, but
+ * its values were always teal (hue ~185°, not emerald's ~160°); it is named
+ * `teal` here for what it is (decisions.md row 140). Mode selectors mirror
+ * the library's own, so the `data-theme` toggle keeps working unchanged.
  */
 
 /* The three faces the tokens below name. Loaded here rather than from the app
@@ -70,18 +70,18 @@ h3 {
    ============================================================================= */
 
 :root {
-  /* emerald: the herb green, brand and success */
-  --color-emerald-50: #f2fafb;
-  --color-emerald-100: #d6eef0;
-  --color-emerald-200: #addde0;
-  --color-emerald-300: #7cc4c8;
-  --color-emerald-400: #4ba5a9;
-  --color-emerald-500: #368086;
-  --color-emerald-600: #2c666c;
-  --color-emerald-700: #234e53;
-  --color-emerald-800: #19393d;
-  --color-emerald-900: #11292c;
-  --color-emerald-950: #0a1a1d;
+  /* teal: the brand. Shipped as `emerald` up to 0.5.0; the values are teal. */
+  --color-teal-50: #f2fafb;
+  --color-teal-100: #d6eef0;
+  --color-teal-200: #addde0;
+  --color-teal-300: #7cc4c8;
+  --color-teal-400: #4ba5a9;
+  --color-teal-500: #368086;
+  --color-teal-600: #2c666c;
+  --color-teal-700: #234e53;
+  --color-teal-800: #19393d;
+  --color-teal-900: #11292c;
+  --color-teal-950: #0a1a1d;
 
   /* earth: warm paper, the neutrals */
   --color-earth-50: #fefcfb;
@@ -122,18 +122,18 @@ h3 {
   --bg-subtle-hovered: var(--color-earth-200);
   --bg-subtle-pressed: var(--color-earth-300);
   --bg-subtle-disabled: var(--color-earth-100);
-  --bg-brand-subtle: var(--color-emerald-100);
-  --bg-brand-subtle-hovered: var(--color-emerald-200);
-  --bg-brand-subtle-pressed: var(--color-emerald-300);
-  --bg-brand-subtle-disabled: var(--color-emerald-50);
-  --bg-brand: var(--color-emerald-600);
-  --bg-brand-hovered: var(--color-emerald-700);
-  --bg-brand-pressed: var(--color-emerald-800);
-  --bg-brand-disabled: var(--color-emerald-300);
-  --bg-brand-strong: var(--color-emerald-800);
-  --bg-brand-strong-hovered: var(--color-emerald-900);
-  --bg-brand-strong-pressed: var(--color-emerald-950);
-  --bg-brand-strong-disabled: var(--color-emerald-400);
+  --bg-brand-subtle: var(--color-teal-100);
+  --bg-brand-subtle-hovered: var(--color-teal-200);
+  --bg-brand-subtle-pressed: var(--color-teal-300);
+  --bg-brand-subtle-disabled: var(--color-teal-50);
+  --bg-brand: var(--color-teal-600);
+  --bg-brand-hovered: var(--color-teal-700);
+  --bg-brand-pressed: var(--color-teal-800);
+  --bg-brand-disabled: var(--color-teal-300);
+  --bg-brand-strong: var(--color-teal-800);
+  --bg-brand-strong-hovered: var(--color-teal-900);
+  --bg-brand-strong-pressed: var(--color-teal-950);
+  --bg-brand-strong-disabled: var(--color-teal-400);
   --bg-overlay: rgba(33, 25, 22, 0.5);
 
   /* Foreground */
@@ -153,14 +153,14 @@ h3 {
   --fg-subtle-hovered: var(--color-earth-800);
   --fg-subtle-pressed: var(--color-earth-900);
   --fg-subtle-disabled: var(--color-earth-400);
-  --fg-brand: var(--color-emerald-700);
-  --fg-brand-hovered: var(--color-emerald-800);
-  --fg-brand-pressed: var(--color-emerald-900);
-  --fg-brand-disabled: var(--color-emerald-300);
-  --fg-on-brand-subtle: var(--color-emerald-800);
-  --fg-on-brand-subtle-hovered: var(--color-emerald-900);
-  --fg-on-brand-subtle-pressed: var(--color-emerald-950);
-  --fg-on-brand-subtle-disabled: var(--color-emerald-400);
+  --fg-brand: var(--color-teal-700);
+  --fg-brand-hovered: var(--color-teal-800);
+  --fg-brand-pressed: var(--color-teal-900);
+  --fg-brand-disabled: var(--color-teal-300);
+  --fg-on-brand-subtle: var(--color-teal-800);
+  --fg-on-brand-subtle-hovered: var(--color-teal-900);
+  --fg-on-brand-subtle-pressed: var(--color-teal-950);
+  --fg-on-brand-subtle-disabled: var(--color-teal-400);
   --fg-on-brand: var(--color-earth-50);
   --fg-on-brand-hovered: white;
   --fg-on-brand-pressed: white;
@@ -189,21 +189,21 @@ h3 {
   --border-subtle-hovered: var(--color-earth-300);
   --border-subtle-pressed: var(--color-earth-400);
   --border-subtle-disabled: var(--color-earth-100);
-  --border-brand-subtle: var(--color-emerald-300);
-  --border-brand-subtle-hovered: var(--color-emerald-400);
-  --border-brand-subtle-pressed: var(--color-emerald-500);
-  --border-brand-subtle-disabled: var(--color-emerald-200);
-  --border-brand: var(--color-emerald-600);
-  --border-brand-hovered: var(--color-emerald-700);
-  --border-brand-pressed: var(--color-emerald-800);
-  --border-brand-disabled: var(--color-emerald-200);
-  --border-brand-strong: var(--color-emerald-800);
-  --border-brand-strong-hovered: var(--color-emerald-900);
-  --border-brand-strong-pressed: var(--color-emerald-950);
-  --border-brand-strong-disabled: var(--color-emerald-400);
+  --border-brand-subtle: var(--color-teal-300);
+  --border-brand-subtle-hovered: var(--color-teal-400);
+  --border-brand-subtle-pressed: var(--color-teal-500);
+  --border-brand-subtle-disabled: var(--color-teal-200);
+  --border-brand: var(--color-teal-600);
+  --border-brand-hovered: var(--color-teal-700);
+  --border-brand-pressed: var(--color-teal-800);
+  --border-brand-disabled: var(--color-teal-200);
+  --border-brand-strong: var(--color-teal-800);
+  --border-brand-strong-hovered: var(--color-teal-900);
+  --border-brand-strong-pressed: var(--color-teal-950);
+  --border-brand-strong-disabled: var(--color-teal-400);
 
   /* Interaction */
-  --focus-ring: var(--color-emerald-500);
+  --focus-ring: var(--color-teal-500);
 }
 
 /* =============================================================================
@@ -232,20 +232,20 @@ h3 {
   --bg-subtle-hovered: var(--color-earth-900);
   --bg-subtle-pressed: var(--color-earth-800);
   --bg-subtle-disabled: var(--color-earth-950);
-  --bg-brand-subtle: var(--color-emerald-950);
-  --bg-brand-subtle-hovered: var(--color-emerald-900);
-  --bg-brand-subtle-pressed: var(--color-emerald-800);
-  --bg-brand-subtle-disabled: var(--color-emerald-950);
-  /* Brand fills go *lighter* in dark, and carry dark text — emerald at 500 is
+  --bg-brand-subtle: var(--color-teal-950);
+  --bg-brand-subtle-hovered: var(--color-teal-900);
+  --bg-brand-subtle-pressed: var(--color-teal-800);
+  --bg-brand-subtle-disabled: var(--color-teal-950);
+  /* Brand fills go *lighter* in dark, and carry dark text — teal at 500 is
      too dim for white text to clear 4.5:1. See --fg-on-brand below. */
-  --bg-brand: var(--color-emerald-400);
-  --bg-brand-hovered: var(--color-emerald-300);
-  --bg-brand-pressed: var(--color-emerald-200);
-  --bg-brand-disabled: var(--color-emerald-800);
-  --bg-brand-strong: var(--color-emerald-300);
-  --bg-brand-strong-hovered: var(--color-emerald-200);
-  --bg-brand-strong-pressed: var(--color-emerald-100);
-  --bg-brand-strong-disabled: var(--color-emerald-600);
+  --bg-brand: var(--color-teal-400);
+  --bg-brand-hovered: var(--color-teal-300);
+  --bg-brand-pressed: var(--color-teal-200);
+  --bg-brand-disabled: var(--color-teal-800);
+  --bg-brand-strong: var(--color-teal-300);
+  --bg-brand-strong-hovered: var(--color-teal-200);
+  --bg-brand-strong-pressed: var(--color-teal-100);
+  --bg-brand-strong-disabled: var(--color-teal-600);
   --bg-overlay: rgba(10, 7, 6, 0.65);
 
   /* Foreground */
@@ -265,22 +265,22 @@ h3 {
   --fg-subtle-hovered: var(--color-earth-300);
   --fg-subtle-pressed: var(--color-earth-200);
   --fg-subtle-disabled: var(--color-earth-700);
-  --fg-brand: var(--color-emerald-300);
-  --fg-brand-hovered: var(--color-emerald-200);
-  --fg-brand-pressed: var(--color-emerald-100);
-  --fg-brand-disabled: var(--color-emerald-700);
-  --fg-on-brand-subtle: var(--color-emerald-300);
-  --fg-on-brand-subtle-hovered: var(--color-emerald-200);
-  --fg-on-brand-subtle-pressed: var(--color-emerald-100);
-  --fg-on-brand-subtle-disabled: var(--color-emerald-700);
-  --fg-on-brand: var(--color-emerald-950);
-  --fg-on-brand-hovered: var(--color-emerald-950);
-  --fg-on-brand-pressed: var(--color-emerald-950);
-  --fg-on-brand-disabled: var(--color-emerald-600);
-  --fg-on-brand-strong: var(--color-emerald-950);
-  --fg-on-brand-strong-hovered: var(--color-emerald-950);
-  --fg-on-brand-strong-pressed: var(--color-emerald-950);
-  --fg-on-brand-strong-disabled: var(--color-emerald-600);
+  --fg-brand: var(--color-teal-300);
+  --fg-brand-hovered: var(--color-teal-200);
+  --fg-brand-pressed: var(--color-teal-100);
+  --fg-brand-disabled: var(--color-teal-700);
+  --fg-on-brand-subtle: var(--color-teal-300);
+  --fg-on-brand-subtle-hovered: var(--color-teal-200);
+  --fg-on-brand-subtle-pressed: var(--color-teal-100);
+  --fg-on-brand-subtle-disabled: var(--color-teal-700);
+  --fg-on-brand: var(--color-teal-950);
+  --fg-on-brand-hovered: var(--color-teal-950);
+  --fg-on-brand-pressed: var(--color-teal-950);
+  --fg-on-brand-disabled: var(--color-teal-600);
+  --fg-on-brand-strong: var(--color-teal-950);
+  --fg-on-brand-strong-hovered: var(--color-teal-950);
+  --fg-on-brand-strong-pressed: var(--color-teal-950);
+  --fg-on-brand-strong-disabled: var(--color-teal-600);
 
   /* Border */
   --border-strong: var(--color-earth-200);
@@ -295,25 +295,25 @@ h3 {
   --border-subtle-hovered: var(--color-earth-800);
   --border-subtle-pressed: var(--color-earth-700);
   --border-subtle-disabled: var(--color-earth-950);
-  --border-brand-subtle: var(--color-emerald-800);
-  --border-brand-subtle-hovered: var(--color-emerald-700);
-  --border-brand-subtle-pressed: var(--color-emerald-600);
-  --border-brand-subtle-disabled: var(--color-emerald-900);
-  --border-brand: var(--color-emerald-400);
-  --border-brand-hovered: var(--color-emerald-300);
-  --border-brand-pressed: var(--color-emerald-200);
-  --border-brand-disabled: var(--color-emerald-800);
-  --border-brand-strong: var(--color-emerald-300);
-  --border-brand-strong-hovered: var(--color-emerald-200);
-  --border-brand-strong-pressed: var(--color-emerald-100);
-  --border-brand-strong-disabled: var(--color-emerald-600);
+  --border-brand-subtle: var(--color-teal-800);
+  --border-brand-subtle-hovered: var(--color-teal-700);
+  --border-brand-subtle-pressed: var(--color-teal-600);
+  --border-brand-subtle-disabled: var(--color-teal-900);
+  --border-brand: var(--color-teal-400);
+  --border-brand-hovered: var(--color-teal-300);
+  --border-brand-pressed: var(--color-teal-200);
+  --border-brand-disabled: var(--color-teal-800);
+  --border-brand-strong: var(--color-teal-300);
+  --border-brand-strong-hovered: var(--color-teal-200);
+  --border-brand-strong-pressed: var(--color-teal-100);
+  --border-brand-strong-disabled: var(--color-teal-600);
 
   /* Interaction */
-  --focus-ring: var(--color-emerald-400);
+  --focus-ring: var(--color-teal-400);
 }
 
 /* =============================================================================
-   COMPONENT TOKENS — the one exception
+   COMPONENT TOKENS — the exceptions
    ============================================================================= */
 
 /* The off Switch. The library paints its track `--bg-subtle`, which is the
@@ -326,4 +326,29 @@ h3 {
    checked rule and take the brand off "on". */
 .switch[data-state="unchecked"] {
   --switch-bg: var(--color-earth-600);
+}
+
+/* The neutral soft Badge. Its fill is the neutral tint, which is
+   `--bg-subtle`: the page itself (rule 1), so a time badge, a tab's count or a
+   review chip on the page was text with no chip. Re-pointed one step past the
+   page and a card in both modes (earth-300 in light, earth-800 in dark), the
+   step the toggles' selected fill uses. Matched by what it is not, because
+   `muted` and any other intent the library has not named falls through to
+   the neutral family. On the badge rather than the neutral intent's tint
+   slot: the neutral slots are the `[data-intent]` floor, and an unlayered
+   rule there would outrank every family's own, not just neutral's. */
+.badge[data-variant="soft"]:not([data-intent="brand"], [data-intent="danger"], [data-intent="success"], [data-intent="warning"]) {
+  --badge-bg: var(--bg-subtle-pressed);
+}
+
+/* The disabled primary Button. The library dims any disabled button to half
+   opacity, which on a brand fill left a muddy teal: in dark, dark text at
+   2.5:1 on it. A primary action that cannot be pressed yet is not the primary
+   action yet (rule 5), so it drops the brand for the neutral selected step,
+   with the subtle text read on it at full opacity: 4.07:1 in light, 4.85:1
+   in dark, the label legible while the grey says "not yet". */
+.btn[data-variant="solid"][data-intent="brand"]:disabled {
+  --button-bg: var(--bg-subtle-pressed);
+  --button-fg: var(--fg-subtle);
+  opacity: 1;
 }

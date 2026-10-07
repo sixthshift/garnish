@@ -115,6 +115,14 @@ describe("StepCard", () => {
     expect(html).toContain("Step 2. ");
   });
 
+  test("the step number is neutral: brand is the primary action's alone (critique #8)", () => {
+    withStorage(fakeStorage());
+    const html = renderToString(<StepCard recipeId={RECIPE_ID} step={step("Rest it")} position={2} ingredients={part} />);
+    const bubble = html.match(/<span class="([^"]*rounded-full[^"]*)" aria-hidden="true">2<\/span>/)?.[1] ?? "";
+    expect(bubble).toContain("bg-bg-subtle-pressed");
+    expect(bubble).not.toContain("brand");
+  });
+
   test("a linked row reads its tick from the shared store", () => {
     const storage = fakeStorage();
     setIngredientTicked(storage, RECIPE_ID, eggs.id, true);

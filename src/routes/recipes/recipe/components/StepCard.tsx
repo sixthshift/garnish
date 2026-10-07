@@ -92,7 +92,8 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
           <span
             className={cn(
               "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-              done ? "bg-bg-subtle text-fg-subtle" : "bg-bg-brand-subtle text-fg-brand"
+              // Neutral: a step number is not an action, so it takes no brand (rule 5).
+              done ? "bg-bg-subtle text-fg-subtle" : "bg-bg-subtle-pressed text-fg-normal"
             )}
             aria-hidden="true"
           >

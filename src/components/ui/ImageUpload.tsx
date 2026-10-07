@@ -81,8 +81,9 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, c
         <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled} onClick={() => inputRef.current?.click()}>
           {hasImage ? "Change image" : "Choose image"}
         </Button>
+        {/* Neutral (rule 5): nothing is lost until the form it sits in is saved, and Cancel keeps the image. */}
         {hasImage && onRemove !== undefined && (
-          <Button type="button" variant="ghost" intent="danger" size="sm" disabled={disabled} onClick={remove}>
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={remove}>
             Remove image
           </Button>
         )}

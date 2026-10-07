@@ -13,7 +13,18 @@ export function ThemeToggle() {
     paint(value);
   };
 
-  return <ToggleGroup type="single" appearance="segmented" size="sm" aria-label="Theme" options={themeOptions} value={theme} onValueChange={choose} />;
+  return (
+    <ToggleGroup
+      type="single"
+      appearance="segmented"
+      variant="outline"
+      size="sm"
+      aria-label="Theme"
+      options={themeOptions}
+      value={theme}
+      onValueChange={choose}
+    />
+  );
 }
 
 export const themeOptions = [

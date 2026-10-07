@@ -34,9 +34,8 @@ export function SettingsPage() {
       <Tabs items={items} defaultValue="library">
         {/* One row that scrolls sideways on a phone rather than wrapping, which split a count from its label.
             The padding (cancelled by the margin) keeps the focus ring's offset inside the scroller. The count's
-            neutral tint is the page's own base, so on the page it drew no pill and floated free of its label:
-            re-point it one step darker and close the gap, so "Style 12" reads as one tab. */}
-        <Tabs.List className="-m-1 max-w-[calc(100%+0.5rem)] overflow-x-auto p-1 [&_.badge]:ml-0 [&_.badge]:[--badge-bg:var(--bg-subtle-pressed)]" />
+            gap is closed so "Style 12" reads as one tab; its pill's fill comes from the theme (theme.css). */}
+        <Tabs.List className="-m-1 max-w-[calc(100%+0.5rem)] overflow-x-auto p-1 [&_.badge]:ml-0" />
         <Tabs.Panels />
       </Tabs>
       <Version />

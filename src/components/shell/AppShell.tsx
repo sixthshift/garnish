@@ -22,10 +22,16 @@ export const navItems = [
   { to: "/settings", label: "Settings", exact: false, footer: true },
 ] as const;
 
-const itemClass =
-  "flex flex-1 items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-fg-subtle " +
-  "hover:bg-bg-subtle-hovered hover:text-fg-normal md:flex-none md:justify-start";
-const activeClass = "bg-bg-brand-subtle text-fg-brand";
+// The colours live in the two states, not here: `cn` cannot tell `text-fg-subtle`
+// from `text-fg-normal` apart as one property, so a base colour would fight the
+// active one on stylesheet order.
+const itemClass = "flex flex-1 items-center justify-center rounded-md px-3 py-2 text-sm font-medium md:flex-none md:justify-start";
+const inactiveClass = "text-fg-subtle hover:bg-bg-subtle-hovered hover:text-fg-normal";
+// The current place takes the toggles' selected fill (ToggleGroup's `on` state:
+// the neutral tint's pressed step and its text partner), not brand: brand is the
+// primary action's alone (design-language rule 5), and every "this one is chosen"
+// in the app reads the same way.
+const activeClass = "bg-bg-subtle-pressed text-fg-normal";
 
 /** `stacked` is the side nav, where a `footer` item is pushed to the bottom. */
 function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTMLElement> & { stacked?: boolean }) {
@@ -34,7 +40,14 @@ function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTML
       {navItems.map((item) => {
         const base = cn(itemClass, stacked && item.footer && "mt-auto");
         return (
-          <Link key={item.to} to={item.to} activeOptions={{ exact: item.exact }} className={base} activeProps={{ className: cn(base, activeClass) }}>
+          <Link
+            key={item.to}
+            to={item.to}
+            activeOptions={{ exact: item.exact }}
+            className={base}
+            activeProps={{ className: activeClass }}
+            inactiveProps={{ className: inactiveClass }}
+          >
             {item.label}
           </Link>
         );

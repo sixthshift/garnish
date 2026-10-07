@@ -103,9 +103,12 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules
         >
           House style · {style.selected.size} of {style.rules.length} on
         </Button>
+        {/* Outline, as every other toggle: the default solid segment is an inverted fill, near-black in light and
+            near-white in dark, a second "selected" language (design-language rule 5). */}
         <ToggleGroup
           type="single"
           appearance="segmented"
+          variant="outline"
           size="sm"
           aria-label="View"
           options={[

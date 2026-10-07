@@ -1,13 +1,13 @@
 import type { CSSProperties } from "react";
 
 /**
- * The icon's fixed palette, copied from design-system/src/theme/tokens.css: an
- * emerald-100 ground under an emerald-700 sprig. Literal hex, not token vars,
+ * The icon's fixed palette, copied from src/styles/theme.css: a
+ * teal-100 ground under a teal-700 sprig. Literal hex, not token vars,
  * because an app icon is a baked asset — it does not follow the light/dark
  * toggle, and the PNGs are generated once and committed.
  */
-export const ICON_GROUND = "#d6eef0"; // emerald-100
-export const ICON_MARK = "#234e53"; // emerald-700
+export const ICON_GROUND = "#d6eef0"; // teal-100
+export const ICON_MARK = "#234e53"; // teal-700
 
 /**
  * The app icon's corner radius: half of 512, so the ground is a circle. The

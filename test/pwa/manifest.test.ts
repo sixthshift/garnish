@@ -46,7 +46,7 @@ describe("manifest installability", () => {
   });
 
   test("colours are literal hex matching the light tokens", () => {
-    expect(manifest.theme_color).toBe("#2c666c"); // --bg-brand light (emerald-600)
+    expect(manifest.theme_color).toBe("#2c666c"); // --bg-brand light (teal-600)
     expect(manifest.background_color).toBe("#fefcfb"); // --bg-normal light (earth-50)
   });
 
