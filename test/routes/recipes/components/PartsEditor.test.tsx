@@ -193,6 +193,14 @@ describe("PartsEditor", () => {
     expect(html).not.toContain('role="dialog"');
   });
 
+  test("a part's reorder controls sit at its name line, not halfway down the part (critique #15b)", () => {
+    const html = renderToString(<PartsEditor draft={tart()} onChange={() => {}} />);
+    const parts = html.slice(html.indexOf('data-narrow="above"'));
+    const row = parts.match(/<li class="([^"]*)"/)?.[1] ?? "";
+    expect(row).toContain("items-start");
+    expect(row).not.toContain("items-center");
+  });
+
   test("a flat recipe prints its two lists with no part chrome at all (M21.1)", () => {
     const html = renderToString(<PartsEditor draft={emptyDraft()} onChange={() => {}} />);
     expect(html).toContain('data-bare=""');

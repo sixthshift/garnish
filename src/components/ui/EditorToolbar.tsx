@@ -41,7 +41,7 @@ export function EditorToolbar({
     <div
       data-testid="editor-toolbar"
       className={cn(
-        "-mx-4 flex flex-wrap items-center gap-3 border-b border-border-normal bg-bg-normal px-4 py-3 md:sticky md:top-0 md:z-20 md:-mx-6 md:px-6",
+        "-mx-4 flex flex-wrap items-center gap-3 border-b border-border-normal bg-bg-normal px-4 py-3 md:sticky md:top-0 md:z-content-sticky md:-mx-6 md:px-6",
         className
       )}
     >

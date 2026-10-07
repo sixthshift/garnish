@@ -70,6 +70,8 @@ export function PartsEditor({ draft, onChange, units = [], errors = {}, disabled
           keyOf={(part) => part.id ?? "unsaved"}
           itemName="part"
           narrow="above"
+          // A part is tall (its name, ingredients and steps): its controls sit at the name, not halfway down beside a step (critique #15b).
+          align="start"
           onReorder={(next) => onChange({ ...draft, parts: next })}
           onRemove={
             parts.length > 1

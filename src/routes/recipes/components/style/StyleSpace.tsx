@@ -196,7 +196,7 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules
 
       <div
         ref={scrollClearance}
-        className="sticky bottom-(--app-bar) z-10 -mx-4 -mb-4 flex flex-col gap-2 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:mb-0 md:mx-0 md:rounded-t-lg md:px-4"
+        className="sticky bottom-(--app-bar) z-content-sticky -mx-4 -mb-4 flex flex-col gap-2 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:mb-0 md:mx-0 md:rounded-t-lg md:px-4"
         data-testid="style-footer"
       >
         {warning !== null && (

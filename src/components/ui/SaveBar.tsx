@@ -31,7 +31,7 @@ export function SaveBar({ label, busyLabel, busy = false, disabled = false, canc
       ref={scrollClearance}
       data-testid="save-bar"
       className={cn(
-        "sticky bottom-(--app-bar) z-10 -mx-4 -mb-4 flex flex-wrap items-center gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:mb-0 md:border-0 md:bg-transparent md:px-0 md:py-0",
+        "sticky bottom-(--app-bar) z-content-sticky -mx-4 -mb-4 flex flex-wrap items-center gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:mb-0 md:border-0 md:bg-transparent md:px-0 md:py-0",
         className
       )}
     >
