@@ -74,13 +74,14 @@ describe("app shell", () => {
     expect(html.match(/aria-label="Main"/g)).toHaveLength(1);
     expect(html).toMatch(/<aside[^>]*>[\s\S]*aria-label="Main"/);
     expect(html).toContain("[--app-bar:0px]");
-    expect(html).not.toContain("[--app-bar:5rem]");
+    expect(html).not.toContain("[--app-bar:calc(");
   });
 
   test("the new-recipe chooser is a place and keeps the tab bar", async () => {
     const html = await render("/recipes/new");
     expect(html.match(/aria-label="Main"/g)).toHaveLength(2);
-    expect(html).toContain("[--app-bar:5rem]");
+    // The bar's real height: 53px of bar plus the home indicator, not a round guess.
+    expect(html).toContain("[--app-bar:calc(2.75rem_+_1px_+_max(0.5rem,env(safe-area-inset-bottom)))]");
   });
 
   test("the style page hides the tab bar too", async () => {

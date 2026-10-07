@@ -38,6 +38,10 @@ export function NewRecipePage() {
           imageUrl={imported.imageUrl}
           file={imported.file}
           onEditDetails={() => setImported({ ...imported, stage: "details" })}
+          onCancel={() => {
+            setImported(null);
+            choose(null);
+          }}
         />
       </Page>
     );

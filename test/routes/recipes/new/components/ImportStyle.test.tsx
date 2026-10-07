@@ -28,20 +28,21 @@ describe("ImportSteps", () => {
 
 describe("ImportStyle", () => {
   test("a draft that does not validate is sent to Edit details rather than restyled", async () => {
-    const html = await renderWithRouter(() => <ImportStyle draft={emptyDraft()} imageUrl={null} file={null} onEditDetails={() => {}} />);
+    const html = await renderWithRouter(() => <ImportStyle draft={emptyDraft()} imageUrl={null} file={null} onEditDetails={() => {}} onCancel={() => {}} />);
     expect(html).toContain('data-testid="import-style-invalid"');
     expect(html).toContain("Edit details");
     expect(html).not.toContain('data-testid="style-space"');
   });
 
-  test("a valid draft opens the Style space on its steps, with Save recipe and Edit details", async () => {
+  test("a valid draft opens the Style space on its steps, with Save recipe, Edit details and Cancel", async () => {
     const draft = draftFromInput(
       recipeInputSchema.parse({ name: "Kung pao chicken", parts: [{ name: "", ingredients: [], steps: [{ text: "Toast the peanuts." }] }] })
     );
-    const html = await renderWithRouter(() => <ImportStyle draft={draft} imageUrl={null} file={null} onEditDetails={() => {}} />);
+    const html = await renderWithRouter(() => <ImportStyle draft={draft} imageUrl={null} file={null} onEditDetails={() => {}} onCancel={() => {}} />);
     expect(html).toContain('data-testid="style-space"');
     expect(html).toContain("Toast the peanuts.");
     expect(html).toContain("Save recipe");
     expect(html).toContain("Edit details");
+    expect(html).toContain(">Cancel<");
   });
 });

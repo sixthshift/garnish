@@ -38,6 +38,11 @@ const inactiveClass = "text-fg-subtle hover:bg-bg-subtle-hovered hover:text-fg-n
 // in the app reads the same way.
 const activeClass = "bg-bg-subtle-pressed text-fg-normal";
 
+// The phone bar's real height, so `--app-bar` means what it says: its top rule,
+// its `p-2`, one `py-2` `text-sm` item (2.25rem) and the bottom padding that
+// grows into the home indicator. Change it with `itemClass` or the bar's padding.
+const APP_BAR_HEIGHT = "[--app-bar:calc(2.75rem_+_1px_+_max(0.5rem,env(safe-area-inset-bottom)))]";
+
 /** `stacked` is the side nav, where a `footer` item is pushed to the bottom. */
 function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTMLElement> & { stacked?: boolean }) {
   return (
@@ -79,7 +84,7 @@ export function AppShell() {
     // `--app-bar` is how much of the screen's foot the tab bar takes: the page's
     // bottom padding, and where a sticky save bar stops. None from `md`, or
     // where the route hides the bar; then a save bar sits at the very bottom.
-    <div className={cn("flex min-h-dvh flex-col bg-bg-subtle text-fg-normal md:flex-row md:[--app-bar:0px]", hideNav ? "[--app-bar:0px]" : "[--app-bar:5rem]")}>
+    <div className={cn("flex min-h-dvh flex-col bg-bg-subtle text-fg-normal md:flex-row md:[--app-bar:0px]", hideNav ? "[--app-bar:0px]" : APP_BAR_HEIGHT)}>
       {/* Sticky and exactly one screen tall: as a plain flex child the aside
           stretches to the content's height, so `mt-auto` would push Settings
           past the fold on a long page. */}

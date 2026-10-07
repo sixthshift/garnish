@@ -117,8 +117,9 @@ describe("TimerStrip", () => {
     const html = renderToString(<TimerStrip recipeId={RECIPE} fixed />);
     expect(html).toContain("19:00");
     expect(html).toContain("Simmer for 20 minutes");
-    // Fixed above the phone tab bar.
-    expect(html).toContain("bottom-20");
+    // Fixed just above the phone tab bar, whose height the shell gives as `--app-bar`, on its layer.
+    expect(html).toContain("bottom-[calc(var(--app-bar)+0.5rem)]");
+    expect(html).toContain("z-app-bar");
     expect(html).toContain("md:bottom-4");
   });
 
@@ -126,7 +127,7 @@ describe("TimerStrip", () => {
     const storage = fakeStorage();
     withStorage(storage);
     startTimer(storage, RECIPE, { id: `${STEP}#0#20 minutes`, label: "Simmer", seconds: 1200 }, T0);
-    expect(renderToString(<TimerStrip recipeId={RECIPE} />)).not.toContain("bottom-20");
+    expect(renderToString(<TimerStrip recipeId={RECIPE} />)).not.toContain("--app-bar");
   });
 
   test("at cook size Pause and dismiss are 48px targets; on the page they stay small", () => {

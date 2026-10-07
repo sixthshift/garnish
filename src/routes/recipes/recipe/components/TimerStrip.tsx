@@ -72,7 +72,9 @@ export function TimerStripRows({ timers, onPause, onResume, onDismiss, size = "p
 export type TimerStripProps = {
   recipeId: string;
   /**
-   * Pin it above the phone tab bar (the recipe view page). In cook mode it
+   * Pin it just above the phone tab bar (the recipe view page): `--app-bar`
+   * is the shell's measure of the bar, and the strip shares its layer, over
+   * content and under sheets and popovers. In cook mode it
    * sits in the footer's own flow instead, so this stays off there.
    */
   fixed?: boolean;
@@ -91,7 +93,7 @@ export function TimerStrip({ recipeId, fixed, size, className }: TimerStripProps
       onResume={resume}
       onDismiss={dismiss}
       size={size}
-      className={cn(fixed && "fixed inset-x-0 bottom-20 z-30 px-4 md:bottom-4", className)}
+      className={cn(fixed && "fixed inset-x-0 bottom-[calc(var(--app-bar)+0.5rem)] z-app-bar px-4 md:bottom-4", className)}
     />
   );
 }

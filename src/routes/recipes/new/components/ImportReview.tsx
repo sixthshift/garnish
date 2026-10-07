@@ -6,6 +6,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import type { IngredientReview } from "../../../../domain/draft";
 import type { ImportedRecipe } from "../../../../domain/import";
 import type { FoodRow, Unit } from "../../../../domain/reference";
+import { scrollClearance } from "../../../../lib/ui/scrollClearance";
 import { IngredientReviewList, ReviewSteps } from "./IngredientReviewList";
 import { changedLines, type DuplicateBy, duplicateMessage, importSummary, ingredientCount, rejectionMessage, stepCount, yieldLabel } from "./importSummary";
 
@@ -152,6 +153,7 @@ export function ImportReview(props: ImportReviewProps) {
       </div>
 
       <div
+        ref={scrollClearance}
         className="sticky bottom-(--app-bar) z-10 -mx-4 -mb-4 flex flex-col gap-2 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:mb-0 md:mx-0 md:rounded-t-lg"
         data-testid="review-footer"
       >

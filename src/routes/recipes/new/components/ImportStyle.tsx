@@ -2,7 +2,8 @@ import { Button } from "@sixthshift/design-system/button";
 import { Message } from "@sixthshift/design-system/message";
 import { toast } from "@sixthshift/design-system/overlay";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { type RecipeDraft, validateDraft } from "../../../../domain/draft";
 import type { RestyledPart } from "../../../../domain/style";
 import { messageFrom } from "../../../../lib/errors";
@@ -23,6 +24,12 @@ export type ImportStyleProps = {
   /** A picture picked in Edit details, which wins over `imageUrl`. */
   file: File | null;
   onEditDetails: () => void;
+  /**
+   * Drop the import and go back to the chooser. Style and Edit details only
+   * lead to each other, and from here the phone has no tab bar, so this is
+   * the way out short of saving; it asks first, since nothing is stored yet.
+   */
+  onCancel: () => void;
 };
 
 /**
@@ -31,21 +38,45 @@ export type ImportStyleProps = {
  * Save creates it: restyled, with the author's words kept for Restore, or as
  * the author wrote it when nothing was taken.
  */
-export function ImportStyle({ draft, imageUrl, file, onEditDetails }: ImportStyleProps) {
+export function ImportStyle({ draft, imageUrl, file, onEditDetails, onCancel }: ImportStyleProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const checked = useMemo(() => validateDraft(draft), [draft]);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+
+  const cancel = (
+    <Button type="button" variant="ghost" intent="neutral" onClick={() => setConfirmingCancel(true)}>
+      Cancel
+    </Button>
+  );
+  const confirm = confirmingCancel && (
+    <ConfirmDialog
+      title="Discard this import?"
+      confirmLabel="Discard"
+      aria-label="Discard this import"
+      onCancel={() => setConfirmingCancel(false)}
+      onConfirm={onCancel}
+    >
+      <p>Nothing has been saved yet. Leaving now loses the recipe and any changes made to it.</p>
+    </ConfirmDialog>
+  );
 
   if (!checked.ok) {
     return (
-      <Message intent="warning" title="This import needs a fix first" data-testid="import-style-invalid">
-        {Object.values(checked.errors)[0] ?? "Something in the recipe is not valid."} Fix it in the details, then come back to the style.
-        <div className="mt-2">
-          <Button type="button" size="sm" variant="outline" intent="neutral" onClick={onEditDetails}>
-            Edit details
-          </Button>
-        </div>
-      </Message>
+      <>
+        <Message intent="warning" title="This import needs a fix first" data-testid="import-style-invalid">
+          {Object.values(checked.errors)[0] ?? "Something in the recipe is not valid."} Fix it in the details, then come back to the style.
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" intent="neutral" onClick={onEditDetails}>
+              Edit details
+            </Button>
+            <Button type="button" size="sm" variant="ghost" intent="neutral" onClick={() => setConfirmingCancel(true)}>
+              Cancel
+            </Button>
+          </div>
+        </Message>
+        {confirm}
+      </>
     );
   }
   const doc = checked.data;
@@ -68,16 +99,22 @@ export function ImportStyle({ draft, imageUrl, file, onEditDetails }: ImportStyl
   };
 
   return (
-    <StyleSpace
-      parts={doc.parts}
-      run={(ruleIds) => restyleDraft({ data: { doc, ruleIds } })}
-      onSave={save}
-      saveLabel="Save recipe"
-      secondary={
-        <Button type="button" variant="outline" intent="neutral" onClick={onEditDetails}>
-          Edit details
-        </Button>
-      }
-    />
+    <>
+      <StyleSpace
+        parts={doc.parts}
+        run={(ruleIds) => restyleDraft({ data: { doc, ruleIds } })}
+        onSave={save}
+        saveLabel="Save recipe"
+        secondary={
+          <>
+            {cancel}
+            <Button type="button" variant="outline" intent="neutral" onClick={onEditDetails}>
+              Edit details
+            </Button>
+          </>
+        }
+      />
+      {confirm}
+    </>
   );
 }
