@@ -134,6 +134,7 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
             items={ingredients}
             keyOf={(row) => row.id ?? "unsaved"}
             itemName="ingredient"
+            narrow="menu"
             group={INGREDIENT_DRAG_GROUP}
             listKey={String(pi)}
             onMoveOut={(_, ii, toPi, toIndex) => onChange(moveIngredientTo(draft, pi, ii, Number(toPi), toIndex))}

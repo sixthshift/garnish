@@ -86,3 +86,62 @@ test("a drag that never moves changes nothing", () => {
 
   expect(onReorder).not.toHaveBeenCalled();
 });
+
+test("a narrow list's ⋯ menu moves and removes the row it sits on", async () => {
+  const user = userEvent.setup();
+  const onReorder = vi.fn();
+  const onRemove = vi.fn();
+  render(
+    <ReorderList
+      items={rows}
+      keyOf={(row) => row.id}
+      onReorder={onReorder}
+      onRemove={onRemove}
+      renderItem={(row) => <span>{row.text}</span>}
+      itemName="ingredient"
+      narrow="menu"
+    />
+  );
+
+  await user.click(screen.getByRole("button", { name: "Reorder ingredient 2" }));
+  await user.click(screen.getByRole("menuitem", { name: "Move up" }));
+  expect(onReorder).toHaveBeenCalledWith([rows[1], rows[0], rows[2]]);
+
+  await user.click(screen.getByRole("button", { name: "Reorder ingredient 3" }));
+  expect(screen.getByRole("menuitem", { name: "Move down" })).toBeDisabled();
+  await user.click(screen.getByRole("menuitem", { name: "Remove" }));
+  expect(onRemove).toHaveBeenCalledWith(rows[2], 2);
+});
+
+test("a row placing its own controls gets the handle and the moves, absent at the ends", async () => {
+  const user = userEvent.setup();
+  const onReorder = vi.fn();
+  render(
+    <ReorderList
+      items={rows}
+      keyOf={(row) => row.id}
+      onReorder={onReorder}
+      itemName="step"
+      narrow="row"
+      renderItem={(row, _, { handle, moveUp, moveDown }) => (
+        <div>
+          {handle}
+          <span>{row.text}</span>
+          {moveUp && (
+            <button type="button" onClick={moveUp}>
+              Up {row.text}
+            </button>
+          )}
+          {moveDown === undefined && <span>last</span>}
+        </div>
+      )}
+    />
+  );
+
+  // The list draws no handle of its own: the one each row placed is the only one.
+  expect(screen.getAllByRole("button", { name: /drag step/i })).toHaveLength(3);
+  expect(screen.queryByRole("button", { name: "Up Onion" })).toBeNull();
+  expect(screen.getAllByText("last")).toHaveLength(1);
+  await user.click(screen.getByRole("button", { name: "Up Celery" }));
+  expect(onReorder).toHaveBeenCalledWith([rows[0], rows[2], rows[1]]);
+});

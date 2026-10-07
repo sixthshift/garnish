@@ -69,6 +69,7 @@ export function PartsEditor({ draft, onChange, units = [], errors = {}, disabled
           items={parts}
           keyOf={(part) => part.id ?? "unsaved"}
           itemName="part"
+          narrow="above"
           onReorder={(next) => onChange({ ...draft, parts: next })}
           onRemove={
             parts.length > 1
@@ -79,7 +80,8 @@ export function PartsEditor({ draft, onChange, units = [], errors = {}, disabled
               : undefined
           }
           renderItem={(part, index) => (
-            <div className="flex flex-col gap-3 border-border-subtle border-l-2 pl-3" data-part={index}>
+            // The rail marks the part beside its controls on a wide list; on a narrow one the controls' line above heads it, and the rail would only cost width.
+            <div className="flex flex-col gap-3 border-border-subtle @2xl:border-l-2 @2xl:pl-3" data-part={index}>
               <Input
                 name={`parts.${index}.name`}
                 value={part.name ?? ""}

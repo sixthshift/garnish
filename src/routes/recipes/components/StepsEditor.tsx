@@ -122,8 +122,9 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
             items={steps}
             keyOf={(step) => step.id ?? "unsaved"}
             itemName="step"
+            narrow="row"
             onReorder={(next) => onChange(withSteps(draft, pi, next))}
-            renderItem={(step, si) => {
+            renderItem={(step, si, reorder) => {
               const id = step.id ?? "";
               return (
                 <StepEditRow
@@ -131,6 +132,7 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
                   pi={pi}
                   si={si}
                   step={step}
+                  reorder={reorder}
                   part={part}
                   path={path}
                   last={si === last}

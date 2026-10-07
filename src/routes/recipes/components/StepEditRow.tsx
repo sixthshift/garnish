@@ -5,6 +5,7 @@ import { Textarea } from "@sixthshift/design-system/textarea";
 import { useRef } from "react";
 import { Markdown } from "../../../components/ui/Markdown";
 import { Menu } from "../../../components/ui/Menu";
+import type { ReorderRow } from "../../../components/ui/ReorderList";
 import {
   type DraftPart,
   ingredientLine,
@@ -32,6 +33,8 @@ export type StepEditRowProps = {
   pi: number;
   si: number;
   step: DraftStep;
+  /** The list's drag handle and moves, which this row places: the handle first, the moves in its menu. */
+  reorder?: ReorderRow;
   part: DraftPart;
   /** Field name prefix for the part's steps (`stepsPath(pi)`). */
   path: string;
@@ -57,6 +60,7 @@ export function StepEditRow({
   pi,
   si,
   step,
+  reorder,
   part,
   path,
   last,
@@ -76,11 +80,18 @@ export function StepEditRow({
   const linked = linkedIngredients(part, step);
   const linkable = linkableIngredients(part, step);
   return (
-    <div className="flex gap-2" data-step={si}>
-      <span className="mt-2 w-5 shrink-0 text-right text-sm font-medium text-fg-subtle" aria-hidden="true">
+    // On a narrow list (ReorderList's `@2xl` container) the handle, the step's
+    // name and the menu share a line and the text takes the full width below
+    // them; on a wide one they sit beside it.
+    <div className="flex gap-2 @max-2xl:flex-wrap @max-2xl:items-center" data-step={si}>
+      {reorder?.handle}
+      <span className="mt-2 w-5 shrink-0 text-right text-sm font-medium text-fg-subtle @max-2xl:hidden" aria-hidden="true">
         {si + 1}.
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="text-sm font-medium text-fg-subtle @2xl:hidden" aria-hidden="true">
+        Step {si + 1}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1 @max-2xl:order-last @max-2xl:basis-full">
         {preview ? (
           <div className="min-h-16 rounded-md border border-border-normal bg-bg-subtle px-3 py-2 text-sm" data-step-preview={si}>
             {(step.text ?? "").trim() === "" ? (
@@ -168,12 +179,22 @@ export function StepEditRow({
           }}
         />
       </div>
-      <Menu label={`Step ${si + 1} actions`} iconOnly>
+      <Menu label={`Step ${si + 1} actions`} iconOnly className="@max-2xl:ml-auto">
         <Menu.Item onSelect={onTogglePreview}>{preview ? "Edit" : "Preview"}</Menu.Item>
         <Menu.Item onSelect={() => fileInput.current?.click()}>{step.image ? "Replace image" : "Add image"}</Menu.Item>
         {step.image != null && step.image !== "" && <Menu.Item onSelect={() => onChange(setStepImage(draft, pi, si, null))}>Remove image</Menu.Item>}
         <Menu.Item onSelect={() => onChange(insertStepAbove(draft, pi, si))}>Insert above</Menu.Item>
         <Menu.Item onSelect={() => onChange(insertStepBelow(draft, pi, si))}>Insert below</Menu.Item>
+        {reorder !== undefined && (
+          <>
+            <Menu.Item disabled={!reorder.moveUp} onSelect={reorder.moveUp}>
+              Move up
+            </Menu.Item>
+            <Menu.Item disabled={!reorder.moveDown} onSelect={reorder.moveDown}>
+              Move down
+            </Menu.Item>
+          </>
+        )}
         <Menu.Item disabled={paragraphs(step.text ?? "").length < 2} onSelect={() => onChange(splitStepByParagraph(draft, pi, si))}>
           Split by paragraph
         </Menu.Item>

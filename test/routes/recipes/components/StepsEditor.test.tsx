@@ -376,6 +376,13 @@ describe("StepsEditor", () => {
     expect(html).not.toContain('role="menu"');
   });
 
+  test("each step places the list's one drag handle and names itself for a narrow list", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
+    expect(html).toContain('data-narrow="row"');
+    expect(html.match(/aria-label="Drag step \d"/g)).toHaveLength(3);
+    expect(html.match(/<span[^>]*@2xl:hidden[^>]*>Step <!-- -->\d<\/span>/g)).toHaveLength(3);
+  });
+
   test("split all and merge all sit once in the header, disabled when they would do nothing", () => {
     const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
     expect(html).toContain(">Split all<");

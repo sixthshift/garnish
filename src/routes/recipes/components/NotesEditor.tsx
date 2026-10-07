@@ -47,6 +47,7 @@ export function NotesEditor({ draft, onChange, errors = {}, disabled }: NotesEdi
             items={notes}
             keyOf={(note) => note.id ?? "unsaved"}
             itemName="note"
+            narrow="above"
             onReorder={(next) => onChange({ ...draft, notes: next })}
             onRemove={(_, ni) => onChange(removeNote(draft, ni))}
             renderItem={(note, ni) => {
@@ -54,7 +55,7 @@ export function NotesEditor({ draft, onChange, errors = {}, disabled }: NotesEdi
               const titleError = errors[`notes.${ni}.title`];
               const textError = errors[`notes.${ni}.text`];
               return (
-                <div className="flex flex-col gap-2 border-border-subtle border-l-2 pl-3" data-note={ni}>
+                <div className="flex flex-col gap-2 border-border-subtle @2xl:border-l-2 @2xl:pl-3" data-note={ni}>
                   <Input
                     name={`notes.${ni}.title`}
                     aria-label={`${label} title`}
