@@ -93,7 +93,7 @@ test("results stop at four, with the note row straight after them and a word on 
   const note = screen.getByRole("button", { name: "Add “a” as a note" });
   const list = screen.getByRole("listbox");
   expect(list.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(screen.getByTestId("plan-add-more")).toHaveTextContent("3 more recipes match");
+  expect(screen.getByTestId("plan-add-more")).toHaveTextContent("4 more recipes match");
 });
 
 test("a day's + opens its sheet, one add closes it, and focus comes back to the +", async () => {
@@ -118,7 +118,7 @@ test("a day's + opens its sheet, one add closes it, and focus comes back to the 
   const dialog = await screen.findByRole("dialog");
   expect(dialog).toHaveTextContent("Tuesday 15 September");
   // A fixed height on a phone, so the box does not move as results arrive.
-  expect(dialog.className).toContain("max-sm:h-[85dvh]");
+  expect(dialog.className).toContain("max-sm:h-[92dvh]");
   // The box takes focus once the sheet has settled, so typing goes straight into it.
   const input = screen.getByRole("textbox", { name: "Search recipes, or type a note" });
   await waitFor(() => expect(input).toHaveFocus());

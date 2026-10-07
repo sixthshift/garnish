@@ -23,9 +23,11 @@ export function PlanAddSheet({
   return (
     // A fixed height on a phone rather than the content's: content-sized, the
     // sheet sat 230px tall at the bottom with its box under the keyboard, then
-    // jumped up as results arrived. At 85dvh the chips and the box sit in the
-    // top third and stay put while the body below them scrolls.
-    <Modal size="md" align="top" closable className="max-sm:h-[85dvh]" onOpenChange={(open) => !open && onClose()}>
+    // jumped up as results arrived. At 92dvh the chips and the box sit high and
+    // stay put while the body below them scrolls. Its own height, not the
+    // viewport's, is what counts on iOS: the keyboard covers the page there
+    // rather than shrinking it, so dvh does not move when it opens.
+    <Modal size="md" align="top" closable className="max-sm:h-[92dvh]" onOpenChange={(open) => !open && onClose()}>
       <ModalHeader>{dayName(date)}</ModalHeader>
       {/* Clear of the home indicator, as the filters sheet's footer is. */}
       <ModalBody className="max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">

@@ -12,11 +12,13 @@ import { MealPicker } from "./MealPicker";
 import { PlanSearchResult } from "./PlanSearchResult";
 
 /**
- * How many results are drawn. With a phone's keyboard up the sheet shows about
- * 500px, and the note row has to stay in sight under the results whatever was
- * typed; a longer list is narrowed by typing, as the hint under it says.
+ * How many results are drawn. On iOS the keyboard covers the bottom ~340px of
+ * an 844px screen without resizing it, leaving about 504px; three results keep
+ * the note row and the "more" line above that (measured at 390x844: note
+ * bottom 429, hint bottom 481), whatever was typed. A longer list is narrowed
+ * by typing, as the hint says.
  */
-export const PLAN_RESULT_LIMIT = 4;
+export const PLAN_RESULT_LIMIT = 3;
 
 /**
  * What the add sheet holds for one day, top to bottom: the meal chips, the
