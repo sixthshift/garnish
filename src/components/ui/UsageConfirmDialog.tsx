@@ -8,6 +8,8 @@ export type UsageConfirmDialogProps = {
   name: string;
   /** Singular kind, e.g. "food", "unit", "tag". */
   itemName: string;
+  /** How many rows are going; above one, the sentence says "these foods" and the button repeats `name` ("Delete 763 foods"). Default 1. */
+  count?: number;
   /** What deleting does to those recipes, e.g. "they will keep the ingredient without a food." */
   effect: string;
   /** The affected recipes, from the repository's `usingFood`/`usingUnit`/`usingTag`. */
@@ -17,12 +19,19 @@ export type UsageConfirmDialogProps = {
   onConfirm: () => void;
 };
 
-export function UsageConfirmDialogContent({ name, itemName, effect, recipes, busy = false, onCancel, onConfirm }: UsageConfirmDialogProps) {
+export function UsageConfirmDialogContent({ name, itemName, count = 1, effect, recipes, busy = false, onCancel, onConfirm }: UsageConfirmDialogProps) {
   const { names, rest } = usageNames(recipes);
   return (
-    <ConfirmDialogContent title={`Delete ${name}?`} confirmLabel="Delete" busy={busy} busyLabel="Deleting…" onCancel={onCancel} onConfirm={onConfirm}>
+    <ConfirmDialogContent
+      title={`Delete ${name}?`}
+      confirmLabel={count > 1 ? `Delete ${name}` : "Delete"}
+      busy={busy}
+      busyLabel="Deleting…"
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    >
       <div className="flex flex-col gap-2">
-        <p>{usageSummary(recipes.length, itemName, effect)}</p>
+        <p>{usageSummary(recipes.length, itemName, effect, count)}</p>
         {names.length > 0 && (
           <ul className="list-disc pl-5" data-usage-list>
             {names.map((recipeName) => (
@@ -51,10 +60,15 @@ export function UsageConfirmDialog(props: UsageConfirmDialogProps) {
 /** How many recipes the list shows before it summarises the rest. */
 export const usageListLimit = 10;
 
-/** The sentence above the list: how many recipes lose this row, and what happens to them. Pure. */
-export function usageSummary(count: number, itemName: string, effect: string): string {
-  if (count === 0) return `No recipes use this ${itemName}.`;
-  return `${count} ${count === 1 ? "recipe uses" : "recipes use"} this ${itemName}; ${effect}`;
+/**
+ * The sentence above the list: how many recipes lose these rows, and what
+ * happens to them. `deleting` is how many rows go ("this food", "these
+ * foods"). Pure.
+ */
+export function usageSummary(count: number, itemName: string, effect: string, deleting = 1): string {
+  const rows = deleting > 1 ? `these ${itemName}s` : `this ${itemName}`;
+  if (count === 0) return `No recipes use ${rows}.`;
+  return `${count} ${count === 1 ? "recipe uses" : "recipes use"} ${rows}; ${effect}`;
 }
 
 /** The names to show, and how many are left over. Pure. */

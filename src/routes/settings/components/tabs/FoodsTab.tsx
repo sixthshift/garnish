@@ -112,6 +112,7 @@ export function FoodsTab({
         <UsageConfirmDialog
           name={foodsLabel(deleting)}
           itemName="food"
+          count={deleting.length}
           effect={FOOD_DELETE_EFFECT}
           recipes={deleteUsage}
           busy={busy}
@@ -146,7 +147,7 @@ export function foodColumns(aisles: readonly Aisle[]): DataTableColumn<FoodRow>[
     { key: "name", header: "Name", value: (food) => food.name },
     { key: "pluralName", header: "Plural", value: (food) => food.pluralName, secondary: true },
     { key: "aisle", header: "Aisle", value: (food) => aisleName(food.aisleId) },
-    { key: "skipShopping", header: "Skip shopping", value: (food) => food.skipShopping, secondary: true },
-    { key: "aliases", header: "Aliases", value: (food) => food.aliases.length, secondary: true },
+    { key: "skipShopping", header: "Skip shopping", value: (food) => food.skipShopping, secondary: "lg" },
+    { key: "aliases", header: "Aliases", value: (food) => food.aliases.length, secondary: "lg" },
   ];
 }

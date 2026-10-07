@@ -64,7 +64,9 @@ export function AppShell() {
         </Link>
         <Nav stacked className="flex flex-1 flex-col gap-1" />
       </aside>
-      <main className="flex-1 pb-20 md:pb-0">
+      {/* `min-w-0`: as a flex child its minimum width is otherwise its content's, so one wide child (a
+          scrolling tab strip, a table) widens the page instead of scrolling or wrapping (design-language rule 6). */}
+      <main className="min-w-0 flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
       {/* `z-app-bar` lifts the bar over page content (a card's heart is positioned

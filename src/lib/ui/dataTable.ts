@@ -17,9 +17,11 @@ export type DataTableColumn<T> = {
    * A column the phone can do without: hidden below `md`, still searched and
    * still sortable once the width is there. Reference tables run to six
    * columns, which no phone can draw — without this the table's min-content
-   * width becomes the page's and the whole layout scrolls sideways.
+   * width becomes the page's and the whole layout scrolls sideways. `"lg"`
+   * holds a column back until `lg`, for a table whose every column is too
+   * many for the tablet's content width beside the sidebar.
    */
-  secondary?: boolean;
+  secondary?: boolean | "lg";
   className?: string;
 };
 
@@ -108,4 +110,10 @@ export function toggleAll(selected: readonly string[], keys: readonly string[]):
 export function headerChecked(selected: readonly string[], keys: readonly string[]): boolean | "indeterminate" {
   if (keys.length === 0 || selected.length === 0) return false;
   return keys.every((key) => selected.includes(key)) ? true : "indeterminate";
+}
+
+/** Classes that hide a `secondary` column below its breakpoint. */
+export function secondaryClass(secondary: boolean | "lg" | undefined): string | false {
+  if (secondary === "lg") return "hidden lg:table-cell";
+  return secondary === true && "hidden md:table-cell";
 }

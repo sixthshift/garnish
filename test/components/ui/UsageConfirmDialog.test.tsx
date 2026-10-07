@@ -29,6 +29,12 @@ describe("usageSummary", () => {
     expect(usageSummary(1, "food", effect)).toBe(`1 recipe uses this food; ${effect}`);
     expect(usageSummary(3, "unit", effect)).toBe(`3 recipes use this unit; ${effect}`);
   });
+
+  test("several rows going are 'these', one is 'this'", () => {
+    expect(usageSummary(17, "food", effect, 763)).toBe(`17 recipes use these foods; ${effect}`);
+    expect(usageSummary(0, "unit", effect, 2)).toBe("No recipes use these units.");
+    expect(usageSummary(1, "food", effect, 1)).toBe(`1 recipe uses this food; ${effect}`);
+  });
 });
 
 describe("usageNames", () => {
@@ -61,6 +67,26 @@ describe("UsageConfirmDialogContent render", () => {
     expect(html).toContain("data-usage-list");
     expect(html).toContain(">Delete<");
     expect(html).toContain(">Cancel<");
+  });
+
+  test("deleting several names them and the button repeats the count; one keeps a plain Delete", () => {
+    const many = renderToString(
+      <UsageConfirmDialogContent
+        name="763 foods"
+        itemName="food"
+        count={763}
+        effect={effect}
+        recipes={[summary("Shortbread")]}
+        onCancel={() => {}}
+        onConfirm={() => {}}
+      />
+    );
+    expect(many).toContain("Delete 763 foods?");
+    expect(many).toContain("1 recipe uses these foods");
+    expect(many).toContain(">Delete 763 foods<");
+    const one = render([summary("Shortbread")]);
+    expect(one).toContain("1 recipe uses this food");
+    expect(one).toContain(">Delete<");
   });
 
   test("an unused row says so and shows no list", () => {

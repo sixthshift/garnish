@@ -13,6 +13,7 @@ import {
   nextSort,
   type SortDirection,
   type SortState,
+  secondaryClass,
   sortItems,
   toggleAll,
   toggleKey,
@@ -112,7 +113,8 @@ export function DataTable<T>({
       </Muted>
 
       {/* No overflow on the card: a row's menu hangs below the row and must not be clipped by it. The
-          table fits a phone because optional columns are `secondary` and the row's actions are one ⋯. */}
+          table fits because optional columns are `secondary` (to `md` or `lg`), the row's actions are one ⋯,
+          and a cell breaks a long unbroken name rather than widening the page. */}
       <Card size="sm" className="min-w-0 p-0">
         <table className="w-full border-collapse text-left text-sm">
           <caption className="sr-only">{plural}</caption>
@@ -133,7 +135,7 @@ export function DataTable<T>({
                   <th
                     key={column.key}
                     scope="col"
-                    className={cn("p-2 font-medium", column.secondary && "hidden md:table-cell", column.className)}
+                    className={cn("p-2 font-medium", secondaryClass(column.secondary), column.className)}
                     aria-sort={sorted === null ? "none" : sorted === "asc" ? "ascending" : "descending"}
                   >
                     {column.sortable === false ? (
@@ -175,7 +177,7 @@ export function DataTable<T>({
                     </td>
                   )}
                   {columns.map((column) => (
-                    <td key={column.key} className={cn("p-2", column.secondary && "hidden md:table-cell", column.className)}>
+                    <td key={column.key} className={cn("p-2 wrap-anywhere", secondaryClass(column.secondary), column.className)}>
                       {column.render ? column.render(item) : cellText(column.value(item))}
                     </td>
                   ))}

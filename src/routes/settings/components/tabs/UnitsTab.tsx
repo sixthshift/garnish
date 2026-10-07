@@ -86,6 +86,7 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
         <UsageConfirmDialog
           name={unitsLabel(deleting)}
           itemName="unit"
+          count={deleting.length}
           effect={UNIT_DELETE_EFFECT}
           recipes={deleteUsage}
           busy={busy}
@@ -113,7 +114,7 @@ export const unitColumns: DataTableColumn<Unit>[] = [
   { key: "name", header: "Name", value: (unit) => unit.name },
   { key: "pluralName", header: "Plural", value: (unit) => unit.pluralName, secondary: true },
   { key: "abbreviation", header: "Abbreviation", value: (unit) => unit.abbreviation },
-  { key: "useAbbreviation", header: "Use abbreviation", value: (unit) => unit.useAbbreviation, secondary: true },
-  { key: "fraction", header: "Fractions", value: (unit) => unit.fraction, secondary: true },
-  { key: "portion", header: "Portion", value: (unit) => unit.portion, secondary: true },
+  { key: "useAbbreviation", header: "Use abbreviation", value: (unit) => unit.useAbbreviation, secondary: "lg" },
+  { key: "fraction", header: "Fractions", value: (unit) => unit.fraction, secondary: "lg" },
+  { key: "portion", header: "Portion", value: (unit) => unit.portion, secondary: "lg" },
 ];
