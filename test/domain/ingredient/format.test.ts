@@ -1,5 +1,14 @@
 import { describe, expect, test } from "vitest";
-import { type DisplayUnit, formatAmount, formatDuration, formatQuantity, formatUnit, formatYield, totalMinutes } from "../../../src/domain/ingredient/format";
+import {
+  type DisplayUnit,
+  formatAmount,
+  formatDuration,
+  formatQuantity,
+  formatUnit,
+  formatYield,
+  totalMinutes,
+  yieldLine,
+} from "../../../src/domain/ingredient/format";
 
 // Realistic rows, mirroring src/db/seed.ts DEFAULT_UNITS.
 const unit = (overrides: Partial<DisplayUnit>): DisplayUnit => ({
@@ -211,5 +220,28 @@ describe("formatYield", () => {
     [0, null, "", ""],
   ])("%s %o %s -> %s", (quantity, u, text, expected) => {
     expect(formatYield(quantity, u, text)).toBe(expected);
+  });
+});
+
+describe("yieldLine", () => {
+  const serving = unit({ name: "serving", pluralName: "servings", abbreviation: "", fraction: false });
+  const loaf = unit({ name: "loaf", pluralName: "loaves", abbreviation: "" });
+  test.each([
+    [6, null, "serves", "Serves", "6"],
+    [6, null, "Servings", "Serves", "6"],
+    [1, null, "serving", "Serves", "1"],
+    [4, null, "people", "Serves", "4"],
+    [0, null, "serves 6", "Serves", "6"],
+    [0, null, "Serves 4-6", "Serves", "4-6"],
+    [0, null, "6 servings", "Serves", "6"],
+    [6, serving, "", "Serves", "6"],
+    [8, null, "slices", "Makes", "8 slices"],
+    [4, null, "bowls", "Makes", "4 bowls"],
+    [4, null, "", "Makes", "4"],
+    [2, loaf, "", "Makes", "2 loaves"],
+    [0, null, "a big pot", "Makes", "a big pot"],
+    [0, null, "", "Makes", ""],
+  ])("%s %o %s -> %s %s", (quantity, u, text, label, value) => {
+    expect(yieldLine(quantity, u, text)).toEqual({ label, value });
   });
 });

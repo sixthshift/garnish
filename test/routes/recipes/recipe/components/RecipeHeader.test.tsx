@@ -146,6 +146,12 @@ describe("RecipeHeader", () => {
     expect(html).toMatch(/<dt[^>]*>Makes<\/dt><dd[^>]*>1 tart<\/dd>/);
   });
 
+  test("a head count reads Serves, not Makes", async () => {
+    const html = await render({ ...base, recipeYieldQuantity: 6, recipeYield: "serves" });
+    expect(html).toMatch(/<dt[^>]*>Serves<\/dt><dd[^>]*>6<\/dd>/);
+    expect(html).not.toContain(">Makes<");
+  });
+
   test("no image holds no space for one: the name leads; no times or yield still leaves the strip for the last made line", async () => {
     const html = await render({ ...base, image: null, prepTime: null, performTime: null, recipeYieldQuantity: 0, recipeYield: "" });
     expect(html).not.toContain("<img");
@@ -207,6 +213,13 @@ describe("the favourite heart (M25.4)", () => {
     const row = html.match(/<div class="([^"]*)" data-print="hide">/)?.[1] ?? "";
     expect(row).toContain("flex-wrap");
     expect(row).toContain("min-w-0");
+  });
+
+  test("the heart is a 44px tap target on touch, 32px for a mouse (critique #15b)", async () => {
+    const html = await render(base);
+    const heart = html.match(/<button[^>]*class="([^"]*)"[^>]*aria-label="Add to favourites"/)?.[1] ?? "";
+    expect(heart).toContain("pointer-coarse:size-11");
+    expect(heart).toMatch(/\bh-8\b.*\bw-8\b/);
   });
 
   test("reflects a favourited recipe", async () => {

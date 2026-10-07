@@ -7,7 +7,7 @@ import { Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
 import { Rating } from "../../../../components/ui/Rating";
-import { formatYield } from "../../../../domain/ingredient";
+import { yieldLine } from "../../../../domain/ingredient";
 import type { Recipe } from "../../../../domain/recipe";
 import { formatDateStamp } from "../../../../lib/dates";
 import { recipeImageUrl } from "../../../../lib/images";
@@ -35,7 +35,7 @@ export type RecipeHeaderProps = {
 export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeaderProps) {
   const src = recipeImageUrl(recipe.image);
   const stats = timeStats(recipe);
-  const yieldText = formatYield(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
+  const yielded = yieldLine(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
   const lastMade = formatDateStamp(recipe.lastMade);
   const count = madeCount ?? 0;
   // An unrated recipe keeps its stars folded behind "Rate" until asked for.
@@ -61,9 +61,10 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <Heading as="h1">{recipe.name}</Heading>
-            {/* Controls, not content: the print stylesheet drops them. */}
+            {/* Controls, not content: the print stylesheet drops them. The heart
+                is 32px for a mouse and the 44px tap target on touch (critique #15b). */}
             <div className="flex min-w-0 flex-wrap items-center gap-2" data-print="hide">
-              <FavouriteButton id={recipe.id} favourite={recipe.favourite} />
+              <FavouriteButton id={recipe.id} favourite={recipe.favourite} className="pointer-coarse:size-11" />
               {actions}
             </div>
           </div>
@@ -88,11 +89,11 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
               </dl>
             )}
             {/* The yield sits on its own line under the times, as in Mealie. */}
-            {yieldText !== "" && (
+            {yielded.value !== "" && (
               <dl className="text-sm" data-testid="yield">
                 <div className="flex gap-1.5">
-                  <dt className="text-fg-subtle">Makes</dt>
-                  <dd className="font-medium text-fg-strong">{yieldText}</dd>
+                  <dt className="text-fg-subtle">{yielded.label}</dt>
+                  <dd className="font-medium text-fg-strong">{yielded.value}</dd>
                 </div>
               </dl>
             )}
