@@ -70,15 +70,47 @@ test("a result picked from directly under the box is added with the chip pressed
   expect(onDone).toHaveBeenCalledTimes(1);
 });
 
-test("Enter takes the highlighted result over the typed line", async () => {
+test("Enter adds the typed line as a note while no result is highlighted, even with results showing", async () => {
+  const user = userEvent.setup();
+  const { onAddRecipe, onAddText, onDone, input } = await renderForm();
+
+  await user.type(input, "out");
+  const option = await screen.findByRole("option", { name: /Lemon tart/ });
+  expect(option).toHaveAttribute("aria-selected", "false");
+  await user.type(input, "{Enter}");
+  expect(onAddText).toHaveBeenCalledWith(MONDAY, "out", null);
+  expect(onAddRecipe).not.toHaveBeenCalled();
+  expect(onDone).toHaveBeenCalledTimes(1);
+});
+
+test("arrowing onto a result makes Enter add that recipe", async () => {
   const user = userEvent.setup();
   const { onAddRecipe, onAddText, input } = await renderForm();
 
   await user.type(input, "tart");
-  await screen.findByRole("option", { name: /Lemon tart/ });
-  await user.type(input, "{Enter}");
+  const option = await screen.findByRole("option", { name: /Lemon tart/ });
+  await user.keyboard("{ArrowDown}");
+  expect(option).toHaveAttribute("aria-selected", "true");
+  await user.keyboard("{Enter}");
   expect(onAddRecipe).toHaveBeenCalledWith(MONDAY, tart, null);
   expect(onAddText).not.toHaveBeenCalled();
+});
+
+test("ArrowUp from the first result, or typing on, lets go of the highlight", async () => {
+  const user = userEvent.setup();
+  const { onAddRecipe, onAddText, input } = await renderForm();
+
+  await user.type(input, "tart");
+  const option = await screen.findByRole("option", { name: /Lemon tart/ });
+  await user.keyboard("{ArrowDown}{ArrowUp}");
+  expect(option).toHaveAttribute("aria-selected", "false");
+
+  await user.keyboard("{ArrowDown}");
+  await user.type(input, "s");
+  await waitFor(() => expect(screen.getByRole("option", { name: /Lemon tart/ })).toHaveAttribute("aria-selected", "false"));
+  await user.keyboard("{Enter}");
+  expect(onAddText).toHaveBeenCalledWith(MONDAY, "tarts", null);
+  expect(onAddRecipe).not.toHaveBeenCalled();
 });
 
 test("results stop at four, with the note row straight after them and a word on the rest", async () => {

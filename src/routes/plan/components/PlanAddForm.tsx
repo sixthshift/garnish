@@ -29,8 +29,11 @@ export const PLAN_RESULT_LIMIT = 3;
  * with `meal: null`.
  *
  * Typing searches recipes (debounced, the same pause the global search uses).
- * Enter takes the highlighted recipe when there is one and the typed line
- * otherwise; arrow keys move the highlight. The line is also a button ("Add
+ * Nothing is highlighted until the arrow keys move into the results, and
+ * typing again lets go of the highlight, so Enter adds what was typed as a
+ * note unless a recipe has been picked out: "out" is a note even when a
+ * recipe called "Takeout curry" matches. ArrowDown walks into the results and
+ * ArrowUp from the first one back to the box. The line is also a button ("Add
  * “leftovers” as a note"), so a phone with no Enter in sight still gets one.
  * Every add is one entry: `onDone` follows it, and the sheet closes on it.
  */
@@ -52,7 +55,8 @@ export function PlanAddForm({
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<RecipeSummary[]>([]);
-  const [selected, setSelected] = useState(0);
+  /** The highlighted result, or -1 for none: Enter then adds the typed line. */
+  const [selected, setSelected] = useState(-1);
   const [meal, setMeal] = useState<Meal | null>(null);
   const requestId = useRef(0);
   const input = useRef<HTMLInputElement | null>(null);
@@ -64,7 +68,7 @@ export function PlanAddForm({
   const clear = () => {
     setQuery("");
     setResults([]);
-    setSelected(0);
+    setSelected(-1);
     setMeal(null);
   };
 
@@ -93,7 +97,7 @@ export function PlanAddForm({
         .then((found) => {
           if (requestId.current !== id) return;
           setResults(found);
-          setSelected((current) => clampSelection(current, Math.min(found.length, PLAN_RESULT_LIMIT)));
+          setSelected((current) => (current < 0 ? -1 : clampSelection(current, Math.min(found.length, PLAN_RESULT_LIMIT))));
         })
         .catch((error: unknown) => {
           if (requestId.current !== id) return;
@@ -126,10 +130,20 @@ export function PlanAddForm({
       else addLine();
       return;
     }
+    if (event.key === "ArrowUp" && selected === 0) {
+      event.preventDefault();
+      setSelected(-1);
+      return;
+    }
     const next = nextSearchIndex(selected, shown.length, event.key);
     if (next === null) return;
     event.preventDefault();
     setSelected(next);
+  };
+
+  const onQueryChange = (value: string) => {
+    setQuery(value);
+    setSelected(-1);
   };
 
   return (
@@ -138,7 +152,7 @@ export function PlanAddForm({
       <SearchInput
         ref={input}
         value={query}
-        onValueChange={setQuery}
+        onValueChange={onQueryChange}
         onKeyDown={onKeyDown}
         disabled={busy}
         name="entry"
