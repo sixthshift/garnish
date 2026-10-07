@@ -115,6 +115,11 @@ test("Back from a paste with text in it asks", async () => {
   const user = userEvent.setup();
   const stage = await renderStage(<RecipeSource {...sourceProps} source="paste" aiAvailable loadText={async () => found} />);
   await user.type(screen.getByRole("textbox", { name: "Pasted recipe" }), "1 cup flour");
+  // Only text so far: the question says so, not that a recipe would be lost.
+  await stage.back();
+  expect(await screen.findByRole("dialog", { name: "Discard this import" })).toHaveTextContent("loses the text you pasted");
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await backAsksThenLeaves(stage, () => screen.getByRole("textbox", { name: "Pasted recipe" }));
 });
 

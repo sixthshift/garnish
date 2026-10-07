@@ -2,7 +2,7 @@ import type { RecipeDraft } from "../../../../domain/draft";
 import type { FileRecipe, ImportedRecipe } from "../../../../domain/import";
 import type { FoodRow, Tag, Unit } from "../../../../domain/reference";
 import { listFoods } from "../../../../server/fns/foods";
-import { useImportGuard } from "../../components/DiscardImport";
+import { DISCARD_PASTE, DISCARD_RECIPE, useImportGuard } from "../../components/DiscardImport";
 import { BrowserSource } from "./BrowserSource";
 import type { SentPage } from "./bookmarklet";
 import { FileSource } from "./FileSource";
@@ -61,7 +61,7 @@ export function RecipeSource(props: RecipeSourceProps) {
   const { url, text, file, choices, imported, rows, busy, error, reading, readError } = state;
   // A recipe under review, or a pasted page, is work the browser's Back would
   // drop unseen: the stages share one URL, so Back leaves /recipes/new.
-  const guard = useImportGuard(imported !== null || (source === "paste" && text.trim() !== ""));
+  const guard = useImportGuard(imported !== null || (source === "paste" && text.trim() !== ""), imported !== null ? DISCARD_RECIPE : DISCARD_PASTE);
 
   return (
     <div className="flex flex-col gap-6">

@@ -130,6 +130,8 @@ export function PlanAddForm({
       else addLine();
       return;
     }
+    // ArrowUp from the box stays in the box: nothing above it to go to.
+    if (event.key === "ArrowUp" && selected < 0) return;
     if (event.key === "ArrowUp" && selected === 0) {
       event.preventDefault();
       setSelected(-1);

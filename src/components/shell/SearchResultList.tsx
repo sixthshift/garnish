@@ -21,7 +21,7 @@ export type SearchResultListProps = {
 
 /**
  * The results of a recipe search: a `listbox` of `option`s, the highlighted
- * one ringed, hovering a row moving the highlight. Shared by the global search
+ * one ringed, moving the pointer over a row moving the highlight. Shared by the global search
  * dialog and the meal plan's add row, which differ only in
  * what a row draws and whether clicking one opens or picks it. The keyboard
  * itself stays with the caller, because the key handler belongs on whatever
@@ -47,7 +47,10 @@ export function SearchResultList({
           aria-selected={index === selected}
           data-selected={index === selected}
           className={index === selected ? "rounded-xl ring-2 ring-border-brand" : "rounded-xl"}
-          onMouseEnter={() => onSelect(index)}
+          // Moved over, not entered: a result that appears under a resting
+          // pointer as the list fills in must not take the highlight, or Enter
+          // would open or add a recipe nobody pointed at (critique #15c).
+          onMouseMove={() => index !== selected && onSelect(index)}
           onClick={onChoose === undefined ? undefined : () => onChoose(index)}
         >
           {renderResult(recipe)}

@@ -1,7 +1,7 @@
 // The add sheet's form, pressed rather than read (M39.1, rebuilt by critique
 // #9). The node suite asserts what the form and the week draw; only a DOM can
 // press a chip, type a line, pick a result and see what the add carries.
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { groupByDay } from "../../../src/domain/plan";
@@ -110,6 +110,42 @@ test("ArrowUp from the first result, or typing on, lets go of the highlight", as
   await waitFor(() => expect(screen.getByRole("option", { name: /Lemon tart/ })).toHaveAttribute("aria-selected", "false"));
   await user.keyboard("{Enter}");
   expect(onAddText).toHaveBeenCalledWith(MONDAY, "tarts", null);
+  expect(onAddRecipe).not.toHaveBeenCalled();
+});
+
+test("a result that appears under a resting pointer is not highlighted, so Enter still adds the note (critique #15c)", async () => {
+  const user = userEvent.setup();
+  const { onAddRecipe, onAddText, input } = await renderForm();
+
+  await user.type(input, "tart");
+  const option = await screen.findByRole("option", { name: /Lemon tart/ });
+  // What the browser sends when content moves in under a pointer that has not moved.
+  fireEvent.mouseOver(option);
+  fireEvent.mouseEnter(option);
+  expect(option).toHaveAttribute("aria-selected", "false");
+  await user.keyboard("{Enter}");
+  expect(onAddText).toHaveBeenCalledWith(MONDAY, "tart", null);
+  expect(onAddRecipe).not.toHaveBeenCalled();
+});
+
+test("moving the pointer over a result does highlight it", async () => {
+  const user = userEvent.setup();
+  const { input } = await renderForm();
+  await user.type(input, "tart");
+  const option = await screen.findByRole("option", { name: /Lemon tart/ });
+  fireEvent.mouseMove(option);
+  expect(option).toHaveAttribute("aria-selected", "true");
+});
+
+test("ArrowUp from the box stays in the box rather than jumping to the last result", async () => {
+  const user = userEvent.setup();
+  const { onAddRecipe, onAddText, input } = await renderForm();
+  await user.type(input, "tart");
+  const option = await screen.findByRole("option", { name: /Lemon tart/ });
+  await user.keyboard("{ArrowUp}");
+  expect(option).toHaveAttribute("aria-selected", "false");
+  await user.keyboard("{Enter}");
+  expect(onAddText).toHaveBeenCalledWith(MONDAY, "tart", null);
   expect(onAddRecipe).not.toHaveBeenCalled();
 });
 
