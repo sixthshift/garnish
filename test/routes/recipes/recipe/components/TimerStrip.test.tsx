@@ -121,6 +121,26 @@ describe("TimerStrip", () => {
     expect(html).toContain("bottom-[calc(var(--app-bar)+0.5rem)]");
     expect(html).toContain("z-app-bar");
     expect(html).toContain("md:bottom-4");
+    // Clear of the side nav from md, not under it (critique #15b).
+    expect(html).toContain("md:left-56");
+  });
+
+  test("hideStep leaves out that step's timers and keeps the rest (critique #15b)", () => {
+    const storage = fakeStorage();
+    withStorage(storage);
+    startTimer(storage, RECIPE, { id: `${STEP}#0#20 minutes`, label: "Simmer", seconds: 1200 }, T0);
+    startTimer(storage, RECIPE, { id: "other-step#0#5 minutes", label: "Rest", seconds: 300 }, T0);
+    const html = renderToString(<TimerStrip recipeId={RECIPE} size="cook" hideStep={STEP} />);
+    expect(html).not.toContain("Simmer");
+    expect(html).toContain("Rest");
+    expect(renderToString(<TimerStrip recipeId={RECIPE} size="cook" hideStep="other-step" />)).not.toContain("Rest");
+  });
+
+  test("with only the hidden step's timers it renders nothing", () => {
+    const storage = fakeStorage();
+    withStorage(storage);
+    startTimer(storage, RECIPE, { id: `${STEP}#0#20 minutes`, label: "Simmer", seconds: 1200 }, T0);
+    expect(renderToString(<TimerStrip recipeId={RECIPE} size="cook" hideStep={STEP} />)).toBe("");
   });
 
   test("in cook mode it is not fixed: it sits in the footer's own flow", () => {

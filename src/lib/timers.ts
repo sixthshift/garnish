@@ -191,3 +191,8 @@ export function clearTimers(storage: StorageLike, recipeId: string): Timer[] {
 export function chipTimerId(stepId: string, offset: number, text: string): string {
   return `${stepId}#${offset}#${text}`;
 }
+
+/** Whether `id` is a timer one of `stepId`'s chips started. Pure. */
+export function isStepTimer(id: string, stepId: string): boolean {
+  return id.startsWith(`${stepId}#`);
+}

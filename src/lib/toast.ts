@@ -11,8 +11,19 @@ export function toastError(title: string, error: unknown): ToastHandle {
 }
 
 /**
+ * The stack's top placement, taken while a page marked `data-toasts="top"` is
+ * on screen: one whose foot is its own controls. Cook mode's footer holds the
+ * timer strip and Next and grows with each timer, so "Timer done" landed on
+ * the strip (critique #15b). The stack portals to the body, outside the page,
+ * so it asks the document rather than an ancestor. Spelled out whole:
+ * Tailwind finds classes by scanning the source as text.
+ */
+const TOAST_TOP =
+  "[:root:has([data-toasts=top])_&]:bottom-auto [:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))] md:[:root:has([data-toasts=top])_&]:top-6";
+
+/**
  * Where the stack sits, merged over the design system's bottom-centre default:
  * on a phone, a column above the bottom nav, oldest first; from `md`, the
- * bottom-right corner.
+ * bottom-right corner. On a `data-toasts="top"` page, the top instead.
  */
-export const TOAST_POSITION = "inset-x-0 bottom-24 translate-x-0 flex-col gap-2 px-4 md:inset-x-auto md:right-6 md:bottom-6 md:items-end md:px-0";
+export const TOAST_POSITION = `inset-x-0 bottom-24 translate-x-0 flex-col gap-2 px-4 md:inset-x-auto md:right-6 md:bottom-6 md:items-end md:px-0 ${TOAST_TOP}`;

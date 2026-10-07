@@ -9,6 +9,7 @@ import {
   clearTimers,
   dismissTimer,
   getTimers,
+  isStepTimer,
   pauseTimer,
   remainingSeconds,
   resumeTimer,
@@ -266,6 +267,14 @@ describe("chipTimerId", () => {
     expect(chipTimerId(STEP, 12, "20 minutes")).toBe(`${STEP}#12#20 minutes`);
     expect(chipTimerId(STEP, 12, "20 minutes")).toBe(chipTimerId(STEP, 12, "20 minutes"));
     expect(chipTimerId(STEP, 40, "20 minutes")).not.toBe(chipTimerId(STEP, 12, "20 minutes"));
+  });
+});
+
+describe("isStepTimer", () => {
+  test("matches the timers that step's chips start, and no other step's", () => {
+    expect(isStepTimer(chipTimerId(STEP, 12, "20 minutes"), STEP)).toBe(true);
+    expect(isStepTimer(chipTimerId(`${STEP}x`, 12, "20 minutes"), STEP)).toBe(false);
+    expect(isStepTimer(chipTimerId("other", 0, "5 minutes"), STEP)).toBe(false);
   });
 });
 

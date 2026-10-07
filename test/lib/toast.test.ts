@@ -26,3 +26,17 @@ test("the position merges over the design system's bottom-centre default rather 
     expect.arrayContaining(["fixed", "z-toast", "pointer-events-none", "inset-x-0", "bottom-24", "flex-col", "md:right-6", "md:bottom-6"])
   );
 });
+
+test("a page marked data-toasts=top moves the stack to the top at every width (critique #15b)", () => {
+  const classes = cn(TOAST_STACK_CLASS, TOAST_POSITION).split(" ");
+  // Kept beside the bottom placement, not merged away by it.
+  expect(classes).toEqual(
+    expect.arrayContaining([
+      "bottom-24",
+      "md:bottom-6",
+      "[:root:has([data-toasts=top])_&]:bottom-auto",
+      "[:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))]",
+      "md:[:root:has([data-toasts=top])_&]:top-6",
+    ])
+  );
+});

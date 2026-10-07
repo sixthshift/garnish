@@ -3,6 +3,7 @@ import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Popover } from "@sixthshift/design-system/popover";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
+import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from "react";
 import { SubRecipesProvider } from "../../../../components/recipe/SubRecipes";
@@ -26,6 +27,14 @@ import { TimerStrip } from "../components/TimerStrip";
 import { CookCardView } from "./components/CookCardView";
 import { FinishedCard } from "./components/FinishedCard";
 import { Route } from "./route";
+
+/**
+ * The deck's one column. The header and footer span the screen for their rule
+ * and fill, but their controls sit in this, so on a desktop they line up with
+ * the card rather than the window's edges (critique #15b). From `lg` it widens
+ * with the step's type, keeping about the same measure.
+ */
+const COLUMN = "mx-auto w-full max-w-3xl px-4 lg:max-w-5xl";
 
 /**
  * "Serves 4" as one button that opens the stepper: the stepper itself is
@@ -105,43 +114,46 @@ export function CookPage() {
 
   return (
     <SubRecipesProvider subRecipes={subRecipes}>
-      <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal">
-        <header className="sticky top-0 z-10 flex flex-col gap-2 border-b border-border-normal bg-bg-normal px-4 py-3">
-          {/* Exit, the name and Serves share the first row; the name gets the
+      {/* `data-toasts="top"`: the footer is the deck's controls, so a toast (a timer done) goes to the top (lib/toast.ts). */}
+      <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal" data-toasts="top">
+        <header className="sticky top-0 z-content-sticky border-b border-border-normal bg-bg-normal py-3">
+          <div className={cn(COLUMN, "flex flex-col gap-2")}>
+            {/* Exit, the name and Serves share the first row; the name gets the
               room left and wraps to a second line before it truncates. */}
-          <div className="flex items-center gap-3">
-            <Button asChild variant="outline" intent="neutral" size="xl" className="shrink-0 px-4">
-              <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-                Exit
-              </Link>
-            </Button>
-            <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong lg:text-lg" data-cook-title>
-              {recipe.name}
-            </h1>
-            {recipe.recipeServings > 0 && <ServesControl servings={recipe.recipeServings} onChange={scaleTo} />}
+            <div className="flex items-center gap-3">
+              <Button asChild variant="outline" intent="neutral" size="xl" className="shrink-0 px-4">
+                <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                  Exit
+                </Link>
+              </Button>
+              <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong lg:text-lg" data-cook-title>
+                {recipe.name}
+              </h1>
+              {recipe.recipeServings > 0 && <ServesControl servings={recipe.recipeServings} onChange={scaleTo} />}
+            </div>
+            {pills.length > 1 && (
+              <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1" aria-label="Parts">
+                {pills.map((pill) => {
+                  const current = card !== undefined && card.part === pill.name;
+                  return (
+                    <Button
+                      key={pill.name}
+                      // The current part is a neutral fill: brand is Next's alone (rule 5).
+                      variant={current ? "solid" : "outline"}
+                      intent="neutral"
+                      size="xl"
+                      className="shrink-0 rounded-full px-5"
+                      aria-current={current ? "true" : undefined}
+                      data-pill={pill.name}
+                      onClick={() => goTo(pill.index)}
+                    >
+                      {pill.label}
+                    </Button>
+                  );
+                })}
+              </nav>
+            )}
           </div>
-          {pills.length > 1 && (
-            <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1" aria-label="Parts">
-              {pills.map((pill) => {
-                const current = card !== undefined && card.part === pill.name;
-                return (
-                  <Button
-                    key={pill.name}
-                    // The current part is a neutral fill: brand is Next's alone (rule 5).
-                    variant={current ? "solid" : "outline"}
-                    intent="neutral"
-                    size="xl"
-                    className="shrink-0 rounded-full px-5"
-                    aria-current={current ? "true" : undefined}
-                    data-pill={pill.name}
-                    onClick={() => goTo(pill.index)}
-                  >
-                    {pill.label}
-                  </Button>
-                );
-              })}
-            </nav>
-          )}
         </header>
 
         {/* Politely spoken on every card change; the visible position line below is silent so it is not said twice. */}
@@ -151,9 +163,8 @@ export function CookPage() {
 
         <main
           // Anchored to the top, under the header, so the step reads high on a
-          // phone. From `lg` the column widens with the step's type, keeping
-          // about the same measure.
-          className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4 lg:max-w-5xl lg:pt-8"
+          // phone.
+          className={cn(COLUMN, "flex flex-1 flex-col gap-4 py-4 lg:pt-8")}
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerCancel={() => (swipe.current = null)}
@@ -183,41 +194,44 @@ export function CookPage() {
           )}
         </main>
 
-        <footer className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {/* Timers started from any card, above the progress bar: they outlive
-              the card they were started on, so they follow you through the deck. */}
-          <TimerStrip recipeId={recipe.id} size="cook" />
-          <ProgressBar
-            completed={index + 1}
-            total={total}
-            showFraction={false}
-            label="Cook progress"
-            // A quiet track and a strong fill: what is done is the signal, not
-            // what is left. Neutral, since brand is Next's alone.
-            intent="neutral"
-            className="[--progress-bar-fill-bg:var(--fg-normal)] [--progress-bar-track-bg:var(--border-normal)]"
-          />
-          <div className="flex items-center justify-between gap-3">
-            <Button variant="outline" intent="neutral" size="xl" className="px-6" disabled={index <= 0} onClick={() => goTo(index - 1)}>
-              Prev
-            </Button>
-            <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
-              {/* The deck's one counter, within the part; the bar shows the whole. */}
-              {card?.kind === "step" && (
-                <span className="truncate text-sm text-fg-normal" data-position>
-                  {cardAnnouncement(card)}
-                </span>
-              )}
-              {screenOn && (
-                <span className="flex items-center gap-1 text-xs text-fg-subtle" data-wake-lock>
-                  <WakeLockIcon />
-                  Screen stays on
-                </span>
-              )}
+        <footer className="sticky bottom-0 z-content-sticky border-t border-border-normal bg-bg-normal pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className={cn(COLUMN, "flex flex-col gap-3")}>
+            {/* Timers started from any card, above the progress bar: they outlive
+              the card they were started on, so they follow you through the deck.
+              The current card's own are left out: its timer buttons count down already. */}
+            <TimerStrip recipeId={recipe.id} size="cook" hideStep={card?.kind === "step" ? card.step.id : undefined} />
+            <ProgressBar
+              completed={index + 1}
+              total={total}
+              showFraction={false}
+              label="Cook progress"
+              // A quiet track and a strong fill: what is done is the signal, not
+              // what is left. Neutral, since brand is Next's alone.
+              intent="neutral"
+              className="[--progress-bar-fill-bg:var(--fg-normal)] [--progress-bar-track-bg:var(--border-normal)]"
+            />
+            <div className="flex items-center justify-between gap-3">
+              <Button variant="outline" intent="neutral" size="xl" className="px-6" disabled={index <= 0} onClick={() => goTo(index - 1)}>
+                Prev
+              </Button>
+              <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
+                {/* The deck's one counter, within the part; the bar shows the whole. */}
+                {card?.kind === "step" && (
+                  <span className="truncate text-sm text-fg-normal" data-position>
+                    {cardAnnouncement(card)}
+                  </span>
+                )}
+                {screenOn && (
+                  <span className="flex items-center gap-1 text-xs text-fg-subtle" data-wake-lock>
+                    <WakeLockIcon />
+                    Screen stays on
+                  </span>
+                )}
+              </div>
+              <Button variant="solid" intent="brand" size="xl" className="px-6" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
+                Next
+              </Button>
             </div>
-            <Button variant="solid" intent="brand" size="xl" className="px-6" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
-              Next
-            </Button>
           </div>
         </footer>
       </div>

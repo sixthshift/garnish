@@ -1,5 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
+import { isStepTimer } from "../../../../lib/timers";
 import { type RunningTimer, useTimers } from "../../../../lib/useTimers";
 
 export type TimerStripRowsProps = {
@@ -78,13 +79,21 @@ export type TimerStripProps = {
    * sits in the footer's own flow instead, so this stays off there.
    */
   fixed?: boolean;
+  /**
+   * A step whose timers to leave out: cook mode's current card, whose own
+   * timer buttons already count down, so the strip holds only the timers
+   * started on other cards (critique #15b). The recipe page passes none: its
+   * strip is fixed and the step that started a timer may be scrolled away.
+   */
+  hideStep?: string;
   size?: "page" | "cook";
   className?: string;
 };
 
 /** The recipe's timers, read from the store and ticking once a second while any of them runs. */
-export function TimerStrip({ recipeId, fixed, size, className }: TimerStripProps) {
-  const { timers, pause, resume, dismiss } = useTimers(recipeId);
+export function TimerStrip({ recipeId, fixed, hideStep, size, className }: TimerStripProps) {
+  const { timers: all, pause, resume, dismiss } = useTimers(recipeId);
+  const timers = hideStep === undefined ? all : all.filter((timer) => !isStepTimer(timer.id, hideStep));
   if (timers.length === 0) return null;
   return (
     <TimerStripRows
@@ -93,7 +102,8 @@ export function TimerStrip({ recipeId, fixed, size, className }: TimerStripProps
       onResume={resume}
       onDismiss={dismiss}
       size={size}
-      className={cn(fixed && "fixed inset-x-0 bottom-[calc(var(--app-bar)+0.5rem)] z-app-bar px-4 md:bottom-4", className)}
+      // From md the shell's side nav (AppShell's `w-56`) holds the left edge, so the strip starts after it.
+      className={cn(fixed && "fixed inset-x-0 bottom-[calc(var(--app-bar)+0.5rem)] z-app-bar px-4 md:bottom-4 md:left-56", className)}
     />
   );
 }
