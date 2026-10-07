@@ -2,6 +2,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Link } from "@tanstack/react-router";
+import { useRef } from "react";
 import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
 import { Page } from "../../../components/shell/Page";
 import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingButton";
@@ -44,6 +45,7 @@ export function RecipePage() {
   // The ingredients heading's "Clear" link: only worth showing once
   // there is something ticked to clear.
   const anyTicked = useAnyTicked(recipe.id);
+  const ingredientsHeading = useRef<HTMLElement>(null);
 
   // The header's stars write straight through: 0 clears the rating,
   // and the loader re-reads it, so there is nothing optimistic to unwind.
@@ -99,7 +101,10 @@ export function RecipePage() {
             >
               {/* The aside's own heading, as Mealie's ingredient list header has both the title and the servings stepper together. */}
               <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
-                <SectionTitle as="h2">Ingredients</SectionTitle>
+                {/* Focusable from code only: where Done fixing hands focus as it goes. */}
+                <SectionTitle as="h2" ref={ingredientsHeading} tabIndex={-1} className="outline-none">
+                  Ingredients
+                </SectionTitle>
                 <div className="flex flex-wrap items-center gap-3">
                   <ScaleControl servings={recipe.recipeServings} />
                   {anyTicked && (
@@ -113,7 +118,7 @@ export function RecipePage() {
               {/* Structured vs. one merged list only means something once there is
                   more than one part to merge; a flat recipe has nothing to
                   toggle. */}
-              <IngredientsToolbar toggle={recipe.parts.length > 1 && <IngredientModeToggle />} />
+              <IngredientsToolbar toggle={recipe.parts.length > 1 && <IngredientModeToggle />} returnFocus={ingredientsHeading} />
 
               {hasIngredients && (
                 <Card size="lg" className="flex flex-col gap-6">

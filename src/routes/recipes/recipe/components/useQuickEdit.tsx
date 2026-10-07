@@ -18,17 +18,28 @@ import { saveQuickEdit } from "./saveQuickEdit";
  * How a row's trigger rests. Fixing lines (the recipe menu's "Fix a line"),
  * it is simply there. Otherwise a page read or cooked from carries no edit
  * mark per row (design-language rule 3): with a mouse the trigger keeps its
- * place but shows only while its row is hovered, and on a touch screen it is
- * visually hidden. In both it is still in the tab order and the accessibility
- * tree, and shows once focus is inside it or its menu is open — the step
- * menu's panel hangs inside the wrapper, so a clipped wrapper would clip it.
+ * place but fades in only while its row is hovered. On a touch screen an
+ * ingredient's pencil is visually hidden, so a short row keeps its width;
+ * `keepPlace` (the step's ⋯) holds its column there too, transparent and
+ * untappable, because a step's paragraph rewrapped round a ⋯ appearing would
+ * grow every card as the mode starts. In all of these it is still in the tab
+ * order and the accessibility tree, and shows once focus is inside it or its
+ * menu is open — the step menu's panel hangs inside the wrapper, so a hidden
+ * or clipped wrapper would hide it.
  */
-export function triggerRest(fixing: boolean): string {
+export function triggerRest(fixing: boolean, keepPlace = false): string {
   if (fixing) return "";
+  const shown = "group-hover/quick-edit:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100";
+  if (keepPlace)
+    return cn(
+      "pointer-events-none opacity-0 transition-opacity",
+      "group-hover/quick-edit:pointer-events-auto focus-within:pointer-events-auto has-[[aria-expanded=true]]:pointer-events-auto",
+      shown
+    );
   return cn(
     "sr-only focus-within:not-sr-only has-[[aria-expanded=true]]:not-sr-only",
-    "[@media(hover:hover)]:not-sr-only [@media(hover:hover)]:opacity-0",
-    "group-hover/quick-edit:opacity-100 focus-within:opacity-100 has-[[aria-expanded=true]]:opacity-100"
+    "[@media(hover:hover)]:not-sr-only [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:transition-opacity",
+    shown
   );
 }
 
@@ -49,10 +60,10 @@ function pencil(label: string, fixing: boolean, onOpen: () => void) {
   );
 }
 
-/** The step card's own trigger: an unboxed "…" menu in its corner, one item, "Edit step". */
+/** The step card's own trigger: an unboxed "…" menu in its corner, one item, "Edit step". Its 44px touch square overhangs the row, as the pencil's does. */
 function stepMenu(fixing: boolean, onOpen: () => void) {
   return (
-    <div data-print="hide" className={cn("-mt-1 -mr-1 shrink-0", triggerRest(fixing))}>
+    <div data-print="hide" className={cn("-mt-1 -mr-1 shrink-0 pointer-coarse:-my-2.5 pointer-coarse:-mr-2.5", triggerRest(fixing, true))}>
       <Menu label="Step actions" iconOnly ghost>
         <Menu.Item onSelect={onOpen}>Edit step</Menu.Item>
       </Menu>
