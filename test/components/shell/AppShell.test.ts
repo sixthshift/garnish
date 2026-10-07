@@ -15,5 +15,5 @@ test("the phone tab bar sits on the app-bar layer", () => {
 test("the menu's scrim and panel sit on the popover layer, above the tab bar", () => {
   const menu = src("components/ui/Menu.tsx");
   expect(menu).toMatch(/data-testid="menu-scrim" className="fixed inset-0 z-popover"/);
-  expect(menu).toMatch(/"absolute top-full z-popover /);
+  expect(menu).toMatch(/"absolute z-popover /);
 });

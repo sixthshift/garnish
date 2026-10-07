@@ -10,6 +10,7 @@ import {
   type ReactNode,
   useContext,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -61,26 +62,73 @@ export function Menu({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelId = useId();
+  const triggerId = useId();
+  // Opened from the keyboard, the menu takes focus to its first (or, by ArrowUp, last) item once the panel is in.
+  const pendingFocus = useRef<"first" | "last" | null>(null);
+  const [upward, setUpward] = useState(false);
 
   const setOpen = (next: boolean) => {
     if (openProp === undefined) setUncontrolled(next);
     onOpenChange?.(next);
   };
 
-  // An item a breakpoint hides (`display: none`) has no layout box and cannot take focus, so the arrows pass over it.
-  const items = (): HTMLElement[] =>
-    Array.from(panelRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]') ?? []).filter(
-      (item) => item.checkVisibility?.() ?? true
-    );
+  // Before paint: hang the panel above the trigger when below it would run under the screen's foot
+  // (the phone tab bar, or a stuck Save bar) and above has more room; then take keyboard focus in.
+  useLayoutEffect(() => {
+    if (!open) {
+      setUpward(false);
+      return;
+    }
+    const panel = panelRef.current;
+    const trigger = triggerRef.current;
+    if (panel && trigger) {
+      const below = panel.getBoundingClientRect();
+      const floor = window.innerHeight - footClearance(trigger);
+      const room = trigger.getBoundingClientRect().top;
+      if (below.bottom > floor && room - below.height > floor - below.bottom) setUpward(true);
+    }
+    if (pendingFocus.current) focusEnd(panelRef.current, pendingFocus.current);
+    pendingFocus.current = null;
+  }, [open]);
+
+  const close = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  // The trigger, as a menu button: Enter and Space open onto the first item (through the click they
+  // fire), ArrowDown and ArrowUp onto the first and last; Escape closes, Tab closes and moves on.
+  const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      pendingFocus.current = open ? null : "first";
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const end = event.key === "ArrowDown" ? "first" : "last";
+      if (open) focusEnd(panelRef.current, end);
+      else {
+        pendingFocus.current = end;
+        setOpen(true);
+      }
+    } else if (event.key === "Escape" && open) {
+      event.stopPropagation();
+      setOpen(false);
+    } else if (event.key === "Tab" && open) {
+      setOpen(false);
+    }
+  };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") {
       event.stopPropagation();
-      setOpen(false);
-      triggerRef.current?.focus();
+      close();
       return;
     }
-    const all = items();
+    // Back to the trigger before the browser moves focus, so Tab goes on from the menu's place in the page.
+    if (event.key === "Tab") {
+      close();
+      return;
+    }
+    const all = menuItems(panelRef.current);
     const active = document.activeElement;
     const index = active instanceof HTMLElement ? all.indexOf(active) : -1;
     const next = nextMenuIndex(index, all.length, event.key);
@@ -93,6 +141,7 @@ export function Menu({
     <div className={cn("relative", className)} data-testid="menu">
       <button
         ref={triggerRef}
+        id={triggerId}
         type="button"
         data-testid="menu-trigger"
         aria-haspopup="menu"
@@ -101,6 +150,7 @@ export function Menu({
         aria-label={iconOnly || display !== undefined ? label : undefined}
         className={ghost ? GHOST_TRIGGER_CLASS : cn(TRIGGER_CLASS, iconOnly && "px-2")}
         onClick={() => setOpen(!open)}
+        onKeyDown={onTriggerKeyDown}
       >
         {iconOnly ? <span aria-hidden="true">⋯</span> : (display ?? label)}
       </button>
@@ -114,32 +164,51 @@ export function Menu({
             ref={panelRef}
             id={panelId}
             role="menu"
-            aria-label={label}
+            aria-labelledby={triggerId}
             data-testid="menu-panel"
             onKeyDown={onKeyDown}
             className={cn(
-              "absolute top-full z-popover mt-1 flex min-w-48 flex-col rounded-lg border border-border-normal bg-bg-normal py-1 shadow-lg",
+              "absolute z-popover flex min-w-48 flex-col rounded-lg border border-border-normal bg-bg-normal py-1 shadow-lg",
+              upward ? "bottom-full mb-1" : "top-full mt-1",
               align === "end" ? "right-0" : "left-0"
             )}
           >
             {/* Choosing an item hands focus back to the trigger, as Escape does. An item that opens a dialog
                 needs it: the dialog's focus manager returns focus on close to whatever held it at open, and
                 that was the item itself, gone with the menu, so Cancel or Escape left focus on the body. */}
-            <menuContext.Provider
-              value={{
-                close: () => {
-                  setOpen(false);
-                  triggerRef.current?.focus();
-                },
-              }}
-            >
-              {children}
-            </menuContext.Provider>
+            <menuContext.Provider value={{ close }}>{children}</menuContext.Provider>
           </div>
         </>
       )}
     </div>
   );
+}
+
+// An item a breakpoint hides (`display: none`) has no layout box and a disabled one refuses focus,
+// so the arrows pass over both.
+const menuItems = (panel: HTMLElement | null): HTMLElement[] =>
+  Array.from(panel?.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]') ?? []).filter(
+    (item) => (item.checkVisibility?.() ?? true) && !item.matches(":disabled, [aria-disabled='true']")
+  );
+
+function focusEnd(panel: HTMLElement | null, end: "first" | "last") {
+  const all = menuItems(panel);
+  (end === "first" ? all[0] : all[all.length - 1])?.focus();
+}
+
+/**
+ * How much of the screen's foot is covered where `trigger` sits: the phone tab bar (`--app-bar`, which the
+ * shell sets) or a stuck footer's clearance (`scroll-padding-bottom`, which `scrollClearance` sets and which
+ * already counts the tab bar under it), whichever is more.
+ */
+function footClearance(trigger: HTMLElement): number {
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:absolute;visibility:hidden;height:var(--app-bar,0px)";
+  trigger.after(probe);
+  const appBar = probe.offsetHeight;
+  probe.remove();
+  const stuck = Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBottom) || 0;
+  return Math.max(appBar, stuck);
 }
 
 export type MenuItemProps = {

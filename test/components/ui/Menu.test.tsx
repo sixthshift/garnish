@@ -57,7 +57,10 @@ describe("Menu", () => {
     );
     expect(html).toContain('data-testid="menu-panel"');
     expect(html).toContain('role="menu"');
-    expect(html).toContain('aria-label="Recipe actions"');
+    // The panel is named by its trigger.
+    const triggerId = html.match(/id="([^"]+)"[^>]*data-testid="menu-trigger"/)?.[1];
+    expect(triggerId).toBeTruthy();
+    expect(html).toContain(`aria-labelledby="${triggerId}"`);
     expect(html.match(/role="menuitem"/g)).toHaveLength(2);
     expect(html).toContain("Duplicate");
     expect(html).toContain("Delete");
