@@ -304,6 +304,15 @@ describe("setStepImage (M35.1)", () => {
 });
 
 describe("StepsEditor", () => {
+  test("a step's reorder controls sit at its first line, not halfway down a tall step (critique #15b)", () => {
+    const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
+    const row = html.match(/<li class="([^"]*)" data-index="0"/)?.[1] ?? "";
+    expect(row).toContain("items-start");
+    expect(row).not.toContain("items-center");
+    // The row's own handle too, which a stretched flex child would centre.
+    expect(html).toMatch(/<div class="flex items-start gap-2[^"]*" data-step="0">/);
+  });
+
   // M35.1: the row menu's "Add image" opens a hidden file input per row. The
   // menu itself is closed in a server render (the test above says so), so what
   // is observable here is the input it clicks and the thumbnail of a stored one.

@@ -122,6 +122,8 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
             items={steps}
             keyOf={(step) => step.id ?? "unsaved"}
             itemName="step"
+            // A step is several lines (its text, its links, a photo): its controls sit at the top, not halfway down (critique #15b).
+            align="start"
             narrow="row"
             onReorder={(next) => onChange(withSteps(draft, pi, next))}
             renderItem={(step, si, reorder) => {

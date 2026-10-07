@@ -183,9 +183,10 @@ const SERVING_WORD = /^(?:serves?|servings?|people|persons?)$/i;
 /**
  * The yield as the header reads it: a label and the value after it. A head
  * count reads "Serves 6", whichever way it was written ("6 serves",
- * "6 servings", "serves 6", a quantity in a "serving" unit); anything else is
- * "Makes" and `formatYield`'s line, "Makes 8 slices". The value is empty when
- * nothing is recorded.
+ * "6 servings", "serves 6", "Serves: 4", a quantity in a "serving" unit);
+ * anything else is "Makes" and `formatYield`'s line, "Makes 8 slices". The
+ * value is empty when nothing is recorded, and when all there is is a bare
+ * "serves" with no count, which says nothing.
  */
 export function yieldLine(quantity: number, unit: DisplayUnit | null, text: string): { label: "Serves" | "Makes"; value: string } {
   const words = text.trim();
@@ -193,8 +194,10 @@ export function yieldLine(quantity: number, unit: DisplayUnit | null, text: stri
   if (count !== "" && words === "" && unit !== null && SERVING_WORD.test(unit.name)) return { label: "Serves", value: count };
   if (count !== "" && unit === null && SERVING_WORD.test(words)) return { label: "Serves", value: count };
   if (count === "") {
-    // Only the text: "serves 6", "6 servings", "serves 4-6".
-    const leading = /^serves\s+(.+)$/i.exec(words)?.[1];
+    // A serving word and no count says nothing about how much: no line.
+    if (SERVING_WORD.test(words)) return { label: "Serves", value: "" };
+    // Only the text: "serves 6", "Serves: 4", "6 servings", "serves 4-6".
+    const leading = /^serves(?:\s*:\s*|\s+)(.+)$/i.exec(words)?.[1];
     if (leading !== undefined) return { label: "Serves", value: leading };
     const [, number, noun] = /^(\S+)\s+(\S+)$/.exec(words) ?? [];
     if (number !== undefined && noun !== undefined && SERVING_WORD.test(noun)) return { label: "Serves", value: number };

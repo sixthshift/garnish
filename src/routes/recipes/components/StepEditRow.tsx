@@ -82,8 +82,8 @@ export function StepEditRow({
   return (
     // On a narrow list (ReorderList's `@2xl` container) the handle, the step's
     // name and the menu share a line and the text takes the full width below
-    // them; on a wide one they sit beside it.
-    <div className="flex gap-2 @max-2xl:flex-wrap @max-2xl:items-center" data-step={si}>
+    // them; on a wide one they sit beside it, the handle at its first line.
+    <div className="flex items-start gap-2 @max-2xl:flex-wrap @max-2xl:items-center" data-step={si}>
       {reorder?.handle}
       <span className="mt-2 w-5 shrink-0 text-right text-sm font-medium text-fg-subtle @max-2xl:hidden" aria-hidden="true">
         {si + 1}.

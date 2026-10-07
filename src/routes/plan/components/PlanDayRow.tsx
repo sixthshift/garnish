@@ -57,16 +57,13 @@ export function PlanDayRow({
       aria-current={marked ? "date" : undefined}
       className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-start py-1 pr-1 pl-4 first:rounded-t-xl last:rounded-b-xl", marked && "bg-bg-subtle-hovered")}
     >
-      {/* Sans on each part, not the display face the theme gives an h2 (an
-          unlayered rule, so a utility on the h2 itself loses): this is a label
-          in a list, not a title. */}
       <h2 className="col-start-1 row-start-1 flex min-w-0 items-baseline gap-1.5 pt-2.5">
-        <SectionTitle as="span" className={cn("font-sans", marked && "text-fg-normal")}>
+        <SectionTitle as="span" className={cn(marked && "text-fg-normal")}>
           {weekday}
         </SectionTitle>
-        <Caption className={cn("font-sans", marked && "font-medium text-fg-normal")}>{dayOfMonth}</Caption>
+        <Caption className={cn(marked && "font-medium text-fg-normal")}>{dayOfMonth}</Caption>
         {marked && (
-          <Badge variant="soft" intent="muted" className="ml-1 self-center font-sans" data-testid="plan-today">
+          <Badge variant="soft" intent="muted" className="ml-1 self-center" data-testid="plan-today">
             Today
           </Badge>
         )}

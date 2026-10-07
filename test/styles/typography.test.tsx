@@ -1,10 +1,11 @@
 // The display face's rule in theme.css is unlayered, so it beats every utility
-// on a bare h1–h3. SectionTitle rendered as an h2 or h3 once came out in
-// Fraunces without its tracking, and as an h4 or a span in Inter (critique
-// #15b). The rule now skips `.uppercase`, SectionTitle's own class; this keeps
-// the two in step.
+// on whatever it selects. Selecting h1–h3 once made SectionTitle's labels and
+// every sheet's title serif (critique #15b). Fraunces is for page and recipe
+// titles, and those are the h1s; anything else is Inter unless it opts in
+// with `font-display`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { Heading } from "@sixthshift/design-system/heading";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { renderToString } from "react-dom/server";
 import { expect, test } from "vitest";
@@ -12,8 +13,23 @@ import { expect, test } from "vitest";
 const root = join(import.meta.dirname, "..", "..");
 const theme = readFileSync(join(root, "src", "styles", "theme.css"), "utf8");
 
-test("the display face skips SectionTitle at every heading level", () => {
-  const rule = /([^{}]*)\{\s*font-family:\s*var\(--font-display\)/.exec(theme);
-  expect(rule?.[1]?.trim()).toMatch(/:is\(h1, h2, h3\):not\(\.uppercase\)$/);
-  expect(renderToString(<SectionTitle as="h2">Ingredients</SectionTitle>)).toMatch(/^<h2 class="[^"]*\buppercase\b/);
+/** The selector of the rule that sets the display face. */
+function displaySelector(): string | undefined {
+  return /([^{}/]*)\{\s*font-family:\s*var\(--font-display\)/.exec(theme)?.[1]?.trim();
+}
+
+/** The tag an element renders as. */
+const tag = (html: string) => /^<([a-z0-9]+)/.exec(html)?.[1];
+
+test("the display face goes to h1 alone", () => {
+  expect(displaySelector()).toBe("h1");
+});
+
+test("a page title is an h1, so Fraunces; a sheet title and a SectionTitle h2 are not, so Inter", () => {
+  expect(tag(renderToString(<Heading as="h1">Recipes</Heading>))).toBe(displaySelector());
+  // A sheet's title, as EditSheet and the other sheets write it.
+  const sheet = renderToString(<h2 className="text-base font-medium">Edit ingredient</h2>);
+  expect(tag(sheet)).not.toBe(displaySelector());
+  expect(sheet).not.toContain("font-display");
+  expect(tag(renderToString(<SectionTitle as="h2">Ingredients</SectionTitle>))).not.toBe(displaySelector());
 });

@@ -163,8 +163,10 @@ export function CookPage() {
 
         <main
           // Anchored to the top, under the header, so the step reads high on a
-          // phone.
-          className={cn(COLUMN, "flex flex-1 flex-col gap-4 py-4 lg:pt-8")}
+          // phone. `isolate`: the tick boxes lift over their rows' overlays
+          // (COOK_TICK's z-10), and that lift stays inside the deck rather
+          // than tying with the sticky header and painting over it (critique #15b).
+          className={cn(COLUMN, "isolate flex flex-1 flex-col gap-4 py-4 lg:pt-8")}
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerCancel={() => (swipe.current = null)}
