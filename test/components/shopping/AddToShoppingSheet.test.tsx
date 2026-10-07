@@ -3,7 +3,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { SubRecipesProvider } from "../../../src/components/recipe/SubRecipes";
-import { AddToShoppingSheetContent } from "../../../src/components/shopping/AddToShoppingSheetContent";
+import { AddToShoppingSheetContent, addToShoppingTitle } from "../../../src/components/shopping/AddToShoppingSheetContent";
 import type { Ingredient, Part, Recipe, SubRecipe } from "../../../src/domain/recipe";
 import type { Food, Unit } from "../../../src/domain/reference";
 import { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/domain/shopping";
@@ -155,13 +155,27 @@ describe("additionsForWithSubRecipes", () => {
   });
 });
 
+describe("addToShoppingTitle (critique #15c)", () => {
+  const titled = (recipeYieldQuantity: number, recipeYield: string, name = "Lemon Tart") =>
+    addToShoppingTitle({ name, recipeYieldQuantity, yieldUnit: null, recipeYield });
+
+  test("names the recipe and the yield its rows are scaled to, worded as the recipe header words it", () => {
+    expect(titled(8, "servings")).toBe("Add Lemon Tart (serves 8)");
+    expect(titled(8, "slices")).toBe("Add Lemon Tart (makes 8 slices)");
+  });
+
+  test("a recipe with no yield is just its name", () => {
+    expect(titled(0, "")).toBe("Add Lemon Tart");
+  });
+});
+
 describe("AddToShoppingSheetContent render", () => {
   const render = (recipe: Recipe, busy = false) =>
     renderToString(<AddToShoppingSheetContent recipe={recipe} busy={busy} onAdd={() => {}} onCancel={() => {}} />);
 
   test("lists every buyable ingredient, ticked to include", () => {
     const html = render(recipeWith([part("", [flour(), freeText(), salt()])]));
-    expect(html).toContain("Add to shopping list");
+    expect(html).toContain("Add Lemon tart");
     expect(html.match(/data-testid="shopping-sheet-row"/g)).toHaveLength(2);
     expect(html).not.toContain("salt");
     expect(html).toContain('data-included="true"');

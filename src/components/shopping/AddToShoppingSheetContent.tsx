@@ -1,10 +1,10 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
+import { ModalBody, ModalFooter, ModalHeader } from "@sixthshift/design-system/modal";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { Sheet } from "@sixthshift/design-system/sheet";
 import { useState } from "react";
-import { formatIngredient } from "../../domain/ingredient";
+import { formatIngredient, yieldLine } from "../../domain/ingredient";
 import { type Ingredient, type Recipe, type SubRecipe, subRecipeScale } from "../../domain/recipe";
 import { additionsForWithSubRecipes, ingredientText, type ShoppingAddition, shoppingGroups } from "../../domain/shopping";
 import { toastError } from "../../lib/toast";
@@ -19,6 +19,17 @@ export type AddToShoppingSheetContentProps = {
   onCancel: () => void;
   busy?: boolean;
 };
+
+/**
+ * The sheet's title: the recipe, and the yield its rows are scaled to, as the
+ * recipe header words it ("Add Lemon Tart (serves 8)", "Add Anzac biscuits
+ * (makes 24)"). A recipe with no yield is just "Add Lemon Tart". Pure.
+ */
+export function addToShoppingTitle(recipe: Pick<Recipe, "name" | "recipeYieldQuantity" | "yieldUnit" | "recipeYield">): string {
+  const yielded = yieldLine(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
+  const name = recipe.name.trim() || "this recipe";
+  return yielded.value === "" ? `Add ${name}` : `Add ${name} (${yielded.label.toLowerCase()} ${yielded.value})`;
+}
 
 export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = false }: AddToShoppingSheetContentProps) {
   // Excluded rather than included: every row starts ticked, so the empty set is
@@ -77,10 +88,8 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
 
   return (
     <>
-      <Sheet.Header>
-        <h2 className="text-base font-medium">Add to shopping list</h2>
-      </Sheet.Header>
-      <Sheet.Body>
+      <ModalHeader>{addToShoppingTitle(recipe)}</ModalHeader>
+      <ModalBody>
         {groups.length === 0 ? (
           <Muted>Nothing to add: this recipe has no ingredients to buy.</Muted>
         ) : (
@@ -129,8 +138,9 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
             ))}
           </div>
         )}
-      </Sheet.Body>
-      <Sheet.Footer>
+      </ModalBody>
+      {/* Clear of the home indicator, as the filters sheet's footer is. */}
+      <ModalFooter className="max-sm:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <Button type="button" variant="ghost" intent="neutral" disabled={busyAdding} onClick={onCancel}>
           Cancel
         </Button>
@@ -144,7 +154,7 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
         >
           {busy ? "Adding…" : "Add"}
         </Button>
-      </Sheet.Footer>
+      </ModalFooter>
     </>
   );
 }
