@@ -1,4 +1,4 @@
-// M24.1: from `md` the recipe page is two columns — every ingredient list in
+// M24.1: from `lg` (critique #13; `md` until then) the recipe page is two columns — every ingredient list in
 // the sticky aside, every step list in the main column — in both ingredient
 // modes. Rendered through the real route tree (see test/helpers/routes.tsx);
 // `elementHtml` slices one column out of the markup so containment, not just
@@ -53,7 +53,7 @@ function seedTart() {
 
 const count = (html: string, needle: string) => html.split(needle).length - 1;
 
-describe("two columns from md (M24.1)", () => {
+describe("two columns from lg (M24.1, critique #13)", () => {
   test("structured mode: the aside holds every part's ingredient list, the main column every step list", async () => {
     await seedTart();
     storeMode("structured");
@@ -129,15 +129,18 @@ describe("two columns from md (M24.1)", () => {
     expect(html).not.toContain('data-testid="ingredient-mode-toggle"');
   });
 
-  test("the grid starts at md, the aside sticks and scrolls itself, and the page widens at lg", async () => {
+  test("the grid starts at lg, the aside sticks and scrolls itself, and the page widens at lg", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     const columns = elementHtml(html, "recipe-columns");
-    expect(columns).toMatch(/class="[^"]*flex flex-col[^"]*md:grid[^"]*md:grid-cols-3/);
+    expect(columns).toMatch(/class="[^"]*flex flex-col[^"]*lg:grid[^"]*lg:grid-cols-3/);
+    // Critique #13: at md a third of the page was 144px, too narrow for the list.
+    expect(columns.slice(0, columns.indexOf(">"))).not.toContain("md:");
     const aside = elementHtml(html, "ingredients-column");
     expect(aside.startsWith("<aside")).toBe(true);
-    expect(aside).toMatch(/class="[^"]*md:sticky[^"]*md:top-6/);
-    expect(aside).toMatch(/class="[^"]*md:overflow-y-auto/);
+    expect(aside).toMatch(/class="[^"]*lg:sticky[^"]*lg:top-6/);
+    expect(aside.slice(0, aside.indexOf(">"))).not.toContain("md:");
+    expect(aside).toMatch(/class="[^"]*lg:overflow-y-auto/);
     expect(html).toMatch(/<article[^>]*class="[^"]*max-w-6xl/);
   });
 
@@ -145,7 +148,7 @@ describe("two columns from md (M24.1)", () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     const main = elementHtml(html, "method-column");
-    expect(main.slice(0, main.indexOf(">"))).toContain("md:col-span-2");
+    expect(main.slice(0, main.indexOf(">"))).toContain("lg:col-span-2");
     // The page's max-w-6xl already caps the step text near a reading measure;
     // a second cap here left the steps 70px short of everything above them.
     expect(main.slice(0, main.indexOf(">"))).not.toContain("max-w-");

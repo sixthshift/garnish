@@ -114,14 +114,15 @@ describe("timeStats", () => {
 });
 
 describe("RecipeHeader", () => {
-  test("stacks below md and puts the image beside the text from md", async () => {
+  test("stacks below lg and puts the image beside the text from lg (critique #13)", async () => {
     const html = await render(base);
     const container = /<div class="([^"]*)"[^>]*data-layout="split"/.exec(html);
     expect(container).not.toBeNull();
     const classes = (container?.[1] ?? "").split(" ");
     expect(classes).toContain("flex-col"); // phone: image above the text
-    expect(classes).toContain("md:flex-row"); // wide: image beside it
-    expect(html).toContain("md:w-2/5"); // the image column, wide only
+    expect(classes).toContain("lg:flex-row");
+    expect(classes).not.toContain("md:flex-row"); // wide: image beside it
+    expect(html).toContain("lg:w-2/5"); // the image column, wide only
   });
 
   test("renders name, rating, description and tag chips", async () => {
@@ -149,7 +150,7 @@ describe("RecipeHeader", () => {
     const html = await render({ ...base, image: null, prepTime: null, performTime: null, recipeYieldQuantity: 0, recipeYield: "" });
     expect(html).not.toContain("<img");
     expect(html).not.toContain('data-placeholder="image"');
-    expect(html).not.toContain("md:w-2/5");
+    expect(html).not.toContain("lg:w-2/5");
     // The split's first child is the text column, headed by the name.
     expect(html).toMatch(/data-layout="split"><div class="[^"]*flex-1[^"]*"><div[^>]*><h1/);
     expect(html).toContain('data-testid="stat-strip"');

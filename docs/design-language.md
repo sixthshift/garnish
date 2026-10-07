@@ -82,8 +82,8 @@ Set by the theme, listed here so the ramp is visible in one place:
 
 Recorded so they are not silently "fixed":
 
-- **Two-column recipe page.** The system's settled rule is single column, drill-in via routing. The recipe page keeps ingredients sticky beside the method, and the print stylesheet depends on it. Decision 99.
-- **`md:` as the breakpoint.** `responsive.md` names mobile / `sm:` / `lg:` as the adaptive vocabulary and calls `md:` outside it. Garnish is phone-first with one break at `md:`, used throughout the shell and the recipe columns. Not worth churning; noted so the mismatch is known.
+- **Two-column recipe page.** The system's settled rule is single column, drill-in via routing. The recipe page keeps ingredients sticky beside the method from `lg`, and the print stylesheet depends on it. Decisions 99 and 145.
+- **`md:` as the breakpoint.** `responsive.md` names mobile / `sm:` / `lg:` as the adaptive vocabulary and calls `md:` outside it. Garnish is phone-first with one break at `md:`, used throughout the shell. The recipe page's two columns and its header's image-beside-title split are the exception: they break at `lg:`, because at `md` beside the side nav a third of the page is 144px, too narrow for the ingredient list (decision 145). Not worth churning; noted so the mismatch is known.
 
 ## Still open
 
