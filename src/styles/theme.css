@@ -9,7 +9,8 @@
  * Only tier 2 (semantic) is re-pointed — the "what a colour means" tier — plus
  * a Tailwind `@theme` block for shape and the display face. Component tokens
  * (tier 3, `--button-bg` and friends) are left alone: nothing here re-wires a
- * component, it only changes what the meanings resolve to.
+ * component, it only changes what the meanings resolve to — with one
+ * exception, the off Switch's track, at the end of the file.
  *
  *   brand     emerald  (the system's own scale; herb green)
  *   neutrals  earth    (warm paper instead of cool slate)
@@ -309,4 +310,20 @@ h3 {
 
   /* Interaction */
   --focus-ring: var(--color-emerald-400);
+}
+
+/* =============================================================================
+   COMPONENT TOKENS — the one exception
+   ============================================================================= */
+
+/* The off Switch. The library paints its track `--bg-subtle`, which is the
+   page itself (rule 1), so an off switch on the page was a thumb with no
+   track — in dark, a 1.16:1 disc. earth-600 clears WCAG 1.4.11's 3:1 against
+   the page and a card in both modes (3.40 and 3.57 in light, 4.73 and 4.08
+   in dark), and against the thumb, which is `--bg-normal`; one step serves
+   both modes, so the rule is mode-free. Scoped to `unchecked` because this
+   file is unlayered: on plain `.switch` it would beat the library's layered
+   checked rule and take the brand off "on". */
+.switch[data-state="unchecked"] {
+  --switch-bg: var(--color-earth-600);
 }
