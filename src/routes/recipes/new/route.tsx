@@ -27,6 +27,9 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/recipes/new",
   validateSearch: NewRecipeSearch,
+  // The chooser is a place and keeps the phone tab bar; a source stage, the
+  // review, Style and the form are a task with its own Back (decision 143).
+  staticData: { hideNav: (search) => search.source !== undefined },
   // A share lands here as `?url=` or `?text=` (or both, or a title alone).
   // Whichever field holds the address, the page sees one shape: the URL
   // stage with `url` set. A share with no address in it falls to the chooser.

@@ -17,6 +17,8 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/recipes/$slug/edit",
   validateSearch: EditRecipeSearch,
+  // A task finished with Save or Cancel: the phone tab bar steps aside (decision 143).
+  staticData: { hideNav: true },
   loader: async ({ params }): Promise<EditRecipeData> => {
     const [recipe, units, tags] = await Promise.all([getRecipe({ data: { slug: params.slug } }), listUnits({ data: {} }), listTags({ data: {} })]);
     return { recipe, units, tags };

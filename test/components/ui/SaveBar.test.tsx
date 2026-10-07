@@ -41,12 +41,14 @@ describe("SaveBar", () => {
     expect(html).toContain("Unsaved changes");
   });
 
-  test("sticks above the phone tab bar and goes inline from md", () => {
+  test("sticks at the shell's foot, clear of the home indicator, and goes inline from md", () => {
     const html = renderToString(<SaveBar label="Save changes" cancel={cancel} />);
     const bar = /<div[^>]*data-testid="save-bar"[^>]*class="([^"]*)"|<div[^>]*class="([^"]*)"[^>]*data-testid="save-bar"/.exec(html);
     const classes = bar?.[1] ?? bar?.[2] ?? "";
     expect(classes).toContain("sticky");
-    expect(classes).toContain("bottom-20");
+    // `--app-bar` is the shell's: the tab bar's height, or none where the route hides it (critique #11).
+    expect(classes).toContain("bottom-(--app-bar)");
+    expect(classes).toContain("pb-[max(0.75rem,env(safe-area-inset-bottom))]");
     expect(classes).toContain("border-t");
     expect(classes).toContain("bg-bg-normal");
     expect(classes).toContain("md:static");

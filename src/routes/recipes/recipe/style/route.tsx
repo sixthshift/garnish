@@ -9,6 +9,8 @@ export type StyleRecipeData = { recipe: Recipe; aiAvailable: boolean };
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/recipes/$slug/style",
+  // A task finished with Save or Cancel: the phone tab bar steps aside (decision 143).
+  staticData: { hideNav: true },
   loader: async ({ params }): Promise<StyleRecipeData> => {
     const [recipe, ai] = await Promise.all([getRecipe({ data: { slug: params.slug } }), aiAvailable().catch(() => ({ available: false }))]);
     return { recipe, aiAvailable: ai.available };

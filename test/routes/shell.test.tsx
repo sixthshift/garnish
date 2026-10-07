@@ -31,7 +31,6 @@ const pages: Array<[string, string]> = [
   ["/", "Recipes"],
   ["/recipes/new", "New recipe"],
   ["/recipes/lemon-tart", "Lemon tart"],
-  ["/recipes/lemon-tart/edit", "Edit recipe"],
   ["/shopping", "Shopping"],
   ["/settings", "Settings"],
 ];
@@ -61,6 +60,33 @@ describe("app shell", () => {
     const html = await render("/recipes/lemon-tart/cook");
     expect(html).toContain("Lemon tart");
     expect(html).not.toContain('aria-label="Main"');
+  });
+
+  // Critique #11: a task finished with Save or Cancel drops the phone's tab bar,
+  // so the Save bar is the only chrome at the foot; the side nav stays.
+  test.each([
+    ["/recipes/lemon-tart/edit", "Edit recipe"],
+    ["/recipes/new?source=manual", "New recipe"],
+    ["/recipes/new?source=url", "New recipe"],
+  ])("%s hides the phone tab bar and keeps the side nav", async (path, text) => {
+    const html = await render(path);
+    expect(html).toContain(text);
+    expect(html.match(/aria-label="Main"/g)).toHaveLength(1);
+    expect(html).toMatch(/<aside[^>]*>[\s\S]*aria-label="Main"/);
+    expect(html).toContain("[--app-bar:0px]");
+    expect(html).not.toContain("[--app-bar:5rem]");
+  });
+
+  test("the new-recipe chooser is a place and keeps the tab bar", async () => {
+    const html = await render("/recipes/new");
+    expect(html.match(/aria-label="Main"/g)).toHaveLength(2);
+    expect(html).toContain("[--app-bar:5rem]");
+  });
+
+  test("the style page hides the tab bar too", async () => {
+    // Not rendered: its loader asks after the model. The flag is the route's.
+    const { Route } = await import("../../src/routes/recipes/recipe/style/route");
+    expect(Route.options.staticData?.hideNav).toBe(true);
   });
 
   test("unknown path renders the not-found view", async () => {
