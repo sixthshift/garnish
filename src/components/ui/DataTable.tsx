@@ -114,7 +114,7 @@ export function DataTable<T>({
 
       {/* No overflow on the card: a row's menu hangs below the row and must not be clipped by it. The
           table fits because optional columns are `secondary` (to `md` or `lg`), the row's actions are one ⋯,
-          and a cell breaks a long unbroken name rather than widening the page. */}
+          and the name column (`wrap: "anywhere"`) breaks a long unbroken name rather than widening the page. */}
       <Card size="sm" className="min-w-0 p-0">
         <table className="w-full border-collapse text-left text-sm">
           <caption className="sr-only">{plural}</caption>
@@ -177,7 +177,10 @@ export function DataTable<T>({
                     </td>
                   )}
                   {columns.map((column) => (
-                    <td key={column.key} className={cn("p-2 wrap-anywhere", secondaryClass(column.secondary), column.className)}>
+                    <td
+                      key={column.key}
+                      className={cn("p-2", column.wrap === "anywhere" && "wrap-anywhere", secondaryClass(column.secondary), column.className)}
+                    >
                       {column.render ? column.render(item) : cellText(column.value(item))}
                     </td>
                   ))}

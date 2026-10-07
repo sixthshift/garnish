@@ -144,7 +144,7 @@ const FOOD_DELETE_EFFECT = "they will keep the ingredient without a food.";
 export function foodColumns(aisles: readonly Aisle[]): DataTableColumn<FoodRow>[] {
   const aisleName = (id: string | null) => aisles.find((aisle) => aisle.id === id)?.name ?? null;
   return [
-    { key: "name", header: "Name", value: (food) => food.name },
+    { key: "name", header: "Name", value: (food) => food.name, wrap: "anywhere" },
     { key: "pluralName", header: "Plural", value: (food) => food.pluralName, secondary: true },
     { key: "aisle", header: "Aisle", value: (food) => aisleName(food.aisleId) },
     { key: "skipShopping", header: "Skip shopping", value: (food) => food.skipShopping, secondary: "lg" },

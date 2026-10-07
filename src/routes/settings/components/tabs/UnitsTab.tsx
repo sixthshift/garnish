@@ -111,7 +111,7 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
 const UNIT_DELETE_EFFECT = "they will keep the ingredient or yield without a unit.";
 
 export const unitColumns: DataTableColumn<Unit>[] = [
-  { key: "name", header: "Name", value: (unit) => unit.name },
+  { key: "name", header: "Name", value: (unit) => unit.name, wrap: "anywhere" },
   { key: "pluralName", header: "Plural", value: (unit) => unit.pluralName, secondary: true },
   { key: "abbreviation", header: "Abbreviation", value: (unit) => unit.abbreviation },
   { key: "useAbbreviation", header: "Use abbreviation", value: (unit) => unit.useAbbreviation, secondary: "lg" },

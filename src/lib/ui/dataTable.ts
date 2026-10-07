@@ -22,6 +22,13 @@ export type DataTableColumn<T> = {
    * many for the tablet's content width beside the sidebar.
    */
   secondary?: boolean | "lg";
+  /**
+   * `"anywhere"` lets a long unbroken value break mid-word rather than widen
+   * the table (and, since the card no longer scrolls, the page). For the name
+   * column only: on every column, table layout shrinks them all below their
+   * longest word and "International" splits.
+   */
+  wrap?: "anywhere";
   className?: string;
 };
 

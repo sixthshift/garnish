@@ -240,6 +240,11 @@ describe("DataTable render", () => {
     expect(html).toContain('aria-label="Select all 60 foods, including 10 not shown"');
   });
 
+  test("only a column marked wrap: anywhere may break a word", () => {
+    const html = render({ columns: [{ key: "name", header: "Name", value: (row) => row.name, wrap: "anywhere" }, columns[1]!] });
+    expect(html.match(/wrap-anywhere/g)).toHaveLength(rows.length);
+  });
+
   test("a table that fits one page has no Show more", () => {
     expect(render()).not.toContain("data-table-more");
     expect(render({ pageSize: 2 }).match(/data-row=/g)).toHaveLength(2);
