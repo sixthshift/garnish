@@ -2,7 +2,7 @@ import { Input } from "@sixthshift/design-system/input";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { filterUnits, foodReference, parseQuantity, quantityText, unitReference } from "../../../domain/draft";
 import { picker } from "../../../lib/ui/picker";
-import type { IngredientFieldsProps } from "./IngredientFields";
+import { INGREDIENT_WIDE_CELL, type IngredientFieldsProps } from "./IngredientFields";
 
 /**
  * The structured row's amount fields: quantity, unit and food, side by side.
@@ -37,7 +37,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         name={`${path}.unit`}
         aria-label={`${label} unit`}
         placeholder="Unit"
-        className={line ? undefined : "w-28 grow"}
+        className={line ? INGREDIENT_WIDE_CELL : "w-28 grow"}
         value={unitText}
         disabled={disabled}
         onValueChange={props.onUnitText}
@@ -61,7 +61,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         name={`${path}.food`}
         aria-label={`${label} food`}
         placeholder="Food"
-        className={line ? undefined : "min-w-40 grow-2"}
+        className={line ? INGREDIENT_WIDE_CELL : "min-w-40 grow-2"}
         value={foodText}
         disabled={disabled}
         onValueChange={props.onFoodText}

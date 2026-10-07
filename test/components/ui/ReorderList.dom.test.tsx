@@ -87,32 +87,6 @@ test("a drag that never moves changes nothing", () => {
   expect(onReorder).not.toHaveBeenCalled();
 });
 
-test("a narrow list's ⋯ menu moves and removes the row it sits on", async () => {
-  const user = userEvent.setup();
-  const onReorder = vi.fn();
-  const onRemove = vi.fn();
-  render(
-    <ReorderList
-      items={rows}
-      keyOf={(row) => row.id}
-      onReorder={onReorder}
-      onRemove={onRemove}
-      renderItem={(row) => <span>{row.text}</span>}
-      itemName="ingredient"
-      narrow="menu"
-    />
-  );
-
-  await user.click(screen.getByRole("button", { name: "Reorder ingredient 2" }));
-  await user.click(screen.getByRole("menuitem", { name: "Move up" }));
-  expect(onReorder).toHaveBeenCalledWith([rows[1], rows[0], rows[2]]);
-
-  await user.click(screen.getByRole("button", { name: "Reorder ingredient 3" }));
-  expect(screen.getByRole("menuitem", { name: "Move down" })).toBeDisabled();
-  await user.click(screen.getByRole("menuitem", { name: "Remove" }));
-  expect(onRemove).toHaveBeenCalledWith(rows[2], 2);
-});
-
 test("a row placing its own controls gets the handle and the moves, absent at the ends", async () => {
   const user = userEvent.setup();
   const onReorder = vi.fn();

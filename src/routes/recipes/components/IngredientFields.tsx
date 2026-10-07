@@ -18,12 +18,16 @@ export const EMPTY_INGREDIENT_SUMMARY = "New ingredient";
  * The editor's one-line row and its column header share these, so the list
  * reads as a table: amount narrow, unit 9.5rem (room for "tablespoon" beside the
  * search icon and the clear button), food and note sharing the rest 3:2.
- * Below 33rem of the row's own width (`@container/fields`), where the food
- * would show fewer than about fifteen letters, the note drops to a second line
- * under amount, unit and food, and the header is hidden.
+ * From 36rem of the row's own width (`@container/fields`) the food holds about
+ * fifteen letters on one line. Below it the row takes two lines read in tab
+ * order — amount and unit over food and note, the food the wider of the two —
+ * and the header is hidden.
  */
 export const INGREDIENT_COLUMNS =
-  "grid gap-2 grid-cols-[4.5rem_minmax(0,9.5rem)_minmax(0,1fr)] @min-[33rem]/fields:grid-cols-[4.5rem_9.5rem_minmax(0,3fr)_minmax(0,2fr)]";
+  "grid gap-2 grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)] @min-[36rem]/fields:grid-cols-[4.5rem_9.5rem_minmax(0,3fr)_minmax(0,2fr)]";
+
+/** The unit and the food: two columns of the two-line row (the unit to the end of its line, the food from its start), one of the one-line row. */
+export const INGREDIENT_WIDE_CELL = "col-span-2 @min-[36rem]/fields:col-span-1";
 
 /** True when a row's imported line says something its fields do not, so the line is worth showing under it. */
 export function originalTextDiffers(ingredient: DraftIngredient): boolean {
@@ -148,7 +152,7 @@ export function IngredientFields(props: IngredientFieldsProps) {
           ) : (
             <>
               {amountFields(props, quantityError, "line")}
-              {noteField("col-span-full @min-[33rem]/fields:col-span-1")}
+              {noteField()}
             </>
           )}
           {quantityError !== undefined && (

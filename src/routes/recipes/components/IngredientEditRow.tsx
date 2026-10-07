@@ -174,7 +174,7 @@ export function IngredientColumnsHeader() {
     <div className="flex items-end gap-2 text-xs font-medium text-fg-subtle">
       <span className="w-6 shrink-0" />
       <div className="@container/fields min-w-0 flex-1">
-        <div className={cn(INGREDIENT_COLUMNS, "hidden @min-[33rem]/fields:grid")}>
+        <div className={cn(INGREDIENT_COLUMNS, "mb-2 hidden @min-[36rem]/fields:grid")}>
           <span className="px-1">Amount</span>
           <span className="px-1">Unit</span>
           <span className="px-1">Food</span>

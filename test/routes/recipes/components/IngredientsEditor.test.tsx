@@ -736,7 +736,9 @@ describe("IngredientsEditor at both widths", () => {
     const header = html.match(/<li[^>]*data-reorder-header=""[^>]*>[\s\S]*?<\/li>/)?.[0] ?? "";
     expect(header).toContain('aria-hidden="true"');
     expect(header).toContain("hidden md:flex");
-    expect(header).toContain("@min-[33rem]/fields:grid");
+    expect(header).toContain("@min-[36rem]/fields:grid");
+    // The header's line takes back the list's gap, so it leaves no space where its columns hide.
+    expect(header).toContain("-mb-2");
     expect(header.match(/>(Amount|Unit|Food|Note)</g)).toEqual([">Amount<", ">Unit<", ">Food<", ">Note<"]);
     // Each field still names itself.
     expect(tagWithLabel(html, "Ingredient 2 note")).toContain('name="parts.0.ingredients.1.note"');
@@ -799,11 +801,13 @@ describe("the one-line fields from md (M13.6, critique #10)", () => {
   test("amount, unit, food and note are cells of one grid, the note last, with no Fixed box or controls on the line", () => {
     const html = renderToString(<IngredientFields {...fieldProps(tart(), 1, () => {})} layout="line" controls={<span>CONTROLS</span>} />);
     const grid = html.match(/<div class="grid [^"]*"/)?.[0] ?? "";
-    expect(grid).toContain("@min-[33rem]/fields:grid-cols-[4.5rem_9.5rem_minmax(0,3fr)_minmax(0,2fr)]");
+    expect(grid).toContain("grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)]");
+    expect(grid).toContain("@min-[36rem]/fields:grid-cols-[4.5rem_9.5rem_minmax(0,3fr)_minmax(0,2fr)]");
     const order = [...html.matchAll(/aria-label="Ingredient 2 (quantity|unit|food|note)"/g)].map((m) => m[1]);
     expect(order).toEqual(["quantity", "unit", "food", "note"]);
-    // Below 33rem the note takes a second line of its own.
-    expect(tagWithLabel(html, "Ingredient 2 note")).toContain("col-span-full @min-[33rem]/fields:col-span-1");
+    // Below 36rem two lines in tab order: amount and unit over food and note, the unit and the food two columns wide.
+    expect(html.match(/col-span-2 @min-\[36rem\]\/fields:col-span-1/g)).toHaveLength(2);
+    expect(tagWithLabel(html, "Ingredient 2 note")).not.toContain("col-span");
     expect(html).not.toContain("Ingredient 2 fixed");
     expect(html).not.toContain("CONTROLS");
   });

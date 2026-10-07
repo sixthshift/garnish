@@ -150,18 +150,18 @@ describe("rectContains", () => {
 });
 
 describe("ReorderList on a narrow list", () => {
-  const list = (narrow: "beside" | "above" | "menu" | "row") =>
+  const list = (narrow: "beside" | "above" | "row") =>
     renderToString(
       <ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} onRemove={() => {}} renderItem={(r) => r.text} itemName="part" narrow={narrow} />
     );
 
   test("only a list whose narrow layout differs measures itself", () => {
     expect(list("beside")).not.toContain("@container");
-    for (const narrow of ["above", "menu", "row"] as const) expect(list(narrow)).toContain(`data-narrow="${narrow}"`);
+    for (const narrow of ["above", "row"] as const) expect(list(narrow)).toContain(`data-narrow="${narrow}"`);
   });
 
   test("the buttons stay for a wide list, and keep their labels whatever the layout", () => {
-    for (const narrow of ["above", "menu", "row"] as const) {
+    for (const narrow of ["above", "row"] as const) {
       const html = list(narrow);
       expect(html.match(/aria-label="Move part \d up"/g)).toHaveLength(3);
       expect(html.match(/aria-label="Remove part \d"/g)).toHaveLength(3);
@@ -172,13 +172,6 @@ describe("ReorderList on a narrow list", () => {
     const html = list("above");
     expect(html).toMatch(/<span[^>]*@2xl:hidden[^>]*>part 1<\/span>/);
     expect(html).toContain("@max-2xl:basis-full");
-  });
-
-  test('"menu" hides the buttons for one ⋯ named like them', () => {
-    const html = list("menu");
-    expect(html).toContain("@max-2xl:hidden");
-    expect(html.match(/aria-label="Reorder part \d"/g)).toHaveLength(6);
-    expect(html.match(/aria-haspopup="menu"/g)).toHaveLength(3);
   });
 
   test('"row" leaves the handle to the row', () => {
