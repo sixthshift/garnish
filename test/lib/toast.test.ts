@@ -3,7 +3,7 @@
 import { TOAST_STACK_CLASS, toastStore } from "@sixthshift/design-system/overlay";
 import { cn } from "@sixthshift/design-system/utils";
 import { afterEach, expect, test } from "vitest";
-import { TOAST_POSITION, toastError } from "../../src/lib/toast";
+import { TIMER_STRIP_VAR, TOAST_POSITION, toastError } from "../../src/lib/toast";
 
 afterEach(() => {
   for (const record of toastStore.snapshot()) toastStore.remove(record.id);
@@ -23,8 +23,27 @@ test("the position merges over the design system's bottom-centre default rather 
   expect(classes).not.toContain("-translate-x-1/2");
   expect(classes).not.toContain("flex-col-reverse");
   expect(classes).toEqual(
-    expect.arrayContaining(["fixed", "z-toast", "pointer-events-none", "inset-x-0", "bottom-24", "flex-col", "md:right-6", "md:bottom-6"])
+    expect.arrayContaining([
+      "fixed",
+      "z-toast",
+      "pointer-events-none",
+      "inset-x-0",
+      "bottom-[calc(6rem+var(--timer-strip,0px))]",
+      "flex-col",
+      "md:right-6",
+      "md:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
+    ])
   );
+});
+
+test("the stack stands on the recipe page's timer strip, by the height the strip publishes (critique #15c)", () => {
+  const classes = cn(TOAST_STACK_CLASS, TOAST_POSITION).split(" ");
+  // Only the raised offsets are left: the design system's own bottom is merged away.
+  expect(classes.filter((c) => /^(md:)?bottom-/.test(c))).toEqual([
+    "bottom-[calc(6rem+var(--timer-strip,0px))]",
+    "md:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
+  ]);
+  expect(TIMER_STRIP_VAR).toBe("--timer-strip");
 });
 
 test("a page marked data-toasts=top moves the stack to the top at every width (critique #15b)", () => {
@@ -32,8 +51,8 @@ test("a page marked data-toasts=top moves the stack to the top at every width (c
   // Kept beside the bottom placement, not merged away by it.
   expect(classes).toEqual(
     expect.arrayContaining([
-      "bottom-24",
-      "md:bottom-6",
+      "bottom-[calc(6rem+var(--timer-strip,0px))]",
+      "md:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
       "[:root:has([data-toasts=top])_&]:bottom-auto",
       "[:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))]",
       "md:[:root:has([data-toasts=top])_&]:top-6",

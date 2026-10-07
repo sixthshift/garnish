@@ -1,6 +1,8 @@
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
+import { type Ref, useEffect, useRef } from "react";
 import { isStepTimer } from "../../../../lib/timers";
+import { TIMER_STRIP_VAR } from "../../../../lib/toast";
 import { type RunningTimer, useTimers } from "../../../../lib/useTimers";
 
 export type TimerStripRowsProps = {
@@ -11,14 +13,15 @@ export type TimerStripRowsProps = {
   /** `cook` gives Pause and dismiss cook mode's 48px targets and the time left a size to read at arm's length. */
   size?: "page" | "cook";
   className?: string;
+  ref?: Ref<HTMLUListElement>;
 };
 
 /** The rows themselves. Renders nothing when no timer is going. */
-export function TimerStripRows({ timers, onPause, onResume, onDismiss, size = "page", className }: TimerStripRowsProps) {
+export function TimerStripRows({ timers, onPause, onResume, onDismiss, size = "page", className, ref }: TimerStripRowsProps) {
   if (timers.length === 0) return null;
   const button = size === "cook" ? "xl" : "sm";
   return (
-    <ul className={cn("flex flex-col gap-2", className)} aria-label="Timers" data-testid="timer-strip" data-print="hide">
+    <ul ref={ref} className={cn("flex flex-col gap-2", className)} aria-label="Timers" data-testid="timer-strip" data-print="hide">
       {timers.map((timer) => {
         const paused = !timer.done && timer.endsAt === null;
         return (
@@ -94,9 +97,31 @@ export type TimerStripProps = {
 export function TimerStrip({ recipeId, fixed, hideStep, size, className }: TimerStripProps) {
   const { timers: all, pause, resume, dismiss } = useTimers(recipeId);
   const timers = hideStep === undefined ? all : all.filter((timer) => !isStepTimer(timer.id, hideStep));
-  if (timers.length === 0) return null;
+  const strip = useRef<HTMLUListElement | null>(null);
+  const showing = timers.length > 0;
+
+  // A fixed strip tells the document how tall it is, so the toast stack (which
+  // portals to the body, outside anything the strip could wrap) stands on it
+  // rather than over it (critique #15c: "Timer done" covered the strip's rows).
+  // Measured, not assumed: the strip grows a row per timer.
+  useEffect(() => {
+    const node = strip.current;
+    if (!fixed || !showing || node === null) return;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty(TIMER_STRIP_VAR, `${node.offsetHeight}px`);
+    publish();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
+    observer?.observe(node);
+    return () => {
+      observer?.disconnect();
+      root.style.removeProperty(TIMER_STRIP_VAR);
+    };
+  }, [fixed, showing]);
+
+  if (!showing) return null;
   return (
     <TimerStripRows
+      ref={strip}
       timers={timers}
       onPause={pause}
       onResume={resume}
