@@ -201,9 +201,8 @@ export function StepEditRow({
         <Menu.Item disabled={last} onSelect={() => onChange(mergeStepWithNext(draft, pi, si))}>
           Merge with next
         </Menu.Item>
-        <Menu.Item intent="danger" onSelect={() => onChange(removeStep(draft, pi, si))}>
-          Delete
-        </Menu.Item>
+        {/* Neutral: it changes the unsaved draft, which Cancel restores (rule 5 keeps red for a confirm). */}
+        <Menu.Item onSelect={() => onChange(removeStep(draft, pi, si))}>Delete</Menu.Item>
       </Menu>
     </div>
   );

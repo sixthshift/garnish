@@ -100,8 +100,9 @@ export function DataTable<T>({
         />
         {actions}
         {onDelete !== undefined && (
-          <Button type="button" variant="outline" intent="danger" size="sm" disabled={selectedItems.length === 0} onClick={() => onDelete(selectedItems)}>
-            {/* The count is on the button because a selection can reach rows not drawn. */}
+          <Button type="button" variant="outline" intent="neutral" size="sm" disabled={selectedItems.length === 0} onClick={() => onDelete(selectedItems)}>
+            {/* The count is on the button because a selection can reach rows not drawn. Neutral: it opens the
+                caller's confirm, which carries the red (design-language rule 5). */}
             {selectedItems.length === 0 ? "Delete" : `Delete ${selectedItems.length}`}
           </Button>
         )}

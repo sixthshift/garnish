@@ -9,9 +9,9 @@
  * Only tier 2 (semantic) is re-pointed — the "what a colour means" tier — plus
  * a Tailwind `@theme` block for shape and the display face. Component tokens
  * (tier 3, `--button-bg` and friends) are left alone: nothing here re-wires a
- * component, it only changes what the meanings resolve to — with three
- * exceptions, the off Switch's track, the neutral soft Badge and the disabled
- * brand Button, at the end of the file.
+ * component, it only changes what the meanings resolve to — with four
+ * exceptions, the off Switch's track, the neutral soft Badge, the disabled
+ * brand Button and the selected Tab, at the end of the file.
  *
  *   brand     teal     (a deep blue-green: #2c666c fills in light, #4ba5a9 in dark)
  *   neutrals  earth    (warm paper instead of cool slate)
@@ -351,4 +351,14 @@ h3 {
   --button-bg: var(--bg-subtle-pressed);
   --button-fg: var(--fg-subtle);
   opacity: 1;
+}
+
+/* The selected Tab. The library fills it `--bg-brand-pressed`: dark teal in
+   light and a bright cyan pill in dark, brand as emphasis on a control that
+   is not the page's action. It takes the one selected look every toggle and
+   the nav use (rule 5): the neutral tint's pressed step, with normal text.
+   The library's hovered cells point back at these, so hover holds. */
+.tabs-trigger[data-selected="true"] {
+  --tabs-trigger-bg: var(--bg-subtle-pressed);
+  --tabs-trigger-fg: var(--fg-normal);
 }

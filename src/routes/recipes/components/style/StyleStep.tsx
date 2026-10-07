@@ -36,6 +36,14 @@ export type StyleStepProps = {
   onDoneEditing: () => void;
 };
 
+/**
+ * The chosen side of Keep / Original: the toggles' selected fill (the neutral
+ * tint's pressed step and its text partner), as the Styled/Original toggle and
+ * the home page's Filters button take it. Never brand: Save is the page's one
+ * primary action (design-language rule 5).
+ */
+const CHOSEN = "[--button-bg-hovered:var(--intent-tint-bg-pressed)] [--button-bg:var(--intent-tint-bg-pressed)] [--button-fg:var(--intent-tint-fg-pressed)]";
+
 /** Everything a step says, as the recipe page shows it: the label, the instruction, the supporting line. */
 function StepWords({ step, className }: { step: RestyledStep; className?: string }) {
   return (
@@ -113,8 +121,9 @@ export function StyleStep(props: StyleStepProps) {
             <Button
               type="button"
               size="sm"
-              variant={choice === "rewrite" ? "solid" : "outline"}
-              intent={choice === "rewrite" ? "brand" : "neutral"}
+              variant="outline"
+              intent="neutral"
+              className={cn(choice === "rewrite" && CHOSEN)}
               aria-pressed={choice === "rewrite"}
               aria-label={`Keep the rewrite of step ${n}`}
               onClick={props.onKeep}
@@ -137,8 +146,9 @@ export function StyleStep(props: StyleStepProps) {
             <Button
               type="button"
               size="sm"
-              variant={choice === "original" ? "solid" : "outline"}
+              variant="outline"
               intent="neutral"
+              className={cn(choice === "original" && CHOSEN)}
               aria-pressed={choice === "original"}
               aria-label={`Use the original of step ${n}`}
               onClick={props.onOriginal}

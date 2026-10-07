@@ -2,6 +2,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { toast } from "@sixthshift/design-system/overlay";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
+import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { Menu } from "../../../../components/ui/Menu";
 import { servingsLabel } from "../../../../domain/plan";
 import type { TimelineEvent } from "../../../../domain/recipe";
@@ -19,12 +20,15 @@ import { offersSaveAsNote, withNoteFromCook } from "./timelineNotes";
  * servings count (`servingsLabel` from src/domain/plan/labels.ts — nothing
  * when it did not), the comment on the same line (truncated, a tap expanding
  * it to full text), a small square thumbnail when there is a photo, and a row
- * menu holding Delete. No confirm — the same delete path stage 5 had.
+ * menu holding Delete. Delete asks first: a cook's entry, its comment and its
+ * photo are history nothing brings back, so the red is the confirm's and the
+ * menu item that opens it (design-language rule 5).
  */
 export function TimelineRow({ event }: { event: TimelineEvent }) {
   const mutate = useMutate();
   const context = useQuickEditContext();
   const [deleting, setDeleting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const photo = timelineImageUrl(event.image);
@@ -94,11 +98,24 @@ export function TimelineRow({ event }: { event: TimelineEvent }) {
               Save as note
             </Menu.Item>
           )}
-          <Menu.Item intent="danger" disabled={deleting} onSelect={() => void remove()}>
+          <Menu.Item intent="danger" disabled={deleting} onSelect={() => setConfirming(true)}>
             Delete
           </Menu.Item>
         </Menu>
       </div>
+      {confirming && (
+        <ConfirmDialog
+          title={`Delete the entry from ${date}?`}
+          aria-label={`Delete the entry from ${date}`}
+          confirmLabel="Delete"
+          busy={deleting}
+          busyLabel="Deleting…"
+          onCancel={() => !deleting && setConfirming(false)}
+          onConfirm={() => void remove()}
+        >
+          Its comment and photo go with it.
+        </ConfirmDialog>
+      )}
     </li>
   );
 }

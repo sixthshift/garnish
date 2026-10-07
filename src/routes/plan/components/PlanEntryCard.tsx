@@ -58,7 +58,8 @@ export function PlanEntryCard({
             </Menu.Item>
           ))}
         <Menu.Separator />
-        <Menu.Item intent="danger" disabled={busy} onSelect={() => onRemove(entry)}>
+        {/* Neutral: no confirm, and an entry is re-added in two taps (rule 5 keeps red for a confirm). */}
+        <Menu.Item disabled={busy} onSelect={() => onRemove(entry)}>
           Remove
         </Menu.Item>
       </Menu>
