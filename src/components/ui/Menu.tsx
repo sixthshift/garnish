@@ -53,7 +53,9 @@ export function Menu({ label, iconOnly = false, display, open: openProp, default
 
   // An item a breakpoint hides (`display: none`) has no layout box and cannot take focus, so the arrows pass over it.
   const items = (): HTMLElement[] =>
-    Array.from(panelRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []).filter((item) => item.checkVisibility?.() ?? true);
+    Array.from(panelRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]') ?? []).filter(
+      (item) => item.checkVisibility?.() ?? true
+    );
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Escape") {
@@ -137,6 +139,8 @@ export type MenuItemProps = {
   "data-testid"?: string;
   /** Extra classes for the item, e.g. a breakpoint that hides it. */
   className?: string;
+  /** Makes the item a checkbox (`menuitemcheckbox`) showing this state with a tick, for a setting the row holds (Fixed). */
+  checked?: boolean;
 };
 
 const ITEM_CLASS = "flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-bg-normal-hovered disabled:opacity-50";
@@ -151,6 +155,7 @@ export function MenuItem({
   asChild = false,
   "data-testid": dataTestId,
   className: extra,
+  checked,
 }: MenuItemProps) {
   const { close } = useContext(menuContext);
   const className = cn(ITEM_CLASS, INTENT_CLASS[intent], extra);
@@ -173,6 +178,17 @@ export function MenuItem({
     });
   }
 
+  if (checked !== undefined) {
+    return (
+      <button type="button" role="menuitemcheckbox" aria-checked={checked} disabled={disabled} className={className} onClick={choose} data-testid={dataTestId}>
+        {children}
+        <span className="ml-auto w-4 shrink-0 text-center" aria-hidden="true">
+          {checked ? "✓" : ""}
+        </span>
+      </button>
+    );
+  }
+
   return (
     <button type="button" role="menuitem" disabled={disabled} className={className} onClick={choose} data-testid={dataTestId}>
       {children}
@@ -180,9 +196,9 @@ export function MenuItem({
   );
 }
 
-/** A hairline between groups of items. */
-export function MenuSeparator() {
-  return <hr className="my-1 border-t border-border-subtle" />;
+/** A hairline between groups of items. `className` hides it with the group it divides. */
+export function MenuSeparator({ className }: { className?: string } = {}) {
+  return <hr className={cn("my-1 border-t border-border-subtle", className)} />;
 }
 
 Menu.Item = MenuItem;

@@ -1,7 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import type { ReactNode } from "react";
 import type { BulkReview } from "../../../components/ui/bulk/useBulkStage";
-import { Menu } from "../../../components/ui/Menu";
 import { addReviewedIngredients, filterUnits, type IngredientReview, type RecipeDraft } from "../../../domain/draft";
 import { pendingCreations, reviewRows, rowCommit } from "../../../domain/ingredient";
 import type { FoodRow, Unit } from "../../../domain/reference";
@@ -72,14 +71,14 @@ export type ParseAction = {
 };
 
 /**
- * The "Parse" action itself: a trigger — a menu item inline, a plain
- * button in the phone sheet, the two placements the task asks for — that
- * becomes the same review chips bulk add shows once pressed, with Cancel
- * (nothing changes) and Apply (commits the decision) alongside. No state of
- * its own; `parse` carries it all, so this stays a plain function like
- * `IngredientFields` itself.
+ * The "Parse" action itself: a plain button in the phone sheet, or nothing
+ * on the editor's one-line row (`"review"`), whose ⋯ menu holds the trigger —
+ * either way it becomes the same review chips bulk add shows once pressed,
+ * with Cancel (nothing changes) and Apply (commits the decision) alongside.
+ * No state of its own; `parse` carries it all, so this stays a plain function
+ * like `IngredientFields` itself.
  */
-export function parseAction(parse: ParseAction, label: string, units: readonly Unit[], disabled: boolean | undefined, variant: "menu" | "button"): ReactNode {
+export function parseAction(parse: ParseAction, label: string, units: readonly Unit[], disabled: boolean | undefined, variant: "button" | "review"): ReactNode {
   const busy = parse.busy || disabled === true;
 
   if (parse.review !== null) {
@@ -110,19 +109,11 @@ export function parseAction(parse: ParseAction, label: string, units: readonly U
     );
   }
 
-  if (variant === "button") {
-    return (
-      <Button type="button" variant="outline" intent="neutral" size="sm" aria-label={`${label} parse`} disabled={busy} onClick={parse.onStart}>
-        Parse
-      </Button>
-    );
-  }
+  if (variant === "review") return null;
 
   return (
-    <Menu label={`${label} actions`} iconOnly>
-      <Menu.Item onSelect={parse.onStart} disabled={busy}>
-        Parse
-      </Menu.Item>
-    </Menu>
+    <Button type="button" variant="outline" intent="neutral" size="sm" aria-label={`${label} parse`} disabled={busy} onClick={parse.onStart}>
+      Parse
+    </Button>
   );
 }

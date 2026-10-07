@@ -106,4 +106,18 @@ describe("Menu", () => {
     );
     expect(html).toContain("disabled");
   });
+
+  test("a checked item is a menuitemcheckbox carrying its state, with a tick only when on", () => {
+    const html = renderToString(
+      <Menu label="Row actions" open>
+        <Menu.Item checked>Fixed</Menu.Item>
+        <Menu.Item checked={false}>Text only</Menu.Item>
+        <Menu.Separator className="max-md:hidden" />
+      </Menu>
+    );
+    expect(html.match(/role="menuitemcheckbox"/g)).toHaveLength(2);
+    expect(html).toMatch(/aria-checked="true"[^>]*>Fixed<span[^>]*>✓</);
+    expect(html).toMatch(/aria-checked="false"[^>]*>Text only<span[^>]*><\/span>/);
+    expect(html).toMatch(/<hr class="[^"]*max-md:hidden/);
+  });
 });

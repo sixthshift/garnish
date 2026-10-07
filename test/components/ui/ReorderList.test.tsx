@@ -206,6 +206,36 @@ describe("ReorderList drag handles", () => {
     expect(html.match(/data-index="\d"/g)).toHaveLength(3);
   });
 
+  test("a header is a hidden first line laid out like a row, outside the rows a drag measures", () => {
+    const html = renderToString(
+      <ReorderList
+        items={rows}
+        keyOf={(r) => r.id}
+        onReorder={() => {}}
+        onRemove={() => {}}
+        renderItem={(r) => <span>{r.text}</span>}
+        header={<span>Columns</span>}
+        headerClassName="hidden md:flex"
+      />
+    );
+    const header = html.match(/<li[^>]*data-reorder-header=""[^>]*>[\s\S]*?<\/li>/)?.[0] ?? "";
+    expect(html.indexOf("data-reorder-header")).toBeLessThan(html.indexOf('data-index="0"'));
+    expect(header).toContain('aria-hidden="true"');
+    expect(header).not.toContain("data-index");
+    expect(header).toContain("hidden md:flex");
+    expect(header).toContain("Columns");
+    // Room for the handle, and for up, down and remove: three 2rem buttons 0.25rem apart.
+    expect(header).toContain('class="w-6 shrink-0"');
+    expect(header).toContain("width:6.5rem");
+  });
+
+  test("align start sets the controls level with a row's first line", () => {
+    const render = (align?: "start") =>
+      renderToString(<ReorderList items={rows} keyOf={(r) => r.id} onReorder={() => {}} renderItem={(r) => <span>{r.text}</span>} align={align} />);
+    expect(render().match(/<li[^>]*data-index="0"[^>]*>/)?.[0]).toContain("items-center");
+    expect(render("start").match(/<li[^>]*data-index="0"[^>]*>/)?.[0]).toContain("items-start");
+  });
+
   test("the touch delay is the 250 ms the plan asks for", () => {
     expect(TOUCH_DELAY_MS).toBe(250);
   });

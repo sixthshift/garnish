@@ -5,14 +5,17 @@ import { picker } from "../../../lib/ui/picker";
 import type { IngredientFieldsProps } from "./IngredientFields";
 
 /**
- * The structured row's amount line: quantity, unit and food, side by side.
+ * The structured row's amount fields: quantity, unit and food, side by side.
+ * Stacked (the sheets) they wrap on a line of their own; on the editor's one
+ * line (`"line"`) they are bare cells of the row's grid, sized by its columns.
  * A plain function of the row's props, like `parseAction`, so `IngredientFields`
  * stays a function a test can call directly and search.
  */
-export function amountFields(props: IngredientFieldsProps, quantityError: string | undefined) {
+export function amountFields(props: IngredientFieldsProps, quantityError: string | undefined, layout: "stack" | "line" = "stack") {
   const { ingredient, path, label, units, disabled, quantityDraft, unitText, foodText, foodRows } = props;
-  return (
-    <div className="flex flex-wrap gap-2">
+  const line = layout === "line";
+  const fields = (
+    <>
       <Input
         name={`${path}.quantity`}
         aria-label={`${label} quantity`}
@@ -21,7 +24,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         inputMode="decimal"
         autoComplete="off"
         placeholder="Qty"
-        className="w-20"
+        className={line ? undefined : "w-20"}
         value={quantityDraft ?? quantityText(ingredient.quantity)}
         disabled={disabled}
         onChange={(event) => {
@@ -34,7 +37,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         name={`${path}.unit`}
         aria-label={`${label} unit`}
         placeholder="Unit"
-        className="w-28 grow"
+        className={line ? undefined : "w-28 grow"}
         value={unitText}
         disabled={disabled}
         onValueChange={props.onUnitText}
@@ -58,7 +61,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         name={`${path}.food`}
         aria-label={`${label} food`}
         placeholder="Food"
-        className="min-w-40 grow-2"
+        className={line ? undefined : "min-w-40 grow-2"}
         value={foodText}
         disabled={disabled}
         onValueChange={props.onFoodText}
@@ -79,6 +82,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
           },
         })}
       />
-    </div>
+    </>
   );
+  return line ? fields : <div className="flex flex-wrap gap-2">{fields}</div>;
 }

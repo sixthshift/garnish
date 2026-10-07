@@ -409,11 +409,11 @@ describe("IngredientsEditor", () => {
     const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
     expect(html).toContain(`data-reorder-group="${INGREDIENT_DRAG_GROUP}"`);
     expect(html.match(/aria-label="Drag ingredient \d"/g)).toHaveLength(2);
-    // The move-to select survives alongside the handle.
-    expect(html).toContain("Move to…");
+    // Each row's ⋯ (Fixed, Text only, Move to, and the moves on a narrow list) survives alongside the handle.
+    expect(html.match(/aria-label="Ingredient \d actions"/g)).toHaveLength(2);
   });
 
-  test("renders the row inputs for a part: quantity, unit, food, note, fixed, text toggle, move-to", () => {
+  test("renders the row inputs for a part on one line: quantity, unit, food, note; the rest is in the row's menu", () => {
     const draft = tart();
     const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
     expect(html).toContain(">Add ingredient<");
@@ -428,12 +428,11 @@ describe("IngredientsEditor", () => {
     expect(tagWithLabel(html, "Ingredient 2 unit")).toContain('value="cup"');
     expect(tagWithLabel(html, "Ingredient 2 food")).toContain('value=""');
     expect(tagWithLabel(html, "Ingredient 2 note")).toContain('value="cold"');
-    expect(html.match(/aria-label="Ingredient \d fixed"/g)).toHaveLength(2);
-    expect(html.match(/aria-label="Ingredient \d text only"/g)).toHaveLength(2);
-    expect(tagWithLabel(html, "Ingredient 1 text only")).toContain('aria-pressed="false"');
-    // Move-to offers the other component, by name.
-    expect(html).toContain('aria-label="Move ingredient 1 to part"');
-    expect(html).toContain("Move to…");
+    // Fixed, Text only and Move to left the line for the row's menu (closed, so not in the markup); the sheet is closed too.
+    expect(html).not.toContain("Ingredient 1 fixed");
+    expect(html).not.toContain("Ingredient 1 text only");
+    expect(html).not.toContain("Move to");
+    expect(tagWithLabel(html, "Ingredient 1 actions")).toContain('aria-haspopup="menu"');
     // Reorder and remove controls per row; the food list does not query on the server.
     expect(html.match(/aria-label="Move ingredient \d up"/g)).toHaveLength(2);
     expect(html.match(/aria-label="Remove ingredient \d"/g)).toHaveLength(2);
@@ -445,11 +444,11 @@ describe("IngredientsEditor", () => {
     const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
     expect(tagWithLabel(html, "Ingredient 1 text")).toContain('value="a pinch of salt"');
     expect(tagWithLabel(html, "Ingredient 1 text")).toContain('name="parts.0.ingredients.0.originalText"');
-    expect(tagWithLabel(html, "Ingredient 1 text only")).toContain('aria-pressed="true"');
+    // The one wide field is the mode, on the line itself.
+    expect(tagWithLabel(html, "Ingredient 1 text")).toContain("col-span-full");
+    expect(html).toContain('data-mode="text"');
     expect(html).not.toContain("Ingredient 1 quantity");
     expect(html).not.toContain("Ingredient 1 food");
-    // A sole component has nowhere to move to.
-    expect(html).not.toContain("Move to…");
   });
 
   test("an empty component offers the textarea; disabled disables the inputs and the add button; a quantity error shows on its row", () => {
@@ -693,7 +692,7 @@ describe("IngredientsEditor at both widths", () => {
     // From md: the inline fields, hidden below it. The sheet is closed, so it is not in the markup.
     const inline = html.match(/<div[^>]*data-inline-fields=""[^>]*>/g) ?? [];
     expect(inline).toHaveLength(2);
-    expect(inline[0]).toContain("hidden md:flex");
+    expect(inline[0]).toContain("hidden md:block");
     expect(html.match(/aria-label="Ingredient \d quantity"/g)).toHaveLength(2);
     expect(html).not.toContain('role="dialog"');
     expect(html).not.toContain("Original text");
@@ -710,12 +709,12 @@ describe("IngredientsEditor at both widths", () => {
     expect(html).toContain(">a pinch of salt<");
   });
 
-  test("a parsed row's original text prints in grey above the inline fields, not the phone summary (M13.6)", () => {
+  test("a parsed row's original text prints in grey under the line, not the phone summary (M13.6)", () => {
     const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
     const html = renderToString(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />);
 
-    expect(html.match(/data-original-text-above=""/g)).toHaveLength(1);
-    expect(html).toMatch(/data-original-text-above=""[^>]*>200g plain flour</);
+    expect(html.match(/data-original-text-below=""/g)).toHaveLength(1);
+    expect(html).toMatch(/data-original-text-below=""[^>]*>200g plain flour</);
 
     // The phone summary shows the formatted line, not the raw original text.
     const summary = html.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? "";
@@ -725,11 +724,22 @@ describe("IngredientsEditor at both widths", () => {
 
   test("no grey line when there is no original text, or when the row is text only", () => {
     const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
-    expect(html).not.toContain("data-original-text-above");
+    expect(html).not.toContain("data-original-text-below");
 
     const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
     const withText = renderToString(<IngredientsEditor draft={text} pi={0} units={units} onChange={() => {}} />);
-    expect(withText).not.toContain("data-original-text-above");
+    expect(withText).not.toContain("data-original-text-below");
+  });
+
+  test("one header over the lines names the four columns, from md and only where the four fit", () => {
+    const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
+    const header = html.match(/<li[^>]*data-reorder-header=""[^>]*>[\s\S]*?<\/li>/)?.[0] ?? "";
+    expect(header).toContain('aria-hidden="true"');
+    expect(header).toContain("hidden md:flex");
+    expect(header).toContain("@min-[33rem]/fields:grid");
+    expect(header.match(/>(Amount|Unit|Food|Note)</g)).toEqual([">Amount<", ">Unit<", ">Food<", ">Note<"]);
+    // Each field still names itself.
+    expect(tagWithLabel(html, "Ingredient 2 note")).toContain('name="parts.0.ingredients.1.note"');
   });
 });
 
@@ -785,27 +795,59 @@ describe("the phone sheet's fields", () => {
   });
 });
 
-describe("the inline fields on wide (M13.6)", () => {
-  test("a parsed row with original text shows it in grey above the fields, unlabelled", () => {
+describe("the one-line fields from md (M13.6, critique #10)", () => {
+  test("amount, unit, food and note are cells of one grid, the note last, with no Fixed box or controls on the line", () => {
+    const html = renderToString(<IngredientFields {...fieldProps(tart(), 1, () => {})} layout="line" controls={<span>CONTROLS</span>} />);
+    const grid = html.match(/<div class="grid [^"]*"/)?.[0] ?? "";
+    expect(grid).toContain("@min-[33rem]/fields:grid-cols-[4.5rem_9.5rem_minmax(0,3fr)_minmax(0,2fr)]");
+    const order = [...html.matchAll(/aria-label="Ingredient 2 (quantity|unit|food|note)"/g)].map((m) => m[1]);
+    expect(order).toEqual(["quantity", "unit", "food", "note"]);
+    // Below 33rem the note takes a second line of its own.
+    expect(tagWithLabel(html, "Ingredient 2 note")).toContain("col-span-full @min-[33rem]/fields:col-span-1");
+    expect(html).not.toContain("Ingredient 2 fixed");
+    expect(html).not.toContain("CONTROLS");
+  });
+
+  test("a Fixed row says so on the line, under its amount", () => {
+    const plain = renderToString(<IngredientFields {...fieldProps(tart(), 0, () => {})} layout="line" />);
+    expect(plain).not.toContain("data-fixed-badge");
+    const draft = updateIngredient(tart(), 0, 0, { fixed: true });
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} layout="line" />);
+    expect(html).toMatch(/data-fixed-badge=""[^>]*>Fixed</);
+  });
+
+  test("a parsed row's original text shows in grey under the line, unlabelled, only when it says more than the fields", () => {
     const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
-    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} originalTextAbove />);
-    expect(html).toMatch(/^<div[^>]*><p[^>]*data-original-text-above=""[^>]*>200g plain flour<\/p>/);
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} layout="line" />);
+    expect(html).toMatch(/data-original-text-below=""[^>]*>200g plain flour</);
     expect(html).not.toContain("Original text");
+
+    // "200g flour" is what the fields already say ("200 g flour"), spacing and punctuation aside.
+    const same = updateIngredient(tart(), 0, 0, { originalText: "200g flour" });
+    expect(renderToString(<IngredientFields {...fieldProps(same, 0, () => {})} layout="line" />)).not.toContain("data-original-text-below");
   });
 
   test("no line when there is no original text, or the row is text only", () => {
-    const plain = renderToString(<IngredientFields {...fieldProps(tart(), 0, () => {})} originalTextAbove />);
-    expect(plain).not.toContain("data-original-text-above");
+    const plain = renderToString(<IngredientFields {...fieldProps(tart(), 0, () => {})} layout="line" />);
+    expect(plain).not.toContain("data-original-text-below");
 
     const text = updateIngredient(addIngredient(emptyDraft(), 0), 0, 0, { originalText: "a pinch of salt" });
-    const html = renderToString(<IngredientFields {...fieldProps(text, 0, () => {})} originalTextAbove />);
-    expect(html).not.toContain("data-original-text-above");
+    const html = renderToString(<IngredientFields {...fieldProps(text, 0, () => {})} layout="line" />);
+    expect(html).not.toContain("data-original-text-below");
+    expect(tagWithLabel(html, "Ingredient 1 text")).toContain("col-span-full");
   });
 
-  test("without the prop, a parsed row's original text stays out of the inline fields", () => {
+  test("a quantity error shows in the row's grid, under the line", () => {
+    const html = renderToString(
+      <IngredientFields {...fieldProps(tart(), 1, () => {})} errors={{ "parts.0.ingredients.1.quantity": "Too small" }} layout="line" />
+    );
+    expect(html).toMatch(/<p class="col-span-full[^"]*" role="alert">Too small<\/p>/);
+  });
+
+  test("stacked (the sheets), a parsed row's original text stays out unless asked for", () => {
     const draft = updateIngredient(tart(), 0, 0, { originalText: "200g plain flour" });
     const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} />);
-    expect(html).not.toContain("data-original-text-above");
+    expect(html).not.toContain("data-original-text-below");
     expect(html).not.toContain("200g plain flour");
   });
 });
@@ -927,23 +969,11 @@ describe("Check: parsing a saved row (M17.6)", () => {
 describe("the Parse action's two placements (M17.6)", () => {
   const noopParse = { review: null, busy: false, error: null, onStart: () => {}, onChange: () => {}, onCancel: () => {}, onConfirm: () => {} };
 
-  test("a text-only row's inline fields (md+) offer Parse inside a row menu", () => {
-    const html = renderToString(<IngredientsEditor draft={textOnlyDraft("3 lemons")} pi={0} units={units} onChange={() => {}} />);
-    expect(html).toContain('aria-label="Ingredient 1 actions"');
-    expect(html).toContain('aria-haspopup="menu"');
-  });
-
-  test("a structured row gets no row menu at all", () => {
-    const html = renderToString(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />);
-    expect(html).not.toContain('aria-label="Ingredient 1 actions"');
-    expect(html).not.toContain(">Parse<");
-  });
-
-  test("inline (originalTextAbove) renders the trigger as a menu item, not a button", () => {
+  test("on the line (md+), the fields render no trigger: Parse is an item in the row's menu", () => {
     const draft = textOnlyDraft("3 lemons");
-    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} parse={noopParse} originalTextAbove />);
-    expect(html).toContain('aria-label="Ingredient 1 actions"');
+    const html = renderToString(<IngredientFields {...fieldProps(draft, 0, () => {})} parse={noopParse} layout="line" />);
     expect(html).not.toContain('aria-label="Ingredient 1 parse"');
+    expect(html).not.toContain(">Parse<");
   });
 
   test("the phone sheet (showOriginalText) renders the trigger as a plain button", () => {
@@ -991,7 +1021,7 @@ describe("the Parse action's two placements (M17.6)", () => {
         confirmed = true;
       },
     };
-    const tree = IngredientFields({ ...fieldProps(draft, 0, () => {}), parse, originalTextAbove: true });
+    const tree = IngredientFields({ ...fieldProps(draft, 0, () => {}), parse, layout: "line" });
     elementWithLabel(tree, "Ingredient 1 parse apply").props.onClick();
     expect(confirmed).toBe(true);
     elementWithLabel(tree, "Ingredient 1 parse cancel").props.onClick();

@@ -23,7 +23,7 @@ import type { FoodRow, Unit } from "../../../domain/reference";
 import { focusNamed, rowEnter, rowFieldName } from "../../../lib/rowKeys";
 import { listFoods } from "../../../server/fns/foods";
 import { EditorSectionHeader } from "./EditorSectionHeader";
-import { IngredientEditRow } from "./IngredientEditRow";
+import { IngredientColumnsHeader, IngredientEditRow } from "./IngredientEditRow";
 import { confirmReviewedIngredients, ingredientReview } from "./ingredientReview";
 import { ParseAllSheet } from "./ParseAllSheet";
 import { partLabel } from "./PartsEditor";
@@ -134,19 +134,24 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
             items={ingredients}
             keyOf={(row) => row.id ?? "unsaved"}
             itemName="ingredient"
-            narrow="menu"
+            narrow="row"
+            header={<IngredientColumnsHeader />}
+            headerClassName="hidden md:flex"
+            align="start"
             group={INGREDIENT_DRAG_GROUP}
             listKey={String(pi)}
             onMoveOut={(_, ii, toPi, toIndex) => onChange(moveIngredientTo(draft, pi, ii, Number(toPi), toIndex))}
             onReorder={(next) => onChange(withIngredients(draft, pi, next))}
             onRemove={(_, ii) => onChange(removeIngredient(draft, pi, ii))}
-            renderItem={(row, ii) => (
+            renderItem={(row, ii, reorder) => (
               <IngredientEditRow
                 key={row.id ?? ii}
                 ingredient={row}
                 pi={pi}
                 ii={ii}
                 units={units}
+                reorder={reorder}
+                onRemove={() => onChange(removeIngredient(draft, pi, ii))}
                 onEnter={() => enterOnRow(ii)}
                 parts={draft.parts.map((c, i) => ({ value: String(i), label: partLabel(c, i) })).filter((_, i) => i !== pi)}
                 errors={errors}

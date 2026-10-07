@@ -25,9 +25,10 @@ export type ReorderRow = {
  * - "above": on a line of their own over the content, after the row's name,
  *   so a tall row (a part, a note) gives its content the full width.
  * - "menu": the handle beside the content, up, down and remove in one ⋯ after
- *   it, for a one-line row (an ingredient's summary).
+ *   it, for a one-line row.
  * - "row": none of them; `renderItem` gets a `ReorderRow` and places the
- *   handle and the moves itself, for a row with a menu of its own (a step).
+ *   handle and the moves itself, for a row with a menu of its own (a step,
+ *   an ingredient).
  *   The row's narrow classes must use the same `@2xl` container.
  */
 export type ReorderNarrow = "beside" | "above" | "menu" | "row";
@@ -54,6 +55,22 @@ export type ReorderListProps<T> = {
   onMoveOut?: (item: T, from: number, toList: string, toIndex: number) => void;
   /** Where the controls go while the list is narrow. Default "beside". */
   narrow?: ReorderNarrow;
+  /**
+   * A row of column labels over the rows, hidden from assistive technology
+   * (each field names itself). It is laid out like a row — room for the
+   * handle (unless `narrow="row"`, where the header places its own) and for
+   * the up, down and remove buttons wherever a row shows them — so a header
+   * whose columns match the row's lines up with them. "beside" and "row" only.
+   */
+  header?: ReactNode;
+  /** Classes for the header's line, e.g. a breakpoint that hides it. */
+  headerClassName?: string;
+  /**
+   * How the up, down and remove buttons sit against a row taller than they
+   * are: "center" (default), or "start", level with a row's first line, for
+   * a one-line row that sometimes grows a quiet line under it (an ingredient).
+   */
+  align?: "center" | "start";
   className?: string;
 };
 
@@ -68,6 +85,9 @@ export function ReorderList<T>({
   listKey,
   onMoveOut,
   narrow = "beside",
+  header,
+  headerClassName,
+  align = "center",
   className,
 }: ReorderListProps<T>) {
   const generatedKey = useId();
@@ -79,6 +99,15 @@ export function ReorderList<T>({
   // The list measures itself only when its narrow layout differs, so a
   // "beside" list sized by its content is never made a container.
   const contained = narrow !== "beside";
+  // Where a row shows its up, down and remove buttons; the header keeps room for them there.
+  const controlsClass = cn(
+    "flex shrink-0 items-center gap-1",
+    narrow === "above" && "@max-2xl:ml-auto",
+    (narrow === "menu" || narrow === "row") && "@max-2xl:hidden"
+  );
+  // Their width: each a small icon-only Button (w-8, 2rem), 0.25rem apart.
+  const controlCount = onRemove === undefined ? 2 : 3;
+  const controlsWidth = `${controlCount * 2 + (controlCount - 1) * 0.25}rem`;
 
   return (
     <ol
@@ -87,6 +116,13 @@ export function ReorderList<T>({
       data-reorder-group={group}
       data-narrow={contained ? narrow : undefined}
     >
+      {header !== undefined && (
+        <li className={cn("flex items-end gap-2", headerClassName)} aria-hidden="true" data-reorder-header="">
+          {narrow !== "row" && <span className="w-6 shrink-0" />}
+          <div className="min-w-0 flex-1">{header}</div>
+          <span className={controlsClass} style={{ width: controlsWidth }} />
+        </li>
+      )}
       {items.map((item, index) => {
         const name = `${itemName} ${index + 1}`;
         const dragging = draggingKey !== null && draggingKey === keyOf(item);
@@ -112,7 +148,12 @@ export function ReorderList<T>({
         return (
           <li
             key={keyOf(item)}
-            className={cn("flex items-center gap-2 rounded-md", narrow === "above" && "@max-2xl:flex-wrap", dragging && "opacity-60 ring-1 ring-current/20")}
+            className={cn(
+              "flex gap-2 rounded-md",
+              align === "start" ? "items-start" : "items-center",
+              narrow === "above" && "@max-2xl:flex-wrap",
+              dragging && "opacity-60 ring-1 ring-current/20"
+            )}
             data-index={index}
             data-dragging={dragging ? "" : undefined}
           >
@@ -125,14 +166,7 @@ export function ReorderList<T>({
             <div className={cn("min-w-0 flex-1", narrow === "above" && "@max-2xl:order-last @max-2xl:basis-full")}>
               {renderItem(item, index, { handle, ...(moveUp && { moveUp }), ...(moveDown && { moveDown }) })}
             </div>
-            <fieldset
-              className={cn(
-                "flex shrink-0 items-center gap-1",
-                narrow === "above" && "@max-2xl:ml-auto",
-                (narrow === "menu" || narrow === "row") && "@max-2xl:hidden"
-              )}
-              aria-label={`Reorder ${name}`}
-            >
+            <fieldset className={controlsClass} aria-label={`Reorder ${name}`}>
               <Button type="button" variant="ghost" intent="neutral" size="sm" iconOnly aria-label={`Move ${name} up`} disabled={!moveUp} onClick={moveUp}>
                 <Chevron direction="up" />
               </Button>
