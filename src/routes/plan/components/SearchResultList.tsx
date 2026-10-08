@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import type { RecipeSummary } from "../../../domain/recipe";
 
+/** The id of the option at `index` in the list `listId`: what the input's `aria-activedescendant` names. */
+export const resultOptionId = (listId: string, index: number) => `${listId}-option-${index}`;
+
 type SearchResultListProps = {
+  /** The listbox's id: the input's `aria-controls`, and the stem of each option's id. */
+  id: string;
   results: readonly RecipeSummary[];
   /** The highlighted index. Out of range highlights nothing. */
   selected: number;
@@ -19,15 +24,17 @@ type SearchResultListProps = {
  * one ringed, moving the pointer over a row moving the highlight. The plan
  * add sheet's results. The keyboard itself stays with the caller, because the
  * key handler belongs on whatever input has focus (`nextSearchIndex` in
- * src/lib/search.ts is its rule).
+ * src/lib/search.ts is its rule); that input is the list's combobox, pointing
+ * at the highlighted option with `aria-activedescendant` (`resultOptionId`).
  */
-export function SearchResultList({ results, selected, onSelect, onChoose, renderResult, label }: SearchResultListProps) {
+export function SearchResultList({ id, results, selected, onSelect, onChoose, renderResult, label }: SearchResultListProps) {
   return (
-    <div className="flex flex-col gap-2" role="listbox" aria-label={label}>
+    <div id={id} className="flex flex-col gap-2" role="listbox" aria-label={label}>
       {results.map((recipe, index) => (
         // biome-ignore lint/a11y/useKeyWithClickEvents: focus stays on the caller's search input, which owns the keyboard (see the doc comment); an option can never receive a key event.
         <div
           key={recipe.id}
+          id={resultOptionId(id, index)}
           role="option"
           tabIndex={-1}
           aria-selected={index === selected}

@@ -1,14 +1,14 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { dayName, type Meal } from "../../../domain/plan";
 import type { RecipeSummary } from "../../../domain/recipe";
 import { clampSelection, nextSearchIndex, selectedResult } from "../../../lib/search";
 import { toastError } from "../../../lib/toast";
 import { MealPicker } from "./MealPicker";
 import { PlanSearchResult } from "./PlanSearchResult";
-import { SearchResultList } from "./SearchResultList";
+import { resultOptionId, SearchResultList } from "./SearchResultList";
 
 /**
  * How many results are drawn. On iOS the keyboard covers the bottom ~340px of
@@ -38,6 +38,11 @@ const PLAN_SEARCH_DEBOUNCE_MS = 200;
  * ArrowUp from the first one back to the box. The line is also a button ("Add
  * “leftovers” as a note"), so a phone with no Enter in sight still gets one.
  * Every add is one entry: `onDone` follows it, and the sheet closes on it.
+ *
+ * The box is the results' combobox (WAI-ARIA list autocomplete): focus stays
+ * in it, `aria-activedescendant` names the highlighted result and is absent
+ * while none is, and a polite status says how many recipes a search found.
+ * The note line is not an option, so the arrows never reach it.
  */
 export function PlanAddForm({
   date,
@@ -60,6 +65,9 @@ export function PlanAddForm({
   /** The highlighted result, or -1 for none: Enter then adds the typed line. */
   const [selected, setSelected] = useState(-1);
   const [meal, setMeal] = useState<Meal | null>(null);
+  /** What the status line says once a search lands: how many recipes it found. */
+  const [status, setStatus] = useState("");
+  const listId = useId();
   const requestId = useRef(0);
   const input = useRef<HTMLInputElement | null>(null);
   const line = query.trim();
@@ -72,6 +80,7 @@ export function PlanAddForm({
     setResults([]);
     setSelected(-1);
     setMeal(null);
+    setStatus("");
   };
 
   // The box takes focus two frames after the sheet opens rather than through
@@ -91,6 +100,7 @@ export function PlanAddForm({
     const term = query.trim();
     if (searchRecipes === undefined || term === "") {
       setResults([]);
+      setStatus("");
       return;
     }
     const id = ++requestId.current;
@@ -99,11 +109,13 @@ export function PlanAddForm({
         .then((found) => {
           if (requestId.current !== id) return;
           setResults(found);
+          setStatus(foundLine(found.length));
           setSelected((current) => (current < 0 ? -1 : clampSelection(current, Math.min(found.length, PLAN_RESULT_LIMIT))));
         })
         .catch((error: unknown) => {
           if (requestId.current !== id) return;
           setResults([]);
+          setStatus("");
           toastError("Search failed", error);
         });
     }, PLAN_SEARCH_DEBOUNCE_MS);
@@ -163,9 +175,19 @@ export function PlanAddForm({
         placeholder="Search recipes, or type a note"
         aria-label="Search recipes, or type a note"
         enterKeyHint="done"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={shown.length > 0}
+        aria-controls={shown.length > 0 ? listId : undefined}
+        aria-activedescendant={selectedResult(shown, selected) !== null ? resultOptionId(listId, selected) : undefined}
+        autoComplete="off"
       />
+      <div role="status" className="sr-only" data-testid="plan-add-status">
+        {status}
+      </div>
       {shown.length > 0 && (
         <SearchResultList
+          id={listId}
           results={shown}
           selected={selected}
           onSelect={setSelected}
@@ -192,4 +214,11 @@ export function PlanAddForm({
       )}
     </div>
   );
+}
+
+/** The status line for a search that found `count` recipes; the sheet draws `PLAN_RESULT_LIMIT` of them. Pure. */
+export function foundLine(count: number): string {
+  if (count === 0) return "No recipes match";
+  const line = count === 1 ? "1 recipe found" : `${count} recipes found`;
+  return count > PLAN_RESULT_LIMIT ? `${line}, showing ${PLAN_RESULT_LIMIT}` : line;
 }

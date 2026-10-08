@@ -16,7 +16,7 @@ const tart = { id: "11111111-1111-4111-8111-111111111111", slug: "lemon-tart", n
 async function renderForm() {
   const spies = { onAddText: vi.fn(), onAddRecipe: vi.fn(), onDone: vi.fn() };
   await renderInRouter(<PlanAddForm date={MONDAY} searchRecipes={async () => [tart]} {...spies} />);
-  return { ...spies, input: screen.getByRole("textbox", { name: "Search recipes, or type a note" }) };
+  return { ...spies, input: screen.getByRole("combobox", { name: "Search recipes, or type a note" }) };
 }
 
 test("an add with no chip pressed carries no meal, and is done", async () => {
@@ -137,6 +137,57 @@ test("moving the pointer over a result does highlight it", async () => {
   expect(option).toHaveAttribute("aria-selected", "true");
 });
 
+test("the box is the results' combobox: activedescendant follows the highlight and is absent while none is (queue 2 G2)", async () => {
+  const user = userEvent.setup();
+  const { onAddText, input } = await renderForm();
+
+  // Empty: collapsed, controlling nothing, pointing at nothing.
+  expect(input).toHaveAttribute("aria-autocomplete", "list");
+  expect(input).toHaveAttribute("aria-expanded", "false");
+  expect(input).not.toHaveAttribute("aria-controls");
+  expect(input).not.toHaveAttribute("aria-activedescendant");
+
+  // Results shown, nothing highlighted (critique #15c): expanded, still no active option.
+  await user.type(input, "tart");
+  const option = await screen.findByRole("option", { name: /Lemon tart/ });
+  const list = screen.getByRole("listbox", { name: "Recipes for Monday 14 September" });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+  expect(input).toHaveAttribute("aria-controls", list.id);
+  expect(input).not.toHaveAttribute("aria-activedescendant");
+  expect(screen.getByRole("status")).toHaveTextContent("1 recipe found");
+
+  // ArrowDown: the input names the option, which says it is selected; focus never leaves the box.
+  await user.keyboard("{ArrowDown}");
+  expect(option.id).not.toBe("");
+  expect(input).toHaveAttribute("aria-activedescendant", option.id);
+  expect(option).toHaveAttribute("aria-selected", "true");
+  expect(input).toHaveFocus();
+
+  // ArrowUp back to the box lets go of it again.
+  await user.keyboard("{ArrowUp}");
+  expect(input).not.toHaveAttribute("aria-activedescendant");
+
+  // A pointer move over the option points the input at it too.
+  fireEvent.mouseMove(option);
+  expect(input).toHaveAttribute("aria-activedescendant", option.id);
+
+  // The note line is not an option: Enter with nothing highlighted still adds it.
+  await user.keyboard("{ArrowUp}");
+  expect(screen.getAllByRole("option")).toHaveLength(1);
+  await user.keyboard("{Enter}");
+  expect(onAddText).toHaveBeenCalledWith(MONDAY, "tart", null);
+  expect(input).toHaveAttribute("aria-expanded", "false");
+});
+
+test("a search that finds nothing says so", async () => {
+  const user = userEvent.setup();
+  await renderInRouter(<PlanAddForm date={MONDAY} searchRecipes={async () => []} onAddText={vi.fn()} onAddRecipe={vi.fn()} />);
+  const input = screen.getByRole("combobox", { name: "Search recipes, or type a note" });
+  await user.type(input, "zzz");
+  await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("No recipes match"));
+  expect(input).toHaveAttribute("aria-expanded", "false");
+});
+
 test("ArrowUp from the box stays in the box rather than jumping to the last result", async () => {
   const user = userEvent.setup();
   const { onAddRecipe, onAddText, input } = await renderForm();
@@ -155,7 +206,7 @@ test("results stop at four, with the note row straight after them and a word on 
   const spies = { onAddText: vi.fn(), onAddRecipe: vi.fn() };
   await renderInRouter(<PlanAddForm date={MONDAY} searchRecipes={async () => many} {...spies} />);
 
-  await user.type(screen.getByRole("textbox", { name: "Search recipes, or type a note" }), "a");
+  await user.type(screen.getByRole("combobox", { name: "Search recipes, or type a note" }), "a");
   await screen.findAllByRole("option");
   expect(screen.getAllByRole("option")).toHaveLength(PLAN_RESULT_LIMIT);
   const note = screen.getByRole("button", { name: "Add “a” as a note" });
@@ -188,7 +239,7 @@ test("a day's + opens its sheet, one add closes it, and focus comes back to the 
   // A fixed height on a phone, so the box does not move as results arrive.
   expect(dialog.className).toContain("max-sm:h-[92dvh]");
   // The box takes focus once the sheet has settled, so typing goes straight into it.
-  const input = screen.getByRole("textbox", { name: "Search recipes, or type a note" });
+  const input = screen.getByRole("combobox", { name: "Search recipes, or type a note" });
   await waitFor(() => expect(input).toHaveFocus());
 
   await user.type(input, "tart");

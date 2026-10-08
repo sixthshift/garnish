@@ -13,7 +13,7 @@ import { describe, expect, test, vi } from "vitest";
 import { groupByDay, type PlanDay, type PlanEntry, planEntrySchema, weekDates } from "../../../src/domain/plan";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import { nextMeal } from "../../../src/routes/plan/components/MealPicker";
-import { PlanAddForm } from "../../../src/routes/plan/components/PlanAddForm";
+import { foundLine, PLAN_RESULT_LIMIT, PlanAddForm } from "../../../src/routes/plan/components/PlanAddForm";
 import { PlanSearchResult } from "../../../src/routes/plan/components/PlanSearchResult";
 import { PlanWeekView } from "../../../src/routes/plan/components/PlanWeekView";
 import { searchPlanRecipes } from "../../../src/routes/plan/components/searchPlanRecipes";
@@ -226,6 +226,24 @@ describe("the add sheet's form", () => {
     // Nothing typed, so no results list yet, and a word on what the box takes.
     expect(html).not.toContain('role="listbox"');
     expect(html).toContain("leftovers");
+  });
+
+  test("the box is a collapsed combobox while nothing is typed, and the status says nothing (queue 2 G2)", () => {
+    const html = renderToString(<PlanAddForm date={MONDAY} onAddText={noop} onAddRecipe={noop} />);
+    const input = html.slice(html.indexOf("<input"), html.indexOf(">", html.indexOf("<input")));
+    expect(input).toContain('role="combobox"');
+    expect(input).toContain('aria-autocomplete="list"');
+    expect(input).toContain('aria-expanded="false"');
+    expect(input).not.toContain("aria-controls");
+    expect(input).not.toContain("aria-activedescendant");
+    expect(elementHtml(html, "plan-add-status")).toContain('role="status"');
+  });
+
+  test("the status line counts what a search found, and says when it draws fewer", () => {
+    expect(foundLine(0)).toBe("No recipes match");
+    expect(foundLine(1)).toBe("1 recipe found");
+    expect(foundLine(PLAN_RESULT_LIMIT)).toBe(`${PLAN_RESULT_LIMIT} recipes found`);
+    expect(foundLine(7)).toBe(`7 recipes found, showing ${PLAN_RESULT_LIMIT}`);
   });
 
   test("the picker is three small chips, none of them pressed", () => {
