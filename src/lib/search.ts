@@ -1,38 +1,3 @@
-/** The bits of `KeyboardEvent` the shortcut cares about. */
-export type SearchKeyEvent = {
-  key: string;
-  ctrlKey?: boolean;
-  metaKey?: boolean;
-  altKey?: boolean;
-};
-
-/** The bits of `EventTarget` needed to tell a form control from anything else. */
-export type SearchEventTarget = { tagName?: string; isContentEditable?: boolean } | null | undefined;
-
-/**
- * True when `target` already consumes plain typing — an input, a textarea, a
- * select, or a contenteditable region — so a bare "/" should type a slash
- * there instead of opening the dialog.
- */
-export function isTypingTarget(target: SearchEventTarget): boolean {
-  if (!target) return false;
-  if (target.isContentEditable) return true;
-  const tag = target.tagName?.toUpperCase();
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-}
-
-/**
- * Whether a keydown should open the global search dialog: a bare "/" (no
- * modifier held), the dialog not already open, and focus not already on
- * something that types.
- */
-export function shouldOpenGlobalSearch(event: SearchKeyEvent, target: SearchEventTarget, alreadyOpen: boolean): boolean {
-  if (alreadyOpen) return false;
-  if (event.key !== "/") return false;
-  if (event.ctrlKey || event.metaKey || event.altKey) return false;
-  return !isTypingTarget(target);
-}
-
 /**
  * Where ArrowUp/ArrowDown move the highlighted result. Clamps at both ends
  * (a search result list is not a menu that wraps) and ignores every other

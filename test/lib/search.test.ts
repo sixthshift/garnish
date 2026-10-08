@@ -1,53 +1,8 @@
-// Pure key-handling helpers behind global search (M12.5): whether a "/"
-// keydown should open the dialog, and how a selected index maps onto a
+// Pure key-handling helpers behind the plan add sheet's recipe search: how
+// the arrow keys move the highlight and how a selected index maps onto a
 // result list.
 import { describe, expect, test } from "vitest";
-import { clampSelection, isTypingTarget, nextSearchIndex, selectedResult, shouldOpenGlobalSearch } from "../../src/lib/search";
-
-describe("isTypingTarget", () => {
-  test("input, textarea and select all count as typing", () => {
-    expect(isTypingTarget({ tagName: "INPUT" })).toBe(true);
-    expect(isTypingTarget({ tagName: "textarea" })).toBe(true);
-    expect(isTypingTarget({ tagName: "SELECT" })).toBe(true);
-  });
-
-  test("a contenteditable region counts even with an unrelated tag", () => {
-    expect(isTypingTarget({ tagName: "DIV", isContentEditable: true })).toBe(true);
-  });
-
-  test("a plain element, or no target at all, does not", () => {
-    expect(isTypingTarget({ tagName: "DIV" })).toBe(false);
-    expect(isTypingTarget(null)).toBe(false);
-    expect(isTypingTarget(undefined)).toBe(false);
-  });
-});
-
-describe("shouldOpenGlobalSearch", () => {
-  test("a bare slash outside a form control opens it", () => {
-    expect(shouldOpenGlobalSearch({ key: "/" }, { tagName: "BODY" }, false)).toBe(true);
-    expect(shouldOpenGlobalSearch({ key: "/" }, null, false)).toBe(true);
-  });
-
-  test("any other key does not", () => {
-    expect(shouldOpenGlobalSearch({ key: "a" }, { tagName: "BODY" }, false)).toBe(false);
-    expect(shouldOpenGlobalSearch({ key: "Enter" }, { tagName: "BODY" }, false)).toBe(false);
-  });
-
-  test("a modifier held down does not — Ctrl+/, Cmd+/ and Alt+/ are left alone", () => {
-    expect(shouldOpenGlobalSearch({ key: "/", ctrlKey: true }, { tagName: "BODY" }, false)).toBe(false);
-    expect(shouldOpenGlobalSearch({ key: "/", metaKey: true }, { tagName: "BODY" }, false)).toBe(false);
-    expect(shouldOpenGlobalSearch({ key: "/", altKey: true }, { tagName: "BODY" }, false)).toBe(false);
-  });
-
-  test("typing in a field keeps its literal slash", () => {
-    expect(shouldOpenGlobalSearch({ key: "/" }, { tagName: "INPUT" }, false)).toBe(false);
-    expect(shouldOpenGlobalSearch({ key: "/" }, { tagName: "DIV", isContentEditable: true }, false)).toBe(false);
-  });
-
-  test("already open does not reopen", () => {
-    expect(shouldOpenGlobalSearch({ key: "/" }, { tagName: "BODY" }, true)).toBe(false);
-  });
-});
+import { clampSelection, nextSearchIndex, selectedResult } from "../../src/lib/search";
 
 describe("nextSearchIndex", () => {
   test("moves down and up within range", () => {

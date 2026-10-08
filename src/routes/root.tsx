@@ -3,7 +3,6 @@ import { OverlayProvider, toast } from "@sixthshift/design-system/overlay";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { AppShell } from "../components/shell/AppShell";
-import { GlobalSearch } from "../components/shell/GlobalSearch";
 import { AppErrorFallback } from "../components/shell/RouteStates";
 import { registerServiceWorker, updateNotice } from "../lib/sw";
 import { TOAST_POSITION } from "../lib/toast";
@@ -63,7 +62,6 @@ function RootComponent() {
       <ErrorBoundary fallback={(props) => <AppErrorFallback {...props} />}>
         <AppShell />
       </ErrorBoundary>
-      <GlobalSearch />
     </OverlayProvider>
   );
 }

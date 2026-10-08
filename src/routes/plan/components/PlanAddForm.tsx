@@ -2,14 +2,13 @@ import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { useEffect, useRef, useState } from "react";
-import { GLOBAL_SEARCH_DEBOUNCE_MS } from "../../../components/shell/GlobalSearch";
-import { SearchResultList } from "../../../components/shell/SearchResultList";
 import { dayName, type Meal } from "../../../domain/plan";
 import type { RecipeSummary } from "../../../domain/recipe";
 import { clampSelection, nextSearchIndex, selectedResult } from "../../../lib/search";
 import { toastError } from "../../../lib/toast";
 import { MealPicker } from "./MealPicker";
 import { PlanSearchResult } from "./PlanSearchResult";
+import { SearchResultList } from "./SearchResultList";
 
 /**
  * How many results are drawn. On iOS the keyboard covers the bottom ~340px of
@@ -20,6 +19,9 @@ import { PlanSearchResult } from "./PlanSearchResult";
  */
 export const PLAN_RESULT_LIMIT = 3;
 
+/** How long typing pauses before the search runs. */
+const PLAN_SEARCH_DEBOUNCE_MS = 200;
+
 /**
  * What the add sheet holds for one day, top to bottom: the meal chips, the
  * search box, its results directly under it, and the typed line as an entry of
@@ -28,7 +30,7 @@ export const PLAN_RESULT_LIMIT = 3;
  * pressed to begin with, so an entry added the way it always was still lands
  * with `meal: null`.
  *
- * Typing searches recipes (debounced, the same pause the global search uses).
+ * Typing searches recipes (debounced, `PLAN_SEARCH_DEBOUNCE_MS`).
  * Nothing is highlighted until the arrow keys move into the results, and
  * typing again lets go of the highlight, so Enter adds what was typed as a
  * note unless a recipe has been picked out: "out" is a note even when a
@@ -104,7 +106,7 @@ export function PlanAddForm({
           setResults([]);
           toastError("Search failed", error);
         });
-    }, GLOBAL_SEARCH_DEBOUNCE_MS);
+    }, PLAN_SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query, searchRecipes]);
 

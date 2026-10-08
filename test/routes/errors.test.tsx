@@ -136,15 +136,15 @@ describe("ErrorView and AppErrorFallback", () => {
 
 describe("root route", () => {
   /** The root component is the overlay provider around the guarded shell; this is the provider element. */
-  function rootElement(): ReactElement<{ toastClassName?: string; children: ReactElement[] }> {
+  function rootElement(): ReactElement<{ toastClassName?: string; children: ReactElement | ReactElement[] }> {
     const component = RootRoute.options.component as unknown as (() => ReactElement) | undefined;
     expect(component).toBeDefined();
-    return component!() as ReactElement<{ toastClassName?: string; children: ReactElement[] }>;
+    return component!() as ReactElement<{ toastClassName?: string; children: ReactElement | ReactElement[] }>;
   }
 
-  /** The provider's children: the boundary and what sits beside it. */
+  /** The provider's children: the boundary and anything that sits beside it. */
   function rootChildren(): ReactElement[] {
-    return rootElement().props.children;
+    return [rootElement().props.children].flat();
   }
 
   test("wraps the shell in the design system ErrorBoundary with the app fallback", () => {

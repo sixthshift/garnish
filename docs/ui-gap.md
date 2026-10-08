@@ -23,7 +23,7 @@ Legend, Status column: **done** names the task that shipped it (stage 2 in [plan
 | Sort: name, created, updated, last made, rating, random; dice for one random recipe | Mealie | none, newest first | **copy** name/created/updated/rating/random; last made after cook log lands | done M12.4 |
 | Search box, debounced, query mirrored in URL | Mealie, Tandoor, Cooklang | have | **have** | done (stage 1) |
 | Infinite scroll, scroll position restored on back | Mealie | full list, no restore | **copy** restore; paging unnecessary at household size | done M12.2 (restore); paging skipped, not needed at this size |
-| `/` opens a global search dialog with arrow-key results | Mealie | none | **copy** | done M12.5 |
+| `/` opens a global search dialog with arrow-key results | Mealie | none | **copy** | done M12.5; removed at the user's request, the list's search box is enough (decision 159) |
 | Adding a recipe starts with a choice of source, not a blank form | Mealie's Add Recipe modal, Tandoor's import wizard `Type` step | New nav item | **copy** the framing; the options differ | M23.6: a web page, or your own (decision 57) |
 | Import a recipe from a URL | Mealie and Tandoor both run `recipe_scrapers`: ~500 per-site classes, then "wild mode" over schema.org `ld+json`/microdata. Mealie then falls through to AI transcription, AI, and an OpenGraph stub; Tandoor falls through to nothing and errors | none | **copy the wild-mode and OpenGraph rungs only** — per-site classes are what intent.md means by "scrapers rot per site" | M23.2–M23.6 (decision 58) |
 | Warn when a URL has already been imported | Tandoor matches on `source_url` and returns the duplicates | none | **copy**, one query | M23.7 |

@@ -304,7 +304,7 @@ describe("/plan", () => {
 describe("searchPlanRecipes", () => {
   useTempDataDir();
 
-  test("finds a recipe by name, the way the global search does", async () => {
+  test("finds a recipe by name, the way the recipes page search does", async () => {
     await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "", ingredients: [], steps: [] }] });
     await callServerFn(createRecipe, { name: "Roast chicken", parts: [{ name: "", ingredients: [], steps: [] }] });
     expect((await searchPlanRecipes("lemon")).map((found) => found.name)).toEqual(["Lemon tart"]);
