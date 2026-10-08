@@ -126,6 +126,28 @@ test("Tab from the panel closes the menu and moves on past it", async () => {
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Next" }));
 });
 
+// An outside click lands on the scrim, which closes the menu. Focus in the panel would go down with it to
+// the page body, so it goes back to the trigger; focus already on the trigger stays there.
+test("opened from the keyboard, an outside click closes and returns focus to the trigger", async () => {
+  const user = userEvent.setup();
+  render(stepMenu);
+  trigger().focus();
+  await user.keyboard("{Enter}{ArrowDown}");
+  expect(document.activeElement).toBe(item("Move down"));
+  await user.click(screen.getByTestId("menu-scrim"));
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(document.activeElement).toBe(trigger());
+});
+
+test("opened by a click, an outside click closes and leaves focus on the trigger", async () => {
+  const user = userEvent.setup();
+  render(stepMenu);
+  await user.click(trigger());
+  await user.click(screen.getByTestId("menu-scrim"));
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(document.activeElement).toBe(trigger());
+});
+
 test("the panel is named by its trigger", async () => {
   const user = userEvent.setup();
   render(stepMenu);

@@ -96,6 +96,12 @@ export function Menu({
     triggerRef.current?.focus();
   };
 
+  const closeFromOutside = () => {
+    const inside = panelRef.current?.contains(document.activeElement) ?? false;
+    setOpen(false);
+    if (inside) triggerRef.current?.focus();
+  };
+
   // The trigger, as a menu button: Enter and Space open onto the first item (through the click they
   // fire), ArrowDown and ArrowUp onto the first and last; Escape closes, Tab closes and moves on.
   const onTriggerKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -158,8 +164,18 @@ export function Menu({
         <>
           {/* Clicking anywhere else closes, without a document listener. Scrim and
               panel share the popover layer, above the phone's tab bar; the panel
-              comes later in the DOM, so it paints over the scrim. */}
-          <div data-testid="menu-scrim" className="fixed inset-0 z-popover" onClick={() => setOpen(false)} aria-hidden="true" />
+              comes later in the DOM, so it paints over the scrim. The scrim covers
+              the page, so an outside click never lands on another control: it keeps
+              focus where it was on the way down (a press on a plain div would drop
+              it to the body), and focus in the panel, which closing unmounts, goes
+              back to the trigger. */}
+          <div
+            data-testid="menu-scrim"
+            className="fixed inset-0 z-popover"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={closeFromOutside}
+            aria-hidden="true"
+          />
           <div
             ref={panelRef}
             id={panelId}

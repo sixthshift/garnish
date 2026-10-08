@@ -24,6 +24,14 @@ import { offersSaveAsNote, withNoteFromCook } from "./timelineNotes";
  * photo are history nothing brings back, so the red is the confirm's and the
  * menu item that opens it (design-language rule 5).
  */
+/** The confirm's second sentence names only what the entry holds; an entry with neither has none. */
+function goesWithIt(comment: boolean, photo: boolean): string | null {
+  if (comment && photo) return "Its comment and photo go with it.";
+  if (comment) return "Its comment goes with it.";
+  if (photo) return "Its photo goes with it.";
+  return null;
+}
+
 export function TimelineRow({ event }: { event: TimelineEvent }) {
   const mutate = useMutate();
   const context = useQuickEditContext();
@@ -113,7 +121,7 @@ export function TimelineRow({ event }: { event: TimelineEvent }) {
           onCancel={() => !deleting && setConfirming(false)}
           onConfirm={() => void remove()}
         >
-          Its comment and photo go with it.
+          {goesWithIt(hasComment, photo !== null)}
         </ConfirmDialog>
       )}
     </li>

@@ -22,11 +22,11 @@ const event = timelineEventSchema.parse({
 
 beforeEach(() => deleteTimelineEvent.mockClear());
 
-async function openConfirm() {
+async function openConfirm(entry = event) {
   const user = userEvent.setup();
   await renderInRouter(
     <ul>
-      <TimelineRow event={event} />
+      <TimelineRow event={entry} />
     </ul>
   );
   await user.click(screen.getByRole("button", { name: /^Actions for entry from/ }));
@@ -63,4 +63,19 @@ test("Escape closes the confirm, and focus goes back to the row's ⋯", async ()
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(deleteTimelineEvent).not.toHaveBeenCalled();
   expect(document.activeElement).toBe(trigger());
+});
+
+// G3: the confirm said "Its comment and photo go with it" for every entry. It names only what the entry holds.
+test.each([
+  ["a comment and a photo", "Lovely", "photo.webp", "Its comment and photo go with it."],
+  ["only a comment", "Lovely", null, "Its comment goes with it."],
+  ["only a photo", "", "photo.webp", "Its photo goes with it."],
+  ["neither", "", null, null],
+])("the confirm for an entry with %s says what goes with it", async (_, message, image, line) => {
+  await openConfirm({ ...event, message, image });
+  const dialog = screen.getByRole("dialog");
+  for (const other of ["Its comment and photo go with it.", "Its comment goes with it.", "Its photo goes with it."]) {
+    expect(dialog.textContent?.includes(other)).toBe(other === line);
+  }
+  expect(dialog.textContent).toContain("Delete the entry from");
 });

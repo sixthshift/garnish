@@ -5,8 +5,8 @@ import type { ReactNode } from "react";
 export type ConfirmDialogProps = {
   /** Question in the header, e.g. "Delete Lemon tart?". */
   title: ReactNode;
-  /** What happens if they go ahead. A plain string is wrapped in a paragraph. */
-  children: ReactNode;
+  /** What happens if they go ahead. A plain string is wrapped in a paragraph; without it the dialog is the question alone. */
+  children?: ReactNode;
   /** The danger button's text. */
   confirmLabel: string;
   /** Accessible name for the dialog; without it the dialog names itself from the title. */
@@ -22,7 +22,7 @@ export function ConfirmDialogContent({ title, children, confirmLabel, busy = fal
   return (
     <>
       <ModalHeader>{title}</ModalHeader>
-      <ModalBody>{typeof children === "string" ? <p>{children}</p> : children}</ModalBody>
+      {children != null && <ModalBody>{typeof children === "string" ? <p>{children}</p> : children}</ModalBody>}
       <ModalFooter>
         <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
           Cancel
