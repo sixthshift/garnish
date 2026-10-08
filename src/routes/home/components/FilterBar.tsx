@@ -59,6 +59,7 @@ export function FilterBar({ allTags, allFoods, tags, match, foods, favourite, on
           {...picker({
             options,
             text: foodText,
+            label: "Food filter suggestions",
             onSelect: (option) => {
               onFoodsChange(addUnique(foods, option.value));
               setFoodText("");

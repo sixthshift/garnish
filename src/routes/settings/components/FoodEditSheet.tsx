@@ -112,6 +112,7 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
               {...picker({
                 options: aisles.map((aisle) => ({ value: aisle.id, label: aisle.name })),
                 text: aisleText,
+                label: "Aisle suggestions",
                 onSelect: (option) => {
                   setAisleId(option.value);
                   setAisleText(option.label);
@@ -139,6 +140,7 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
                 {...picker({
                   options: recipes.map((recipe) => ({ value: recipe.id, label: recipe.name })),
                   text: recipeText,
+                  label: "Recipe suggestions",
                   onSelect: (option) => {
                     setRecipeId(option.value);
                     setRecipeText(option.label);

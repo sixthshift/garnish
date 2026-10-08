@@ -43,14 +43,21 @@ export type PickerProps = {
   onSelect: (option: PickerOption) => void;
   /** When given, a "Create “text”" row shows for text that matches no option. */
   onCreate?: (text: string) => void;
+  /**
+   * Names the suggestions listbox after its field ("Ingredient 2 food
+   * suggestions"). Required: the list is portalled out of its dialog, so
+   * SearchInput's default "Suggestions" left a screen reader no way to tell
+   * one field's list from another's.
+   */
+  label: string;
 };
 
 /**
- * The three SearchInput props that make it a picker. A picked row is its option
+ * The SearchInput props that make it a picker. A picked row is its option
  * or the create row; Enter on the typed text itself (ArrowUp past the first row)
  * takes the exact match, else creates.
  */
-export function picker({ options, text, onSelect, onCreate }: PickerProps) {
+export function picker({ options, text, onSelect, onCreate, label }: PickerProps) {
   const take = (id: string, value: string) => {
     if (id === CREATE_ID) return onCreate?.(value.trim());
     const option = options.find((candidate) => candidate.value === id);
@@ -58,6 +65,7 @@ export function picker({ options, text, onSelect, onCreate }: PickerProps) {
   };
   return {
     suggestions: pickerSuggestions(options, text, onCreate !== undefined),
+    suggestionsLabel: label,
     onSuggestionSelect: (suggestion: { id?: string; value: string }) => take(suggestion.id ?? suggestion.value, suggestion.value),
     onSubmit: (value: string) => {
       const exact = exactMatch(options, value);

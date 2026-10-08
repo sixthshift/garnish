@@ -57,8 +57,12 @@ describe("picker", () => {
   const setup = (text: string, canCreate = true) => {
     const onSelect = vi.fn();
     const onCreate = vi.fn();
-    return { onSelect, onCreate, props: picker({ options, text, onSelect, onCreate: canCreate ? onCreate : undefined }) };
+    return { onSelect, onCreate, props: picker({ options, text, onSelect, onCreate: canCreate ? onCreate : undefined, label: "Unit suggestions" }) };
   };
+
+  test("the listbox is named by the caller, never SearchInput's default (queue 2 G2)", () => {
+    expect(setup("gr").props.suggestionsLabel).toBe("Unit suggestions");
+  });
 
   test("a picked row is its option, found by id", () => {
     const { onSelect, props } = setup("gr");

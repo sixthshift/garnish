@@ -23,7 +23,7 @@ function Harness({ onSelect, onCreate, onSubmit }: { onSelect: (o: PickerOption)
         onSubmit();
       }}
     >
-      <SearchInput aria-label="Unit" value={text} onValueChange={setText} {...picker({ options, text, onSelect, onCreate })} />
+      <SearchInput aria-label="Unit" value={text} onValueChange={setText} {...picker({ options, text, onSelect, onCreate, label: "Unit suggestions" })} />
     </form>
   );
 }

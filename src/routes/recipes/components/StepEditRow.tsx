@@ -155,6 +155,7 @@ export function StepEditRow({
             {...picker({
               options: linkable.map((row) => ({ value: row.id!, label: ingredientLine(row) })),
               text: pickerText,
+              label: `Step ${si + 1} ingredient suggestions`,
               onSelect: (option) => {
                 onPickerText("");
                 onChange(linkIngredient(draft, pi, si, option.value));

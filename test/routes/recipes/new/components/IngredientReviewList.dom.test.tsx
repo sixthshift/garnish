@@ -60,6 +60,8 @@ test("a food the parser misread is corrected by typing part of its name and pick
   const field = screen.getByLabelText("Line 1 food");
   await user.clear(field);
   await user.type(field, "green");
+  // The list is portalled out of the row, so it carries its field's name (queue 2 G2).
+  expect(await screen.findByRole("listbox", { name: "Line 1 food suggestions" })).toBeInTheDocument();
   await user.click(await screen.findByRole("option", { name: "green beans" }));
 
   expect(screen.getByTestId("review-counts")).toHaveTextContent("1 matched");

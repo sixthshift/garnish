@@ -70,6 +70,7 @@ export function IngredientReviewFields(props: IngredientReviewFieldsProps) {
           {...picker({
             options: [NO_UNIT, ...unitOptions],
             text: unitQuery,
+            label: `${label} unit suggestions`,
             onSelect: props.onPickUnit,
             onCreate: (name) => onChange({ ...row, unit: { kind: "create", name } }),
           })}
@@ -95,6 +96,7 @@ export function IngredientReviewFields(props: IngredientReviewFieldsProps) {
             {...picker({
               options: foodOptions,
               text: foodQuery,
+              label: `${label} food suggestions`,
               onSelect: props.onPickFood,
               onCreate: (name) => onChange({ ...row, food: { kind: "create", name } }),
             })}

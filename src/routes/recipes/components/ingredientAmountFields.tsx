@@ -45,6 +45,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         {...picker({
           options: filterUnits(units, unitText).map((unit) => ({ value: unit.id, label: unit.name, hint: unit.abbreviation || undefined })),
           text: unitText,
+          label: `${label} unit suggestions`,
           onSelect: (option) => {
             const unit = units.find((u) => u.id === option.value);
             if (!unit) return;
@@ -70,6 +71,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         {...picker({
           options: foodRows.map((row) => ({ value: row.id, label: row.name })),
           text: foodText,
+          label: `${label} food suggestions`,
           onSelect: (option) => {
             const row = foodRows.find((r) => r.id === option.value);
             if (!row) return;
