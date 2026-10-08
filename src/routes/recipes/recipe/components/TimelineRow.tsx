@@ -15,6 +15,14 @@ import { useQuickEditContext } from "./QuickEditContext";
 import { saveQuickEdit } from "./saveQuickEdit";
 import { offersSaveAsNote, withNoteFromCook } from "./timelineNotes";
 
+/** The confirm's second sentence names only what the entry holds; an entry with neither has none. */
+function goesWithIt(comment: boolean, photo: boolean): string | null {
+  if (comment && photo) return "Its comment and photo go with it.";
+  if (comment) return "Its comment goes with it.";
+  if (photo) return "Its photo goes with it.";
+  return null;
+}
+
 /**
  * One compact row: the date, "serves N" beside it when the cook recorded a
  * servings count (`servingsLabel` from src/domain/plan/labels.ts — nothing
@@ -24,14 +32,6 @@ import { offersSaveAsNote, withNoteFromCook } from "./timelineNotes";
  * photo are history nothing brings back, so the red is the confirm's and the
  * menu item that opens it (design-language rule 5).
  */
-/** The confirm's second sentence names only what the entry holds; an entry with neither has none. */
-function goesWithIt(comment: boolean, photo: boolean): string | null {
-  if (comment && photo) return "Its comment and photo go with it.";
-  if (comment) return "Its comment goes with it.";
-  if (photo) return "Its photo goes with it.";
-  return null;
-}
-
 export function TimelineRow({ event }: { event: TimelineEvent }) {
   const mutate = useMutate();
   const context = useQuickEditContext();
