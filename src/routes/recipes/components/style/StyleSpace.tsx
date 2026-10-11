@@ -5,14 +5,13 @@ import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Spinner } from "@sixthshift/design-system/spinner";
-import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { type ReactNode, useState } from "react";
 import type { RestyledPart, StyleRule } from "../../../../domain/style";
 import { messageFrom } from "../../../../lib/errors";
 import { scrollClearance } from "../../../../lib/ui/scrollClearance";
 import { StylePart } from "./StylePart";
 import type { StyleAnswer } from "./styleSession";
-import { type StyleSourcePart, type StyleView, useStyleSpace } from "./useStyleSpace";
+import { type StyleSourcePart, useStyleSpace } from "./useStyleSpace";
 
 export type StyleSpaceProps = {
   /** The author's parts: a saved recipe's, or an import's before it is saved. */
@@ -55,16 +54,26 @@ export function saveWarning(check: {
   return `Saving this mix ${clauses.join(" and ")}.`;
 }
 
+/** Where each part's steps start, numbered through the recipe: 1, then 1 plus the first part's count, and so on. Pure. */
+export function startsOf(counts: readonly number[]): number[] {
+  let next = 1;
+  return counts.map((count) => {
+    const first = next;
+    next += count;
+    return first;
+  });
+}
+
 /**
- * The Style space: the recipe as it will read in the house style, step by
- * step, with the author's words one press away. Shared by the import, where
+ * The Style space: the author's steps and the rewrite side by side, chosen
+ * step by step. Shared by the import, where
  * it comes before Save, and a saved recipe's Style page.
  */
 export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules }: StyleSpaceProps) {
   const style = useStyleSpace({ parts, run, loadRules });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const { original, answer, choices, assembled, counts, saveCheck, view, running } = style;
+  const { original, answer, choices, assembled, counts, saveCheck, running } = style;
   const warning = saveCheck && !saveCheck.ok ? saveWarning(saveCheck) : null;
 
   const save = async () => {
@@ -78,13 +87,9 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules
     }
   };
 
-  // Steps are numbered through the recipe as shown, and a part chosen whole may show a different count.
-  let next = 1;
-  const firstSteps = original.map((part, p) => {
-    const first = next;
-    next += view === "styled" && assembled ? assembled[p]!.steps.length : part.steps.length;
-    return first;
-  });
+  // Steps are numbered through the recipe on each side, and a part whose rewrite merged or split steps counts differently on the rewrite's.
+  const firstSteps = startsOf(original.map((part) => part.steps.length));
+  const firstRewriteSteps = startsOf(original.map((part, p) => answer?.parts[p]?.steps.length ?? part.steps.length));
 
   return (
     <div className="flex flex-col gap-6" data-testid="style-space">
@@ -104,26 +109,6 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules
         >
           House style · {style.selected.size} of {style.rules.length} on
         </Button>
-        {/* Outline, as every other toggle: the default solid segment is an inverted fill, near-black in light and
-            near-white in dark, a second "selected" language (design-language rule 5). */}
-        <ToggleGroup
-          type="single"
-          appearance="segmented"
-          variant="outline"
-          size="sm"
-          aria-label="View"
-          options={[
-            { value: "styled", label: "Styled" },
-            { value: "original", label: "Original" },
-          ]}
-          value={view}
-          onValueChange={(value: string) => {
-            if (value === "styled" || value === "original") {
-              style.setView(value as StyleView);
-              style.setEditing(null);
-            }
-          }}
-        />
       </div>
 
       {style.error !== null && (
@@ -179,16 +164,15 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules
           p={p}
           original={original}
           firstStep={firstSteps[p]!}
+          firstRewriteStep={firstRewriteSteps[p]!}
           answer={answer}
           choices={choices}
           assembled={assembled?.[p] ?? null}
-          view={view}
           running={running}
-          comparing={style.comparing}
+          failed={style.error !== null}
           editing={style.editing}
           onStep={(s, choice) => style.setStep(p, s, choice)}
           onPart={(choice) => style.setPart(p, choice)}
-          onCompare={style.toggleCompare}
           onEdit={style.setEditing}
           onDraft={style.editStep}
         />

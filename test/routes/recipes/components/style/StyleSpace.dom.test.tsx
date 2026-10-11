@@ -1,4 +1,4 @@
-// The Style space pressed: it runs on arrival, a flagged step starts on the author's words, the per-step choices change what Save writes, and a retyped step is saved as typed.
+// The Style space pressed: it runs on arrival, the author's words and the rewrite are on screen together, a flagged step starts on the author's words, the per-step choices change what Save writes, and a retyped step is saved as typed.
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
@@ -63,7 +63,7 @@ test("Save writes each step's chosen side, a retyped rewrite as typed, and the r
   await user.clear(field);
   await user.type(field, "Heat the wok until smoking.");
   await user.click(screen.getByRole("button", { name: "Done" }));
-  expect(screen.getAllByTestId("style-step-status")[0]).toHaveTextContent("Rewritten · edited");
+  expect(screen.getAllByTestId("style-step-status")[0]).toHaveTextContent("Edited");
 
   await user.click(screen.getByTestId("style-save"));
   await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -85,12 +85,48 @@ test("keeping the flagged rewrite anyway warns before Save, and putting every st
   await waitFor(() => expect(onSave).toHaveBeenCalledWith(null));
 });
 
-test("Original shows the author's words with nothing to choose, and a failed run says so with the recipe as written", async () => {
+test("each step shows the author's words beside the rewrite, with nothing to flip, and either side can be taken", async () => {
   const { user } = setup();
   await waitFor(() => expect(screen.getAllByTestId("style-step")[0]).toHaveAttribute("data-choice", "rewrite"));
-  await user.click(screen.getByRole("radio", { name: "Original" }));
-  expect(screen.getAllByTestId("style-step").map((step) => step.getAttribute("data-choice"))).toEqual(["none", "none"]);
-  expect(screen.getByText("Heat 2 tablespoons oil in a wok over high heat.")).toBeInTheDocument();
+  expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Compare" })).not.toBeInTheDocument();
+  const first = screen.getAllByTestId("style-step")[0]!;
+  expect(within(first).getByTestId("style-step-original")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
+  expect(within(first).getByTestId("style-step-rewrite")).toHaveTextContent("Heat 2 tbsp of the oil in the wok over high heat.");
+
+  await user.click(within(first).getByRole("button", { name: "Use the original of step 1" }));
+  expect(first).toHaveAttribute("data-choice", "original");
+  expect(within(first).getByRole("button", { name: "Keep the rewrite of step 1" })).toHaveAttribute("aria-pressed", "false");
+});
+
+test("a part whose rewrite merged its steps shows both lists side by side and is taken whole", async () => {
+  const merged: RestyledPart[] = [
+    {
+      name: "",
+      notes: ["smashed and sliced"],
+      steps: [restyledStep("Heat 2 tablespoons oil in a wok over high heat, then add the garlic and cook for a minute or two until fragrant.")],
+    },
+  ];
+  const onSave = vi.fn(async (_parts: RestyledPart[] | null) => {});
+  const user = userEvent.setup();
+  render(
+    <StyleSpace
+      parts={parts}
+      run={async () => ({ parts: merged, check: checkRestyle(styleOriginal(parts), merged) })}
+      onSave={onSave}
+      saveLabel="Save recipe"
+      loadRules={async () => rules}
+    />
+  );
+  await waitFor(() => expect(screen.getByTestId("style-rewrite-column")).toHaveTextContent("then add the garlic"));
+  expect(screen.getAllByTestId("style-plain-step")).toHaveLength(3);
+  expect(screen.getByText("Add the garlic and cook for a minute or two until fragrant.")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "Keep all" }));
+  expect(screen.getByTestId("style-rewrite-column")).toHaveTextContent("Taken");
+  await user.click(screen.getByTestId("style-save"));
+  await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+  expect(onSave.mock.calls[0]![0]![0]!.steps).toHaveLength(1);
 });
 
 test("a run that fails shows why, keeps the author's steps on screen, and can be tried again", async () => {

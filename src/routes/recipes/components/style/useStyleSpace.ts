@@ -29,8 +29,6 @@ export type UseStyleSpaceOptions = {
   loadRules?: () => Promise<StyleRule[]>;
 };
 
-export type StyleView = "styled" | "original";
-
 export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
   const original = useMemo(() => styleOriginal(parts), [parts]);
   const [rules, setRules] = useState<StyleRule[]>([]);
@@ -39,8 +37,6 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
   const [choices, setChoices] = useState<StyleChoices | null>(null);
   const [running, setRunning] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<StyleView>("styled");
-  const [comparing, setComparing] = useState<ReadonlySet<string>>(new Set());
   const [editing, setEditing] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const live = useRef(true);
@@ -50,7 +46,6 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     setError(null);
     setPanelOpen(false);
     setEditing(null);
-    setComparing(new Set());
     try {
       const next = await run(ruleIds);
       if (!live.current) return;
@@ -104,13 +99,6 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
 
   const editStep = (key: string, text: string) => setChoices((current) => (current ? { ...current, edits: { ...current.edits, [key]: text } } : current));
 
-  const toggleCompare = (key: string) =>
-    setComparing((previous) => {
-      const next = new Set(previous);
-      if (!next.delete(key)) next.add(key);
-      return next;
-    });
-
   return {
     original,
     rules,
@@ -119,8 +107,6 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     choices,
     running,
     error,
-    view,
-    comparing,
     editing,
     panelOpen,
     assembled,
@@ -128,14 +114,12 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     saveCheck,
     /** What Save writes: the assembled parts, or null when nothing differs from the author's. */
     toSave: assembled && changesAnything(original, assembled) ? assembled : null,
-    setView,
     setEditing,
     setPanelOpen,
     toggleRule,
     setStep,
     setPart,
     editStep,
-    toggleCompare,
     runAgain: () => void start([...selected]),
   };
 }

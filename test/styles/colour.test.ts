@@ -78,6 +78,5 @@ test("a style step's Keep and Original are outline neutral toggles, never brand"
 });
 
 test("every segmented toggle is outline, so selected reads one way", () => {
-  expect(src("routes/recipes/components/style/StyleSpace.tsx")).toMatch(/appearance="segmented"\s+variant="outline"/);
   expect(src("routes/settings/components/ThemeToggle.tsx")).toMatch(/appearance="segmented"\s+variant="outline"/);
 });
