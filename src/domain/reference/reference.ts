@@ -165,3 +165,9 @@ export type FoodRow = {
   /** "1 cup of flour is 125 g". Empty for most foods. */
   conversions: FoodConversion[];
 };
+
+/**
+ * The answer to "which foods" for a list or a picker: what an entry needs and
+ * nothing else, as RecipeSummary is for recipes. `FoodRow` is the food itself.
+ */
+export type FoodSummary = Pick<FoodRow, "id" | "name">;

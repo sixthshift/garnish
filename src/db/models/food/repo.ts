@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import type { FoodConversion, FoodRow } from "../../../domain/reference";
+import type { FoodConversion, FoodRow, FoodSummary } from "../../../domain/reference";
 import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";
@@ -102,6 +102,10 @@ export function foodRepository(db: Database) {
               .all()
           : query.orderBy(asc(food.name)).all()
       );
+    },
+    /** Every food as a summary, by name: no conversions, for a list or picker that needs nothing else. */
+    summaries(): FoodSummary[] {
+      return dz.select({ id: food.id, name: food.name }).from(food).orderBy(asc(food.name)).all();
     },
     get,
     getByName,

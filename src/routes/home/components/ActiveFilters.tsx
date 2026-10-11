@@ -1,13 +1,12 @@
 import { Button } from "@sixthshift/design-system/button";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { cn } from "@sixthshift/design-system/utils";
-import type { Food } from "../../../db/models/food/repo";
-import type { Tag } from "../../../domain/reference";
+import type { FoodSummary, Tag } from "../../../domain/reference";
 import { withoutId } from "../../../lib/lists";
 
 export type ActiveFiltersProps = {
   allTags: readonly Tag[];
-  allFoods: readonly Food[];
+  allFoods: readonly FoodSummary[];
   tags: readonly string[];
   foods: readonly string[];
   favourite: boolean;

@@ -128,6 +128,15 @@ test("list with q filters by case-insensitive substring and escapes wildcards", 
   expect(repo.list("nothing")).toEqual([]);
 });
 
+test("summaries returns every food's id and name by name, and nothing else", () => {
+  const salt = repo.create({ name: "salt", aliases: ["sea salt"] });
+  const butter = repo.create({ name: "butter", pluralName: "butters" });
+  expect(repo.summaries()).toEqual([
+    { id: butter.id, name: "butter" },
+    { id: salt.id, name: "salt" },
+  ]);
+});
+
 // --- Conversions (M32.1, decisions.md row 69) --------------------------------
 
 /** A cup, a gram and a millilitre to convert between. */

@@ -3,15 +3,14 @@ import { Switch } from "@sixthshift/design-system/switch";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
-import type { Food } from "../../../db/models/food/repo";
 import type { TagMatch } from "../../../domain/recipe";
-import type { Tag } from "../../../domain/reference";
+import type { FoodSummary, Tag } from "../../../domain/reference";
 import { addUnique, withoutId } from "../../../lib/lists";
 import { type PickerOption, picker } from "../../../lib/ui/picker";
 
 export type FilterBarProps = {
   allTags: readonly Tag[];
-  allFoods: readonly Food[];
+  allFoods: readonly FoodSummary[];
   tags: readonly string[];
   match: TagMatch;
   foods: readonly string[];
