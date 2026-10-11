@@ -8,7 +8,7 @@ export const getImageRoute = createRoute({
   path: "/api/images/$file",
   server: {
     handlers: {
-      GET: ({ params }) => handleGetImage(params.file),
+      GET: ({ request, params }) => handleGetImage(params.file, request),
     },
   },
 });

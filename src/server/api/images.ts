@@ -61,16 +61,24 @@ export async function handleUploadImage(request: Request, recipeId: string): Pro
 }
 
 /**
- * GET /api/images/:file — the stored bytes with their content type. 400 when
- * the name is not one this server writes (so `..` and separators never reach
- * the filesystem), 404 when the file is absent.
+ * `file` in `dir` with its content type, for the three image GET routes. 400
+ * when the name is not one this server writes (so `..` and separators never
+ * reach the filesystem), 404 when the file is absent. A replaced image keeps
+ * its URL, so the browser revalidates every time; the ETag (size and
+ * modified time) lets an unchanged image answer 304 with no body.
  */
-export async function handleGetImage(file: string): Promise<Response> {
+export async function serveImage(dir: string, file: string, request?: Request): Promise<Response> {
   const contentType = imageContentType(file);
   if (!contentType) return badRequest("invalid image name");
-  const blob = Bun.file(join(imagesDir(), file));
+  const blob = Bun.file(join(dir, file));
   if (!(await blob.exists())) return notFound(`image ${file} not found`);
-  return new Response(blob, {
-    headers: { "content-type": contentType, "content-length": String(blob.size), "cache-control": "private, max-age=0, must-revalidate" },
-  });
+  const etag = `W/"${blob.size.toString(36)}-${Math.trunc(blob.lastModified).toString(36)}"`;
+  const headers = { etag, "cache-control": "private, max-age=0, must-revalidate" };
+  if (request?.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
+  return new Response(blob, { headers: { ...headers, "content-type": contentType, "content-length": String(blob.size) } });
+}
+
+/** GET /api/images/:file — a stored recipe image (`serveImage`). */
+export function handleGetImage(file: string, request?: Request): Promise<Response> {
+  return serveImage(imagesDir(), file, request);
 }

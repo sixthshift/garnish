@@ -1,9 +1,9 @@
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import timeline from "../../db/models/timeline/repo";
-import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
+import { IMAGE_FIELD, type ImageExtension, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
-import { imagesDir } from "./images";
+import { imagesDir, serveImage } from "./images";
 
 const EVENT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -59,17 +59,7 @@ export async function handleUploadTimelineImage(request: Request, eventId: strin
   return Response.json({ image });
 }
 
-/**
- * GET /api/images/timeline/:file — the stored bytes with their content type.
- * 400 when the name is not one this server writes (so `..` and separators
- * never reach the filesystem), 404 when the file is absent.
- */
-export async function handleGetTimelineImage(file: string): Promise<Response> {
-  const contentType = imageContentType(file);
-  if (!contentType) return badRequest("invalid image name");
-  const blob = Bun.file(join(timelineImagesDir(), file));
-  if (!(await blob.exists())) return notFound(`image ${file} not found`);
-  return new Response(blob, {
-    headers: { "content-type": contentType, "content-length": String(blob.size), "cache-control": "private, max-age=0, must-revalidate" },
-  });
+/** GET /api/images/timeline/:file — a stored cook-log image (`serveImage`). */
+export function handleGetTimelineImage(file: string, request?: Request): Promise<Response> {
+  return serveImage(timelineImagesDir(), file, request);
 }

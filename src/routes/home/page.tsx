@@ -19,6 +19,9 @@ import { SortMenu } from "./components/SortMenu";
 import { ViewModeToggle } from "./components/ViewModeToggle";
 import { Route } from "./route";
 
+/** Cards whose image is fetched eagerly: a phone shows the first and the top of the second, a wide screen the first row. */
+const PRIORITY_CARDS = 2;
+
 export function RecipesPage() {
   const { recipes, tags, foods } = Route.useLoaderData();
   const { q = "", tag, tags: tagsParam, match = "any", foods: foodsParam = [], favourite = false, sort: sortParam, dir: dirParam } = Route.useSearch();
@@ -137,9 +140,9 @@ export function RecipesPage() {
           className={viewMode === "list" ? "flex flex-col gap-3" : "grid gap-4"}
           style={viewMode === "list" ? undefined : { gridTemplateColumns: `repeat(auto-fill, minmax(min(${CARD_MIN_WIDTH}, 100%), 1fr))` }}
         >
-          {recipes.map((recipe) => (
+          {recipes.map((recipe, index) => (
             <li key={recipe.id}>
-              <RecipeCard recipe={recipe} mode={viewMode} />
+              <RecipeCard recipe={recipe} mode={viewMode} priority={index < PRIORITY_CARDS} />
             </li>
           ))}
         </ul>

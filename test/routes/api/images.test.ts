@@ -49,6 +49,29 @@ test("upload then GET returns the same bytes with the image content type", async
   expect(recipeRepository(getDb()).getById(id)?.image).toBe(`${id}.png`);
 });
 
+test("an unchanged image answers its ETag with a bodiless 304, and a replaced one does not", async () => {
+  const id = await createRecipe();
+  await upload(id, png);
+  const get = (etag?: string) =>
+    handleGetImage(`${id}.png`, new Request(`http://localhost/api/images/${id}.png`, { headers: etag ? { "if-none-match": etag } : {} }));
+
+  const first = await get();
+  const etag = first.headers.get("etag");
+  expect(etag).toMatch(/^W\/".+"$/);
+  expect(first.headers.get("cache-control")).toBe("private, max-age=0, must-revalidate");
+
+  const again = await get(etag ?? "");
+  expect(again.status).toBe(304);
+  expect(again.headers.get("etag")).toBe(etag);
+  expect(await again.text()).toBe("");
+
+  // A different image under the same name: different size, so a different tag and the new bytes.
+  await upload(id, Uint8Array.from([...png, 0]));
+  const replaced = await get(etag ?? "");
+  expect(replaced.status).toBe(200);
+  expect(replaced.headers.get("etag")).not.toBe(etag);
+});
+
 test("uploading a different format replaces the file and updates recipe.image", async () => {
   const id = await createRecipe();
   await upload(id, png);

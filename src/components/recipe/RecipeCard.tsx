@@ -12,7 +12,12 @@ import type { ViewMode } from "../../lib/prefs";
 import { FavouriteButton } from "../ui/FavouriteButton";
 import { Rating } from "../ui/Rating";
 
-export type RecipeCardProps = { recipe: RecipeSummary; mode?: ViewMode };
+export type RecipeCardProps = {
+  recipe: RecipeSummary;
+  mode?: ViewMode;
+  /** The image is above the fold: fetch it now and first, rather than lazily once laid out. The list sets it on its first cards. */
+  priority?: boolean;
+};
 
 /**
  * The narrowest a grid card stays readable at: below this the image, the stat
@@ -51,9 +56,12 @@ function ImagePlaceholder({ className }: { className: string }) {
 }
 
 /** The recipe's image, or the placeholder, sized by `className` for the card's mode. */
-function CardImage({ src, className }: { src: string | null; className: string }) {
-  return src ? <img src={src} alt="" loading="lazy" className={`${className} object-cover`} /> : <ImagePlaceholder className={className} />;
+function CardImage({ src, priority, className }: { src: string | null; priority: boolean; className: string }) {
+  if (!src) return <ImagePlaceholder className={className} />;
+  return <img src={src} alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : undefined} className={`${className} object-cover`} />;
 }
+
+type BodyProps = { recipe: RecipeSummary; src: string | null; priority: boolean; totalTime: string };
 
 /** Rating stars and the total-time chip, shared by both card modes. */
 function CardStats({ rating, totalTime }: { rating: number | null; totalTime: string }) {
@@ -93,10 +101,10 @@ function CardTags({ tags }: { tags: readonly Tag[] }) {
 }
 
 /** Grid card body: image on top, text below. The original, still the default. */
-function GridBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: string | null; totalTime: string }) {
+function GridBody({ recipe, src, priority, totalTime }: BodyProps) {
   return (
     <Card className="flex h-full flex-col overflow-hidden p-0 transition-colors group-hover:border-border-normal-hovered">
-      <CardImage src={src} className="aspect-4/3 w-full" />
+      <CardImage src={src} priority={priority} className="aspect-4/3 w-full" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <span className="font-semibold text-fg-strong group-hover:underline">{recipe.name}</span>
         <CardStats rating={recipe.rating} totalTime={totalTime} />
@@ -107,10 +115,10 @@ function GridBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: stri
 }
 
 /** List card body: Mealie's `RecipeCardMobile` row — a small square image on the left, text stacked to the right. */
-function ListBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: string | null; totalTime: string }) {
+function ListBody({ recipe, src, priority, totalTime }: BodyProps) {
   return (
     <Card className="flex flex-row items-stretch overflow-hidden p-0 transition-colors group-hover:border-border-normal-hovered">
-      <CardImage src={src} className="aspect-square w-24 shrink-0 sm:w-28" />
+      <CardImage src={src} priority={priority} className="aspect-square w-24 shrink-0 sm:w-28" />
       {/* `pr-14` keeps the text clear of the heart, which sits over this column's top-right corner. */}
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 p-3 pr-14">
         <span className="truncate font-semibold text-fg-strong group-hover:underline">{recipe.name}</span>
@@ -121,12 +129,16 @@ function ListBody({ recipe, src, totalTime }: { recipe: RecipeSummary; src: stri
   );
 }
 
-export function RecipeCard({ recipe, mode = "grid" }: RecipeCardProps) {
+export function RecipeCard({ recipe, mode = "grid", priority = false }: RecipeCardProps) {
   const src = recipeImageUrl(recipe.image);
 
   const totalTime = formatDuration(recipe.totalTime);
   const body: ReactNode =
-    mode === "list" ? <ListBody recipe={recipe} src={src} totalTime={totalTime} /> : <GridBody recipe={recipe} src={src} totalTime={totalTime} />;
+    mode === "list" ? (
+      <ListBody recipe={recipe} src={src} priority={priority} totalTime={totalTime} />
+    ) : (
+      <GridBody recipe={recipe} src={src} priority={priority} totalTime={totalTime} />
+    );
 
   const link = (
     <Link

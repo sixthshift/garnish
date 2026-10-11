@@ -27,8 +27,8 @@ const base: RecipeSummary = {
 };
 
 /** Render inside a throwaway router, so the card's `Link` resolves. */
-async function render(recipe: RecipeSummary, mode?: "grid" | "list"): Promise<string> {
-  const rootRoute = createRootRoute({ component: () => <RecipeCard recipe={recipe} mode={mode} /> });
+async function render(recipe: RecipeSummary, mode?: "grid" | "list", priority?: boolean): Promise<string> {
+  const rootRoute = createRootRoute({ component: () => <RecipeCard recipe={recipe} mode={mode} priority={priority} /> });
   const slugRoute = createRoute({ getParentRoute: () => rootRoute, path: "/recipes/$slug", component: () => null });
   const router = createRouter({
     routeTree: rootRoute.addChildren([slugRoute]),
@@ -93,6 +93,18 @@ describe("RecipeCard render", () => {
   test("a placeholder image renders when the recipe has none", async () => {
     const html = await render(base);
     expect(html).toContain('data-placeholder="image"');
+  });
+
+  test("an image loads lazily by default, and eagerly at high priority when the card is a priority one", async () => {
+    const withImage = { ...base, image: "photo.jpg" };
+    for (const mode of ["grid", "list"] as const) {
+      const lazy = await render(withImage, mode);
+      expect(lazy).toMatch(/<img[^>]*loading="lazy"/);
+      expect(lazy).not.toContain("fetchPriority");
+      const eager = await render(withImage, mode, true);
+      expect(eager).toMatch(/<img[^>]*loading="eager"/);
+      expect(eager).toMatch(/<img[^>]*fetchPriority="high"/);
+    }
   });
 });
 

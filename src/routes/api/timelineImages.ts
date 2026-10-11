@@ -8,7 +8,7 @@ export const getTimelineImageRoute = createRoute({
   path: "/api/images/timeline/$file",
   server: {
     handlers: {
-      GET: ({ params }) => handleGetTimelineImage(params.file),
+      GET: ({ request, params }) => handleGetTimelineImage(params.file, request),
     },
   },
 });

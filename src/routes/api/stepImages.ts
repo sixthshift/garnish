@@ -8,7 +8,7 @@ export const getStepImageRoute = createRoute({
   path: "/api/images/steps/$file",
   server: {
     handlers: {
-      GET: ({ params }) => handleGetStepImage(params.file),
+      GET: ({ request, params }) => handleGetStepImage(params.file, request),
     },
   },
 });
