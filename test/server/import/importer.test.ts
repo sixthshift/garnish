@@ -5,9 +5,13 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { ImportError } from "../../../src/domain/import";
 import type { Fetcher } from "../../../src/server/ai/client";
+import { apiProvider } from "../../../src/server/ai/provider/api";
 import { createImporter } from "../../../src/server/import/importer";
 
-const KEYS = ["AI_API_KEY", "AI_BASE_URL", "AI_MODEL"] as const;
+/** The importer with one fake `fetch` behind both its ports: the page and the model. */
+const importerOver = (fetcher: Fetcher) => createImporter(fetcher, apiProvider(fetcher));
+
+const KEYS = ["AI_API_KEY", "AI_BASE_URL", "AI_IMPORT_MODEL"] as const;
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 afterEach(() => {
   for (const key of KEYS) {
@@ -39,7 +43,7 @@ function fakeFetch(page: [body: string, status: number], model: [body: string, s
 describe("createImporter", () => {
   test("a URL goes through the page fetch and the rules, and never the model", async () => {
     const fetcher = fakeFetch([SCHEMA_PAGE, 200], [completion(answer), 200]);
-    const found = await createImporter(fetcher).import({ kind: "url", url: "https://example.test/x" });
+    const found = await importerOver(fetcher).import({ kind: "url", url: "https://example.test/x" });
     expect(found.from).toBe("schema");
     expect(fetcher.calls).toEqual(["https://example.test/x"]);
   });
@@ -48,7 +52,7 @@ describe("createImporter", () => {
     process.env.AI_API_KEY = "k";
     process.env.AI_BASE_URL = "https://provider.test/v1";
     const fetcher = fakeFetch(["", 500], [completion(answer), 200]);
-    const found = await createImporter(fetcher).import({ kind: "text", text: "Anzac biscuits\n1 cup plain flour" });
+    const found = await importerOver(fetcher).import({ kind: "text", text: "Anzac biscuits\n1 cup plain flour" });
     expect(found.from).toBe("ai");
     expect(found.recipe.name).toBe("Anzac biscuits");
     expect(fetcher.calls).toEqual(["https://provider.test/v1/chat/completions"]);
@@ -56,7 +60,7 @@ describe("createImporter", () => {
 
   test("the provider's failures keep their kind as ImportErrors", async () => {
     process.env.AI_API_KEY = "k";
-    const caught = await createImporter(fakeFetch(["", 500], ["{}", 429]))
+    const caught = await importerOver(fakeFetch(["", 500], ["{}", 429]))
       .import({ kind: "text", text: "text" })
       .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);
@@ -67,7 +71,7 @@ describe("createImporter", () => {
   test("no key configured is unavailable rather than a crash, and nothing is sent", async () => {
     delete process.env.AI_API_KEY;
     const fetcher = fakeFetch(["", 500], [completion(answer), 200]);
-    const caught = await createImporter(fetcher)
+    const caught = await importerOver(fetcher)
       .import({ kind: "text", text: "text" })
       .catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(ImportError);

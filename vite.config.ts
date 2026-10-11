@@ -51,6 +51,7 @@ export default defineConfig({
           include: ["test/**/*.test.{ts,tsx}"],
           exclude: ["test/**/*.dom.test.tsx"],
           environment: "node",
+          setupFiles: ["./vitest.env.ts"],
         },
       },
       {
@@ -59,7 +60,7 @@ export default defineConfig({
           name: "dom",
           include: ["test/**/*.dom.test.tsx"],
           environment: "happy-dom",
-          setupFiles: ["./vitest.setup.ts"],
+          setupFiles: ["./vitest.env.ts", "./vitest.setup.ts"],
         },
       },
     ],

@@ -16,12 +16,16 @@ services:
       - garnish-data:/data
     environment:
       DATA_DIR: /data
-      # The AI import (M36.1). Passed through from the host, and empty when the
-      # host has not set them: with no AI_API_KEY the paste option is hidden and
-      # every other import path works as it always did.
+      # The AI (decisions.md rows 75 and 163). Passed through from the host,
+      # and empty when the host has not set them. AI_PROVIDER says which and is
+      # required: api reads AI_API_KEY and AI_BASE_URL; claude-code reads
+      # CLAUDE_CODE_OAUTH_TOKEN, from `claude setup-token`. Unset, the paste
+      # option is hidden and every other import path works as it always did.
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-}
-      AI_MODEL: ${AI_MODEL:-}
+      AI_IMPORT_MODEL: ${AI_IMPORT_MODEL:-}
       AI_RESTYLE_MODEL: ${AI_RESTYLE_MODEL:-}
       AI_PLANNER_MODEL: ${AI_PLANNER_MODEL:-}
       # Timer alerts (decisions.md row 111) need nothing set; this is the

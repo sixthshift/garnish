@@ -1,7 +1,7 @@
 // The planner lab's pure half: flags, the week they resolve to, and the report. The CLI itself is one wiring block and is not run here.
 import { describe, expect, test } from "vitest";
 import type { LibraryRecipe, ProposalCheck, ProposalInput } from "../../../src/domain/planner";
-import { AiError, type AiRunner } from "../../../src/server/ai/client";
+import { AiError } from "../../../src/server/ai/client";
 import {
   DAY_TOKENS,
   daysFlag,
@@ -15,6 +15,7 @@ import {
   runLab,
   weekMondayFlag,
 } from "../../../src/server/ai/plannerLab";
+import { fakeAi } from "../../helpers/ai";
 
 const MONDAY = "2026-09-21"; // a real Monday
 const TUESDAY = "2026-09-22";
@@ -160,14 +161,9 @@ const input: ProposalInput = {
   recent: [],
 };
 
-/** A runner that answers with `content` regardless of the prompt. */
-function fakeRunner(content: string): AiRunner {
-  return async () => content;
-}
-
 describe("runLab", () => {
   test("the table names each slot once, even when the model answers a slot twice", async () => {
-    const run = fakeRunner(
+    const ai = fakeAi(
       JSON.stringify({
         entries: [
           { date: MONDAY, meal: "dinner", recipeId: "r1", reason: "First." },
@@ -177,7 +173,7 @@ describe("runLab", () => {
       })
     );
 
-    const lines = await runLab(input, ["lite"], () => run);
+    const lines = await runLab(input, ["lite"], ai);
 
     expect(lines[0]).toBe("");
     expect(lines[1]).toBe("## lite");
@@ -187,12 +183,12 @@ describe("runLab", () => {
   });
 
   test("a model that fails is reported and does not stop the ones after it", async () => {
-    const boom: AiRunner = async () => {
-      throw new AiError("timeout", "The model took too long to answer.");
-    };
-    const ok = fakeRunner(JSON.stringify({ entries: [] }));
+    const ai = fakeAi(async ({ model }) => {
+      if (model === "slow") throw new AiError("timeout", "The model took too long to answer.");
+      return JSON.stringify({ entries: [] });
+    });
 
-    const lines = await runLab(input, ["slow", "lite"], (model) => (model === "slow" ? boom : ok));
+    const lines = await runLab(input, ["slow", "lite"], ai);
 
     expect(lines[1]).toBe("## slow  0.0s  FAILED: The model took too long to answer.");
     expect(lines.some((line) => line === "## lite")).toBe(true);

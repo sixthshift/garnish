@@ -28,32 +28,13 @@ import {
   type UnfilledSlot,
 } from "../../domain/planner";
 import type { RecipeSummary } from "../../domain/recipe";
-import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher } from "./client";
+import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
+import serverAi from "./provider";
 
 export { AiError } from "./client";
 
 /** How far back "what we just ate" reaches: four weeks of plan and of logged cooks before the week being planned. */
 export const RECENT_DAYS = 28;
-
-/** Which model proposes, where, and with what key: the import's settings with `AI_PLANNER_MODEL` over the model. */
-export function plannerSettings(): { apiKey: string; baseUrl: string; model: string } {
-  const settings = aiSettings();
-  const model = (process.env.AI_PLANNER_MODEL ?? "").trim();
-  return model === "" ? settings : { ...settings, model };
-}
-
-/** The runner used in anger here: the client's runner, told to ask for the proposal schema and this model. */
-export const plannerRunner: AiRunner = (prompt, timeoutMs) =>
-  createFetchRunner(fetch, { schema: PROPOSAL_JSON_SCHEMA, schemaName: "proposal", model: plannerSettings().model })(prompt, timeoutMs);
-
-/** The same runner over an injected `fetch`, so the HTTP path can be driven without a provider. */
-export function createPlannerRunner(fetcher: Fetcher = fetch): AiRunner {
-  return createFetchRunner(fetcher, {
-    schema: PROPOSAL_JSON_SCHEMA,
-    schemaName: "proposal",
-    model: plannerSettings().model,
-  });
-}
 
 /**
  * One proposal: one prompt, one answer, parsed and checked against the slots
@@ -63,14 +44,14 @@ export function createPlannerRunner(fetcher: Fetcher = fetch): AiRunner {
  * fails as `AiError("malformed")` so the screen reads it the way it reads the
  * import's and the restyle's failures. Nothing is written.
  */
-export async function runProposal(input: ProposalInput, options: { run?: AiRunner } = {}): Promise<ProposalCheck> {
-  const { run = plannerRunner } = options;
+export async function runProposal(input: ProposalInput, options: { ai?: AiClient; model?: string } = {}): Promise<ProposalCheck> {
+  const { ai = serverAi, model = ai.model("planner") } = options;
   // A week with nothing open has nothing to propose, and the model is not called.
   if (!input.slots.some((slot) => slot.taken === null)) return { entries: [], dropped: [], unfilled: [] };
 
   let content: string;
   try {
-    content = await run(proposalPrompt(input), AI_TIMEOUT_MS);
+    content = await ai.ask({ prompt: proposalPrompt(input), schema: PROPOSAL_JSON_SCHEMA, schemaName: "proposal", model, timeoutMs: AI_TIMEOUT_MS });
   } catch (cause) {
     if (cause instanceof AiError) throw cause;
     throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
@@ -204,7 +185,7 @@ export function resolveProposal(check: ProposalCheck, slots: readonly ProposalSl
 }
 
 /** Gather, ask, check, and resolve: the whole proposal behind one call, for the server function and its tests. Nothing is written. */
-export async function proposeWeek(week: { monday: string; dates: string[]; meals: Meal[] }, options: { run?: AiRunner } = {}): Promise<ProposedWeek> {
+export async function proposeWeek(week: { monday: string; dates: string[]; meals: Meal[] }, options: { ai?: AiClient } = {}): Promise<ProposedWeek> {
   const input = proposalInput(week);
   const check = await runProposal(input, options);
   // The library is only re-read when there is something to name.

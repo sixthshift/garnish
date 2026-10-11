@@ -7,7 +7,8 @@ import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { checkRestyle, type OriginalPart, type RestyleCheck, type RestyledPart } from "../../domain/style";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
-import { AI_TIMEOUT_MS, AiError, type AiRunner, aiSettings, createFetchRunner, type Fetcher } from "./client";
+import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
+import serverAi from "./provider";
 import {
   matchParts,
   parseRestyleAnswer,
@@ -20,13 +21,6 @@ import {
 } from "./restylePrompt";
 
 export { AiError } from "./client";
-
-/** Which model rewrites, where, and with what key: the import's settings with `AI_RESTYLE_MODEL` over the model. */
-export function restyleSettings(): { apiKey: string; baseUrl: string; model: string } {
-  const settings = aiSettings();
-  const model = (process.env.AI_RESTYLE_MODEL ?? "").trim();
-  return model === "" ? settings : { ...settings, model };
-}
 
 /**
  * The recipe's parts as the check reads them: each ingredient row carrying the
@@ -43,19 +37,6 @@ function checkedParts(parts: readonly StylablePart[]): OriginalPart[] {
 /** What `runRestyle` hands back: the rewritten parts and the facts check over them. Nothing is written. */
 export type RestyleResult = { parts: RestyledPart[]; check: RestyleCheck };
 
-/** The runner used in anger here: the client's runner, told to ask for this schema and this model. */
-export const restyleRunner: AiRunner = (prompt, timeoutMs) =>
-  createFetchRunner(fetch, { schema: RESTYLE_JSON_SCHEMA, schemaName: "restyle", model: restyleSettings().model })(prompt, timeoutMs);
-
-/** The same runner over an injected `fetch`, so the HTTP path can be driven without a provider. */
-export function createRestyleRunner(fetcher: Fetcher = fetch): AiRunner {
-  return createFetchRunner(fetcher, {
-    schema: RESTYLE_JSON_SCHEMA,
-    schemaName: "restyle",
-    model: restyleSettings().model,
-  });
-}
-
 /**
  * One restyle: one prompt, one answer, the pairing verified, the facts check
  * over it. The rules arrive as their texts rather than as ids so this stays
@@ -68,9 +49,9 @@ export function createRestyleRunner(fetcher: Fetcher = fetch): AiRunner {
 export async function runRestyle(
   recipe: { parts: readonly StylablePart[] },
   rules: readonly string[],
-  options: { run?: AiRunner } = {}
+  options: { ai?: AiClient; model?: string } = {}
 ): Promise<RestyleResult> {
-  const { run = restyleRunner } = options;
+  const { ai = serverAi, model = ai.model("restyle") } = options;
   if (partsWithSteps(recipe.parts).length === 0) {
     // A recipe with no steps at all has nothing to rewrite: the answer is the recipe, and the model is not called.
     const parts = recipe.parts.map((part) => ({ name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] }));
@@ -80,7 +61,7 @@ export async function runRestyle(
 
   let content: string;
   try {
-    content = await run(prompt, AI_TIMEOUT_MS);
+    content = await ai.ask({ prompt, schema: RESTYLE_JSON_SCHEMA, schemaName: "restyle", model, timeoutMs: AI_TIMEOUT_MS });
   } catch (cause) {
     if (cause instanceof AiError) throw cause;
     throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);

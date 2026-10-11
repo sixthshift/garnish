@@ -3,7 +3,7 @@ import type { PlannerRule } from "../../domain/planner";
 import type { RecipeSummary } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
 import type { StyleRule } from "../../domain/style";
-import type { AiStatus } from "../../server/ai/check";
+import type { AiStatus } from "../../server/ai/client";
 import { getAiStatus } from "../../server/fns/ai";
 import { listAisles } from "../../server/fns/aisles";
 import { listFoods } from "../../server/fns/foods";

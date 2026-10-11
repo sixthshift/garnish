@@ -7,14 +7,14 @@ import { plannerRepository } from "../../db/models/planner/repo";
 import { recipeRepository } from "../../db/models/recipe/repo";
 import { timelineRepository } from "../../db/models/timeline/repo";
 import { addDays, todayIso } from "../../domain/plan";
-import { PROPOSAL_JSON_SCHEMA, type ProposalInput, proposalPrompt, type RecentMeal } from "../../domain/planner";
+import { type ProposalInput, proposalPrompt, type RecentMeal } from "../../domain/planner";
 import { ensureDataDir } from "../core/boot";
-import { createFetchRunner } from "./client";
-import { libraryRecipe, mergeRecent, plannerSettings, RECENT_DAYS, weekSlots } from "./planner";
+import { libraryRecipe, mergeRecent, RECENT_DAYS, weekSlots } from "./planner";
 import { daysFlag, LAB_USAGE, parseLabFlags, rulesFromText, runLab, weekMondayFlag } from "./plannerLab";
+import ai from "./provider";
 
 if (import.meta.main) {
-  const flags = parseLabFlags(process.argv.slice(2), plannerSettings().model);
+  const flags = parseLabFlags(process.argv.slice(2), ai.model("planner"));
   const path = databasePath(ensureDataDir());
   // Never create the database here: an empty one would answer "no such table". The app or `bun run seed` builds it.
   if (!(await Bun.file(path).exists())) throw new Error(`No database at ${path}. Start the app or run \`bun run seed\` first. ${LAB_USAGE}`);
@@ -69,8 +69,7 @@ if (import.meta.main) {
     if (flags.showPrompt) {
       console.log("", proposalPrompt(input), "");
     } else {
-      const runnerFor = (model: string) => createFetchRunner(fetch, { schema: PROPOSAL_JSON_SCHEMA, schemaName: "proposal", model });
-      for (const line of await runLab(input, flags.models, runnerFor)) console.log(line);
+      for (const line of await runLab(input, flags.models, ai)) console.log(line);
     }
   } finally {
     db.close();

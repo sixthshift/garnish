@@ -60,7 +60,7 @@ export function StyleRecipePage() {
       />
       {!aiAvailable ? (
         <Message intent="neutral" title="No model is configured" data-testid="style-unavailable">
-          Restyling needs a model. Set AI_API_KEY on the server, then come back.
+          Restyling needs a model. Set AI_PROVIDER and its key on the server (Settings › AI says which), then come back.
         </Message>
       ) : (
         <>

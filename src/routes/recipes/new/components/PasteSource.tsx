@@ -47,7 +47,7 @@ export function PasteSource({ text, busy, error, aiAvailable = false, onTextChan
       <Muted as="p" className="text-sm">
         {aiAvailable
           ? "The whole recipe, ingredients and method in any order. If a site blocked the import, paste the page's HTML instead: view source, select all, copy."
-          : "The page's HTML, when a site blocked the import: view source, select all, copy. Reading plain text needs a model (AI_API_KEY)."}
+          : "The page's HTML, when a site blocked the import: view source, select all, copy. Reading plain text needs a model (AI_PROVIDER, in Settings › AI)."}
       </Muted>
     </SourceStage>
   );

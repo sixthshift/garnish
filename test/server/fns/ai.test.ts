@@ -6,15 +6,22 @@ import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
 
-const saved = process.env.AI_API_KEY;
+const KEYS = ["AI_PROVIDER", "AI_API_KEY"] as const;
+const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 afterEach(() => {
-  if (saved === undefined) delete process.env.AI_API_KEY;
-  else process.env.AI_API_KEY = saved;
+  for (const key of KEYS) {
+    if (saved[key] === undefined) delete process.env[key];
+    else process.env[key] = saved[key];
+  }
 });
 
-test("an unset key is unavailable and a set one is available: the key is the whole of the gate", async () => {
+test("available only with a provider named and its credential set", async () => {
+  delete process.env.AI_PROVIDER;
   delete process.env.AI_API_KEY;
   await expect(callServerFn(aiAvailable)).resolves.toEqual({ available: false });
   process.env.AI_API_KEY = "k";
+  // A key alone does not choose a provider.
+  await expect(callServerFn(aiAvailable)).resolves.toEqual({ available: false });
+  process.env.AI_PROVIDER = "api";
   await expect(callServerFn(aiAvailable)).resolves.toEqual({ available: true });
 });

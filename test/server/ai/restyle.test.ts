@@ -7,17 +7,9 @@ import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import recipes from "../../../src/db/models/recipe/repo";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipe";
-import { AiError, type AiRunner } from "../../../src/server/ai/client";
-import {
-  applyRestyle,
-  createRestyledRecipe,
-  createRestyleRunner,
-  restoreSteps,
-  restyleDraft,
-  restyleSettings,
-  restyleSteps,
-  runRestyle,
-} from "../../../src/server/ai/restyle";
+import { AiError } from "../../../src/server/ai/client";
+import { apiProvider, DEFAULT_API_MODEL } from "../../../src/server/ai/provider/api";
+import { applyRestyle, createRestyledRecipe, restoreSteps, restyleDraft, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
 import {
   FIXED_RESTYLE_LINE,
   foodMarker,
@@ -32,6 +24,7 @@ import {
 } from "../../../src/server/ai/restylePrompt";
 import { createRecipe, getRecipe, listRecipes } from "../../../src/server/fns/recipes";
 import { listStyleRules } from "../../../src/server/fns/style";
+import { fakeAi } from "../../helpers/ai";
 import { restyledPart } from "../../helpers/restyle";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
@@ -80,17 +73,6 @@ async function saved(): Promise<Recipe> {
   return await callServerFn(createRecipe, doc());
 }
 
-/** A runner that answers with `content` and records what it was asked. */
-function fakeRunner(content: string): AiRunner & { calls: { prompt: string; timeoutMs: number }[] } {
-  const calls: { prompt: string; timeoutMs: number }[] = [];
-  const run = (async (prompt, timeoutMs) => {
-    calls.push({ prompt, timeoutMs });
-    return content;
-  }) as AiRunner & { calls: typeof calls };
-  run.calls = calls;
-  return run;
-}
-
 /** A chat completion envelope carrying `content`. */
 const completion = (content: string) => ({ choices: [{ message: { content } }] });
 
@@ -113,7 +95,8 @@ const GOOD = {
 
 afterEach(() => {
   delete process.env.AI_RESTYLE_MODEL;
-  delete process.env.AI_MODEL;
+  delete process.env.AI_IMPORT_MODEL;
+  delete process.env.AI_PROVIDER;
   delete process.env.AI_API_KEY;
   delete process.env.AI_BASE_URL;
   vi.unstubAllGlobals();
@@ -246,9 +229,9 @@ describe("empty parts", () => {
   test("a recipe with no steps at all is its own answer, and the model is not called", async () => {
     const input = doc();
     const recipe = await callServerFn(createRecipe, { ...input, parts: input.parts.map((part) => ({ ...part, steps: [] })) });
-    const run = fakeRunner("never read");
-    const { parts, check } = await runRestyle(recipe, ["Plain words."], { run });
-    expect(run.calls).toEqual([]);
+    const ai = fakeAi("never read");
+    const { parts, check } = await runRestyle(recipe, ["Plain words."], { ai });
+    expect(ai.calls).toEqual([]);
     // An untouched part answers with its own notes, so the check sees it lining up.
     expect(parts).toEqual([
       { name: "", notes: ["", "a pinch of salt"], steps: [] },
@@ -263,11 +246,11 @@ describe("empty parts", () => {
       ...input,
       parts: [{ ...input.parts[0]!, steps: [] }, input.parts[1]!, { name: "Topping", ingredients: [], steps: [{ text: "Melt the butter." }] }],
     });
-    const run = fakeRunner(JSON.stringify({ parts: [GOOD.parts[1], restyledPart("Topping", ["Melt the butter slowly."])] }));
-    const { parts, check } = await runRestyle(recipe, ["Plain words."], { run });
+    const ai = fakeAi(JSON.stringify({ parts: [GOOD.parts[1], restyledPart("Topping", ["Melt the butter slowly."])] }));
+    const { parts, check } = await runRestyle(recipe, ["Plain words."], { ai });
     // The stepless main body is still sent, so the model reads the ingredients it holds.
-    expect(run.calls[0]!.prompt).toContain('PART "" (the recipe\'s main body)');
-    expect(run.calls[0]!.prompt).toContain("a pinch of salt");
+    expect(ai.calls[0]!.prompt).toContain('PART "" (the recipe\'s main body)');
+    expect(ai.calls[0]!.prompt).toContain("a pinch of salt");
     expect(parts.map((part) => part.name)).toEqual(["", "Golden syrup mixture", "Topping"]);
     expect(parts[0]).toEqual({ name: "", notes: ["", "a pinch of salt"], steps: [] });
     expect(check.ok).toBe(true);
@@ -286,8 +269,8 @@ describe("empty parts", () => {
     const input = doc();
     const recipe = await callServerFn(createRecipe, { ...input, parts: [{ ...input.parts[0]!, steps: [] }, input.parts[1]!] });
     const body = { name: "", notes: ["sifted", "a pinch of salt"], steps: [] };
-    const run = fakeRunner(JSON.stringify({ parts: [body, GOOD.parts[1]] }));
-    const { parts } = await runRestyle(recipe, ["Plain words."], { run });
+    const ai = fakeAi(JSON.stringify({ parts: [body, GOOD.parts[1]] }));
+    const { parts } = await runRestyle(recipe, ["Plain words."], { ai });
     expect(parts[0]).toEqual(body);
 
     const written = await callServerFn(applyRestyle, {
@@ -326,20 +309,20 @@ describe("the answer's schema", () => {
 });
 
 describe("the model", () => {
-  test("AI_RESTYLE_MODEL overrides the model for this pass and defaults to AI_MODEL", () => {
-    process.env.AI_MODEL = "import-model";
-    expect(restyleSettings().model).toBe("import-model");
+  test("AI_RESTYLE_MODEL sets the model for this pass, and the import's model does not", () => {
+    process.env.AI_IMPORT_MODEL = "import-model";
+    expect(apiProvider().model("restyle")).toBe(DEFAULT_API_MODEL);
     process.env.AI_RESTYLE_MODEL = "big-model";
-    expect(restyleSettings().model).toBe("big-model");
+    expect(apiProvider().model("restyle")).toBe("big-model");
   });
 
   test("the request asks for the restyle schema and the restyle model", async () => {
     process.env.AI_API_KEY = "secret";
     process.env.AI_BASE_URL = "https://provider.test/v1";
-    process.env.AI_MODEL = "import-model";
+    process.env.AI_IMPORT_MODEL = "import-model";
     process.env.AI_RESTYLE_MODEL = "big-model";
     const fetcher = fakeFetch(200, completion(JSON.stringify(GOOD)));
-    await createRestyleRunner(fetcher)("PROMPT", 1000);
+    await runRestyle(await saved(), [], { ai: apiProvider(fetcher) });
     const body = JSON.parse(String(fetcher.calls[0]!.init?.body)) as Record<string, unknown>;
     expect(body.model).toBe("big-model");
     expect(body.response_format).toEqual({
@@ -352,8 +335,8 @@ describe("the model", () => {
 describe("runRestyle", () => {
   test("an answer that keeps every fact passes the check, and nothing is written", async () => {
     const recipe = await saved();
-    const run = fakeRunner(JSON.stringify(GOOD));
-    const { parts, check } = await runRestyle(recipe, ["One action per step."], { run });
+    const ai = fakeAi(JSON.stringify(GOOD));
+    const { parts, check } = await runRestyle(recipe, ["One action per step."], { ai });
 
     expect(check.ok).toBe(true);
     expect(check.missingFacts).toEqual([]);
@@ -361,8 +344,8 @@ describe("runRestyle", () => {
     expect(parts.map((part) => part.name)).toEqual(["", "Golden syrup mixture"]);
     expect(parts[0]!.steps).toEqual(GOOD.parts[0]!.steps);
     // The rules and the recipe both reached the prompt.
-    expect(run.calls[0]!.prompt).toContain("1. One action per step.");
-    expect(run.calls[0]!.prompt).toContain("Heat the oven to 180°C.");
+    expect(ai.calls[0]!.prompt).toContain("1. One action per step.");
+    expect(ai.calls[0]!.prompt).toContain("Heat the oven to 180°C.");
     // Nothing written: the recipe still has the steps it was saved with.
     const again = await saved();
     expect(again.parts[0]!.steps.map((step) => step.text)).toEqual(doc().parts[0]!.steps!.map((step) => step.text));
@@ -376,7 +359,7 @@ describe("runRestyle", () => {
         restyledPart("Golden syrup mixture", ["Warm the golden syrup for 2 minutes."], 1),
       ],
     };
-    const { parts, check } = await runRestyle(recipe, [], { run: fakeRunner(JSON.stringify(dropped)) });
+    const { parts, check } = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(dropped)) });
     expect(parts).toHaveLength(2);
     expect(check.ok).toBe(false);
     expect(check.missingFacts).toEqual(["180c", "15min"]);
@@ -386,7 +369,7 @@ describe("runRestyle", () => {
   test("a missing part is malformed: the pairing is verified, never assumed", async () => {
     const recipe = await saved();
     const short = { parts: [restyledPart("", ["Heat the oven to 180°C and bake for 15 minutes."], 2)] };
-    const caught = await runRestyle(recipe, [], { run: fakeRunner(JSON.stringify(short)) }).catch((cause: unknown) => cause);
+    const caught = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(short)) }).catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(AiError);
     expect((caught as AiError).kind).toBe("malformed");
     expect((caught as AiError).message).toMatch(/1 part where the recipe has 2/);
@@ -400,11 +383,11 @@ describe("runRestyle", () => {
         restyledPart("Syrup", ["Warm the golden syrup for 2 minutes."], 1),
       ],
     };
-    const caught = await runRestyle(recipe, [], { run: fakeRunner(JSON.stringify(renamed)) }).catch((cause: unknown) => cause);
+    const caught = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(renamed)) }).catch((cause: unknown) => cause);
     expect((caught as AiError).kind).toBe("malformed");
 
     const recased = { parts: [GOOD.parts[0]!, { ...GOOD.parts[1]!, name: "  GOLDEN SYRUP MIXTURE " }] };
-    const { check } = await runRestyle(recipe, [], { run: fakeRunner(JSON.stringify(recased)) });
+    const { check } = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(recased)) });
     expect(check.ok).toBe(true);
   });
 
@@ -412,10 +395,10 @@ describe("runRestyle", () => {
     const recipe = await saved();
     expect(() => matchParts(recipe.parts, GOOD.parts)).not.toThrow();
 
-    const boom: AiRunner = async () => {
+    const boom = fakeAi(async () => {
       throw new AiError("timeout", "The model took too long to answer.");
-    };
-    const caught = await runRestyle(recipe, [], { run: boom }).catch((cause: unknown) => cause);
+    });
+    const caught = await runRestyle(recipe, [], { ai: boom }).catch((cause: unknown) => cause);
     expect((caught as AiError).kind).toBe("timeout");
   });
 });
@@ -466,6 +449,7 @@ describe("restyleSteps", () => {
   test("takes a recipe id and rule ids, and answers with the parts and the check", async () => {
     const recipe = await saved();
     const rules = await callServerFn(listStyleRules);
+    process.env.AI_PROVIDER = "api";
     process.env.AI_API_KEY = "secret";
     const fetcher = fakeFetch(200, completion(JSON.stringify(GOOD)));
     vi.stubGlobal("fetch", fetcher);
@@ -503,6 +487,7 @@ describe("before the recipe is saved", () => {
   const accepted = () => GOOD.parts.map((part) => ({ ...part, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) }));
 
   test("restyleDraft rewrites a document that has no id, and writes nothing", async () => {
+    process.env.AI_PROVIDER = "api";
     process.env.AI_API_KEY = "secret";
     vi.stubGlobal("fetch", fakeFetch(200, completion(JSON.stringify(GOOD))));
 

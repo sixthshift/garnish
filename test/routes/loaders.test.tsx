@@ -14,7 +14,7 @@ import type { Route as NewRoute } from "../../src/routes/recipes/new/route";
 import type { Route as EditRoute } from "../../src/routes/recipes/recipe/edit/route";
 import type { RecipeViewData, Route as ViewRoute } from "../../src/routes/recipes/recipe/route";
 import type { FoodRow, SettingsData, Route as SettingsRoute } from "../../src/routes/settings/route";
-import type { AiStatus } from "../../src/server/ai/check";
+import type { AiStatus } from "../../src/server/ai/client";
 import { createFood, listFoods } from "../../src/server/fns/foods";
 import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/server/fns/recipes";
 import type { listTags } from "../../src/server/fns/tags";
@@ -458,6 +458,7 @@ describe("/recipes/$slug/style", () => {
   });
 
   test("with a model it opens the Style space on the recipe's own steps, and Restore only once restyled", async () => {
+    process.env.AI_PROVIDER = "api";
     process.env.AI_API_KEY = "secret";
     try {
       await callServerFn(createRecipe, tart);
@@ -466,6 +467,7 @@ describe("/recipes/$slug/style", () => {
       expect(html).toContain("Blind bake the case until golden.");
       expect(html).not.toContain('data-testid="style-restore"');
     } finally {
+      delete process.env.AI_PROVIDER;
       delete process.env.AI_API_KEY;
     }
   });

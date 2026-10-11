@@ -65,6 +65,12 @@ describe("runtime contract", () => {
     expect(lines).toContainEqual(expect.stringMatching(/^RUN\s+bun run build$/));
   });
 
+  test("carries the Claude Code binary for AI_PROVIDER=claude-code, and names it", () => {
+    expect(lines).toContainEqual(expect.stringMatching(/^RUN\s+cp\s.*claude-agent-sdk-linux-\*.*grep -v musl.*\/usr\/local\/bin\/claude$/));
+    expect(lines).toContainEqual("COPY --from=build /usr/local/bin/claude /usr/local/bin/claude");
+    expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bCLAUDE_CODE_EXECUTABLE=\/usr\/local\/bin\/claude\b/));
+  });
+
   test("DATA_DIR=/data is the volume", () => {
     expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bDATA_DIR=\/data\b/));
     expect(lines).toContainEqual(expect.stringMatching(/^VOLUME\s+\/data$/));

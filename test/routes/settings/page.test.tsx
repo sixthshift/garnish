@@ -20,7 +20,7 @@ import type { StyleRule } from "../../../src/domain/style";
 import { VERSION } from "../../../src/lib/version";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
 import { AislesTab } from "../../../src/routes/settings/components/tabs/AislesTab";
-import { AiTab } from "../../../src/routes/settings/components/tabs/AiTab";
+import { AiTab, connectedMessage, connectedTitle, OfferedModels } from "../../../src/routes/settings/components/tabs/AiTab";
 import { BackupTab } from "../../../src/routes/settings/components/tabs/BackupTab";
 import { PlannerTab } from "../../../src/routes/settings/components/tabs/PlannerTab";
 import { StyleTab } from "../../../src/routes/settings/components/tabs/StyleTab";
@@ -182,6 +182,9 @@ describe("BackupTab render", () => {
 
 describe("AiTab render", () => {
   const status = {
+    provider: "api" as const,
+    problem: null,
+    credential: "AI_API_KEY",
     configured: true,
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     isDefaultProvider: true,
@@ -194,7 +197,7 @@ describe("AiTab render", () => {
 
   test("shows the configuration as rows, naming each variable, and never the key", () => {
     const html = renderToString(<AiTab status={status} />);
-    for (const name of ["AI_API_KEY", "AI_BASE_URL", "AI_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL"]) expect(html).toContain(name);
+    for (const name of ["AI_API_KEY", "AI_BASE_URL", "AI_IMPORT_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL"]) expect(html).toContain(name);
     expect(html).toContain("gemini-pro-latest");
     expect(html).toMatch(/data-testid="ai-key-status"[^>]*>.*●●●●.*>Set</);
     expect(html).not.toContain("Not set");
@@ -207,6 +210,81 @@ describe("AiTab render", () => {
     expect(html).toMatch(/data-testid="ai-key-status"[^>]*>Not set</);
     expect(html).not.toMatch(/may train on what is sent/);
     expect(html).toMatch(/<button[^>]*disabled/);
+  });
+
+  test("a check that proved the key says it works; one that could not says the first import will", () => {
+    const models = [{ use: "import" as const, model: "haiku", listed: true }];
+    expect(connectedMessage({ ok: true, baseUrl: "x", credentialProved: true, models, offered: [] }, "key")).toBe(
+      "The key works, and every model named above is offered."
+    );
+    const unproved = connectedMessage({ ok: true, baseUrl: "x", credentialProved: false, models, offered: [] }, "token");
+    expect(unproved).toMatch(/picked up the token; the token itself is proved by the first import/);
+    expect(unproved).not.toMatch(/token works/);
+    expect(connectedTitle({ ok: true, baseUrl: "x", credentialProved: false, models: [{ ...models[0]!, listed: false }], offered: [] })).toBe(
+      "Connected, but a model is not listed"
+    );
+  });
+
+  test("with no provider it says Not set and why, shows no credential row, and the test is disabled", () => {
+    const problem = "No AI provider is set. Set AI_PROVIDER to api (with AI_API_KEY) or claude-code (with CLAUDE_CODE_OAUTH_TOKEN) to use this.";
+    const html = renderToString(
+      <AiTab status={{ provider: null, problem, credential: "", configured: false, baseUrl: "", isDefaultProvider: false, models: [] }} />
+    );
+    expect(html).toMatch(/data-testid="ai-provider-status"[^>]*>Not set</);
+    expect(html).toContain("No AI provider is set.");
+    expect(html).not.toContain("ai-key-status");
+    expect(html).not.toContain("AI_BASE_URL");
+    expect(html).toMatch(/<button[^>]*disabled/);
+  });
+
+  test("the offered models are listed by name, with the full id a name stands for and the features that ask it", () => {
+    const html = renderToString(
+      <OfferedModels
+        offered={[
+          { name: "haiku", resolvesTo: "claude-haiku-4-5-20251001" },
+          { name: "opus", resolvesTo: "claude-opus-5-5" },
+          { name: "claude-fable-5-1", resolvesTo: "claude-fable-5-1" },
+        ]}
+        models={[
+          { use: "import", model: "haiku", listed: true },
+          { use: "restyle", model: "claude-opus-5-5", listed: true },
+          { use: "planner", model: "claude-mystery", listed: false },
+        ]}
+      />
+    );
+    expect(html).toContain("Models it offers");
+    expect(html).toContain("<code>haiku</code>");
+    expect(html).toContain("<code>claude-haiku-4-5-20251001</code>");
+    // A name that is its own full id does not repeat it.
+    expect(html.match(/claude-fable-5-1/g)).toHaveLength(1);
+    // Badged by the features that ask it, whether by name or by full id.
+    expect(html).toMatch(/haiku<\/code>[\s\S]*?Recipe import/);
+    expect(html).toMatch(/opus<\/code>[\s\S]*?Restyle/);
+    expect(html).not.toContain("Planner");
+  });
+
+  test("an empty offer says so in a row rather than an empty card", () => {
+    const html = renderToString(<OfferedModels offered={[]} models={[]} />);
+    expect(html).toContain("No models listed");
+  });
+
+  test("on Claude Code it names the token's variable and has no endpoint row", () => {
+    const html = renderToString(
+      <AiTab
+        status={{
+          ...status,
+          provider: "claude-code",
+          credential: "CLAUDE_CODE_OAUTH_TOKEN",
+          isDefaultProvider: false,
+          baseUrl: "Claude Code, on the subscription",
+        }}
+      />
+    );
+    expect(html).toContain("CLAUDE_CODE_OAUTH_TOKEN");
+    expect(html).toContain("claude-code");
+    expect(html).not.toContain("AI_API_KEY");
+    expect(html).not.toContain("AI_BASE_URL");
+    expect(html).not.toMatch(/may train on what is sent/);
   });
 });
 

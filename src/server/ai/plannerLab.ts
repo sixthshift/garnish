@@ -2,7 +2,7 @@
 
 import { addDays, dayLabel, weekDates, weekMonday } from "../../domain/plan";
 import { type LibraryRecipe, MEALS, type Meal, type ProposalCheck, type ProposalInput } from "../../domain/planner";
-import type { AiRunner } from "./client";
+import type { AiClient } from "./client";
 import { runProposal } from "./planner";
 
 export type LabFlags = {
@@ -136,21 +136,18 @@ export function failureLine(model: string, seconds: number, error: unknown): str
   return `## ${model}  ${seconds.toFixed(1)}s  FAILED: ${error instanceof Error ? error.message : String(error)}`;
 }
 
-/** A model name to the runner that asks it. What the CLI hands in over `createFetchRunner`, and a test hands in over a fake. */
-export type LabRunnerFor = (model: string) => AiRunner;
-
 /**
  * The lab itself: `input` asked of every model in turn, each timed, checked
- * and reported, or reported as a failure when the runner throws. Nothing is
- * written; the runner is the only IO, and it is always injected. Pure aside
+ * and reported, or reported as a failure when the client throws. Nothing is
+ * written; the client is the only IO, and it is always injected. Pure aside
  * from that.
  */
-export async function runLab(input: ProposalInput, models: readonly string[], runnerFor: LabRunnerFor): Promise<string[]> {
+export async function runLab(input: ProposalInput, models: readonly string[], ai: AiClient): Promise<string[]> {
   const lines: string[] = [];
   for (const model of models) {
     const started = performance.now();
     try {
-      const check = await runProposal(input, { run: runnerFor(model) });
+      const check = await runProposal(input, { ai, model });
       lines.push("", ...reportLines(model, (performance.now() - started) / 1000, check, input.library));
     } catch (error) {
       lines.push("", failureLine(model, (performance.now() - started) / 1000, error));

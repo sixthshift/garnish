@@ -5,22 +5,14 @@
 
 import { afterEach, describe, expect, test } from "vitest";
 import type { RecipeInput } from "../../../src/domain/recipe";
-import { AiError, type AiRunner } from "../../../src/server/ai/client";
-import {
-  createPlannerRunner,
-  libraryRecipe,
-  mergeRecent,
-  plannerSettings,
-  proposalInput,
-  proposeWeek,
-  resolveProposal,
-  runProposal,
-  weekSlots,
-} from "../../../src/server/ai/planner";
+import { AiError } from "../../../src/server/ai/client";
+import { libraryRecipe, mergeRecent, proposalInput, proposeWeek, resolveProposal, runProposal, weekSlots } from "../../../src/server/ai/planner";
+import { apiProvider, DEFAULT_API_MODEL } from "../../../src/server/ai/provider/api";
 import { addPlanEntry, listPlanWeek } from "../../../src/server/fns/plan";
 import { applyPlanProposal, proposePlanWeek } from "../../../src/server/fns/planner";
 import { createRecipe, deleteRecipe } from "../../../src/server/fns/recipes";
 import { createTimelineEvent } from "../../../src/server/fns/timeline";
+import { fakeAi } from "../../helpers/ai";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
@@ -31,23 +23,12 @@ const WEDNESDAY = "2026-09-23";
 
 afterEach(() => {
   delete process.env.AI_PLANNER_MODEL;
-  delete process.env.AI_MODEL;
+  delete process.env.AI_IMPORT_MODEL;
   delete process.env.AI_API_KEY;
   delete process.env.AI_BASE_URL;
 });
 
 const newRecipe = (name: string) => callServerFn(createRecipe, { name, parts: [{ name: "", ingredients: [], steps: [] }] } as RecipeInput);
-
-/** A runner that answers with `content` and records what it was asked. */
-function fakeRunner(content: string): AiRunner & { calls: { prompt: string; timeoutMs: number }[] } {
-  const calls: { prompt: string; timeoutMs: number }[] = [];
-  const run = (async (prompt, timeoutMs) => {
-    calls.push({ prompt, timeoutMs });
-    return content;
-  }) as AiRunner & { calls: typeof calls };
-  run.calls = calls;
-  return run;
-}
 
 /** A chat completion envelope carrying `content`. */
 const completion = (content: string) => ({ choices: [{ message: { content } }] });
@@ -109,20 +90,20 @@ function fixture(ids: { open: string; taken: string }) {
 const IDS = { open: "11111111-1111-4111-8111-111111111111", taken: "22222222-2222-4222-8222-222222222222" };
 
 describe("the model", () => {
-  test("AI_PLANNER_MODEL overrides the model for this pass and defaults to AI_MODEL", () => {
-    process.env.AI_MODEL = "import-model";
-    expect(plannerSettings().model).toBe("import-model");
+  test("AI_PLANNER_MODEL sets the model for this pass, and the import's model does not", () => {
+    process.env.AI_IMPORT_MODEL = "import-model";
+    expect(apiProvider().model("planner")).toBe(DEFAULT_API_MODEL);
     process.env.AI_PLANNER_MODEL = "big-model";
-    expect(plannerSettings().model).toBe("big-model");
+    expect(apiProvider().model("planner")).toBe("big-model");
   });
 
   test("the request asks for the proposal schema and the planner model", async () => {
     process.env.AI_API_KEY = "secret";
     process.env.AI_BASE_URL = "https://provider.test/v1";
-    process.env.AI_MODEL = "import-model";
+    process.env.AI_IMPORT_MODEL = "import-model";
     process.env.AI_PLANNER_MODEL = "big-model";
     const fetcher = fakeFetch(200, completion(JSON.stringify({ entries: [] })));
-    await createPlannerRunner(fetcher)("PROMPT", 1000);
+    await runProposal(fixture(IDS), { ai: apiProvider(fetcher) });
     const body = JSON.parse(String(fetcher.calls[0]!.init?.body)) as Record<string, unknown>;
     expect(fetcher.calls[0]!.url).toBe("https://provider.test/v1/chat/completions");
     expect(body.model).toBe("big-model");
@@ -136,7 +117,7 @@ describe("the model", () => {
       error.name = "TimeoutError";
       throw error;
     };
-    const caught = await createPlannerRunner(slow)("PROMPT", 1).catch((cause: unknown) => cause);
+    const caught = await runProposal(fixture(IDS), { ai: apiProvider(slow) }).catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(AiError);
     expect((caught as AiError).kind).toBe("timeout");
   });
@@ -144,20 +125,20 @@ describe("the model", () => {
 
 describe("runProposal", () => {
   test("a clean answer comes back as the week, with the prompt carrying the slots and the statements", async () => {
-    const run = fakeRunner(JSON.stringify({ entries: [{ date: MONDAY, meal: "dinner", recipeId: IDS.open, reason: "Quick (1)." }] }));
-    const result = await runProposal(fixture(IDS), { run });
+    const ai = fakeAi(JSON.stringify({ entries: [{ date: MONDAY, meal: "dinner", recipeId: IDS.open, reason: "Quick (1)." }] }));
+    const result = await runProposal(fixture(IDS), { ai });
 
     expect(result.entries).toEqual([{ date: MONDAY, meal: "dinner", recipeId: IDS.open, reason: "Quick (1)." }]);
     expect(result.dropped).toEqual([]);
     expect(result.unfilled).toEqual([]);
-    expect(run.calls[0]!.timeoutMs).toBe(60_000);
-    expect(run.calls[0]!.prompt).toContain(`${MONDAY} dinner — OPEN`);
-    expect(run.calls[0]!.prompt).toContain(`${TUESDAY} dinner — TAKEN: Lemon tart`);
-    expect(run.calls[0]!.prompt).toContain("- Weeknights are quick.");
+    expect(ai.calls[0]!.timeoutMs).toBe(60_000);
+    expect(ai.calls[0]!.prompt).toContain(`${MONDAY} dinner — OPEN`);
+    expect(ai.calls[0]!.prompt).toContain(`${TUESDAY} dinner — TAKEN: Lemon tart`);
+    expect(ai.calls[0]!.prompt).toContain("- Weeknights are quick.");
   });
 
   test("a foreign id and a taken slot are dropped, and the open slot is reported unfilled", async () => {
-    const run = fakeRunner(
+    const ai = fakeAi(
       JSON.stringify({
         entries: [
           { date: MONDAY, meal: "dinner", recipeId: "00000000-0000-4000-8000-000000000000", reason: "Made it up." },
@@ -165,7 +146,7 @@ describe("runProposal", () => {
         ],
       })
     );
-    const result = await runProposal(fixture(IDS), { run });
+    const result = await runProposal(fixture(IDS), { ai });
 
     expect(result.entries).toEqual([]);
     expect(result.dropped.map((line) => line.kind)).toEqual(["unknown-recipe", "not-open"]);
@@ -174,20 +155,20 @@ describe("runProposal", () => {
   });
 
   test("an answer that is not a week at all is malformed, as the client's other failures are", async () => {
-    const caught = await runProposal(fixture(IDS), { run: fakeRunner("Sorry, I cannot plan a week.") }).catch((cause: unknown) => cause);
+    const caught = await runProposal(fixture(IDS), { ai: fakeAi("Sorry, I cannot plan a week.") }).catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(AiError);
     expect((caught as AiError).kind).toBe("malformed");
   });
 
   test("the runner's own failures come through untouched, and a week with nothing open never calls it", async () => {
-    const boom: AiRunner = async () => {
+    const boom = fakeAi(async () => {
       throw new AiError("unavailable", "No model is configured here.");
-    };
-    const caught = await runProposal(fixture(IDS), { run: boom }).catch((cause: unknown) => cause);
+    });
+    const caught = await runProposal(fixture(IDS), { ai: boom }).catch((cause: unknown) => cause);
     expect((caught as AiError).kind).toBe("unavailable");
 
     const full = { ...fixture(IDS), slots: [{ date: MONDAY, meal: "dinner" as const, taken: "Lemon tart" }] };
-    expect(await runProposal(full, { run: boom })).toEqual({ entries: [], dropped: [], unfilled: [] });
+    expect(await runProposal(full, { ai: boom })).toEqual({ entries: [], dropped: [], unfilled: [] });
   });
 });
 
@@ -361,8 +342,8 @@ describe("proposeWeek", () => {
     const congee = await newRecipe("Congee");
     await callServerFn(addPlanEntry, { date: OCTOBER, recipeId: congee.id, text: congee.name, meal: "dinner" });
 
-    const run = fakeRunner(JSON.stringify({ entries: [{ date: OCTOBER_TUESDAY, meal: "dinner", recipeId: laksa.id, reason: "Nothing like it lately." }] }));
-    const week = await proposeWeek({ monday: OCTOBER, dates: [OCTOBER, OCTOBER_TUESDAY], meals: ["dinner"] }, { run });
+    const ai = fakeAi(JSON.stringify({ entries: [{ date: OCTOBER_TUESDAY, meal: "dinner", recipeId: laksa.id, reason: "Nothing like it lately." }] }));
+    const week = await proposeWeek({ monday: OCTOBER, dates: [OCTOBER, OCTOBER_TUESDAY], meals: ["dinner"] }, { ai });
 
     expect(week.entries).toEqual([
       {

@@ -1,14 +1,15 @@
-// The domain's Importer given the server's two ports: fetch.ts for pages, the shared AI client for the model.
+// The domain's Importer given the server's two ports: fetch.ts for pages, the server's AI client for the model.
 
 import { ImportError, Importer, type Ports } from "../../domain/import";
-import { AiError, createFetchRunner, type Fetcher } from "../ai/client";
+import { type AiClient, AiError, type Fetcher } from "../ai/client";
+import serverAi from "../ai/provider";
 import { createPageFetcher } from "./fetch";
 
-/** The model port over the shared client: whatever the importer asks, in whatever shape it asks for. */
-export function createModelPort(fetcher: Fetcher = fetch): Ports["model"] {
+/** The model port over an AI client: whatever the importer asks, in whatever shape it asks for, of the import's model. */
+export function createModelPort(ai: AiClient = serverAi): Ports["model"] {
   return async ({ prompt, schema, schemaName, timeoutMs }) => {
     try {
-      return await createFetchRunner(fetcher, { schema, schemaName })(prompt, timeoutMs);
+      return await ai.ask({ prompt, schema, schemaName, model: ai.model("import"), timeoutMs });
     } catch (cause) {
       if (cause instanceof AiError) throw new ImportError(cause.kind, cause.message);
       throw cause;
@@ -16,9 +17,9 @@ export function createModelPort(fetcher: Fetcher = fetch): Ports["model"] {
   };
 }
 
-/** An importer over the platform's `fetch` — or an injected one, so the whole path can be driven without a network. */
-export function createImporter(fetcher: Fetcher = fetch): Importer {
-  return new Importer({ fetchPage: createPageFetcher(fetcher), model: createModelPort(fetcher) });
+/** An importer over the platform's `fetch` and the server's AI client — or injected ones, so the whole path can be driven without a network. */
+export function createImporter(fetcher: Fetcher = fetch, ai: AiClient = serverAi): Importer {
+  return new Importer({ fetchPage: createPageFetcher(fetcher), model: createModelPort(ai) });
 }
 
 /** The importer the server functions and the upload route use. */

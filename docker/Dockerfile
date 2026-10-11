@@ -17,6 +17,13 @@ WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
+# The Claude Code binary, for AI_PROVIDER=claude-code (decisions.md row 163).
+# The Agent SDK finds it beside itself in node_modules, which the runtime stage
+# does not have, so it is set aside here and named by CLAUDE_CODE_EXECUTABLE.
+# The install brought the one for this stage's platform; the glibc build, as
+# -slim is Debian, never the -musl one.
+RUN cp "$(ls -d node_modules/@anthropic-ai/claude-agent-sdk-linux-* | grep -v musl | head -n 1)/claude" /usr/local/bin/claude
+
 COPY . .
 # `build` sets NODE_ENV=production itself. The prerender step boots the server
 # once, which creates ./data inside this stage; it is not copied forward.
@@ -29,11 +36,13 @@ FROM oven/bun:1.4.2-slim
 WORKDIR /app
 
 COPY --from=build /app/.output ./.output
+COPY --from=build /usr/local/bin/claude /usr/local/bin/claude
 
 # Boot (src/server.ts) creates DATA_DIR, migrates and seeds before the first
 # request, so migrations run on every start; no separate step is needed.
 # HOST=0.0.0.0 so the Nitro bun preset listens beyond the container loopback.
 ENV DATA_DIR=/data \
+    CLAUDE_CODE_EXECUTABLE=/usr/local/bin/claude \
     NODE_ENV=production \
     PORT=9988 \
     HOST=0.0.0.0

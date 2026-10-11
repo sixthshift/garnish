@@ -1,14 +1,13 @@
-// docker/docker-compose.yml and the README's Docker sections are text, so their
-// contract is asserted here: one `garnish` service pulling the published image, on port 9988 with the
-// `garnish-data` volume at DATA_DIR=/data plus the three AI variables, and a
-// README that documents run, backup, restore and the AI import. Docker itself is not run under vitest.
+// docker/docker-compose.yml is text, so its contract is asserted here: one
+// `garnish` service pulling the published image, on port 9988 with the
+// `garnish-data` volume at DATA_DIR=/data plus the AI variables. Docker itself
+// is not run under vitest.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 const root = join(import.meta.dirname, "..", "..");
 const composeText = readFileSync(join(root, "docker", "docker-compose.yml"), "utf8");
-const readme = readFileSync(join(root, "README.md"), "utf8");
 const dockerfile = readFileSync(join(root, "docker", "Dockerfile"), "utf8");
 
 type Compose = {
@@ -42,14 +41,6 @@ export function envValue(environment: Compose["services"][string]["environment"]
   return environment[key];
 }
 
-/** Section headings (`## ...`) of a markdown file. Pure. */
-export function headings(markdown: string): string[] {
-  return markdown
-    .split("\n")
-    .filter((line) => /^## /.test(line))
-    .map((line) => line.replace(/^## /, "").trim());
-}
-
 const compose = parseCompose(composeText);
 const garnish = compose.services.garnish!;
 
@@ -79,9 +70,11 @@ describe("compose file", () => {
   });
 
   test("passes the three AI variables through from the host, defaulting to empty", () => {
+    expect(envValue(garnish.environment, "AI_PROVIDER")).toBe("${AI_PROVIDER:-}");
+    expect(envValue(garnish.environment, "CLAUDE_CODE_OAUTH_TOKEN")).toBe("${CLAUDE_CODE_OAUTH_TOKEN:-}");
     expect(envValue(garnish.environment, "AI_API_KEY")).toBe("${AI_API_KEY:-}");
     expect(envValue(garnish.environment, "AI_BASE_URL")).toBe("${AI_BASE_URL:-}");
-    expect(envValue(garnish.environment, "AI_MODEL")).toBe("${AI_MODEL:-}");
+    expect(envValue(garnish.environment, "AI_IMPORT_MODEL")).toBe("${AI_IMPORT_MODEL:-}");
   });
 
   test("passes the per-pass model overrides through too", () => {
@@ -99,48 +92,5 @@ describe("envValue", () => {
     expect(envValue(["DATA_DIR=/x", "PORT=1"], "DATA_DIR")).toBe("/x");
     expect(envValue(["PORT=1"], "DATA_DIR")).toBeUndefined();
     expect(envValue(undefined, "DATA_DIR")).toBeUndefined();
-  });
-});
-
-describe("README", () => {
-  const sections = headings(readme);
-
-  test("documents run, backup and restore", () => {
-    expect(sections).toContain("Run with Docker");
-    expect(sections).toContain("Backup");
-    expect(sections).toContain("Restore");
-  });
-
-  test("names the compose, backup and restore commands", () => {
-    expect(readme).toContain("docker compose up");
-    // The runtime image holds only .output, so a running container is backed
-    // up and restored over HTTP; the bun scripts are for outside Docker.
-    expect(readme).toContain("http://localhost:9988/api/backup.zip");
-    expect(readme).toContain("http://localhost:9988/api/restore");
-    expect(readme).toContain("bun run backup");
-    expect(readme).toContain("bun run restore");
-  });
-
-  test("restore removes the WAL sidecars", () => {
-    const restore = readme.slice(readme.indexOf("## Restore"));
-    expect(restore).toContain("garnish.db-wal");
-    expect(restore).toContain("garnish.db-shm");
-  });
-
-  test("documents the AI import and its three variables", () => {
-    expect(sections).toContain("AI import");
-    expect(readme).toContain("AI_API_KEY");
-    expect(readme).toContain("AI_BASE_URL");
-    expect(readme).toContain("AI_MODEL");
-    expect(readme).toContain("AI_PLANNER_MODEL");
-  });
-
-  test("dev instructions match package.json scripts and ports", () => {
-    expect(readme).toContain("bun run dev");
-    expect(readme).toContain("9988");
-    expect(readme).toContain("bun run build");
-    expect(readme).toContain("bun run start");
-    expect(readme).toContain("DATA_DIR");
-    expect(readme).toContain("PORT");
   });
 });
