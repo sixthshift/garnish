@@ -30,7 +30,8 @@ export default defineConfig({
       // it is handed the root alone and an output path nothing imports.
       router: { virtualRouteConfig: rootRoute("root.tsx"), generatedRouteTree: "../.tanstack/routeTree.gen.ts" },
     }),
-    ...(testing ? [] : [nitro({ preset: "bun" })]),
+    // compressPublicAssets writes .gz/.br beside each built asset; Nitro's static handler serves them by Accept-Encoding.
+    ...(testing ? [] : [nitro({ preset: "bun", compressPublicAssets: { gzip: true, brotli: true } })]),
     viteReact(),
     tailwindcss(),
     // Emits public/sw.js from src/sw/ during the client build; see the plugin for why it is not a post-build step.
