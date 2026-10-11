@@ -8,6 +8,8 @@ import { checkRestyle, type OriginalPart, type RestyleCheck, type RestyledPart }
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
+// Referenced only inside handlers, so Start drops it from the client build: the
+// provider brings Node-only SDKs (claude-agent-sdk) that throw in a browser.
 import serverAi from "./provider";
 import {
   matchParts,
@@ -49,9 +51,9 @@ export type RestyleResult = { parts: RestyledPart[]; check: RestyleCheck };
 export async function runRestyle(
   recipe: { parts: readonly StylablePart[] },
   rules: readonly string[],
-  options: { ai?: AiClient; model?: string } = {}
+  options: { ai: AiClient; model?: string }
 ): Promise<RestyleResult> {
-  const { ai = serverAi, model = ai.model("restyle") } = options;
+  const { ai, model = ai.model("restyle") } = options;
   if (partsWithSteps(recipe.parts).length === 0) {
     // A recipe with no steps at all has nothing to rewrite: the answer is the recipe, and the model is not called.
     const parts = recipe.parts.map((part) => ({ name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] }));
@@ -90,7 +92,7 @@ export const restyleSteps = createServerFn({ method: "POST" })
   .validator(RestyleStepsInput)
   .handler(async ({ data }): Promise<RestyleResult> => {
     const recipe = required(recipes.getById(data.id), "recipe", data.id);
-    return runRestyle(recipe, ruleTexts(data.ruleIds));
+    return runRestyle(recipe, ruleTexts(data.ruleIds), { ai: serverAi });
   });
 
 /** The ticked statements' texts, in the guide's order. Unknown ids are ignored. */
@@ -115,7 +117,7 @@ export const RestyleDraftInput = z.object({
  */
 export const restyleDraft = createServerFn({ method: "POST" })
   .validator(RestyleDraftInput)
-  .handler(async ({ data }): Promise<RestyleResult> => runRestyle(data.doc, ruleTexts(data.ruleIds)));
+  .handler(async ({ data }): Promise<RestyleResult> => runRestyle(data.doc, ruleTexts(data.ruleIds), { ai: serverAi }));
 
 export const ApplyRestyleInput = z.object({
   /** The recipe's id, as `restyleSteps` takes it. */
