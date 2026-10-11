@@ -25,6 +25,11 @@ RUN bun install --frozen-lockfile
 RUN cp "$(ls -d node_modules/@anthropic-ai/claude-agent-sdk-linux-* | grep -v musl | head -n 1)/claude" /usr/local/bin/claude
 
 COPY . .
+# The commit this image is built from, for the build to inline beside the
+# version (src/lib/version.ts): the context has no .git, so the workflow hands
+# it over. Declared after the install so a new commit keeps that layer cached.
+ARG GARNISH_COMMIT=""
+ENV GARNISH_COMMIT=$GARNISH_COMMIT
 # `build` sets NODE_ENV=production itself. The prerender step boots the server
 # once, which creates ./data inside this stage; it is not copied forward.
 RUN bun run build

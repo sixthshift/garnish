@@ -4,6 +4,7 @@ import { Appearance } from "./components/Appearance";
 import { TimerAlerts } from "./components/TimerAlerts";
 import { AiTab } from "./components/tabs/AiTab";
 import { BackupTab } from "./components/tabs/BackupTab";
+import { DiagnosticsTab, recentCount } from "./components/tabs/DiagnosticsTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
 import { PlannerTab } from "./components/tabs/PlannerTab";
 import { StyleTab } from "./components/tabs/StyleTab";
@@ -11,7 +12,8 @@ import { Version } from "./components/Version";
 import { Route } from "./route";
 
 export function SettingsPage() {
-  const { aisles, units, foods, tags, recipes, styleRules, plannerRules, ai } = Route.useLoaderData();
+  const { aisles, units, foods, tags, recipes, styleRules, plannerRules, ai, diagnostics } = Route.useLoaderData();
+  const recent = recentCount(diagnostics, new Date());
 
   const items: TabItem[] = [
     { value: "library", label: "Library", content: <LibraryTab foods={foods} aisles={aisles} units={units} tags={tags} recipes={recipes} /> },
@@ -26,6 +28,8 @@ export function SettingsPage() {
     { value: "ai", label: "AI", content: <AiTab status={ai} /> },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
     { value: "alerts", label: "Alerts", content: <TimerAlerts /> },
+    // The badge is the last week's problems, so a quiet tab means nothing went wrong lately.
+    { value: "diagnostics", label: "Diagnostics", badge: recent > 0 ? recent : undefined, content: <DiagnosticsTab events={diagnostics} /> },
   ];
 
   return (

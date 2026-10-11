@@ -5,11 +5,13 @@ import styleRules from "../../db/models/style/repo";
 import { formatIngredient } from "../../domain/ingredient";
 import { type Recipe, recipeInputSchema } from "../../domain/recipe";
 import { checkRestyle, type OriginalPart, type RestyleCheck, type RestyledPart } from "../../domain/style";
+import diagnostics, { type DiagnosticReport } from "../core/diagnostics";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
-// Referenced only inside handlers, so Start drops it from the client build: the
-// provider brings Node-only SDKs (claude-agent-sdk) that throw in a browser.
+// This and the diagnostics import above are referenced only inside handlers,
+// so Start drops both from the client build: the provider brings Node-only SDKs (claude-agent-sdk) that throw in a
+// browser, and diagnostics brings bun:sqlite.
 import serverAi from "./provider";
 import {
   matchParts,
@@ -74,6 +76,23 @@ export async function runRestyle(
   return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
 }
 
+/**
+ * A restyle whose facts check failed, as a warning for Settings › Diagnostics:
+ * not an error — the household is shown the result and chooses — but the
+ * report is what explains "the restyle failed" afterwards. Null when the check
+ * passed. Pure.
+ */
+export function refusedCheckReport(recipeName: string, model: string, result: RestyleResult): DiagnosticReport | null {
+  if (result.check.ok) return null;
+  return {
+    source: "ai",
+    level: "warning",
+    name: "restyle",
+    message: `The facts check flagged the rewrite of "${recipeName}"`,
+    detail: { recipe: recipeName, model, check: { ...result.check, parts: result.check.parts.filter((part) => !part.ok) } },
+  };
+}
+
 // --- Server functions ------------------------------------------------------
 
 export const RestyleStepsInput = z.object({
@@ -92,7 +111,11 @@ export const restyleSteps = createServerFn({ method: "POST" })
   .validator(RestyleStepsInput)
   .handler(async ({ data }): Promise<RestyleResult> => {
     const recipe = required(recipes.getById(data.id), "recipe", data.id);
-    return runRestyle(recipe, ruleTexts(data.ruleIds), { ai: serverAi });
+    const result = await runRestyle(recipe, ruleTexts(data.ruleIds), { ai: serverAi });
+    // Inside the handler, as every use of serverAi and diagnostics here is, so the client build drops both.
+    const flagged = refusedCheckReport(recipe.name, serverAi.model("restyle"), result);
+    if (flagged) diagnostics.record(flagged);
+    return result;
   });
 
 /** The ticked statements' texts, in the guide's order. Unknown ids are ignored. */
@@ -117,7 +140,12 @@ export const RestyleDraftInput = z.object({
  */
 export const restyleDraft = createServerFn({ method: "POST" })
   .validator(RestyleDraftInput)
-  .handler(async ({ data }): Promise<RestyleResult> => runRestyle(data.doc, ruleTexts(data.ruleIds), { ai: serverAi }));
+  .handler(async ({ data }): Promise<RestyleResult> => {
+    const result = await runRestyle(data.doc, ruleTexts(data.ruleIds), { ai: serverAi });
+    const flagged = refusedCheckReport(data.doc.name, serverAi.model("restyle"), result);
+    if (flagged) diagnostics.record(flagged);
+    return result;
+  });
 
 export const ApplyRestyleInput = z.object({
   /** The recipe's id, as `restyleSteps` takes it. */

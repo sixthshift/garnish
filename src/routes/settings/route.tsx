@@ -1,4 +1,5 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import type { DiagnosticEvent } from "../../db/models/diagnostic/repo";
 import type { PlannerRule } from "../../domain/planner";
 import type { RecipeSummary } from "../../domain/recipe";
 import type { Aisle, Tag, Unit } from "../../domain/reference";
@@ -6,6 +7,7 @@ import type { StyleRule } from "../../domain/style";
 import type { AiStatus } from "../../server/ai/client";
 import { getAiStatus } from "../../server/fns/ai";
 import { listAisles } from "../../server/fns/aisles";
+import { listDiagnostics } from "../../server/fns/diagnostics";
 import { listFoods } from "../../server/fns/foods";
 import { listPlannerRules } from "../../server/fns/planner";
 import { listRecipes } from "../../server/fns/recipes";
@@ -26,13 +28,14 @@ export type SettingsData = {
   styleRules: StyleRule[];
   plannerRules: PlannerRule[];
   ai: AiStatus;
+  diagnostics: DiagnosticEvent[];
 };
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   loader: async (): Promise<SettingsData> => {
-    const [aisles, units, foods, tags, recipes, styleRules, plannerRules, ai] = await Promise.all([
+    const [aisles, units, foods, tags, recipes, styleRules, plannerRules, ai, diagnostics] = await Promise.all([
       listAisles({ data: {} }),
       listUnits({ data: {} }),
       listFoods({ data: {} }),
@@ -42,8 +45,9 @@ export const Route = createRoute({
       listStyleRules(),
       listPlannerRules(),
       getAiStatus(),
+      listDiagnostics(),
     ]);
-    return { aisles, units, foods, tags, recipes, styleRules, plannerRules, ai };
+    return { aisles, units, foods, tags, recipes, styleRules, plannerRules, ai, diagnostics };
   },
   component: lazyRouteComponent(() => import("./page"), "SettingsPage"),
 });

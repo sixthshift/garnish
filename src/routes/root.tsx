@@ -4,6 +4,7 @@ import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import { AppShell } from "../components/shell/AppShell";
 import { AppErrorFallback } from "../components/shell/RouteStates";
+import { installErrorReporting } from "../components/shell/reportError";
 import { registerServiceWorker, updateNotice } from "../lib/sw";
 import { TOAST_POSITION } from "../lib/toast";
 import appCss from "../styles.css?url";
@@ -70,6 +71,8 @@ function RootDocument({ children }: { children: ReactNode }) {
   // Client-only, production-only: public/sw.js exists only in a build, and a
   // worker in dev would serve stale modules over Vite's. A deploy that lands
   // while the app is open offers itself as a notice rather than taking over.
+  // An error no boundary catches is sent to the server's diagnostics all the same.
+  useEffect(() => installErrorReporting(window), []);
   useEffect(() => {
     registerServiceWorker(typeof navigator === "undefined" ? undefined : navigator, import.meta.env.PROD, {
       onUpdateReady: (waiting) => void toast(updateNotice(waiting)),

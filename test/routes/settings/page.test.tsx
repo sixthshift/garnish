@@ -17,7 +17,7 @@ import type { PlannerRule } from "../../../src/domain/planner";
 import type { RecipeSummary } from "../../../src/domain/recipe";
 import type { Aisle, Tag, Unit } from "../../../src/domain/reference";
 import type { StyleRule } from "../../../src/domain/style";
-import { VERSION } from "../../../src/lib/version";
+import { buildLabel } from "../../../src/lib/version";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
 import { AislesTab } from "../../../src/routes/settings/components/tabs/AislesTab";
 import { AiTab, connectedMessage, connectedTitle, OfferedModels } from "../../../src/routes/settings/components/tabs/AiTab";
@@ -379,5 +379,5 @@ describe("PlannerTab render", () => {
 
 test("the Settings footer names the version this build was stamped with", () => {
   const html = renderToString(<Version />);
-  expect(html).toContain(`Garnish ${VERSION}`);
+  expect(html).toContain(`Garnish ${buildLabel()}`);
 });

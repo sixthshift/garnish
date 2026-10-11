@@ -146,6 +146,16 @@ docker compose run --rm --no-deps garnish sh -c '
 docker compose start garnish
 ```
 
+## When something goes wrong
+
+**Settings › Diagnostics** lists what went wrong, newest first: a failure on the server, an error a browser caught, a model call that failed, or a restyle or import whose check refused the model's answer. Tap one for its detail — the stack, the check's report, and the build that saw it. Every error screen also names the build it is running, so a screenshot says which version and commit it came from.
+
+The same events are lines in the server's log, beside a line for every model call and how long it took:
+
+```bash
+docker compose logs garnish
+```
+
 ## Updating
 
 ```bash
@@ -153,7 +163,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Your data is untouched, and the database is brought up to date on start. The version you are running is at the foot of Settings; what changed is on the [releases page](https://github.com/sixthshift/garnish/releases).
+Your data is untouched, and the database is brought up to date on start. The version and commit you are running are at the foot of Settings; what changed is on the [releases page](https://github.com/sixthshift/garnish/releases).
 
 To stay on one version, name it in place of `latest`, for example `image: ghcr.io/sixthshift/garnish:1.2.3`.
 

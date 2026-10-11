@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { AppErrorFallback, ErrorView } from "../../src/components/shell/RouteStates";
 import { describeError, isNetworkError } from "../../src/lib/errors";
 import { TOAST_POSITION } from "../../src/lib/toast";
+import { buildLabel } from "../../src/lib/version";
 import { Route as RootRoute } from "../../src/routes/root";
 import { renderRoute } from "../helpers/routes";
 
@@ -131,6 +132,11 @@ describe("ErrorView and AppErrorFallback", () => {
     expect(html).toContain("bg-bg-subtle");
     expect(html).toContain("shell broke");
     expect(html).toContain("Retry");
+  });
+
+  test("names the build under the message, so a screenshot says what was running", () => {
+    const html = renderToString(<ErrorView error={new Error("boom")} reset={() => {}} />);
+    expect(html).toContain(`Garnish ${buildLabel()}`);
   });
 });
 

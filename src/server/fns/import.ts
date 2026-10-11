@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ScrapedRecipeSchema } from "../../domain/import";
+import { type ImportedRecipe, ScrapedRecipeSchema } from "../../domain/import";
+import diagnostics, { type DiagnosticReport } from "../core/diagnostics";
 import { notFoundMiddleware } from "../core/fn";
 import { importer } from "../import/importer";
 
@@ -30,15 +31,36 @@ export const ImportFromTextInput = z.object({
   anchor: ScrapedRecipeSchema.optional(),
 });
 
+/**
+ * A model's reading that the anchor check refused, as a warning for Settings ›
+ * Diagnostics: the review falls back to the page's own version and offers the
+ * answer beside it, so nothing failed, but this is what explains a review that
+ * came back unsorted. Null when there was no check or it passed. Pure.
+ */
+export function refusedImportReport(result: ImportedRecipe): DiagnosticReport | null {
+  if (!result.check || result.check.ok) return null;
+  return {
+    source: "ai",
+    level: "warning",
+    name: "import",
+    message: `The anchor check refused the model's reading of "${result.recipe.name}"`,
+    detail: { url: result.url, check: result.check },
+  };
+}
+
 /** Read a recipe out of text with a hosted model, anchored to the page's own data when there is one. */
 export const importFromText = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(ImportFromTextInput)
-  .handler(async ({ data }) =>
-    importer.import({
+  .handler(async ({ data }) => {
+    const result = await importer.import({
       kind: "text",
       text: data.text,
       sourceUrl: data.sourceUrl,
       anchor: data.anchor ?? null,
-    })
-  );
+    });
+    // Inside the handler, so the client build drops the diagnostics import.
+    const refused = refusedImportReport(result);
+    if (refused) diagnostics.record(refused);
+    return result;
+  });

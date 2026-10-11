@@ -5,8 +5,11 @@ import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Spinner } from "@sixthshift/design-system/spinner";
 import { type ErrorComponentProps, Link, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { describeError } from "../../lib/errors";
 import { useOnline } from "../../lib/useOnline";
+import { buildLabel } from "../../lib/version";
+import { reportError } from "./reportError";
 
 export function RoutePending() {
   return (
@@ -21,16 +24,22 @@ type ErrorViewProps = {
   error: unknown;
   /** Clears the boundary that caught the error. */
   reset: () => void;
+  /** Which boundary caught it, for the report the server keeps. */
+  where?: "route" | "shell";
 };
 
 /**
  * The one error view. Retry clears the boundary and re-runs every active
- * loader; without a router (a bare render in a test) it only clears.
+ * loader; without a router (a bare render in a test) it only clears. The error
+ * is sent to the server's diagnostics as it is shown (a network failure is
+ * not: the server cannot hear it), and the build is named under the message,
+ * so a screenshot says what was running.
  */
-export function ErrorView({ error, reset }: ErrorViewProps) {
+export function ErrorView({ error, reset, where = "route" }: ErrorViewProps) {
   const router = useRouter({ warn: false });
   const online = useOnline();
   const { title, detail } = describeError(error, online);
+  useEffect(() => reportError(error, where), [error, where]);
   const retry = () => {
     reset();
     void router?.invalidate();
@@ -45,6 +54,9 @@ export function ErrorView({ error, reset }: ErrorViewProps) {
           Retry
         </Button>
       </div>
+      <Muted as="p" className="text-xs" data-testid="error-build">
+        {`Garnish ${buildLabel()}`}
+      </Muted>
     </div>
   );
 }
@@ -58,7 +70,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
 export function AppErrorFallback({ error, reset }: ErrorFallbackProps) {
   return (
     <div className="min-h-dvh bg-bg-subtle text-fg-normal">
-      <ErrorView error={error} reset={reset} />
+      <ErrorView error={error} reset={reset} where="shell" />
     </div>
   );
 }

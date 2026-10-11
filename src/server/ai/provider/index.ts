@@ -8,6 +8,7 @@
 // `import ai from "…/ai/provider"; ai.ask(…)`. Tests and the labs bring their
 // own (`apiProvider(fakeFetch)`, or a fake that answers from a fixture).
 
+import diagnostics, { type Diagnostics } from "../../core/diagnostics";
 import { AI_PROVIDERS, type AiClient, AiError, type AiProviderName } from "../client";
 import { apiProvider } from "./api";
 import { claudeCodeProvider } from "./claudeCode";
@@ -41,6 +42,43 @@ export function noProvider(problem: string): AiClient {
 }
 
 /**
+ * `client` with every question timed and written down (decisions.md row 166):
+ * a line on stdout for each answer, and a recorded error for each failure,
+ * naming the provider, the model, what was asked for and how long it took. The
+ * error is thrown on unchanged. The one place every model call passes, so the
+ * import, the restyle and the planner are covered alike.
+ */
+export function withDiagnostics(
+  client: AiClient,
+  log: Pick<Diagnostics, "note" | "failure"> = diagnostics,
+  clock: () => number = () => performance.now()
+): AiClient {
+  return {
+    configured: () => client.configured(),
+    model: (use) => client.model(use),
+    status: () => client.status(),
+    check: () => client.check(),
+    ask: async (request) => {
+      const started = clock();
+      const fields = () => ({
+        provider: client.status().provider,
+        model: request.model,
+        asked: request.schemaName,
+        seconds: Math.round((clock() - started) / 100) / 10,
+      });
+      try {
+        const answer = await client.ask(request);
+        log.note({ source: "ai", name: request.schemaName, message: "Answered", ...fields(), chars: answer.length });
+        return answer;
+      } catch (error) {
+        log.failure("ai", request.schemaName, error, fields());
+        throw error;
+      }
+    },
+  };
+}
+
+/**
  * The server's client. `AI_PROVIDER` is read on every call, as every other AI
  * variable is, so changing provider does not need the app restarted.
  */
@@ -58,4 +96,4 @@ export function serverClient(): AiClient {
   };
 }
 
-export default serverClient();
+export default withDiagnostics(serverClient());

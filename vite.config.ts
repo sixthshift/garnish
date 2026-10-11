@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -16,8 +17,22 @@ const testing = Boolean(process.env.VITEST);
 // and inlined into both bundles as __GARNISH_VERSION__ (src/lib/version.ts).
 const { version } = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 
+// The commit, inlined as __GARNISH_COMMIT__ beside it: GARNISH_COMMIT when the
+// build is handed one (the image's build context has no .git, so the workflow
+// passes it as a build argument), else git's own answer, else "" — a build
+// outside a checkout still builds.
+function commit(): string {
+  const given = process.env.GARNISH_COMMIT?.trim();
+  if (given) return given.slice(0, 7);
+  try {
+    return execFileSync("git", ["rev-parse", "--short=7", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return "";
+  }
+}
+
 export default defineConfig({
-  define: { __GARNISH_VERSION__: JSON.stringify(version) },
+  define: { __GARNISH_VERSION__: JSON.stringify(version), __GARNISH_COMMIT__: JSON.stringify(commit()) },
   // 9988 is garnish's port everywhere — dev, `bun run start` and the image
   // (decisions.md row 118). strictPort fails loud rather than hopping to a
   // port the devcontainer does not publish.

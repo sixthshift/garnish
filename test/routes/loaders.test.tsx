@@ -2,8 +2,10 @@
 // in-process through runLocally against a temp DATA_DIR), and the component
 // renders what came back. Type assertions at the bottom pin each loader's
 // data to the zod-inferred domain types, so a drift fails `bun run check`.
+
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
+import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/planner";
 import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipe";
 import type { Aisle, FoodSummary, Tag, Unit } from "../../src/domain/reference";
@@ -37,6 +39,7 @@ vi.mock("../../src/server/fns/foods", local);
 vi.mock("../../src/server/fns/style", local);
 vi.mock("../../src/server/fns/planner", local);
 vi.mock("../../src/server/fns/ai", local);
+vi.mock("../../src/server/fns/diagnostics", local);
 vi.mock("../../src/server/fns/import", local);
 
 useTempDataDir();
@@ -742,6 +745,7 @@ describe("loader data types match the domain schemas", () => {
       styleRules: StyleRule[];
       plannerRules: PlannerRule[];
       ai: AiStatus;
+      diagnostics: DiagnosticEvent[];
     }>();
     // Search params are typed from their zod schemas.
     expectTypeOf<(typeof IndexRoute)["types"]["searchSchema"]>().toEqualTypeOf<{
