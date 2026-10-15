@@ -57,6 +57,8 @@ export {
   withStepReplaced,
   withSteps,
 } from "./steps";
+export type { TagSuggestion, TagSuggestions } from "./tagSuggestions";
+export { tagSuggestions, tickedTags } from "./tagSuggestions";
 export type { DraftIngredient, DraftNote, DraftPart, RecipeDraft } from "./types";
 export type { FieldErrors } from "./validate";
 export { validateDraft } from "./validate";

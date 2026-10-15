@@ -1,7 +1,7 @@
 // The stage state of /recipes/new and the flows between stages; RecipeSource renders what this returns.
 
-import { useEffect, useRef, useState } from "react";
-import type { IngredientReview } from "../../../../domain/draft";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { type IngredientReview, tagSuggestions, tickedTags } from "../../../../domain/draft";
 import { type FileRecipe, type ImportedRecipe, review } from "../../../../domain/import";
 import { reviewRows } from "../../../../domain/ingredient";
 import type { FoodRow } from "../../../../domain/reference";
@@ -37,6 +37,21 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const [vocabulary, setVocabulary] = useState<readonly FoodRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The tags ticked on the review, held against the import they were ticked
+  // on: a new import (a model's answer, another recipe out of a backup) starts
+  // again from its own suggestions rather than carrying the last one's ticks.
+  const [picked, setPicked] = useState<{ on: ImportedRecipe; names: string[] } | null>(null);
+  const suggestions = useMemo(
+    () =>
+      imported === null
+        ? null
+        : tagSuggestions(imported.recipe.tags, imported.recipe.name, tags ?? [], imported.from === "mealie" || imported.from === "tandoor"),
+    [imported, tags]
+  );
+  const chosenTags = imported !== null && picked?.on === imported ? picked.names : suggestions === null ? [] : tickedTags(suggestions);
+  const setChosenTags = (names: string[]) => {
+    if (imported !== null) setPicked({ on: imported, names });
+  };
 
   // Read at call time rather than closed over: an address typed on the chooser
   // is read in the same press that sets it, before a render has caught up.
@@ -160,7 +175,9 @@ export function useRecipeSource(props: RecipeSourceProps) {
     setBusy(true);
     setError(null);
     try {
-      const draft = await draftFromReview({ imported, rows, rowSteps, subRecipes, tags, linkSubRecipeFood });
+      // Only the tags ticked on the review go on: a new one is made only when it was ticked.
+      const withTags = { ...imported, recipe: { ...imported.recipe, tags: chosenTags } };
+      const draft = await draftFromReview({ imported: withTags, rows, rowSteps, subRecipes, tags, linkSubRecipeFood });
       onDraft(draft, imported.recipe.image);
     } catch (cause) {
       setBusy(false);
@@ -231,6 +248,9 @@ export function useRecipeSource(props: RecipeSourceProps) {
     busy,
     error,
     duplicate,
+    suggestions,
+    chosenTags,
+    setChosenTags,
     reading: model.reading,
     readError: model.readError,
     setUrl,

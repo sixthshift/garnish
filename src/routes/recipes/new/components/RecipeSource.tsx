@@ -104,6 +104,9 @@ export function RecipeSource(props: RecipeSourceProps) {
           onRetryRead={state.retryRead}
           onUseRejected={state.useRejected}
           onRowsChange={state.setRows}
+          tagSuggestions={state.suggestions}
+          chosenTags={state.chosenTags}
+          onChosenTagsChange={state.setChosenTags}
           onBack={state.leaveReview}
           onCreate={() => void state.create()}
         />

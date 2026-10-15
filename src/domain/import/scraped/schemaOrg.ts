@@ -139,7 +139,10 @@ export function scrapedFromSchema(node: JsonLdNode): ScrapedRecipe {
     // and putting the page's total here makes the total it shows correct. Only
     // as a fallback, so a page that states both is taken at its word.
     cookMinutes: durationToMinutes(field(node, "cookTime", "performTime")) ?? durationToMinutes(node.totalTime),
-    tags: parseKeywords(field(node, "keywords", "recipeCategory")),
+    // Category and cuisine first: "Dinner" and "Chinese" are the shelves a
+    // household keeps; keywords are mostly search phrases, which the review
+    // sorts out (decisions.md row 171). parseKeywords keeps each once.
+    tags: parseKeywords([...list(node.recipeCategory), ...list(node.recipeCuisine), ...list(node.keywords)]),
     parts,
   };
 }

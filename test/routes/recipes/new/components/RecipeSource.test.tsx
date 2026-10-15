@@ -172,7 +172,6 @@ describe("ImportReview", () => {
     expect(html).toContain("24 biscuits");
     expect(html).toContain("Prep 20 min");
     expect(html).toContain("Cook 15 min");
-    expect(html).toContain("baking");
     expect(html).toContain(SOURCE);
     // One review row per ingredient line, in the shape bulk add reviews.
     expect(html.match(/data-review-row=""/g)).toHaveLength(2);
@@ -182,6 +181,23 @@ describe("ImportReview", () => {
     expect(html).toContain("Icing");
     expect(html).toContain("Heat the oven.");
     expect(html).toContain("Whisk.");
+  });
+
+  test("the page's tags are offered on their own, known ticked, new marked, name repeats named as left out", () => {
+    const suggestions = {
+      suggested: [
+        { name: "Baking", known: true, ticked: true },
+        { name: "Biscuits", known: false, ticked: false },
+      ],
+      leftOut: ["Anzac biscuits recipe"],
+    };
+    const html = renderToString(
+      <ImportReview {...reviewProps} imported={imported(scraped)} rows={rows()} tagSuggestions={suggestions} chosenTags={["Baking"]} />
+    );
+    expect(html).toContain('data-testid="review-tags"');
+    expect(html).toContain("Baking");
+    expect(html).toContain("Biscuits (new)");
+    expect(html).toContain("Left out, as they repeat the name or read as search phrases: Anzac biscuits recipe.");
   });
 
   test("a stub says plainly that there was nothing to read", () => {

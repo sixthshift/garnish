@@ -1,9 +1,10 @@
 import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
+import { CheckboxGroup } from "@sixthshift/design-system/checkbox-group";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
-import type { IngredientReview } from "../../../../domain/draft";
+import type { IngredientReview, TagSuggestions } from "../../../../domain/draft";
 import type { ImportedRecipe } from "../../../../domain/import";
 import type { FoodRow, Unit } from "../../../../domain/reference";
 import { scrollClearance } from "../../../../lib/ui/scrollClearance";
@@ -32,6 +33,11 @@ export type ImportReviewProps = {
   /** Take the rejected answer anyway. */
   onUseRejected?: () => void;
   onRowsChange: (rows: IngredientReview[]) => void;
+  /** The source's tags as offered: known ones ticked, new ones not, name repeats left out (decisions.md row 171). */
+  tagSuggestions?: TagSuggestions | null;
+  /** The tags ticked now; only these go onto the recipe. */
+  chosenTags?: readonly string[];
+  onChosenTagsChange?: (names: string[]) => void;
   onBack: () => void;
   onCreate: () => void;
 };
@@ -40,6 +46,7 @@ export type ImportReviewProps = {
 export function ImportReview(props: ImportReviewProps) {
   const { imported, rows, units, searchFoods, busy, error, duplicate, duplicateBy = "url", onRowsChange, onBack, onCreate } = props;
   const { aiAvailable = false, reading = false, readError = null, onRetryRead, onUseRejected } = props;
+  const { tagSuggestions = null, chosenTags = [], onChosenTagsChange } = props;
   const { recipe, from } = imported;
   const label = yieldLabel(recipe);
   // Whether the parts on the screen are the model's doing. An `ai` result that
@@ -128,11 +135,6 @@ export function ImportReview(props: ImportReviewProps) {
             )}
             {recipe.prepMinutes !== null && <Badge variant="soft" intent="neutral">{`Prep ${recipe.prepMinutes} min`}</Badge>}
             {recipe.cookMinutes !== null && <Badge variant="soft" intent="neutral">{`Cook ${recipe.cookMinutes} min`}</Badge>}
-            {recipe.tags.map((tag) => (
-              <Badge key={tag} variant="outline" intent="brand">
-                {tag}
-              </Badge>
-            ))}
           </div>
           {imported.url !== "" && (
             <Muted as="p" className="truncate text-xs" data-source-url="">
@@ -141,6 +143,8 @@ export function ImportReview(props: ImportReviewProps) {
           )}
         </div>
       </Card>
+
+      {tagSuggestions !== null && <ReviewTags suggestions={tagSuggestions} chosen={chosenTags} busy={busy} onChange={onChosenTagsChange} />}
 
       {/* Side by side from `lg`, as the recipe page lays a recipe out; one column below it. */}
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
@@ -175,5 +179,43 @@ export function ImportReview(props: ImportReviewProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * The source's tags, each a toggle: the household's own come ticked, a new one
+ * says so and is made only if ticked, and what was left out is named, so a
+ * keyword that vanished is not a mystery (decisions.md row 171).
+ */
+function ReviewTags(props: { suggestions: TagSuggestions; chosen: readonly string[]; busy?: boolean; onChange?: (names: string[]) => void }) {
+  const { suggestions, chosen, busy, onChange } = props;
+  const { suggested, leftOut } = suggestions;
+  if (suggested.length === 0 && leftOut.length === 0) return null;
+  return (
+    <Card size="md" className="flex flex-col gap-2" data-testid="review-tags">
+      <h3 className="text-sm font-semibold">Tags</h3>
+      {suggested.length > 0 && (
+        <>
+          <CheckboxGroup
+            aria-label="Tags"
+            appearance="separate"
+            orientation="horizontal"
+            className="flex-wrap"
+            disabled={busy}
+            options={suggested.map((tag) => ({ value: tag.name, label: tag.known ? tag.name : `${tag.name} (new)` }))}
+            value={[...chosen]}
+            onValueChange={(names) => onChange?.(names)}
+          />
+          <Muted as="p" className="text-xs">
+            Tags you already have are ticked. A new one is made only if you tick it.
+          </Muted>
+        </>
+      )}
+      {leftOut.length > 0 && (
+        <Muted as="p" className="text-xs" data-testid="review-tags-left-out">
+          {`Left out, as they repeat the name or read as search phrases: ${leftOut.join(", ")}.`}
+        </Muted>
+      )}
+    </Card>
   );
 }

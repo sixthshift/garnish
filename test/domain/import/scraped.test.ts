@@ -429,3 +429,16 @@ describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
     expect(recipe.parts).toEqual([{ name: "", ingredients: [], steps: [] }]);
   });
 });
+
+// decisions.md row 171: the shelves a household keeps are the category and the
+// cuisine, so they are read beside the keywords, not only when keywords are missing.
+test("tags take the category and cuisine first, then the keywords, each once", () => {
+  const recipe = scrapedFromSchema({
+    "@type": "Recipe",
+    name: "Thai Red Curry",
+    recipeCategory: ["Dinner"],
+    recipeCuisine: "Thai",
+    keywords: "thai red curry, dinner, easy",
+  });
+  expect(recipe.tags).toEqual(["Dinner", "Thai", "Thai red curry", "Easy"]);
+});
