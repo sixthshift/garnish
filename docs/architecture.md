@@ -79,7 +79,7 @@ src/
   styles/       theme.css: the Garnish theme, re-pointing the design system's semantic tokens
   styles.css    Tailwind entry: the design system's theme, @source, the Garnish theme, print rules
   router.tsx    getRouter() over routes/routes.ts, and the Register declarations that type Link and the route hooks
-  server.ts     custom server entry: boot, then the default Start handler
+  server.ts     custom server entry: shell mode first (server/shellMode.ts, decisions.md row 169), boot, then the default Start handler
   start.ts      Start's instance: the app-wide request and function middleware that record failures (server/core/middleware.ts)
 vite.config.ts  tanstackStart({ spa, router }), nitro({ preset: 'bun' }), viteReact(), tailwindcss(), serviceWorkerPlugin(). The `router` option hands Start's route generator the root alone and an output under .tanstack/ that nothing imports: Start needs the generator to run to build its asset manifest, even though routing is code
 public/         manifest.webmanifest (installability, and the share_target that lands a shared URL on /recipes/new), icons/, apple-touch-icon.png
@@ -95,7 +95,7 @@ Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `
 | Layer | Choice |
 |---|---|
 | Runtime | Bun 1.4 or newer (1.3 cannot parse the built server, decisions.md row 32) |
-| Framework | TanStack Start, SPA mode, file routes in `src/routes/` |
+| Framework | TanStack Start in SPA mode, in production as in dev: every page request gets the shell and the browser draws the page (`TSS_SHELL`, set in `src/server/shellMode.ts`; decisions.md row 169), as Mealie, Tandoor, Sonarr and Radarr do. File routes in `src/routes/` |
 | Build | Vite via `bun --bun vite`, `NODE_ENV=production` set by the build script; Nitro Bun preset for production; the service worker is emitted by a small Vite plugin in the client build |
 | Frontend | React 19 + Tailwind 4 via `@tailwindcss/vite` |
 | UI kit | `@sixthshift/design-system`, subpath imports (`sheet`, `toast`, `popover`, `tabs`, `search-input`, `switch`, `badge`, `tooltip`, `modal`). Gaps built locally from its primitives under `src/components/ui/`: `Rating`, `NumberStepper`, `ReorderList`, `ImageUpload`, `ConfirmDialog`, `UsageConfirmDialog`, `Menu`, `DataTable`, `EditSheet`, `BulkAddSheet`, `SaveBar`, `Disclosure`, `EditorToolbar` |

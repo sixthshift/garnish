@@ -42,6 +42,15 @@ test.describe(() => {
   });
 });
 
+// decisions.md row 169: the server answers every page with the shell — the
+// frame and a spinner — and the browser draws the page.
+test("a page arrives as the shell, not drawn", async ({ request }) => {
+  const html = await (await request.get("/plan")).text();
+  expect(html).toContain('aria-label="Main"');
+  expect(html).toContain(">Loading<");
+  expect(html).not.toContain("<h1");
+});
+
 test("/api/health answers", async ({ request }) => {
   const response = await request.get("/api/health");
   expect(response.ok()).toBe(true);

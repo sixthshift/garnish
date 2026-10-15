@@ -9,7 +9,7 @@ import type { SwConfig } from "./worker.ts";
 /** The client environment's name in a TanStack Start build. */
 const CLIENT_ENVIRONMENT = "client";
 export const SW_FILE = "sw.js";
-/** Nitro serves the SSR shell for `/`; the prerendered _shell.html is not routable. */
+/** Every page request is answered with the shell (decisions.md row 169), the same for every address, so `/`'s copy serves them all offline; the prerendered _shell.html is not routable. */
 export const SHELL_URL = "/";
 const VERSION_PLACEHOLDER = "__SW_VERSION__";
 

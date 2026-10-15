@@ -61,7 +61,7 @@ vi.mock("../../../src/server/fns/plan", local);
 Every spec imports from `e2e/fixtures.ts`, not `@playwright/test`:
 
 - **`page` fails the test on any uncaught error or console error.** Every journey is also a check that nothing on its way threw. A test that expects one names it: `test.use({ allowedErrors: [/status of 404/] })`.
-- **`open(path)`** navigates and waits for a quiet network. The server sends a prerendered shell that React hydrates as the route's chunks arrive; typing before that finishes is thrown away with the mismatched DOM (React #418). Navigate with `open`, not `page.goto`.
+- **`open(path)`** navigates and waits for a quiet network: the server sends the shell, and the browser draws the page once its chunk and loader data arrive (decisions.md row 169). Navigate with `open`, not `page.goto`; `typing.spec.ts` is the exception, since typing early is what it tests.
 - **`createRecipe(page, open, recipe)`** types a recipe in through the editor and resolves on its page — the setup most journeys need.
 - **`unique(name)`** suffixes a name. The specs share one database, so each makes what it reads unique.
 

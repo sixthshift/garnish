@@ -90,8 +90,9 @@ describe("/recipes/$slug/cook", () => {
     expect(html).not.toContain("data-position");
     expect(isDisabled(html, "Prev")).toBe(true);
     expect(isDisabled(html, "Next")).toBe(false);
-    // Full-screen: the shell's nav is gone, and the way out is the Exit link.
-    expect(html).not.toContain('aria-label="Main"');
+    // The way out is the Exit link. Full-screen — the shell's nav gone — is
+    // drawn once the page is the browser's (decisions.md row 169), so it is
+    // held in test/routes/shell.dom.test.tsx, not in this server render.
     expect(html).toContain('href="/recipes/lemon-tart"');
     expect(html).toContain(">Exit<");
     expect(html).toContain("Lemon tart");
@@ -342,7 +343,10 @@ describe("/recipes/$slug/cook", () => {
 
   test("phone width: single column, no fixed widths on the page or its cards", async () => {
     await seedTart();
-    const html = await renderRoute("/recipes/lemon-tart/cook");
+    // Cook mode's page, from the shell's <main> on: before hydration the
+    // shell's sidebar (w-56) is drawn beside it (decisions.md row 169).
+    const rendered = await renderRoute("/recipes/lemon-tart/cook");
+    const html = rendered.slice(rendered.indexOf('<main class="min-w-0'));
     // Page column is fluid (w-full, max-w), anchored to the top rather than
     // centred, and the name may take two lines rather than truncating early.
     expect(html).toMatch(/<main class="[^"]*w-full max-w-3xl[^"]*flex-col/);

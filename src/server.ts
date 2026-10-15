@@ -1,3 +1,5 @@
+// First, for its side effect: Start reads it as its handler module loads (decisions.md row 169).
+import "./server/shellMode";
 import type { Register } from "@tanstack/react-router";
 import type { RequestHandler } from "@tanstack/react-start/server";
 import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";

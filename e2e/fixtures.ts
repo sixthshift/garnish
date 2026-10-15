@@ -7,7 +7,7 @@ import { test as base, expect, type Page } from "@playwright/test";
 type Fixtures = {
   /** Patterns of page errors this test expects; any other fails it. */
   allowedErrors: RegExp[];
-  /** Go to `path` and resolve once the page is hydrated and safe to type into. */
+  /** Go to `path` and resolve once the page has loaded and settled. */
   open: (path: string) => Promise<void>;
 };
 
@@ -25,11 +25,10 @@ export const test = base.extend<Fixtures>({
     await use(page);
     expect(errors, "the page logged errors").toEqual([]);
   },
-  // The server sends a prerendered shell and React hydrates it as the route's
-  // lazy chunks arrive. Typing before that finishes is thrown away with the
-  // mismatched DOM (React #418), and a fiber on the node is no sign it is
-  // done: React attaches those before it commits. The chunks are the last
-  // thing hydration waits on, so a quiet network is the signal.
+  // The server sends the shell and the browser draws the page once the
+  // route's chunk and its loader data arrive (decisions.md row 169). A quiet
+  // network means both are in, so a spec starts from the page as a person
+  // would see it settled. typing.spec.ts is the one that types early on purpose.
   open: async ({ page }, use) => {
     await use(async (path) => {
       await page.goto(path, { waitUntil: "networkidle" });

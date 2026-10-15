@@ -56,26 +56,23 @@ describe("app shell", () => {
     expect(aside).toContain("md:top-0");
   });
 
-  test("cook mode is fullscreen: the outlet renders without either nav", async () => {
-    const html = await render("/recipes/lemon-tart/cook");
-    expect(html).toContain("Lemon tart");
-    expect(html).not.toContain('aria-label="Main"');
-  });
-
-  // Critique #11: a task finished with Save or Cancel drops the phone's tab bar,
-  // so the Save bar is the only chrome at the foot; the side nav stays.
-  test.each([
-    ["/recipes/lemon-tart/edit", "Edit recipe"],
-    ["/recipes/new?source=manual", "New recipe"],
-    ["/recipes/new?source=url", "New recipe"],
-  ])("%s hides the phone tab bar and keeps the side nav", async (path, text) => {
-    const html = await render(path);
-    expect(html).toContain(text);
-    expect(html.match(/aria-label="Main"/g)).toHaveLength(1);
-    expect(html).toMatch(/<aside[^>]*>[\s\S]*aria-label="Main"/);
-    expect(html).toContain("[--app-bar:0px]");
-    expect(html).not.toContain("[--app-bar:calc(");
-  });
+  // decisions.md row 169: the shell is drawn before the page is the
+  // browser's, and offline one cached copy answers every address, so it must
+  // read the same everywhere — both navs, no place marked, the tab bar kept.
+  // What the address decides is drawn once hydrated: test/routes/shell.dom.test.tsx.
+  test.each(["/recipes/lemon-tart/cook", "/recipes/lemon-tart/edit", "/recipes/new?source=manual", "/settings"])(
+    "%s draws the same neutral shell before hydration",
+    async (path) => {
+      const html = await render(path);
+      const navs = html.match(/<nav aria-label="Main"[\s\S]*?<\/nav>/g) ?? [];
+      expect(navs).toHaveLength(2);
+      for (const nav of navs) {
+        expect(nav).not.toContain('data-status="active"');
+        expect(nav).not.toContain('aria-current="page"');
+      }
+      expect(html).toContain("[--app-bar:calc(2.75rem_+_1px_+_max(0.5rem,env(safe-area-inset-bottom)))]");
+    }
+  );
 
   test("the new-recipe chooser is a place and keeps the tab bar", async () => {
     const html = await render("/recipes/new");
@@ -94,14 +91,6 @@ describe("app shell", () => {
     const html = await render("/nowhere");
     expect(html).toContain("Not found");
     expect(html).toContain('href="/"');
-  });
-
-  test("only the current nav item is active", async () => {
-    const html = await render("/settings");
-    const active = html.match(/data-status="active"/g) ?? [];
-    // One per nav (side + bottom).
-    expect(active).toHaveLength(2);
-    expect(html).toMatch(/href="\/settings"[^>]*data-status="active"|data-status="active"[^>]*href="\/settings"/);
   });
 });
 

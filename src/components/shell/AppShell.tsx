@@ -2,6 +2,7 @@ import { bootstrapTheme } from "@sixthshift/design-system/hooks";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link, Outlet, useMatches } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useHydrated } from "../../lib/useHydrated";
 import { Logo } from "./Logo";
 
 // Routes opt out of the nav with `staticData: { fullscreen: true }` (cook mode).
@@ -43,12 +44,26 @@ const activeClass = "bg-bg-subtle-pressed text-fg-normal";
 // grows into the home indicator. Change it with `itemClass` or the bar's padding.
 const APP_BAR_HEIGHT = "[--app-bar:calc(2.75rem_+_1px_+_max(0.5rem,env(safe-area-inset-bottom)))]";
 
-/** `stacked` is the side nav, where a `footer` item is pushed to the bottom. */
+/**
+ * `stacked` is the side nav, where a `footer` item is pushed to the bottom.
+ * Until the page is hydrated the items are plain links with no place marked:
+ * the shell must read the same for every address, since offline one cached
+ * copy answers them all (decisions.md row 169). A router `Link` marks itself
+ * `aria-current` as it renders, and React would leave a stale one in place.
+ */
 function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTMLElement> & { stacked?: boolean }) {
+  const hydrated = useHydrated();
   return (
     <nav aria-label="Main" className={className} {...props}>
       {navItems.map((item) => {
         const base = cn(itemClass, stacked && item.footer && "mt-auto");
+        if (!hydrated) {
+          return (
+            <a key={item.to} href={item.to} className={cn(base, inactiveClass)}>
+              {item.label}
+            </a>
+          );
+        }
         return (
           <Link
             key={item.to}
@@ -68,11 +83,16 @@ function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTML
 
 export function AppShell() {
   useEffect(() => bootstrapTheme(), []);
-  const fullscreen = useMatches({ select: (matches) => matches.some((match) => match.staticData.fullscreen === true) });
-  const hideNav = useMatches({
+  // The address decides these only once the page is the browser's: the shell
+  // is the same for every address (see Nav).
+  const hydrated = useHydrated();
+  const fullscreenRoute = useMatches({ select: (matches) => matches.some((match) => match.staticData.fullscreen === true) });
+  const hideNavRoute = useMatches({
     select: (matches) =>
       matches.some(({ staticData: { hideNav }, search }) => hideNav === true || (typeof hideNav === "function" && hideNav(search as Record<string, unknown>))),
   });
+  const fullscreen = hydrated && fullscreenRoute;
+  const hideNav = hydrated && hideNavRoute;
   if (fullscreen) {
     return (
       <div className="min-h-dvh bg-bg-subtle text-fg-normal">
