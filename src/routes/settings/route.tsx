@@ -2,7 +2,7 @@ import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import type { DiagnosticEvent } from "../../db/models/diagnostic/repo";
 import type { PlannerRule } from "../../domain/planner";
 import type { RecipeSummary } from "../../domain/recipe";
-import type { Aisle, Tag, Unit } from "../../domain/reference";
+import type { Aisle, TagUsage, Unit } from "../../domain/reference";
 import type { StyleRule } from "../../domain/style";
 import type { AiStatus } from "../../server/ai/client";
 import { getAiStatus } from "../../server/fns/ai";
@@ -12,7 +12,7 @@ import { listFoods } from "../../server/fns/foods";
 import { listPlannerRules } from "../../server/fns/planner";
 import { listRecipes } from "../../server/fns/recipes";
 import { listStyleRules } from "../../server/fns/style";
-import { listTags } from "../../server/fns/tags";
+import { listTagUsage } from "../../server/fns/tags";
 import { listUnits } from "../../server/fns/units";
 import { Route as rootRoute } from "../root";
 
@@ -23,7 +23,7 @@ export type SettingsData = {
   aisles: Aisle[];
   units: Unit[];
   foods: FoodRow[];
-  tags: Tag[];
+  tags: TagUsage[];
   recipes: RecipeSummary[];
   styleRules: StyleRule[];
   plannerRules: PlannerRule[];
@@ -39,7 +39,7 @@ export const Route = createRoute({
       listAisles({ data: {} }),
       listUnits({ data: {} }),
       listFoods({ data: {} }),
-      listTags({ data: {} }),
+      listTagUsage(),
       // For the food sheet's "Made by a recipe".
       listRecipes({ data: { sort: "name", dir: "asc" } }),
       listStyleRules(),

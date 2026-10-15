@@ -740,7 +740,7 @@ describe("loader data types match the domain schemas", () => {
       aisles: Aisle[];
       units: Unit[];
       foods: FoodRow[];
-      tags: Tag[];
+      tags: TagUsage[];
       recipes: RecipeSummary[];
       styleRules: StyleRule[];
       plannerRules: PlannerRule[];

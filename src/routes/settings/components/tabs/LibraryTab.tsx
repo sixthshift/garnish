@@ -1,7 +1,7 @@
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
 import type { RecipeSummary } from "../../../../domain/recipe";
-import type { Aisle, Tag, Unit } from "../../../../domain/reference";
+import type { Aisle, TagUsage, Unit } from "../../../../domain/reference";
 import type { FoodRow } from "../../route";
 import { AislesTab } from "./AislesTab";
 import { FoodsTab } from "./FoodsTab";
@@ -31,7 +31,7 @@ export function LibraryTab({
   foods: readonly FoodRow[];
   units: readonly Unit[];
   aisles: readonly Aisle[];
-  tags: readonly Tag[];
+  tags: readonly TagUsage[];
   recipes: readonly RecipeSummary[];
 }) {
   const [section, setSection] = useState<Section>("foods");

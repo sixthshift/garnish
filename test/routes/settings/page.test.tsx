@@ -6,8 +6,8 @@
 //
 // Aisles, Tags and Style are not the default tab, so their tabs are rendered
 // directly here instead: AislesTab's drag list and rename/delete triggers,
-// TagsTab's A–Z grouping (pure `groupTagsAZ`) and its tag-chip links,
-// rename/merge/delete triggers, and closed-by-default dialogs, and StyleTab's
+// TagsTab's table (counts, tag-chip links, row actions, closed-by-default
+// dialogs) and its rename clash check, and StyleTab's
 // statement rows — switch, editable text, note, reorder and add (M37.2).
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -15,7 +15,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { PlannerRule } from "../../../src/domain/planner";
 import type { RecipeSummary } from "../../../src/domain/recipe";
-import type { Aisle, Tag, Unit } from "../../../src/domain/reference";
+import type { Aisle, TagUsage, Unit } from "../../../src/domain/reference";
 import type { StyleRule } from "../../../src/domain/style";
 import { buildLabel } from "../../../src/lib/version";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/settings/components/settingsLabels";
@@ -24,8 +24,7 @@ import { AiTab, connectedMessage, connectedTitle, OfferedModels } from "../../..
 import { BackupTab } from "../../../src/routes/settings/components/tabs/BackupTab";
 import { PlannerTab } from "../../../src/routes/settings/components/tabs/PlannerTab";
 import { StyleTab } from "../../../src/routes/settings/components/tabs/StyleTab";
-import { TagsTab } from "../../../src/routes/settings/components/tabs/TagsTab";
-import { groupTagsAZ } from "../../../src/routes/settings/components/tagGroups";
+import { renameClash, TagsTab } from "../../../src/routes/settings/components/tabs/TagsTab";
 import { Version } from "../../../src/routes/settings/components/Version";
 import type { FoodRow } from "../../../src/routes/settings/route";
 
@@ -58,8 +57,8 @@ function aisle(id: string, name: string, position: number): Aisle {
   return { id, name, position };
 }
 
-function tag(id: string, name: string): Tag {
-  return { id, name, slug: name.toLowerCase() };
+function tag(id: string, name: string, recipes = 1): TagUsage {
+  return { id, name, slug: name.toLowerCase(), recipes };
 }
 
 /** Render a component inside a throwaway router, so a `Link` it renders resolves. */
@@ -98,30 +97,17 @@ describe("unitsLabel", () => {
   });
 });
 
-describe("groupTagsAZ", () => {
-  test("groups by first letter, upper-cased, each group sorted by name", () => {
-    const weeknight = tag("t1", "Weeknight");
-    const almonds = tag("t2", "almonds"); // lower-case name still groups under A
-    const baking = tag("t3", "Baking");
-    const groups = groupTagsAZ([weeknight, almonds, baking]);
-    expect(groups).toEqual([
-      { letter: "A", tags: [almonds] },
-      { letter: "B", tags: [baking] },
-      { letter: "W", tags: [weeknight] },
-    ]);
+describe("renameClash", () => {
+  const weeknight = tag("t1", "Weeknight");
+  const dinner = tag("t2", "Weeknight dinners");
+  test("a rename onto another tag's name, in any case, is that tag", () => {
+    expect(renameClash([weeknight, dinner], dinner, "weeknight")).toBe(weeknight);
+    expect(renameClash([weeknight, dinner], dinner, "  #WEEKNIGHT ")).toBe(weeknight);
   });
 
-  test("a name starting with anything but A–Z falls into a trailing # group", () => {
-    const weeknight = tag("t1", "Weeknight");
-    const thirty = tag("t2", "30 minute");
-    expect(groupTagsAZ([thirty, weeknight])).toEqual([
-      { letter: "W", tags: [weeknight] },
-      { letter: "#", tags: [thirty] },
-    ]);
-  });
-
-  test("empty input gives no groups", () => {
-    expect(groupTagsAZ([])).toEqual([]);
+  test("a new name, or the tag's own in another case, is no clash", () => {
+    expect(renameClash([weeknight, dinner], dinner, "School nights")).toBeNull();
+    expect(renameClash([weeknight, dinner], weeknight, "weeknight")).toBeNull();
   });
 });
 
@@ -144,20 +130,20 @@ describe("AislesTab render", () => {
 });
 
 describe("TagsTab render", () => {
-  test("groups tags A–Z, each name links to the filtered recipe list, with an actions menu (rename, merge, delete)", async () => {
-    const html = await renderWithRouter(() => <TagsTab tags={[tag("t1", "Weeknight"), tag("t2", "Baking")]} />);
-    expect(html).toContain('aria-label="Tags starting with B"');
-    expect(html).toContain('aria-label="Tags starting with W"');
+  test("a table of tags with how many recipes carry each, each name linking to its recipes, with row actions", async () => {
+    const html = await renderWithRouter(() => <TagsTab tags={[tag("t1", "Weeknight", 6), tag("t2", "Baking", 0)]} />);
+    expect(html).toContain("Recipes");
+    expect(html).toMatch(/Weeknight[\s\S]*>6</);
     expect(html).toContain('href="/?tag=baking"');
     expect(html).toContain('href="/?tag=weeknight"');
     expect(html).toContain('aria-label="Actions for Weeknight"');
-    expect(html).toContain('aria-label="Actions for Baking"');
+    expect(html).toContain('aria-label="Select Baking"');
     // No dialog is open by default.
     expect(html).not.toContain("will be deleted");
     expect(html).not.toContain("Merge into");
   });
 
-  test("no tags says so instead of an empty list", async () => {
+  test("no tags says so instead of an empty table", async () => {
     expect(await renderWithRouter(() => <TagsTab tags={[]} />)).toContain("No tags yet.");
   });
 });

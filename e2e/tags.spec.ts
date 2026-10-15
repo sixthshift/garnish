@@ -87,3 +87,49 @@ test("the editor finds the household's tags as you type, and creates one only wh
   await p.getByRole("button", { name: "Create recipe" }).click();
   await expect(p.getByRole("main").getByRole("link", { name: made })).toBeVisible();
 });
+
+test("Settings › Tags: a rename onto another tag's name merges, and a tag nobody wants is deleted", async ({ page: p, open }) => {
+  const keep = `K${unique("eep").replace(" ", "").slice(1).toLowerCase()}`;
+  const dupe = `${keep} dinners`;
+  const junk = `J${unique("unk").replace(" ", "").slice(1).toLowerCase()}`;
+
+  // One recipe carrying all three, typed in through the editor.
+  const name = unique("Tidy Soup");
+  await open("/recipes/new?source=manual");
+  await p.getByRole("textbox", { name: "Name" }).fill(name);
+  await p.getByRole("textbox", { name: "New steps" }).fill("Cook it.");
+  await p.getByRole("region", { name: "Parts" }).getByRole("button", { name: "Add", exact: true }).last().click();
+  await p.getByText("Details", { exact: true }).click();
+  await p.getByRole("combobox", { name: "Add a tag" }).fill(`${keep}, ${dupe}, ${junk}`);
+  await p.getByRole("combobox", { name: "Add a tag" }).press("Enter");
+  await p.getByRole("button", { name: "Create recipe" }).click();
+  await expect(p.getByRole("heading", { level: 1, name })).toBeVisible();
+  const recipe = new URL(p.url()).pathname;
+
+  await open("/settings");
+  await p.getByRole("radio", { name: "Tags" }).click();
+  const table = p.getByRole("table", { name: "tags" });
+
+  // Rename the duplicate onto the keeper's name: it offers a merge instead of failing.
+  await table.getByRole("button", { name: `Actions for ${dupe}` }).click();
+  await p.getByRole("menuitem", { name: "Rename" }).click();
+  await p.getByRole("textbox", { name: "Name" }).fill(keep.toUpperCase());
+  await p.getByRole("button", { name: "Save" }).click();
+  await p
+    .getByRole("dialog", { name: `Merge ${dupe} into ${keep}?` })
+    .getByRole("button", { name: "Merge" })
+    .click();
+  await expect(table.getByRole("link", { name: dupe })).toHaveCount(0);
+
+  // Select the junk tag and delete it.
+  await table.getByRole("checkbox", { name: `Select ${junk}` }).check();
+  await p.getByRole("button", { name: "Delete 1", exact: true }).click();
+  await p.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
+  await expect(table.getByRole("link", { name: junk })).toHaveCount(0);
+
+  await open(recipe);
+  const main = p.getByRole("main");
+  await expect(main.getByRole("link", { name: keep })).toBeVisible();
+  await expect(main.getByRole("link", { name: dupe })).toHaveCount(0);
+  await expect(main.getByRole("link", { name: junk })).toHaveCount(0);
+});
