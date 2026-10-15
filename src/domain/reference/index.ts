@@ -24,3 +24,4 @@ export {
   UnitUpdate,
   unitSchema,
 } from "./reference";
+export { tagKey, tagName, tagNamesFrom } from "./tagName";

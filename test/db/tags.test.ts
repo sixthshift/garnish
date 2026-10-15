@@ -91,3 +91,18 @@ test("merging a tag into itself is a no-op that returns it unchanged", () => {
   expect(repo.merge(weeknight.id, weeknight.id)).toEqual(weeknight);
   expect(repo.list()).toEqual([weeknight]);
 });
+
+// The house rule (decisions.md row 170) is applied where every tag is finally stored.
+test("create, update and findOrCreate store the name in sentence case", () => {
+  const thai = repo.create({ name: "  thai " });
+  expect(thai).toMatchObject({ name: "Thai", slug: "thai" });
+  expect(repo.update(thai.id, { name: "#thai curry" })).toMatchObject({ name: "Thai curry", slug: "thai-curry" });
+  expect(repo.findOrCreate("one  pot")).toMatchObject({ name: "One pot", slug: "one-pot" });
+});
+
+test("findOrCreate matches by the tag key, which NOCASE alone would miss", () => {
+  const creme = repo.create({ name: "Crème" });
+  expect(repo.findOrCreate("CRÈME")).toEqual(creme);
+  expect(repo.findOrCreate("#crème")).toEqual(creme);
+  expect(repo.list()).toHaveLength(1);
+});

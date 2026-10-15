@@ -234,7 +234,7 @@ describe("draftFromScraped", () => {
     expect(draft.prepTime).toBe(20);
     expect(draft.performTime).toBe(15);
     expect(draft.sourceUrl).toBe(SOURCE);
-    expect(draft.tags.map((tag) => tag.name)).toEqual(["baking"]);
+    expect(draft.tags.map((tag) => tag.name)).toEqual(["Baking"]);
   });
 
   test("a bare servings count is not repeated as a yield", () => {

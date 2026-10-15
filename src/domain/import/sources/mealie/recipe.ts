@@ -1,3 +1,4 @@
+import { tagNamesFrom } from "../../../reference";
 import { durationToMinutes } from "../../scraped/schemaOrg";
 import { text } from "../../scraped/text";
 import { parseYield } from "../../scraped/yield";
@@ -29,21 +30,10 @@ export function mealieTimeToMinutes(value: unknown): number | null {
   return total > 0 ? Math.round(total) : null;
 }
 
-/** Names out of Mealie's tag and category rows (either shape: a row, or a bare string), once each. Pure. */
+/** Names out of Mealie's tag and category rows (either shape: a row, or a bare string), by the tag rule, once each. Pure. */
 export function tagNames(...lists: unknown[]): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const list of lists) {
-    if (!Array.isArray(list)) continue;
-    for (const entry of list) {
-      const name = (isNode(entry) ? text(pick(entry, "name")) : text(entry)).trim();
-      const key = name.toLowerCase();
-      if (name === "" || seen.has(key)) continue;
-      seen.add(key);
-      out.push(name);
-    }
-  }
-  return out;
+  const names = lists.flatMap((list) => (Array.isArray(list) ? list : [])).map((entry) => (isNode(entry) ? text(pick(entry, "name")) : text(entry)));
+  return tagNamesFrom(names);
 }
 
 // --- One recipe ------------------------------------------------------------

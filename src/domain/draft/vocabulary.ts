@@ -1,6 +1,6 @@
 import { randomUuid } from "../../lib/id";
 import { slugify } from "../../lib/names";
-import type { Food, FoodRow, Tag, Unit } from "../reference";
+import { type Food, type FoodRow, type Tag, tagKey, tagNamesFrom, type Unit } from "../reference";
 
 export const VULGAR: Record<string, number> = {
   "½": 1 / 2,
@@ -119,20 +119,15 @@ export function filterUnits(units: readonly Unit[], text: string): Unit[] {
 }
 
 /**
- * Tag references for the names in the tag input: an existing tag by name
- * (case-insensitive, from `known`), else a new reference the server will
+ * Tag references for the names in the tag input or an import: each split on
+ * commas and cleaned by the house rule (`tagNamesFrom`), then an existing tag
+ * whose key matches (from `known`), else a new reference the server will
  * find-or-create by name. Blank and duplicate names are dropped. Pure apart
  * from the random id on a new tag.
  */
 export function tagsFromNames(names: readonly string[], known: readonly Tag[]): Tag[] {
-  const out: Tag[] = [];
-  const seen = new Set<string>();
-  for (const raw of names) {
-    const name = raw.trim();
-    const key = name.toLowerCase();
-    if (name === "" || seen.has(key)) continue;
-    seen.add(key);
-    out.push(known.find((tag) => tag.name.toLowerCase() === key) ?? { id: randomUuid(), name, slug: slugify(name) || name });
-  }
-  return out;
+  return tagNamesFrom(names).map((name) => {
+    const key = tagKey(name);
+    return known.find((tag) => tagKey(tag.name) === key) ?? { id: randomUuid(), name, slug: slugify(name) || name };
+  });
 }

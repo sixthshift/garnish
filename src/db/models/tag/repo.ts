@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { tagKey, tagName } from "../../../domain/reference";
 import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern, slugify, uniqueSlug } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";
@@ -33,9 +34,26 @@ export function tagRepository(db: Database) {
     });
   }
 
+  /** The house rule's name (domain/reference/tagName.ts); throws when nothing is left. */
+  function houseName(raw: string): string {
+    return cleanName(tagName(raw));
+  }
+
+  /** The tag whose name has `name`'s key, if any: a match the column's ASCII-only NOCASE would miss ("Crème" and "CRÈME"). */
+  function byKey(name: string): Tag | null {
+    const key = tagKey(name);
+    return (
+      dz
+        .select()
+        .from(tag)
+        .all()
+        .find((row) => tagKey(row.name) === key) ?? null
+    );
+  }
+
   function create(input: TagInput): Tag {
     const id = crypto.randomUUID();
-    const name = cleanName(input.name);
+    const name = houseName(input.name);
     dz.insert(tag)
       .values({ id, name, slug: slugFor(name, id) })
       .run();
@@ -65,7 +83,7 @@ export function tagRepository(db: Database) {
     update(id: string, patch: Partial<TagInput>): Tag | null {
       const current = get(id);
       if (!current) return null;
-      const name = cleanName(patch.name ?? current.name);
+      const name = houseName(patch.name ?? current.name);
       dz.update(tag)
         .set({ name, slug: slugFor(name, id) })
         .where(eq(tag.id, id))
@@ -76,10 +94,10 @@ export function tagRepository(db: Database) {
     /** True when a row was deleted. recipe_tag links cascade; recipes stay. */
     remove,
 
-    /** Existing tag whose name matches case-insensitively, else a new one. */
+    /** Existing tag whose name has the same key (case, spacing, a leading #), else a new one in the house style. */
     findOrCreate(name: string): Tag {
-      const clean = cleanName(name);
-      return dz.select().from(tag).where(eq(tag.name, clean)).get() ?? create({ name: clean });
+      const clean = houseName(name);
+      return byKey(clean) ?? create({ name: clean });
     },
 
     /**

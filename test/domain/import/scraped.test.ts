@@ -117,12 +117,12 @@ describe("parseYield", () => {
 });
 
 describe("parseKeywords", () => {
-  test("a comma-separated string splits", () => {
-    expect(parseKeywords("quick, vegetarian ,  weeknight")).toEqual(["quick", "vegetarian", "weeknight"]);
+  test("a comma-separated string splits, each in the tag rule's sentence case", () => {
+    expect(parseKeywords("quick, vegetarian ,  weeknight")).toEqual(["Quick", "Vegetarian", "Weeknight"]);
   });
 
   test("a list is taken as written, and nested commas still split", () => {
-    expect(parseKeywords(["quick", "vegetarian, easy"])).toEqual(["quick", "vegetarian", "easy"]);
+    expect(parseKeywords(["quick", "vegetarian, easy"])).toEqual(["Quick", "Vegetarian", "Easy"]);
   });
 
   test("blanks and case-insensitive duplicates are dropped", () => {
@@ -131,7 +131,7 @@ describe("parseKeywords", () => {
   });
 
   test("an object with a name is read", () => {
-    expect(parseKeywords([{ "@type": "Thing", name: "quick" }])).toEqual(["quick"]);
+    expect(parseKeywords([{ "@type": "Thing", name: "quick" }])).toEqual(["Quick"]);
   });
 });
 
@@ -248,7 +248,7 @@ describe("scrapedFromSchema", () => {
       yieldText: "biscuits",
       prepMinutes: 20,
       cookMinutes: 15,
-      tags: ["biscuits", "baking"],
+      tags: ["Biscuits", "Baking"],
       parts: [{ name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: ["Heat the oven to 180C.", "Mix and bake."] }],
     });
   });

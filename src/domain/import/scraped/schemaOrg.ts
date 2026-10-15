@@ -1,3 +1,4 @@
+import { tagNamesFrom } from "../../reference";
 import type { JsonLdNode } from "../page/jsonLd";
 import { tidyParts } from "./parts";
 import { field, list, text } from "./text";
@@ -37,21 +38,9 @@ export function durationToMinutes(value: unknown): number | null {
   return total > 0 ? Math.round(total) : null;
 }
 
-/** `keywords` as a list: split a comma-separated string, flatten a list, drop blanks and duplicates. Pure. */
+/** `keywords` as a list: flatten a list, split comma-separated strings, clean and dedupe by the tag rule. Pure. */
 export function parseKeywords(value: unknown): string[] {
-  const out: string[] = [];
-  const seen = new Set<string>();
-  for (const entry of list(value)) {
-    const parts = typeof entry === "object" && entry !== null ? [text((entry as JsonLdNode).name)] : text(entry).split(",");
-    for (const part of parts) {
-      const name = part.trim();
-      const key = name.toLowerCase();
-      if (name === "" || seen.has(key)) continue;
-      seen.add(key);
-      out.push(name);
-    }
-  }
-  return out;
+  return tagNamesFrom(list(value).map((entry) => (typeof entry === "object" && entry !== null ? text((entry as JsonLdNode).name) : text(entry))));
 }
 
 // --- Instructions ----------------------------------------------------------
