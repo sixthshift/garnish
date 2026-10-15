@@ -2,12 +2,12 @@ import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
 import { Label } from "@sixthshift/design-system/label";
 import { Select } from "@sixthshift/design-system/select";
-import { TagInput } from "@sixthshift/design-system/tag-input";
 import { useId } from "react";
 import { Disclosure } from "../../../components/ui/Disclosure";
-import { type FieldErrors, type RecipeDraft, tagsFromNames } from "../../../domain/draft";
+import type { FieldErrors, RecipeDraft } from "../../../domain/draft";
 import type { Tag, Unit } from "../../../domain/reference";
 import { detailsHint, feedback, parseAmount, parseMinutes } from "./recipeFormText";
+import { TagField } from "./TagField";
 
 export type RecipeDetailsProps = {
   draft: RecipeDraft;
@@ -95,12 +95,7 @@ export function RecipeDetails({ draft, errors, saving, units, knownTags, default
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={tagsId}>Tags</Label>
-        <TagInput
-          id={tagsId}
-          value={draft.tags.map((tag) => tag.name)}
-          placeholder="Add a tag and press Enter"
-          onValueChange={(names) => onPatch({ tags: tagsFromNames(names, [...draft.tags, ...knownTags]) })}
-        />
+        <TagField id={tagsId} value={draft.tags} known={knownTags} disabled={saving} onChange={(tags) => onPatch({ tags })} />
       </div>
 
       <FormField label="Source" description="Where the recipe came from" feedback={feedback(errors, "sourceUrl")}>

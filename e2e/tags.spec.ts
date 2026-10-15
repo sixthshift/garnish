@@ -58,3 +58,32 @@ test("a new tag is made only when ticked, and the next import finds it ticked", 
   await create(p, second);
   await expect(p.getByRole("main").getByRole("link", { name: made })).toBeVisible();
 });
+
+test("the editor finds the household's tags as you type, and creates one only when asked", async ({ page: p, open }) => {
+  const shelf = unique("Shelf").replace(" ", "");
+  const made = `S${shelf.slice(1).toLowerCase()}`;
+
+  /** A new recipe's Details, with the tag field in reach. */
+  const details = async (name: string) => {
+    await open("/recipes/new?source=manual");
+    await p.getByRole("textbox", { name: "Name" }).fill(name);
+    await p.getByRole("textbox", { name: "New steps" }).fill("Cook it.");
+    await p.getByRole("region", { name: "Parts" }).getByRole("button", { name: "Add", exact: true }).last().click();
+    await p.getByText("Details", { exact: true }).click();
+  };
+
+  const first = unique("Tagged Soup");
+  await details(first);
+  await p.getByRole("combobox", { name: "Add a tag" }).fill(shelf.toLowerCase());
+  await p.getByRole("option", { name: `Create “${shelf.toLowerCase()}”` }).click();
+  await expect(p.getByRole("list", { name: "Recipe tags" })).toContainText(made);
+  await p.getByRole("button", { name: "Create recipe" }).click();
+  await expect(p.getByRole("main").getByRole("link", { name: made })).toBeVisible();
+
+  const second = unique("Tagged Stew");
+  await details(second);
+  await p.getByRole("combobox", { name: "Add a tag" }).fill(shelf.slice(0, 8).toUpperCase());
+  await p.getByRole("option", { name: made }).click();
+  await p.getByRole("button", { name: "Create recipe" }).click();
+  await expect(p.getByRole("main").getByRole("link", { name: made })).toBeVisible();
+});
