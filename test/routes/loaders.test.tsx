@@ -8,7 +8,7 @@ import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/planner";
 import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipe";
-import type { Aisle, FoodSummary, Tag, Unit } from "../../src/domain/reference";
+import type { Aisle, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/reference";
 import type { StyleRule } from "../../src/domain/style";
 import { searchParam } from "../../src/lib/search";
 import type { Route as IndexRoute, RecipeListData } from "../../src/routes/home/route";
@@ -730,7 +730,7 @@ describe("loader data types match the domain schemas", () => {
     // ...and each route hands its component the same shape (`types` is the
     // route's phantom type bag; `useLoaderData()` returns `types.loaderData`).
     expectTypeOf<(typeof IndexRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeListData>();
-    expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: Tag[]; foods: FoodSummary[] }>();
+    expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: TagUsage[]; foods: FoodSummary[] }>();
     expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeViewData>();
     expectTypeOf<RecipeViewData>().toEqualTypeOf<{ recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[]; aiAvailable: boolean }>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();

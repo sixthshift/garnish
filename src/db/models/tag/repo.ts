@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
-import { tagKey, tagName } from "../../../domain/reference";
+import { type TagUsage, tagKey, tagName } from "../../../domain/reference";
 import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern, slugify, uniqueSlug } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";
@@ -74,6 +74,16 @@ export function tagRepository(db: Database) {
             .orderBy(asc(tag.name))
             .all()
         : query.orderBy(asc(tag.name)).all();
+    },
+    /** Every tag with the number of recipes carrying it, by name. */
+    usage(): TagUsage[] {
+      return dz
+        .select({ id: tag.id, name: tag.name, slug: tag.slug, recipes: sql<number>`count(${recipeTag.recipeId})` })
+        .from(tag)
+        .leftJoin(recipeTag, eq(recipeTag.tagId, tag.id))
+        .groupBy(tag.id)
+        .orderBy(asc(tag.name))
+        .all();
     },
     get,
     getBySlug: (slug: string): Tag | null => dz.select().from(tag).where(eq(tag.slug, slug)).get() ?? null,

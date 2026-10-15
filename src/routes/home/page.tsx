@@ -16,6 +16,7 @@ import { ActiveFilters, activeFilterCount } from "./components/ActiveFilters";
 import { FilterBar, type FilterBarProps } from "./components/FilterBar";
 import { FiltersSheet } from "./components/FiltersSheet";
 import { SortMenu } from "./components/SortMenu";
+import { tagsByUse } from "./components/tagUse";
 import { ViewModeToggle } from "./components/ViewModeToggle";
 import { Route } from "./route";
 
@@ -142,7 +143,7 @@ export function RecipesPage() {
         >
           {recipes.map((recipe, index) => (
             <li key={recipe.id}>
-              <RecipeCard recipe={recipe} mode={viewMode} priority={index < PRIORITY_CARDS} />
+              <RecipeCard recipe={{ ...recipe, tags: tagsByUse(recipe.tags, tags) }} mode={viewMode} priority={index < PRIORITY_CARDS} />
             </li>
           ))}
         </ul>

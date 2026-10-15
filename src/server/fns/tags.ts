@@ -10,6 +10,11 @@ export const listTags = createServerFn({ method: "GET" })
   .validator(ListQuery)
   .handler(async ({ data }) => tags.list(data.q));
 
+/** Every tag with how many recipes carry it: the filter bar ranks by it (decisions.md row 173). */
+export const listTagUsage = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .handler(async () => tags.usage());
+
 export const createTag = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(TagCreate)

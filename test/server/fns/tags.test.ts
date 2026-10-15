@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { recipeInputSchema } from "../../../src/domain/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { createRecipe } from "../../../src/server/fns/recipes";
-import { createTag, deleteTag, findOrCreateTag, listTags, mergeTag, updateTag, usingTag } from "../../../src/server/fns/tags";
+import { createTag, deleteTag, findOrCreateTag, listTags, listTagUsage, mergeTag, updateTag, usingTag } from "../../../src/server/fns/tags";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
@@ -83,4 +83,17 @@ test("mergeTag is not-found when either id is unknown", async () => {
   const missingTarget = await callServerFn(mergeTag, { sourceId: weeknight.id, targetId: MISSING }).catch((e: unknown) => e);
   expect(isNotFound(missingTarget)).toBe(true);
   expect((missingTarget as { data: NotFoundData }).data).toMatchObject({ entity: "tag", id: MISSING });
+});
+
+// decisions.md row 173: the filter bar ranks tags by how many recipes carry them.
+test("listTagUsage counts each tag's recipes, an unused tag at nought", async () => {
+  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
+  await callServerFn(createTag, { name: "Unused" });
+  for (const name of ["Toast", "Soup"]) {
+    await callServerFn(createRecipe, recipeInputSchema.parse({ name, parts: [{ name: "", ingredients: [], steps: [] }], tags: [weeknight] }));
+  }
+  expect((await callServerFn(listTagUsage)).map((tag) => [tag.name, tag.recipes])).toEqual([
+    ["Unused", 0],
+    ["Weeknight", 2],
+  ]);
 });

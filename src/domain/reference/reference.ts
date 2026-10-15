@@ -149,6 +149,9 @@ export type Food = z.infer<typeof foodSchema>;
 export type FoodConversion = z.infer<typeof foodConversionSchema>;
 export type Tag = z.infer<typeof tagSchema>;
 
+/** A tag with how many recipes carry it, for lists that rank tags by use (decisions.md row 173). */
+export type TagUsage = Tag & { recipes: number };
+
 /**
  * A food as the foods list returns it: the row, with `aisleId` flat rather
  * than the nested aisle the recipe document carries. The repository's own

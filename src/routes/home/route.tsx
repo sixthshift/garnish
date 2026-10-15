@@ -1,10 +1,10 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
 import type { RecipeSummary } from "../../domain/recipe";
-import type { FoodSummary, Tag } from "../../domain/reference";
+import type { FoodSummary, TagUsage } from "../../domain/reference";
 import { listFoodSummaries } from "../../server/fns/foods";
 import { listRecipes } from "../../server/fns/recipes";
-import { listTags } from "../../server/fns/tags";
+import { listTagUsage } from "../../server/fns/tags";
 import { Route as rootRoute } from "../root";
 
 export const RecipeListSearch = z.object({
@@ -20,7 +20,7 @@ export const RecipeListSearch = z.object({
   seed: z.string().optional(),
 });
 
-export type RecipeListData = { recipes: RecipeSummary[]; tags: Tag[]; foods: FoodSummary[] };
+export type RecipeListData = { recipes: RecipeSummary[]; tags: TagUsage[]; foods: FoodSummary[] };
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -38,7 +38,7 @@ export const Route = createRoute({
     seed,
   }),
   loader: async ({ deps }): Promise<RecipeListData> => {
-    const [recipes, tags, foods] = await Promise.all([listRecipes({ data: deps }), listTags({ data: {} }), listFoodSummaries()]);
+    const [recipes, tags, foods] = await Promise.all([listRecipes({ data: deps }), listTagUsage(), listFoodSummaries()]);
     return { recipes, tags, foods };
   },
   component: lazyRouteComponent(() => import("./page"), "RecipesPage"),
