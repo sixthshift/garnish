@@ -40,12 +40,20 @@ async function renderStage(ui: ReactNode) {
     await act(async () => window.history.back());
   };
   const where = () => router.state.location.pathname;
-  return { back, where };
+  // Whether a stage has put its "Discard this import?" guard on the history.
+  // React registers it in an effect, just after the stage draws.
+  const guarded = () => history._getBlockers().length > 0;
+  return { back, where, guarded };
 }
 
 /** Back asks; staying keeps the stage; asking again and discarding leaves. */
-async function backAsksThenLeaves(stage: { back: () => Promise<void>; where: () => string }, stillThere: () => HTMLElement) {
+async function backAsksThenLeaves(stage: { back: () => Promise<void>; where: () => string; guarded: () => boolean }, stillThere: () => HTMLElement) {
   const user = userEvent.setup();
+  // A Back pressed in the instant between the stage drawing and its guard's
+  // effect running would leave unasked: the test pressed it there under a busy
+  // suite, about one run in three. A person's Back comes after the stage has
+  // settled, so the test waits for the guard as they would.
+  await waitFor(() => expect(stage.guarded()).toBe(true));
   await stage.back();
   const dialog = await screen.findByRole("dialog", { name: "Discard this import" });
   expect(stage.where()).toBe("/recipes/new");
