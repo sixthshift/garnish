@@ -57,9 +57,13 @@ The gate, run before every commit:
 ```bash
 bun run check   # tsc --noEmit
 bun run test    # vitest run, under Bun
+bun run lint    # Biome
+bun run e2e     # Playwright over the production build
 ```
 
-Both must pass. `bun run test` is the only way to run the tests; `bun test` is a different runner and will not work.
+All four must pass; CI runs the same four before it builds the image. `bun run test` is the only way to run the tests; `bun test` is a different runner and will not work. `bun run e2e` builds the app itself and serves it on port 9989 over an empty database, so the dev server can stay up; it needs Playwright's Chromium once per machine, `bunx playwright install chromium`. A failed spec leaves a screenshot and a trace in `test-results/` (`bunx playwright show-trace <trace.zip>`).
+
+Which layer a new test belongs in, and the helpers each one has: [`testing.md`](testing.md).
 
 ## Seed
 

@@ -56,3 +56,7 @@ data/
 
 # sibling design-system checkout (linked for local development, its own repo)
 design-system/
+
+# playwright (bun run e2e)
+test-results
+playwright-report

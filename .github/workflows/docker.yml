@@ -2,9 +2,9 @@
 # ghcr.io/<owner>/<repo> on every push to main (tagged latest, by the new
 # version and by commit) and every v* tag (tagged by version). Pull requests
 # build without pushing.
-# The test job gates the image: nothing ships that does not pass
-# `bun run check`, `bun run test` and `bun run lint` on the same Bun the image
-# runs.
+# The test and e2e jobs gate the image: nothing ships that does not pass
+# `bun run check`, `bun run test`, `bun run lint` and `bun run e2e` on the same
+# Bun the image runs.
 # A push to main also bumps package.json's version before the build, by what
 # the commits since the last tag ask for (scripts/version.ts, Conventional
 # Commits). The image carries that version, and the bumped package.json is
@@ -46,8 +46,30 @@ jobs:
       - run: bun run test
       - run: bun run lint
 
+  # The built app in a real browser (decisions.md row 168): every page loads
+  # without an error, and the journeys a household relies on work end to end.
+  # Beside the test job, not after it, so the gate takes the longer of the two.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
+
   image:
-    needs: test
+    needs: [test, e2e]
     runs-on: ubuntu-latest
     permissions:
       # The bump commit and its tag go back to main.

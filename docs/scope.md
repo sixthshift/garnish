@@ -30,7 +30,6 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 ## Later, in rough order
 
 - In-editor AI help: unit conversion, rewording, substitutions.
-- A DOM test environment, so an interaction can be tested rather than read (the stage 5 question, still open).
 
 ## Open
 

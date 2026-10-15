@@ -10,6 +10,7 @@ A personal recipe manager. Single household, runs on the LAN, no public exposure
 - [`docs/scope.md`](docs/scope.md) — v1, later, open, never
 - [`docs/plan.md`](docs/plan.md) — implementation tasks and the per-task protocol. Run with `/ailoop`
 - [`docs/design-language.md`](docs/design-language.md) — the six rules for how it looks, and the divergences from the design system
+- [`docs/testing.md`](docs/testing.md) — unit, integration and e2e: which layer a test belongs in, and the helpers for each
 
 Keep the argument in `docs/`; keep operating constraints here.
 
@@ -28,7 +29,7 @@ Keep the argument in `docs/`; keep operating constraints here.
 - **Frontend:** React 19 + Tailwind 4 via `@tailwindcss/vite`. Phone-first PWA.
 - **UI kit:** `@sixthshift/design-system` (Jason's personal system). Subpath imports only, e.g. `@sixthshift/design-system/button`. Check its exports before writing any UI element. Missing primitives are built locally from its pieces.
 - **Locale:** metric, en-AU spelling. UUID ids, zod validation, images on disk.
-- **Tests:** vitest via `bun run test`. Not `bun test`. `bun run lint` (Biome, a11y included) is part of the gate too. Two projects in one command: everything runs in `node` and renders with `renderToString`, except `*.dom.test.tsx`, which gets happy-dom and Testing Library so an interaction can be driven. Name a file `.dom.test.tsx` only when it presses something; a DOM for a file that just checks markup costs the whole suite.
+- **Tests:** vitest via `bun run test`. Not `bun test`. `bun run lint` (Biome, a11y included) is part of the gate too. Two projects in one command: everything runs in `node` and renders with `renderToString`, except `*.dom.test.tsx`, which gets happy-dom and Testing Library so an interaction can be driven. Name a file `.dom.test.tsx` only when it presses something; a DOM for a file that just checks markup costs the whole suite. `bun run e2e` is the third layer and part of the gate: Playwright over the production build, specs in `e2e/` importing `e2e/fixtures.ts` (not `@playwright/test`), navigating with `open`, selecting by role and name (decisions.md row 168).
 - **Deploy:** one Docker container, SQLite file on a volume.
 - **Cooklang:** borrow sections, `=` fixed quantities, servings scaling, aisle config. Do not adopt the file format.
 

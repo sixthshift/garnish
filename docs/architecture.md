@@ -84,10 +84,11 @@ src/
 vite.config.ts  tanstackStart({ spa, router }), nitro({ preset: 'bun' }), viteReact(), tailwindcss(), serviceWorkerPlugin(). The `router` option hands Start's route generator the root alone and an output under .tanstack/ that nothing imports: Start needs the generator to run to build its asset manifest, even though routing is code
 public/         manifest.webmanifest (installability, and the share_target that lands a shared URL on /recipes/new), icons/, apple-touch-icon.png
 test/           mirrors src/, plus docs/, docker/ and pwa/ contract tests; *.dom.test.tsx is the happy-dom project (helpers/dom.tsx renders into one), everything else is node
+e2e/            Playwright over the built app: playwright.config.ts (build, serve on 9989 over a temp DATA_DIR), fixtures.ts, smoke.spec.ts and one spec per journey (decisions.md row 168)
 data/           runtime volume: garnish.db, images/, backups/  (gitignored)
 ```
 
-Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `test`, `migrate`, `seed`, `dev:seed`, `dev:sample`, `db:generate`, `bench:ingredients`, `backup`, `icons`, `restyle`, `propose`, `version:next`. README.md says how to use them. `lint` and `format` are Biome (`biome.json`, the design system's configuration: two spaces, double quotes, semicolons, a 160-column line, imports organised); the devcontainer sets it as the editor's formatter on save.
+Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `test`, `e2e`, `migrate`, `seed`, `dev:seed`, `dev:sample`, `db:generate`, `bench:ingredients`, `backup`, `icons`, `restyle`, `propose`, `version:next`. README.md says how to use them. `lint` and `format` are Biome (`biome.json`, the design system's configuration: two spaces, double quotes, semicolons, a 160-column line, imports organised); the devcontainer sets it as the editor's formatter on save.
 
 ## Stack
 
@@ -102,7 +103,7 @@ Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `
 | Queries | Drizzle ORM over that same `bun:sqlite` handle; tables in `src/db/models/<domain>/schema.ts` (decisions.md row 46) |
 | Validation | zod, one schema per document, shared by API and editor |
 | IDs | UUID, plus slug on recipe (Mealie) |
-| Tests | vitest, run as `bun run test` (`bun --bun vitest run`, so `bun:sqlite` resolves). The nitro plugin is left out of the config under vitest. Two projects: `node` for everything, `dom` (happy-dom, Testing Library, `vitest.setup.ts`) for `*.dom.test.tsx` |
+| Tests | vitest, run as `bun run test` (`bun --bun vitest run`, so `bun:sqlite` resolves). The nitro plugin is left out of the config under vitest. Two projects: `node` for everything, `dom` (happy-dom, Testing Library, `vitest.setup.ts`) for `*.dom.test.tsx`. Beside it, `bun run e2e`: Playwright over the production build in Chromium (decisions.md row 168). Which layer a test belongs in: `docs/testing.md` |
 | Deploy | Docker, single container, one volume |
 
 ## Data model

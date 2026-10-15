@@ -27,5 +27,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["src", "test", "vite.config.ts", "vitest.setup.ts"]
+  "include": ["src", "test", "e2e", "vite.config.ts", "vitest.setup.ts"]
 }

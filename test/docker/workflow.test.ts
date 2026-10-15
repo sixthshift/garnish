@@ -1,7 +1,7 @@
 // .github/workflows/docker.yml is text, so its contract is asserted here: the
 // image is built from docker/Dockerfile for both platforms, published to
-// ghcr.io on pushes and not on pull requests, gated by the test job, and the
-// tests run on the Bun the image is pinned to. Actions itself is not run here.
+// ghcr.io on pushes and not on pull requests, gated by the test and e2e jobs,
+// and both run on the Bun the image is pinned to. Actions itself is not run here.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -24,7 +24,7 @@ export function stepUsing(steps: readonly Step[], action: string): Step | undefi
   return steps.find((step) => step.uses?.startsWith(action));
 }
 
-const { test: testJob, image } = workflow.jobs;
+const { test: testJob, e2e, image } = workflow.jobs;
 const build = stepUsing(image!.steps, "docker/build-push-action")!;
 const meta = stepUsing(image!.steps, "docker/metadata-action")!;
 const bump = image!.steps.find((step) => step.id === "bump")!;
@@ -55,9 +55,29 @@ describe("test job", () => {
   });
 });
 
+// decisions.md row 168: the built app in a real browser, beside the vitest gate rather than after it.
+describe("e2e job", () => {
+  test("installs from the lockfile and Chromium with its system libraries, then runs the e2e specs", () => {
+    const runs = e2e!.steps.map((step) => step.run).filter(Boolean);
+    expect(runs).toEqual(["bun install --frozen-lockfile", "bunx playwright install --with-deps chromium", "bun run e2e"]);
+  });
+
+  test("runs the Bun the image is pinned to", () => {
+    const pinned = fromImage(instructions(dockerfile).find((line) => /^FROM\s/i.test(line))!).split(":")[1];
+    expect(stepUsing(e2e!.steps, "oven-sh/setup-bun")?.with?.["bun-version"]).toBe(pinned);
+  });
+
+  test("keeps the report and traces when it fails", () => {
+    const upload = stepUsing(e2e!.steps, "actions/upload-artifact")!;
+    expect(upload.if).toBe("failure()");
+    expect(upload.with?.path).toContain("playwright-report");
+    expect(upload.with?.path).toContain("test-results");
+  });
+});
+
 describe("image job", () => {
-  test("waits for the tests", () => {
-    expect(image!.needs).toBe("test");
+  test("waits for the tests and the e2e specs", () => {
+    expect(image!.needs).toEqual(["test", "e2e"]);
   });
 
   test("builds docker/Dockerfile from the repo root for amd64 and arm64", () => {
