@@ -118,6 +118,7 @@ export function AddToShoppingSheetContent({ recipe, onAdd, onCancel, busy = fals
                           <button type="button" disabled={busyAdding} className="flex-1 text-left" onClick={() => toggle(ingredient.id)}>
                             {label}
                           </button>
+                          {ingredient.food?.skipShopping && <span className="mt-0.5 text-xs text-fg-subtle">on hand</span>}
                         </div>
                         {child !== null && (
                           <button

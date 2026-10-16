@@ -213,10 +213,29 @@ describe("mergeIntoList", () => {
     expect(plan.additions[0]).toMatchObject({ foodId: null, text: "Batteries" });
   });
 
-  test("a skipShopping food is dropped", () => {
+  test("an on-hand food arrives as a new line already ticked", () => {
     const plan = mergeIntoList([], [addition({ quantity: 2, food: garlic })]);
 
     expect(plan.merges).toEqual([]);
+    expect(plan.additions).toEqual([
+      {
+        quantity: 2,
+        unitId: null,
+        foodId: garlic.id,
+        text: "",
+        ticked: true,
+        sources: [{ recipeId: null, recipeName: "Lemon tart", partName: "", servings: 4, quantity: 2 }],
+      },
+    ]);
+  });
+
+  test("an on-hand food joins its ticked line, and an unticked one first when there is one", () => {
+    const tickedGarlic = existingItem({ quantity: 1, food: garlic, ticked: true });
+    expect(mergeIntoList([tickedGarlic], [addition({ quantity: 2, food: garlic })]).merges).toMatchObject([{ id: tickedGarlic.id, quantity: 3 }]);
+
+    const toBuy = existingItem({ quantity: 1, food: garlic });
+    const plan = mergeIntoList([tickedGarlic, toBuy], [addition({ quantity: 2, food: garlic })]);
+    expect(plan.merges).toMatchObject([{ id: toBuy.id, quantity: 3 }]);
     expect(plan.additions).toEqual([]);
   });
 
@@ -294,7 +313,7 @@ describe("mergeIntoList", () => {
     expect(plan.merges[0]).toMatchObject({ id: existing.id, quantity: 225 });
   });
 
-  test("a whole recipe at scale 2: merges an overlapping food into the list, drops skipShopping, keeps fixed apart", () => {
+  test("a whole recipe at scale 2: merges an overlapping food into the list, ticks the on-hand one, keeps fixed apart", () => {
     const recipe = recipeSchema.parse({
       id: "10000000-0000-4000-8000-000000000000",
       slug: "buttered-toast",
@@ -343,10 +362,10 @@ describe("mergeIntoList", () => {
     ]);
 
     // butter is new, doubled
-    expect(plan.additions).toHaveLength(2); // butter, bay leaf (fixed) — garlic dropped
-    expect(plan.additions.find((a) => a.foodId === butter.id)).toMatchObject({ quantity: 40 });
-    expect(plan.additions.find((a) => a.foodId === bayLeaf.id)).toMatchObject({ quantity: 1 });
-    expect(plan.additions.some((a) => a.foodId === garlic.id)).toBe(false);
+    expect(plan.additions).toHaveLength(3); // butter, bay leaf (fixed), garlic (on hand)
+    expect(plan.additions.find((a) => a.foodId === butter.id)).toMatchObject({ quantity: 40, ticked: false });
+    expect(plan.additions.find((a) => a.foodId === bayLeaf.id)).toMatchObject({ quantity: 1, ticked: false });
+    expect(plan.additions.find((a) => a.foodId === garlic.id)).toMatchObject({ quantity: 2, ticked: true });
   });
 });
 
@@ -403,7 +422,8 @@ describe("subRecipeAdditions", () => {
     // fetched child document (already at 2 servings) carries 100 g of flour.
     const additions = subRecipeAdditions(pastryRow(), sweetPastry, childDoc(2), parentSource);
 
-    expect(additions).toHaveLength(1); // salt is skipShopping: dropped
+    expect(additions).toHaveLength(2); // flour, and salt, which mergeIntoList ticks
+    expect(additions[1]!.food?.skipShopping).toBe(true);
     expect(additions[0]).toMatchObject({
       quantity: 100,
       unit: gram,

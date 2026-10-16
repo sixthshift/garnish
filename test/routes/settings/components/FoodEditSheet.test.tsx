@@ -129,7 +129,7 @@ describe("FoodEditSheetContent render", () => {
     expect(html).toContain('value="Butter"');
     expect(html).toContain('value="Dairy"');
     expect(html).toContain("unsalted butter\nsalted butter");
-    expect(html).toContain("Skip shopping");
+    expect(html).toContain("On hand");
     expect(html).toContain(">Save<");
     expect(html).toContain(">Cancel<");
   });

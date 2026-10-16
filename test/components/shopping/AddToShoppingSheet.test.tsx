@@ -87,9 +87,9 @@ describe("shoppingGroups", () => {
     expect(groups.map((g) => g.name)).toEqual(["Pastry", ""]);
   });
 
-  test("drops an on-hand food: it can never reach the list", () => {
+  test("keeps an on-hand food: it reaches the list ticked", () => {
     const groups = shoppingGroups(recipeWith([part("", [flour(), salt()])]));
-    expect(groups[0]!.ingredients.map((i) => i.food?.name)).toEqual(["flour"]);
+    expect(groups[0]!.ingredients.map((i) => i.food?.name)).toEqual(["flour", "salt"]);
   });
 
   test("drops a row with neither a food nor any text", () => {
@@ -173,11 +173,11 @@ describe("AddToShoppingSheetContent render", () => {
   const render = (recipe: Recipe, busy = false) =>
     renderToString(<AddToShoppingSheetContent recipe={recipe} busy={busy} onAdd={() => {}} onCancel={() => {}} />);
 
-  test("lists every buyable ingredient, ticked to include", () => {
+  test("lists every ingredient, ticked to include, and marks the on-hand one", () => {
     const html = render(recipeWith([part("", [flour(), freeText(), salt()])]));
     expect(html).toContain("Add Lemon tart");
-    expect(html.match(/data-testid="shopping-sheet-row"/g)).toHaveLength(2);
-    expect(html).not.toContain("salt");
+    expect(html.match(/data-testid="shopping-sheet-row"/g)).toHaveLength(3);
+    expect(html.match(/>on hand</g)).toHaveLength(1);
     expect(html).toContain('data-included="true"');
     expect(html).not.toContain('data-included="false"');
     expect(html).toContain("a splash of vanilla");
@@ -201,7 +201,7 @@ describe("AddToShoppingSheetContent render", () => {
   });
 
   test("a recipe with nothing to buy says so and cannot be added", () => {
-    const html = render(recipeWith([part("", [salt()])]));
+    const html = render(recipeWith([part("", [ingredient()])]));
     expect(html).toContain("Nothing to add");
     expect(html).not.toContain('data-testid="shopping-sheet-row"');
     expect(html).toMatch(/disabled/);

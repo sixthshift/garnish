@@ -54,7 +54,7 @@ export type StarterFood = {
   plural?: string;
   aliases?: readonly string[];
   aisle: StarterAisle;
-  /** Never added to a shopping list: what comes out of the tap or is already on the bench. */
+  /** On hand: added to a shopping list already ticked, since the household always has it. */
   skipShopping?: true;
 };
 
@@ -73,6 +73,8 @@ const spice = aisle("Spices");
 const international = aisle("International");
 const drinks = aisle("Drinks");
 const freezer = aisle("Freezer");
+/** A staple the household always has: it reaches a shopping list already ticked. */
+const onHand = (food: StarterFood): StarterFood => ({ ...food, skipShopping: true });
 
 export const STARTER_FOODS: readonly StarterFood[] = [
   // ── Fruit & veg: the onion family
@@ -804,25 +806,29 @@ export const STARTER_FOODS: readonly StarterFood[] = [
   dairy("custard", undefined, ["vanilla custard", "store-bought custard", "thick custard"]),
 
   // ── Pantry: oils and vinegars
-  pantry("olive oil", undefined, ["light olive oil", "mild olive oil", "pure olive oil", "regular olive oil"]),
-  pantry("extra virgin olive oil", undefined, ["virgin olive oil", "extra-virgin olive oil", "evoo", "good olive oil", "best-quality extra virgin olive oil"]),
-  pantry("vegetable oil", undefined, [
-    "salad oil",
-    "vegetable or sunflower oil",
-    "sunflower or vegetable oil",
-    "neutral-tasting oil",
-    "vegetable or olive oil",
-    "oil",
-    "neutral oil",
-    "cooking oil",
-    "flavourless oil",
-    "flavorless oil",
-    "neutral-flavoured oil",
-    "neutral flavoured oil",
-    "vegetable or canola oil",
-    "oil for frying",
-  ]),
-  pantry("canola oil", undefined, ["cold-pressed rapeseed oil", "rapeseed oil"]),
+  onHand(pantry("olive oil", undefined, ["light olive oil", "mild olive oil", "pure olive oil", "regular olive oil"])),
+  onHand(
+    pantry("extra virgin olive oil", undefined, ["virgin olive oil", "extra-virgin olive oil", "evoo", "good olive oil", "best-quality extra virgin olive oil"])
+  ),
+  onHand(
+    pantry("vegetable oil", undefined, [
+      "salad oil",
+      "vegetable or sunflower oil",
+      "sunflower or vegetable oil",
+      "neutral-tasting oil",
+      "vegetable or olive oil",
+      "oil",
+      "neutral oil",
+      "cooking oil",
+      "flavourless oil",
+      "flavorless oil",
+      "neutral-flavoured oil",
+      "neutral flavoured oil",
+      "vegetable or canola oil",
+      "oil for frying",
+    ])
+  ),
+  onHand(pantry("canola oil", undefined, ["cold-pressed rapeseed oil", "rapeseed oil"])),
   pantry("sunflower oil"),
   pantry("peanut oil", undefined, ["groundnut oil"]),
   pantry("rice bran oil"),
@@ -1254,17 +1260,19 @@ export const STARTER_FOODS: readonly StarterFood[] = [
     "leaf gelatine",
     "titanium-strength gelatine leaves",
   ]),
-  baking("white sugar", undefined, [
-    "golden granulated sugar",
-    "sugar",
-    "granulated sugar",
-    "white granulated sugar",
-    "regular sugar",
-    "table sugar",
-    "cane sugar",
-    "granulated white sugar",
-  ]),
-  baking("caster sugar", undefined, ["superfine sugar", "castor sugar", "white caster sugar", "golden caster sugar"]),
+  onHand(
+    baking("white sugar", undefined, [
+      "golden granulated sugar",
+      "sugar",
+      "granulated sugar",
+      "white granulated sugar",
+      "regular sugar",
+      "table sugar",
+      "cane sugar",
+      "granulated white sugar",
+    ])
+  ),
+  onHand(baking("caster sugar", undefined, ["superfine sugar", "castor sugar", "white caster sugar", "golden caster sugar"])),
   baking("brown sugar", undefined, [
     "light brown soft sugar",
     "soft light brown sugar",
@@ -1365,22 +1373,24 @@ export const STARTER_FOODS: readonly StarterFood[] = [
   baking("instant coffee", undefined, ["instant coffee powder", "instant coffee granules", "instant espresso powder", "espresso powder"]),
 
   // ── Spices
-  spice("salt", undefined, [
-    "coarse sea salt",
-    "cooking salt",
-    "table salt",
-    "kosher salt",
-    "fine salt",
-    "fine sea salt",
-    "sea salt",
-    "coarse salt",
-    "coarse cooking salt",
-    "rock salt",
-    "iodised salt",
-    "pink salt",
-    "himalayan salt",
-    "river salt",
-  ]),
+  onHand(
+    spice("salt", undefined, [
+      "coarse sea salt",
+      "cooking salt",
+      "table salt",
+      "kosher salt",
+      "fine salt",
+      "fine sea salt",
+      "sea salt",
+      "coarse salt",
+      "coarse cooking salt",
+      "rock salt",
+      "iodised salt",
+      "pink salt",
+      "himalayan salt",
+      "river salt",
+    ])
+  ),
   spice("sea salt flakes", undefined, ["salt flakes", "flaky sea salt", "flaked sea salt", "maldon salt", "sea salt flake", "flaky salt"]),
   {
     name: "salt and pepper",
@@ -1400,18 +1410,20 @@ export const STARTER_FOODS: readonly StarterFood[] = [
     aisle: "Spices",
     skipShopping: true,
   },
-  spice("black pepper", undefined, [
-    "pepper",
-    "ground black pepper",
-    "freshly ground black pepper",
-    "cracked black pepper",
-    "freshly cracked black pepper",
-    "ground pepper",
-    "freshly ground pepper",
-    "cracked pepper",
-    "coarsely ground black pepper",
-  ]),
-  spice("white pepper", undefined, ["ground white pepper", "white pepper powder"]),
+  onHand(
+    spice("black pepper", undefined, [
+      "pepper",
+      "ground black pepper",
+      "freshly ground black pepper",
+      "cracked black pepper",
+      "freshly cracked black pepper",
+      "ground pepper",
+      "freshly ground pepper",
+      "cracked pepper",
+      "coarsely ground black pepper",
+    ])
+  ),
+  onHand(spice("white pepper", undefined, ["ground white pepper", "white pepper powder"])),
   spice("black peppercorns", undefined, ["white peppercorns", "peppercorns", "whole black peppercorns", "black peppercorn", "whole peppercorns"]),
   spice("sichuan pepper", undefined, ["sichuan peppercorns", "szechuan peppercorns", "szechuan pepper", "sichuan peppercorn"]),
   spice("ground cumin", undefined, ["cumin", "cumin powder", "ground cumin powder"]),
@@ -1685,7 +1697,7 @@ export const STARTER_FOODS: readonly StarterFood[] = [
   ]),
   freezer("filo pastry", undefined, ["filo", "phyllo pastry", "phyllo", "filo sheets", "phyllo dough", "fillo pastry"]),
   freezer("vanilla ice cream", undefined, ["ice cream", "vanilla ice-cream", "ice-cream", "vanilla bean ice cream"]),
-  freezer("ice", undefined, ["ice cubes", "ice cube", "crushed ice"]),
+  onHand(freezer("ice", undefined, ["ice cubes", "ice cube", "crushed ice"])),
 
   // ── Water: from the tap, never on a list
   {

@@ -703,7 +703,7 @@ describe("/settings", () => {
     // Foods is the default tab: its table, its search box, its column headers.
     expect(html).toContain('data-table="food"');
     expect(html).toContain('aria-label="Search foods"');
-    expect(html).toContain(">Skip shopping<");
+    expect(html).toContain(">On hand<");
     expect(html).toContain(`${foods.length} food`);
   });
 

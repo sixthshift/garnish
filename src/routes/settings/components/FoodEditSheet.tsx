@@ -152,7 +152,7 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
           <FormField label="Aliases" description="One per line.">
             <Textarea value={aliases} disabled={busy} onChange={(event) => setAliases(event.target.value)} />
           </FormField>
-          <Checkbox label="Skip shopping" checked={skipShopping} disabled={busy} onCheckedChange={setSkipShopping} />
+          <Checkbox label="On hand" checked={skipShopping} disabled={busy} onCheckedChange={setSkipShopping} />
           <ConversionRows conversions={conversions} units={units} busy={busy} onChange={setConversions} />
         </form>
       </Sheet.Body>

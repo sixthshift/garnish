@@ -12,10 +12,9 @@ export function ingredientText(ingredient: Ingredient): string {
   return original === "" ? formatIngredient(ingredient).trim() : original;
 }
 
-/** False for a row that can never reach the list: an on-hand food, or nothing to name. Pure. */
+/** False for a row that can never reach the list: no food and nothing to name. An on-hand food still can; it arrives ticked. Pure. */
 export function buyable(ingredient: Ingredient): boolean {
-  if (ingredient.food !== null) return !ingredient.food.skipShopping;
-  return ingredientText(ingredient) !== "";
+  return ingredient.food !== null || ingredientText(ingredient) !== "";
 }
 
 /**

@@ -147,7 +147,7 @@ export function foodColumns(aisles: readonly Aisle[]): DataTableColumn<FoodRow>[
     { key: "name", header: "Name", value: (food) => food.name, wrap: "anywhere" },
     { key: "pluralName", header: "Plural", value: (food) => food.pluralName, secondary: true },
     { key: "aisle", header: "Aisle", value: (food) => aisleName(food.aisleId) },
-    { key: "skipShopping", header: "Skip shopping", value: (food) => food.skipShopping, secondary: "lg" },
+    { key: "skipShopping", header: "On hand", value: (food) => food.skipShopping, secondary: "lg" },
     { key: "aliases", header: "Aliases", value: (food) => food.aliases.length, secondary: "lg" },
   ];
 }

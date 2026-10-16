@@ -1,4 +1,4 @@
-// The list's merge rule: by food and unit (or a convertible unit) into an unticked line; on-hand foods dropped; food-less additions never combine.
+// The list's merge rule: by food and unit (or a convertible unit) into an unticked line; an on-hand food arrives ticked; food-less additions never combine.
 
 import { convert, type Food, type Unit } from "../reference";
 import type { ShoppingItem, ShoppingItemInput, ShoppingItemSourceInput } from "./schema";
@@ -76,9 +76,11 @@ interface DraftLine {
 
 /**
  * Fold a batch of additions into an existing list. A `fixed` or null-quantity
- * addition never merges; a ticked line is never merged into; a convertible
- * unit lands in the stored line's own unit, and between two new lines the
- * metric one wins. Pure; `items` is not mutated.
+ * addition never merges; a ticked line is never merged into, except by an
+ * on-hand food (`skipShopping`), which prefers an unticked line, then joins
+ * its ticked one, and otherwise starts a new line already ticked: on the list
+ * to see, not to buy. A convertible unit lands in the stored line's own unit,
+ * and between two new lines the metric one wins. Pure; `items` is not mutated.
  */
 export function mergeIntoList(items: readonly ShoppingItem[], additions: readonly ShoppingAddition[]): ShoppingMergePlan {
   const merges = new Map<string, ShoppingListMerge>();
@@ -86,13 +88,14 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
   const plannedAdditions: ShoppingItemInput[] = [];
 
   function existingTarget(food: Food, unit: Unit | null) {
-    return items.find((item) => !item.ticked && item.food !== null && item.food.id === food.id && unitsConvertible(item.unit, unit, food));
+    const matches = (item: ShoppingItem) => item.food !== null && item.food.id === food.id && unitsConvertible(item.unit, unit, food);
+    return items.find((item) => !item.ticked && matches(item)) ?? (food.skipShopping ? items.find(matches) : undefined);
   }
 
   for (const addition of additions) {
     const { quantity, unit, food, originalText, fixed, source } = addition;
 
-    if (food?.skipShopping) continue; // on hand already: dropped
+    const ticked = food?.skipShopping ?? false; // on hand already: listed, but ticked off
 
     if (food === null) {
       // Free text, or an ingredient the parser found no food for: its own new
@@ -137,7 +140,7 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
           unitId: unit?.id ?? null,
           foodId: food.id,
           text: "",
-          ticked: false,
+          ticked,
           sources: [{ ...source, quantity }],
         };
         newLines.push({ input: created, unit });
@@ -168,7 +171,7 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
       unitId: unit?.id ?? null,
       foodId: food.id,
       text: "",
-      ticked: false,
+      ticked,
       sources: [{ ...source, quantity }],
     });
   }

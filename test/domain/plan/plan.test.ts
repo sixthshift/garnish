@@ -383,7 +383,7 @@ describe("planWeekAdditions", () => {
 
     const additions = planWeekAdditions(days, recipesByEntry);
 
-    expect(additions).toHaveLength(3); // flour, butter and the text line — garlic is skipShopping and dropped
+    expect(additions).toHaveLength(4); // flour, garlic (on hand: mergeIntoList ticks it), butter and the text line
 
     expect(additions[0]).toMatchObject({
       quantity: 200,
@@ -393,7 +393,9 @@ describe("planWeekAdditions", () => {
       source: { recipeId: tartRef.id, recipeName: "Lemon tart", partName: dayLabel(MONDAY), servings: 4 },
     });
 
-    expect(additions[1]).toMatchObject({
+    expect(additions[1]).toMatchObject({ food: garlic, source: { recipeName: "Lemon tart" } });
+
+    expect(additions[2]).toMatchObject({
       quantity: 500,
       unit: gram,
       food: butter,
@@ -401,7 +403,7 @@ describe("planWeekAdditions", () => {
       source: { recipeId: soupRef.id, recipeName: "Soup", partName: dayLabel(TUESDAY), servings: 8 },
     });
 
-    expect(additions[2]).toEqual({
+    expect(additions[3]).toEqual({
       quantity: null,
       unit: null,
       food: null,

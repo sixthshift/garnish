@@ -160,10 +160,11 @@ test("addPlanWeekToShopping adds a week with two recipes and a text line, each s
   await callServerFn(addPlanEntry, { date: "2026-09-16", text: "Leftovers" });
 
   const result = await callServerFn(addPlanWeekToShopping, { monday: MONDAY });
-  expect(result).toEqual({ added: 3 }); // flour, butter and the text line; garlic is skipShopping
+  expect(result).toEqual({ added: 4 }); // flour, garlic, butter and the text line
 
   const list = await callServerFn(listShoppingItems);
-  expect(list).toHaveLength(3);
+  expect(list).toHaveLength(4);
+  expect(list.find((item) => item.food?.name === "garlic")).toMatchObject({ ticked: true }); // on hand: listed, ticked off
 
   const flourLine = list.find((item) => item.food?.name === "flour");
   expect(flourLine).toMatchObject({ quantity: 200 });

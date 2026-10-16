@@ -49,8 +49,21 @@ describe.each([
     expect(clashes).toEqual([]);
   });
 
-  test("only water and the salt-and-pepper line skip the shopping list", () => {
-    expect(STARTER_FOODS.filter((food) => food.skipShopping).map((food) => food.name)).toEqual(["salt and pepper", "water"]);
+  test("the household's staples are on hand, and nothing else", () => {
+    expect(STARTER_FOODS.filter((food) => food.skipShopping).map((food) => food.name)).toEqual([
+      "olive oil",
+      "extra virgin olive oil",
+      "vegetable oil",
+      "canola oil",
+      "white sugar",
+      "caster sugar",
+      "salt",
+      "salt and pepper",
+      "black pepper",
+      "white pepper",
+      "ice",
+      "water",
+    ]);
   });
 });
 

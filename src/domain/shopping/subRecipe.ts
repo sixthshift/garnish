@@ -8,9 +8,9 @@ function displayText(ingredient: Ingredient): string {
 }
 
 /**
- * One recipe's own buyable ingredients as additions: every part in order, an
- * on-hand food dropped and a food-less row with nothing to say dropped, same
- * as the sheet's own rows follow (`buyable` in
+ * One recipe's own ingredients as additions: every part in order, a
+ * food-less row with nothing to say dropped, same as the sheet's own rows
+ * follow (`buyable` in
  * src/components/shopping/AddToShoppingSheet.tsx). `sourceForPart` builds each row's
  * source from its part's trimmed name — `childIngredientAdditions`
  * uses the child's own part names, and `planWeekAdditions` (src/domain/plan/week.ts) uses one name shared by every row: the plan day rather
@@ -21,7 +21,6 @@ export function recipeAdditions(recipe: Recipe, sourceForPart: (partName: string
   for (const part of recipe.parts) {
     const partName = part.name.trim();
     for (const ingredient of part.ingredients) {
-      if (ingredient.food?.skipShopping) continue;
       const originalText = displayText(ingredient);
       if (ingredient.food === null && originalText === "") continue;
       additions.push({
