@@ -8,7 +8,7 @@ import type { AiStatus } from "../../server/ai/client";
 import { getAiStatus } from "../../server/fns/ai";
 import { listAisles } from "../../server/fns/aisles";
 import { listDiagnostics } from "../../server/fns/diagnostics";
-import { listFoods } from "../../server/fns/foods";
+import { listFoods, listFoodUsage } from "../../server/fns/foods";
 import { listPlannerRules } from "../../server/fns/planner";
 import { listRecipes } from "../../server/fns/recipes";
 import { listStyleRules } from "../../server/fns/style";
@@ -23,6 +23,8 @@ export type SettingsData = {
   aisles: Aisle[];
   units: Unit[];
   foods: FoodRow[];
+  /** Recipes per food id; a food no recipe uses is absent. */
+  foodUsage: Record<string, number>;
   tags: TagUsage[];
   recipes: RecipeSummary[];
   styleRules: StyleRule[];
@@ -35,10 +37,11 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   loader: async (): Promise<SettingsData> => {
-    const [aisles, units, foods, tags, recipes, styleRules, plannerRules, ai, diagnostics] = await Promise.all([
+    const [aisles, units, foods, foodUsage, tags, recipes, styleRules, plannerRules, ai, diagnostics] = await Promise.all([
       listAisles({ data: {} }),
       listUnits({ data: {} }),
       listFoods({ data: {} }),
+      listFoodUsage(),
       listTagUsage(),
       // For the food sheet's "Made by a recipe".
       listRecipes({ data: { sort: "name", dir: "asc" } }),
@@ -47,7 +50,18 @@ export const Route = createRoute({
       getAiStatus(),
       listDiagnostics(),
     ]);
-    return { aisles, units, foods, tags, recipes, styleRules, plannerRules, ai, diagnostics };
+    return {
+      aisles,
+      units,
+      foods,
+      foodUsage: Object.fromEntries(foodUsage.map((row) => [row.foodId, row.recipes])),
+      tags,
+      recipes,
+      styleRules,
+      plannerRules,
+      ai,
+      diagnostics,
+    };
   },
   component: lazyRouteComponent(() => import("./page"), "SettingsPage"),
 });

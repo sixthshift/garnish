@@ -40,10 +40,10 @@ export type MenuProps = {
 };
 
 const GHOST_TRIGGER_CLASS =
-  "inline-flex size-8 items-center justify-center rounded-md text-fg-subtle hover:bg-bg-normal-hovered hover:text-fg-normal pointer-coarse:size-11";
+  "inline-flex size-8 cursor-pointer items-center justify-center rounded-md text-fg-subtle hover:bg-bg-normal-hovered hover:text-fg-normal pointer-coarse:size-11";
 
 const TRIGGER_CLASS =
-  "inline-flex items-center gap-1 rounded-md border border-border-normal bg-bg-normal px-3 py-1.5 text-sm font-medium text-fg-normal hover:bg-bg-normal-hovered";
+  "inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-normal bg-bg-normal px-3 py-1.5 text-sm font-medium text-fg-normal hover:bg-bg-normal-hovered";
 
 export function Menu({
   label,

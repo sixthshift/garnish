@@ -2,6 +2,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
+import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
@@ -83,7 +84,7 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
   return (
     <>
       <Sheet.Header>
-        <h2 className="text-base font-medium">{`Edit ${food.name}`}</h2>
+        <h2 className="text-base font-medium">{sheetTitle(food)}</h2>
       </Sheet.Header>
       <Sheet.Body>
         <form
@@ -152,7 +153,12 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
           <FormField label="Aliases" description="One per line.">
             <Textarea value={aliases} disabled={busy} onChange={(event) => setAliases(event.target.value)} />
           </FormField>
-          <Checkbox label="On hand" checked={skipShopping} disabled={busy} onCheckedChange={setSkipShopping} />
+          <div className="flex flex-col gap-1">
+            <Checkbox label="On hand" checked={skipShopping} disabled={busy} onCheckedChange={setSkipShopping} />
+            <Muted as="p" className="ml-6 text-sm">
+              Always in the cupboard: it goes on the shopping list already ticked.
+            </Muted>
+          </div>
           <ConversionRows conversions={conversions} units={units} busy={busy} onChange={setConversions} />
         </form>
       </Sheet.Body>
@@ -170,9 +176,14 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
 
 export type FoodEditSheetProps = FoodEditSheetContentProps & { open: boolean };
 
+/** "New food" for a food not saved yet (an empty id), "Edit aioli" otherwise. */
+function sheetTitle(food: Food): string {
+  return food.id === "" ? "New food" : `Edit ${food.name}`;
+}
+
 export function FoodEditSheet({ open, ...props }: FoodEditSheetProps) {
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && props.onCancel()} size="sm" closable aria-label={`Edit ${props.food.name}`}>
+    <Sheet open={open} onOpenChange={(next) => !next && props.onCancel()} size="sm" closable aria-label={sheetTitle(props.food)}>
       <FoodEditSheetContent {...props} />
     </Sheet>
   );

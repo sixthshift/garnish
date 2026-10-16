@@ -10,6 +10,11 @@ export const listFoods = createServerFn({ method: "GET" })
   .validator(ListQuery)
   .handler(async ({ data }) => foods.list(data.q));
 
+/** How many recipes use each food, for Settings › Foods' Recipes column. */
+export const listFoodUsage = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .handler(async () => foods.usage());
+
 /** Every food as a summary: the home filter's vocabulary, without the rows' conversions and aliases. */
 export const listFoodSummaries = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])

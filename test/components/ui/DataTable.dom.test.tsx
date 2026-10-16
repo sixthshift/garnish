@@ -1,7 +1,7 @@
 // What a person does with a long reference table: a row's ⋯ menu runs its
-// action, Show more draws the next page, search and select-all reach rows not
-// yet drawn, and Delete says how many it will act on.
-import { render, screen, within } from "@testing-library/react";
+// action, search, sort and select-all reach rows the virtual list has not
+// drawn, and Delete says how many it will act on.
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { DataTable } from "../../../src/components/ui/DataTable";
@@ -35,34 +35,63 @@ test("a row's menu runs the chosen action on that row", async () => {
   expect(screen.queryByRole("menu")).toBeNull();
 });
 
-test("Show more and Show all draw the rest; search reaches a row past the first page", async () => {
+test("search and sort reach rows the list has not drawn", async () => {
   const user = userEvent.setup();
   render(<DataTable items={rows} columns={columns} keyOf={(row) => row.id} itemName="food" />);
-  expect(drawn()).toBe(50);
+  const firstDraw = drawn();
+  expect(firstDraw).toBeLessThan(60);
   expect(screen.queryByText("food 55")).toBeNull();
 
   await user.type(screen.getByLabelText("Search foods"), "55");
   expect(drawn()).toBe(1);
   expect(screen.getByText("food 55")).toBeTruthy();
   await user.clear(screen.getByLabelText("Search foods"));
-  expect(drawn()).toBe(50);
+  expect(drawn()).toBe(firstDraw);
 
-  // Sorting runs over every row, not just the drawn page.
+  // Sorting runs over every row, not just the drawn ones.
   await user.click(screen.getByRole("button", { name: "Name" }));
-  expect(within(document.querySelector("tbody") as HTMLElement).getAllByRole("row")[0]?.textContent).toContain("food 59");
-  await user.click(screen.getByRole("button", { name: "Name" }));
-
-  await user.click(screen.getByRole("button", { name: "Show 10 more" }));
-  expect(drawn()).toBe(60);
-  expect(screen.queryByRole("button", { name: /Show all/ })).toBeNull();
+  expect(document.querySelector("tbody tr[data-row]")?.textContent).toContain("food 59");
 });
 
 test("select-all takes every matching row, drawn or not, and Delete says how many", async () => {
   const user = userEvent.setup();
   const onDelete = vi.fn();
   render(<DataTable items={rows} columns={columns} keyOf={(row) => row.id} itemName="food" onDelete={onDelete} />);
-  await user.click(screen.getByRole("checkbox", { name: "Select all 60 foods, including 10 not shown" }));
+  await user.click(screen.getByRole("checkbox", { name: "Select all 60 foods" }));
   expect(screen.getByText(/60 selected/)).toBeTruthy();
   await user.click(screen.getByRole("button", { name: "Delete 60" }));
   expect(onDelete).toHaveBeenCalledWith(rows);
+});
+
+test("a tap anywhere on a row opens it, and the keyboard reaches the same through the name", async () => {
+  const user = userEvent.setup();
+  const open = vi.fn();
+  const merge = vi.fn();
+  render(
+    <DataTable
+      items={rows}
+      columns={[...columns, { key: "id", header: "Id", value: (row) => row.id }]}
+      keyOf={(row) => row.id}
+      itemName="food"
+      onOpen={open}
+      onDelete={() => {}}
+      rowActions={[{ label: "Merge", onSelect: merge }]}
+    />
+  );
+  await user.click(screen.getByText("r2"));
+  expect(open).toHaveBeenLastCalledWith(rows[2]);
+
+  screen.getByRole("button", { name: "Edit food 04" }).focus();
+  await user.keyboard("{Enter}");
+  expect(open).toHaveBeenLastCalledWith(rows[4]);
+  expect(open).toHaveBeenCalledTimes(2);
+
+  // The checkbox and the ⋯ menu keep their own clicks, closing the menu by tapping outside among them.
+  await user.click(screen.getByRole("checkbox", { name: "Select food 01" }));
+  await user.click(screen.getByRole("button", { name: "Actions for food 01" }));
+  await user.click(screen.getByTestId("menu-scrim"));
+  await user.click(screen.getByRole("button", { name: "Actions for food 01" }));
+  await user.click(screen.getByRole("menuitem", { name: "Merge" }));
+  expect(merge).toHaveBeenCalledWith(rows[1]);
+  expect(open).toHaveBeenCalledTimes(2);
 });

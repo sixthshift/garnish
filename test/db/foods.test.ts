@@ -216,3 +216,20 @@ test("the table refuses a repeated pair of units, and a deleted food or unit tak
   unitRepository(db).remove(gram.id);
   expect(repo.get(flour.id)!.conversions).toEqual([]);
 });
+
+test("usage counts each recipe once per food, and leaves out foods no recipe uses", () => {
+  const butter = repo.create({ name: "butter" });
+  const flour = repo.create({ name: "flour" });
+  repo.create({ name: "saffron" });
+  db.run("INSERT INTO recipe (id, slug, name) VALUES ('r1', 'r1', 'Shortbread'), ('r2', 'r2', 'Roux')");
+  db.run("INSERT INTO part (id, recipe_id, position) VALUES ('p1', 'r1', 0), ('p1b', 'r1', 1), ('p2', 'r2', 0)");
+  const row = db.prepare("INSERT INTO ingredient (id, part_id, position, food_id, original_text) VALUES (?, ?, ?, ?, '')");
+  row.run("i1", "p1", 0, butter.id);
+  row.run("i2", "p1b", 0, butter.id); // the same recipe's second part: still one recipe
+  row.run("i3", "p1", 1, flour.id);
+  row.run("i4", "p2", 0, butter.id);
+  row.run("i5", "p2", 1, null);
+
+  const usage = Object.fromEntries(repo.usage().map((u) => [u.foodId, u.recipes]));
+  expect(usage).toEqual({ [butter.id]: 2, [flour.id]: 1 });
+});

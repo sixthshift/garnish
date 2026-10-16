@@ -707,15 +707,19 @@ describe("/settings", () => {
     expect(html).toContain(`${foods.length} food`);
   });
 
-  test("each food row has one actions menu (Edit, Merge inside), and no dialog is open by default", async () => {
+  test("each food row opens its editor and has one actions menu, and no dialog is open by default", async () => {
     await callServerFn(createFood, { name: "Butter" });
-    await callServerFn(createFood, { name: "Salt" });
+    await callServerFn(createFood, { name: "Salt", skipShopping: true, aliases: ["sea salt"] });
     const html = await renderRoute("/settings");
     expect(html).toContain('aria-label="Actions for Butter"');
     expect(html).toContain('aria-label="Actions for Salt"');
+    // The row's own button, not the sheet: only one of each.
+    expect(html.match(/aria-label="Edit Butter"/g)).toHaveLength(1);
+    // A staple says so under its name, beside its aliases.
+    expect(html).toMatch(/on hand<\/span>.*sea salt/);
     // The edit sheet, delete confirm and merge dialog all start closed.
     expect(html).not.toContain("Merge into");
-    expect(html).not.toContain('aria-label="Edit Butter"');
+    expect(html).not.toContain("Always in the cupboard");
     expect(html).not.toContain("will be deleted");
   });
 });
@@ -740,6 +744,7 @@ describe("loader data types match the domain schemas", () => {
       aisles: Aisle[];
       units: Unit[];
       foods: FoodRow[];
+      foodUsage: Record<string, number>;
       tags: TagUsage[];
       recipes: RecipeSummary[];
       styleRules: StyleRule[];

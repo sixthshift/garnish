@@ -5,7 +5,7 @@ import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
-import { ingredient } from "../recipe/schema";
+import { ingredient, part } from "../recipe/schema";
 import { food, foodConversion } from "./schema";
 
 export type Food = FoodRow;
@@ -102,6 +102,16 @@ export function foodRepository(db: Database) {
               .all()
           : query.orderBy(asc(food.name)).all()
       );
+    },
+    /** How many recipes use each food, counting a recipe once however many of its rows name it. Foods no recipe uses are absent. */
+    usage(): { foodId: string; recipes: number }[] {
+      return dz
+        .select({ foodId: sql<string>`${ingredient.foodId}`, recipes: sql<number>`count(distinct ${part.recipeId})` })
+        .from(ingredient)
+        .innerJoin(part, eq(part.id, ingredient.partId))
+        .where(sql`${ingredient.foodId} IS NOT NULL`)
+        .groupBy(ingredient.foodId)
+        .all();
     },
     /** Every food as a summary, by name: no conversions, for a list or picker that needs nothing else. */
     summaries(): FoodSummary[] {

@@ -14,6 +14,12 @@ export type DataTableColumn<T> = {
   /** Default true. */
   searchable?: boolean;
   /**
+   * What search matches in this column, when it is not the displayed `value`:
+   * a name column that also answers to its aliases, say. Ignored when
+   * `searchable` is false.
+   */
+  search?: (item: T) => string;
+  /**
    * A column the phone can do without: hidden below `md`, still searched and
    * still sortable once the width is there. Reference tables run to six
    * columns, which no phone can draw — without this the table's min-content
@@ -47,7 +53,7 @@ export function cellText(value: string | number | boolean | null): string {
 export function searchText<T>(columns: readonly DataTableColumn<T>[], item: T): string {
   return columns
     .filter((column) => column.searchable !== false)
-    .map((column) => cellText(column.value(item)))
+    .map((column) => column.search?.(item) ?? cellText(column.value(item)))
     .join(" ")
     .toLowerCase();
 }

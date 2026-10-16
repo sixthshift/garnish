@@ -52,6 +52,14 @@ describe("searchText", () => {
     expect(searchText(columns, rows[0]!)).toBe("butter dairy 2 no");
     expect(searchText(columns, rows[1]!)).toBe("flour  0 yes");
   });
+
+  test("a column's own search text stands in for its value", () => {
+    const named: DataTableColumn<Row>[] = [
+      { key: "name", header: "Name", value: (row) => row.name, search: (row) => `${row.name} ${row.aisle ?? "unshelved"}` },
+    ];
+    expect(searchText(named, rows[1]!)).toBe("flour unshelved");
+    expect(filterItems(rows, named, "unshelved").map((row) => row.name)).toEqual(["Flour"]);
+  });
 });
 
 describe("filterItems", () => {
@@ -202,14 +210,14 @@ describe("DataTable render", () => {
     // Closed: the actions are in the menu, not on the row.
     expect(html).not.toContain(">Edit<");
     expect(html).not.toContain(">Merge<");
-    expect(html).toContain('aria-label="Select all foods"');
+    expect(html).toContain('aria-label="Select all 3 foods"');
     expect(html).toContain('aria-label="Select butter"');
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Delete<\/button>/);
   });
 
   test("selectable can be asked for without a delete", () => {
     const html = render({ selectable: true });
-    expect(html).toContain('aria-label="Select all foods"');
+    expect(html).toContain('aria-label="Select all 3 foods"');
     expect(html).not.toContain(">Delete<");
   });
 
@@ -228,16 +236,14 @@ describe("DataTable render", () => {
     expect(render({ actions: <button type="button">Add food</button> })).toContain(">Add food<");
   });
 
-  test("draws one page of rows and says how many more there are", () => {
+  test("a long list draws about a screenful, and select-all still names every row", () => {
     const many = Array.from({ length: 60 }, (_, i) => ({ id: `r${i}`, name: `food ${String(i).padStart(2, "0")}`, aisle: null, aliases: 0, skip: false }));
     const html = render({ items: many, onDelete: () => {} });
-    expect(html.match(/data-row=/g)).toHaveLength(50);
+    expect(html.match(/data-row=/g)!.length).toBeLessThan(60);
+    expect(html).toContain('data-row="r0"');
     expect(html).toContain("60 foods");
-    expect(html).toContain("Showing <!-- -->50<!-- --> of <!-- -->60");
-    expect(html).toContain("Show <!-- -->10<!-- --> more");
-    expect(html).toContain("Show all <!-- -->60");
-    // Select-all reaches the rows not drawn, and says so.
-    expect(html).toContain('aria-label="Select all 60 foods, including 10 not shown"');
+    expect(html).toContain('aria-rowcount="61"');
+    expect(html).toContain('aria-label="Select all 60 foods"');
   });
 
   test("only a column marked wrap: anywhere may break a word", () => {
@@ -245,8 +251,9 @@ describe("DataTable render", () => {
     expect(html.match(/wrap-anywhere/g)).toHaveLength(rows.length);
   });
 
-  test("a table that fits one page has no Show more", () => {
-    expect(render()).not.toContain("data-table-more");
-    expect(render({ pageSize: 2 }).match(/data-row=/g)).toHaveLength(2);
+  test("a short table draws every row, with no spacer", () => {
+    const html = render();
+    expect(html.match(/data-row=/g)).toHaveLength(rows.length);
+    expect(html).not.toContain("data-spacer");
   });
 });

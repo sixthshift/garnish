@@ -33,6 +33,7 @@
     "@sixthshift/design-system": "^0.11.0",
     "@tanstack/react-router": "^1.170.36",
     "@tanstack/react-start": "^1.168.54",
+    "@tanstack/react-virtual": "3.14.13",
     "ai": "^7.0.137",
     "ai-sdk-provider-claude-code": "^4.3.3",
     "drizzle-orm": "^0.45.2",

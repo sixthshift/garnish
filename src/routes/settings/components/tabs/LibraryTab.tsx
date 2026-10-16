@@ -23,12 +23,14 @@ function isSection(value: string): value is Section {
 
 export function LibraryTab({
   foods,
+  foodUsage,
   units,
   aisles,
   tags,
   recipes,
 }: {
   foods: readonly FoodRow[];
+  foodUsage: Readonly<Record<string, number>>;
   units: readonly Unit[];
   aisles: readonly Aisle[];
   tags: readonly TagUsage[];
@@ -48,7 +50,7 @@ export function LibraryTab({
         value={section}
         onValueChange={(value) => isSection(value) && setSection(value)}
       />
-      {section === "foods" && <FoodsTab foods={foods} aisles={aisles} units={units} recipes={recipes} />}
+      {section === "foods" && <FoodsTab foods={foods} usage={foodUsage} aisles={aisles} units={units} recipes={recipes} />}
       {section === "units" && <UnitsTab units={units} />}
       {section === "aisles" && <AislesTab aisles={aisles} />}
       {section === "tags" && <TagsTab tags={tags} />}
