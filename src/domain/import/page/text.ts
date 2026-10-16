@@ -7,7 +7,7 @@ export const MAX_PAGE_TEXT = 40_000;
 const DROP_TAGS = new Set(["script", "style", "noscript", "template", "svg", "iframe", "form", "nav", "header", "footer", "aside"]);
 
 /** Tags whose boundary ends a line: the common block-level elements, plus the void `br`/`hr`. */
-const BLOCK_TAGS = new Set([
+export const BLOCK_TAGS = new Set([
   "address",
   "article",
   "blockquote",

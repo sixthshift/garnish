@@ -1,6 +1,7 @@
-// A page in, a result out: the schema.org rung first, then the OpenGraph stub, else null.
+// A page in, a result out: the schema.org rung first (JSON-LD, then microdata), then the OpenGraph stub, else null.
 
-import { recipeNodeFromHtml } from "./page/jsonLd";
+import { type JsonLdNode, recipeNodeFromHtml } from "./page/jsonLd";
+import { recipeNodeFromMicrodata } from "./page/microdata";
 import { openGraphStub } from "./page/openGraph";
 import { readableText } from "./page/text";
 import type { ImportedRecipe } from "./result";
@@ -25,7 +26,10 @@ export function scrapedFromStub(stub: { name: string; description: string; image
 
 /**
  * The recipe in a page's HTML: the schema.org Recipe if it has a usable one,
- * else an OpenGraph stub, else null. Pure — the fetch is the caller's, and it
+ * read from its JSON-LD or, failing that, its microdata; else an OpenGraph
+ * stub, else null. Microdata is the same vocabulary as JSON-LD in attributes
+ * instead of a script, so a recipe found either way is `from: "schema"` and
+ * anchors the model's read the same. Pure — the fetch is the caller's, and it
  * does not matter whether the caller fetched the page or was handed it as a
  * paste: view-source-and-paste gets exactly what a successful fetch
  * would have got — the same rungs, the same `pageText` for the model to read,
@@ -39,8 +43,10 @@ export function scrapedFromStub(stub: { name: string; description: string; image
  */
 export function extractRecipe(html: string, url: string): ImportedRecipe | null {
   const pageText = readableText(html);
-  const node = recipeNodeFromHtml(html);
-  if (node !== null) {
+  const readers: ((html: string) => JsonLdNode | null)[] = [recipeNodeFromHtml, recipeNodeFromMicrodata];
+  for (const read of readers) {
+    const node = read(html);
+    if (node === null) continue;
     const recipe = scrapedFromSchema(node);
     // A Recipe node with nothing in it is an SEO shell, not a recipe.
     if (hasContent(recipe)) return { from: "schema", url, recipe, pageText };

@@ -34,6 +34,9 @@ const EMPTY_SCHEMA_PAGE = `<html><head>
 <meta property="og:title" content="Shell from OpenGraph">
 </head><body></body></html>`;
 
+/** A recorded-style page whose recipe is microdata only, with OpenGraph tags beside it. */
+const MICRODATA_PAGE = readFileSync(join(import.meta.dirname, "../../fixtures/importUrl/microdata-page.html"), "utf8");
+
 const BARE_PAGE = "<html><head><title>Nothing here</title></head><body><p>Prose.</p></body></html>";
 
 describe("scrapedFromStub", () => {
@@ -55,6 +58,31 @@ describe("extractRecipe", () => {
     expect(found?.recipe.parts[0]!.steps).toEqual(["Mix.", "Bake."]);
     expect(found?.recipe.servings).toBe(24);
     expect(found?.recipe.prepMinutes).toBe(20);
+  });
+
+  test("microdata is read where the page has no JSON-LD, and wins over OpenGraph", () => {
+    const found = extractRecipe(MICRODATA_PAGE, URL_UNDER_TEST);
+    expect(found?.from).toBe("schema");
+    expect(found?.recipe).toMatchObject({
+      name: "Lemon delicious pudding",
+      description: "A sponge that sits on its own lemon sauce — Nan's favourite.",
+      image: "https://example.test/lemon.jpg?w=800&h=600",
+      servings: 6,
+      prepMinutes: 15,
+      cookMinutes: 45,
+      tags: ["Dessert", "Winter", "Lemon"],
+    });
+    expect(ingredientLines(found!.recipe)).toEqual(["60 g butter, softened", "1 cup caster sugar", "3 eggs, separated", "1 ½ cups milk"]);
+    expect(found?.recipe.parts[0]!.steps).toEqual([
+      "Preheat oven to 180°C.",
+      "Cream the butter and sugar, then beat in the yolks.",
+      "Fold in the whites and bake for 45 minutes.",
+    ]);
+  });
+
+  test("a usable JSON-LD recipe is taken before microdata", () => {
+    const both = SCHEMA_PAGE.replace("<body></body>", `<body>${MICRODATA_PAGE.slice(MICRODATA_PAGE.indexOf("<article"))}</body>`);
+    expect(extractRecipe(both, URL_UNDER_TEST)?.recipe.name).toBe("Anzac biscuits");
   });
 
   test("OpenGraph is the fallback", () => {
