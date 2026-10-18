@@ -109,7 +109,7 @@ export function RecipePage() {
                 <div className="flex flex-wrap items-center gap-3">
                   <ScaleControl servings={recipe.recipeServings} />
                   {anyTicked && (
-                    <Button variant="link" intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
+                    <Button inline intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
                       Clear
                     </Button>
                   )}

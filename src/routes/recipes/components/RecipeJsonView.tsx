@@ -34,7 +34,7 @@ export function RecipeJsonView({ json, error, disabled, onChange, onApply }: Rec
         </Message>
       )}
       <div className="flex gap-2">
-        <Button type="button" intent="primary" size="sm" disabled={disabled} onClick={onApply}>
+        <Button type="button" variant="outline" intent="brand" size="sm" disabled={disabled} onClick={onApply}>
           Apply
         </Button>
       </div>

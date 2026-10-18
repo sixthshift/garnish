@@ -63,7 +63,7 @@ export function ShoppingRow({
             </div>
           )}
           {/* Neutral: row removal is (design-language rule 5), and a line is one type away from coming back. */}
-          <Button type="button" variant="link" intent="neutral" size="sm" disabled={busy} onClick={() => onRemove(item.id)}>
+          <Button type="button" inline intent="neutral" size="sm" disabled={busy} onClick={() => onRemove(item.id)}>
             Remove
           </Button>
         </div>

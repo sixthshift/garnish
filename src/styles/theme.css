@@ -7,7 +7,8 @@
  * without an `!important`. Never wrap anything here in `@layer`.
  *
  * Only tier 2 (semantic) is re-pointed — the "what a colour means" tier — plus
- * a Tailwind `@theme` block for shape and the display face. Component tokens
+ * the theme's radius scale and a Tailwind `@theme` block for the display
+ * face. Component tokens
  * (tier 3, `--button-bg` and friends) are left alone: nothing here re-wires a
  * component, it only changes what the meanings resolve to — with four
  * exceptions, the off Switch's track, the neutral soft Badge, the disabled
@@ -38,16 +39,19 @@
    SHAPE AND TYPE
    ============================================================================= */
 
-@theme {
-  /* Softer corners than stock Tailwind throughout — the components spell their
-     radii as `rounded-md`/`rounded-lg`, which resolve to these. */
-  --radius-xs: 0.1875rem;
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.25rem;
+/* Softer corners than Linen's throughout. The theme owns the five steps and
+   the library points every `rounded-*` at them, its components' and garnish's
+   alike; `rounded-2xl` and up are not steps and generate nothing. Mode-free,
+   so one block. */
+:root {
+  --border-radius-xs: 0.1875rem;
+  --border-radius-sm: 0.375rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --border-radius-xl: 1rem;
+}
 
+@theme {
   /* Recipe titles get a warm serif; body and UI stay Inter for phone
      legibility. Declared here as well as applied below so `font-display` is a
      usable utility. */
@@ -333,11 +337,12 @@ h1 {
    review chip on the page was text with no chip. Re-pointed one step past the
    page and a card in both modes (earth-300 in light, earth-800 in dark), the
    step the toggles' selected fill uses. Matched by what it is not, because
-   `muted` and any other intent the library has not named falls through to
-   the neutral family. On the badge rather than the neutral intent's tint
-   slot: the neutral slots are the `[data-intent]` floor, and an unlayered
-   rule there would outrank every family's own, not just neutral's. */
-.badge[data-variant="soft"]:not([data-intent="brand"], [data-intent="danger"], [data-intent="success"], [data-intent="warning"]) {
+   any intent the library has not named falls through to the neutral family,
+   so every named family but neutral is listed. On the badge rather than the
+   neutral intent's tint slot: the neutral slots are the `[data-intent]`
+   floor, and an unlayered rule there would outrank every family's own, not
+   just neutral's. */
+.badge[data-variant="soft"]:not([data-intent="brand"], [data-intent="danger"], [data-intent="success"], [data-intent="warning"], [data-intent="info"]) {
   --badge-bg: var(--bg-subtle-pressed);
 }
 

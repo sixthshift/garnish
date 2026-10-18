@@ -60,7 +60,7 @@ export function PlanEntryRow({
         </Caption>
       )}
       {serves !== "" && (
-        <Badge variant="soft" intent="muted" className="shrink-0">
+        <Badge variant="soft" intent="neutral" className="shrink-0">
           {serves}
         </Badge>
       )}

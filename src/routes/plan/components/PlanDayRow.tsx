@@ -63,7 +63,7 @@ export function PlanDayRow({
         </SectionTitle>
         <Caption className={cn(marked && "font-medium text-fg-normal")}>{dayOfMonth}</Caption>
         {marked && (
-          <Badge variant="soft" intent="muted" className="ml-1 self-center" data-testid="plan-today">
+          <Badge variant="soft" intent="neutral" className="ml-1 self-center" data-testid="plan-today">
             Today
           </Badge>
         )}

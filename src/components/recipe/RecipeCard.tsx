@@ -91,7 +91,7 @@ function CardTags({ tags }: { tags: readonly Tag[] }) {
       ))}
       {more > 0 && (
         <li>
-          <Badge variant="soft" intent="muted" aria-label={`${more} more tags`}>
+          <Badge variant="soft" intent="neutral" aria-label={`${more} more tags`}>
             {`+${more}`}
           </Badge>
         </li>

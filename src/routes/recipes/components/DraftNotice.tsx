@@ -19,7 +19,7 @@ export function DraftNotice({ text, onResume, onDiscard }: DraftNoticeProps) {
       <div className="flex flex-col gap-2">
         <p>{text}</p>
         <div className="flex gap-2">
-          <Button type="button" intent="primary" size="sm" data-testid="draft-resume" onClick={onResume}>
+          <Button type="button" variant="outline" intent="brand" size="sm" data-testid="draft-resume" onClick={onResume}>
             Resume
           </Button>
           <Button type="button" variant="outline" intent="neutral" size="sm" data-testid="draft-discard" onClick={onDiscard}>

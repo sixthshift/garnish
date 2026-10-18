@@ -92,7 +92,7 @@ export function ScaleControl({ servings }: { servings: number }) {
         </Button>
       </div>
       {requested !== undefined && (
-        <Button variant="link" intent="neutral" size="sm" onClick={() => go(undefined)}>
+        <Button inline intent="neutral" size="sm" onClick={() => go(undefined)}>
           Reset
         </Button>
       )}

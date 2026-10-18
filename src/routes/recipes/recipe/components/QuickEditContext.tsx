@@ -42,7 +42,7 @@ export function IngredientsToolbar({ toggle, returnFocus }: { toggle?: ReactNode
     <div className="flex flex-wrap items-center justify-end gap-3">
       {fixing && (
         <Button
-          variant="link"
+          inline
           intent="neutral"
           size="sm"
           data-print="hide"

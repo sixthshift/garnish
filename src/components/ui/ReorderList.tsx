@@ -130,7 +130,7 @@ export function ReorderList<T>({
             tabIndex={-1}
             aria-label={`Drag ${name}`}
             title={`Drag to reorder ${name}`}
-            className="mt-1 shrink-0 cursor-grab touch-none select-none rounded p-1 text-current/50 hover:text-current focus-visible:outline-none active:cursor-grabbing @max-2xl:mt-0"
+            className="mt-1 shrink-0 cursor-grab touch-none select-none rounded-sm p-1 text-current/50 hover:text-current focus-visible:outline-none active:cursor-grabbing @max-2xl:mt-0"
             onPointerDown={(event) => onHandleDown(event, index)}
             onPointerMove={onHandleMove}
             onPointerUp={onHandleUp}

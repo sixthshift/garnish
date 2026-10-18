@@ -6,8 +6,9 @@
 // src/styles/theme.css, which re-points those tokens and may add new ones.
 // A guessed token now fails the gate instead of painting nothing.
 import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
+import { designSystemCss, garnishThemeCss } from "../helpers/designSystem";
 
 const root = join(import.meta.dirname, "..", "..");
 
@@ -23,14 +24,6 @@ export function tokenNames(css: string): Set<string> {
     names.add(match[0].slice("--color-".length));
   }
   return names;
-}
-
-/** `path`'s CSS with every relative `@import "./x.css"` inlined, recursively. Package imports are left as they are. */
-function cssWithImports(path: string, seen = new Set<string>()): string {
-  if (seen.has(path)) return "";
-  seen.add(path);
-  const css = readFileSync(path, "utf8");
-  return css.replace(/@import\s+"(\.\.?\/[^"]+)"[^;]*;/g, (_match, target: string) => cssWithImports(join(dirname(path), target), seen));
 }
 
 const CLASS_PATTERN = /\b(bg-bg|text-fg|border-border)-[a-z-]+/g;
@@ -104,16 +97,10 @@ describe("tokenClasses", () => {
 });
 
 describe("real tokens only", () => {
-  const designSystemDir = join(root, "node_modules", "@sixthshift", "design-system");
-  const designSystemPkg = JSON.parse(readFileSync(join(designSystemDir, "package.json"), "utf8")) as {
-    exports: Record<string, string>;
-  };
   // The theme is one entry (`themes/linen.css`) that composes its tokens, its
   // palette and the Tailwind mapping through relative @imports, so the scan
   // follows those rather than reading one file.
-  const themeCssPath = join(designSystemDir, designSystemPkg.exports["./themes/linen.css"]!);
-
-  const tokens = new Set([...tokenNames(cssWithImports(themeCssPath)), ...tokenNames(readFileSync(join(root, "src", "styles", "theme.css"), "utf8"))]);
+  const tokens = new Set([...tokenNames(designSystemCss()), ...tokenNames(garnishThemeCss())]);
 
   test("found at least one token, so an empty set can't fake a pass", () => {
     expect(tokens.size).toBeGreaterThan(0);

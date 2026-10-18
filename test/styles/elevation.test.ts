@@ -16,12 +16,12 @@ function block(source: string, selector: string): string {
   return source.slice(start, source.indexOf("}", start));
 }
 
-/** `name`'s value in `body`, following one `var(--color-…)` into the palette. Pure. */
+/** `name`'s value in `body`, following one `var(--color-…)` into the palette, which is declared once, wherever it sits. Pure. */
 function resolve(body: string, name: string): string {
   const value = new RegExp(`${name}:\\s*([^;]+);`).exec(body)?.[1]?.trim();
   if (value === undefined) throw new Error(`no ${name}`);
   const ref = /^var\((--color-[a-z0-9-]+)\)$/.exec(value)?.[1];
-  return ref === undefined ? value : resolve(block(css, ":root"), ref);
+  return ref === undefined ? value : resolve(css, ref);
 }
 
 /** WCAG relative luminance of a `#rrggbb`. Pure. */

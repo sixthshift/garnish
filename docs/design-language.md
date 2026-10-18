@@ -84,10 +84,11 @@ Recorded so they are not silently "fixed":
 
 - **Two-column recipe page.** The system's settled rule is single column, drill-in via routing. The recipe page keeps ingredients sticky beside the method from `lg`, and the print stylesheet depends on it. Decisions 99 and 145.
 - **`md:` as the breakpoint.** `responsive.md` names mobile / `sm:` / `lg:` as the adaptive vocabulary and calls `md:` outside it. Garnish is phone-first with one break at `md:`, used throughout the shell. The recipe page's two columns and its header's image-beside-title split are the exception: they break at `lg:`, because at `md` beside the side nav a third of the page is 144px, too narrow for the ingredient list (decision 145). Not worth churning; noted so the mismatch is known.
+- **Three local components the system also ships.** `src/components/ui/` keeps its own `DataTable`, `NumberStepper` and `Markdown`, each built from the system's pieces, because the library's version does less than garnish needs (decision 180). `DataTable` adds row selection with a bulk Delete, search across every name a row answers to, a ⋯ menu per row, tap-to-open and a virtual list (rows 137, 174, 176, 177). `NumberStepper` takes decimals, 1.5 servings, where the library's is whole numbers only. `Markdown` is a parser with no HTML output and no `react-markdown`, and renders only what a step needs: paragraphs, lists, bold and italic. Anything else the system ships — `Steps` among them — is used as it is.
 
 ## Related
 
-- [`decisions.md`](decisions.md) — rows 97, 98, 99, 137, 141
+- [`decisions.md`](decisions.md) — rows 97, 98, 99, 137, 141, 180
 - [`ui-gap.md`](ui-gap.md) — what garnish borrowed from Mealie and Tandoor, feature by feature
 - `design-system/docs/visual-hierarchy.md` — the surface system and the axes
 - `design-system/docs/density.md` — the three density modes

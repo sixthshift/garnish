@@ -20,8 +20,9 @@ async function renderWithRouter(component: () => ReactNode): Promise<string> {
 describe("ImportSteps", () => {
   test("ticks the stages before the current one and marks the current one for a screen reader", () => {
     const html = renderToString(<ImportSteps current="Style" />);
-    expect(html.match(/✓/g)).toHaveLength(2);
+    expect(html.match(/data-state="complete"/g)).toHaveLength(2);
     expect(html).toMatch(/aria-current="step"[^>]*>.*Style/);
+    expect(html).toContain('aria-label="Import steps"');
     expect(html).toContain("Save");
   });
 });
