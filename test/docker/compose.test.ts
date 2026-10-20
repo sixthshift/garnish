@@ -1,7 +1,7 @@
 // docker/docker-compose.yml is text, so its contract is asserted here: one
-// `garnish` service pulling the published image, on port 9988 with the
-// `garnish-data` volume at DATA_DIR=/data plus the AI variables. Docker itself
-// is not run under vitest.
+// `garnish` service pulling the published image, on port 9988 with the host
+// data folder (GARNISH_DATA_DIR, default ./data) bind-mounted at
+// DATA_DIR=/data plus the AI variables. Docker itself is not run under vitest.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -60,9 +60,9 @@ describe("compose file", () => {
     expect(dockerfile).toMatch(/^EXPOSE\s+9988$/m);
   });
 
-  test("mounts the named volume at /data and declares it", () => {
-    expect(garnish.volumes).toEqual(["garnish-data:/data"]);
-    expect(compose.volumes).toHaveProperty("garnish-data");
+  test("bind-mounts the host data folder at /data, ./data unless GARNISH_DATA_DIR says otherwise", () => {
+    expect(garnish.volumes).toEqual(["${GARNISH_DATA_DIR:-./data}:/data"]);
+    expect(compose.volumes).toBeUndefined();
   });
 
   test("DATA_DIR points at the mount", () => {

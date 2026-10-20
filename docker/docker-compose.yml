@@ -1,4 +1,4 @@
-# garnish — one service, one named volume, run from this folder:
+# garnish — one service, one data folder, run from this folder:
 # `cd docker && docker compose up -d`. The image is the one GitHub Actions
 # publishes (.github/workflows/docker.yml); nothing is built here. Set
 # GARNISH_IMAGE to run another, e.g. one built locally with
@@ -12,8 +12,8 @@ services:
     ports:
       - "9988:9988"
     volumes:
-      # garnish.db, images/ and backups/ all live in the volume.
-      - garnish-data:/data
+      # garnish.db, images/ and backups/ all live here. GARNISH_DATA_DIR sets the host folder (default ./data).
+      - ${GARNISH_DATA_DIR:-./data}:/data
     environment:
       DATA_DIR: /data
       # The AI (decisions.md rows 75 and 163). Passed through from the host,
@@ -32,6 +32,3 @@ services:
       # optional contact the push services see, a mailto: or https: URL.
       PUSH_CONTACT: ${PUSH_CONTACT:-}
     restart: unless-stopped
-
-volumes:
-  garnish-data:

@@ -21,13 +21,10 @@ services:
     ports:
       - "9988:9988"
     volumes:
-      - garnish-data:/data
+      - ${GARNISH_DATA_DIR:-./data}:/data
     environment:
       DATA_DIR: /data
     restart: unless-stopped
-
-volumes:
-  garnish-data:
 ```
 
 Then, from that folder:
@@ -110,7 +107,7 @@ Every feature asks Claude's Haiku model unless its model variable says `sonnet` 
 
 ## Your data
 
-Everything — the database and every photo — lives in the `garnish-data` volume. `docker compose down` leaves it alone; only `docker compose down -v` deletes it.
+Everything — the database and every photo — lives in one folder on the host: `data/` next to `docker-compose.yml`, or wherever `GARNISH_DATA_DIR` points (for example `GARNISH_DATA_DIR=/mnt/user/appdata/garnish` on Unraid, so its appdata backups cover it). `docker compose down` leaves it alone.
 
 ## Backup
 
@@ -126,7 +123,7 @@ Exporting a single recipe is different: the recipe's ⋯ menu saves it as JSON o
 
 ## Restore
 
-A restore **replaces** everything with the backup; it never merges. The whole file is checked first, and a file that fails the check changes nothing. Before anything is replaced, what was there is kept inside the volume as `backups/garnish-pre-restore-<time>.db` and `backups/garnish-pre-restore-<time>-images/`.
+A restore **replaces** everything with the backup; it never merges. The whole file is checked first, and a file that fails the check changes nothing. Before anything is replaced, what was there is kept inside the data folder as `backups/garnish-pre-restore-<time>.db` and `backups/garnish-pre-restore-<time>-images/`.
 
 From **Settings › Backup › Choose backup…**, Garnish shows what the backup holds beside what you have now, and Restore stays off until you tick "I understand this replaces everything". Or from the machine running Garnish:
 
