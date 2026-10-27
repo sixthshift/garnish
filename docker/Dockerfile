@@ -46,11 +46,13 @@ COPY --from=build /usr/local/bin/claude /usr/local/bin/claude
 # Boot (src/server.ts) creates DATA_DIR, migrates and seeds before the first
 # request, so migrations run on every start; no separate step is needed.
 # HOST=0.0.0.0 so the Nitro bun preset listens beyond the container loopback.
+# BUN_JSC_useJIT=0 halves the memory under load (decisions.md row 188).
 ENV DATA_DIR=/data \
     CLAUDE_CODE_EXECUTABLE=/usr/local/bin/claude \
     NODE_ENV=production \
     PORT=9988 \
-    HOST=0.0.0.0
+    HOST=0.0.0.0 \
+    BUN_JSC_useJIT=0
 
 # garnish.db, images/ and backups/ all live here. Runs as root, like Mealie's
 # default, so a bind-mounted host directory works without ownership setup.

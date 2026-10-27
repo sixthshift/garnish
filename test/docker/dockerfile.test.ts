@@ -82,6 +82,10 @@ describe("runtime contract", () => {
     expect(lines).toContainEqual(expect.stringMatching(/^EXPOSE\s+9988$/));
   });
 
+  test("runs without the JIT, for memory (decisions.md row 188)", () => {
+    expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bBUN_JSC_useJIT=0\b/));
+  });
+
   test("healthcheck probes /api/health", () => {
     const health = lines.find((line) => /^HEALTHCHECK\s/i.test(line));
     expect(health).toContain("/api/health");

@@ -87,14 +87,9 @@ export type ZipInput = { name: string; bytes: Uint8Array; compress?: boolean };
 /** Bit 11 of the general-purpose flags: the name is UTF-8. */
 const UTF8_NAMES = 0x0800;
 
-/** CRC-32, as a zip's headers want it. Pure. */
+/** CRC-32, as a zip's headers want it. Bun's native one: the server runs without the JIT (decisions.md row 188), where a per-bit loop over a backup's photos took over 300 ms. Pure. */
 export function crc32(bytes: Uint8Array): number {
-  let crc = -1;
-  for (const byte of bytes) {
-    crc ^= byte;
-    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-  }
-  return (crc ^ -1) >>> 0;
+  return Bun.hash.crc32(bytes);
 }
 
 async function deflate(bytes: Uint8Array): Promise<Uint8Array> {
