@@ -4,7 +4,7 @@ import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Select } from "@sixthshift/design-system/select";
 import type { Dispatch, SetStateAction } from "react";
-import type { Unit } from "../../../db/models/unit/repo";
+import type { Unit } from "../../db/models/unit/repo";
 import { blankConversion, type ConversionDraft } from "./foodEditDraft";
 
 export type ConversionRowsProps = {

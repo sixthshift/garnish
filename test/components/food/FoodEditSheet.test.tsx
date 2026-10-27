@@ -2,10 +2,7 @@
 // FoodEditSheetContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, expectTypeOf, test } from "vitest";
-import type { Food } from "../../../../src/db/models/food/repo";
-import type { Unit } from "../../../../src/db/models/unit/repo";
-import type { Aisle } from "../../../../src/domain/reference";
-import { FoodEditSheetContent, type FoodPatch } from "../../../../src/routes/settings/components/FoodEditSheet";
+import { FoodEditSheetContent, type FoodPatch } from "../../../src/components/food/FoodEditSheet";
 import {
   aliasesText,
   blankConversion,
@@ -19,7 +16,10 @@ import {
   parseAliases,
   parseConversions,
   parsePacks,
-} from "../../../../src/routes/settings/components/foodEditDraft";
+} from "../../../src/components/food/foodEditDraft";
+import type { Food } from "../../../src/db/models/food/repo";
+import type { Unit } from "../../../src/db/models/unit/repo";
+import type { Aisle } from "../../../src/domain/reference";
 
 const dairy: Aisle = { id: "a1", name: "Dairy", position: 0 };
 const bakery: Aisle = { id: "a2", name: "Bakery", position: 1 };

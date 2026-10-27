@@ -1,6 +1,7 @@
 import { toast } from "@sixthshift/design-system/overlay";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { saveFood } from "../../components/food/saveFood";
 import { randomUuid } from "../../lib/id";
 import { useMutate } from "../../lib/mutate";
 import { applyOutbox } from "../../lib/outbox";
@@ -8,9 +9,10 @@ import { useShoppingView } from "../../lib/prefs";
 import { toastError } from "../../lib/toast";
 import { useOnline } from "../../lib/useOnline";
 import { useOutbox } from "../../lib/useOutbox";
+import { findOrCreateAisle } from "../../server/fns/aisles";
 import { addShoppingItems, clearTickedShoppingItems, removeShoppingItem, tickShoppingItem } from "../../server/fns/shopping";
 import { ShoppingListView } from "./components/ShoppingListView";
-import { sendOutboxEntry, setFoodAisle, setFoodSizes } from "./components/shoppingListActions";
+import { sendOutboxEntry, setFoodAisle } from "./components/shoppingListActions";
 import { Route } from "./route";
 
 /**
@@ -77,7 +79,20 @@ export function ShoppingPage() {
       aisles={aisles}
       packs={packs}
       units={units}
-      onSetSizes={(foodId, sizes) => void write("Couldn't add the size", () => setFoodSizes(foodId, sizes))}
+      onSaveFood={async (patch) => {
+        setBusy(true);
+        try {
+          await mutate(() => saveFood(patch));
+          toast({ intent: "success", title: `${patch.name} saved` });
+          return true;
+        } catch (error) {
+          toastError("Couldn't save the food", error);
+          return false;
+        } finally {
+          setBusy(false);
+        }
+      }}
+      onCreateAisle={(name) => mutate(() => findOrCreateAisle({ data: { name } }))}
       busy={busy}
       pending={queue.length}
       offline={!online}

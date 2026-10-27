@@ -1,17 +1,11 @@
-import type { FoodPackInput } from "../../../domain/reference";
 import type { ShoppingItem } from "../../../domain/shopping";
 import type { OutboxEntry } from "../../../lib/outbox";
-import { setFoodPacks, updateFood } from "../../../server/fns/foods";
+import { updateFood } from "../../../server/fns/foods";
 import { addShoppingItems, removeShoppingItem, tickShoppingItem } from "../../../server/fns/shopping";
 
 /** The "Set aisle" Select writes straight through `updateFood`. One line so the route and the tests share it. */
 export function setFoodAisle(foodId: string, aisleId: string): Promise<unknown> {
   return updateFood({ data: { id: foodId, aisleId } });
-}
-
-/** "Sold in" writes the food's whole list of sizes through `setFoodPacks`. */
-export function setFoodSizes(foodId: string, packs: FoodPackInput[]): Promise<unknown> {
-  return setFoodPacks({ data: { id: foodId, packs } });
 }
 
 /** One queued write, sent. The list's offline-able writes and nothing else. */

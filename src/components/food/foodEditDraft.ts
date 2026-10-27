@@ -1,4 +1,4 @@
-import type { FoodConversion, FoodConversionInput, FoodPack, FoodPackInput } from "../../../domain/reference";
+import type { FoodConversion, FoodConversionInput, FoodPack, FoodPackInput } from "../../domain/reference";
 
 /** Aliases as they are edited: one per line, blank lines dropped, each trimmed. Pure. */
 export function parseAliases(text: string): string[] {

@@ -75,7 +75,7 @@ test("the list by meal shows each planned dish its own share of a line they shar
   await expect(soupGroup.getByRole("checkbox", { name: "100 g red lentils" })).toBeChecked();
 });
 
-test("a line is rounded up to the sizes its food is sold in, and a size can be added from the list", async ({ page, open }) => {
+test("a line is rounded up to the sizes its food is sold in, and a size can be added from the list's Edit food", async ({ page, open }) => {
   const name = unique("Pack Bake");
   // Butter comes in 250 g and 500 g from the starter sizes; red lentils has none.
   await createRecipe(page, open, { name, servings: 4, ingredients: ["150 g butter", "300 g red lentils"], steps: ["Bake."] });
@@ -94,15 +94,19 @@ test("a line is rounded up to the sizes its food is sold in, and a size can be a
   const dairy = page.getByRole("region", { name: "Dairy & eggs" });
   await expect(dairy.getByText(/butter → \d+ × (250|500) g/)).toBeVisible();
 
-  // Lentils: a 1 kg bag, added from the row, and the line is rounded at once.
+  // Lentils: a 1 kg bag, added through the row's Edit food, and the line is rounded once it saves.
   const lentils = page.getByRole("region", { name: "Pantry" }).getByRole("listitem").filter({ hasText: "red lentils" });
   await lentils
     .getByText(/red lentils/)
     .first()
     .click();
-  await lentils.getByRole("textbox", { name: "Size red lentils is sold in" }).fill("1");
-  await lentils.getByRole("combobox", { name: "Unit of the size red lentils is sold in" }).click();
+  await lentils.getByRole("button", { name: "Edit food" }).click();
+  const foodSheet = page.getByRole("dialog", { name: "Edit red lentils" });
+  await foodSheet.getByRole("button", { name: "Add size" }).click();
+  await foodSheet.getByRole("textbox", { name: "Size 1 amount" }).fill("1");
+  await foodSheet.getByRole("combobox", { name: "Size 1 unit" }).click();
   await page.getByRole("option", { name: "kilogram" }).click();
-  await lentils.getByRole("button", { name: "Add size" }).click();
+  await foodSheet.getByRole("button", { name: "Save" }).click();
+  await expect(foodSheet).toBeHidden();
   await expect(lentils.getByText(/→ \d+ × 1 kg/)).toBeVisible();
 });

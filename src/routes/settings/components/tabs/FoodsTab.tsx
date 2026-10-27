@@ -3,6 +3,8 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { toast } from "@sixthshift/design-system/overlay";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { useState } from "react";
+import { FoodEditSheet, type FoodPatch } from "../../../../components/food/FoodEditSheet";
+import { saveFood } from "../../../../components/food/saveFood";
 import { DataTable } from "../../../../components/ui/DataTable";
 import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../../domain/recipe";
@@ -11,9 +13,8 @@ import { useMutate } from "../../../../lib/mutate";
 import { toastError } from "../../../../lib/toast";
 import type { DataTableColumn } from "../../../../lib/ui/dataTable";
 import { findOrCreateAisle } from "../../../../server/fns/aisles";
-import { createFood, deleteFood, mergeFood, setFoodPacks, updateFood, usingFood } from "../../../../server/fns/foods";
+import { deleteFood, mergeFood, usingFood } from "../../../../server/fns/foods";
 import type { FoodRow } from "../../route";
-import { FoodEditSheet, type FoodPatch } from "../FoodEditSheet";
 import { FoodMergeDialog } from "../FoodMergeDialog";
 import { dedupeSummaries, foodsLabel } from "../settingsLabels";
 
@@ -69,12 +70,7 @@ export function FoodsTab({
   const saveEdit = async (patch: FoodPatch) => {
     setBusy(true);
     try {
-      const { id, packs: sizes, ...fields } = patch;
-      await mutate(async () => {
-        const saved = id === "" ? await createFood({ data: fields }) : await updateFood({ data: { id, ...fields } });
-        // A new food with no sizes has none to write.
-        if (id !== "" || sizes.length > 0) await setFoodPacks({ data: { id: saved.id, packs: sizes } });
-      });
+      await mutate(() => saveFood(patch));
       toast({ intent: "success", title: `${patch.name} saved` });
       setEditing(null);
     } catch (error) {

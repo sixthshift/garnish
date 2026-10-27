@@ -4,7 +4,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { Select } from "@sixthshift/design-system/select";
 import { formatQuantity } from "../../../domain/ingredient";
 import { dayParts } from "../../../domain/plan";
-import type { Aisle, FoodPackInput, Unit } from "../../../domain/reference";
+import type { Aisle, Food } from "../../../domain/reference";
 import {
   breakdownOf,
   overLabel,
@@ -16,7 +16,6 @@ import {
   type ShoppingMeal,
   shoppingItemLabel,
 } from "../../../domain/shopping";
-import { SoldInForm } from "./SoldInForm";
 
 /** "Lemon tart · Mon": the dish and its weekday, a breakdown row's middle. */
 function dishText(row: ShoppingBreakdownRow): string {
@@ -39,8 +38,7 @@ export function ShoppingRow({
   whole = null,
   meals = [],
   sizes,
-  units = [],
-  onSetSizes = () => {},
+  onEditFood,
   aisles,
   onTick,
   onRemove,
@@ -56,13 +54,12 @@ export function ShoppingRow({
   meals?: readonly ShoppingMeal[];
   /**
    * The sizes the line's food is sold in, in the aisle view only: the line is
-   * rounded up to whole packs ("→ 2 × 250 g") and "Sold in" adds one.
-   * Undefined (the meal view, whose rows are shares) shows neither.
+   * rounded up to whole packs ("→ 2 × 250 g"). Undefined (the meal view,
+   * whose rows are shares) rounds nothing.
    */
   sizes?: readonly PackSize[];
-  /** Every unit, for "Sold in". */
-  units?: readonly Unit[];
-  onSetSizes?: (foodId: string, packs: FoodPackInput[]) => void;
+  /** "Edit food": opens the food's sheet, sizes and all (decisions.md row 186). Absent hides it. */
+  onEditFood?: (food: Food) => void;
   aisles: readonly Aisle[];
   onTick: (id: string, ticked: boolean) => void;
   onRemove: (id: string) => void;
@@ -137,8 +134,10 @@ export function ShoppingRow({
                 />
               </div>
             )}
-            {food !== null && sizes !== undefined && !food.skipShopping && units.length > 0 && (
-              <SoldInForm food={food} sizes={sizes} units={units} busy={busy} onSetSizes={onSetSizes} />
+            {food !== null && onEditFood !== undefined && (
+              <Button type="button" inline intent="brand" size="sm" disabled={busy} onClick={() => onEditFood(food)}>
+                Edit food
+              </Button>
             )}
             {/* Neutral: row removal is (design-language rule 5), and a line is one type away from coming back. */}
             <Button type="button" inline intent="neutral" size="sm" disabled={busy} onClick={() => onRemove(item.id)}>

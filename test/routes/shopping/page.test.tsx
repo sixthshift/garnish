@@ -269,11 +269,10 @@ describe("pack sizes (row 184)", () => {
     expect(elementHtml(html, "shopping-packs")).toContain("→ 1");
   });
 
-  test("a food line offers Sold in, naming the sizes it has; a typed line does not", () => {
-    const html = renderPacks([item({ quantity: 400, unit: gram, food: butter }), item({ text: "Batteries" })], [block250, block500]);
-    expect(html.match(/data-testid="shopping-sold-in"/g)).toHaveLength(1);
-    expect(elementHtml(html, "shopping-sold-in")).toContain("Sold in 250 g, 500 g");
-    expect(html).toContain('aria-label="Size butter is sold in"');
+  test("no Sold in form on the list: a size is set in the food's own sheet", () => {
+    const html = renderPacks([item({ quantity: 400, unit: gram, food: butter })], [block250]);
+    expect(html).not.toContain("Sold in");
+    expect(html).not.toContain("Add size");
   });
 });
 
