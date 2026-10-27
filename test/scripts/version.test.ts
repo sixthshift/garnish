@@ -1,7 +1,7 @@
-// The one decision the release workflow makes: how far the version moves for
-// the commits being shipped.
+// The release workflow's two decisions: how far the version moves for
+// the commits being shipped, and what the release says about them.
 import { describe, expect, test } from "vitest";
-import { bumpAcross, bumpFor, nextVersion, withVersion } from "../../scripts/version";
+import { bumpAcross, bumpFor, nextVersion, noteFor, releaseNotes, withVersion } from "../../scripts/version";
 
 describe("bumpFor", () => {
   test("feat is a minor", () => {
@@ -68,4 +68,43 @@ describe("withVersion", () => {
 test("the version in package.json is one the bumper can read", async () => {
   const pkg = (await Bun.file(new URL("../../package.json", import.meta.url).pathname).json()) as { version: string };
   expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
+});
+
+describe("noteFor", () => {
+  test("sorts by type, keeping the scope", () => {
+    expect(noteFor("feat(mcp): an MCP server")).toEqual({ section: "Features", line: "- **mcp:** an MCP server" });
+    expect(noteFor("fix: the swipe misses")).toEqual({ section: "Fixes and performance", line: "- the swipe misses" });
+    expect(noteFor("perf(server): no JIT")).toEqual({ section: "Fixes and performance", line: "- **server:** no JIT" });
+    expect(noteFor("style(shopping): a circle")).toEqual({ section: "Other changes", line: "- **shopping:** a circle" });
+  });
+
+  test("a breaking change goes first, whatever the type", () => {
+    expect(noteFor("refactor(db)!: rename the volume")?.section).toBe("Breaking changes");
+    expect(noteFor("fix: paths\n\nBREAKING CHANGE: DATA_DIR moved")?.section).toBe("Breaking changes");
+  });
+
+  test("housekeeping and the bot's release commits are left out", () => {
+    for (const message of ["chore: retire the skill", "chore(release): v1.8.0 [skip ci]", "test: x", "ci: y", "docs: z", "build: w"]) {
+      expect(noteFor(message)).toBeNull();
+    }
+  });
+
+  test("an unconventional header is kept whole, and only the header is used", () => {
+    expect(noteFor("Store data in a bind mount\n\nBecause volumes hide it.")).toEqual({
+      section: "Other changes",
+      line: "- Store data in a bind mount",
+    });
+  });
+});
+
+describe("releaseNotes", () => {
+  test("sections in order, each oldest first, empty ones left out", () => {
+    const newestFirst = ["chore(release): v1.7.1 [skip ci]", "style(shopping): a circle", "feat(ui): a sprig", "chore: tidy", "feat(mcp): a server"];
+    expect(releaseNotes(newestFirst)).toBe("## Features\n\n- **mcp:** a server\n- **ui:** a sprig\n\n## Other changes\n\n- **shopping:** a circle\n");
+  });
+
+  test("nothing worth saying is empty", () => {
+    expect(releaseNotes(["chore: tidy"])).toBe("");
+    expect(releaseNotes([])).toBe("");
+  });
 });

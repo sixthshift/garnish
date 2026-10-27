@@ -10,8 +10,9 @@
 # Commits). The image carries that version, and the bumped package.json is
 # committed back to main with a matching v tag once the image is published —
 # `[skip ci]` so the bot's own commit does not start this again — and the tag
-# is published as a GitHub release, its notes generated from the commits since
-# the last one.
+# is published as a GitHub release, its notes written by scripts/version.ts
+# from the commits since the last one (GitHub's generator lists pull requests,
+# and this repo pushes straight to main), with GitHub's compare link after them.
 # docker/docker-compose.yml pulls the latest tag. test/docker/workflow.test.ts
 # asserts this contract.
 name: docker
@@ -84,7 +85,7 @@ jobs:
         with:
           bun-version: 1.4.2
       # Writes the new version into package.json so the build inlines it, and
-      # outputs it. Only on a push to main: a pull request and a hand-made tag
+      # outputs it, with the path of the release notes it wrote. Only on a push to main: a pull request and a hand-made tag
       # build the version already committed.
       - id: bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -141,4 +142,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.bump.outputs.version }}
-        run: gh release create "v$VERSION" --title "v$VERSION" --generate-notes --verify-tag
+          NOTES: ${{ steps.bump.outputs.notes }}
+        # --generate-notes adds GitHub's compare link after the notes file.
+        run: gh release create "v$VERSION" --title "v$VERSION" --notes-file "$NOTES" --generate-notes --verify-tag

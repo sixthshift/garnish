@@ -132,9 +132,11 @@ describe("version bump", () => {
     expect(record.run).toContain('git push origin HEAD:main "refs/tags/v$VERSION"');
   });
 
-  test("publishes the tag as a release, with notes generated from the commits", () => {
+  test("publishes the tag as a release, with notes written from the commits", () => {
     expect(release.if).toBe("steps.bump.outputs.version != ''");
     expect(release.run).toContain('gh release create "v$VERSION"');
+    expect(release.env?.NOTES).toBe("${{ steps.bump.outputs.notes }}");
+    expect(release.run).toContain('--notes-file "$NOTES"');
     expect(release.run).toContain("--generate-notes");
     expect(release.env?.GH_TOKEN).toBe("${{ secrets.GITHUB_TOKEN }}");
     expect(image!.steps.indexOf(release)).toBeGreaterThan(image!.steps.indexOf(record));
