@@ -15,6 +15,8 @@ const planDate = z.iso.date().nullable().default(null);
 export const shoppingItemSourceSchema = z.object({
   id,
   recipeId: id.nullable().default(null),
+  /** The live recipe's slug, read beside the source for a link to it; null once the recipe is gone. Never written. */
+  recipeSlug: z.string().nullable().default(null),
   recipeName: text,
   partName: text, // '' is the unnamed part: the recipe's main body
   servings: quantity, // the scale the recipe was added at

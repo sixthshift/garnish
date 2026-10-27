@@ -10,9 +10,9 @@ import { describe, expect, test, vi } from "vitest";
 import { type ShoppingItem, shoppingItemSchema } from "../../../src/domain/shopping";
 import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../../src/lib/outbox";
 import { ShoppingListView } from "../../../src/routes/shopping/components/ShoppingListView";
-import { sendOutboxEntry, setFoodAisle, toBuyLabel } from "../../../src/routes/shopping/components/shoppingListActions";
+import { sendOutboxEntry, toBuyLabel } from "../../../src/routes/shopping/components/shoppingListActions";
 import { findOrCreateAisle } from "../../../src/server/fns/aisles";
-import { createFood, listFoods } from "../../../src/server/fns/foods";
+import { createFood } from "../../../src/server/fns/foods";
 import { addShoppingItems, listShoppingItems } from "../../../src/server/fns/shopping";
 import { elementHtml, renderRoute } from "../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
@@ -83,58 +83,34 @@ describe("grouping", () => {
     expect(row).toContain('aria-checked="false"');
     expect(row).toContain('aria-label="3 lemon"');
     expect(row).toContain('data-ticked="false"');
-    // The row body is the tap target for the expansion, not a hover-only chevron.
-    expect(row).toContain("<summary");
+    // The line's text is a phone-sized target that ticks it too.
     expect(row).toContain("min-h-11");
   });
 });
 
-describe("the sources expansion", () => {
-  test("a chevron row expands to each dish's amount and servings, then the actions", () => {
+describe("the row (row 187)", () => {
+  test("no expanding part: the line, the dishes under it, and a remove for each way of pointing", () => {
     const html = render([
       item({
         quantity: 250,
         unit: gram,
         food: butter,
-        sources: [
-          { id: "55555555-5555-4555-8555-555555555555", recipeName: "Lemon tart", partName: "Pastry", servings: 4, quantity: 150 },
-          { id: "66666666-6666-4666-8666-666666666666", recipeName: "Shortbread", partName: "", servings: 12, quantity: 100 },
-        ],
+        sources: [{ id: "55555555-5555-4555-8555-555555555555", recipeName: "Lemon tart", servings: 4, quantity: 250 }],
       }),
     ]);
-    const sources = elementHtml(html, "shopping-sources");
-    // A row per dish, its amount first; the part is not said, since a dish's amounts are added up.
-    const rows = elementHtml(html, "shopping-breakdown").split("<li").slice(1);
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatch(/150 g<\/span>.*Lemon tart.* · serves 4/);
-    expect(rows[1]).toMatch(/100 g<\/span>.*Shortbread.* · serves 12/);
-    // One aisle-view line with no sizes: the breakdown is the whole story, so no total.
-    expect(sources).not.toContain("shopping-total");
-    expect(elementHtml(html, "shopping-actions")).toContain("Remove");
+    expect(html).not.toContain("<details");
+    expect(elementHtml(html, "shopping-meals")).toContain("Lemon tart");
+    // The trash with a mouse, and the Delete a swipe shows on a touch screen: each is displayed on one kind of screen only.
+    expect(html.match(/aria-label="Remove 250 g butter"/g)).toHaveLength(2);
+    expect(elementHtml(html, "shopping-remove")).toContain("[@media(hover:hover)]:flex");
+    expect(html).toContain(">Delete<");
   });
 
-  test("a hand-typed line says so rather than showing an empty expansion", () => {
-    expect(elementHtml(render([item({ text: "Batteries" })]), "shopping-sources")).toContain("Added by hand");
-  });
-});
-
-describe("Set aisle (M31.6)", () => {
-  const unaisled = food("ffffffff-ffff-4fff-8fff-ffffffffffff", "flour", null);
-
-  test("the control shows only on a food line with no aisle, not an aisled food or a hand-typed line", () => {
-    const html = renderToString(
-      <ShoppingListView
-        items={[item({ quantity: 3, food: lemons }), item({ quantity: 400, food: unaisled }), item({ text: "Batteries" })]}
-        aisles={[produce, dairy]}
-        onAdd={noop}
-        onTick={noop}
-        onRemove={noop}
-        onClearTicked={noop}
-      />
-    );
-    expect(html.match(/data-testid="shopping-set-aisle"/g)).toHaveLength(1);
-    expect(html).toContain("Set aisle");
-    expect(html).toContain('aria-label="Aisle for flour"');
+  test("a dish whose recipe is gone is named but not linked", () => {
+    const html = render([
+      item({ quantity: 250, unit: gram, food: butter, sources: [{ id: "55555555-5555-4555-8555-555555555555", recipeName: "Lemon tart" }] }),
+    ]);
+    expect(elementHtml(html, "shopping-meals")).not.toContain("<a ");
   });
 });
 
@@ -188,7 +164,7 @@ describe("the meal view", () => {
     expect(html).toContain("Wed 28 Oct");
   });
 
-  test("a shared line shows each dish its share, and says the whole in the expansion", () => {
+  test("a shared line shows each dish its share", () => {
     const html = renderMeals([
       item({
         quantity: 350,
@@ -204,12 +180,9 @@ describe("the meal view", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain("200 g butter");
     expect(rows[1]).toContain("150 g butter");
-    expect(rows[0]).toContain("350 g butter in all");
-    expect(rows[0]).toMatch(/200 g<\/span>.*Lemon tart · Mon/);
-    expect(rows[0]).toMatch(/150 g<\/span>.*Soup · Wed/);
   });
 
-  test("the aisle view says under each line which dishes it is for, and nothing under a typed line", () => {
+  test("the aisle view says under each line which dishes it is for, with each share of a shared line, and nothing under a typed line", () => {
     const html = render([
       item({
         quantity: 350,
@@ -223,7 +196,7 @@ describe("the meal view", () => {
       item({ text: "Batteries" }),
     ]);
     expect(html.match(/data-testid="shopping-meals"/g)).toHaveLength(1);
-    expect(elementHtml(html, "shopping-meals")).toContain("Lemon tart, Mon · Soup, Wed");
+    expect(elementHtml(html, "shopping-meals")).toMatch(/Lemon tart Mon 200 g.* · .*Soup Wed 150 g/);
     expect(html).toContain('aria-label="350 g butter"');
   });
 
@@ -249,10 +222,9 @@ describe("pack sizes (row 184)", () => {
       <ShoppingListView items={items} view={view} packs={packs as never} units={units} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} />
     );
 
-  test("the aisle view rounds a line up to whole packs, and says what is over", () => {
+  test("the aisle view rounds a line up to whole packs", () => {
     const html = renderPacks([item({ quantity: 400, unit: gram, food: butter })], [block250]);
     expect(elementHtml(html, "shopping-packs")).toContain("→ 2 × 250 g");
-    expect(elementHtml(html, "shopping-total")).toContain("400 g butter needed · 2 × 250 g · 100 g over");
   });
 
   test("several sizes: the least over, then the fewest packs", () => {
@@ -317,7 +289,7 @@ describe("/shopping", () => {
     const html = await renderRoute("/shopping");
     expect(html).toContain("Dairy");
     expect(html).toContain("250 butter");
-    expect(html).toMatch(/Lemon tart.* · serves 4/);
+    expect(elementHtml(html, "shopping-meals")).toContain("Lemon tart");
     expect(html).toContain("Batteries");
     expect(html).toContain("Other");
     expect(html).toContain("2 items to buy");
@@ -420,20 +392,5 @@ describe("sendOutboxEntry", () => {
     const candles = (await listShoppingItems()).find((row) => row.text === "Candles");
     expect(candles).toMatchObject({ ticked: true, food: null, sources: [] });
     expect(candles?.id).not.toBe("local-id");
-  });
-});
-
-describe("setFoodAisle", () => {
-  useTempDataDir();
-
-  test("choosing an aisle writes the food", async () => {
-    const aisle = await callServerFn(findOrCreateAisle, { name: "Baking" });
-    const created = await callServerFn(createFood, { name: "flour" });
-    expect(created.aisleId).toBeNull();
-
-    await setFoodAisle(created.id, aisle.id);
-
-    const updated = (await listFoods({ data: {} })).find((row) => row.id === created.id);
-    expect(updated?.aisleId).toBe(aisle.id);
   });
 });

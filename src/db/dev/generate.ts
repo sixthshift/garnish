@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import { type ingredientInputSchema, type RecipeInput, suggestLinks, type TimelineEventInput } from "../../domain/recipe";
 import type { Food, Tag } from "../../domain/reference";
+import { STARTER_PACKS, type StarterSize } from "../seed/packs";
 import { type Random, random } from "./random";
 import { foodRef, SEEDED_FOOD_NAMES, SEEDED_UNIT_NAMES, tagRef, unitRef } from "./references";
 import { DESCRIPTIONS, DOUBLE_STEPS, NOTES, SHAPES, SOURCES, STEPS, TAGS } from "./vocabulary";
@@ -72,15 +73,44 @@ function quantityFor(rng: Random, unitName: string): number {
   }
 }
 
+/** The starter sizes by food name: a food sold in packs is asked for in a pack's unit. */
+const SIZES = new Map<string, readonly StarterSize[]>(STARTER_PACKS.map((pack) => [pack.food, pack.sizes]));
+
+/** Every food with starter sizes, so each recipe can be given a few and the list shows its packs. */
+const PACKED_FOOD_NAMES: readonly string[] = STARTER_PACKS.map((pack) => pack.food);
+
+/** Round to a step, never below one step: 237 g by 10 is 240 g. */
+const roundTo = (value: number, step: number) => Math.max(step, Math.round(value / step) * step);
+
+/**
+ * An amount of a food sold in packs, in one of its sizes' units, as a recipe
+ * would write it: part of a pack or a few, so the list has a pack to round up
+ * to ("150 g butter → 1 × 250 g") rather than an exact fit every time.
+ */
+function packedAmount(rng: Random, sizes: readonly StarterSize[]): { quantity: number; unitName: string | null } {
+  const [size, unitName] = rng.pick(sizes);
+  if (unitName === null) return { quantity: rng.int(1, Math.ceil(size * 1.5)), unitName }; // 1 to 9 eggs from a 6
+  if (unitName === "can") return { quantity: rng.pick([0.5, 1, 1, 2]), unitName };
+  const scaled = size * rng.pick([0.25, 0.4, 0.6, 0.8, 1, 1.2, 1.6, 2]);
+  if (unitName === "kilogram" || unitName === "litre") return { quantity: roundTo(scaled, 0.25), unitName };
+  return { quantity: roundTo(scaled, size >= 100 ? 10 : 1), unitName };
+}
+
 function ingredient(rng: Random, foodName: string): LinkableIngredient {
   // A few lines carry no amount at all ("salt, to taste"), and a few are fixed
   // so they do not scale with servings.
   const noAmount = rng.chance(0.1);
-  const unitName = rng.pick(SEEDED_UNIT_NAMES);
+  const sizes = SIZES.get(foodName);
+  const { quantity, unitName } = sizes
+    ? packedAmount(rng, sizes)
+    : (() => {
+        const name = rng.pick(SEEDED_UNIT_NAMES);
+        return { quantity: quantityFor(rng, name), unitName: name };
+      })();
   return {
     id: devId(rng),
-    quantity: noAmount ? null : quantityFor(rng, unitName),
-    unit: noAmount ? null : unitRef(unitName),
+    quantity: noAmount ? null : quantity,
+    unit: noAmount || unitName === null ? null : unitRef(unitName),
     food: foodRef(foodName),
     note: rng.chance(0.25) ? rng.pick(["finely chopped", "roughly torn", "at room temperature", "plus extra to serve", "drained and rinsed"]) : "",
     fixed: rng.chance(0.08),
@@ -175,8 +205,11 @@ export function generateDevRecipes(seed: string = DEV_SEED, count: number = DEV_
     const longName = i === 3;
     const finalName = longName ? `${name} with Charred Corn, Pickled Onion and a Whipped Fetta That Is Frankly the Best Part` : name;
 
-    // Any seeded food can turn up: dev recipes are made of what a real database has.
-    const pantry = rng.shuffle(SEEDED_FOOD_NAMES);
+    // Any seeded food can turn up: dev recipes are made of what a real database
+    // has. One to three of them come first from the foods sold in packs, so a
+    // week of dev recipes puts packs on the shopping list (decisions.md row 184).
+    const packed = rng.shuffle(PACKED_FOOD_NAMES).slice(0, rng.int(1, 3));
+    const pantry = [...packed, ...rng.shuffle(SEEDED_FOOD_NAMES).filter((name) => !packed.includes(name))];
     const partCount = shape.parts.length;
 
     // Deliberate outliers: one single-ingredient recipe, one very long one.

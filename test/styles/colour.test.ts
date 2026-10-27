@@ -52,6 +52,7 @@ test("red is the confirm's: a danger Button or menu item is a confirm, or a ⋯ 
     "routes/recipes/recipe/style/page.tsx": false, // Restore, the inline confirm's second step
     "routes/settings/components/RestoreSheet.tsx": false, // the backup restore's own confirm
     "routes/settings/components/tabs/AislesTab.tsx": true, // Delete aisle
+    "routes/shopping/components/ShoppingRow.tsx": false, // a swiped row's Delete: the swipe is the first step, as a ⋯ press is (decisions.md row 187)
   };
   const red = tsxFiles().filter((file) => hasRedAction(src(file)));
   expect(red.sort()).toEqual(Object.keys(allowed).sort());

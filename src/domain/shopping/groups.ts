@@ -137,26 +137,41 @@ function mealRow(item: ShoppingItem, sources: readonly ShoppingItemSource[]): Sh
   return label === whole ? { item, label, whole: null } : { item, label, whole };
 }
 
-/** One dish a line is for: the recipe's name and, when the plan asked for it, the day. */
+/** One dish a line is for: the recipe, the day the plan asked for it, and its share when the line is shared. */
 export interface ShoppingMeal {
   name: string;
   date: string | null;
+  /** The live recipe's slug, for a link to it; null once the recipe is gone. */
+  slug: string | null;
+  /** This dish's amount ("200 g") when the line is shared with another dish; '' when it is the only one, or the amount cannot be said. */
+  amount: string;
 }
 
 /**
  * The dishes a line is for, for the aisle view's second line under it: each
  * once, in the order they reached the line, as the meal view would group them
- * (decisions.md row 183). A hand-typed line or a plain plan entry is for no
- * dish and gives none. Pure.
+ * (decisions.md row 183), each with its recipe's slug for a link and, on a
+ * line two dishes share, its own amount (row 187): "Lemon tart 200 g · Roast
+ * chicken 150 g". A hand-typed line or a plain plan entry is for no dish and
+ * gives none. Pure.
  */
-export function mealsOf(item: Pick<ShoppingItem, "sources">): ShoppingMeal[] {
-  const meals = new Map<string, ShoppingMeal>();
+export function mealsOf(item: ShoppingItem): ShoppingMeal[] {
+  const byKey = new Map<string, ShoppingItemSource[]>();
   for (const source of item.sources) {
     const key = mealKey(source);
-    if (key === NO_MEAL_KEY || meals.has(key)) continue;
-    meals.set(key, { name: source.recipeName.trim(), date: source.planDate });
+    if (key !== NO_MEAL_KEY) byKey.set(key, [...(byKey.get(key) ?? []), source]);
   }
-  return [...meals.values()];
+  const shared = byKey.size > 1;
+  return [...byKey.values()].map((sources) => {
+    const first = sources[0]!;
+    const share = shared ? shareOf(item, sources) : null;
+    return {
+      name: first.recipeName.trim(),
+      date: first.planDate,
+      slug: sources.find((source) => source.recipeSlug !== null)?.recipeSlug ?? null,
+      amount: share === null ? "" : formatAmount(share.quantity, share.unit),
+    };
+  });
 }
 
 /**
@@ -206,45 +221,4 @@ export function groupByMeal(items: readonly ShoppingItem[]): ShoppingMealGroup[]
 export function shoppingItemLabel(item: Pick<ShoppingItem, "quantity" | "unit" | "food" | "text">): string {
   if (item.food === null) return item.text.trim();
   return formatIngredient({ quantity: item.quantity, unit: item.unit, food: item.food, note: "", originalText: "" });
-}
-
-/** One dish's part in a line, for the row's expansion: "200 g · Lemon tart · Mon · serves 4". */
-export interface ShoppingBreakdownRow {
-  /** Stable React key: the dish. */
-  key: string;
-  /** What the dish asked for, in one unit ("200 g"); '' when it cannot be said or the line has no amount. */
-  amount: string;
-  /** The recipe; "Meal plan" for a plain plan entry ("leftovers"). */
-  name: string;
-  /** The plan day that asked for it, YYYY-MM-DD; null from anywhere else. */
-  date: string | null;
-  /** The servings the recipe was added at; null when not recorded. */
-  servings: number | null;
-}
-
-/**
- * Where a line came from, one row per dish, in the order the dishes reached
- * it (decisions.md row 185). A dish that asked more than once (the butter in
- * the pastry and in the filling) is one row with the amounts added, as the
- * meal view adds them; a plain plan entry is "Meal plan" on its day. A line
- * typed by hand has no sources and gives no rows. Pure.
- */
-export function breakdownOf(item: ShoppingItem): ShoppingBreakdownRow[] {
-  const byKey = new Map<string, ShoppingItemSource[]>();
-  for (const source of item.sources) {
-    const key = source.recipeName.trim() === "" ? `note@${source.planDate ?? ""}` : mealKey(source);
-    byKey.set(key, [...(byKey.get(key) ?? []), source]);
-  }
-  return [...byKey].map(([key, sources]) => {
-    const first = sources[0]!;
-    const share = shareOf(item, sources);
-    const servings = sources.find((source) => source.servings !== null && source.servings > 0)?.servings ?? null;
-    return {
-      key,
-      amount: share === null ? "" : formatAmount(share.quantity, share.unit),
-      name: first.recipeName.trim() === "" ? "Meal plan" : first.recipeName.trim(),
-      date: first.planDate,
-      servings,
-    };
-  });
 }

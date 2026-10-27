@@ -1,7 +1,7 @@
 // Rounding a line up to the sizes its food is sold in (decisions.md row 184).
 import { describe, expect, test } from "vitest";
 import { foodSchema, type Unit, unitSchema } from "../../../src/domain/reference";
-import { overLabel, type PackSize, packsFor, packsLabel } from "../../../src/domain/shopping/packs";
+import { overLabel, type PackSize, packsFor, packsLabel, packsRepeatNeed } from "../../../src/domain/shopping/packs";
 
 const unit = (id: string, name: string, abbreviation: string, more: Partial<Unit> = {}): Unit =>
   unitSchema.parse({ id, name, pluralName: `${name}s`, abbreviation, useAbbreviation: abbreviation !== "", ...more });
@@ -39,7 +39,7 @@ describe("packsFor", () => {
   });
 
   test("a size in another unit is reached through the unit's standard and the food's conversions", () => {
-    expect(said(plan(1500, ml, stock, [size(1, litre)]))).toBe("2 l");
+    expect(said(plan(1500, ml, stock, [size(1, litre)]))).toBe("2 × 1 l"); // a measure of one is still a size, not a count
     const convertible = food("tomato paste", [{ id: "11111111-1111-4111-8111-111111111111", unitId: tbsp.id, quantity: 1, toUnitId: gram.id, toQuantity: 16 }]);
     expect(said(plan(2, tbsp, convertible, [size(140, gram)]))).toBe("1 × 140 g");
   });
@@ -63,6 +63,16 @@ describe("packsFor", () => {
 
   test("a tiny size beside a sensible one is not searched pack by pack", () => {
     expect(said(plan(5000, gram, butter, [size(1, gram), size(500, gram)]))).toBe("10 × 500 g");
+  });
+});
+
+describe("packsRepeatNeed", () => {
+  test("one size in the line's unit with nothing over only says the line again", () => {
+    expect(packsRepeatNeed(plan(1, can, food("chickpeas"), [size(1, can)])!, { unit: can })).toBe(true);
+    expect(packsRepeatNeed(plan(280, gram, butter, [size(280, gram)])!, { unit: gram })).toBe(true);
+    expect(packsRepeatNeed(plan(500, gram, butter, [size(250, gram)])!, { unit: gram })).toBe(false); // says which pack
+    expect(packsRepeatNeed(plan(150, gram, butter, [size(250, gram)])!, { unit: gram })).toBe(false); // something over
+    expect(packsRepeatNeed(plan(1000, ml, stock, [size(1, litre)])!, { unit: ml })).toBe(false); // another unit
   });
 });
 

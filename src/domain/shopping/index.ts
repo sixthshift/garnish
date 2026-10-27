@@ -1,10 +1,10 @@
 export { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "./additions";
-export type { ShoppingBreakdownRow, ShoppingMeal, ShoppingMealGroup, ShoppingMealRow } from "./groups";
-export { breakdownOf, groupByAisle, groupByMeal, mealsOf, shoppingItemLabel } from "./groups";
+export type { ShoppingMeal, ShoppingMealGroup, ShoppingMealRow } from "./groups";
+export { groupByAisle, groupByMeal, mealsOf, shoppingItemLabel } from "./groups";
 export type { ShoppingAddition, ShoppingListMerge, ShoppingMergePlan } from "./merge";
 export { mergeIntoList } from "./merge";
 export type { PackCount, PackNeed, PackPlan, PackSize } from "./packs";
-export { overLabel, packsFor, packsLabel, sizesByFood } from "./packs";
+export { overLabel, packsFor, packsLabel, packsRepeatNeed, sizesByFood } from "./packs";
 export type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemInput, ShoppingItemPatch, ShoppingItemSourceInput } from "./schema";
 export { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSchema, shoppingItemSourceInputSchema } from "./schema";
 export { recipeAdditions } from "./subRecipe";

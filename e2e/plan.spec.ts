@@ -54,8 +54,10 @@ test("the list by meal shows each planned dish its own share of a line they shar
   await expect(page.getByRole("status").filter({ hasText: "items added" })).toBeVisible();
 
   await open("/shopping");
-  // By aisle, the lentil line says under it which dishes it is for.
-  await expect(page.getByRole("region", { name: "Pantry" }).getByText(`${dal}, Mon · ${soup}, Tue`)).toBeVisible();
+  // By aisle, the lentil line says under it which dishes it is for, each a link with its own share.
+  const lentils = page.getByRole("region", { name: "Pantry" }).getByRole("listitem").filter({ hasText: "red lentils" });
+  await expect(lentils.getByRole("link", { name: `${dal} Mon 200 g` })).toBeVisible();
+  await expect(lentils.getByRole("link", { name: `${soup} Tue 100 g` })).toBeVisible();
 
   await page.getByRole("radio", { name: "Meals" }).click();
   // One lentil line on the list, drawn under each dish at that dish's amount.
@@ -75,9 +77,9 @@ test("the list by meal shows each planned dish its own share of a line they shar
   await expect(soupGroup.getByRole("checkbox", { name: "100 g red lentils" })).toBeChecked();
 });
 
-test("a line is rounded up to the sizes its food is sold in, and a size can be added from the list's Edit food", async ({ page, open }) => {
+test("a line is rounded up to the sizes its food is sold in, and its dish links back to the recipe", async ({ page, open }) => {
   const name = unique("Pack Bake");
-  // Butter comes in 250 g and 500 g from the starter sizes; red lentils has none.
+  // Butter comes in 250 g and 500 g from the starter sizes.
   await createRecipe(page, open, { name, servings: 4, ingredients: ["150 g butter", "300 g red lentils"], steps: ["Bake."] });
 
   await open("/plan");
@@ -91,22 +93,14 @@ test("a line is rounded up to the sizes its food is sold in, and a size can be a
 
   await open("/shopping");
   await page.getByRole("radio", { name: "Aisles" }).click();
-  const dairy = page.getByRole("region", { name: "Dairy & eggs" });
-  await expect(dairy.getByText(/butter → \d+ × (250|500) g/)).toBeVisible();
+  const butter = page
+    .getByRole("region", { name: "Dairy & eggs" })
+    .getByRole("listitem")
+    .filter({ hasText: /butter → \d+ × (250|500) g/ });
+  await expect(butter).toBeVisible();
 
-  // Lentils: a 1 kg bag, added through the row's Edit food, and the line is rounded once it saves.
-  const lentils = page.getByRole("region", { name: "Pantry" }).getByRole("listitem").filter({ hasText: "red lentils" });
-  await lentils
-    .getByText(/red lentils/)
-    .first()
-    .click();
-  await lentils.getByRole("button", { name: "Edit food" }).click();
-  const foodSheet = page.getByRole("dialog", { name: "Edit red lentils" });
-  await foodSheet.getByRole("button", { name: "Add size" }).click();
-  await foodSheet.getByRole("textbox", { name: "Size 1 amount" }).fill("1");
-  await foodSheet.getByRole("combobox", { name: "Size 1 unit" }).click();
-  await page.getByRole("option", { name: "kilogram" }).click();
-  await foodSheet.getByRole("button", { name: "Save" }).click();
-  await expect(foodSheet).toBeHidden();
-  await expect(lentils.getByText(/→ \d+ × 1 kg/)).toBeVisible();
+  // The dish under the line is a link to its recipe.
+  await butter.getByRole("link", { name: new RegExp(`^${name}`) }).click();
+  await expect(page).toHaveURL(/\/recipes\/pack-bake-/);
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 });

@@ -2,16 +2,7 @@
 // the patch's "absent means leave alone".
 import { describe, expect, test } from "vitest";
 import { type Ingredient, mergeIngredients, type Recipe, recipeSchema, type SubRecipe, scaleRecipe } from "../../../src/domain/recipe";
-import {
-  breakdownOf,
-  groupByAisle,
-  groupByMeal,
-  mealsOf,
-  NO_MEAL_GROUP,
-  shoppingItemLabel,
-  TICKED_GROUP,
-  UNASSIGNED_GROUP,
-} from "../../../src/domain/shopping/groups";
+import { groupByAisle, groupByMeal, mealsOf, NO_MEAL_GROUP, shoppingItemLabel, TICKED_GROUP, UNASSIGNED_GROUP } from "../../../src/domain/shopping/groups";
 import { mergeIntoList, type ShoppingAddition, type ShoppingAdditionSource } from "../../../src/domain/shopping/merge";
 import {
   type ShoppingItem,
@@ -52,6 +43,7 @@ test("a source defaults to no recipe, no names and no amounts", () => {
   expect(shoppingItemSourceSchema.parse({ id })).toEqual({
     id,
     recipeId: null,
+    recipeSlug: null,
     recipeName: "",
     partName: "",
     servings: null,
@@ -619,17 +611,28 @@ describe("groupByMeal", () => {
     expect(groupByMeal([])).toEqual([]);
   });
 
-  test("mealsOf names each dish a line is for once, in order, and none for a hand-typed line", () => {
+  test("mealsOf names each dish a line is for once, in order, each with its share of a shared line", () => {
     const line = existingItem({
-      quantity: 400,
+      quantity: 401,
       unit: gram,
       food: butter,
-      sources: [source(tart, 200, gram), source(chicken, 150, gram), source(tart, 50, gram), { ...source(tart, 1), planDate: null, partName: "" }],
+      sources: [
+        { ...source(tart, 200, gram), recipeSlug: "lemon-tart" },
+        source(chicken, 150, gram),
+        source(tart, 50, gram),
+        { ...source(tart, 1), planDate: null, partName: "" },
+      ],
     });
     expect(mealsOf(line)).toEqual([
-      { name: "Lemon tart", date: "2026-10-26" },
-      { name: "Roast chicken", date: "2026-10-28" },
-      { name: "Lemon tart", date: null },
+      { name: "Lemon tart", date: "2026-10-26", slug: "lemon-tart", amount: "250 g" },
+      { name: "Roast chicken", date: "2026-10-28", slug: null, amount: "150 g" },
+      { name: "Lemon tart", date: null, slug: null, amount: "1 g" },
+    ]);
+  });
+
+  test("mealsOf says no amount for a line one dish has to itself, and no dish for a hand-typed line", () => {
+    expect(mealsOf(existingItem({ quantity: 250, unit: gram, food: butter, sources: [source(tart, 200, gram), source(tart, 50, gram)] }))).toEqual([
+      { name: "Lemon tart", date: "2026-10-26", slug: null, amount: "" },
     ]);
     expect(mealsOf(existingItem({ text: "Batteries" }))).toEqual([]);
   });
@@ -644,42 +647,5 @@ describe("shoppingItemLabel", () => {
   test("no quantity drops the amount, and a free-text line is its own text", () => {
     expect(shoppingItemLabel(existingItem({ quantity: null, unit: gram, food: flour }))).toBe("flour");
     expect(shoppingItemLabel(existingItem({ text: "  Batteries  " }))).toBe("Batteries");
-  });
-});
-
-describe("breakdownOf", () => {
-  let n = 0;
-  const src = (fields: Record<string, unknown>) => {
-    n += 1;
-    return shoppingItemSourceSchema.parse({ id: `6b6b6b6b-6b6b-4b6b-8b6b-${String(n).padStart(12, "0")}`, ...fields });
-  };
-  const tart = { recipeId: "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1", recipeName: "Lemon tart", planDate: "2026-10-26", servings: 4 };
-  const chicken = { recipeId: "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2", recipeName: "Roast chicken", planDate: "2026-10-28", servings: 6 };
-
-  test("a row per dish with its own amount, a dish that asked twice added up, in the order they came", () => {
-    const line = existingItem({
-      quantity: 400,
-      unit: gram,
-      food: butter,
-      sources: [
-        src({ ...tart, partName: "Pastry", quantity: 150, unit: gram }),
-        src({ ...chicken, quantity: 200, unit: gram }),
-        src({ ...tart, partName: "Filling", quantity: 50, unit: gram }),
-      ],
-    });
-    expect(breakdownOf(line)).toEqual([
-      { key: expect.any(String), amount: "200 g", name: "Lemon tart", date: "2026-10-26", servings: 4 },
-      { key: expect.any(String), amount: "200 g", name: "Roast chicken", date: "2026-10-28", servings: 6 },
-    ]);
-  });
-
-  test("no amount, no servings, a plain plan entry, and a typed line", () => {
-    expect(breakdownOf(existingItem({ food: butter, sources: [src({ recipeName: "Lemon tart", servings: 0 })] }))).toMatchObject([
-      { amount: "", name: "Lemon tart", date: null, servings: null },
-    ]);
-    expect(breakdownOf(existingItem({ text: "Leftovers", sources: [src({ partName: "Tue 27 Oct", planDate: "2026-10-27" })] }))).toMatchObject([
-      { amount: "", name: "Meal plan", date: "2026-10-27" },
-    ]);
-    expect(breakdownOf(existingItem({ text: "Batteries" }))).toEqual([]);
   });
 });

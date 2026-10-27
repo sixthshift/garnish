@@ -93,18 +93,36 @@ export function packsFor(need: PackNeed, sizes: readonly PackSize[]): PackPlan |
   return { packs, over: Math.max(0, chosen.over) };
 }
 
+/** A size counted rather than measured: one of the food ("each") or one of a unit said by name, a can or a bunch. */
+function counted(pack: PackSize): boolean {
+  return pack.quantity === 1 && (pack.unit === null || !pack.unit.useAbbreviation);
+}
+
 /**
- * The packs as the row says them: "2 × 250 g", "1 × 600 ml + 1 × 300 ml". A
- * size of one unit is counted in that unit ("2 cans") and a size of one of
- * the food in plain numbers ("1"). Pure.
+ * The packs as the row says them: "2 × 250 g", "1 × 600 ml + 1 × 300 ml",
+ * "2 × 1 kg". A counted size is said as a count, "2 cans" or "1". Pure.
  */
 export function packsLabel(plan: PackPlan): string {
   return plan.packs
-    .map((pack) => {
-      if (pack.quantity === 1) return pack.unit === null ? String(pack.count) : formatAmount(pack.count, pack.unit);
-      return `${pack.count} × ${formatAmount(pack.quantity, pack.unit)}`;
-    })
+    .map((pack) =>
+      counted(pack)
+        ? pack.unit === null
+          ? String(pack.count)
+          : formatAmount(pack.count, pack.unit)
+        : `${pack.count} × ${formatAmount(pack.quantity, pack.unit)}`
+    )
     .join(" + ");
+}
+
+/**
+ * Whether the packs only say the line again: one size, in the line's own
+ * unit, with nothing over — "1 can → 1 can", "280 g → 1 × 280 g". The row
+ * leaves the arrow off then; "500 g → 2 × 250 g" still says which pack. Pure.
+ */
+export function packsRepeatNeed(plan: PackPlan, need: Pick<PackNeed, "unit">): boolean {
+  if (plan.packs.length !== 1 || plan.over > 0) return false;
+  const [pack] = plan.packs as [PackCount];
+  return (pack.unit?.id ?? null) === (need.unit?.id ?? null) && (pack.count === 1 || counted(pack));
 }
 
 /** What the packs leave over, in the line's own unit: "100 g over". Empty when they fit exactly. Pure. */

@@ -5,11 +5,10 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
-import { FoodEditSheet, type FoodPatch } from "../../../components/food/FoodEditSheet";
 import { Page, PageHeader } from "../../../components/shell/Page";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { dayLabel } from "../../../domain/plan";
-import type { Aisle, Food, FoodPack, Unit } from "../../../domain/reference";
+import type { FoodPack, Unit } from "../../../domain/reference";
 import { groupByAisle, groupByMeal, mealsOf, type ShoppingItem, sizesByFood } from "../../../domain/shopping";
 import { pendingLabel } from "../../../lib/outbox";
 import type { ShoppingView } from "../../../lib/prefs";
@@ -22,11 +21,6 @@ const VIEWS = [
   { value: "meals", label: "Meals" },
 ] as const;
 
-/** A list line's food as the food sheet edits it: the aisle as an id, as Settings › Foods holds it. */
-function foodRow({ aisle, ...food }: Food) {
-  return { ...food, aisleId: aisle?.id ?? null };
-}
-
 const isView = (value: string): value is ShoppingView => VIEWS.some((view) => view.value === value);
 
 /** The list itself, writes injected. Rendered by the route and by the tests. */
@@ -34,28 +28,21 @@ export function ShoppingListView({
   items,
   view = "aisles",
   onViewChange = () => {},
-  aisles = [],
   packs = [],
   units = [],
-  onSaveFood,
-  onCreateAisle,
   onAdd,
   onTick,
   onRemove,
   onClearTicked,
-  onSetAisle = () => {},
   busy = false,
   pending = 0,
   offline = false,
 }: ShoppingListViewProps) {
-  const rowProps = { aisles, onTick, onRemove, onSetAisle, busy };
+  const rowProps = { onTick, onRemove, busy };
   const sizes = sizesByFood(packs, units);
   // Clearing deletes every ticked line at once and nothing brings them back, so it asks first;
   // the button that opens the question is neutral and the dialog's is the red one (rule 5).
   const [confirming, setConfirming] = useState(false);
-  // The food a row's "Edit food" opened, in the same sheet Settings › Foods uses.
-  const [editing, setEditing] = useState<Food | null>(null);
-  const editFood = onSaveFood && onCreateAisle ? setEditing : undefined;
   const tickedCount = items.filter((item) => item.ticked).length;
 
   return (
@@ -116,7 +103,6 @@ export function ShoppingListView({
                           item={item}
                           meals={mealsOf(item)}
                           sizes={item.food === null ? undefined : (sizes.get(item.food.id) ?? [])}
-                          onEditFood={editFood}
                           {...rowProps}
                         />
                       ))}
@@ -139,7 +125,7 @@ export function ShoppingListView({
                       </div>
                       <ul className="flex flex-col divide-y divide-border-subtle">
                         {group.rows.map((row) => (
-                          <ShoppingRow key={row.item.id} item={row.item} label={row.label} whole={row.whole} onEditFood={editFood} {...rowProps} />
+                          <ShoppingRow key={row.item.id} item={row.item} label={row.label} {...rowProps} />
                         ))}
                       </ul>
                     </section>
@@ -148,19 +134,6 @@ export function ShoppingListView({
           </div>
         </div>
       </EmptyBoundary>
-      {editing !== null && onSaveFood && onCreateAisle && (
-        <FoodEditSheet
-          open
-          food={foodRow(editing)}
-          packs={packs.filter((pack) => pack.foodId === editing.id)}
-          aisles={aisles}
-          units={units}
-          busy={busy}
-          onCancel={() => !busy && setEditing(null)}
-          onSave={(patch) => void onSaveFood(patch).then((saved) => saved && setEditing(null))}
-          onCreateAisle={onCreateAisle}
-        />
-      )}
       {confirming && (
         <ConfirmDialog
           title={`Clear ${tickedCount} ticked ${tickedCount === 1 ? "item" : "items"}?`}
@@ -188,27 +161,15 @@ export type ShoppingListViewProps = {
    */
   view?: ShoppingView;
   onViewChange?: (view: ShoppingView) => void;
-  /** Every aisle, in `position` order, for the "Set aisle" Select. Empty hides the control. */
-  aisles?: readonly Aisle[];
   /** Every food's sizes: the aisle view rounds a line up to whole packs of them. */
   packs?: readonly FoodPack[];
-  /** Every unit: the sizes' own, and the food sheet's. */
+  /** Every unit: the sizes' own. */
   units?: readonly Unit[];
-  /**
-   * The food sheet's Save, from a row's "Edit food": resolves true once
-   * saved, and the sheet closes; false leaves it open. Absent (with
-   * `onCreateAisle`) hides "Edit food".
-   */
-  onSaveFood?: (patch: FoodPatch) => Promise<boolean>;
-  /** The sheet's Aisle picker creating one by name. */
-  onCreateAisle?: (name: string) => Promise<Aisle>;
   /** A line typed into the box at the top, already trimmed and never empty. */
   onAdd: (text: string) => void;
   onTick: (id: string, ticked: boolean) => void;
   onRemove: (id: string) => void;
   onClearTicked: () => void;
-  /** A row's food has no aisle and one was picked from the Select. */
-  onSetAisle?: (foodId: string, aisleId: string) => void;
   /** A write is in flight: every control is disabled, as the editor's SaveBar does. */
   busy?: boolean;
   /** How many ticks are queued for the server. Shown in the header; 0 shows nothing. */

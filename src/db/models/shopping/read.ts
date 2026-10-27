@@ -1,6 +1,7 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
 import type { Food, Unit } from "../../../domain/reference";
 import type { ShoppingItem } from "../../../domain/shopping";
+import { recipe } from "../recipe/schema";
 import type { ShoppingContext } from "./context";
 import { shoppingItem, shoppingItemSource } from "./schema";
 
@@ -50,12 +51,26 @@ export function readers({ dz, units, foods, aisles }: ShoppingContext) {
       .orderBy(sql`rowid`)
       .all();
 
+    // The live recipes' slugs, for the row's link to each; a deleted recipe has none.
+    const recipeIds = [...new Set(sourceRows.flatMap((s) => (s.recipeId === null ? [] : [s.recipeId])))];
+    const slugs = new Map(
+      recipeIds.length === 0
+        ? []
+        : dz
+            .select({ id: recipe.id, slug: recipe.slug })
+            .from(recipe)
+            .where(inArray(recipe.id, recipeIds))
+            .all()
+            .map((row) => [row.id, row.slug])
+    );
+
     const sourcesByItem = new Map<string, ShoppingItem["sources"]>();
     for (const s of sourceRows) {
       const list = sourcesByItem.get(s.itemId) ?? [];
       list.push({
         id: s.id,
         recipeId: s.recipeId,
+        recipeSlug: s.recipeId === null ? null : (slugs.get(s.recipeId) ?? null),
         recipeName: s.recipeName,
         partName: s.partName,
         servings: s.servings,

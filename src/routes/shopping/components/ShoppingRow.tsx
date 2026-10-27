@@ -1,56 +1,53 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
-import { Muted } from "@sixthshift/design-system/muted";
-import { Select } from "@sixthshift/design-system/select";
-import { formatQuantity } from "../../../domain/ingredient";
+import { Link } from "@tanstack/react-router";
+import { Fragment, useRef, useState } from "react";
+import { TrashIcon } from "../../../components/ui/icons";
 import { dayParts } from "../../../domain/plan";
-import type { Aisle, Food } from "../../../domain/reference";
-import {
-  breakdownOf,
-  overLabel,
-  type PackSize,
-  packsFor,
-  packsLabel,
-  type ShoppingBreakdownRow,
-  type ShoppingItem,
-  type ShoppingMeal,
-  shoppingItemLabel,
-} from "../../../domain/shopping";
+import { type PackSize, packsFor, packsLabel, packsRepeatNeed, type ShoppingItem, type ShoppingMeal, shoppingItemLabel } from "../../../domain/shopping";
 
-/** "Lemon tart · Mon": the dish and its weekday, a breakdown row's middle. */
-function dishText(row: ShoppingBreakdownRow): string {
-  return row.date === null ? row.name : `${row.name} · ${dayParts(row.date).weekday}`;
+/** How far a row slides left to show Delete behind it. */
+export const DELETE_WIDTH = 88;
+
+/** A touch has to travel this far before it is a drag at all, and then it is the row's only if it went more across than down. */
+const DRAG_SLOP = 8;
+
+/** Where a row sits while it is dragged: from where it started, never right of closed nor left of open. Pure. */
+export function swipeOffset(start: number, dx: number): number {
+  return Math.min(0, Math.max(-DELETE_WIDTH, start + dx));
 }
 
-/** "Lemon tart, Mon · Roast chicken, Wed": the weekday alone, since a list spans a week or so. */
-function mealsText(meals: readonly ShoppingMeal[]): string {
-  return meals.map((meal) => (meal.date === null ? meal.name : `${meal.name}, ${dayParts(meal.date).weekday}`)).join(" · ");
+/** Where a released row rests: open once dragged more than half way, closed otherwise. Pure. */
+export function swipeSettle(offset: number): number {
+  return offset < -DELETE_WIDTH / 2 ? -DELETE_WIDTH : 0;
+}
+
+/** "Lemon tart · Mon", "Lemon tart 200 g": the dish, its weekday, and its share of a shared line. */
+function mealText(meal: ShoppingMeal): string {
+  return [meal.name, meal.date === null ? "" : dayParts(meal.date).weekday, meal.amount].filter((part) => part !== "").join(" ");
 }
 
 /**
- * One line: the tick box, the amount and food (or the text), and a chevron
- * that expands where it came from. The whole summary is the chevron's target,
- * so the tap area is the row rather than the glyph.
+ * One line (decisions.md row 187): the tick box, the amount and food (or the
+ * text) — tapping it ticks too — and under it the dishes it is for, each a
+ * link to its recipe. Removing it is a trash icon that shows on hover with a
+ * mouse, and on a touch screen a swipe left that slides the row off a red
+ * Delete. Only one of the two is ever displayed, so only one is in the
+ * accessibility tree.
  */
 export function ShoppingRow({
   item,
   label = shoppingItemLabel(item),
-  whole = null,
   meals = [],
   sizes,
-  onEditFood,
-  aisles,
   onTick,
   onRemove,
-  onSetAisle,
   busy,
 }: {
   item: ShoppingItem;
   /** What the row reads: the line, or in the meal view one dish's share of it. */
   label?: string;
-  /** The whole line when `label` is only a share of it, said in the expansion. */
-  whole?: string | null;
-  /** The dishes the line is for, said under it in the aisle view. Empty says nothing. */
+  /** The dishes the line is for, linked under it in the aisle view. Empty says nothing. */
   meals?: readonly ShoppingMeal[];
   /**
    * The sizes the line's food is sold in, in the aisle view only: the line is
@@ -58,94 +55,123 @@ export function ShoppingRow({
    * whose rows are shares) rounds nothing.
    */
   sizes?: readonly PackSize[];
-  /** "Edit food": opens the food's sheet, sizes and all (decisions.md row 186). Absent hides it. */
-  onEditFood?: (food: Food) => void;
-  aisles: readonly Aisle[];
   onTick: (id: string, ticked: boolean) => void;
   onRemove: (id: string) => void;
-  onSetAisle: (foodId: string, aisleId: string) => void;
   busy: boolean;
 }) {
   const food = item.food;
-  const needsAisle = food !== null && food.aisle === null;
   // On hand is ticked and not bought, so there is nothing to round.
-  const plan = sizes === undefined || food?.skipShopping ? null : packsFor(item, sizes);
-  const breakdown = breakdownOf(item);
-  // A total only when it says something the breakdown does not: the packs to
-  // take, or (in the meal view, whose row is one dish's share) the whole line.
-  const total =
-    plan !== null
-      ? [`${label} needed`, packsLabel(plan), overLabel(plan, item.unit)].filter((part) => part !== "").join(" · ")
-      : whole !== null
-        ? `${whole} in all`
-        : "";
+  const packs = sizes === undefined || food?.skipShopping ? null : packsFor(item, sizes);
+  // Packs that only say the line again ("1 can → 1 can") are left off.
+  const plan = packs !== null && packsRepeatNeed(packs, item) ? null : packs;
+
+  // The swipe: a touch drag across the row slides it; a drag down is the page's scroll (touch-action: pan-y).
+  const [offset, setOffset] = useState(0);
+  const drag = useRef<{ x: number; y: number; start: number; across: boolean | null } | null>(null);
+  // A drag that ended over the line's text must not also tick it.
+  const dragged = useRef(false);
+
+  const release = () => {
+    if (drag.current?.across) setOffset(swipeSettle(offset));
+    drag.current = null;
+  };
+
   return (
-    <li className="flex items-start gap-3" data-testid="shopping-row" data-ticked={item.ticked ? "true" : "false"}>
-      <Checkbox checked={item.ticked} disabled={busy} className="mt-3.5" aria-label={label} onCheckedChange={(next) => onTick(item.id, next)} />
-      <details className="group min-w-0 flex-1">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 marker:hidden">
-          <span className="flex min-w-0 flex-col">
-            <span className={item.ticked ? "text-fg-subtle line-through" : undefined}>
-              {label}
-              {plan !== null && <span className="text-fg-subtle" data-testid="shopping-packs">{` → ${packsLabel(plan)}`}</span>}
-            </span>
-            {meals.length > 0 && (
-              <span className="text-sm text-fg-subtle" data-testid="shopping-meals">
-                {mealsText(meals)}
-              </span>
-            )}
-          </span>
-          <span aria-hidden="true" className="shrink-0 text-fg-subtle transition-transform group-open:rotate-90">
-            ›
-          </span>
-        </summary>
-        <div className="flex flex-col gap-2 pb-3" data-testid="shopping-sources">
-          {breakdown.length === 0 ? (
-            <Muted as="p">Added by hand</Muted>
-          ) : (
-            <ul className="flex flex-col gap-1" data-testid="shopping-breakdown">
-              {breakdown.map((row) => (
-                <li key={row.key} className="flex gap-3 text-sm">
-                  {/* Amount first: it is what the shelf is checked against. */}
-                  <span className="w-16 shrink-0 tabular-nums">{row.amount}</span>
-                  <span className="min-w-0">
-                    {dishText(row)}
-                    {row.servings !== null && <span className="text-fg-subtle">{` · serves ${formatQuantity(row.servings)}`}</span>}
-                  </span>
-                </li>
+    <li className="group relative overflow-hidden" data-testid="shopping-row" data-ticked={item.ticked ? "true" : "false"}>
+      {/* Transparent while the row is closed, so its edges never show past the sliding row; a screen reader still reaches it. */}
+      <div
+        className={
+          offset === 0
+            ? "absolute inset-y-0 right-0 flex opacity-0 [@media(hover:hover)]:hidden"
+            : "absolute inset-y-0 right-0 flex [@media(hover:hover)]:hidden"
+        }
+        style={{ width: DELETE_WIDTH }}
+      >
+        <Button
+          type="button"
+          variant="solid"
+          intent="danger"
+          className="h-full w-full rounded-none"
+          disabled={busy}
+          aria-label={`Remove ${label}`}
+          tabIndex={offset === 0 ? -1 : 0}
+          onClick={() => onRemove(item.id)}
+        >
+          Delete
+        </Button>
+      </div>
+      <div
+        className="relative flex touch-pan-y items-start gap-3 bg-bg-subtle transition-transform duration-150"
+        style={{ transform: `translateX(${offset}px)` }}
+        data-testid="shopping-row-body"
+        onPointerDown={(event) => {
+          if (event.pointerType === "mouse") return;
+          drag.current = { x: event.clientX, y: event.clientY, start: offset, across: null };
+          dragged.current = false;
+        }}
+        onPointerMove={(event) => {
+          const at = drag.current;
+          if (at === null) return;
+          const dx = event.clientX - at.x;
+          const dy = event.clientY - at.y;
+          if (at.across === null && Math.hypot(dx, dy) > DRAG_SLOP) at.across = Math.abs(dx) > Math.abs(dy);
+          if (at.across) {
+            dragged.current = true;
+            setOffset(swipeOffset(at.start, dx));
+          }
+        }}
+        onPointerUp={release}
+        onPointerCancel={release}
+        onClickCapture={(event) => {
+          if (!dragged.current) return;
+          dragged.current = false;
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      >
+        <Checkbox checked={item.ticked} disabled={busy} className="mt-3.5" aria-label={label} onCheckedChange={(next) => onTick(item.id, next)} />
+        <div className="flex min-h-11 min-w-0 flex-1 flex-col justify-center py-2">
+          {/* The text is the tick's bigger target; the checkbox carries the name, so this button stays out of the tab order. */}
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden="true"
+            className={item.ticked ? "text-left text-fg-subtle line-through" : "text-left"}
+            disabled={busy}
+            onClick={() => (offset === 0 ? onTick(item.id, !item.ticked) : setOffset(0))}
+          >
+            {label}
+            {plan !== null && <span className="text-fg-subtle" data-testid="shopping-packs">{` → ${packsLabel(plan)}`}</span>}
+          </button>
+          {meals.length > 0 && (
+            <span className="text-sm text-fg-subtle" data-testid="shopping-meals">
+              {meals.map((meal, index) => (
+                <Fragment key={`${meal.name}@${meal.date ?? ""}`}>
+                  {index > 0 && " · "}
+                  {meal.slug === null ? (
+                    mealText(meal)
+                  ) : (
+                    <Link to="/recipes/$slug" params={{ slug: meal.slug }} className="underline-offset-2 hover:text-fg-normal hover:underline">
+                      {mealText(meal)}
+                    </Link>
+                  )}
+                </Fragment>
               ))}
-            </ul>
+            </span>
           )}
-          {total !== "" && (
-            <p className="border-t border-border-subtle pt-2 text-sm" data-testid="shopping-total">
-              {total}
-            </p>
-          )}
-          <div className="flex flex-col items-start gap-2 border-t border-border-subtle pt-2" data-testid="shopping-actions">
-            {needsAisle && (
-              <div className="flex items-center gap-2" data-testid="shopping-set-aisle">
-                <Muted as="span">Set aisle</Muted>
-                <Select
-                  aria-label={`Aisle for ${food.name}`}
-                  placeholder="Choose an aisle"
-                  options={aisles.map((aisle) => ({ value: aisle.id, label: aisle.name }))}
-                  disabled={busy}
-                  onValueChange={(aisleId) => onSetAisle(food.id, aisleId)}
-                />
-              </div>
-            )}
-            {food !== null && onEditFood !== undefined && (
-              <Button type="button" inline intent="brand" size="sm" disabled={busy} onClick={() => onEditFood(food)}>
-                Edit food
-              </Button>
-            )}
-            {/* Neutral: row removal is (design-language rule 5), and a line is one type away from coming back. */}
-            <Button type="button" inline intent="neutral" size="sm" disabled={busy} onClick={() => onRemove(item.id)}>
-              Remove
-            </Button>
-          </div>
         </div>
-      </details>
+        {/* With a mouse: a bin that shows on the hovered or focused row. Neutral, as row removal is (design-language rule 5). */}
+        <button
+          type="button"
+          aria-label={`Remove ${label}`}
+          data-testid="shopping-remove"
+          disabled={busy}
+          className="mt-2.5 hidden size-8 shrink-0 items-center justify-center rounded text-fg-subtle opacity-0 transition-opacity hover:bg-bg-normal-hovered hover:text-fg-normal focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:flex"
+          onClick={() => onRemove(item.id)}
+        >
+          <TrashIcon />
+        </button>
+      </div>
     </li>
   );
 }

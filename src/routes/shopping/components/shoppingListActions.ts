@@ -1,12 +1,6 @@
 import type { ShoppingItem } from "../../../domain/shopping";
 import type { OutboxEntry } from "../../../lib/outbox";
-import { updateFood } from "../../../server/fns/foods";
 import { addShoppingItems, removeShoppingItem, tickShoppingItem } from "../../../server/fns/shopping";
-
-/** The "Set aisle" Select writes straight through `updateFood`. One line so the route and the tests share it. */
-export function setFoodAisle(foodId: string, aisleId: string): Promise<unknown> {
-  return updateFood({ data: { id: foodId, aisleId } });
-}
 
 /** One queued write, sent. The list's offline-able writes and nothing else. */
 export function sendOutboxEntry(entry: OutboxEntry): Promise<unknown> {
