@@ -4,10 +4,10 @@ Stage 4 of the garnish plan, written to be executed one task per loop iteration 
 
 ## Loop protocol
 
-What one task looks like, whoever runs it (an ailoop subagent, a /loop firing, or a person):
+What one task looks like, whoever runs it (a /loop firing or a person):
 
 1. Read this file. Read `CLAUDE.md`. Do not re-read the other docs unless a task points at them.
-2. Pick the first unchecked task whose dependencies are checked. Milestones run in order; tasks within a milestone run in order unless marked `∥`. A `!` before the task id asks `/ailoop` to dispatch it on a stronger model; the skill's Model section has the rules.
+2. Pick the first unchecked task whose dependencies are checked. Milestones run in order; tasks within a milestone run in order unless marked `∥`.
 3. Do that one task. Nothing else. No drive-by refactors, no adjacent tasks.
 4. Verify with the task's own check. Then run the full gate:
    ```
@@ -16,7 +16,7 @@ What one task looks like, whoever runs it (an ailoop subagent, a /loop firing, o
    ```
    Both must pass. A failing gate is not done. Fix it or revert the task.
 5. Commit with a one-line message naming the task id, e.g. `M1.3 recipe document schema`. Attribution trailer per `CLAUDE.md`.
-6. Report. Under `/ailoop` the orchestrator ticks the task, appends the Log line and commits; a subagent never edits this file. Under `/loop`, do it yourself.
+6. Report: tick the task and append the Log line.
 7. Stop. One task per iteration.
 
 Rules:

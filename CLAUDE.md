@@ -8,7 +8,7 @@ A personal recipe manager. Single household, runs on the LAN; the one public doo
 - [`docs/architecture.md`](docs/architecture.md) — stack, data model, scaling, API, persistence rules
 - [`docs/decisions.md`](docs/decisions.md) — decision log; add a row to reverse one, don't edit
 - [`docs/scope.md`](docs/scope.md) — v1, later, open, never
-- [`docs/plan.md`](docs/plan.md) — implementation tasks and the per-task protocol. Run with `/ailoop`
+- [`docs/plan.md`](docs/plan.md) — implementation tasks and the per-task protocol
 - [`docs/design-language.md`](docs/design-language.md) — the six rules for how it looks, and the divergences from the design system
 - [`docs/testing.md`](docs/testing.md) — unit, integration and e2e: which layer a test belongs in, and the helpers for each
 
