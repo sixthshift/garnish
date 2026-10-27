@@ -2,7 +2,16 @@
 // the patch's "absent means leave alone".
 import { describe, expect, test } from "vitest";
 import { type Ingredient, mergeIngredients, type Recipe, recipeSchema, type SubRecipe, scaleRecipe } from "../../../src/domain/recipe";
-import { groupByAisle, shoppingItemLabel, sourceLabel, TICKED_GROUP, UNASSIGNED_GROUP } from "../../../src/domain/shopping/groups";
+import {
+  groupByAisle,
+  groupByMeal,
+  mealsOf,
+  NO_MEAL_GROUP,
+  shoppingItemLabel,
+  sourceLabel,
+  TICKED_GROUP,
+  UNASSIGNED_GROUP,
+} from "../../../src/domain/shopping/groups";
 import { mergeIntoList, type ShoppingAddition, type ShoppingAdditionSource } from "../../../src/domain/shopping/merge";
 import {
   type ShoppingItem,
@@ -47,6 +56,8 @@ test("a source defaults to no recipe, no names and no amounts", () => {
     partName: "",
     servings: null,
     quantity: null,
+    unit: null,
+    planDate: null,
   });
 });
 
@@ -224,7 +235,7 @@ describe("mergeIntoList", () => {
         foodId: garlic.id,
         text: "",
         ticked: true,
-        sources: [{ recipeId: null, recipeName: "Lemon tart", partName: "", servings: 4, quantity: 2 }],
+        sources: [{ recipeId: null, recipeName: "Lemon tart", partName: "", servings: 4, quantity: 2, unitId: null, planDate: null }],
       },
     ]);
   });
@@ -249,7 +260,7 @@ describe("mergeIntoList", () => {
         foodId: null,
         text: "a pinch of this and that",
         ticked: false,
-        sources: [{ recipeId: null, recipeName: "Lemon tart", partName: "", servings: 4, quantity: null }],
+        sources: [{ recipeId: null, recipeName: "Lemon tart", partName: "", servings: 4, quantity: null, unitId: null, planDate: null }],
       },
     ]);
   });
@@ -276,8 +287,8 @@ describe("mergeIntoList", () => {
     expect(plan.additions).toHaveLength(1);
     expect(plan.additions[0]).toMatchObject({ foodId: flour.id, unitId: gram.id, quantity: 250 });
     expect(plan.additions[0]!.sources).toEqual([
-      { recipeId: null, recipeName: "Lemon tart", partName: "", servings: 4, quantity: 200 },
-      { recipeId: null, recipeName: "Scones", partName: "", servings: 8, quantity: 50 },
+      { recipeId: null, recipeName: "Lemon tart", partName: "", servings: 4, quantity: 200, unitId: gram.id, planDate: null },
+      { recipeId: null, recipeName: "Scones", partName: "", servings: 8, quantity: 50, unitId: gram.id, planDate: null },
     ]);
   });
 
@@ -358,7 +369,11 @@ describe("mergeIntoList", () => {
     // flour: 100 (part 1, x2) + 50 (topping, x2) = 300 merged by mergeIngredients,
     // on top of the existing 100g line
     expect(plan.merges).toEqual([
-      { id: existingFlour.id, quantity: 400, sources: [{ recipeId: recipe.id, recipeName: "Buttered toast", partName: "", servings: 8, quantity: 300 }] },
+      {
+        id: existingFlour.id,
+        quantity: 400,
+        sources: [{ recipeId: recipe.id, recipeName: "Buttered toast", partName: "", servings: 8, quantity: 300, unitId: gram.id, planDate: null }],
+      },
     ]);
 
     // butter is new, doubled
@@ -498,6 +513,125 @@ describe("groupByAisle", () => {
   test("an empty list has no groups, and an empty group is never returned", () => {
     expect(groupByAisle([])).toEqual([]);
     expect(groupByAisle([existingItem({ food: withAisle(flour, produce) })]).map((group) => group.name)).toEqual(["Produce"]);
+  });
+});
+
+describe("groupByMeal", () => {
+  const TART = "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1";
+  const CHICKEN = "b2b2b2b2-b2b2-4b2b-8b2b-b2b2b2b2b2b2";
+  const tart = { recipeId: TART, recipeName: "Lemon tart", partName: "Mon 26 Oct", planDate: "2026-10-26" };
+  const chicken = { recipeId: CHICKEN, recipeName: "Roast chicken", partName: "Wed 28 Oct", planDate: "2026-10-28" };
+  let nextSourceId = 0;
+  const sourceId = () => {
+    nextSourceId += 1;
+    return `5a5a5a5a-5a5a-4a5a-8a5a-${String(nextSourceId).padStart(12, "0")}`;
+  };
+  const source = (from: typeof tart, quantity: number | null, unit: typeof gram | null = null) =>
+    shoppingItemSourceSchema.parse({ id: sourceId(), ...from, quantity, unit });
+
+  test("one group per dish, in plan-day order, whatever order the lines are in", () => {
+    const groups = groupByMeal([
+      existingItem({ quantity: 1, food: butter, sources: [source(chicken, 1)] }),
+      existingItem({ quantity: 250, unit: gram, food: flour, sources: [source(tart, 250, gram)] }),
+    ]);
+    expect(groups.map((group) => [group.name, group.date])).toEqual([
+      ["Lemon tart", "2026-10-26"],
+      ["Roast chicken", "2026-10-28"],
+    ]);
+    expect(groups[0]!.recipeId).toBe(TART);
+  });
+
+  test("a line two dishes share sits under both, each with its own share and the whole beside it", () => {
+    const shared = existingItem({ quantity: 350, unit: gram, food: butter, sources: [source(tart, 200, gram), source(chicken, 150, gram)] });
+    const [first, second] = groupByMeal([shared]);
+    expect(first!.rows).toEqual([{ item: shared, label: "200 g butter", whole: "350 g butter" }]);
+    expect(second!.rows).toEqual([{ item: shared, label: "150 g butter", whole: "350 g butter" }]);
+  });
+
+  test("a line one dish asked for twice shows its sum, and is the whole line", () => {
+    const line = existingItem({ quantity: 300, unit: gram, food: flour, sources: [source(tart, 250, gram), source(tart, 50, gram)] });
+    expect(groupByMeal([line])[0]!.rows).toEqual([{ item: line, label: "300 g flour", whole: null }]);
+  });
+
+  test("a share in another unit is converted to the line's, and an old source with no unit is in the line's", () => {
+    const convertible = {
+      ...flour,
+      conversions: [{ id: "aaaaaaaa-1111-4111-8111-111111111111", unitId: cup.id, quantity: 1, toUnitId: gram.id, toQuantity: 125 }],
+    };
+    const line = existingItem({
+      quantity: 425,
+      unit: gram,
+      food: convertible,
+      sources: [source(tart, 1, cup), source(tart, 50, null), source(chicken, 250, null)],
+    });
+    const [first, second] = groupByMeal([line]);
+    expect(first!.rows[0]!.label).toBe("175 g flour");
+    expect(second!.rows[0]!.label).toBe("250 g flour");
+  });
+
+  test("a share that cannot be said shows the whole line", () => {
+    const line = existingItem({ quantity: 2, food: butter, sources: [source(tart, null), source(chicken, 1)] });
+    expect(groupByMeal([line])[0]!.rows[0]).toMatchObject({ label: "2 butter", whole: null });
+  });
+
+  test("the same recipe on two days is two dishes; from its own page it is one, after the plan's", () => {
+    const groups = groupByMeal([
+      existingItem({ quantity: 1, food: butter, sources: [{ ...source(tart, 1), planDate: null, partName: "" }] }),
+      existingItem({ quantity: 2, food: flour, sources: [source({ ...tart, planDate: "2026-10-29", partName: "Thu 29 Oct" }, 1), source(tart, 1)] }),
+    ]);
+    expect(groups.map((group) => [group.name, group.date])).toEqual([
+      ["Lemon tart", "2026-10-26"],
+      ["Lemon tart", "2026-10-29"],
+      ["Lemon tart", null],
+    ]);
+    expect(new Set(groups.map((group) => group.key)).size).toBe(3);
+  });
+
+  test("a recipe deleted since still groups by its copied name", () => {
+    const groups = groupByMeal([
+      existingItem({ quantity: 1, food: butter, sources: [{ ...source(tart, 1), recipeId: null }] }),
+      existingItem({ quantity: 1, food: flour, sources: [{ ...source(tart, 1), recipeId: null }] }),
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({ name: "Lemon tart", recipeId: null });
+  });
+
+  test("hand-typed lines and plain plan entries go under Other, last", () => {
+    const typed = existingItem({ text: "Batteries" });
+    const leftovers = existingItem({
+      text: "Leftovers",
+      sources: [shoppingItemSourceSchema.parse({ id: sourceId(), partName: "Tue 27 Oct", planDate: "2026-10-27" })],
+    });
+    const groups = groupByMeal([typed, existingItem({ quantity: 1, food: butter, sources: [source(chicken, 1)] }), leftovers]);
+    expect(groups.map((group) => group.name)).toEqual(["Roast chicken", NO_MEAL_GROUP]);
+    expect(groups[1]!.rows.map((row) => row.label)).toEqual(["Batteries", "Leftovers"]);
+  });
+
+  test("ticked lines stay under their dish, in list order", () => {
+    const first = existingItem({ quantity: 1, food: butter, ticked: true, sources: [source(tart, 1)] });
+    const second = existingItem({ quantity: 1, food: flour, sources: [source(tart, 1)] });
+    const groups = groupByMeal([first, second]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]!.rows.map((row) => row.item.id)).toEqual([first.id, second.id]);
+  });
+
+  test("an empty list has no groups", () => {
+    expect(groupByMeal([])).toEqual([]);
+  });
+
+  test("mealsOf names each dish a line is for once, in order, and none for a hand-typed line", () => {
+    const line = existingItem({
+      quantity: 400,
+      unit: gram,
+      food: butter,
+      sources: [source(tart, 200, gram), source(chicken, 150, gram), source(tart, 50, gram), { ...source(tart, 1), planDate: null, partName: "" }],
+    });
+    expect(mealsOf(line)).toEqual([
+      { name: "Lemon tart", date: "2026-10-26" },
+      { name: "Roast chicken", date: "2026-10-28" },
+      { name: "Lemon tart", date: null },
+    ]);
+    expect(mealsOf(existingItem({ text: "Batteries" }))).toEqual([]);
   });
 });
 

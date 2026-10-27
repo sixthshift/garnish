@@ -33,11 +33,14 @@ describe("the table", () => {
       ["viewMode", "garnish.viewMode", "grid"],
       ["ingredientMode", "garnish.ingredientMode", "structured"],
       ["theme", "theme", "system"],
+      ["shoppingView", "garnish.shoppingView", "aisles"],
     ]);
     expect(prefs.viewMode.isValid("list")).toBe(true);
     expect(prefs.viewMode.isValid("carousel")).toBe(false);
     expect(prefs.ingredientMode.isValid("summary")).toBe(true);
     expect(prefs.theme.isValid("blue")).toBe(false);
+    expect(prefs.shoppingView.isValid("meals")).toBe(true);
+    expect(prefs.shoppingView.isValid("recipes")).toBe(false);
   });
 
   test("every key is distinct, so setting one never disturbs another", () => {

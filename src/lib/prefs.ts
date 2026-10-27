@@ -8,6 +8,7 @@ import { readItem, type StorageLike, useLocalStorage, writeItem } from "./useLoc
 export type ViewMode = "grid" | "list";
 export type IngredientMode = "structured" | "summary";
 export type Theme = "light" | "dark" | "system";
+export type ShoppingView = "aisles" | "meals";
 
 /** One preference: where it lives, what it is when unset, and what counts as one. */
 export type Pref<T> = {
@@ -32,6 +33,8 @@ export const prefs = {
   /** The recipe page's ingredients as rows per part, or one list. */
   ingredientMode: oneOf<IngredientMode>("garnish.ingredientMode", "structured", ["structured", "summary"]),
   theme: oneOf<Theme>("theme", "system", ["light", "dark", "system"]),
+  /** The shopping list by aisle, or by the dish each line is for. */
+  shoppingView: oneOf<ShoppingView>("garnish.shoppingView", "aisles", ["aisles", "meals"]),
 } as const;
 
 /** `pref`'s value in `storage`, or its fallback. Pure. */
@@ -68,3 +71,4 @@ export function defaultViewMode(): ViewMode {
 export const useViewMode = () => usePref({ ...prefs.viewMode, fallback: defaultViewMode() });
 export const useIngredientMode = () => usePref(prefs.ingredientMode);
 export const useTheme = () => usePref(prefs.theme);
+export const useShoppingView = () => usePref(prefs.shoppingView);

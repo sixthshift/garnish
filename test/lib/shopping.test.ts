@@ -121,7 +121,9 @@ describe("addToShoppingList", () => {
     expect(line.foodId).toBe("food-flour");
     expect(line.unitId).toBe("unit-g");
     expect(line.quantity).toBe(400); // 200 g at 4 servings, doubled
-    expect(line.sources).toEqual([{ recipeId: "recipe-tart", recipeName: "Lemon tart", partName: "Pastry", servings: 8, quantity: 400 }]);
+    expect(line.sources).toEqual([
+      { recipeId: "recipe-tart", recipeName: "Lemon tart", partName: "Pastry", servings: 8, quantity: 400, unitId: "unit-g", planDate: null },
+    ]);
   });
 
   test("an addition matching an unticked line tops that line up instead of adding one", async () => {
@@ -132,7 +134,7 @@ describe("addToShoppingList", () => {
       {
         id: "item-flour",
         quantity: 300,
-        sources: [{ recipeId: "recipe-tart", recipeName: "Lemon tart", partName: "Pastry", servings: 4, quantity: 200 }],
+        sources: [{ recipeId: "recipe-tart", recipeName: "Lemon tart", partName: "Pastry", servings: 4, quantity: 200, unitId: "unit-g", planDate: null }],
       },
     ]);
     expect(sent.added.map((line) => line.foodId)).toEqual(["food-lemon"]);

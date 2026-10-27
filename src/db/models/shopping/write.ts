@@ -50,6 +50,8 @@ export function writers({ dz }: ShoppingContext, { get, list }: Readers) {
                 partName: source.partName,
                 servings: source.servings,
                 quantity: source.quantity,
+                unitId: source.unitId,
+                planDate: source.planDate,
               })
               .run();
           }
@@ -78,6 +80,8 @@ export function writers({ dz }: ShoppingContext, { get, list }: Readers) {
               partName: source.partName,
               servings: source.servings,
               quantity: source.quantity,
+              unitId: source.unitId,
+              planDate: source.planDate,
             })
             .run();
         }

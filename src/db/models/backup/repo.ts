@@ -245,6 +245,8 @@ export function backupRepository(db: Database) {
               partName: s.partName,
               servings: s.servings,
               quantity: s.quantity,
+              unitId: s.unitId,
+              planDate: s.planDate,
             })),
           })),
         styleRules: dz.select().from(styleRule).orderBy(asc(styleRule.position), asc(styleRule.id)).all().map(rule),

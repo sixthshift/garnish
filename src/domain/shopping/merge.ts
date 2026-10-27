@@ -3,8 +3,11 @@
 import { convert, type Food, type Unit } from "../reference";
 import type { ShoppingItem, ShoppingItemInput, ShoppingItemSourceInput } from "./schema";
 
-/** Where an addition came from, minus the amount — `mergeIntoList` fills that in per source. */
-export type ShoppingAdditionSource = Omit<ShoppingItemSourceInput, "quantity">;
+/**
+ * Where an addition came from, minus the amount and its unit — `mergeIntoList`
+ * fills those in per source. `planDate` only from the meal plan.
+ */
+export type ShoppingAdditionSource = Omit<ShoppingItemSourceInput, "quantity" | "unitId" | "planDate"> & { planDate?: string | null };
 
 /**
  * One line coming in: a recipe ingredient (scaled, with its food and unit
@@ -33,6 +36,11 @@ export interface ShoppingListMerge {
 export interface ShoppingMergePlan {
   merges: ShoppingListMerge[];
   additions: ShoppingItemInput[];
+}
+
+/** A source as stored: what it contributed, in the unit it arrived in. */
+function sourceInput(source: ShoppingAdditionSource, quantity: number | null, unit: Unit | null): ShoppingItemSourceInput {
+  return { ...source, planDate: source.planDate ?? null, quantity, unitId: unit?.id ?? null };
 }
 
 function sameUnit(a: Unit | null, b: Unit | null): boolean {
@@ -106,7 +114,7 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
         foodId: null,
         text: originalText,
         ticked: false,
-        sources: [{ ...source, quantity: null }],
+        sources: [sourceInput(source, null, null)],
       });
       continue;
     }
@@ -124,11 +132,11 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
           merges.set(existing.id, {
             id: existing.id,
             quantity: (existing.quantity ?? 0) + inExistingUnit,
-            sources: [{ ...source, quantity }],
+            sources: [sourceInput(source, quantity, unit)],
           });
         } else {
           entry.quantity = (entry.quantity ?? 0) + inExistingUnit;
-          entry.sources.push({ ...source, quantity });
+          entry.sources.push(sourceInput(source, quantity, unit));
         }
         continue;
       }
@@ -141,13 +149,13 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
           foodId: food.id,
           text: "",
           ticked,
-          sources: [{ ...source, quantity }],
+          sources: [sourceInput(source, quantity, unit)],
         };
         newLines.push({ input: created, unit });
         plannedAdditions.push(created);
       } else if (sameUnit(line.unit, unit)) {
         line.input.quantity = (line.input.quantity ?? 0) + quantity;
-        line.input.sources!.push({ ...source, quantity });
+        line.input.sources!.push(sourceInput(source, quantity, unit));
       } else {
         // Different but convertible units: settle on the metric one, moving
         // the running total across if the draft's own unit loses.
@@ -160,7 +168,7 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
           line.input.unitId = winner.id;
           line.unit = winner;
         }
-        line.input.sources!.push({ ...source, quantity });
+        line.input.sources!.push(sourceInput(source, quantity, unit));
       }
       continue;
     }
@@ -172,7 +180,7 @@ export function mergeIntoList(items: readonly ShoppingItem[], additions: readonl
       foodId: food.id,
       text: "",
       ticked,
-      sources: [{ ...source, quantity }],
+      sources: [sourceInput(source, quantity, unit)],
     });
   }
 

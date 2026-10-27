@@ -152,6 +152,85 @@ describe("the ticked group", () => {
   });
 });
 
+describe("the meal view", () => {
+  const TART = "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1";
+  const tart = { id: "5a5a5a5a-5a5a-4a5a-8a5a-000000000001", recipeId: TART, recipeName: "Lemon tart", partName: "Mon 26 Oct", planDate: "2026-10-26" };
+  const soup = { id: "5a5a5a5a-5a5a-4a5a-8a5a-000000000002", recipeName: "Soup", partName: "Wed 28 Oct", planDate: "2026-10-28" };
+  const renderMeals = (items: ShoppingItem[]) =>
+    renderToString(<ShoppingListView items={items} view="meals" onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} />);
+  const headings = (html: string) => [...html.matchAll(/data-testid="shopping-group"[^>]*>.*?<h2[^>]*>([^<]+)</g)].map((match) => match[1]);
+
+  test("the toggle offers both views and marks the one shown", () => {
+    for (const [html, on] of [
+      [render([item({ text: "Batteries" })]), "Aisles"],
+      [renderMeals([item({ text: "Batteries" })]), "Meals"],
+    ] as const) {
+      expect(html).toContain('aria-label="Group the list by"');
+      expect(html).toMatch(new RegExp(`aria-checked="true"[^>]*>(<[^>]+>)*${on}`));
+    }
+  });
+
+  test("a heading per dish with its day, in day order, hand-typed lines under Other", () => {
+    const html = renderMeals([
+      item({ text: "Batteries" }),
+      item({ quantity: 1, food: lemons, sources: [{ ...soup, quantity: 1 }] }),
+      item({ quantity: 3, food: lemons, sources: [{ ...tart, quantity: 3 }] }),
+    ]);
+    expect(html).toContain('data-view="meals"');
+    expect(headings(html)).toEqual(["Lemon tart", "Soup", "Other"]);
+    expect(html).toContain('aria-label="Lemon tart, Mon 26 Oct"');
+    expect(html).toContain("Wed 28 Oct");
+  });
+
+  test("a shared line shows each dish its share, and says the whole in the expansion", () => {
+    const html = renderMeals([
+      item({
+        quantity: 350,
+        unit: gram,
+        food: butter,
+        sources: [
+          { ...tart, quantity: 200 },
+          { ...soup, quantity: 150 },
+        ],
+      }),
+    ]);
+    const rows = html.split('data-testid="shopping-row"').slice(1);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toContain("200 g butter");
+    expect(rows[1]).toContain("150 g butter");
+    expect(rows[0]).toContain("350 g butter on the list in all");
+  });
+
+  test("the aisle view says under each line which dishes it is for, and nothing under a typed line", () => {
+    const html = render([
+      item({
+        quantity: 350,
+        unit: gram,
+        food: butter,
+        sources: [
+          { ...tart, quantity: 200 },
+          { ...soup, quantity: 150 },
+        ],
+      }),
+      item({ text: "Batteries" }),
+    ]);
+    expect(html.match(/data-testid="shopping-meals"/g)).toHaveLength(1);
+    expect(elementHtml(html, "shopping-meals")).toContain("Lemon tart, Mon · Soup, Wed");
+    expect(html).toContain('aria-label="350 g butter"');
+  });
+
+  test("the meal view does not repeat the dish under its own rows", () => {
+    expect(renderMeals([item({ quantity: 3, food: lemons, sources: [{ ...tart, quantity: 3 }] })])).not.toContain("shopping-meals");
+  });
+
+  test("a ticked line stays under its dish, and there is no Ticked group", () => {
+    const html = renderMeals([item({ quantity: 3, food: lemons, ticked: true, sources: [{ ...tart, quantity: 3 }] })]);
+    expect(headings(html)).toEqual(["Lemon tart"]);
+    expect(elementHtml(html, "shopping-row")).toContain('data-ticked="true"');
+    expect(html).not.toContain("Clear ticked");
+  });
+});
+
 describe("the empty state", () => {
   test("an empty list offers the box and the recipe route in, and no groups", () => {
     const html = render([]);

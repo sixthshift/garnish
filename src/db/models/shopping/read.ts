@@ -60,6 +60,8 @@ export function readers({ dz, units, foods, aisles }: ShoppingContext) {
         partName: s.partName,
         servings: s.servings,
         quantity: s.quantity,
+        unit: readUnit(s.unitId, unitCache),
+        planDate: s.planDate,
       });
       sourcesByItem.set(s.itemId, list);
     }

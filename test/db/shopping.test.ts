@@ -200,13 +200,34 @@ test("a line survives its food and unit being deleted, keeping its quantity", ()
   expect(after.quantity).toBe(250);
 });
 
+test("a source keeps the unit its amount is in and the plan day that asked for it, through a merge too", () => {
+  const { food, unit } = seedFlour();
+  const cup = unitRepository(db).create({ name: "cup" });
+  const [item] = repo.addMany([
+    parse({ quantity: 250, foodId: food.id, unitId: unit.id, sources: [{ recipeName: "Lemon tart", quantity: 250, unitId: unit.id, planDate: "2026-10-26" }] }),
+  ]);
+  const merged = repo.mergeInto(item!.id, 375, [
+    { recipeName: "Scones", quantity: 1, unitId: cup.id, planDate: null, recipeId: null, partName: "", servings: null },
+  ]);
+
+  expect(merged!.sources).toMatchObject([
+    { recipeName: "Lemon tart", quantity: 250, unit: { id: unit.id }, planDate: "2026-10-26" },
+    { recipeName: "Scones", quantity: 1, unit: { id: cup.id }, planDate: null },
+  ]);
+  expect(shoppingItemSchema.parse(merged)).toEqual(merged);
+
+  // The unit goes; the source stays, its amount now read in the line's own.
+  expect(unitRepository(db).remove(cup.id)).toBe(true);
+  expect(repo.get(item!.id)!.sources[1]).toMatchObject({ quantity: 1, unit: null });
+});
+
 test("005 applies to an existing database migrated only as far as 004", async () => {
   const dir = mkdtempSync(join(tmpdir(), "garnish-migrations-"));
   mkdirSync(dir, { recursive: true });
   const files = readdirSync(MIGRATIONS_DIR)
     .filter((f) => f.endsWith(".sql"))
     .sort();
-  const earlier = files.filter((f) => !f.startsWith("005_"));
+  const earlier = files.filter((f) => f < "005_");
   for (const file of earlier) copyFileSync(join(MIGRATIONS_DIR, file), join(dir, file));
 
   const existing = openDatabase(":memory:");

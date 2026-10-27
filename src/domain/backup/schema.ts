@@ -168,6 +168,8 @@ export const backupShoppingSourceSchema = z.object({
   partName: text,
   servings: z.number().nonnegative().nullable().default(null),
   quantity: z.number().nonnegative().nullable().default(null),
+  unitId: id.nullable().default(null),
+  planDate: z.iso.date().nullable().default(null),
 });
 
 export const backupShoppingItemSchema = z.object({

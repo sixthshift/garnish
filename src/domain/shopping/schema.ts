@@ -5,6 +5,7 @@ const id = z.uuid();
 const timestamp = z.iso.datetime();
 const text = z.string().default("");
 const quantity = z.number().nonnegative().nullable().default(null);
+const planDate = z.iso.date().nullable().default(null);
 
 /**
  * Where a line came from: "Lemon tart, Pastry, serves 4". `recipeName` and
@@ -17,7 +18,9 @@ export const shoppingItemSourceSchema = z.object({
   recipeName: text,
   partName: text, // '' is the unnamed part: the recipe's main body
   servings: quantity, // the scale the recipe was added at
-  quantity, // what this source contributed to the line
+  quantity, // what this source contributed to the line, in `unit`
+  unit: unitSchema.nullable().default(null), // null: the line's own unit
+  planDate, // the meal plan day that asked for it; null from anywhere else
 });
 
 /** One line of the list: a food line (`food` set) or a free-text line (`text`). */
@@ -45,6 +48,8 @@ export const shoppingItemSourceInputSchema = z.object({
   partName: text,
   servings: quantity,
   quantity,
+  unitId: id.nullable().default(null),
+  planDate,
 });
 
 /** One line as a caller sends it. A line with neither a food nor text is rejected. */

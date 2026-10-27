@@ -42,7 +42,8 @@ export function reorderMove(before: readonly string[], after: readonly string[])
 // (`recipeAdditions`, src/domain/shopping/subRecipe.ts), except every source's
 // `partName` is the entry's day (`dayLabel`) rather than the recipe's own
 // part: a shopping line remembers which day of the week asked for it, not
-// which section of the recipe it came from.
+// which section of the recipe it came from. `planDate` is the same day as a
+// date, which the list's meal view groups and orders by.
 //
 // Pure: `recipesByEntry` carries the already-scaled recipe document for every
 // recipe entry, keyed by the entry's own id rather than the recipe's, so the
@@ -71,14 +72,14 @@ export function planWeekAdditions(days: readonly PlanDay[], recipesByEntry: Read
           food: null,
           originalText: entry.text,
           fixed: false,
-          source: { recipeId: null, recipeName: "", partName, servings: null },
+          source: { recipeId: null, recipeName: "", partName, servings: null, planDate: day.date },
         });
         continue;
       }
       const recipe = recipesByEntry.get(entry.id);
       if (recipe === undefined) continue;
       const servings = recipe.recipeServings > 0 ? recipe.recipeServings : null;
-      additions.push(...recipeAdditions(recipe, () => ({ recipeId: recipe.id, recipeName: recipe.name, partName, servings })));
+      additions.push(...recipeAdditions(recipe, () => ({ recipeId: recipe.id, recipeName: recipe.name, partName, servings, planDate: day.date })));
     }
   }
   return additions;

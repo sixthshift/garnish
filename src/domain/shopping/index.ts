@@ -1,5 +1,6 @@
 export { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "./additions";
-export { groupByAisle, shoppingItemLabel, sourceLabel } from "./groups";
+export type { ShoppingMeal, ShoppingMealGroup, ShoppingMealRow } from "./groups";
+export { groupByAisle, groupByMeal, mealsOf, shoppingItemLabel, sourceLabel } from "./groups";
 export type { ShoppingAddition, ShoppingListMerge, ShoppingMergePlan } from "./merge";
 export { mergeIntoList } from "./merge";
 export type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemInput, ShoppingItemPatch, ShoppingItemSourceInput } from "./schema";

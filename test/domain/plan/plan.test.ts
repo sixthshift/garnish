@@ -390,7 +390,7 @@ describe("planWeekAdditions", () => {
       unit: gram,
       food: flour,
       fixed: false,
-      source: { recipeId: tartRef.id, recipeName: "Lemon tart", partName: dayLabel(MONDAY), servings: 4 },
+      source: { recipeId: tartRef.id, recipeName: "Lemon tart", partName: dayLabel(MONDAY), servings: 4, planDate: MONDAY },
     });
 
     expect(additions[1]).toMatchObject({ food: garlic, source: { recipeName: "Lemon tart" } });
@@ -400,7 +400,7 @@ describe("planWeekAdditions", () => {
       unit: gram,
       food: butter,
       fixed: false,
-      source: { recipeId: soupRef.id, recipeName: "Soup", partName: dayLabel(TUESDAY), servings: 8 },
+      source: { recipeId: soupRef.id, recipeName: "Soup", partName: dayLabel(TUESDAY), servings: 8, planDate: TUESDAY },
     });
 
     expect(additions[3]).toEqual({
@@ -409,7 +409,7 @@ describe("planWeekAdditions", () => {
       food: null,
       originalText: "Leftovers",
       fixed: false,
-      source: { recipeId: null, recipeName: "", partName: dayLabel(WEDNESDAY), servings: null },
+      source: { recipeId: null, recipeName: "", partName: dayLabel(WEDNESDAY), servings: null, planDate: WEDNESDAY },
     });
   });
 

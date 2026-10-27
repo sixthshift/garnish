@@ -45,8 +45,12 @@ export const shoppingItemSource = sqliteTable(
     partName: text("part_name").notNull().default(""),
     /** The servings the recipe was added at, for "serves 4" in the expansion. */
     servings: real("servings"),
-    /** What this source contributed to the line's quantity. */
+    /** What this source contributed to the line's quantity, in `unitId`. */
     quantity: real("quantity"),
+    /** The unit `quantity` is in; NULL is the line's own (decisions.md row 182). */
+    unitId: text("unit_id").references(() => unit.id, { onDelete: "set null" }),
+    /** The meal plan day that asked for it, YYYY-MM-DD; NULL when it came from anywhere else. */
+    planDate: text("plan_date"),
   },
   (t) => [index("shopping_item_source_item_id").on(t.itemId), index("shopping_item_source_recipe_id").on(t.recipeId)]
 );

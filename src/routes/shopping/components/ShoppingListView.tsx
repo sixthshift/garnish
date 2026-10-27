@@ -3,19 +3,31 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
+import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
 import { Page, PageHeader } from "../../../components/shell/Page";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
+import { dayLabel } from "../../../domain/plan";
 import type { Aisle } from "../../../domain/reference";
-import { groupByAisle, type ShoppingItem } from "../../../domain/shopping";
+import { groupByAisle, groupByMeal, mealsOf, type ShoppingItem } from "../../../domain/shopping";
 import { pendingLabel } from "../../../lib/outbox";
+import type { ShoppingView } from "../../../lib/prefs";
 import { AddItemForm } from "./AddItemForm";
 import { ShoppingRow } from "./ShoppingRow";
 import { toBuyLabel } from "./shoppingListActions";
 
+const VIEWS = [
+  { value: "aisles", label: "Aisles" },
+  { value: "meals", label: "Meals" },
+] as const;
+
+const isView = (value: string): value is ShoppingView => VIEWS.some((view) => view.value === value);
+
 /** The list itself, writes injected. Rendered by the route and by the tests. */
 export function ShoppingListView({
   items,
+  view = "aisles",
+  onViewChange = () => {},
   aisles = [],
   onAdd,
   onTick,
@@ -26,7 +38,7 @@ export function ShoppingListView({
   pending = 0,
   offline = false,
 }: ShoppingListViewProps) {
-  const groups = groupByAisle(items);
+  const rowProps = { aisles, onTick, onRemove, onSetAisle, busy };
   // Clearing deletes every ticked line at once and nothing brings them back, so it asks first;
   // the button that opens the question is neutral and the dialog's is the red one (rule 5).
   const [confirming, setConfirming] = useState(false);
@@ -59,24 +71,60 @@ export function ShoppingListView({
           </div>
         }
       >
-        <div className="flex flex-col gap-6" data-testid="shopping-groups">
-          {groups.map((group) => (
-            <section key={group.key} className="flex flex-col gap-1" aria-label={group.name} data-testid="shopping-group">
-              <div className="flex items-center justify-between gap-3">
-                <SectionTitle as="h2">{group.name}</SectionTitle>
-                {group.ticked && (
-                  <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={busy || offline} onClick={() => setConfirming(true)}>
-                    Clear ticked
-                  </Button>
-                )}
-              </div>
-              <ul className="flex flex-col divide-y divide-border-subtle">
-                {group.items.map((item) => (
-                  <ShoppingRow key={item.id} item={item} aisles={aisles} onTick={onTick} onRemove={onRemove} onSetAisle={onSetAisle} busy={busy} />
-                ))}
-              </ul>
-            </section>
-          ))}
+        <div className="flex flex-col gap-4">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            appearance="segmented"
+            size="sm"
+            aria-label="Group the list by"
+            className="self-start"
+            options={VIEWS}
+            value={view}
+            onValueChange={(value) => isView(value) && onViewChange(value)}
+          />
+          <div className="flex flex-col gap-6" data-testid="shopping-groups" data-view={view}>
+            {view === "aisles"
+              ? groupByAisle(items).map((group) => (
+                  <section key={group.key} className="flex flex-col gap-1" aria-label={group.name} data-testid="shopping-group">
+                    <div className="flex items-center justify-between gap-3">
+                      <SectionTitle as="h2">{group.name}</SectionTitle>
+                      {group.ticked && (
+                        <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={busy || offline} onClick={() => setConfirming(true)}>
+                          Clear ticked
+                        </Button>
+                      )}
+                    </div>
+                    <ul className="flex flex-col divide-y divide-border-subtle">
+                      {group.items.map((item) => (
+                        <ShoppingRow key={item.id} item={item} meals={mealsOf(item)} {...rowProps} />
+                      ))}
+                    </ul>
+                  </section>
+                ))
+              : groupByMeal(items).map((group) => {
+                  // "Lemon tart, Mon 26 Oct": the same recipe on two days is two groups, and the landmark has to say which.
+                  const day = group.date === null ? null : dayLabel(group.date);
+                  return (
+                    <section
+                      key={group.key}
+                      className="flex flex-col gap-1"
+                      aria-label={day === null ? group.name : `${group.name}, ${day}`}
+                      data-testid="shopping-group"
+                    >
+                      <div className="flex items-baseline justify-between gap-3">
+                        <SectionTitle as="h2">{group.name}</SectionTitle>
+                        {day !== null && <Muted as="span">{day}</Muted>}
+                      </div>
+                      <ul className="flex flex-col divide-y divide-border-subtle">
+                        {group.rows.map((row) => (
+                          <ShoppingRow key={row.item.id} item={row.item} label={row.label} whole={row.whole} {...rowProps} />
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                })}
+          </div>
         </div>
       </EmptyBoundary>
       {confirming && (
@@ -99,6 +147,13 @@ export function ShoppingListView({
 
 export type ShoppingListViewProps = {
   items: readonly ShoppingItem[];
+  /**
+   * By aisle (the shop's order, each line with the dishes it is for under it,
+   * ticked lines sunk to the foot) or by meal
+   * (each dish's lines, ticked ones left in place). The device remembers it.
+   */
+  view?: ShoppingView;
+  onViewChange?: (view: ShoppingView) => void;
   /** Every aisle, in `position` order, for the "Set aisle" Select. Empty hides the control. */
   aisles?: readonly Aisle[];
   /** A line typed into the box at the top, already trimmed and never empty. */
