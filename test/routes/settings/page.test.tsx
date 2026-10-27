@@ -22,6 +22,7 @@ import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../src/routes/set
 import { AislesTab } from "../../../src/routes/settings/components/tabs/AislesTab";
 import { AiTab, connectedMessage, connectedTitle, OfferedModels } from "../../../src/routes/settings/components/tabs/AiTab";
 import { BackupTab } from "../../../src/routes/settings/components/tabs/BackupTab";
+import { connectionDescription, McpTab, maskedCode } from "../../../src/routes/settings/components/tabs/McpTab";
 import { PlannerTab } from "../../../src/routes/settings/components/tabs/PlannerTab";
 import { StyleTab } from "../../../src/routes/settings/components/tabs/StyleTab";
 import { renameClash, TagsTab } from "../../../src/routes/settings/components/tabs/TagsTab";
@@ -163,6 +164,59 @@ describe("BackupTab render", () => {
     expect(html).not.toContain("/api/export.json");
     // No confirm until a file has passed the check.
     expect(html).not.toContain("I understand this replaces everything");
+  });
+});
+
+describe("McpTab render", () => {
+  const connection = {
+    id: "00000000-0000-4000-8000-000000000001",
+    clientId: "https://claude.ai/oauth/mcp-oauth-client-metadata",
+    clientName: "Claude",
+    scope: "read write delete",
+    createdAt: "2026-10-03T01:00:00.000Z",
+    lastUsedAt: null,
+  };
+
+  test("an open door shows the address to paste, how to connect, and each connection with Disconnect", async () => {
+    const status = { url: "https://garnish.example/api/mcp", problem: null, pairingCode: "K7QF-M2XP-9RTD", connections: [connection] };
+    const html = await renderWithRouter(() => <McpTab status={status} />);
+    expect(html).toContain("https://garnish.example/api/mcp");
+    expect(html).toContain("claude mcp add --transport http garnish");
+    expect(html).toContain("Any MCP client");
+    expect(html).toContain("Claude");
+    expect(html).toContain("Disconnect");
+    expect(html).not.toContain("GARNISH_PUBLIC_URL is not used");
+    expect(html).toContain("Give this to the assistant as a remote MCP server.");
+    // The pairing code starts hidden, with its controls beside it.
+    expect(html).not.toContain("K7QF-M2XP-9RTD");
+    expect(html).toContain("••••-••••-••••");
+    for (const label of ["Show", "Regenerate"]) expect(html).toContain(`>${label}</button>`);
+  });
+
+  test("a LAN address says it is for clients on the network; a wrong GARNISH_PUBLIC_URL says why it is not used", async () => {
+    const status = {
+      url: "http://192.168.1.5:9988/api/mcp",
+      problem: "GARNISH_PUBLIC_URL is not an address: x",
+      pairingCode: "K7QF-M2XP-9RTD",
+      connections: [],
+    };
+    const html = await renderWithRouter(() => <McpTab status={status} />);
+    expect(html).toContain("http://192.168.1.5:9988/api/mcp");
+    expect(html).toContain("right for clients on this network");
+    expect(html).toContain("GARNISH_PUBLIC_URL is not an address: x");
+    expect(html).toContain("Pairing code");
+    expect(html).toContain("Nothing connected");
+  });
+
+  test("maskedCode hides every character and keeps the dashes", () => {
+    expect(maskedCode("K7QF-M2XP-9RTD")).toBe("••••-••••-••••");
+  });
+
+  test("connectionDescription says when, how recently and what it may do", () => {
+    expect(connectionDescription(connection)).toBe("Connected 3 Oct 2026, not used yet. May read, write, delete.");
+    expect(connectionDescription({ ...connection, lastUsedAt: "2026-10-25T01:00:00.000Z" })).toBe(
+      "Connected 3 Oct 2026, last used 25 Oct 2026. May read, write, delete."
+    );
   });
 });
 

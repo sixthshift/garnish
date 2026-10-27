@@ -18,6 +18,7 @@ import type { RecipeViewData, Route as ViewRoute } from "../../src/routes/recipe
 import type { FoodRow, SettingsData, Route as SettingsRoute } from "../../src/routes/settings/route";
 import type { AiStatus } from "../../src/server/ai/client";
 import { createFood, listFoods } from "../../src/server/fns/foods";
+import type { McpStatus } from "../../src/server/fns/mcp";
 import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/server/fns/recipes";
 import type { listTags } from "../../src/server/fns/tags";
 import { listUnits } from "../../src/server/fns/units";
@@ -40,6 +41,12 @@ vi.mock("../../src/server/fns/style", local);
 vi.mock("../../src/server/fns/planner", local);
 vi.mock("../../src/server/fns/ai", local);
 vi.mock("../../src/server/fns/diagnostics", local);
+vi.mock("../../src/server/fns/mcp", local);
+// Run locally there is no request in flight; Settings › MCP builds its address from one, so it gets the LAN's.
+vi.mock("@tanstack/react-start/server", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getRequest: () => new Request("http://192.168.1.5:9988/settings"),
+}));
 vi.mock("../../src/server/fns/import", local);
 
 useTempDataDir();
@@ -750,6 +757,7 @@ describe("loader data types match the domain schemas", () => {
       styleRules: StyleRule[];
       plannerRules: PlannerRule[];
       ai: AiStatus;
+      mcp: McpStatus;
       diagnostics: DiagnosticEvent[];
     }>();
     // Search params are typed from their zod schemas.

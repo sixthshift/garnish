@@ -44,7 +44,7 @@ The hard parts were never the CRUD app. They were the scraper and the parser. An
 See [decisions.md](decisions.md). The load-bearing ones:
 
 - SQLite is the only store. Cooklang is a reference, not a format we write.
-- No auth, no users.
+- No auth, no users. The MCP connector is the exception that proves it: behind OAuth, it lets in a client with a pairing code from Settings, never a person (decisions.md row 181).
 - No AI in v1. When it comes, it runs as a hosted model over an OpenAI-compatible endpoint, configured by environment.
 - Docker, one container, one volume.
 

@@ -6,13 +6,14 @@ import { AiTab } from "./components/tabs/AiTab";
 import { BackupTab } from "./components/tabs/BackupTab";
 import { DiagnosticsTab, recentCount } from "./components/tabs/DiagnosticsTab";
 import { LibraryTab } from "./components/tabs/LibraryTab";
+import { McpTab } from "./components/tabs/McpTab";
 import { PlannerTab } from "./components/tabs/PlannerTab";
 import { StyleTab } from "./components/tabs/StyleTab";
 import { Version } from "./components/Version";
 import { Route } from "./route";
 
 export function SettingsPage() {
-  const { aisles, units, foods, foodUsage, tags, recipes, styleRules, plannerRules, ai, diagnostics } = Route.useLoaderData();
+  const { aisles, units, foods, foodUsage, tags, recipes, styleRules, plannerRules, ai, mcp, diagnostics } = Route.useLoaderData();
   const recent = recentCount(diagnostics, new Date());
 
   const items: TabItem[] = [
@@ -30,6 +31,12 @@ export function SettingsPage() {
     },
     { value: "backup", label: "Backup", content: <BackupTab /> },
     { value: "ai", label: "AI", content: <AiTab status={ai} /> },
+    {
+      value: "mcp",
+      label: "MCP",
+      badge: mcp.connections.length > 0 ? mcp.connections.length : undefined,
+      content: <McpTab status={mcp} />,
+    },
     { value: "appearance", label: "Appearance", content: <Appearance /> },
     { value: "alerts", label: "Alerts", content: <TimerAlerts /> },
     // The badge is the last week's problems, so a quiet tab means nothing went wrong lately.

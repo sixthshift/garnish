@@ -16,3 +16,7 @@ const AI_VARIABLES = [
 ];
 
 for (const name of AI_VARIABLES) delete process.env[name];
+
+// The same for the MCP connector's public address: set, it would pin every OAuth address in a test to the
+// developer's own, where the tests expect the address each request reached.
+delete process.env.GARNISH_PUBLIC_URL;

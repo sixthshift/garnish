@@ -9,6 +9,7 @@ import { getAiStatus } from "../../server/fns/ai";
 import { listAisles } from "../../server/fns/aisles";
 import { listDiagnostics } from "../../server/fns/diagnostics";
 import { listFoods, listFoodUsage } from "../../server/fns/foods";
+import { getMcpStatus, type McpStatus } from "../../server/fns/mcp";
 import { listPlannerRules } from "../../server/fns/planner";
 import { listRecipes } from "../../server/fns/recipes";
 import { listStyleRules } from "../../server/fns/style";
@@ -30,6 +31,7 @@ export type SettingsData = {
   styleRules: StyleRule[];
   plannerRules: PlannerRule[];
   ai: AiStatus;
+  mcp: McpStatus;
   diagnostics: DiagnosticEvent[];
 };
 
@@ -37,7 +39,7 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   loader: async (): Promise<SettingsData> => {
-    const [aisles, units, foods, foodUsage, tags, recipes, styleRules, plannerRules, ai, diagnostics] = await Promise.all([
+    const [aisles, units, foods, foodUsage, tags, recipes, styleRules, plannerRules, ai, mcp, diagnostics] = await Promise.all([
       listAisles({ data: {} }),
       listUnits({ data: {} }),
       listFoods({ data: {} }),
@@ -48,6 +50,7 @@ export const Route = createRoute({
       listStyleRules(),
       listPlannerRules(),
       getAiStatus(),
+      getMcpStatus(),
       listDiagnostics(),
     ]);
     return {
@@ -60,6 +63,7 @@ export const Route = createRoute({
       styleRules,
       plannerRules,
       ai,
+      mcp,
       diagnostics,
     };
   },

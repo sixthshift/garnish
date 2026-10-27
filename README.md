@@ -50,7 +50,7 @@ Open the same address in your phone's browser and add it to the home screen. Ins
 - **Add a recipe** — from a web page's address, from a Mealie or Tandoor backup, or typed in yourself. On a phone where Garnish is installed, share a page to Garnish to import it.
 - **Plan** — a week of meals, a recipe or a plain line in each slot; add the whole week to the shopping list in one tap.
 - **Shopping** — one list for the household, grouped by aisle, with the same food from different recipes merged into one line.
-- **Settings** — your foods, units, aisles and tags; the house style and the planner's guide; backup and restore; AI; appearance; and timer alerts for this device.
+- **Settings** — your foods, units, aisles and tags; the house style and the planner's guide; backup and restore; AI; MCP; appearance; and timer alerts for this device.
 
 ## Configuration
 
@@ -62,6 +62,7 @@ Garnish is configured with environment variables in the `environment:` section o
 | `AI_API_KEY`, `AI_BASE_URL` | Used by `AI_PROVIDER=api` |
 | `CLAUDE_CODE_OAUTH_TOKEN` | Used by `AI_PROVIDER=claude-code` |
 | `AI_IMPORT_MODEL`, `AI_RESTYLE_MODEL`, `AI_PLANNER_MODEL` | Optional. Which model each feature asks, for either provider |
+| `GARNISH_PUBLIC_URL` | Optional. Your tunnel's public address, for Settings › MCP to show and for a tunnel that does not tell Garnish it is https. See [MCP](#mcp) |
 | `PUSH_CONTACT` | Optional. A `mailto:` or `https:` address the phone push services see for timer alerts |
 
 To keep keys out of `docker-compose.yml`, put them in a file named `.env` beside it, `AI_API_KEY=...`, and write `AI_API_KEY: ${AI_API_KEY}` in the compose file. Compose fills it in.
@@ -104,6 +105,32 @@ Every feature asks Claude's Haiku model unless its model variable says `sonnet` 
 **Models.** Each feature has its own variable — `AI_IMPORT_MODEL` for reading recipes, `AI_RESTYLE_MODEL` for the house style, `AI_PLANNER_MODEL` for the meal planner — and each one unset uses the provider's default: Gemini Flash-Lite for `api`, Haiku for `claude-code`.
 
 **Checking it.** Settings › AI shows which provider is on, whether its key is set (never the key itself) and each feature's model. **Test** checks the connection without spending anything. With Claude Code it can only confirm the token was found; your first import proves it works.
+
+### MCP
+
+Any AI assistant that speaks MCP — Claude (on the web, the phone or Claude Code), ChatGPT, or another — can search, read, add and change recipes, and work with the shopping list and the meal plan, through Garnish's MCP server. Ask it to "add this recipe to garnish" or "put the lasagne on Thursday".
+
+Assistants on the web and the phone call MCP servers from their makers' servers, not from your phone, so the server needs a public https address. (A desktop client on your own network, such as Claude Code, can use `http://localhost` or a LAN address instead.) Everything else stays on your network: forward only these paths to Garnish, for example with a [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (free, with a domain on Cloudflare) or [Tailscale Funnel](https://tailscale.com/kb/1223/funnel):
+
+```
+/.well-known/oauth-protected-resource*
+/.well-known/oauth-authorization-server
+/api/oauth/*
+/api/mcp
+```
+
+That is all: the MCP server is always on, and works out its address from each request, so a request through the tunnel gets the tunnel's address and one on your network gets that one. Settings › MCP shows the address you opened Garnish at, which on your network is right for Claude Code; for Claude on the web or the phone, give it your tunnel's address with `/api/mcp` on the end. To have Settings show the public address instead, or if your tunnel does not send `X-Forwarded-Proto: https`, set it:
+
+```yaml
+    environment:
+      GARNISH_PUBLIC_URL: https://garnish.example.com
+```
+
+**Connecting.** Settings › MCP shows the address. Add it to your assistant as a remote (Streamable HTTP) MCP server: in Claude, Settings › Connectors › Add custom connector; in Claude Code, `claude mcp add --transport http garnish https://garnish.example.com/api/mcp`, then `/mcp`. A Garnish page opens asking what the assistant may do — read, change, delete — and for the pairing code; press Allow. It stays connected until you press Disconnect in Settings › MCP, which lists every connected assistant.
+
+**The pairing code.** Garnish makes it for you; there is nothing to set. It sits in Settings › MCP, hidden until you press Show, with Copy and Regenerate. It changes every time a connection is allowed, so a code that has been typed is never good twice, and Regenerate makes a new one whenever you like without disconnecting anything.
+
+Before an assistant deletes anything, Garnish saves a backup to `backups/` in your data folder, which Settings › Backup can restore.
 
 ## Your data
 
