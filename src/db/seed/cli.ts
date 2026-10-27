@@ -21,6 +21,7 @@ if (import.meta.main) {
       foods,
       aliasedFoods,
       correctedFoods,
+      packedFoods,
       styleRules: rules,
       rewordedStyleRules: reworded,
       retiredStyleRules: retired,
@@ -32,6 +33,7 @@ if (import.meta.main) {
     if (foods.length > 0 || aisles.length > 0) console.log(`${path}: seeded ${foods.length} starter foods and ${aisles.length} aisles`);
     if (aliasedFoods.length > 0) console.log(`${path}: gave ${aliasedFoods.length} existing foods the starter aliases`);
     if (correctedFoods.length > 0) console.log(`${path}: corrected the plurals of ${correctedFoods.length} starter foods`);
+    if (packedFoods.length > 0) console.log(`${path}: gave ${packedFoods.length} starter foods the sizes they are sold in`);
     console.log(rules.length === 0 ? `${path}: house style already seeded` : `${path}: seeded ${rules.length} house style statements`);
     if (reworded.length > 0) console.log(`${path}: reworded ${reworded.length} house style statements in place`);
     if (retired.length > 0) console.log(`${path}: removed ${retired.length} house style statements now said by another`);

@@ -38,6 +38,14 @@ export const FoodUpdate = FoodFields.extend({ name: Name }).partial().extend({ i
 export type FoodCreate = z.infer<typeof FoodCreate>;
 export type FoodUpdate = z.infer<typeof FoodUpdate>;
 
+/** "Butter comes in 250 g" as it is written: no id, the food is the parent. A null unit is "each". */
+export const FoodPackInput = z.object({ quantity: z.number().positive(), unitId: Id.nullable() });
+export type FoodPackInput = z.infer<typeof FoodPackInput>;
+
+/** This food's sizes, replaced wholesale. */
+export const FoodPacks = z.object({ id: Id, packs: z.array(FoodPackInput) });
+export type FoodPacks = z.infer<typeof FoodPacks>;
+
 /** This food's conversions, replaced wholesale. */
 export const FoodConversions = z.object({ id: Id, conversions: z.array(FoodConversionInput) });
 export type FoodConversions = z.infer<typeof FoodConversions>;
@@ -137,6 +145,18 @@ export const foodSchema = z.object({
   conversions: z.array(foodConversionSchema).default([]),
 });
 
+/**
+ * A size a food is sold in (decisions.md row 184): `quantity` of `unitId`, or
+ * of the food itself when `unitId` is null ("6 eggs"). Not on the food
+ * document: only the shopping list and the food's editor read them.
+ */
+export const foodPackSchema = z.object({
+  id,
+  foodId: id,
+  quantity: z.number().positive(),
+  unitId: id.nullable(),
+});
+
 export const tagSchema = z.object({
   id,
   name: nonEmpty,
@@ -147,6 +167,7 @@ export type Aisle = z.infer<typeof aisleSchema>;
 export type Unit = z.infer<typeof unitSchema>;
 export type Food = z.infer<typeof foodSchema>;
 export type FoodConversion = z.infer<typeof foodConversionSchema>;
+export type FoodPack = z.infer<typeof foodPackSchema>;
 export type Tag = z.infer<typeof tagSchema>;
 
 /** A tag with how many recipes carry it, for lists that rank tags by use (decisions.md row 173). */

@@ -52,3 +52,21 @@ export const foodConversion = sqliteTable(
     unique("food_conversion_food_id_unit_id_to_unit_id").on(t.foodId, t.unitId, t.toUnitId),
   ]
 );
+
+/**
+ * A size the food is sold in: `quantity` of `unitId`, or of the food itself
+ * when `unitId` is null ("each"). The shopping list rounds a line up to whole
+ * packs of these (decisions.md row 184).
+ */
+export const foodPack = sqliteTable(
+  "food_pack",
+  {
+    id: text("id").primaryKey(),
+    foodId: text("food_id")
+      .notNull()
+      .references(() => food.id, { onDelete: "cascade" }),
+    quantity: real("quantity").notNull(),
+    unitId: text("unit_id").references(() => unit.id, { onDelete: "cascade" }),
+  },
+  (t) => [index("food_pack_food_id").on(t.foodId), index("food_pack_unit_id").on(t.unitId), check("pack_quantity_positive", sql`${t.quantity} > 0`)]
+);

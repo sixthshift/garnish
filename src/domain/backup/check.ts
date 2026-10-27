@@ -46,6 +46,7 @@ export function referenceProblems(backup: Backup): string[] {
   const tags = table("tag");
   const foods = table("food");
   const conversions = table("conversion");
+  const packs = table("pack size");
   const recipes = table("recipe");
   const parts = table("part");
   const ingredients = table("ingredient");
@@ -72,6 +73,9 @@ export function referenceProblems(backup: Backup): string[] {
     foods.add(row.id, `foods[${i}]`);
     row.conversions.forEach((c, j) => {
       conversions.add(c.id, `foods[${i}].conversions[${j}]`);
+    });
+    row.packs.forEach((p, j) => {
+      packs.add(p.id, `foods[${i}].packs[${j}]`);
     });
   });
   backup.recipes.forEach((recipe, i) => {
@@ -122,6 +126,9 @@ export function referenceProblems(backup: Backup): string[] {
       ref(units, "unit", c.unitId, `foods[${i}].conversions[${j}].unitId`);
       ref(units, "unit", c.toUnitId, `foods[${i}].conversions[${j}].toUnitId`);
     });
+    food.packs.forEach((p, j) => {
+      ref(units, "unit", p.unitId, `foods[${i}].packs[${j}].unitId`);
+    });
     uniqueness(
       problems,
       "conversion",
@@ -159,6 +166,7 @@ export function referenceProblems(backup: Backup): string[] {
     ref(foods, "food", item.foodId, `shopping[${i}].foodId`);
     item.sources.forEach((source, j) => {
       ref(recipes, "recipe", source.recipeId, `shopping[${i}].sources[${j}].recipeId`);
+      ref(units, "unit", source.unitId, `shopping[${i}].sources[${j}].unitId`);
     });
   });
 

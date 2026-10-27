@@ -1,4 +1,4 @@
-import type { FoodConversion, FoodConversionInput } from "../../../domain/reference";
+import type { FoodConversion, FoodConversionInput, FoodPack, FoodPackInput } from "../../../domain/reference";
 
 /** Aliases as they are edited: one per line, blank lines dropped, each trimmed. Pure. */
 export function parseAliases(text: string): string[] {
@@ -63,4 +63,46 @@ export function parseConversions(rows: readonly ConversionDraft[]): { conversion
     conversions.push({ unitId: row.unitId, quantity, toUnitId: row.toUnitId, toQuantity });
   }
   return { conversions, error: null };
+}
+
+// --- Sold in ----------------------------------------------------------------
+// The sizes a food is sold in (decisions.md row 184), edited as rows of an
+// amount and a unit, where the unit may be "each": the food itself.
+
+/** The unit Select's value for a size counted in the food itself. */
+export const EACH = "each";
+
+/** One size as it is being typed. `unitId` is "" until chosen, `EACH` for the food itself. */
+export type PackDraft = { key: string; quantity: string; unitId: string };
+
+/** A stored size as the editor holds it. Pure. */
+export function packDraft(pack: FoodPack): PackDraft {
+  return { key: pack.id, quantity: String(pack.quantity), unitId: pack.unitId ?? EACH };
+}
+
+/** A blank row, ready to type into. Not pure — it mints a key. */
+export function blankPack(): PackDraft {
+  return { key: crypto.randomUUID(), quantity: "", unitId: "" };
+}
+
+/**
+ * Draft rows as they are written, or the first thing wrong with them. A
+ * blank row is dropped; a half-filled row, an amount that is not above zero
+ * and the same size twice are refused. Pure.
+ */
+export function parsePacks(rows: readonly PackDraft[]): { packs: FoodPackInput[]; error: string | null } {
+  const packs: FoodPackInput[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const text = row.quantity.trim();
+    if (text === "" && row.unitId === "") continue;
+    if (text === "" || row.unitId === "") return { packs: [], error: "Every size needs an amount and a unit." };
+    const quantity = Number(text);
+    if (!Number.isFinite(quantity) || quantity <= 0) return { packs: [], error: "Sizes must be numbers above zero." };
+    const key = `${quantity} ${row.unitId}`;
+    if (seen.has(key)) return { packs: [], error: "The same size is listed twice." };
+    seen.add(key);
+    packs.push({ quantity, unitId: row.unitId === EACH ? null : row.unitId });
+  }
+  return { packs, error: null };
 }

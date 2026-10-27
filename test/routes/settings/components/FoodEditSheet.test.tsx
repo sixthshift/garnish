@@ -9,11 +9,16 @@ import { FoodEditSheetContent, type FoodPatch } from "../../../../src/routes/set
 import {
   aliasesText,
   blankConversion,
+  blankPack,
   type ConversionDraft,
   conversionDraft,
+  EACH,
   isBlankConversion,
+  type PackDraft,
+  packDraft,
   parseAliases,
   parseConversions,
+  parsePacks,
 } from "../../../../src/routes/settings/components/foodEditDraft";
 
 const dairy: Aisle = { id: "a1", name: "Dairy", position: 0 };
@@ -214,5 +219,48 @@ describe("made by a recipe", () => {
 
   test("the patch carries recipeId", () => {
     expectTypeOf<FoodPatch["recipeId"]>().toEqualTypeOf<string | null>();
+  });
+});
+
+describe("Sold in (row 184)", () => {
+  const packRow = (over: Partial<PackDraft> = {}): PackDraft => ({ key: "k", quantity: "250", unitId: gram.id, ...over });
+
+  test("parsePacks: a size per row, 'each' as a null unit, blank rows dropped", () => {
+    expect(parsePacks([packRow(), packRow({ key: "e", quantity: "6", unitId: EACH }), blankPack()])).toEqual({
+      packs: [
+        { quantity: 250, unitId: gram.id },
+        { quantity: 6, unitId: null },
+      ],
+      error: null,
+    });
+  });
+
+  test("parsePacks: a half-filled row, a size not above zero and a repeat are refused", () => {
+    expect(parsePacks([packRow({ unitId: "" })]).error).toBe("Every size needs an amount and a unit.");
+    expect(parsePacks([packRow({ quantity: "0" })]).error).toBe("Sizes must be numbers above zero.");
+    expect(parsePacks([packRow({ quantity: "abc" })]).error).toBe("Sizes must be numbers above zero.");
+    expect(parsePacks([packRow(), packRow({ key: "b" })]).error).toBe("The same size is listed twice.");
+  });
+
+  test("packDraft holds a stored size as the editor does, 'each' for a null unit", () => {
+    expect(packDraft({ id: "p", foodId: "f1", quantity: 6, unitId: null })).toEqual({ key: "p", quantity: "6", unitId: EACH });
+  });
+
+  test("the sheet lists the food's sizes and offers Add size", () => {
+    const html = renderToString(
+      <FoodEditSheetContent
+        food={butter}
+        packs={[{ id: "p1", foodId: butter.id, quantity: 250, unitId: gram.id }]}
+        aisles={[dairy]}
+        units={[cup, gram]}
+        onSave={() => {}}
+        onCancel={() => {}}
+        onCreateAisle={() => Promise.resolve(dairy)}
+      />
+    );
+    expect(html).toContain("Sold in");
+    expect(html).toContain('aria-label="Size 1 amount"');
+    expect(html).toContain('value="250"');
+    expect(html).toContain("Add size");
   });
 });

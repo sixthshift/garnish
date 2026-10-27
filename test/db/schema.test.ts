@@ -98,6 +98,7 @@ test("the migrations create every table in architecture.md", () => {
     "diagnostic_event",
     "food",
     "food_conversion",
+    "food_pack",
     "ingredient",
     "mcp_pairing",
     "meal_plan_entry",

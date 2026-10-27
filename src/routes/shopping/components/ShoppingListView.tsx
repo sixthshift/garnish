@@ -8,8 +8,8 @@ import { useState } from "react";
 import { Page, PageHeader } from "../../../components/shell/Page";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { dayLabel } from "../../../domain/plan";
-import type { Aisle } from "../../../domain/reference";
-import { groupByAisle, groupByMeal, mealsOf, type ShoppingItem } from "../../../domain/shopping";
+import type { Aisle, FoodPack, FoodPackInput, Unit } from "../../../domain/reference";
+import { groupByAisle, groupByMeal, mealsOf, type ShoppingItem, sizesByFood } from "../../../domain/shopping";
 import { pendingLabel } from "../../../lib/outbox";
 import type { ShoppingView } from "../../../lib/prefs";
 import { AddItemForm } from "./AddItemForm";
@@ -29,6 +29,9 @@ export function ShoppingListView({
   view = "aisles",
   onViewChange = () => {},
   aisles = [],
+  packs = [],
+  units = [],
+  onSetSizes = () => {},
   onAdd,
   onTick,
   onRemove,
@@ -39,6 +42,7 @@ export function ShoppingListView({
   offline = false,
 }: ShoppingListViewProps) {
   const rowProps = { aisles, onTick, onRemove, onSetAisle, busy };
+  const sizes = sizesByFood(packs, units);
   // Clearing deletes every ticked line at once and nothing brings them back, so it asks first;
   // the button that opens the question is neutral and the dialog's is the red one (rule 5).
   const [confirming, setConfirming] = useState(false);
@@ -97,7 +101,15 @@ export function ShoppingListView({
                     </div>
                     <ul className="flex flex-col divide-y divide-border-subtle">
                       {group.items.map((item) => (
-                        <ShoppingRow key={item.id} item={item} meals={mealsOf(item)} {...rowProps} />
+                        <ShoppingRow
+                          key={item.id}
+                          item={item}
+                          meals={mealsOf(item)}
+                          sizes={item.food === null ? undefined : (sizes.get(item.food.id) ?? [])}
+                          units={units}
+                          onSetSizes={onSetSizes}
+                          {...rowProps}
+                        />
                       ))}
                     </ul>
                   </section>
@@ -156,6 +168,12 @@ export type ShoppingListViewProps = {
   onViewChange?: (view: ShoppingView) => void;
   /** Every aisle, in `position` order, for the "Set aisle" Select. Empty hides the control. */
   aisles?: readonly Aisle[];
+  /** Every food's sizes: the aisle view rounds a line up to whole packs of them. */
+  packs?: readonly FoodPack[];
+  /** Every unit: the sizes' own, and "Sold in"'s Select. */
+  units?: readonly Unit[];
+  /** A size added from a row's "Sold in": the food's whole list of sizes. */
+  onSetSizes?: (foodId: string, packs: FoodPackInput[]) => void;
   /** A line typed into the box at the top, already trimmed and never empty. */
   onAdd: (text: string) => void;
   onTick: (id: string, ticked: boolean) => void;

@@ -14,6 +14,7 @@ export const IDS = {
   butter: "d0000000-0000-4000-8000-000000000001",
   hollandaise: "d0000000-0000-4000-8000-000000000002",
   conversion: "e0000000-0000-4000-8000-000000000001",
+  pack: "e1000000-0000-4000-8000-000000000001",
   recipe: "f0000000-0000-4000-8000-000000000001",
   note: "f1000000-0000-4000-8000-000000000001",
   part: "f2000000-0000-4000-8000-000000000001",
@@ -67,8 +68,19 @@ export function sampleBackup(): Backup {
         recipeId: null,
         skipShopping: false,
         conversions: [{ id: IDS.conversion, unitId: IDS.kilogram, quantity: 1, toUnitId: IDS.gram, toQuantity: 1000 }],
+        packs: [{ id: IDS.pack, quantity: 250, unitId: IDS.gram }],
       },
-      { id: IDS.hollandaise, name: "hollandaise", pluralName: null, aliases: [], aisleId: null, recipeId: IDS.recipe, skipShopping: false, conversions: [] },
+      {
+        id: IDS.hollandaise,
+        name: "hollandaise",
+        pluralName: null,
+        aliases: [],
+        aisleId: null,
+        recipeId: IDS.recipe,
+        skipShopping: false,
+        conversions: [],
+        packs: [],
+      },
     ],
     recipes: [
       {

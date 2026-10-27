@@ -24,6 +24,7 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
 vi.mock("../../../src/server/fns/shopping", local);
 vi.mock("../../../src/server/fns/foods", local);
 vi.mock("../../../src/server/fns/aisles", local);
+vi.mock("../../../src/server/fns/units", local);
 
 const stamp = "2026-09-13T00:00:00.000Z";
 const gram = {
@@ -89,7 +90,7 @@ describe("grouping", () => {
 });
 
 describe("the sources expansion", () => {
-  test("a chevron row expands to the recipe, part and servings behind the line", () => {
+  test("a chevron row expands to each dish's amount and servings, then the actions", () => {
     const html = render([
       item({
         quantity: 250,
@@ -102,9 +103,14 @@ describe("the sources expansion", () => {
       }),
     ]);
     const sources = elementHtml(html, "shopping-sources");
-    expect(sources).toContain("Lemon tart, Pastry, serves 4");
-    expect(sources).toContain("Shortbread, serves 12");
-    expect(sources).toContain("Remove");
+    // A row per dish, its amount first; the part is not said, since a dish's amounts are added up.
+    const rows = elementHtml(html, "shopping-breakdown").split("<li").slice(1);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatch(/150 g<\/span>.*Lemon tart.* · serves 4/);
+    expect(rows[1]).toMatch(/100 g<\/span>.*Shortbread.* · serves 12/);
+    // One aisle-view line with no sizes: the breakdown is the whole story, so no total.
+    expect(sources).not.toContain("shopping-total");
+    expect(elementHtml(html, "shopping-actions")).toContain("Remove");
   });
 
   test("a hand-typed line says so rather than showing an empty expansion", () => {
@@ -198,7 +204,9 @@ describe("the meal view", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain("200 g butter");
     expect(rows[1]).toContain("150 g butter");
-    expect(rows[0]).toContain("350 g butter on the list in all");
+    expect(rows[0]).toContain("350 g butter in all");
+    expect(rows[0]).toMatch(/200 g<\/span>.*Lemon tart · Mon/);
+    expect(rows[0]).toMatch(/150 g<\/span>.*Soup · Wed/);
   });
 
   test("the aisle view says under each line which dishes it is for, and nothing under a typed line", () => {
@@ -228,6 +236,44 @@ describe("the meal view", () => {
     expect(headings(html)).toEqual(["Lemon tart"]);
     expect(elementHtml(html, "shopping-row")).toContain('data-ticked="true"');
     expect(html).not.toContain("Clear ticked");
+  });
+});
+
+describe("pack sizes (row 184)", () => {
+  const each = { foodId: lemons.id, quantity: 1, unitId: null };
+  const block250 = { id: "7a7a7a7a-7a7a-4a7a-8a7a-000000000001", foodId: butter.id, quantity: 250, unitId: gram.id };
+  const block500 = { id: "7a7a7a7a-7a7a-4a7a-8a7a-000000000002", foodId: butter.id, quantity: 500, unitId: gram.id };
+  const units = [{ ...gram, portion: false }];
+  const renderPacks = (items: ShoppingItem[], packs: unknown[], view: "aisles" | "meals" = "aisles") =>
+    renderToString(
+      <ShoppingListView items={items} view={view} packs={packs as never} units={units} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} />
+    );
+
+  test("the aisle view rounds a line up to whole packs, and says what is over", () => {
+    const html = renderPacks([item({ quantity: 400, unit: gram, food: butter })], [block250]);
+    expect(elementHtml(html, "shopping-packs")).toContain("→ 2 × 250 g");
+    expect(elementHtml(html, "shopping-total")).toContain("400 g butter needed · 2 × 250 g · 100 g over");
+  });
+
+  test("several sizes: the least over, then the fewest packs", () => {
+    expect(elementHtml(renderPacks([item({ quantity: 450, unit: gram, food: butter })], [block250, block500]), "shopping-packs")).toContain("→ 1 × 500 g");
+  });
+
+  test("a food with no size, a typed line and the meal view say nothing about packs", () => {
+    expect(renderPacks([item({ quantity: 400, unit: gram, food: butter }), item({ text: "Batteries" })], [])).not.toContain("shopping-packs");
+    expect(renderPacks([item({ quantity: 400, unit: gram, food: butter, sources: [] })], [block250], "meals")).not.toContain("shopping-packs");
+  });
+
+  test("an each size rounds a half lemon to one", () => {
+    const html = renderPacks([item({ quantity: 0.5, food: lemons })], [{ id: "7a7a7a7a-7a7a-4a7a-8a7a-000000000003", ...each }]);
+    expect(elementHtml(html, "shopping-packs")).toContain("→ 1");
+  });
+
+  test("a food line offers Sold in, naming the sizes it has; a typed line does not", () => {
+    const html = renderPacks([item({ quantity: 400, unit: gram, food: butter }), item({ text: "Batteries" })], [block250, block500]);
+    expect(html.match(/data-testid="shopping-sold-in"/g)).toHaveLength(1);
+    expect(elementHtml(html, "shopping-sold-in")).toContain("Sold in 250 g, 500 g");
+    expect(html).toContain('aria-label="Size butter is sold in"');
   });
 });
 
@@ -272,7 +318,7 @@ describe("/shopping", () => {
     const html = await renderRoute("/shopping");
     expect(html).toContain("Dairy");
     expect(html).toContain("250 butter");
-    expect(html).toContain("Lemon tart, Pastry, serves 4");
+    expect(html).toMatch(/Lemon tart.* · serves 4/);
     expect(html).toContain("Batteries");
     expect(html).toContain("Other");
     expect(html).toContain("2 items to buy");

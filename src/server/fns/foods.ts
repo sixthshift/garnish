@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import foods from "../../db/models/food/repo";
 import recipes from "../../db/models/recipe/repo";
-import { FoodConversions, FoodCreate, FoodMerge, FoodUpdate, IdInput, ListQuery, NameInput, RecipeFoodInput } from "../../domain/reference";
+import { FoodConversions, FoodCreate, FoodMerge, FoodPacks, FoodUpdate, IdInput, ListQuery, NameInput, RecipeFoodInput } from "../../domain/reference";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
@@ -38,6 +38,17 @@ export const setFoodConversions = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(FoodConversions)
   .handler(async ({ data: { id, conversions } }) => required(foods.setConversions(id, conversions), "food", id));
+
+/** Every size every food is sold in: what the shopping list rounds a line up to (decisions.md row 184). */
+export const listFoodPacks = createServerFn({ method: "GET" })
+  .middleware([notFoundMiddleware])
+  .handler(async () => foods.packs());
+
+/** This food's sizes, replaced wholesale: the food editor's "Sold in", and the list's own. */
+export const setFoodPacks = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(FoodPacks)
+  .handler(async ({ data: { id, packs } }) => required(foods.setPacks(id, packs), "food", id));
 
 /** Deletes and returns the row, as Mealie does. */
 export const deleteFood = createServerFn({ method: "POST" })

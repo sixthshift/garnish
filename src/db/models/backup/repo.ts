@@ -8,7 +8,7 @@ import { getDb } from "../../../server/core/db";
 import { snapshot } from "../../backup/snapshot";
 import { orm } from "../../connection/client";
 import { aisle } from "../aisle/schema";
-import { food, foodConversion } from "../food/schema";
+import { food, foodConversion, foodPack } from "../food/schema";
 import { mealPlanEntry } from "../plan/schema";
 import { plannerRule } from "../planner/schema";
 import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "../recipe/schema";
@@ -122,6 +122,7 @@ export function backupRepository(db: Database) {
       recipeNote,
       recipeTag,
       foodConversion,
+      foodPack,
       food,
       recipe,
       unit,
@@ -144,6 +145,7 @@ export function backupRepository(db: Database) {
         dz.select().from(foodConversion).orderBy(asc(foodConversion.unitId), asc(foodConversion.toUnitId)).all(),
         (row) => row.foodId
       );
+      const packs = groupBy(dz.select().from(foodPack).orderBy(asc(foodPack.quantity), asc(foodPack.id)).all(), (row) => row.foodId);
       const sources = groupBy(dz.select().from(shoppingItemSource).orderBy(asc(shoppingItemSource.id)).all(), (row) => row.itemId);
       const rule = (row: typeof styleRule.$inferSelect) => ({
         id: row.id,
@@ -193,6 +195,7 @@ export function backupRepository(db: Database) {
               toUnitId: c.toUnitId,
               toQuantity: c.toQuantity,
             })),
+            packs: (packs.get(row.id) ?? []).map((p) => ({ id: p.id, quantity: p.quantity, unitId: p.unitId })),
           })),
         recipes: readRecipes(),
         timeline: dz
@@ -297,8 +300,12 @@ export function backupRepository(db: Database) {
         for (const row of body.aisles) tx.insert(aisle).values(row).run();
         for (const { standardUnitId: _, ...row } of body.units) tx.insert(unit).values(row).run();
         for (const row of body.tags) tx.insert(tag).values(row).run();
-        for (const { conversions, recipeId: _, ...row } of body.foods) {
+        for (const { conversions, packs, recipeId: _, ...row } of body.foods) {
           tx.insert(food).values(row).run();
+          for (const p of packs)
+            tx.insert(foodPack)
+              .values({ ...p, foodId: row.id })
+              .run();
           for (const c of conversions)
             tx.insert(foodConversion)
               .values({ ...c, foodId: row.id })

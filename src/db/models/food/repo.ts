@@ -1,12 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import type { FoodConversion, FoodRow, FoodSummary } from "../../../domain/reference";
+import type { FoodConversion, FoodPack, FoodPackInput, FoodRow, FoodSummary } from "../../../domain/reference";
 import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { ingredient, part } from "../recipe/schema";
-import { food, foodConversion } from "./schema";
+import { food, foodConversion, foodPack } from "./schema";
 
 export type Food = FoodRow;
 
@@ -58,6 +58,11 @@ export function foodRepository(db: Database) {
         }))
       )
       .run();
+  }
+
+  /** This food's sizes, smallest first. */
+  function packsOf(id: string): FoodPack[] {
+    return dz.select().from(foodPack).where(eq(foodPack.foodId, id)).orderBy(asc(foodPack.quantity), sql`rowid`).all();
   }
 
   function get(id: string): Food | null {
@@ -139,6 +144,24 @@ export function foodRepository(db: Database) {
       if (!get(id)) return null;
       writeConversions(id, next);
       return get(id);
+    },
+
+    /** Every size every food is sold in, by food then size: what the shopping list rounds to (decisions.md row 184). */
+    packs: (): FoodPack[] => dz.select().from(foodPack).orderBy(asc(foodPack.foodId), asc(foodPack.quantity), sql`rowid`).all(),
+
+    packsOf,
+
+    /** This food's sizes, replaced wholesale. Null when `id` is unknown. */
+    setPacks(id: string, next: readonly FoodPackInput[]): FoodPack[] | null {
+      if (!get(id)) return null;
+      dz.transaction((tx) => {
+        tx.delete(foodPack).where(eq(foodPack.foodId, id)).run();
+        if (next.length > 0)
+          tx.insert(foodPack)
+            .values(next.map((pack) => ({ id: crypto.randomUUID(), foodId: id, quantity: pack.quantity, unitId: pack.unitId })))
+            .run();
+      });
+      return packsOf(id);
     },
 
     /** True when a row was deleted. Ingredients pointing at it are set null by the schema. */

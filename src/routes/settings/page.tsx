@@ -13,14 +13,14 @@ import { Version } from "./components/Version";
 import { Route } from "./route";
 
 export function SettingsPage() {
-  const { aisles, units, foods, foodUsage, tags, recipes, styleRules, plannerRules, ai, mcp, diagnostics } = Route.useLoaderData();
+  const { aisles, units, foods, foodUsage, foodPacks, tags, recipes, styleRules, plannerRules, ai, mcp, diagnostics } = Route.useLoaderData();
   const recent = recentCount(diagnostics, new Date());
 
   const items: TabItem[] = [
     {
       value: "library",
       label: "Library",
-      content: <LibraryTab foods={foods} foodUsage={foodUsage} aisles={aisles} units={units} tags={tags} recipes={recipes} />,
+      content: <LibraryTab foods={foods} foodUsage={foodUsage} foodPacks={foodPacks} aisles={aisles} units={units} tags={tags} recipes={recipes} />,
     },
     { value: "style", label: "Style", badge: styleRules.filter((rule) => rule.enabled).length, content: <StyleTab rules={styleRules} /> },
     {

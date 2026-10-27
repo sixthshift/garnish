@@ -8,7 +8,7 @@ import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
 import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/planner";
 import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipe";
-import type { Aisle, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/reference";
+import type { Aisle, FoodPack, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/reference";
 import type { StyleRule } from "../../src/domain/style";
 import { searchParam } from "../../src/lib/search";
 import type { Route as IndexRoute, RecipeListData } from "../../src/routes/home/route";
@@ -752,6 +752,7 @@ describe("loader data types match the domain schemas", () => {
       units: Unit[];
       foods: FoodRow[];
       foodUsage: Record<string, number>;
+      foodPacks: FoodPack[];
       tags: TagUsage[];
       recipes: RecipeSummary[];
       styleRules: StyleRule[];

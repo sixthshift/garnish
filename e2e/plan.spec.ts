@@ -74,3 +74,35 @@ test("the list by meal shows each planned dish its own share of a line they shar
   await expect(page.getByRole("radio", { name: "Meals" })).toBeChecked();
   await expect(soupGroup.getByRole("checkbox", { name: "100 g red lentils" })).toBeChecked();
 });
+
+test("a line is rounded up to the sizes its food is sold in, and a size can be added from the list", async ({ page, open }) => {
+  const name = unique("Pack Bake");
+  // Butter comes in 250 g and 500 g from the starter sizes; red lentils has none.
+  await createRecipe(page, open, { name, servings: 4, ingredients: ["150 g butter", "300 g red lentils"], steps: ["Bake."] });
+
+  await open("/plan");
+  await page.getByRole("button", { name: /^Add to Wednesday/ }).click();
+  const sheet = page.getByRole("dialog");
+  await sheet.getByRole("combobox", { name: "Search recipes, or type a note" }).fill(name);
+  await sheet.getByRole("option", { name }).click();
+  await expect(sheet).toBeHidden();
+  await page.getByRole("button", { name: "Add this week to the shopping list" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "items added" })).toBeVisible();
+
+  await open("/shopping");
+  await page.getByRole("radio", { name: "Aisles" }).click();
+  const dairy = page.getByRole("region", { name: "Dairy & eggs" });
+  await expect(dairy.getByText(/butter → \d+ × (250|500) g/)).toBeVisible();
+
+  // Lentils: a 1 kg bag, added from the row, and the line is rounded at once.
+  const lentils = page.getByRole("region", { name: "Pantry" }).getByRole("listitem").filter({ hasText: "red lentils" });
+  await lentils
+    .getByText(/red lentils/)
+    .first()
+    .click();
+  await lentils.getByRole("textbox", { name: "Size red lentils is sold in" }).fill("1");
+  await lentils.getByRole("combobox", { name: "Unit of the size red lentils is sold in" }).click();
+  await page.getByRole("option", { name: "kilogram" }).click();
+  await lentils.getByRole("button", { name: "Add size" }).click();
+  await expect(lentils.getByText(/→ \d+ × 1 kg/)).toBeVisible();
+});

@@ -1,4 +1,4 @@
-import { formatIngredient, formatQuantity } from "../ingredient";
+import { formatAmount, formatIngredient } from "../ingredient";
 import { type Aisle, convert, type Unit } from "../reference";
 import type { ShoppingItem, ShoppingItemSource } from "./schema";
 
@@ -208,17 +208,43 @@ export function shoppingItemLabel(item: Pick<ShoppingItem, "quantity" | "unit" |
   return formatIngredient({ quantity: item.quantity, unit: item.unit, food: item.food, note: "", originalText: "" });
 }
 
+/** One dish's part in a line, for the row's expansion: "200 g · Lemon tart · Mon · serves 4". */
+export interface ShoppingBreakdownRow {
+  /** Stable React key: the dish. */
+  key: string;
+  /** What the dish asked for, in one unit ("200 g"); '' when it cannot be said or the line has no amount. */
+  amount: string;
+  /** The recipe; "Meal plan" for a plain plan entry ("leftovers"). */
+  name: string;
+  /** The plan day that asked for it, YYYY-MM-DD; null from anywhere else. */
+  date: string | null;
+  /** The servings the recipe was added at; null when not recorded. */
+  servings: number | null;
+}
+
 /**
- * Where a line came from, for the row's expansion: "Lemon tart, Pastry,
- * serves 4". The part name is dropped for the unnamed part (it is the recipe's
- * main body), the servings when the source did not record them, and a source
- * with no recipe name at all (a hand-typed line) reads as "Added by hand".
- * Pure.
+ * Where a line came from, one row per dish, in the order the dishes reached
+ * it (decisions.md row 185). A dish that asked more than once (the butter in
+ * the pastry and in the filling) is one row with the amounts added, as the
+ * meal view adds them; a plain plan entry is "Meal plan" on its day. A line
+ * typed by hand has no sources and gives no rows. Pure.
  */
-export function sourceLabel(source: Pick<ShoppingItemSource, "recipeName" | "partName" | "servings">): string {
-  const parts = [source.recipeName.trim(), source.partName.trim()].filter((part) => part !== "");
-  if (parts.length === 0) return "Added by hand";
-  const servings = source.servings;
-  if (servings !== null && servings > 0) parts.push(`serves ${formatQuantity(servings)}`);
-  return parts.join(", ");
+export function breakdownOf(item: ShoppingItem): ShoppingBreakdownRow[] {
+  const byKey = new Map<string, ShoppingItemSource[]>();
+  for (const source of item.sources) {
+    const key = source.recipeName.trim() === "" ? `note@${source.planDate ?? ""}` : mealKey(source);
+    byKey.set(key, [...(byKey.get(key) ?? []), source]);
+  }
+  return [...byKey].map(([key, sources]) => {
+    const first = sources[0]!;
+    const share = shareOf(item, sources);
+    const servings = sources.find((source) => source.servings !== null && source.servings > 0)?.servings ?? null;
+    return {
+      key,
+      amount: share === null ? "" : formatAmount(share.quantity, share.unit),
+      name: first.recipeName.trim() === "" ? "Meal plan" : first.recipeName.trim(),
+      date: first.planDate,
+      servings,
+    };
+  });
 }

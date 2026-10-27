@@ -5,6 +5,7 @@ import type { Food } from "../models/food/repo";
 import { type PlannerRule, plannerRepository } from "../models/planner/repo";
 import { type StyleRule, styleRuleRepository } from "../models/style/repo";
 import { type Unit, unitRepository } from "../models/unit/repo";
+import { seedStarterPacks } from "./packs";
 import { DEFAULT_PLANNER_RULES } from "./planner";
 import { seedFoodPlurals, seedStarterFoods } from "./starter";
 import { seedStatements } from "./statements";
@@ -18,6 +19,8 @@ export type SeedResult = {
   aliasedFoods: Food[];
   /** Starter foods the plurals batch renamed, gave a plural or new aliases (`foodPlurals.ts`). */
   correctedFoods: Food[];
+  /** Starter foods the packs batch gave the sizes they are sold in (`packs.ts`), by name. */
+  packedFoods: string[];
   styleRules: StyleRule[];
   rewordedStyleRules: StyleRule[];
   retiredStyleRules: StyleRule[];
@@ -56,6 +59,7 @@ export function seed(db: Database): SeedResult {
 
     const starter = seedStarterFoods(db);
     const correctedFoods = seedFoodPlurals(db);
+    const packedFoods = seedStarterPacks(db);
     const style = seedStatements(styleRepo, DEFAULT_STYLE_RULES);
     const plan = seedStatements(planner.rules, DEFAULT_PLANNER_RULES);
 
@@ -65,6 +69,7 @@ export function seed(db: Database): SeedResult {
       foods: starter.foods,
       aliasedFoods: starter.aliasedFoods,
       correctedFoods,
+      packedFoods,
       styleRules: style.made,
       rewordedStyleRules: style.reworded,
       retiredStyleRules: style.retired,

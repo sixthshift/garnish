@@ -78,6 +78,13 @@ export const backupConversionSchema = z.object({
   toQuantity: z.number().positive(),
 });
 
+/** A size the food is sold in (decisions.md row 184); a null unit is "each". */
+export const backupPackSchema = z.object({
+  id,
+  quantity: z.number().positive(),
+  unitId: id.nullable().default(null),
+});
+
 export const backupFoodSchema = z.object({
   id,
   name: nonEmpty,
@@ -87,6 +94,7 @@ export const backupFoodSchema = z.object({
   recipeId: id.nullable().default(null),
   skipShopping: z.boolean().default(false),
   conversions: z.array(backupConversionSchema).default([]),
+  packs: z.array(backupPackSchema).default([]),
 });
 
 // --- Recipes ----------------------------------------------------------------

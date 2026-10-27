@@ -10,7 +10,7 @@ import { useOnline } from "../../lib/useOnline";
 import { useOutbox } from "../../lib/useOutbox";
 import { addShoppingItems, clearTickedShoppingItems, removeShoppingItem, tickShoppingItem } from "../../server/fns/shopping";
 import { ShoppingListView } from "./components/ShoppingListView";
-import { sendOutboxEntry, setFoodAisle } from "./components/shoppingListActions";
+import { sendOutboxEntry, setFoodAisle, setFoodSizes } from "./components/shoppingListActions";
 import { Route } from "./route";
 
 /**
@@ -22,7 +22,7 @@ import { Route } from "./route";
  * list at once. The header says how many are waiting until they land.
  */
 export function ShoppingPage() {
-  const { items, aisles } = Route.useLoaderData();
+  const { items, aisles, packs, units } = Route.useLoaderData();
   const mutate = useMutate();
   const router = useRouter();
   const online = useOnline();
@@ -75,6 +75,9 @@ export function ShoppingPage() {
       view={view}
       onViewChange={setView}
       aisles={aisles}
+      packs={packs}
+      units={units}
+      onSetSizes={(foodId, sizes) => void write("Couldn't add the size", () => setFoodSizes(foodId, sizes))}
       busy={busy}
       pending={queue.length}
       offline={!online}

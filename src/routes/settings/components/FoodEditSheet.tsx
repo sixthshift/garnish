@@ -9,10 +9,11 @@ import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
 import type { Food } from "../../../db/models/food/repo";
 import type { Unit } from "../../../db/models/unit/repo";
-import type { Aisle, FoodConversionInput } from "../../../domain/reference";
+import type { Aisle, FoodConversionInput, FoodPack, FoodPackInput } from "../../../domain/reference";
 import { picker } from "../../../lib/ui/picker";
 import { ConversionRows } from "./ConversionRows";
-import { aliasesText, type ConversionDraft, conversionDraft, parseAliases, parseConversions } from "./foodEditDraft";
+import { aliasesText, type ConversionDraft, conversionDraft, type PackDraft, packDraft, parseAliases, parseConversions, parsePacks } from "./foodEditDraft";
+import { PackRows } from "./PackRows";
 
 /** A recipe as the "Made by a recipe" Combobox offers it. */
 export type RecipeOption = { id: string; name: string };
@@ -29,10 +30,14 @@ export type FoodPatch = {
   skipShopping: boolean;
   /** Replaces the food's conversions wholesale. */
   conversions: FoodConversionInput[];
+  /** Replaces the sizes the food is sold in wholesale (decisions.md row 184). */
+  packs: FoodPackInput[];
 };
 
 export type FoodEditSheetContentProps = {
   food: Food;
+  /** The sizes this food is sold in, for "Sold in". */
+  packs?: readonly FoodPack[];
   aisles: readonly Aisle[];
   /** Every unit, for the conversions editor's two Selects. Empty hides the editor. */
   units?: readonly Unit[];
@@ -45,13 +50,24 @@ export type FoodEditSheetContentProps = {
   busy?: boolean;
 };
 
-export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], onSave, onCancel, onCreateAisle, busy = false }: FoodEditSheetContentProps) {
+export function FoodEditSheetContent({
+  food,
+  packs = [],
+  aisles,
+  units = [],
+  recipes = [],
+  onSave,
+  onCancel,
+  onCreateAisle,
+  busy = false,
+}: FoodEditSheetContentProps) {
   const [name, setName] = useState(food.name);
   const [pluralName, setPluralName] = useState(food.pluralName ?? "");
   const [aliases, setAliases] = useState(() => aliasesText(food.aliases));
   const [skipShopping, setSkipShopping] = useState(food.skipShopping);
   const [aisleId, setAisleId] = useState(food.aisleId);
   const [conversions, setConversions] = useState<ConversionDraft[]>(() => food.conversions.map(conversionDraft));
+  const [sizes, setSizes] = useState<PackDraft[]>(() => packs.map(packDraft));
   const [aisleText, setAisleText] = useState(() => aisles.find((aisle) => aisle.id === food.aisleId)?.name ?? "");
   const [recipeId, setRecipeId] = useState(food.recipeId);
   const [recipeText, setRecipeText] = useState(() => recipes.find((recipe) => recipe.id === food.recipeId)?.name ?? "");
@@ -68,6 +84,11 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
       setError(parsed.error);
       return;
     }
+    const parsedSizes = parsePacks(sizes);
+    if (parsedSizes.error) {
+      setError(parsedSizes.error);
+      return;
+    }
     setError(null);
     onSave({
       id: food.id,
@@ -78,6 +99,7 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
       recipeId,
       skipShopping,
       conversions: parsed.conversions,
+      packs: parsedSizes.packs,
     });
   };
 
@@ -159,6 +181,7 @@ export function FoodEditSheetContent({ food, aisles, units = [], recipes = [], o
               Always in the cupboard: it goes on the shopping list already ticked.
             </Muted>
           </div>
+          <PackRows packs={sizes} units={units} busy={busy} onChange={setSizes} />
           <ConversionRows conversions={conversions} units={units} busy={busy} onChange={setConversions} />
         </form>
       </Sheet.Body>

@@ -114,7 +114,7 @@ describe("what the database would refuse", () => {
 
   test("names unique without case, slugs unique exactly", () => {
     const backup = sampleBackup();
-    backup.foods.push({ ...backup.foods[0]!, id: "d0000000-0000-4000-8000-000000000009", name: "Butter", conversions: [] });
+    backup.foods.push({ ...backup.foods[0]!, id: "d0000000-0000-4000-8000-000000000009", name: "Butter", conversions: [], packs: [] });
     backup.recipes.push({
       ...backup.recipes[0]!,
       id: "f0000000-0000-4000-8000-000000000009",

@@ -1,7 +1,7 @@
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
 import type { RecipeSummary } from "../../../../domain/recipe";
-import type { Aisle, TagUsage, Unit } from "../../../../domain/reference";
+import type { Aisle, FoodPack, TagUsage, Unit } from "../../../../domain/reference";
 import type { FoodRow } from "../../route";
 import { AislesTab } from "./AislesTab";
 import { FoodsTab } from "./FoodsTab";
@@ -24,6 +24,7 @@ function isSection(value: string): value is Section {
 export function LibraryTab({
   foods,
   foodUsage,
+  foodPacks = [],
   units,
   aisles,
   tags,
@@ -31,6 +32,8 @@ export function LibraryTab({
 }: {
   foods: readonly FoodRow[];
   foodUsage: Readonly<Record<string, number>>;
+  /** Every food's sizes, for the food sheet's "Sold in". */
+  foodPacks?: readonly FoodPack[];
   units: readonly Unit[];
   aisles: readonly Aisle[];
   tags: readonly TagUsage[];
@@ -50,7 +53,7 @@ export function LibraryTab({
         value={section}
         onValueChange={(value) => isSection(value) && setSection(value)}
       />
-      {section === "foods" && <FoodsTab foods={foods} usage={foodUsage} aisles={aisles} units={units} recipes={recipes} />}
+      {section === "foods" && <FoodsTab foods={foods} usage={foodUsage} packs={foodPacks} aisles={aisles} units={units} recipes={recipes} />}
       {section === "units" && <UnitsTab units={units} />}
       {section === "aisles" && <AislesTab aisles={aisles} />}
       {section === "tags" && <TagsTab tags={tags} />}

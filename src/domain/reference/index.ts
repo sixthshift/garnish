@@ -1,5 +1,5 @@
 export { convert } from "./convert";
-export type { Aisle, Food, FoodConversion, FoodRow, FoodSummary, Tag, TagUsage, Unit } from "./reference";
+export type { Aisle, Food, FoodConversion, FoodPack, FoodRow, FoodSummary, Tag, TagUsage, Unit } from "./reference";
 export {
   AisleCreate,
   AisleReorder,
@@ -8,7 +8,10 @@ export {
   FoodConversions,
   FoodCreate,
   FoodMerge,
+  FoodPackInput,
+  FoodPacks,
   FoodUpdate,
+  foodPackSchema,
   foodSchema,
   Id,
   IdInput,

@@ -6,12 +6,12 @@ import { useState } from "react";
 import { DataTable } from "../../../../components/ui/DataTable";
 import { UsageConfirmDialog } from "../../../../components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../../domain/recipe";
-import type { Aisle, Unit } from "../../../../domain/reference";
+import type { Aisle, FoodPack, Unit } from "../../../../domain/reference";
 import { useMutate } from "../../../../lib/mutate";
 import { toastError } from "../../../../lib/toast";
 import type { DataTableColumn } from "../../../../lib/ui/dataTable";
 import { findOrCreateAisle } from "../../../../server/fns/aisles";
-import { createFood, deleteFood, mergeFood, updateFood, usingFood } from "../../../../server/fns/foods";
+import { createFood, deleteFood, mergeFood, setFoodPacks, updateFood, usingFood } from "../../../../server/fns/foods";
 import type { FoodRow } from "../../route";
 import { FoodEditSheet, type FoodPatch } from "../FoodEditSheet";
 import { FoodMergeDialog } from "../FoodMergeDialog";
@@ -23,6 +23,7 @@ const NEW_FOOD: FoodRow = { id: "", name: "", pluralName: null, aliases: [], ais
 export function FoodsTab({
   foods,
   usage,
+  packs = [],
   aisles,
   units,
   recipes,
@@ -30,6 +31,8 @@ export function FoodsTab({
   foods: readonly FoodRow[];
   /** Recipes per food id; a food no recipe uses is absent. */
   usage: Readonly<Record<string, number>>;
+  /** Every food's sizes; the sheet edits the open food's. */
+  packs?: readonly FoodPack[];
   aisles: readonly Aisle[];
   units: readonly Unit[];
   recipes: readonly RecipeSummary[];
@@ -66,8 +69,12 @@ export function FoodsTab({
   const saveEdit = async (patch: FoodPatch) => {
     setBusy(true);
     try {
-      const { id, ...fields } = patch;
-      await mutate(() => (id === "" ? createFood({ data: fields }) : updateFood({ data: patch })));
+      const { id, packs: sizes, ...fields } = patch;
+      await mutate(async () => {
+        const saved = id === "" ? await createFood({ data: fields }) : await updateFood({ data: { id, ...fields } });
+        // A new food with no sizes has none to write.
+        if (id !== "" || sizes.length > 0) await setFoodPacks({ data: { id: saved.id, packs: sizes } });
+      });
       toast({ intent: "success", title: `${patch.name} saved` });
       setEditing(null);
     } catch (error) {
@@ -121,6 +128,7 @@ export function FoodsTab({
         <FoodEditSheet
           open
           food={editing}
+          packs={packs.filter((pack) => pack.foodId === editing.id)}
           aisles={aisles}
           units={units}
           recipes={recipes}
