@@ -166,7 +166,7 @@ export function ShoppingRow({
           aria-label={`Remove ${label}`}
           data-testid="shopping-remove"
           disabled={busy}
-          className="mt-2.5 hidden size-8 shrink-0 items-center justify-center rounded text-fg-subtle opacity-0 transition-opacity hover:bg-bg-normal-hovered hover:text-fg-normal focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:flex"
+          className="mt-2.5 hidden size-8 shrink-0 items-center justify-center rounded-full text-fg-subtle opacity-0 transition-opacity hover:bg-bg-normal-hovered hover:text-fg-normal focus-visible:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:flex"
           onClick={() => onRemove(item.id)}
         >
           <TrashIcon />
