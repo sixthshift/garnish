@@ -40,6 +40,25 @@ function leaf(length: number, radius: number): string {
   return `M0 0 A ${radius} ${radius} 0 0 1 ${length} 0 A ${radius} ${radius} 0 0 1 0 0 Z`;
 }
 
+/** The stem, from its foot to its tip. */
+const STEM = "M262 384 C 250 330 250 278 256 188";
+
+/** Each leaf's length, radius, base and angle, from the stem's foot to its tip. */
+const LEAVES: readonly [number, number, number, number, number][] = [
+  [94, 61, 252, 381, -39],
+  [90, 58, 264, 345, -158],
+  [86, 55, 244, 313, -30],
+  [82, 53, 261, 279, -151],
+  [77, 50, 244, 245, -26],
+  [71, 46, 263, 213, -149],
+  [66, 43, 255, 200, -86],
+];
+
+/** Scales the artwork about its centre to fill the 512 box. */
+function sprigTransform(scale: number): string {
+  return `translate(256,256) scale(${scale}) translate(-253,-259)`;
+}
+
 /**
  * The sprig. Every leaf base sits on the stem's own curve — the positions are
  * sampled from the cubic, and each leaf is turned to that point's tangent ±55°,
@@ -50,15 +69,11 @@ function leaf(length: number, radius: number): string {
  */
 function Sprig({ scale }: { scale: number }) {
   return (
-    <g transform={`translate(256,256) scale(${scale}) translate(-253,-259)`}>
-      <path d="M262 384 C 250 330 250 278 256 188" fill="none" stroke="currentColor" strokeWidth="18" strokeLinecap="round" />
-      <path d={leaf(94, 61)} fill="currentColor" transform="translate(252,381) rotate(-39)" />
-      <path d={leaf(90, 58)} fill="currentColor" transform="translate(264,345) rotate(-158)" />
-      <path d={leaf(86, 55)} fill="currentColor" transform="translate(244,313) rotate(-30)" />
-      <path d={leaf(82, 53)} fill="currentColor" transform="translate(261,279) rotate(-151)" />
-      <path d={leaf(77, 50)} fill="currentColor" transform="translate(244,245) rotate(-26)" />
-      <path d={leaf(71, 46)} fill="currentColor" transform="translate(263,213) rotate(-149)" />
-      <path d={leaf(66, 43)} fill="currentColor" transform="translate(255,200) rotate(-86)" />
+    <g transform={sprigTransform(scale)}>
+      <path d={STEM} fill="none" stroke="currentColor" strokeWidth="18" strokeLinecap="round" />
+      {LEAVES.map(([length, radius, x, y, angle]) => (
+        <path key={`${x},${y}`} d={leaf(length, radius)} fill="currentColor" transform={`translate(${x},${y}) rotate(${angle})`} />
+      ))}
     </g>
   );
 }
@@ -84,6 +99,40 @@ export function LogoMark({ size, className, style }: LogoMarkProps) {
       aria-label="Garnish"
     >
       <Sprig scale={SCALE_FULL} />
+    </svg>
+  );
+}
+
+/**
+ * The bare sprig growing, then swaying, for the loading screen. The stem is
+ * drawn from its foot, `pathLength` making its dash one unit long; each leaf
+ * unfurls from its base in turn as the stem passes it, then flutters; and once
+ * it is whole the sprig sways from the stem's foot. The motion is all CSS
+ * (`.logo-animated`, `.sprig-stem`, `.sprig-leaf` in styles.css), so it plays
+ * from the shell the server sends, before the app's JS has loaded, and stands
+ * still under reduced motion. A leaf's path is wrapped in a group carrying its
+ * placement, since a CSS transform on the path would replace the attribute.
+ * Decorative: whatever shows it says what is happening in words.
+ */
+export function LogoAnimated({ size, className, style }: LogoMarkProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 512 512"
+      width={size}
+      height={size}
+      className={`logo-animated ${className ?? ""}`}
+      style={style}
+      aria-hidden="true"
+    >
+      <g transform={sprigTransform(SCALE_FULL)}>
+        <path d={STEM} fill="none" stroke="currentColor" strokeWidth="18" strokeLinecap="round" pathLength={1} className="sprig-stem" />
+        {LEAVES.map(([length, radius, x, y, angle], index) => (
+          <g key={`${x},${y}`} transform={`translate(${x},${y}) rotate(${angle})`}>
+            <path d={leaf(length, radius)} fill="currentColor" className="sprig-leaf" style={{ "--leaf": index } as CSSProperties} />
+          </g>
+        ))}
+      </g>
     </svg>
   );
 }

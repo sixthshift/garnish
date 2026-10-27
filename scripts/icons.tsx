@@ -1,7 +1,7 @@
 /**
  * Regenerates every file in public/icons, plus apple-touch-icon.png, from the
  * <LogoIcon> component — so the PNGs can never drift from the mark the app
- * renders. Run with `bun run icons` after changing src/components/Logo.tsx.
+ * renders. Run with `bun run icons` after changing src/components/shell/Logo.tsx.
  *
  * Three shapes come out of one drawing:
  *   icon.svg, icon-192, icon-512   circular, purpose "any"

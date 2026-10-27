@@ -3,18 +3,26 @@ import type { ErrorFallbackProps } from "@sixthshift/design-system/error-boundar
 import { Heading } from "@sixthshift/design-system/heading";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
-import { Spinner } from "@sixthshift/design-system/spinner";
 import { type ErrorComponentProps, Link, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { describeError } from "../../lib/errors";
 import { useOnline } from "../../lib/useOnline";
 import { buildLabel } from "../../lib/version";
+import { LogoAnimated } from "./Logo";
 import { reportError } from "./reportError";
 
+/**
+ * What fills the page while it loads: the shell the server sends on every cold
+ * start, and a navigation whose loader outlasts `pendingMs`. In the middle of
+ * the space above the tab bar the sprig grows, stem then leaves, and sways
+ * until the page arrives. It starts only after a moment, so a quick load shows
+ * nothing. Both are CSS (`.route-pending` in
+ * styles.css), since in the shell they run before the app's JS has loaded.
+ */
 export function RoutePending() {
   return (
-    <div className="flex min-h-48 items-center justify-center p-6" role="status">
-      <Spinner size="lg" />
+    <div className="route-pending flex min-h-[calc(100dvh-var(--app-bar,0px))] items-center justify-center p-6 text-fg-brand" role="status">
+      <LogoAnimated size={56} />
       <span className="sr-only">Loading</span>
     </div>
   );

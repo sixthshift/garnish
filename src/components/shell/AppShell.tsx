@@ -1,6 +1,6 @@
 import { bootstrapTheme } from "@sixthshift/design-system/hooks";
 import { cn } from "@sixthshift/design-system/utils";
-import { Link, Outlet, useMatches } from "@tanstack/react-router";
+import { Link, Outlet, useMatches, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useHydrated } from "../../lib/useHydrated";
 import { Logo } from "./Logo";
@@ -81,6 +81,24 @@ function Nav({ stacked = false, className, ...props }: React.HTMLAttributes<HTML
   );
 }
 
+/**
+ * A thin bar sweeping along the top of the screen while the router loads the
+ * next page, so a press answers at once; the page being left stays in place
+ * until `pendingMs`, when `RoutePending` takes over. Fades in after a moment
+ * (`.nav-progress` in styles.css), so a quick navigation shows nothing. Not
+ * drawn before hydration: the cold start has `RoutePending` already.
+ */
+function NavigationProgress() {
+  const hydrated = useHydrated();
+  const loading = useRouterState({ select: (state) => state.isLoading });
+  if (!hydrated || !loading) return null;
+  return (
+    <div className="nav-progress pointer-events-none fixed inset-x-0 top-0 z-app-bar h-0.5 overflow-hidden" aria-hidden="true">
+      <div className="nav-progress-bar h-full w-2/5 bg-bg-brand" />
+    </div>
+  );
+}
+
 export function AppShell() {
   useEffect(() => bootstrapTheme(), []);
   // The address decides these only once the page is the browser's: the shell
@@ -96,6 +114,7 @@ export function AppShell() {
   if (fullscreen) {
     return (
       <div className="min-h-dvh bg-bg-subtle text-fg-normal">
+        <NavigationProgress />
         <Outlet />
       </div>
     );
@@ -105,6 +124,7 @@ export function AppShell() {
     // bottom padding, and where a sticky save bar stops. None from `md`, or
     // where the route hides the bar; then a save bar sits at the very bottom.
     <div className={cn("flex min-h-dvh flex-col bg-bg-subtle text-fg-normal md:flex-row md:[--app-bar:0px]", hideNav ? "[--app-bar:0px]" : APP_BAR_HEIGHT)}>
+      <NavigationProgress />
       {/* Sticky and exactly one screen tall: as a plain flex child the aside
           stretches to the content's height, so `mt-auto` would push Settings
           past the fold on a long page. */}
