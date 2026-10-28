@@ -77,7 +77,7 @@ export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProp
     try {
       await mutate(() => deleteRecipe({ data: { id: recipe.id } }));
       toast({ intent: "success", title: `${recipe.name} deleted` });
-      await navigate({ to: "/" });
+      await navigate({ to: "/recipes" });
     } catch (error) {
       toastError("Could not delete recipe", error);
       setDeleting(false);

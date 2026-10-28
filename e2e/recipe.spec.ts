@@ -16,7 +16,7 @@ test("a recipe typed in is listed, scales, and keeps an edit", async ({ page, op
   await expect(page.getByRole("list", { name: "Steps" }).getByRole("listitem")).toHaveCount(2);
 
   // Found from the list by search.
-  await open("/");
+  await open("/recipes");
   await page.getByRole("textbox", { name: "Search recipes" }).fill(name);
   await page.getByRole("link", { name }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();

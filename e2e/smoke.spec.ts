@@ -3,8 +3,10 @@
 // v1.4.1's New recipe and Style pages passed the whole vitest suite.
 import { createRecipe, expect, test, unique } from "./fixtures";
 
-const pages = [
-  { path: "/", heading: "Recipes" },
+// Home is titled with the day it is, whichever day the run lands on.
+const pages: Array<{ path: string; heading: string | RegExp }> = [
+  { path: "/", heading: /^(Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day$/ },
+  { path: "/recipes", heading: "Recipes" },
   { path: "/recipes/new", heading: "New recipe" },
   { path: "/recipes/new?source=manual", heading: "New recipe" },
   { path: "/plan", heading: "Plan" },

@@ -135,8 +135,8 @@ describe("TagsTab render", () => {
     const html = await renderWithRouter(() => <TagsTab tags={[tag("t1", "Weeknight", 6), tag("t2", "Baking", 0)]} />);
     expect(html).toContain("Recipes");
     expect(html).toMatch(/Weeknight[\s\S]*>6</);
-    expect(html).toContain('href="/?tag=baking"');
-    expect(html).toContain('href="/?tag=weeknight"');
+    expect(html).toContain('href="/recipes?tag=baking"');
+    expect(html).toContain('href="/recipes?tag=weeknight"');
     expect(html).toContain('aria-label="Actions for Weeknight"');
     expect(html).toContain('aria-label="Select Baking"');
     // No dialog is open by default.

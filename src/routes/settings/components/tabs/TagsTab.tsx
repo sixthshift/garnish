@@ -150,7 +150,7 @@ export const TAG_COLUMNS: DataTableColumn<TagUsage>[] = [
     value: (tag) => tag.name,
     wrap: "anywhere",
     render: (tag) => (
-      <Link to="/" search={{ tag: tag.slug }} className="rounded-full focus-visible:outline-2 focus-visible:outline-border-brand">
+      <Link to="/recipes" search={{ tag: tag.slug }} className="rounded-full focus-visible:outline-2 focus-visible:outline-border-brand">
         <TagChip tag={tag.name} size="md" />
       </Link>
     ),

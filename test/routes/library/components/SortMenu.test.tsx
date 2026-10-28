@@ -4,7 +4,7 @@
 // behaviour.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { SortMenu } from "../../../../src/routes/home/components/SortMenu";
+import { SortMenu } from "../../../../src/routes/library/components/SortMenu";
 
 function noop() {}
 

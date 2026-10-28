@@ -129,7 +129,7 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
             <ul className="flex flex-wrap gap-1" aria-label="Tags">
               {recipe.tags.map((tag) => (
                 <li key={tag.id}>
-                  <Link to="/" search={{ tag: tag.slug }} className="rounded-full focus-visible:outline-2 focus-visible:outline-border-brand">
+                  <Link to="/recipes" search={{ tag: tag.slug }} className="rounded-full focus-visible:outline-2 focus-visible:outline-border-brand">
                     <TagChip tag={tag.name} size="md" />
                   </Link>
                 </li>

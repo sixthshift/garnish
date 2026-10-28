@@ -19,7 +19,7 @@ export function RecipeFormCancel({ existing, disabled }: RecipeFormCancelProps) 
           Cancel
         </Link>
       ) : (
-        <Link to="/">Cancel</Link>
+        <Link to="/recipes">Cancel</Link>
       )}
     </Button>
   );

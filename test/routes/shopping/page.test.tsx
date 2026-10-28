@@ -271,10 +271,10 @@ describe("/shopping", () => {
   test("an empty database renders the empty state inside the shell", async () => {
     const html = await renderRoute("/shopping");
     expect(html).toContain("Nothing on the list.");
-    // The nav item sits between Recipes and Settings, in both navs.
+    // The nav item sits between Plan and Recipes, in both navs.
     expect(html.match(/>Shopping<\/a>/g)).toHaveLength(2);
-    expect(html.indexOf(">Recipes</a>")).toBeLessThan(html.indexOf(">Shopping</a>"));
-    expect(html.indexOf(">Shopping</a>")).toBeLessThan(html.indexOf(">Settings</a>"));
+    expect(html.indexOf(">Plan</a>")).toBeLessThan(html.indexOf(">Shopping</a>"));
+    expect(html.indexOf(">Shopping</a>")).toBeLessThan(html.indexOf(">Recipes</a>"));
   });
 
   test("the loader reads the stored list and the page groups it", async () => {

@@ -2,7 +2,7 @@
 // Filters button shows. Static render; pressing a chip's × is in the .dom test.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { ActiveFilters, type ActiveFiltersProps, activeFilterCount } from "../../../../src/routes/home/components/ActiveFilters";
+import { ActiveFilters, type ActiveFiltersProps, activeFilterCount } from "../../../../src/routes/library/components/ActiveFilters";
 
 const weeknight = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" };
 const flour = {

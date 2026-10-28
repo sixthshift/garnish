@@ -1,6 +1,6 @@
 // The preference table and the read and write over it, against an in-memory
 // storage and one that throws on every access. The hooks share the table and
-// are pressed in test/routes/home/components/ViewModeToggle.dom.test.tsx.
+// are pressed in test/routes/library/components/ViewModeToggle.dom.test.tsx.
 import { afterEach, describe, expect, test } from "vitest";
 import { defaultViewMode, prefs, readPref, VIEW_MODE_GRID_QUERY, writePref } from "../../src/lib/prefs";
 import type { StorageLike } from "../../src/lib/useLocalStorage";

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { TagUsage } from "../../../../src/domain/reference";
-import { TOP_TAGS, tagShelves, tagsByUse } from "../../../../src/routes/home/components/tagUse";
+import { TOP_TAGS, tagShelves, tagsByUse } from "../../../../src/routes/library/components/tagUse";
 
 const tag = (name: string, recipes: number): TagUsage => ({ id: name, name, slug: name.toLowerCase().replace(/ /g, "-"), recipes });
 const library = [

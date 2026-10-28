@@ -5,7 +5,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test } from "vitest";
 import { useIngredientMode, useViewMode } from "../../../../src/lib/prefs";
-import { ViewModeToggle } from "../../../../src/routes/home/components/ViewModeToggle";
+import { ViewModeToggle } from "../../../../src/routes/library/components/ViewModeToggle";
 import { IngredientModeToggle } from "../../../../src/routes/recipes/recipe/components/IngredientModeToggle";
 
 function ViewProbe() {

@@ -29,7 +29,7 @@ test("a restored backup replaces everything with what it held", async ({ page, o
   await restore.click();
   await expect(sheet).toBeHidden();
 
-  await open("/");
+  await open("/recipes");
   await expect(page.getByRole("link", { name: kept })).toBeVisible();
   await expect(page.getByRole("link", { name: lost })).toHaveCount(0);
 });

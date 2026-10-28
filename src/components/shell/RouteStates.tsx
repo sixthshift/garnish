@@ -90,7 +90,7 @@ export function RouteNotFound() {
       <Muted as="p">There is nothing at this address.</Muted>
       <div>
         <Button asChild variant="outline" intent="neutral">
-          <Link to="/">Back to recipes</Link>
+          <Link to="/recipes">Back to recipes</Link>
         </Button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { Route as home } from "./home/route";
+import { Route as library } from "./library/route";
 import { Route as plan } from "./plan/route";
 import { Route as newRecipe } from "./recipes/new/route";
 import { Route as cook } from "./recipes/recipe/cook/route";
@@ -15,4 +16,4 @@ import { Route as shopping } from "./shopping/route";
 // behind it. The type stays the full list so both sides see one tree.
 const api = import.meta.env.SSR ? (await import("./api/routes")).apiRoutes : ([] as unknown as typeof import("./api/routes").apiRoutes);
 
-export const routeTree = root.addChildren([home, plan, shopping, settings, newRecipe, recipe, cook, edit, styleRecipe, ...api]);
+export const routeTree = root.addChildren([home, library, plan, shopping, settings, newRecipe, recipe, cook, edit, styleRecipe, ...api]);

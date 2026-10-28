@@ -11,7 +11,7 @@ import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type Tim
 import type { Aisle, FoodPack, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/reference";
 import type { StyleRule } from "../../src/domain/style";
 import { searchParam } from "../../src/lib/search";
-import type { Route as IndexRoute, RecipeListData } from "../../src/routes/home/route";
+import type { Route as IndexRoute, RecipeListData } from "../../src/routes/library/route";
 import type { Route as NewRoute } from "../../src/routes/recipes/new/route";
 import type { Route as EditRoute } from "../../src/routes/recipes/recipe/edit/route";
 import type { RecipeViewData, Route as ViewRoute } from "../../src/routes/recipes/recipe/route";
@@ -67,9 +67,9 @@ function seed(
   });
 }
 
-describe("/ (list)", () => {
+describe("/recipes (list)", () => {
   test("empty database renders the empty state with a link to the editor", async () => {
-    const html = await renderRoute("/");
+    const html = await renderRoute("/recipes");
     expect(html).toContain("No recipes yet.");
     expect(html).toContain('href="/recipes/new"');
     expect(html).not.toContain("No recipes match");
@@ -81,7 +81,7 @@ describe("/ (list)", () => {
     await seed("Flatbread", { tags: [weeknight], image: "flatbread.jpg" });
     await seed("Pancakes");
     await seed("Lemon tart", { image: "lemon tart.webp" });
-    const html = await renderRoute("/");
+    const html = await renderRoute("/recipes");
     expect(html).toContain("3 recipes");
     for (const [name, slug] of [
       ["Flatbread", "flatbread"],
@@ -106,24 +106,24 @@ describe("/ (list)", () => {
   test("q and tag search params filter the list", async () => {
     await seed("Flatbread", { tags: [weeknight] });
     await seed("Pancakes");
-    let html = await renderRoute("/?q=flat");
+    let html = await renderRoute("/recipes?q=flat");
     expect(html).toContain("1 recipe<");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
 
-    html = await renderRoute("/?tag=weeknight");
+    html = await renderRoute("/recipes?tag=weeknight");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
 
-    html = await renderRoute("/?q=pan&tag=weeknight");
+    html = await renderRoute("/recipes?q=pan&tag=weeknight");
     expect(html).toContain("No recipes match that search.");
     expect(html).not.toContain("No recipes yet.");
-    expect(html).toContain('href="/"'); // clear filters
+    expect(html).toContain('href="/recipes"'); // clear filters
   });
 
   test("the search box and active tag reflect the URL", async () => {
     await seed("Flatbread", { tags: [weeknight] });
-    const html = await renderRoute("/?q=flat&tag=weeknight");
+    const html = await renderRoute("/recipes?q=flat&tag=weeknight");
     expect(html).toContain("<search>"); // the search landmark, as an element rather than a role
     expect(html).toContain('value="flat"');
     // The legacy singular `tag` param still selects its chip (M12.3 folds it into `tags`).
@@ -138,7 +138,7 @@ describe("/ (list)", () => {
     const flourId = flat.parts[0]!.ingredients[0]!.food!.id;
 
     // any (the default): either tag matches.
-    let html = await renderRoute(`/?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}`);
+    let html = await renderRoute(`/recipes?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}`);
     expect(html).toContain("Flatbread");
     expect(html).toContain("Pancakes");
     expect(html).toContain("Toast");
@@ -146,7 +146,7 @@ describe("/ (list)", () => {
     expect(html).toMatch(/data-state="on"[^>]*>Pasta/);
 
     // all: only the recipe carrying both.
-    html = await renderRoute(`/?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}&match=all`);
+    html = await renderRoute(`/recipes?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}&match=all`);
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
     expect(html).not.toContain("Toast");
@@ -154,13 +154,13 @@ describe("/ (list)", () => {
     expect(html).toContain('data-state="checked"');
 
     // foods[]: only the recipe with that ingredient's food.
-    html = await renderRoute(`/?foods=${encodeURIComponent(JSON.stringify([flourId]))}`);
+    html = await renderRoute(`/recipes?foods=${encodeURIComponent(JSON.stringify([flourId]))}`);
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
     expect(html).toContain('aria-label="Remove flour"'); // selected food renders as a removable chip
 
     // favourite.
-    html = await renderRoute("/?favourite=true");
+    html = await renderRoute("/recipes?favourite=true");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
     expect(html).not.toContain("Toast");
@@ -173,7 +173,7 @@ describe("/ (list)", () => {
 
     test("defaults to a grid: cards in grid mode, grid selected in the toggle", async () => {
       await seed("Flatbread");
-      const html = await renderRoute("/");
+      const html = await renderRoute("/recipes");
       expect(html).toContain('data-card-mode="grid"');
       expect(html).not.toContain('data-card-mode="list"');
       expect(html).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
@@ -189,7 +189,7 @@ describe("/ (list)", () => {
       (globalThis as { window?: unknown }).window = {
         localStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => void storage.set(key, value) },
       };
-      const html = await renderRoute("/");
+      const html = await renderRoute("/recipes");
       expect(html.match(/data-card-mode="list"/g)).toHaveLength(2);
       expect(html).not.toContain('data-card-mode="grid"');
       expect(html).toMatch(/aria-label="List view"[^>]*aria-checked="true"/);
@@ -199,7 +199,7 @@ describe("/ (list)", () => {
   describe("sort and dice (M12.4)", () => {
     test("defaults to the newest-created sort, and the dice button renders", async () => {
       await seed("Flatbread");
-      const html = await renderRoute("/");
+      const html = await renderRoute("/recipes");
       expect(html).toContain("Sort: Newest created");
       expect(html).toContain('aria-label="Open a random recipe"');
     });
@@ -208,11 +208,11 @@ describe("/ (list)", () => {
       await seed("Banana cake");
       await seed("Apple pie");
 
-      let html = await renderRoute("/?sort=name&dir=asc");
+      let html = await renderRoute("/recipes?sort=name&dir=asc");
       expect(html).toContain("Sort: Name (A–Z)");
       expect(html.indexOf("Apple pie")).toBeLessThan(html.indexOf("Banana cake"));
 
-      html = await renderRoute("/?sort=name&dir=desc");
+      html = await renderRoute("/recipes?sort=name&dir=desc");
       expect(html).toContain("Sort: Name (Z–A)");
       expect(html.indexOf("Banana cake")).toBeLessThan(html.indexOf("Apple pie"));
     });
@@ -220,7 +220,7 @@ describe("/ (list)", () => {
     test("sort=random with a seed renders every recipe once", async () => {
       await seed("Banana cake");
       await seed("Apple pie");
-      const html = await renderRoute("/?sort=random&seed=abc");
+      const html = await renderRoute("/recipes?sort=random&seed=abc");
       expect(html).toContain("Sort: Random");
       expect(html).toContain("Banana cake");
       expect(html).toContain("Apple pie");
@@ -319,7 +319,7 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain("Sharp and buttery.");
     expect(html).toContain('aria-label="Rated 4 out of 5"');
     expect(html).toContain(">Weeknight</span>");
-    expect(html).toContain('href="/?tag=weeknight"');
+    expect(html).toContain('href="/recipes?tag=weeknight"');
     for (const [label, value] of [
       ["Prep", "20 min"],
       ["Cook", "40 min"],
@@ -611,12 +611,12 @@ describe("/recipes/$slug/edit", () => {
   test("a deleted recipe is gone from the list and its slug is not found", async () => {
     const tart = await seed("Lemon tart");
     await seed("Pancakes");
-    expect(await renderRoute("/")).toContain("2 recipes");
+    expect(await renderRoute("/recipes")).toContain("2 recipes");
 
     const gone = await callServerFn(deleteRecipe, { id: tart.id });
     expect(gone.slug).toBe("lemon-tart");
 
-    const html = await renderRoute("/");
+    const html = await renderRoute("/recipes");
     expect(html).toContain("1 recipe<");
     expect(html).toContain("Pancakes");
     expect(html).toContain('href="/recipes/pancakes"');

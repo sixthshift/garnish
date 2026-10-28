@@ -17,14 +17,17 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// Home is the day as it stands (tonight, the week, the list); Recipes is the
+// library, reached when choosing rather than every time the app opens.
 // "New" is not here: creating a recipe is an action on the recipes page, not a
 // place to navigate to, so it lives as a button in that page's header.
 // `footer` items sink to the bottom of the side nav (Settings is chrome, not a
 // sibling of Recipes); the phone bar is one row, so it ignores the flag.
 export const navItems = [
-  { to: "/", label: "Recipes", exact: true, footer: false },
+  { to: "/", label: "Home", exact: true, footer: false },
   { to: "/plan", label: "Plan", exact: false, footer: false },
   { to: "/shopping", label: "Shopping", exact: false, footer: false },
+  { to: "/recipes", label: "Recipes", exact: false, footer: false },
   { to: "/settings", label: "Settings", exact: false, footer: true },
 ] as const;
 

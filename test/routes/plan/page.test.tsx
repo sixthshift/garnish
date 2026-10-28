@@ -283,9 +283,9 @@ describe("/plan", () => {
     expect(html.match(/data-testid="plan-day"/g)).toHaveLength(7);
     expect(html).toContain("14 – 20 Sep 2026");
     expect(html.match(/data-testid="plan-day-empty"/g)).toHaveLength(7);
-    // The nav item sits between Recipes and Shopping, in both navs.
+    // The nav item sits between Home and Shopping, in both navs.
     expect(html.match(/>Plan<\/a>/g)).toHaveLength(2);
-    expect(html.indexOf(">Recipes</a>")).toBeLessThan(html.indexOf(">Plan</a>"));
+    expect(html.indexOf(">Home</a>")).toBeLessThan(html.indexOf(">Plan</a>"));
     expect(html.indexOf(">Plan</a>")).toBeLessThan(html.indexOf(">Shopping</a>"));
   });
 

@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
-import { ActiveFilters } from "../../../../src/routes/home/components/ActiveFilters";
+import { ActiveFilters } from "../../../../src/routes/library/components/ActiveFilters";
 
 const tags = [
   { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight" },

@@ -5,7 +5,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { prefs, VIEW_MODE_GRID_QUERY, writePref } from "../../../../src/lib/prefs";
 import type { StorageLike } from "../../../../src/lib/useLocalStorage";
-import { ViewModeToggle } from "../../../../src/routes/home/components/ViewModeToggle";
+import { ViewModeToggle } from "../../../../src/routes/library/components/ViewModeToggle";
 
 function fakeStorage(): StorageLike {
   const map = new Map<string, string>();

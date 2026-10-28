@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, test } from "vitest";
 import type { TagUsage } from "../../../../src/domain/reference";
-import { FilterBar } from "../../../../src/routes/home/components/FilterBar";
+import { FilterBar } from "../../../../src/routes/library/components/FilterBar";
 
 const tag = (name: string, recipes: number): TagUsage => ({ id: name, name, slug: name.toLowerCase().replace(/ /g, "-"), recipes });
 const library = Array.from({ length: 8 }, (_, i) => tag(`Common ${i}`, 10 - i)).concat([tag("Gluten free", 1), tag("Party", 1)]);
