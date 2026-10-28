@@ -21,6 +21,9 @@ export function WeeknightsStep({
   carried,
   today,
   reasons = {},
+  source = "rotation",
+  rotationEmpty = false,
+  choosing = false,
   onChange,
 }: {
   dates: readonly string[];
@@ -31,6 +34,12 @@ export function WeeknightsStep({
   today: string;
   /** The planner's reason for a recipe on a date, when it chose it: shown instead of the rotation's. */
   reasons?: Readonly<Record<string, string>>;
+  /** Who made the first offer: the planner, or the rotation's own order. */
+  source?: "planner" | "rotation";
+  /** Nothing is marked Rotation, so the rotation offered nothing and Swap offers any recipe. */
+  rotationEmpty?: boolean;
+  /** The planner is still choosing: the days are drawn, waiting, with nothing to press. */
+  choosing?: boolean;
   onChange: (nights: (string | null)[]) => void;
 }) {
   const carriedIds = new Set(carried.map((recipe) => recipe.id));
@@ -51,13 +60,19 @@ export function WeeknightsStep({
     <section aria-labelledby="weeknights" className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
         <h2 id="weeknights" className="text-lg font-semibold">
-          Weeknights, from the rotation
+          Weeknights
         </h2>
-        <Muted as="p">The ones you haven't had for longest come first. Swap any you don't fancy.</Muted>
+        {!choosing && (
+          <Muted as="p">
+            {source === "planner"
+              ? "Swap any you don't fancy, or take a night off."
+              : "From your rotation, the ones you haven't had for longest first. Swap any you don't fancy."}
+          </Muted>
+        )}
       </div>
-      {pool.length === 0 && carried.length === 0 && (
+      {!choosing && source === "rotation" && rotationEmpty && carried.length === 0 && (
         <p className="rounded-lg bg-bg-subtle-hovered p-3 text-sm">
-          No recipes are marked Rotation yet. Mark your regulars on their pages, or{" "}
+          No recipes are marked Rotation yet, so Swap offers any recipe. Mark your regulars on their pages, or{" "}
           <Link to="/recipes" className="font-medium text-fg-brand underline underline-offset-2">
             find them in Recipes
           </Link>
@@ -78,8 +93,8 @@ export function WeeknightsStep({
                   <span className="block text-xs text-fg-subtle">{day}</span>
                 </span>
                 <span className="flex min-w-0 flex-[1_1_10rem] flex-col">
-                  <span className={cn("font-medium", off && "text-fg-subtle")}>{recipe?.name ?? "Night off"}</span>
-                  {recipe && (
+                  <span className={cn("font-medium", (off || choosing) && "text-fg-subtle")}>{choosing ? "Choosing…" : (recipe?.name ?? "Night off")}</span>
+                  {recipe && !choosing && (
                     <span className="text-sm text-fg-subtle">{reasons[reasonKey(date, recipe.id)] ?? reasonLabel(nightReason(recipe, carriedIds, today))}</span>
                   )}
                 </span>
@@ -90,7 +105,7 @@ export function WeeknightsStep({
                     intent="neutral"
                     size="sm"
                     aria-label={`Swap ${weekday}`}
-                    disabled={pool.length === 0}
+                    disabled={choosing || pool.length === 0}
                     onClick={() => onChange(swapNight(nights, index, pool))}
                   >
                     Swap
@@ -99,7 +114,8 @@ export function WeeknightsStep({
                     variant="outline"
                     size="sm"
                     aria-label={`${weekday} night off`}
-                    pressed={off}
+                    pressed={off && !choosing}
+                    disabled={choosing}
                     onPressedChange={(pressed) => onChange(nights.map((night, i) => (i === index ? (pressed ? null : offerFor(index)) : night)))}
                   >
                     Night off

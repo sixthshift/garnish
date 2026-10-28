@@ -11,7 +11,7 @@ import { toastError } from "../../../lib/toast";
 import { browserStorage } from "../../../lib/useLocalStorage";
 import { addPlanWeekToShopping } from "../../../server/fns/plan";
 import { applyPlanProposal, proposePlanWeek } from "../../../server/fns/planner";
-import { fillNights, fromProposal, missedRecipes, type OtherMeal, openDays, rotationPool, sessionEntries, weekendShelf } from "./components/fill";
+import { fillNights, fromProposal, missedRecipes, type OtherMeal, openDays, rotationPool, sessionEntries, swapPool, weekendShelf } from "./components/fill";
 import { OtherMeals } from "./components/OtherMeals";
 import { PlannerBar, type PlannerStatus } from "./components/PlannerBar";
 import { readOtherMeals, readServings, toggleMeal, writeOtherMeals, writeServings } from "./components/plannerPrefs";
@@ -42,10 +42,13 @@ export function PlanFillPage() {
   const byId = useMemo(() => new Map(recipes.map((recipe) => [recipe.id, recipe])), [recipes]);
   const open = useMemo(() => openDays(monday, days, today), [monday, days, today]);
   const carried = useMemo(() => missedRecipes(previousDays, byId, today), [previousDays, byId, today]);
-  const pool = useMemo(() => {
-    const planned = [...previousDays, ...days].flatMap((day) => day.entries.flatMap((entry) => (entry.recipe ? [entry.recipe.id] : [])));
-    return rotationPool(recipes, new Set(planned));
-  }, [recipes, previousDays, days]);
+  const planned = useMemo(
+    () => new Set([...previousDays, ...days].flatMap((day) => day.entries.flatMap((entry) => (entry.recipe ? [entry.recipe.id] : [])))),
+    [previousDays, days]
+  );
+  // The first offer comes from the rotation alone; Swap falls back to every weeknight-able recipe when it is empty.
+  const pool = useMemo(() => rotationPool(recipes, planned), [recipes, planned]);
+  const swaps = useMemo(() => swapPool(recipes, planned), [recipes, planned]);
   const shelf = useMemo(() => weekendShelf(recipes), [recipes]);
 
   const [step, setStep] = useState(0);
@@ -80,10 +83,14 @@ export function PlanFillPage() {
     }
   };
 
-  // The first pass, once, as the page opens.
+  // The first pass, once, as the page opens. The ref holds it to once: in
+  // development React mounts an effect twice, and each run is a model call.
+  const started = useRef(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: asked once on open; Ask again is the way to ask again
   useEffect(() => {
-    if (planner.state === "asking") void ask(otherMeals);
+    if (started.current || planner.state !== "asking") return;
+    started.current = true;
+    void ask(otherMeals);
   }, []);
 
   const entries = sessionEntries(open, nights, weekend, others);
@@ -135,21 +142,20 @@ export function PlanFillPage() {
               onAsk={() => void ask(otherMeals)}
             />
           )}
-          {planner.state !== "asking" && (
-            <>
-              <WeeknightsStep
-                dates={open.weeknights}
-                nights={nights}
-                byId={byId}
-                pool={pool}
-                carried={carried}
-                today={today}
-                reasons={reasons}
-                onChange={setNights}
-              />
-              <OtherMeals others={others} byId={byId} reasons={reasons} onChange={setOthers} />
-            </>
-          )}
+          <WeeknightsStep
+            dates={open.weeknights}
+            nights={nights}
+            byId={byId}
+            pool={swaps}
+            carried={carried}
+            today={today}
+            reasons={reasons}
+            source={planner.state === "done" ? "planner" : "rotation"}
+            rotationEmpty={pool.length === 0}
+            choosing={planner.state === "asking"}
+            onChange={setNights}
+          />
+          {planner.state !== "asking" && <OtherMeals others={others} byId={byId} reasons={reasons} onChange={setOthers} />}
         </>
       )}
       {step === 1 && <WeekendStep dates={open.weekend} chosen={weekend} shelf={shelf} byId={byId} reasons={reasons} onChange={setWeekend} />}

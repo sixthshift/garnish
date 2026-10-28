@@ -6,6 +6,7 @@
 import { RouterProvider } from "@tanstack/react-router";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { RecipeSummary } from "../../../../src/domain/recipe";
 import { testRouter } from "../../../helpers/routes";
@@ -50,7 +51,8 @@ vi.mock("../../../../src/server/fns/plan", () => ({
   ),
   addPlanWeekToShopping: fns.addPlanWeekToShopping,
 }));
-vi.mock("../../../../src/server/fns/recipes", () => ({ listRecipes: vi.fn(async () => [dal, kofta, lamb]) }));
+const library = vi.hoisted(() => ({ current: [] as RecipeSummary[] }));
+vi.mock("../../../../src/server/fns/recipes", () => ({ listRecipes: vi.fn(async () => library.current) }));
 vi.mock("../../../../src/server/fns/ai", () => ({ aiAvailable: fns.aiAvailable }));
 vi.mock("../../../../src/server/fns/planner", () => ({ proposePlanWeek: fns.proposePlanWeek, applyPlanProposal: fns.applyPlanProposal }));
 
@@ -68,13 +70,19 @@ beforeEach(() => {
   fns.proposePlanWeek.mockReset();
   fns.applyPlanProposal.mockClear();
   window.localStorage.clear();
+  library.current = [dal, kofta, lamb];
 });
 afterEach(() => vi.useRealTimers());
 
 async function open() {
   const router = testRouter(`/plan/fill?week=${MONDAY}`);
   await router.load();
-  render(<RouterProvider router={router} />);
+  // StrictMode, as the dev server runs it: an effect mounted twice must still ask the model once.
+  render(
+    <StrictMode>
+      <RouterProvider router={router} />
+    </StrictMode>
+  );
   return router;
 }
 
@@ -87,6 +95,7 @@ test("the planner's picks and reasons fill the week, and Add writes them at the 
   });
   await open();
   await screen.findByText("Chosen by the planner from your guide. Change anything below.");
+  expect(fns.proposePlanWeek).toHaveBeenCalledTimes(1);
   expect(fns.proposePlanWeek).toHaveBeenCalledWith({
     data: { monday: MONDAY, dates: ["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"], meals: ["dinner"] },
   });
@@ -120,4 +129,20 @@ test("when the planner fails the rotation's week stands, with why", async () => 
   expect(screen.getByText("No AI provider is set.")).toBeInTheDocument();
   expect(screen.getByText("Dal")).toBeInTheDocument();
   expect(screen.getByText("Kofta")).toBeInTheDocument();
+});
+
+test("while the planner chooses the days wait in place; with nothing marked Rotation its picks can still be swapped", async () => {
+  const plain = [summary("00000000-0000-4000-8000-000000000011", "Soup", null), summary("00000000-0000-4000-8000-000000000012", "Pie", null)];
+  library.current = plain;
+  let answer: (value: unknown) => void = () => {};
+  fns.proposePlanWeek.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+  await open();
+  expect(await screen.findAllByText("Choosing…")).toHaveLength(5);
+  expect(screen.getByRole("button", { name: "Swap Mon" })).toBeDisabled();
+  answer({ entries: [entry("2026-11-02", plain[0]!, "a soup for Monday")], dropped: [], unfilled: [], taken: [] });
+  await screen.findByText("a soup for Monday");
+  expect(screen.queryByText(/No recipes are marked Rotation yet/)).toBeNull();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Swap Mon" }));
+  expect(screen.getAllByText("Pie").length).toBeGreaterThan(0);
 });

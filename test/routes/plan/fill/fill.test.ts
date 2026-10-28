@@ -12,6 +12,7 @@ import {
   rotationPool,
   sessionEntries,
   swapNight,
+  swapPool,
   weekendShelf,
 } from "../../../../src/routes/plan/fill/components/fill";
 
@@ -159,4 +160,13 @@ test("the session writes its dinners in day order, then the other meals not skip
     { date: "2026-09-19", meal: "dinner", recipeId: "w1" },
     { date: "2026-09-14", meal: "lunch", recipeId: "l1" },
   ]);
+});
+
+test("Swap draws from the rotation, or from every recipe not marked Weekend while nothing is marked Rotation", () => {
+  const soup = recipe("Soup");
+  const lamb = recipe("Lamb", { kind: "weekend" });
+  const dal = recipe("Dal", { kind: "rotation" });
+  expect(swapPool([soup, lamb, dal], new Set()).map((r) => r.name)).toEqual(["Dal"]);
+  expect(swapPool([soup, lamb], new Set()).map((r) => r.name)).toEqual(["Soup"]);
+  expect(swapPool([soup, lamb], new Set([soup.id]))).toEqual([]);
 });

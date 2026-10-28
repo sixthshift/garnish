@@ -31,7 +31,7 @@ describe("/plan/fill", () => {
     expect(html).toContain(">Plan the week</h1>");
     expect(html).toContain("21 – 27 Sep 2026");
     expect(html).toContain('aria-label="Planning steps"');
-    expect(html).toContain("Weeknights, from the rotation");
+    expect(html).toContain("From your rotation, the ones you haven&#x27;t had for longest first.");
     expect(html.indexOf("Dal")).toBeLessThan(html.indexOf("Laksa"));
     expect(html).toContain("Last made 7 weeks ago");
     // Two rotation recipes for five weeknights: the rest start as nights off.
@@ -45,6 +45,6 @@ describe("/plan/fill", () => {
     const html = await renderRoute(`/plan/fill?week=${NEXT_MONDAY}`);
     expect(html).not.toContain('aria-label="Swap Mon"');
     expect(html).toContain('aria-label="Swap Tue"');
-    expect(html).toContain("No recipes are marked Rotation yet.");
+    expect(html).toContain("No recipes are marked Rotation yet, so Swap offers any recipe.");
   });
 });

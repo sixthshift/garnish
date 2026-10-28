@@ -54,6 +54,20 @@ export function rotationPool(recipes: readonly RecipeSummary[], exclude: Readonl
 }
 
 /**
+ * What Swap draws from: the rotation, or every recipe not marked Weekend when
+ * nothing is marked Rotation yet, in the same order and with the same
+ * exclusions. A household that has not marked its regulars, or whose week the
+ * planner chose, can still swap a night.
+ */
+export function swapPool(recipes: readonly RecipeSummary[], exclude: ReadonlySet<string>): RecipeSummary[] {
+  const rotation = rotationPool(recipes, exclude);
+  if (rotation.length > 0) return rotation;
+  return recipes
+    .filter((recipe) => recipe.kind !== "weekend" && !exclude.has(recipe.id))
+    .sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? "") || a.name.localeCompare(b.name));
+}
+
+/**
  * The weeknights' first offer: what did not happen last week first, then the
  * rotation in order. A night with nothing left to offer is null, a night off.
  */
