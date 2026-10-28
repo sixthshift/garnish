@@ -1,9 +1,10 @@
-import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent, redirect } from "@tanstack/react-router";
 import { type PlanDay, todayIso, weekMonday } from "../../domain/plan";
 import type { RecipeSummary } from "../../domain/recipe";
 import { listPlanWeek } from "../../server/fns/plan";
 import { listRecipes } from "../../server/fns/recipes";
 import { listShoppingItems } from "../../server/fns/shopping";
+import { RecipeListSearch } from "../library/route";
 import { Route as rootRoute } from "../root";
 import { nextMonday } from "./components/today";
 
@@ -21,6 +22,15 @@ export type HomeData = {
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
+  // `/` was the recipe grid until decisions.md row 190: an old link or bookmark
+  // carrying its filters (`/?tag=weeknight`) goes on to the grid with them.
+  beforeLoad: ({ location }) => {
+    const filters = Object.fromEntries(Object.entries(location.search as Record<string, unknown>).filter(([key]) => key in RecipeListSearch.shape));
+    if (Object.keys(filters).length === 0) return;
+    // A value the grid no longer accepts is dropped rather than failing the page.
+    const parsed = RecipeListSearch.safeParse(filters);
+    throw redirect({ to: "/recipes", search: parsed.success ? parsed.data : {} });
+  },
   loader: async (): Promise<HomeData> => {
     const today = todayIso();
     const monday = weekMonday(undefined, today);

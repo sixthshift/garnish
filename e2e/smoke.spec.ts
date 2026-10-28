@@ -22,6 +22,13 @@ for (const { path, heading } of pages) {
   });
 }
 
+// \`/\` was the recipe grid (decisions.md row 190): an old link with its filters lands on the grid with them.
+test("an old link to the grid at / goes on to /recipes", async ({ page, open }) => {
+  await open("/?q=nothing-matches-this");
+  await expect(page).toHaveURL(/\/recipes\?q=nothing-matches-this/);
+  await expect(page.getByRole("heading", { level: 1, name: "Recipes" })).toBeVisible();
+});
+
 // The recipe's own pages need a recipe; one is typed in, then each is loaded cold.
 test("a recipe's pages load", async ({ page, open }) => {
   const name = unique("Smoke Toast");

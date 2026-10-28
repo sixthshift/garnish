@@ -17,6 +17,7 @@ export const INSTRUCTIONS = `You are connected to garnish, one household's recip
 ## Working with recipes
 - Never guess an id. Find a recipe with search_recipes, then read it with get_recipe before changing it.
 - update_recipe changes only the fields you send. Sending parts replaces every part: send the whole list back, keeping each unchanged ingredient's and step's id so their links and photos survive.
+- A recipe's kind is how the household cooks it: "rotation" for a weeknight regular, "weekend" for one worth a weekend's time, or null when not said. The household sets it; never set it unless the person asks. When planning, fill weeknight dinners from the rotation and weekend dinners from the weekend recipes, and search_recipes with kind finds each.
 - delete_recipe cannot be undone from the app; garnish keeps a backup from just before. Confirm with the person before deleting.
 
 ## The shopping list and the meal plan

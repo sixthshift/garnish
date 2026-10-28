@@ -5,13 +5,13 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { KindToggle } from "../../../../components/recipe/KindToggle";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
 import { Rating } from "../../../../components/ui/Rating";
 import { yieldLine } from "../../../../domain/ingredient";
 import type { Recipe } from "../../../../domain/recipe";
 import { formatDateStamp } from "../../../../lib/dates";
 import { recipeImageUrl } from "../../../../lib/images";
-import { KindToggle } from "./KindToggle";
 import { StatIcon } from "./StatIcon";
 import { timeStats } from "./timeStats";
 

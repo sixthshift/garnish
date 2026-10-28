@@ -13,8 +13,12 @@ test("a week filled from the rotation and the weekend recipes lands on the plan 
   await page.getByRole("radio", { name: "Rotation" }).click();
   await expect(page.getByRole("radio", { name: "Rotation" })).toBeChecked();
   await createRecipe(page, open, { name: weekend, servings: 6, ingredients: ["2 kg lamb shoulder"], steps: ["Roast."] });
-  await page.getByRole("radio", { name: "Weekend" }).click();
-  await expect(page.getByRole("radio", { name: "Weekend" })).toBeChecked();
+  // The other from the Recipes grid, the way a library is sorted in one sitting.
+  await open(`/recipes?q=${encodeURIComponent(weekend)}`);
+  await page.getByRole("button", { name: "Mark Rotation & Weekend" }).click();
+  const kind = page.getByRole("radiogroup", { name: `How you cook ${weekend}` });
+  await kind.getByRole("radio", { name: "Weekend" }).click();
+  await expect(kind.getByRole("radio", { name: "Weekend" })).toBeChecked();
 
   await open(`/plan/fill?week=${WEEK}`);
   await expect(page.getByRole("heading", { level: 1, name: "Plan the week" })).toBeVisible();

@@ -2,9 +2,11 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
+import { Toggle } from "@sixthshift/design-system/toggle";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { KindToggle } from "../../components/recipe/KindToggle";
 import { CARD_MIN_WIDTH, RecipeCard } from "../../components/recipe/RecipeCard";
 import { Page, PageHeader } from "../../components/shell/Page";
 import { DiceIcon } from "../../components/ui/icons";
@@ -55,6 +57,7 @@ export function RecipesPage() {
     void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: undefined, foods: undefined, favourite: undefined, shelf: undefined }) });
   const filterCount = activeFilterCount(selected, foodsParam, favourite);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [marking, setMarking] = useState(false);
 
   const onDice = () => {
     const pick = pickRandom(recipes);
@@ -92,7 +95,13 @@ export function RecipesPage() {
             <SearchInput value={query} onValueChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
           </form>
         </search>
-        <ShelfToggle shelf={shelf} onChange={(next) => void navigate({ search: (prev) => ({ ...prev, shelf: next }) })} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ShelfToggle shelf={shelf} onChange={(next) => void navigate({ search: (prev) => ({ ...prev, shelf: next }) })} />
+          {/* Marking the library one recipe page at a time is the slow way in; this puts the toggle under every card (decisions.md row 195). */}
+          <Toggle variant="outline" size="sm" pressed={marking} onPressedChange={setMarking}>
+            Mark Rotation &amp; Weekend
+          </Toggle>
+        </div>
         {/* Inline from `md:` up; on a phone the same controls open in a sheet from the toolbar, and what is set shows as chips. */}
         <div className="max-md:hidden">
           <FilterBar {...filterBar} />
@@ -147,6 +156,11 @@ export function RecipesPage() {
           {recipes.map((recipe, index) => (
             <li key={recipe.id}>
               <RecipeCard recipe={{ ...recipe, tags: tagsByUse(recipe.tags, tags) }} mode={viewMode} priority={index < PRIORITY_CARDS} />
+              {marking && (
+                <div className="mt-2">
+                  <KindToggle id={recipe.id} kind={recipe.kind} label={`How you cook ${recipe.name}`} />
+                </div>
+              )}
             </li>
           ))}
         </ul>

@@ -1,6 +1,6 @@
 import { renderToString } from "react-dom/server";
 import { expect, test, vi } from "vitest";
-import { KindToggle, kindFromValue } from "../../../../../src/routes/recipes/recipe/components/KindToggle";
+import { KindToggle, kindFromValue } from "../../../src/components/recipe/KindToggle";
 
 vi.mock("@tanstack/react-router", async (importOriginal) => ({ ...(await importOriginal()), useRouter: () => ({}) }));
 
