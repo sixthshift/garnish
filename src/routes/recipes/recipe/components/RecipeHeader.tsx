@@ -11,6 +11,7 @@ import { yieldLine } from "../../../../domain/ingredient";
 import type { Recipe } from "../../../../domain/recipe";
 import { formatDateStamp } from "../../../../lib/dates";
 import { recipeImageUrl } from "../../../../lib/images";
+import { KindToggle } from "./KindToggle";
 import { StatIcon } from "./StatIcon";
 import { timeStats } from "./timeStats";
 
@@ -117,6 +118,7 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
             </div>
           </div>
 
+          <KindToggle id={recipe.id} kind={recipe.kind} />
           {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}
           <EmptyBoundary
             isEmpty={recipe.tags.length === 0}

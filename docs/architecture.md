@@ -113,7 +113,7 @@ Scripts in `package.json`: `dev`, `build`, `start`, `check`, `lint`, `format`, `
 Mealie's schema outside recipe internals, minus users and groups. Tandoor's shape inside recipes. When a field is in doubt, Mealie wins.
 
 ```
-recipe        id, slug, name, description, image, rating, last_made, favourite,
+recipe        id, slug, name, description, image, rating, last_made, favourite, kind?,
               servings, yield_quantity, yield_unit_id?, yield_text,
               prep_minutes, cook_minutes, source_url, created_at, updated_at
 recipe_note   id, recipe_id, position, title, text
@@ -154,7 +154,7 @@ The document the API reads and writes (`src/domain/recipe/recipe.ts`) mirrors th
 - `food_id` and `unit_id` are nullable. A line that is only text still saves. `original_text` is always kept.
 - Servings and yield: `servings` and `yield_quantity` are numbers and scale; `yield_text` is display. Mealie's three fields. `yield_unit_id` lets a parent later ask for "150 ml of this".
 - Sub-recipes attach to the **food**, not the ingredient row: `food.recipe_id`. An ingredient line reads "150 g hollandaise" and does not care whether hollandaise has a recipe. Tandoor's shape. A parent scales through it (decisions.md row 70): `subRecipeScale` in `src/domain/recipe/subRecipe.ts` expresses the row's amount in the child's `yield_unit` — the same unit, or through the food's conversions — and reads off `(amount / yield_quantity) * servings`, null whenever nothing relates the two. That derived figure is the link's hint on the recipe page, cook mode's "Open <child> at N servings", and the servings the shopping sheet fetches the child at. Since the page scales its document before rendering, the parent's own scale flows through. One level only: expanding a child does not expand the child's own sub-recipes, and nothing guards a cycle because nothing recurses. A parent follows its child's yield live, nothing pinned; both stay as they are (decisions.md row 130).
-- `favourite` is a 0/1 flag on the recipe, not a magic tag (decisions.md row 43). Tags are the only organiser; there are no categories or tools (row 42).
+- `favourite` is a 0/1 flag on the recipe, not a magic tag (decisions.md row 43). `kind` (`027_recipe_kind.sql`) is `rotation`, `weekend` or NULL: how the household cooks it, set by the household and never inferred (decisions.md row 191); the plan's weeknights come from the rotation, its weekend from the weekend recipes. Tags are the only organiser; there are no categories or tools (row 42).
 - `timeline_event` is one logged cook: `occurred_on` is a calendar date (`YYYY-MM-DD`), `message` a comment, `image` an optional photo file name. `recipe.last_made` is derived, never written directly: creating or deleting an event recomputes it as the greatest `occurred_on`, falling back to null. Mealie's "Made this" shape (decisions.md row 41).
 - `food.skip_shopping` is "on hand" (Mealie's `onHand`): water, salt, pepper, white and caster sugar, the cooking oils. `aisle` is its own table.
 - Conversions are per food (decisions.md row 69): `food_conversion` reads "1 cup of plain flour is 125 g", one row per food per pair of units, both units cascading, and the food document carries them as `conversions`. `unit.standard_quantity` / `unit.standard_unit_id` keep the unit-to-unit conversions that hold whatever is being measured (1 l is 1000 ml). A cup of flour is 125 g and a cup of sugar is 220 g, so the food's rows are tried first and the unit's are the fallback.
@@ -318,7 +318,7 @@ garnish-backup-20261007-091500.zip
 ## API
 
 - **Server functions** (`createServerFn`) for everything the app itself calls, one file per resource in `src/server/fns/`. Input validated with the shared zod schemas. Reads use `method: 'GET'` so they are cacheable; writes are `POST`.
-  - `recipes`: `listRecipes({ q?, tag?, tags?, match?, foods?, favourite?, sort?, dir?, seed? })` (card summaries), `getRecipe({ slug, servings? })`, `createRecipe(doc)`, `updateRecipe({ id, doc })`, `duplicateRecipe({ id })`, `setFavourite({ id, favourite })`, `deleteRecipe({ id })`.
+  - `recipes`: `listRecipes({ q?, tag?, tags?, match?, foods?, favourite?, kind?, neverMade?, sort?, dir?, seed? })` (card summaries), `getRecipe({ slug, servings? })`, `createRecipe(doc)`, `updateRecipe({ id, doc })`, `duplicateRecipe({ id })`, `setFavourite({ id, favourite })`, `setKind({ id, kind })`, `deleteRecipe({ id })`.
     - Filters combine with AND: name substring, tag slugs (`match: 'any' | 'all'`, default any; the older singular `tag` folds in), food ids, favourites-only.
     - `sort` is `name | created | updated | lastMade | rating | random`, with `dir` defaulting per key and nulls last. `random` takes a `seed` so the same URL keeps the same order. Unsorted is newest first.
     - Summaries carry what the card draws: name, slug, image, rating, tags, `favourite`, `lastMade` and `totalTime`.

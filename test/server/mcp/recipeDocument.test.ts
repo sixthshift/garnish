@@ -68,6 +68,23 @@ test("steps get links to the ingredients they mention", () => {
   expect(part.steps![1]!.ingredientIds).toEqual([]);
 });
 
+test("kind is read, set, cleared, and kept by an update that does not send it", () => {
+  const created = parseDocument(documentFromMcp(createRecipeSchema.parse({ name: "Laksa", kind: "rotation", parts: [{}] }), vocabulary, null).doc);
+  expect(created.kind).toBe("rotation");
+  const stored = recipeSchema.parse({
+    ...created,
+    id: "00000000-0000-4000-8000-0000000000d2",
+    slug: "laksa",
+    createdAt: "2026-10-26T00:00:00.000Z",
+    updatedAt: "2026-10-26T00:00:00.000Z",
+    parts: created.parts.map((part) => ({ ...part, id: crypto.randomUUID() })),
+  });
+  expect(recipeForMcp(stored).kind).toBe("rotation");
+  expect(documentFromMcp(updateRecipeSchema.parse({ name: "Chicken laksa" }), vocabulary, stored).doc.kind).toBe("rotation");
+  expect(documentFromMcp(updateRecipeSchema.parse({ kind: "weekend" }), vocabulary, stored).doc.kind).toBe("weekend");
+  expect(documentFromMcp(updateRecipeSchema.parse({ kind: null }), vocabulary, stored).doc.kind).toBeNull();
+});
+
 test("an update keeps what it does not send, and keeps unchanged rows whole", () => {
   const created = parseDocument(
     documentFromMcp(

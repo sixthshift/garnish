@@ -19,6 +19,7 @@ export function emptyDraft(): RecipeDraft {
     performTime: null,
     sourceUrl: null,
     favourite: false,
+    kind: null,
     notes: [],
     tags: [],
     parts: [newPart()],

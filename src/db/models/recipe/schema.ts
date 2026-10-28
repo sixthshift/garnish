@@ -32,11 +32,14 @@ export const recipe = sqliteTable(
     // 011_restyle.sql: when the steps were last rewritten in the house style,
     // NULL while they are still the author's words.
     restyledAt: text("restyled_at"),
+    // 027_recipe_kind.sql: rotation or weekend, NULL until the household says.
+    kind: text("kind", { enum: ["rotation", "weekend"] }),
   },
   (t) => [
     index("recipe_yield_unit_id").on(t.yieldUnitId),
     check("rating_range", sql`${t.rating} IS NULL OR (${t.rating} >= 0 AND ${t.rating} <= 5)`),
     check("favourite_flag", sql`${t.favourite} IN (0, 1)`),
+    check("kind_value", sql`${t.kind} IS NULL OR ${t.kind} IN ('rotation', 'weekend')`),
   ]
 );
 

@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import { type ParsedRecipeInput, type Recipe, type SubRecipe, suggestLinks } from "../../../domain/recipe";
+import { type ParsedRecipeInput, type Recipe, type RecipeKind, type SubRecipe, suggestLinks } from "../../../domain/recipe";
 import type { Unit } from "../../../domain/reference";
 import type { Db, Executor } from "../../connection/client";
 import { nowUtc } from "../columns";
@@ -142,6 +142,9 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
 
     /** Set the favourite flag alone. Nothing else changes, `updated_at` included. True when the id exists. */
     favourite: (favourite: boolean): boolean => dz.update(recipe).set({ favourite }).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
+
+    /** Set the kind alone (null clears it). Nothing else changes, `updated_at` included, as with the favourite flag. True when the id exists. */
+    kind: (kind: RecipeKind | null): boolean => dz.update(recipe).set({ kind }).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
 
     /** Set the rating alone (null clears it), and touch `updated_at`. True when the id exists. */
     rate: (rating: number | null): boolean =>

@@ -25,6 +25,7 @@ const stored: Recipe = {
   rating: 4,
   lastMade: null,
   favourite: true,
+  kind: null,
   recipeServings: 4,
   recipeYieldQuantity: 1,
   yieldUnit: gram,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { tagSchema } from "../reference";
+import { recipeKindSchema } from "./recipe";
 
 /**
  * The answer to "which recipes": what a list entry needs and nothing else. A
@@ -17,6 +18,7 @@ export const recipeSummarySchema = z.object({
   totalTime: z.number().int().nonnegative().nullable(),
   lastMade: z.iso.datetime().nullable(),
   favourite: z.boolean(),
+  kind: recipeKindSchema.nullable(),
   tags: z.array(tagSchema),
   /** The first ingredient lines, part order then row order, formatted with domain/ingredient/format.ts's formatIngredient. */
   ingredientPreview: z.array(z.string()),

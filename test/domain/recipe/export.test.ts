@@ -21,6 +21,7 @@ const recipe: Recipe = {
   performTime: null,
   sourceUrl: null,
   favourite: false,
+  kind: null,
   notes: [],
   tags: [],
   parts: [{ id: "22222222-2222-4222-8222-222222222222", name: "", ingredients: [], steps: [] }],

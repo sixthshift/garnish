@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { foodReference, tagsFromNames } from "../../domain/draft";
 import { formatIngredient, parseIngredient } from "../../domain/ingredient";
-import { type Ingredient, type Recipe, type RecipeInput, recipeInputSchema, suggestLinks } from "../../domain/recipe";
+import { type Ingredient, type Recipe, type RecipeInput, type RecipeKind, recipeInputSchema, recipeKindSchema, suggestLinks } from "../../domain/recipe";
 import type { FoodRow, Tag, Unit } from "../../domain/reference";
 
 /** What the household already has: the parser matches against it, and a write reuses it before making anything. */
@@ -57,6 +57,9 @@ export const recipeFieldsSchema = {
   sourceUrl: z.string().nullable().describe("Where the recipe came from"),
   tags: z.array(text.min(1)).describe("Tag names; existing tags are reused"),
   favourite: z.boolean(),
+  kind: recipeKindSchema
+    .nullable()
+    .describe("How the household cooks it: 'rotation' for a weeknight regular, 'weekend' for one worth a weekend's time, null when not said"),
   rating: z.number().min(0).max(5).nullable(),
   parts: z.array(partInputSchema).min(1).describe("At least one; the first is usually the unnamed main body"),
   notes: z.array(noteInput).describe("The recipe's notes, in order"),
@@ -81,6 +84,7 @@ export type McpRecipe = {
   sourceUrl: string | null;
   tags: string[];
   favourite: boolean;
+  kind: RecipeKind | null;
   rating: number | null;
   lastMade: string | null;
   parts: {
@@ -109,6 +113,7 @@ export function recipeForMcp(doc: Recipe): McpRecipe {
     sourceUrl: doc.sourceUrl,
     tags: doc.tags.map((tag) => tag.name),
     favourite: doc.favourite,
+    kind: doc.kind,
     rating: doc.rating,
     lastMade: doc.lastMade,
     parts: doc.parts.map((part) => ({
@@ -226,6 +231,7 @@ export function documentFromMcp(
     performTime: input.cookMinutes !== undefined ? input.cookMinutes : (current?.performTime ?? null),
     sourceUrl: input.sourceUrl !== undefined ? input.sourceUrl : (current?.sourceUrl ?? null),
     favourite: pick("favourite", current?.favourite ?? false),
+    kind: input.kind !== undefined ? input.kind : (current?.kind ?? null),
     tags: input.tags !== undefined ? tagsFromNames(input.tags, vocabulary.tags) : (current?.tags ?? []),
     notes: input.notes !== undefined ? input.notes.map((note) => ({ id: note.id, title: note.title, text: note.text })) : (current?.notes ?? []),
     parts: input.parts !== undefined ? input.parts.map(partFrom) : (current?.parts ?? []),

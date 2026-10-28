@@ -12,6 +12,7 @@ import {
   recipeByName,
   recipeBySource,
   setFavourite,
+  setKind,
   setRating,
   subRecipesOf,
   updateRecipe,
@@ -190,6 +191,19 @@ test("setFavourite flips the flag and round-trips through listRecipes; an unknow
   expect((await callServerFn(listRecipes, {}))[0]!.favourite).toBe(false);
 
   const data = await notFoundData(callServerFn(setFavourite, { id: ids.missing, favourite: true }));
+  expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
+});
+
+test("setKind sets and clears the kind, listRecipes filters by it; an unknown id maps to notFound", async () => {
+  const created = await callServerFn(createRecipe, doc());
+  await expect(callServerFn(setKind, { id: created.id, kind: "weekend" })).resolves.toEqual({ id: created.id, kind: "weekend" });
+  expect((await callServerFn(listRecipes, { kind: "weekend" })).map((r) => r.id)).toEqual([created.id]);
+  expect(await callServerFn(listRecipes, { kind: "rotation" })).toEqual([]);
+  await expect(callServerFn(setKind, { id: created.id, kind: null })).resolves.toEqual({ id: created.id, kind: null });
+  expect((await callServerFn(getRecipe, { slug: created.slug })).kind).toBeNull();
+  expect((await callServerFn(listRecipes, { neverMade: true })).map((r) => r.id)).toEqual([created.id]);
+
+  const data = await notFoundData(callServerFn(setKind, { id: ids.missing, kind: "rotation" }));
   expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
 });
 

@@ -58,6 +58,7 @@ function recipeWith(parts: Part[], recipeServings = 4): Recipe {
     performTime: null,
     sourceUrl: null,
     favourite: false,
+    kind: null,
     notes: [],
     tags: [],
     parts,

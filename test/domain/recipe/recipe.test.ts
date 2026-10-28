@@ -58,6 +58,7 @@ const fullRead: Recipe = {
   rating: 4.5,
   lastMade: "2026-09-01T09:00:00.000Z",
   favourite: false,
+  kind: null,
   recipeServings: 2,
   recipeYieldQuantity: 2,
   yieldUnit: {

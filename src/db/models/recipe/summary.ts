@@ -25,11 +25,12 @@ export const summaryColumns = {
   cookMinutes: recipe.cookMinutes,
   lastMade: recipe.lastMade,
   favourite: recipe.favourite,
+  kind: recipe.kind,
 };
 
 export type SummaryRow = Pick<
   typeof recipe.$inferSelect,
-  "id" | "slug" | "name" | "image" | "rating" | "prepMinutes" | "cookMinutes" | "lastMade" | "favourite"
+  "id" | "slug" | "name" | "image" | "rating" | "prepMinutes" | "cookMinutes" | "lastMade" | "favourite" | "kind"
 >;
 
 /** A recipe's tags by name. Shared with document assembly. */
@@ -104,6 +105,7 @@ export function summarise(dz: Db, row: SummaryRow): RecipeSummary {
     totalTime: totalMinutes(row.prepMinutes, row.cookMinutes),
     lastMade: row.lastMade,
     favourite: row.favourite,
+    kind: row.kind,
     tags: selectTags(dz, row.id),
     ingredientPreview: selectIngredientPreview(dz, row.id),
   };

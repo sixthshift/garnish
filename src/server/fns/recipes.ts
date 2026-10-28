@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import recipes, { type RecipeQuery } from "../../db/models/recipe/repo";
-import { duplicateInput, type RecipeSummary, recipeInputSchema, scaleRecipe } from "../../domain/recipe";
+import { duplicateInput, type RecipeSummary, recipeInputSchema, recipeKindSchema, scaleRecipe } from "../../domain/recipe";
 import { NotFound, required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
 
@@ -26,6 +26,10 @@ export const ListRecipesInput = z
     foods: z.array(z.uuid()).optional(),
     /** Only favourited recipes when true. */
     favourite: z.boolean().optional(),
+    /** Only recipes of this kind. */
+    kind: recipeKindSchema.optional(),
+    /** Only recipes never made when true. */
+    neverMade: z.boolean().optional(),
     /** Sort key. Unset keeps the original newest-first order. */
     sort: z.enum(["name", "created", "updated", "lastMade", "rating", "random"]).optional(),
     /** Sort direction. Unset defaults per key; ignored for `sort: "random"`. */
@@ -63,6 +67,9 @@ export const DuplicateRecipeInput = z.object({ id: recipeId });
 export const SubRecipesInput = z.object({ id: recipeId });
 
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
+
+/** `kind` null clears it: the recipe goes back to not said. */
+export const SetKindInput = z.object({ id: recipeId, kind: recipeKindSchema.nullable() });
 
 /** `rating` is 0 to 5; 0 means "no rating" and clears the column to null, as pressing the current star does. */
 export const SetRatingInput = z.object({ id: recipeId, rating: z.number().min(0).max(5) });
@@ -136,6 +143,15 @@ export const setFavourite = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!recipes.ref(data.id).favourite(data.favourite)) throw new NotFound("recipe", data.id);
     return { id: data.id, favourite: data.favourite };
+  });
+
+/** Set the kind alone: rotation, weekend, or null for not said. Returns it as stored. Not-found for an unknown id. */
+export const setKind = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(SetKindInput)
+  .handler(async ({ data }) => {
+    if (!recipes.ref(data.id).kind(data.kind)) throw new NotFound("recipe", data.id);
+    return { id: data.id, kind: data.kind };
   });
 
 /**

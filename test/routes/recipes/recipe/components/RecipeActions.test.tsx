@@ -18,6 +18,7 @@ const base: Recipe = {
   rating: null,
   lastMade: null,
   favourite: false,
+  kind: null,
   recipeServings: 4,
   recipeYieldQuantity: 1,
   yieldUnit: null,

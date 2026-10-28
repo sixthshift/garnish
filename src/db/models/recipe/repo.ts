@@ -1,10 +1,11 @@
 import type { Database } from "bun:sqlite";
-import { and, asc, eq, exists, inArray, ne, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, exists, inArray, isNull, ne, type SQL, sql } from "drizzle-orm";
 import {
   type Ingredient,
   type ParsedRecipeInput,
   type Part,
   type Recipe,
+  type RecipeKind,
   type RecipeNote,
   type RecipeSummary,
   resolveSort,
@@ -47,6 +48,10 @@ export type RecipeFilter = {
   foods?: string[];
   /** Only favourited recipes when true; unset or false is unfiltered. */
   favourite?: boolean;
+  /** Only recipes of this kind; unset is unfiltered. */
+  kind?: RecipeKind;
+  /** Only recipes never made (no last-made date) when true: the ones to try. */
+  neverMade?: boolean;
   /** Sort key. Unset keeps the original newest-first order. */
   sort?: SortKey;
   /** Sort direction. Unset defaults per key, see `resolveSort`. Ignored for `sort: "random"`. */
@@ -288,6 +293,7 @@ export function recipeRepository(db: Database) {
       performTime: row.cookMinutes,
       sourceUrl: row.sourceUrl,
       favourite: row.favourite,
+      kind: row.kind,
       restyledAt: row.restyledAt,
       notes,
       tags: selectTags(dz, row.id),
@@ -334,6 +340,7 @@ export function recipeRepository(db: Database) {
       cookMinutes: doc.performTime,
       sourceUrl: doc.sourceUrl,
       favourite: doc.favourite,
+      kind: doc.kind,
     };
   }
 
@@ -457,6 +464,8 @@ export function recipeRepository(db: Database) {
     }
 
     if (filter.favourite) clauses.push(eq(recipe.favourite, true));
+    if (filter.kind) clauses.push(eq(recipe.kind, filter.kind));
+    if (filter.neverMade) clauses.push(isNull(recipe.lastMade));
 
     const where = clauses.length > 0 ? and(...clauses) : undefined;
     const { key: sort, dir } = resolveSort(filter.sort, filter.dir);

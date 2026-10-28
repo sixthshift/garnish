@@ -1,4 +1,4 @@
-import type { RecipeInput } from "../recipe";
+import type { RecipeInput, RecipeKind } from "../recipe";
 import type { Tag, Unit } from "../reference";
 
 export type PartInput = RecipeInput["parts"][number];
@@ -28,6 +28,7 @@ export type RecipeDraft = {
   performTime: number | null;
   sourceUrl: string | null;
   favourite: boolean;
+  kind: RecipeKind | null;
   notes: DraftNote[];
   tags: Tag[];
   parts: DraftPart[];

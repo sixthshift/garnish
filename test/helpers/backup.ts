@@ -91,6 +91,7 @@ export function sampleBackup(): Backup {
         image: `images/${IDS.recipe}.png`,
         rating: 4,
         favourite: true,
+        kind: "rotation",
         recipeServings: 4,
         recipeYieldQuantity: 300,
         yieldUnitId: IDS.gram,

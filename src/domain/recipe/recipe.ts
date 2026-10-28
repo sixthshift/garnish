@@ -70,6 +70,15 @@ export const partSchema = z.object({
   steps: z.array(stepSchema).default([]),
 });
 
+/**
+ * How the household cooks a recipe: one of the regulars the weeknights are
+ * filled from, or one worth a weekend's time. Null until someone says; never
+ * guessed from the times or the cook log (decisions.md row 191).
+ */
+export const RECIPE_KINDS = ["rotation", "weekend"] as const;
+export const recipeKindSchema = z.enum(RECIPE_KINDS);
+export type RecipeKind = z.infer<typeof recipeKindSchema>;
+
 const recipeFields = {
   name: nonEmpty,
   description: text,
@@ -84,6 +93,7 @@ const recipeFields = {
   performTime: minutes,
   sourceUrl: z.string().nullable().default(null),
   favourite: z.boolean().default(false),
+  kind: recipeKindSchema.nullable().default(null),
   notes: z.array(recipeNoteSchema).default([]),
   tags: z.array(tagSchema).default([]),
 };

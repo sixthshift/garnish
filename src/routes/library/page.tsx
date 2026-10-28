@@ -15,6 +15,7 @@ import { SEARCH_DEBOUNCE_MS, searchParam } from "../../lib/search";
 import { ActiveFilters, activeFilterCount } from "./components/ActiveFilters";
 import { FilterBar, type FilterBarProps } from "./components/FilterBar";
 import { FiltersSheet } from "./components/FiltersSheet";
+import { ShelfToggle } from "./components/ShelfToggle";
 import { SortMenu } from "./components/SortMenu";
 import { tagsByUse } from "./components/tagUse";
 import { ViewModeToggle } from "./components/ViewModeToggle";
@@ -25,10 +26,10 @@ const PRIORITY_CARDS = 2;
 
 export function RecipesPage() {
   const { recipes, tags, foods } = Route.useLoaderData();
-  const { q = "", tag, tags: tagsParam, match = "any", foods: foodsParam = [], favourite = false, sort: sortParam, dir: dirParam } = Route.useSearch();
+  const { q = "", tag, tags: tagsParam, match = "any", foods: foodsParam = [], favourite = false, shelf, sort: sortParam, dir: dirParam } = Route.useSearch();
   const navigate = Route.useNavigate();
   const selected = selectedTags(tag, tagsParam);
-  const filtered = Boolean(q || selected.length > 0 || foodsParam.length > 0 || favourite);
+  const filtered = Boolean(q || selected.length > 0 || foodsParam.length > 0 || favourite || shelf);
   const [viewMode] = useViewMode();
   const { key: sort, dir } = resolveSort(sortParam, dirParam);
 
@@ -50,7 +51,8 @@ export function RecipesPage() {
     onFoodsChange: (next) => void navigate({ search: (prev) => ({ ...prev, foods: arrayParam(next) }) }),
     onFavouriteChange: (next) => void navigate({ search: (prev) => ({ ...prev, favourite: next ? true : undefined }) }),
   };
-  const onClearFilters = () => void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: undefined, foods: undefined, favourite: undefined }) });
+  const onClearFilters = () =>
+    void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: undefined, foods: undefined, favourite: undefined, shelf: undefined }) });
   const filterCount = activeFilterCount(selected, foodsParam, favourite);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -90,6 +92,7 @@ export function RecipesPage() {
             <SearchInput value={query} onValueChange={setQuery} placeholder="Search recipes" aria-label="Search recipes" name="q" />
           </form>
         </search>
+        <ShelfToggle shelf={shelf} onChange={(next) => void navigate({ search: (prev) => ({ ...prev, shelf: next }) })} />
         {/* Inline from `md:` up; on a phone the same controls open in a sheet from the toolbar, and what is set shows as chips. */}
         <div className="max-md:hidden">
           <FilterBar {...filterBar} />

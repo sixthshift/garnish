@@ -9,7 +9,7 @@ import shopping from "../../db/models/shopping/repo";
 import tags from "../../db/models/tag/repo";
 import units from "../../db/models/unit/repo";
 import { isoDate, MEALS, planEntryInputSchema, weekMonday } from "../../domain/plan";
-import { type RecipeSummary, scaleRecipe } from "../../domain/recipe";
+import { type RecipeSummary, recipeKindSchema, scaleRecipe } from "../../domain/recipe";
 import { mergeIntoList, recipeAdditions, shoppingItemInputSchema, shoppingItemLabel } from "../../domain/shopping";
 import { VERSION } from "../../lib/version";
 import { INSTRUCTIONS } from "./instructions";
@@ -36,6 +36,7 @@ const summary = (row: RecipeSummary) => ({
   totalMinutes: row.totalTime,
   rating: row.rating,
   favourite: row.favourite,
+  kind: row.kind,
   lastMade: row.lastMade,
 });
 
@@ -60,21 +61,23 @@ export function buildMcpServer(caller: Pick<Caller, "scopes">): McpServer {
       "search_recipes",
       {
         title: "Search recipes",
-        description: "Find recipes by name, tag or favourite. With nothing given, every recipe, newest first. Answers summaries; read one with get_recipe.",
+        description:
+          "Find recipes by name, tag, favourite or kind. With nothing given, every recipe, newest first. Answers summaries; read one with get_recipe.",
         inputSchema: {
           query: z.string().optional().describe("Part of the recipe's name"),
           tags: z.array(z.string()).optional().describe("Tag names; a recipe needs any of them"),
           favourite: z.boolean().optional().describe("Only favourites"),
+          kind: recipeKindSchema.optional().describe("Only the household's weeknight regulars ('rotation') or its weekend cooks ('weekend')"),
           sort: z.enum(["name", "updated", "lastMade", "rating", "created"]).optional(),
         },
         annotations: READ,
       },
-      async ({ query, tags: tagNames, favourite, sort }) => {
+      async ({ query, tags: tagNames, favourite, kind, sort }) => {
         const known = tags.list();
         const slugs = (tagNames ?? []).flatMap((name) => known.filter((tag) => tag.name.toLowerCase() === name.trim().toLowerCase()).map((tag) => tag.slug));
         if (tagNames && tagNames.length > 0 && slugs.length === 0)
           return ok({ recipes: [], note: "No tag has that name. list_tags gives the household's tags." });
-        const rows = recipes.query({ by: "filter", q: query, tags: slugs.length > 0 ? slugs : undefined, favourite, sort });
+        const rows = recipes.query({ by: "filter", q: query, tags: slugs.length > 0 ? slugs : undefined, favourite, kind, sort });
         return ok({ recipes: rows.map(summary) });
       }
     );

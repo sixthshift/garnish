@@ -108,6 +108,7 @@ describe("toCooklang", () => {
     rating: null,
     lastMade: null,
     favourite: false,
+    kind: null,
     recipeServings: 4,
     recipeYieldQuantity: 0,
     yieldUnit: null,

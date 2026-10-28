@@ -51,6 +51,7 @@ const tart: Recipe = {
   performTime: null,
   sourceUrl: null,
   favourite: false,
+  kind: null,
   notes: [],
   tags: [],
   parts: [part("Pastry", [FLOUR]), part("Filling", [LEMON])],

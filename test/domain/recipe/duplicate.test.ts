@@ -22,6 +22,7 @@ const tart: Recipe = {
   performTime: 45,
   sourceUrl: "https://example.test/tart",
   favourite: true,
+  kind: null,
   notes: [{ id: id(), title: "Tip", text: "Chill the pastry." }],
   tags: [{ id: id(), name: "Dessert", slug: "dessert" }],
   parts: [

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { imageContentType } from "../../lib/imageFile";
 import { MEALS } from "../planner";
+import { recipeKindSchema } from "../recipe";
 
 // The backup's `garnish.json`, as architecture.md's Backup and restore draws
 // it (decisions.md row 131). Normalised: a row names a food, unit, aisle, tag or
@@ -133,6 +134,8 @@ export const backupRecipeSchema = z.object({
   image: image("recipe"),
   rating: z.number().min(0).max(5).nullable().default(null),
   favourite: z.boolean().default(false),
+  // Absent from a backup made before it existed: such a recipe has no kind.
+  kind: recipeKindSchema.nullable().default(null),
   recipeServings: z.number().nonnegative().default(0),
   recipeYieldQuantity: z.number().nonnegative().default(0),
   yieldUnitId: id.nullable().default(null),

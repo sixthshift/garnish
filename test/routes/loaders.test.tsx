@@ -166,6 +166,19 @@ describe("/recipes (list)", () => {
     expect(html).not.toContain("Toast");
   });
 
+  test("the shelf search param narrows to a kind, or to the recipes never made", async () => {
+    const laksa = await callServerFn(createRecipe, { name: "Laksa", parts: [{ name: "" }], kind: "rotation", lastMade: "2026-09-01T08:00:00.000Z" });
+    await callServerFn(createRecipe, { name: "Lamb shoulder", parts: [{ name: "" }], kind: "weekend" });
+    expect(laksa.kind).toBe("rotation");
+    let html = await renderRoute("/recipes?shelf=rotation");
+    expect(html).toContain('href="/recipes/laksa"');
+    expect(html).not.toContain('href="/recipes/lamb-shoulder"');
+    html = await renderRoute("/recipes?shelf=try");
+    expect(html).toContain('href="/recipes/lamb-shoulder"');
+    expect(html).not.toContain('href="/recipes/laksa"');
+    expect(html).toContain('aria-label="Shelf"');
+  });
+
   describe("view mode (M12.2)", () => {
     afterEach(() => {
       delete (globalThis as { window?: unknown }).window;
@@ -769,6 +782,7 @@ describe("loader data types match the domain schemas", () => {
       match?: "any" | "all" | undefined;
       foods?: string[] | undefined;
       favourite?: boolean | undefined;
+      shelf?: "rotation" | "weekend" | "try" | undefined;
       sort?: "name" | "created" | "updated" | "lastMade" | "rating" | "random" | undefined;
       dir?: "asc" | "desc" | undefined;
       seed?: string | undefined;

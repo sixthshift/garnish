@@ -8,8 +8,16 @@ export { exportedRecipe } from "./export";
 export type { TagMatch } from "./filters";
 export { selectedTags } from "./filters";
 export { mergeIngredients } from "./mergeIngredients";
-export type { Ingredient, ParsedRecipeInput, Part, Recipe, RecipeInput, RecipeNote, Step, TimelineEvent, TimelineEventInput } from "./recipe";
-export { ingredientInputSchema, recipeInputSchema, recipeSchema, timelineEventInputSchema, timelineEventSchema } from "./recipe";
+export type { Ingredient, ParsedRecipeInput, Part, Recipe, RecipeInput, RecipeKind, RecipeNote, Step, TimelineEvent, TimelineEventInput } from "./recipe";
+export {
+  ingredientInputSchema,
+  RECIPE_KINDS,
+  recipeInputSchema,
+  recipeKindSchema,
+  recipeSchema,
+  timelineEventInputSchema,
+  timelineEventSchema,
+} from "./recipe";
 export { nextServings, scaledForServings, scaleRecipe } from "./scale";
 export type { SortDir, SortKey } from "./sort";
 export { resolveSort, SORT_OPTIONS } from "./sort";

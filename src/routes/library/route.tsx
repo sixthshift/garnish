@@ -15,6 +15,8 @@ export const RecipeListSearch = z.object({
   match: z.enum(["any", "all"]).optional(),
   foods: z.array(z.string()).optional(),
   favourite: z.boolean().optional(),
+  /** Which shelf: the weeknight regulars, the weekend cooks, or the ones never made. Unset is everything. */
+  shelf: z.enum(["rotation", "weekend", "try"]).optional(),
   sort: z.enum(["name", "created", "updated", "lastMade", "rating", "random"]).optional(),
   dir: z.enum(["asc", "desc"]).optional(),
   seed: z.string().optional(),
@@ -26,8 +28,10 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: "/recipes",
   validateSearch: RecipeListSearch,
-  loaderDeps: ({ search: { q, tag, tags, match, foods, favourite, sort, dir, seed } }) => ({
+  loaderDeps: ({ search: { q, tag, tags, match, foods, favourite, shelf, sort, dir, seed } }) => ({
     q,
+    kind: shelf === "rotation" || shelf === "weekend" ? shelf : undefined,
+    neverMade: shelf === "try" ? true : undefined,
     tag,
     tags,
     match,
