@@ -1,3 +1,4 @@
+import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
@@ -5,7 +6,7 @@ import { Popover } from "@sixthshift/design-system/popover";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { SubRecipesProvider } from "../../../../components/recipe/SubRecipes";
 import { WakeLockIcon } from "../../../../components/ui/icons";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
@@ -25,6 +26,7 @@ import { swipeIntent } from "../../../../lib/swipe";
 import { useWakeLock } from "../../../../lib/useWakeLock";
 import { TimerStrip } from "../components/TimerStrip";
 import { CookCardView } from "./components/CookCardView";
+import { amountChange, type CookChange, readChanges, sessionStore, withChange, withChanges, withoutChange, writeChanges } from "./components/cookChanges";
 import { FinishedCard } from "./components/FinishedCard";
 import { Route } from "./route";
 
@@ -60,9 +62,20 @@ function ServesControl({ servings, onChange }: { servings: number; onChange: (va
 export function CookPage() {
   const { recipe: stored, subRecipes, parentName } = Route.useLoaderData();
   const { step, servings: requested, from } = Route.useSearch();
+  // What changed at the stove this cook (decisions.md row 193), held for the
+  // session so a reload or a look at the recipe page does not lose it.
+  const [changes, setChanges] = useState<CookChange[]>(() => readChanges(sessionStore(), stored.id));
+  const keepChanges = (next: CookChange[]) => {
+    setChanges(next);
+    writeChanges(sessionStore(), stored.id, next);
+  };
   // Scaled on the client from the search param: the deck is rebuilt from the
-  // scaled document, so the stepper is a re-render and not a round trip.
-  const recipe = scaledForServings(stored, requested);
+  // scaled document, so the stepper is a re-render and not a round trip. The
+  // changes go in first, at the stored servings, and scale with the rest.
+  const recipe = scaledForServings(withChanges(stored, changes), requested);
+  const factor = stored.recipeServings > 0 ? recipe.recipeServings / stored.recipeServings : 1;
+  const changedIds = new Set(changes.map((change) => (change.kind === "amount" ? change.ingredientId : change.stepId)));
+  const originalStep = (id: string) => stored.parts.flatMap((part) => part.steps).find((s) => s.id === id)?.text;
   const navigate = Route.useNavigate();
   const screenOn = useWakeLock();
 
@@ -129,6 +142,11 @@ export function CookPage() {
               <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong lg:text-lg" data-cook-title>
                 {recipe.name}
               </h1>
+              {changes.length > 0 && (
+                <Badge variant="soft" intent="neutral" className="shrink-0" data-cook-changes>
+                  {changes.length === 1 ? "1 change" : `${changes.length} changes`}
+                </Badge>
+              )}
               {recipe.recipeServings > 0 && <ServesControl servings={recipe.recipeServings} onChange={scaleTo} />}
             </div>
             {pills.length > 1 && (
@@ -172,7 +190,15 @@ export function CookPage() {
           onPointerCancel={() => (swipe.current = null)}
         >
           {finished ? (
-            <FinishedCard recipe={recipe} servings={requested} from={from} parentName={parentName} />
+            <FinishedCard
+              recipe={recipe}
+              stored={stored}
+              servings={requested}
+              from={from}
+              parentName={parentName}
+              changes={changes}
+              onChangesDone={() => keepChanges([])}
+            />
           ) : (
             <EmptyBoundary
               isEmpty={card === undefined}
@@ -190,6 +216,18 @@ export function CookPage() {
                   onNext={() => goTo(index + 1)}
                   cookFrom={recipe.slug}
                   partName={pills.length > 1 ? undefined : card.part}
+                  changedIds={changedIds}
+                  onChangeAmount={(ingredient, typed) => {
+                    const change = amountChange(ingredient, typed, factor);
+                    if (change) keepChanges(withChange(changes, change));
+                  }}
+                  onChangeStep={(changedStep, position, text) =>
+                    keepChanges(
+                      text === originalStep(changedStep.id)
+                        ? withoutChange(changes, `step:${changedStep.id}`)
+                        : withChange(changes, { kind: "step", stepId: changedStep.id, position, text })
+                    )
+                  }
                 />
               )}
             </EmptyBoundary>

@@ -14,10 +14,12 @@ export type MadeThisButtonProps = {
   recipe: Pick<Recipe, "id" | "name" | "recipeServings">;
   /** `xl` on cook mode's finish card, where every target is 48px. */
   size?: "sm" | "xl";
+  /** The comment the sheet starts with. */
+  defaultMessage?: string;
 };
 
 /** Opens the sheet, logs the cook and uploads the photo, if one was given. */
-export function MadeThisButton({ recipe, size = "sm" }: MadeThisButtonProps) {
+export function MadeThisButton({ recipe, size = "sm", defaultMessage }: MadeThisButtonProps) {
   const mutate = useMutate();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -54,6 +56,7 @@ export function MadeThisButton({ recipe, size = "sm" }: MadeThisButtonProps) {
         onCancel={() => setOpen(false)}
         onSave={(input, photo) => void save(input, photo)}
         defaultServings={recipe.recipeServings > 0 ? Number(recipe.recipeServings.toFixed(2)) : 1}
+        defaultMessage={defaultMessage}
       />
     </>
   );

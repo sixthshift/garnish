@@ -19,12 +19,21 @@ export type MadeThisSheetContentProps = {
   today?: string;
   /** The stepper's starting value — the page's current scale. */
   defaultServings?: number;
+  /** The comment's starting words: cook mode's changes kept for this time only (decisions.md row 193). */
+  defaultMessage?: string;
 };
 
-export function MadeThisSheetContent({ onSave, onCancel, busy = false, today = todayIso(), defaultServings = 1 }: MadeThisSheetContentProps) {
+export function MadeThisSheetContent({
+  onSave,
+  onCancel,
+  busy = false,
+  today = todayIso(),
+  defaultServings = 1,
+  defaultMessage = "",
+}: MadeThisSheetContentProps) {
   const [occurredOn, setOccurredOn] = useState(today);
   const [servings, setServings] = useState(defaultServings);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(defaultMessage);
   const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,7 +87,8 @@ export type MadeThisSheetProps = MadeThisSheetContentProps & { open: boolean };
 export function MadeThisSheet({ open, ...props }: MadeThisSheetProps) {
   return (
     <Sheet open={open} onOpenChange={(next) => !next && props.onCancel()} size="sm" closable aria-label="Made this">
-      <MadeThisSheetContent {...props} />
+      {/* Keyed on the starting comment, so words that arrive after the first open are the ones it starts with. */}
+      <MadeThisSheetContent key={props.defaultMessage ?? ""} {...props} />
     </Sheet>
   );
 }
