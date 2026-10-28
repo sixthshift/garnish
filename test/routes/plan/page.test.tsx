@@ -134,11 +134,9 @@ describe("the week", () => {
     expect(elementHtml(html, "plan-week-actions")).toContain('data-testid="plan-add-week"');
   });
 
-  test("Propose says what it does", async () => {
-    const html = await render(emptyWeek(), { plannerAvailable: true });
-    const actions = elementHtml(html, "plan-week-actions");
-    expect(actions).toContain("Propose a week");
-    expect(actions).toContain("Nothing is added until you accept it.");
+  test("Plan the week opens the session for the shown week, while the week is not over", async () => {
+    const html = await render(emptyWeek());
+    expect(elementHtml(html, "plan-week-actions")).toContain(`href="/plan/fill?week=${MONDAY}"`);
   });
 });
 

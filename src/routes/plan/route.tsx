@@ -1,7 +1,6 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
 import { type PlanDay, weekMonday } from "../../domain/plan";
-import { aiAvailable } from "../../server/fns/ai";
 import { listPlanWeek } from "../../server/fns/plan";
 import { Route as rootRoute } from "../root";
 
@@ -11,8 +10,6 @@ export const PlanSearch = z.object({ week: z.string().optional() });
 export type PlanWeekData = {
   monday: string;
   days: PlanDay[];
-  /** A model is configured: the header gains Propose. */
-  plannerAvailable: boolean;
 };
 
 export const Route = createRoute({
@@ -22,10 +19,8 @@ export const Route = createRoute({
   loaderDeps: ({ search: { week } }) => ({ week }),
   loader: async ({ deps }): Promise<PlanWeekData> => {
     const monday = weekMonday(deps.week);
-    // The planner's read is the header's business, not the week's: a failure
-    // leaves the week drawn and Propose out of the way.
-    const [days, available] = await Promise.all([listPlanWeek({ data: { monday } }), aiAvailable().catch(() => ({ available: false }))]);
-    return { monday, days, plannerAvailable: available.available };
+    const days = await listPlanWeek({ data: { monday } });
+    return { monday, days };
   },
   component: lazyRouteComponent(() => import("./page"), "PlanPage"),
 });

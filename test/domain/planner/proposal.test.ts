@@ -15,7 +15,7 @@ import {
 import { libraryLine, ProposalAnswerEntrySchema, ProposalAnswerSchema } from "../../../src/domain/planner/proposal";
 
 function recipe(id: string, name: string, over: Partial<LibraryRecipe> = {}): LibraryRecipe {
-  return { id, name, tags: [], totalMinutes: null, rating: null, favourite: false, lastMade: null, ...over };
+  return { id, name, tags: [], totalMinutes: null, rating: null, favourite: false, kind: null, lastMade: null, ...over };
 }
 
 const INPUT: ProposalInput = {
@@ -107,6 +107,8 @@ describe("the prompt", () => {
   test("the library line names the facts it has and only those", () => {
     expect(libraryLine(recipe("r3", "Toast", { totalMinutes: 5 }))).toBe("r3 | Toast |  | 5 min | never made");
     expect(libraryLine(recipe("r4", "Curry", { tags: ["thai"], rating: 3, lastMade: "2026-01-02" }))).toBe("r4 | Curry | thai | ★3 | last 2026-01-02");
+    expect(libraryLine(recipe("r5", "Dal", { kind: "rotation" }))).toBe("r5 | Dal |  | rotation | never made");
+    expect(libraryLine(recipe("r6", "Lamb", { kind: "weekend", favourite: true }))).toBe("r6 | Lamb |  | fav | weekend | never made");
   });
 
   test("the JSON Schema names exactly the fields the zod schema does, and requires all of them", () => {
@@ -157,4 +159,10 @@ describe("parseProposalAnswer", () => {
       expect((caught as ProposalError).kind, content).toBe("malformed");
     }
   });
+});
+
+test("the prompt says what a recipe's kind means, and the library header names the column", () => {
+  const prompt = proposalPrompt(INPUT);
+  expect(prompt).toContain("A recipe marked `rotation` is one of the household's weeknight regulars");
+  expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | kind | last made):");
 });

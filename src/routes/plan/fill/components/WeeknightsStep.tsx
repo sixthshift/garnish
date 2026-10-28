@@ -6,7 +6,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { dayParts } from "../../../../domain/plan";
 import type { RecipeSummary } from "../../../../domain/recipe";
-import { nightReason, reasonLabel, swapNight } from "./fill";
+import { nightReason, reasonKey, reasonLabel, swapNight } from "./fill";
 
 /**
  * The open weeknights, each with the recipe the rotation offers and why:
@@ -20,6 +20,7 @@ export function WeeknightsStep({
   pool,
   carried,
   today,
+  reasons = {},
   onChange,
 }: {
   dates: readonly string[];
@@ -28,6 +29,8 @@ export function WeeknightsStep({
   pool: readonly RecipeSummary[];
   carried: readonly RecipeSummary[];
   today: string;
+  /** The planner's reason for a recipe on a date, when it chose it: shown instead of the rotation's. */
+  reasons?: Readonly<Record<string, string>>;
   onChange: (nights: (string | null)[]) => void;
 }) {
   const carriedIds = new Set(carried.map((recipe) => recipe.id));
@@ -76,7 +79,9 @@ export function WeeknightsStep({
                 </span>
                 <span className="flex min-w-0 flex-[1_1_10rem] flex-col">
                   <span className={cn("font-medium", off && "text-fg-subtle")}>{recipe?.name ?? "Night off"}</span>
-                  {recipe && <span className="text-sm text-fg-subtle">{reasonLabel(nightReason(recipe, carriedIds, today))}</span>}
+                  {recipe && (
+                    <span className="text-sm text-fg-subtle">{reasons[reasonKey(date, recipe.id)] ?? reasonLabel(nightReason(recipe, carriedIds, today))}</span>
+                  )}
                 </span>
                 <span className="flex gap-2">
                   <Button

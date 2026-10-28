@@ -1,10 +1,12 @@
-import { addDays, type PlanDay, weekDates } from "../../../../domain/plan";
+import { addDays, type Meal, type PlanDay, weekDates } from "../../../../domain/plan";
 import type { RecipeSummary } from "../../../../domain/recipe";
+import type { ProposedWeek } from "../../../../server/ai/planner";
 
-// Filling a week by hand, without a model: the weeknights from the recipes the
-// household marked Rotation, the ones not had for longest first, and the
-// weekend chosen from those marked Weekend and the ones never made
-// (decisions.md row 192). Pure; the page holds the choices and writes them.
+// Filling a week: the weeknights from the recipes the household marked
+// Rotation, the ones not had for longest first, and the weekend chosen from
+// those marked Weekend and the ones never made (decisions.md row 192). With a
+// model configured its proposal makes the first pass instead, and the same
+// choices follow (row 194). Pure; the page holds the choices and writes them.
 
 /** Why a weeknight got the recipe it did, as the row says it. */
 export type NightReason = { kind: "carried" } | { kind: "never" } | { kind: "weeks"; weeks: number };
@@ -101,4 +103,60 @@ export function reasonLabel(reason: NightReason): string {
   if (reason.kind === "never") return "Not made yet";
   if (reason.weeks === 0) return "Made this week";
   return reason.weeks === 1 ? "Last made a week ago" : `Last made ${reason.weeks} weeks ago`;
+}
+
+// --- The model's first pass (decisions.md row 194) -------------------------------
+
+/** A breakfast or lunch the model proposed: shown beside the dinners, each one skippable. */
+export type OtherMeal = { date: string; meal: Meal; recipeId: string; skip: boolean };
+
+/** Where a model's reason is kept: the slot's date and the recipe it was given for, so a swap leaves it behind. */
+export const reasonKey = (date: string, recipeId: string): string => `${date}:${recipeId}`;
+
+/** The session's choices as a proposal sets them. */
+export type FirstPass = { nights: (string | null)[]; weekend: (string | null)[]; others: OtherMeal[]; reasons: Record<string, string> };
+
+/**
+ * The model's proposal as the session's starting choices: its dinners on the
+ * open weeknights and weekend days, its other meals beside them, and its
+ * reason for each. A weeknight it left empty, or filled with a recipe already
+ * used, is filled from `fallback` (what did not happen, then the rotation), so
+ * a short answer still gives a whole week. Pure.
+ */
+export function fromProposal(
+  week: ProposedWeek,
+  open: { weeknights: readonly string[]; weekend: readonly string[] },
+  fallback: readonly RecipeSummary[]
+): FirstPass {
+  const dinner = new Map(week.entries.filter((entry) => entry.meal === "dinner").map((entry) => [entry.date, entry.recipeId]));
+  const used = new Set<string>();
+  const take = (id: string | undefined) => {
+    if (id === undefined || used.has(id)) return null;
+    used.add(id);
+    return id;
+  };
+  const weekend = open.weekend.map((date) => take(dinner.get(date)));
+  const proposed = open.weeknights.map((date) => take(dinner.get(date)));
+  const spare = fallback.map((recipe) => recipe.id).filter((id) => !used.has(id));
+  const nights = proposed.map((id) => id ?? spare.shift() ?? null);
+  const others = week.entries
+    .filter((entry) => entry.meal !== "dinner")
+    .map((entry) => ({ date: entry.date, meal: entry.meal, recipeId: entry.recipeId, skip: false }));
+  const reasons = Object.fromEntries(
+    week.entries.filter((entry) => entry.reason.trim() !== "").map((entry) => [reasonKey(entry.date, entry.recipeId), entry.reason])
+  );
+  return { nights, weekend, others, reasons };
+}
+
+/** Everything the session writes, as `applyPlanProposal` takes it: the dinners chosen, then the other meals not skipped. Pure. */
+export function sessionEntries(
+  open: { weeknights: readonly string[]; weekend: readonly string[] },
+  nights: readonly (string | null)[],
+  weekend: readonly (string | null)[],
+  others: readonly OtherMeal[]
+): { date: string; meal: Meal; recipeId: string }[] {
+  const dinners = [...open.weeknights.map((date, i) => [date, nights[i]] as const), ...open.weekend.map((date, i) => [date, weekend[i]] as const)].flatMap(
+    ([date, recipeId]) => (recipeId ? [{ date, meal: "dinner" as const, recipeId }] : [])
+  );
+  return [...dinners, ...others.filter((other) => !other.skip).map(({ date, meal, recipeId }) => ({ date, meal, recipeId }))];
 }

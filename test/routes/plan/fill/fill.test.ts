@@ -3,11 +3,14 @@ import { type PlanDay, planEntrySchema } from "../../../../src/domain/plan";
 import type { RecipeSummary } from "../../../../src/domain/recipe";
 import {
   fillNights,
+  fromProposal,
   missedRecipes,
   nightReason,
   openDays,
+  reasonKey,
   reasonLabel,
   rotationPool,
+  sessionEntries,
   swapNight,
   weekendShelf,
 } from "../../../../src/routes/plan/fill/components/fill";
@@ -110,4 +113,50 @@ test("a night's reason reads as carried, never made, or whole weeks since", () =
   expect(reasonLabel(nightReason(r, new Set(), "2026-09-14"))).toBe("Last made 3 weeks ago");
   expect(reasonLabel(nightReason(r, new Set(), "2026-08-29"))).toBe("Last made a week ago");
   expect(reasonLabel(nightReason(r, new Set(), "2026-08-22"))).toBe("Made this week");
+});
+
+test("a proposal sets the dinners, the other meals and the reasons; a weeknight it left empty or doubled is filled from the fallback", () => {
+  const [a, b, c, d] = ["Dal", "Kofta", "Lamb", "Fallback"].map((name) => recipe(name));
+  const open = { weeknights: ["2026-09-14", "2026-09-15", "2026-09-16"], weekend: ["2026-09-19"] };
+  const week = {
+    entries: [
+      {
+        date: "2026-09-14",
+        meal: "dinner" as const,
+        recipeId: a!.id,
+        reason: "not made since June",
+        recipe: { id: a!.id, slug: "dal", name: "Dal", image: null },
+      },
+      { date: "2026-09-15", meal: "dinner" as const, recipeId: a!.id, reason: "", recipe: { id: a!.id, slug: "dal", name: "Dal", image: null } },
+      {
+        date: "2026-09-19",
+        meal: "dinner" as const,
+        recipeId: c!.id,
+        reason: "a weekend cook",
+        recipe: { id: c!.id, slug: "lamb", name: "Lamb", image: null },
+      },
+      { date: "2026-09-14", meal: "lunch" as const, recipeId: b!.id, reason: "", recipe: { id: b!.id, slug: "kofta", name: "Kofta", image: null } },
+    ],
+    dropped: [],
+    unfilled: [],
+    taken: [],
+  };
+  const first = fromProposal(week, open, [a!, d!]);
+  expect(first.nights).toEqual([a!.id, d!.id, null]);
+  expect(first.weekend).toEqual([c!.id]);
+  expect(first.others).toEqual([{ date: "2026-09-14", meal: "lunch", recipeId: b!.id, skip: false }]);
+  expect(first.reasons).toEqual({ [reasonKey("2026-09-14", a!.id)]: "not made since June", [reasonKey("2026-09-19", c!.id)]: "a weekend cook" });
+});
+
+test("the session writes its dinners in day order, then the other meals not skipped", () => {
+  const open = { weeknights: ["2026-09-14", "2026-09-15"], weekend: ["2026-09-19"] };
+  const others = [
+    { date: "2026-09-14", meal: "lunch" as const, recipeId: "l1", skip: false },
+    { date: "2026-09-15", meal: "breakfast" as const, recipeId: "b1", skip: true },
+  ];
+  expect(sessionEntries(open, ["n1", null], ["w1"], others)).toEqual([
+    { date: "2026-09-14", meal: "dinner", recipeId: "n1" },
+    { date: "2026-09-19", meal: "dinner", recipeId: "w1" },
+    { date: "2026-09-14", meal: "lunch", recipeId: "l1" },
+  ]);
 });

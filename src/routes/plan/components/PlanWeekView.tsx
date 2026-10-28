@@ -1,6 +1,5 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
-import { Muted } from "@sixthshift/design-system/muted";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Page, PageHeader } from "../../../components/shell/Page";
@@ -9,7 +8,6 @@ import type { RecipeSummary } from "../../../domain/recipe";
 import { AddWeekToShoppingButton } from "./AddWeekToShoppingButton";
 import { PlanAddSheet } from "./PlanAddSheet";
 import { PlanDayRow } from "./PlanDayRow";
-import { ProposeButton } from "./ProposeButton";
 
 export type PlanWeekViewProps = {
   monday: string;
@@ -27,8 +25,6 @@ export type PlanWeekViewProps = {
   searchRecipes?: (query: string) => Promise<RecipeSummary[]>;
   /** A write is in flight: every control is disabled, as the other pages do. */
   busy?: boolean;
-  /** A model is configured, so a week can be proposed. Off: no Propose button at all. */
-  plannerAvailable?: boolean;
 };
 
 /**
@@ -36,21 +32,11 @@ export type PlanWeekViewProps = {
  *
  * One list at every width (decisions.md row 141): the title and the week's
  * arrows on one line, then the seven days as rows of one card, then the
- * week's own actions — adding it to the shopping list, and Propose when a
- * model is configured — after the days they act on.
+ * week's own actions — Plan the week (which asks the planner first when a
+ * model is configured, decisions.md row 194) and adding it to the shopping
+ * list — after the days they act on.
  */
-export function PlanWeekView({
-  monday,
-  days,
-  today = todayIso(),
-  onAddText,
-  onAddRecipe,
-  onMove,
-  onRemove,
-  searchRecipes,
-  busy = false,
-  plannerAvailable = false,
-}: PlanWeekViewProps) {
+export function PlanWeekView({ monday, days, today = todayIso(), onAddText, onAddRecipe, onMove, onRemove, searchRecipes, busy = false }: PlanWeekViewProps) {
   const [adding, setAdding] = useState<string | null>(null);
 
   return (
@@ -81,7 +67,7 @@ export function PlanWeekView({
         <div className="flex flex-wrap gap-2">
           {/* The week's empty nights, filled from the rotation and the weekend recipes (decisions.md row 192). Gone once the week is over. */}
           {addDays(monday, 6) >= today && (
-            <Button asChild variant="outline" intent="neutral">
+            <Button asChild variant="outline" intent="neutral" size="sm">
               <Link to="/plan/fill" search={{ week: monday }}>
                 Plan the week
               </Link>
@@ -89,14 +75,6 @@ export function PlanWeekView({
           )}
           <AddWeekToShoppingButton monday={monday} />
         </div>
-        {plannerAvailable && (
-          <div className="flex flex-col items-start gap-1">
-            <ProposeButton monday={monday} today={today} />
-            <Muted as="p" className="text-sm">
-              Suggests recipes for the days and meals you choose, from your planner guide. Nothing is added until you accept it.
-            </Muted>
-          </div>
-        )}
       </div>
 
       {adding !== null && (

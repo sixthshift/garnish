@@ -28,6 +28,8 @@ export type LibraryRecipe = {
   totalMinutes: number | null;
   rating: number | null;
   favourite: boolean;
+  /** How the household cooks it, as it marked it: a weeknight regular, a weekend cook, or not said (decisions.md row 191). */
+  kind: "rotation" | "weekend" | null;
   /** The last time it was planned or cooked, `YYYY-MM-DD`, or null for never. */
   lastMade: string | null;
 };
@@ -114,6 +116,13 @@ export type ProposalEntry = { date: string; meal: Meal; recipeId: string; reason
 export const FIXED_PLACE_LINE = "This household is in Australia: the southern hemisphere, so read the month below for the season.";
 
 /**
+ * What a recipe's kind means, a fact of the library rather than a statement:
+ * the household marked it, so it is not one to switch off (decisions.md row 194).
+ */
+export const KIND_LINE =
+  "A recipe marked `rotation` is one of the household's weeknight regulars; one marked `weekend` is worth a weekend's time. Fill Monday to Friday dinners from the rotation and Saturday and Sunday dinners from the weekend recipes, unless a statement below asks otherwise. An unmarked recipe may go anywhere it suits.";
+
+/**
  * The recipes the prompt shows, and whether the list was cut. Under the cap
  * the library goes as given, in the caller's order; past it the favourites
  * come first, then the highest rated, then the rest, because those are the
@@ -134,6 +143,7 @@ export function libraryLine(recipe: LibraryRecipe): string {
   if (recipe.totalMinutes !== null) fields.push(`${recipe.totalMinutes} min`);
   if (recipe.rating !== null) fields.push(`★${recipe.rating}`);
   if (recipe.favourite) fields.push("fav");
+  if (recipe.kind !== null) fields.push(recipe.kind);
   fields.push(recipe.lastMade === null ? "never made" : `last ${recipe.lastMade}`);
   return fields.join(" | ");
 }
@@ -169,6 +179,7 @@ export function proposalPrompt(input: ProposalInput): string {
     "Propose meals for the week below, and answer with JSON matching the schema.",
     `Today is ${input.today}.`,
     FIXED_PLACE_LINE,
+    KIND_LINE,
     `The week begins Monday ${input.week.monday}. The days being planned are ${input.week.dates.join(", ")}.`,
     `The meals being planned are ${input.meals.length === 0 ? "none" : input.meals.join(", ")}.`,
     "",
@@ -185,7 +196,7 @@ export function proposalPrompt(input: ProposalInput): string {
   if (input.recent.length === 0) lines.push("(nothing recorded)");
   else for (const meal of input.recent) lines.push(`${meal.date}  ${meal.name}`);
 
-  lines.push("", "LIBRARY (id | name | tags | time | rating | fav | last made):");
+  lines.push("", "LIBRARY (id | name | tags | time | rating | fav | kind | last made):");
   if (cut) {
     lines.push(`(the library holds ${input.library.length} recipes and was cut to ${MAX_LIBRARY_LINES}: favourites and the highest rated first)`);
   }

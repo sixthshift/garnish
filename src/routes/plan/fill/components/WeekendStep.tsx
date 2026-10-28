@@ -7,6 +7,7 @@ import { formatDuration } from "../../../../domain/ingredient";
 import { dayName, dayParts } from "../../../../domain/plan";
 import type { RecipeSummary } from "../../../../domain/recipe";
 import { recipeImageUrl } from "../../../../lib/images";
+import { reasonKey } from "./fill";
 
 /**
  * The open weekend days and what to cook on them: pick a day, then a recipe
@@ -18,15 +19,20 @@ export function WeekendStep({
   dates,
   chosen,
   shelf,
+  byId,
+  reasons = {},
   onChange,
 }: {
   dates: readonly string[];
   chosen: readonly (string | null)[];
   shelf: readonly RecipeSummary[];
+  /** Every recipe: the planner may choose one that is not on the shelf. */
+  byId: ReadonlyMap<string, RecipeSummary>;
+  /** The planner's reason for a recipe on a date, when it chose it. */
+  reasons?: Readonly<Record<string, string>>;
   onChange: (chosen: (string | null)[]) => void;
 }) {
   const [slot, setSlot] = useState(0);
-  const byId = new Map(shelf.map((recipe) => [recipe.id, recipe]));
 
   if (dates.length === 0) {
     return (
@@ -73,6 +79,7 @@ export function WeekendStep({
             >
               <span className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">{dayParts(date).weekday}</span>
               <span className={cn("font-medium", !recipe && "text-fg-subtle")}>{recipe?.name ?? "Choose below"}</span>
+              {recipe && reasons[reasonKey(date, recipe.id)] && <span className="text-sm text-fg-subtle">{reasons[reasonKey(date, recipe.id)]}</span>}
             </button>
           );
         })}
