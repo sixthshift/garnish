@@ -18,9 +18,15 @@ export function NextWeek({ monday, count }: { monday: string; count: number }) {
         </h2>
         <Muted as="p">{line}</Muted>
       </div>
-      <Link to="/plan" search={{ week: monday }} className={glanceLinkClass}>
-        {count === 0 ? "Plan it" : "Open"}
-      </Link>
+      {count === 0 ? (
+        <Link to="/plan/fill" search={{ week: monday }} className={glanceLinkClass}>
+          Plan it
+        </Link>
+      ) : (
+        <Link to="/plan" search={{ week: monday }} className={glanceLinkClass}>
+          Open
+        </Link>
+      )}
     </section>
   );
 }

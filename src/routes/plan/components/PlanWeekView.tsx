@@ -1,3 +1,4 @@
+import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Link } from "@tanstack/react-router";
@@ -77,7 +78,15 @@ export function PlanWeekView({
       </Card>
 
       <div className="flex flex-col gap-3" data-testid="plan-week-actions">
-        <div>
+        <div className="flex flex-wrap gap-2">
+          {/* The week's empty nights, filled from the rotation and the weekend recipes (decisions.md row 192). Gone once the week is over. */}
+          {addDays(monday, 6) >= today && (
+            <Button asChild variant="outline" intent="neutral">
+              <Link to="/plan/fill" search={{ week: monday }}>
+                Plan the week
+              </Link>
+            </Button>
+          )}
           <AddWeekToShoppingButton monday={monday} />
         </div>
         {plannerAvailable && (

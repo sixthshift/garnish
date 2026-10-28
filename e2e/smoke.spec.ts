@@ -10,6 +10,7 @@ const pages: Array<{ path: string; heading: string | RegExp }> = [
   { path: "/recipes/new", heading: "New recipe" },
   { path: "/recipes/new?source=manual", heading: "New recipe" },
   { path: "/plan", heading: "Plan" },
+  { path: "/plan/fill", heading: "Plan the week" },
   { path: "/shopping", heading: "Shopping" },
   { path: "/settings", heading: "Settings" },
 ];

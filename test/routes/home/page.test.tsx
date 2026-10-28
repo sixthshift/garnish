@@ -49,7 +49,7 @@ describe("/ (home)", () => {
     expect(html.match(/<li[^>]*aria-current="date"/g)).toHaveLength(1);
     expect(html).toContain("2 things left to buy");
     expect(html).toContain("Not planned yet.");
-    expect(html).toContain('href="/plan?week=2026-09-21"');
+    expect(html).toContain('href="/plan/fill?week=2026-09-21"');
     // Through the week, planning next week is not the page's primary action.
     expect(html).not.toContain("Plan next week");
   });
@@ -67,5 +67,6 @@ describe("/ (home)", () => {
     expect(html).toContain(">Saturday</h1>");
     expect(html).toContain("Next week isn&#x27;t planned yet");
     expect(html).toContain("Plan next week");
+    expect(html).toContain('href="/plan/fill?week=2026-09-21"');
   });
 });

@@ -50,7 +50,7 @@ export function HomePage() {
             <p className="text-fg-on-brand-subtle">Weeknights from the rotation, then something for the weekend.</p>
           </div>
           <Button asChild intent="brand">
-            <Link to="/plan" search={{ week: next }}>
+            <Link to="/plan/fill" search={{ week: next }}>
               Plan next week
             </Link>
           </Button>
