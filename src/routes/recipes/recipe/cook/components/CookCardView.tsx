@@ -4,8 +4,10 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
+import { formatIngredient } from "../../../../../domain/ingredient";
 import type { CookCard, Ingredient, Step } from "../../../../../domain/recipe";
-import { StepCard } from "../../components/StepCard";
+import { linkedIngredients, StepCard } from "../../components/StepCard";
+import { AmountForm } from "./AmountForm";
 import { CookIngredientItem } from "./CookIngredientItem";
 
 /** Under every card: a dimmed, tappable preview of the card that follows. */
@@ -62,6 +64,57 @@ function StepChange({ step, changed, onSave }: { step: Step; changed: boolean; o
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * "Change an amount" under a step card whose ingredients ride on the step:
+ * the step's rows that have an amount, each opening the same field the
+ * ingredients card's pencil does.
+ */
+function StepAmounts({
+  rows,
+  changedIds,
+  onChangeAmount,
+}: {
+  rows: readonly Ingredient[];
+  changedIds?: ReadonlySet<string>;
+  onChangeAmount: (ingredient: Ingredient, typed: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  if (rows.length === 0) return null;
+  if (!open) {
+    return (
+      <Button type="button" variant="ghost" intent="neutral" size="xl" className="self-start" onClick={() => setOpen(true)}>
+        Change an amount
+      </Button>
+    );
+  }
+  return (
+    <ul className="flex flex-col gap-1" aria-label="Amounts for this step">
+      {rows.map((ingredient) => (
+        <li key={ingredient.id} className="flex min-h-12 flex-wrap items-center gap-3">
+          {editing === ingredient.id ? (
+            <AmountForm ingredient={ingredient} onSave={(typed) => onChangeAmount(ingredient, typed)} onClose={() => setEditing(null)} />
+          ) : (
+            <>
+              <span className="min-w-0 flex-1 text-xl">{formatIngredient(ingredient)}</span>
+              {changedIds?.has(ingredient.id) && <Muted as="span">changed</Muted>}
+              <Button type="button" variant="outline" intent="neutral" size="xl" onClick={() => setEditing(ingredient.id)}>
+                <span className="sr-only">Change the amount of {formatIngredient(ingredient)}</span>
+                <span aria-hidden="true">Change</span>
+              </Button>
+            </>
+          )}
+        </li>
+      ))}
+      <li>
+        <Button type="button" variant="ghost" intent="neutral" size="xl" onClick={() => setOpen(false)}>
+          Done
+        </Button>
+      </li>
+    </ul>
   );
 }
 
@@ -135,6 +188,14 @@ export function CookCardView({
       <ul>
         <StepCard recipeId={recipeId} step={card.step} position={card.number} ingredients={card.ingredients} size="cook" cookFrom={cookFrom} />
       </ul>
+      {onChangeAmount && (
+        <StepAmounts
+          key={`amounts-${card.step.id}`}
+          rows={linkedIngredients(card.step, card.ingredients).filter((ingredient) => ingredient.quantity !== null)}
+          changedIds={changedIds}
+          onChangeAmount={onChangeAmount}
+        />
+      )}
       {onChangeStep && (
         <StepChange
           key={card.step.id}

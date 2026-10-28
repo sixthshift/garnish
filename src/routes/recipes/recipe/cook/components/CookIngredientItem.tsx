@@ -1,14 +1,13 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
-import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
 import { PencilIcon } from "../../../../../components/ui/icons";
-import { formatIngredient, formatUnit } from "../../../../../domain/ingredient";
+import { formatIngredient } from "../../../../../domain/ingredient";
 import type { Ingredient } from "../../../../../domain/recipe";
 import { useIngredientTick } from "../../../../../lib/useTicks";
 import { COOK_ROW_BUTTON, COOK_TICK } from "../../components/IngredientRow";
+import { AmountForm } from "./AmountForm";
 
 /**
  * One ingredient card row: ticks off for this session, shared with the recipe
@@ -33,43 +32,13 @@ export function CookIngredientItem({
 }) {
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
   const [editing, setEditing] = useState(false);
-  const [typed, setTyped] = useState("");
   const line = formatIngredient(ingredient) || "ingredient";
   const canChange = onChangeAmount !== undefined && ingredient.quantity !== null;
 
   if (editing && canChange) {
-    const save = () => {
-      const value = Number(typed.replace(",", "."));
-      if (Number.isFinite(value) && value > 0) onChangeAmount(value);
-      setEditing(false);
-    };
     return (
-      <li className="flex flex-wrap items-center gap-3 py-2" data-testid="cook-ingredient" data-editing="true">
-        <form
-          className="flex flex-wrap items-center gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            save();
-          }}
-        >
-          <Input
-            inputMode="decimal"
-            aria-label={`How much ${ingredient.food?.name ?? "of it"} you used`}
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            className="w-28 text-2xl"
-            autoFocus
-          />
-          <span className="text-xl">
-            {[formatUnit(Number(typed) || ingredient.quantity, ingredient.unit), ingredient.food?.name].filter(Boolean).join(" ")}
-          </span>
-          <Button type="submit" variant="solid" intent="neutral" size="xl">
-            Save
-          </Button>
-          <Button type="button" variant="ghost" intent="neutral" size="xl" onClick={() => setEditing(false)}>
-            Cancel
-          </Button>
-        </form>
+      <li className="py-2" data-testid="cook-ingredient" data-editing="true">
+        <AmountForm ingredient={ingredient} onSave={onChangeAmount} onClose={() => setEditing(false)} />
       </li>
     );
   }
@@ -105,10 +74,7 @@ export function CookIngredientItem({
           type="button"
           aria-label={`Change the amount of ${line}`}
           className="relative z-10 mt-1 flex size-12 shrink-0 items-center justify-center rounded-md text-fg-subtle hover:bg-bg-normal-hovered hover:text-fg-normal"
-          onClick={() => {
-            setTyped(String(Number((ingredient.quantity ?? 0).toFixed(2))));
-            setEditing(true);
-          }}
+          onClick={() => setEditing(true)}
         >
           <PencilIcon size={18} title="Change amount" />
         </button>

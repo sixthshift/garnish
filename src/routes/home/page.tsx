@@ -60,9 +60,9 @@ export function HomePage() {
       <div className="grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-start">
         <div className="flex min-w-0 flex-col gap-6">
           <Tonight entry={tonight} totalTime={recipe?.totalTime ?? null} primary={!planNow} />
+          <WeekGlance days={days} today={today} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
-          <WeekGlance days={days} today={today} />
           <ShoppingGlance toBuy={toBuy} />
           {!planNow && <NextWeek monday={next} count={entryCount(nextDays)} />}
           <ToTry recipes={toTry(recipes, TO_TRY_LIMIT)} />

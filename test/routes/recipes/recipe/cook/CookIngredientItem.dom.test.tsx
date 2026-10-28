@@ -45,3 +45,36 @@ test("Cancel leaves the amount alone, and a row with no amount has no pencil", a
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(onChangeAmount).not.toHaveBeenCalled();
 });
+
+test("a step whose ingredients ride on it offers Change an amount for each of them", async () => {
+  const { recipeSchema, buildCookCards } = await import("../../../../../src/domain/recipe");
+  const { CookCardView } = await import("../../../../../src/routes/recipes/recipe/cook/components/CookCardView");
+  const recipe = recipeSchema.parse({
+    id: "00000000-0000-4000-8000-000000000001",
+    slug: "tart",
+    name: "Tart",
+    recipeServings: 4,
+    createdAt: "2026-10-01T00:00:00.000Z",
+    updatedAt: "2026-10-01T00:00:00.000Z",
+    parts: [
+      {
+        id: "00000000-0000-4000-8000-000000000002",
+        name: "",
+        ingredients: [{ ...soy }],
+        steps: [{ id: "00000000-0000-4000-8000-000000000005", text: "Add the soy sauce.", ingredientIds: [soy.id] }],
+      },
+    ],
+  });
+  const [card] = buildCookCards(recipe);
+  expect(card?.kind).toBe("step");
+  const onChangeAmount = vi.fn();
+  await renderInRouter(<CookCardView card={card!} recipeId={recipe.id} preview="Finished" onNext={() => {}} cookFrom="tart" onChangeAmount={onChangeAmount} />);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Change an amount" }));
+  await user.click(screen.getByRole("button", { name: "Change the amount of 3 soy sauce" }));
+  const field = screen.getByRole("textbox", { name: "How much soy sauce you used" });
+  await user.clear(field);
+  await user.type(field, "1");
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  expect(onChangeAmount).toHaveBeenCalledWith(expect.objectContaining({ id: soy.id }), 1);
+});
