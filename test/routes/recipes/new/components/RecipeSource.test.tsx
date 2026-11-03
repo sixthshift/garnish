@@ -128,10 +128,18 @@ describe("SourceChooser", () => {
     expect(html).toContain("Start from scratch");
   });
 
+  test("the bookmark is part of the web page's card, not one of the other ways in", () => {
+    const html = renderToString(<SourceChooser onChoose={() => {}} />);
+    const card = html.slice(0, html.indexOf("Other ways in"));
+    expect(card).toContain('data-source="browser"');
+    expect(card).toContain("Send it from your browser");
+    expect(html.slice(html.indexOf("Other ways in"))).not.toContain('data-source="browser"');
+  });
+
   test("disabled locks the field and every way in", () => {
     const html = renderToString(<SourceChooser onChoose={() => {}} disabled />);
     expect(html).toMatch(/<input[^>]*disabled=""/);
-    expect(html.match(/<button[^>]*disabled=""[^>]*data-source=/g)).toHaveLength(4);
+    expect(html.match(/<button[^>]*disabled=""[^>]*data-source=/g)).toHaveLength(4); // the bookmark's button and the three rows
   });
 });
 
@@ -153,6 +161,13 @@ describe("UrlSource", () => {
     const html = renderToString(<UrlSource url={SOURCE} error="Could not reach example.test" onUrlChange={() => {}} onFetch={() => {}} onBack={() => {}} />);
     expect(html).toContain('data-testid="import-error"');
     expect(html).toContain("Could not reach example.test");
+  });
+
+  test("a failed read offers the bookmark, inside the error", () => {
+    const props = { url: SOURCE, onUrlChange: () => {}, onFetch: () => {}, onBack: () => {}, onBookmark: () => {} };
+    expect(renderToString(<UrlSource {...props} />)).not.toContain("Send it from your browser");
+    const html = renderToString(<UrlSource {...props} error="example.test is blocking automated requests." />);
+    expect(html.slice(html.indexOf('data-testid="import-error"'))).toContain("Send it from your browser");
   });
 
   test("busy says so and locks both controls", () => {

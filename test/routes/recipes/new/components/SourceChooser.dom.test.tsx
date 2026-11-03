@@ -24,3 +24,11 @@ test("each other way in reports which one it is", async () => {
   await user.click(screen.getByRole("button", { name: /Start from scratch/ }));
   expect(onChoose.mock.calls.map(([kind]) => kind)).toEqual(["paste", "file", "manual"]);
 });
+
+test("the web page's card opens the bookmark, for a site that blocks the import", async () => {
+  const onChoose = vi.fn();
+  const user = userEvent.setup();
+  render(<SourceChooser onChoose={onChoose} />);
+  await user.click(screen.getByRole("button", { name: /Send it from your browser/ }));
+  expect(onChoose).toHaveBeenCalledWith("browser");
+});

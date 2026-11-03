@@ -49,12 +49,6 @@ function otherWays(aiAvailable: boolean): { kind: SourceKind; title: string; blu
       ),
     },
     {
-      kind: "browser",
-      title: "Save from your browser",
-      blurb: "A bookmark that sends the page you are on, for sites that block the import.",
-      icon: icon(<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />),
-    },
-    {
       kind: "file",
       title: "Upload an export",
       blurb: "A Mealie or Tandoor backup, or a single recipe file.",
@@ -73,6 +67,8 @@ function otherWays(aiAvailable: boolean): { kind: SourceKind; title: string; blu
  * The first stage. A web page is how most recipes arrive, so its address
  * field is the page itself and reads at once; the other ways in sit below it
  * as rows. Paste is always offered: a page's HTML is read without a model.
+ * The Save to Garnish bookmark is part of the web page's card, not a row: it
+ * is another way to get the same page, not another source.
  */
 export function SourceChooser({ onChoose, onReadUrl, disabled, aiAvailable = false }: SourceChooserProps) {
   const [url, setUrl] = useState("");
@@ -110,6 +106,15 @@ export function SourceChooser({ onChoose, onReadUrl, disabled, aiAvailable = fal
           <Muted as="p" className="text-sm">
             The recipe is read off the page and shown to you before anything is saved. On a phone, share the page to Garnish instead.
           </Muted>
+          {/* Not another way in: the same web page, its markup sent by the reader's browser instead of fetched here (decisions.md row 200). */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border-normal pt-3">
+            <Muted as="span" className="text-sm">
+              Site blocks the import?
+            </Muted>
+            <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled} data-source="browser" onClick={() => onChoose("browser")}>
+              <span aria-hidden="true">🌿</span> Send it from your browser
+            </Button>
+          </div>
         </form>
       </Card>
 

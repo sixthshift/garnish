@@ -153,6 +153,16 @@ export function RecipeSource(props: RecipeSourceProps) {
       );
     }
 
-    return <UrlSource url={url} busy={busy} error={error} onUrlChange={state.setUrl} onFetch={() => void state.read()} onBack={state.leaveSource} />;
+    return (
+      <UrlSource
+        url={url}
+        busy={busy}
+        error={error}
+        onUrlChange={state.setUrl}
+        onFetch={() => void state.read()}
+        onBack={state.leaveSource}
+        onBookmark={() => onChoose("browser")}
+      />
+    );
   }
 }

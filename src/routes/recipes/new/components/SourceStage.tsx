@@ -10,6 +10,8 @@ export type SourceStageProps = {
   /** The title of the error message, when there is one. */
   errorTitle: string;
   error?: string | null;
+  /** A way on from the error, drawn inside its message. */
+  errorAction?: ReactNode;
   busy?: boolean;
   /** The primary action's label, and its label while busy. */
   action: string;
@@ -30,6 +32,7 @@ export function SourceStage({
   title,
   errorTitle,
   error,
+  errorAction,
   busy,
   action,
   busyAction = "Reading…",
@@ -49,7 +52,14 @@ export function SourceStage({
         {children}
         {error != null && (
           <Message intent="danger" title={errorTitle} data-testid="import-error">
-            {error}
+            {errorAction ? (
+              <span className="flex flex-col items-start gap-2">
+                <span>{error}</span>
+                {errorAction}
+              </span>
+            ) : (
+              error
+            )}
           </Message>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3">
