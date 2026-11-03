@@ -11,7 +11,8 @@ import { aisle } from "../aisle/schema";
 import { food, foodConversion, foodPack } from "../food/schema";
 import { mealPlanEntry } from "../plan/schema";
 import { plannerRule } from "../planner/schema";
-import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "../recipe/schema";
+import { insertAlternatives, readAlternatives } from "../recipe/alternatives";
+import { alternative, alternativeItem, ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "../recipe/schema";
 import { shoppingItem, shoppingItemSource } from "../shopping/schema";
 import { styleRule } from "../style/schema";
 import { tag } from "../tag/schema";
@@ -61,6 +62,10 @@ export function backupRepository(db: Database) {
     const ingredients = groupBy(dz.select().from(ingredient).orderBy(asc(ingredient.position)).all(), (row) => row.partId);
     const steps = groupBy(dz.select().from(step).orderBy(asc(step.position)).all(), (row) => row.partId);
     const links = groupBy(dz.select().from(stepIngredient).orderBy(asc(stepIngredient.position)).all(), (row) => row.stepId);
+    const alternatives = readAlternatives(
+      dz,
+      [...ingredients.values()].flat().map((i) => i.id)
+    );
 
     return recipes.map((row) => ({
       id: row.id,
@@ -91,6 +96,7 @@ export function backupRepository(db: Database) {
           note: i.note,
           originalText: i.originalText,
           fixed: i.fixed,
+          alternatives: alternatives.get(i.id) ?? [],
         })),
         steps: (steps.get(p.id) ?? []).map((s) => ({
           id: s.id,
@@ -118,6 +124,8 @@ export function backupRepository(db: Database) {
       timelineEvent,
       stepIngredient,
       step,
+      alternativeItem,
+      alternative,
       ingredient,
       part,
       recipeNote,
@@ -226,6 +234,7 @@ export function backupRepository(db: Database) {
             recipeId: row.recipeId,
             text: row.text,
             servings: row.servings,
+            choices: row.choices,
           })),
         shopping: dz
           .select()
@@ -343,10 +352,11 @@ export function backupRepository(db: Database) {
           });
           r.parts.forEach((p, partPosition) => {
             tx.insert(part).values({ id: p.id, recipeId: r.id, position: partPosition, name: p.name }).run();
-            p.ingredients.forEach((i, position) => {
+            p.ingredients.forEach(({ alternatives, ...i }, position) => {
               tx.insert(ingredient)
                 .values({ ...i, partId: p.id, position })
                 .run();
+              insertAlternatives(tx, i.id, alternatives);
             });
             p.steps.forEach(({ ingredientIds, image, ...s }, position) => {
               tx.insert(step)

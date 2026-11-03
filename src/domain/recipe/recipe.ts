@@ -11,6 +11,34 @@ const date = z.iso.date();
 
 // --- Recipe-owned rows ------------------------------------------------------
 
+/**
+ * One thing that goes in the line's place: a food, and how much per the
+ * alternative's basis. A null quantity takes the line's own amount and unit.
+ */
+export const alternativeItemSchema = z.object({
+  quantity: z.number().nonnegative().nullable().default(null),
+  unit: unitSchema.nullable().default(null),
+  food: foodSchema,
+});
+
+/**
+ * Another way to make the line: "you can use this instead" (decisions.md row
+ * 199). Beef strips for the stir-fry's chicken; 1 cup milk and 1 tbsp lemon
+ * juice for a cup of buttermilk. `basisQuantity` of `basisUnit` is what the
+ * items replace ("per 1 cup"); a null basis is a one-for-one swap. `planPicks`
+ * marks the ones the plan rotates through, and those are a single food, which
+ * is what a plan entry's choice names.
+ */
+export const alternativeSchema = z
+  .object({
+    basisQuantity: z.number().positive().nullable().default(null),
+    basisUnit: unitSchema.nullable().default(null),
+    note: text,
+    planPicks: z.boolean().default(false),
+    items: z.array(alternativeItemSchema).min(1, "an alternative needs something to put in"),
+  })
+  .refine((alt) => !alt.planPicks || alt.items.length === 1, { message: "an alternative the plan picks is a single food" });
+
 const ingredientFields = {
   quantity: z.number().nonnegative().nullable().default(null), // null: no amount ("salt to taste")
   unit: unitSchema.nullable().default(null),
@@ -18,6 +46,8 @@ const ingredientFields = {
   note: text,
   originalText: text,
   fixed: z.boolean().default(false), // has an amount, does not scale (Cooklang `=`)
+  /** What can be used instead of this line's food, in order; its own food is the default (decisions.md row 199). */
+  alternatives: z.array(alternativeSchema).default([]),
 };
 
 const stepFields = {
@@ -163,6 +193,8 @@ export const recipeInputSchema = z.object({
 // --- Types ------------------------------------------------------------------
 
 export type Ingredient = z.infer<typeof ingredientSchema>;
+export type Alternative = z.infer<typeof alternativeSchema>;
+export type AlternativeItem = z.infer<typeof alternativeItemSchema>;
 export type Step = z.infer<typeof stepSchema>;
 export type RecipeNote = z.infer<typeof recipeNoteSchema>;
 export type Part = z.infer<typeof partSchema>;

@@ -1,10 +1,12 @@
 import { Badge } from "@sixthshift/design-system/badge";
 import { Caption } from "@sixthshift/design-system/caption";
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { Menu } from "../../../components/ui/Menu";
 import type { ReorderRow } from "../../../components/ui/ReorderList";
 import { dayLabel, entryLabel, mealLabel, type PlanDay, type PlanEntry, servingsLabel } from "../../../domain/plan";
 import { recipeImageUrl } from "../../../lib/images";
+import { ChooseOptionsSheet } from "./ChooseOptionsSheet";
 import { EntryImage } from "./EntryImage";
 
 /**
@@ -39,6 +41,9 @@ export function PlanEntryRow({
   const label = entryLabel(entry);
   const serves = servingsLabel(entry.servings);
   const meal = mealLabel(entry.meal);
+  const [choosing, setChoosing] = useState(false);
+  // What the plan chose for the recipe's rows with options (decisions.md row 198), linked through.
+  const choices = Object.keys(entry.choices).length > 0 ? entry.choices : undefined;
   return (
     <div
       className="flex items-center gap-2 rounded-md p-1 hover:bg-bg-subtle-hovered"
@@ -49,9 +54,17 @@ export function PlanEntryRow({
       {entry.recipe === null ? (
         <span className="min-w-0 flex-1 truncate py-1 text-sm">{label}</span>
       ) : (
-        <Link to="/recipes/$slug" params={{ slug: entry.recipe.slug }} className="flex min-w-0 flex-1 items-center gap-2">
+        <Link to="/recipes/$slug" params={{ slug: entry.recipe.slug }} search={{ choices }} className="flex min-w-0 flex-1 items-center gap-2">
           <EntryImage src={recipeImageUrl(entry.recipe.image)} />
-          <span className="min-w-0 flex-1 truncate text-sm">{label}</span>
+          <span className="min-w-0 flex-1 truncate text-sm">
+            {label}
+            {entry.chosen.length > 0 && (
+              <span className="text-fg-subtle" data-testid="plan-entry-chosen">
+                {" "}
+                · {entry.chosen.join(", ")}
+              </span>
+            )}
+          </span>
         </Link>
       )}
       {meal !== null && (
@@ -82,12 +95,21 @@ export function PlanEntryRow({
             </Menu.Item>
           </>
         )}
+        {entry.choosable && (
+          <>
+            <Menu.Separator />
+            <Menu.Item disabled={busy} onSelect={() => setChoosing(true)}>
+              Choose…
+            </Menu.Item>
+          </>
+        )}
         <Menu.Separator />
         {/* Neutral: no confirm, and an entry is re-added in two taps (rule 5 keeps red for a confirm). */}
         <Menu.Item disabled={busy} onSelect={() => onRemove(entry)}>
           Remove
         </Menu.Item>
       </Menu>
+      {entry.choosable && <ChooseOptionsSheet entry={entry} open={choosing} onOpenChange={setChoosing} />}
     </div>
   );
 }

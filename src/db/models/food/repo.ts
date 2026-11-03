@@ -1,11 +1,11 @@
 import type { Database } from "bun:sqlite";
-import { asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { FoodConversion, FoodPack, FoodPackInput, FoodRow, FoodSummary } from "../../../domain/reference";
 import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
-import { ingredient, part } from "../recipe/schema";
+import { alternative, alternativeItem, ingredient, part } from "../recipe/schema";
 import { food, foodConversion, foodPack } from "./schema";
 
 export type Food = FoodRow;
@@ -184,6 +184,27 @@ export function foodRepository(db: Database) {
       if (!target || !get(sourceId)) return null;
       dz.transaction((tx) => {
         tx.update(ingredient).set({ foodId: targetId }).where(eq(ingredient.foodId, sourceId)).run();
+        // An alternative of the source becomes one of the target (decisions.md
+        // row 199). A line now on the target that would offer the target as its
+        // own alternative loses that item, and the trigger takes an alternative
+        // left with none.
+        tx.update(alternativeItem).set({ foodId: targetId }).where(eq(alternativeItem.foodId, sourceId)).run();
+        const selfOffered = tx
+          .select({ id: alternativeItem.id })
+          .from(alternativeItem)
+          .innerJoin(alternative, eq(alternative.id, alternativeItem.alternativeId))
+          .innerJoin(ingredient, eq(ingredient.id, alternative.ingredientId))
+          .where(and(eq(alternativeItem.foodId, targetId), eq(ingredient.foodId, targetId)))
+          .all();
+        if (selfOffered.length > 0)
+          tx.delete(alternativeItem)
+            .where(
+              inArray(
+                alternativeItem.id,
+                selfOffered.map((row) => row.id)
+              )
+            )
+            .run();
         tx.delete(food).where(eq(food.id, sourceId)).run();
       });
       return get(targetId);

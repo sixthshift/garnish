@@ -132,6 +132,7 @@ export function CookCardView({
   cookFrom,
   partName,
   changedIds,
+  fixedIds,
   onChangeAmount,
   onChangeStep,
 }: {
@@ -146,6 +147,12 @@ export function CookCardView({
   partName?: string;
   /** Ingredient and step ids changed this cook, marked as such. */
   changedIds?: ReadonlySet<string>;
+  /**
+   * Rows whose amount this cook cannot change: a row made with an option the
+   * plan chose (decisions.md row 198), whose amount is the option's, not the
+   * row's, so keeping it would write it onto the wrong food.
+   */
+  fixedIds?: ReadonlySet<string>;
   /** The cook typed a new amount for an ingredient row. Without it the rows have no pencil. */
   onChangeAmount?: (ingredient: Ingredient, typed: number) => void;
   /** The cook rewrote a step. Without it a step card has no "Change this step". */
@@ -171,7 +178,7 @@ export function CookCardView({
                 recipeId={recipeId}
                 ingredient={ingredient}
                 changed={changedIds?.has(ingredient.id)}
-                onChangeAmount={onChangeAmount && ((typed) => onChangeAmount(ingredient, typed))}
+                onChangeAmount={onChangeAmount && !fixedIds?.has(ingredient.id) ? (typed) => onChangeAmount(ingredient, typed) : undefined}
               />
             ))}
           </ul>
@@ -191,7 +198,7 @@ export function CookCardView({
       {onChangeAmount && (
         <StepAmounts
           key={`amounts-${card.step.id}`}
-          rows={linkedIngredients(card.step, card.ingredients).filter((ingredient) => ingredient.quantity !== null)}
+          rows={linkedIngredients(card.step, card.ingredients).filter((ingredient) => ingredient.quantity !== null && !fixedIds?.has(ingredient.id))}
           changedIds={changedIds}
           onChangeAmount={onChangeAmount}
         />

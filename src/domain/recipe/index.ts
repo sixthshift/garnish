@@ -1,3 +1,7 @@
+export type { AlternativeRow } from "./alternatives";
+export { alternativeAt, alternativeText } from "./alternatives";
+export type { Choices } from "./choices";
+export { choiceNames, choiceRows, chooseOption, rotateChoices, rowChoices, withChoices } from "./choices";
 export type { CookCard } from "./cook";
 export { buildCookCards, cardAnnouncement, clampStep, isFinishedIndex, nextPreview, partPills, stepForKey, totalWithFinish } from "./cook";
 export { toCooklang } from "./cooklang";
@@ -8,8 +12,22 @@ export { exportedRecipe } from "./export";
 export type { TagMatch } from "./filters";
 export { selectedTags } from "./filters";
 export { mergeIngredients } from "./mergeIngredients";
-export type { Ingredient, ParsedRecipeInput, Part, Recipe, RecipeInput, RecipeKind, RecipeNote, Step, TimelineEvent, TimelineEventInput } from "./recipe";
+export type {
+  Alternative,
+  AlternativeItem,
+  Ingredient,
+  ParsedRecipeInput,
+  Part,
+  Recipe,
+  RecipeInput,
+  RecipeKind,
+  RecipeNote,
+  Step,
+  TimelineEvent,
+  TimelineEventInput,
+} from "./recipe";
 export {
+  alternativeSchema,
   ingredientInputSchema,
   RECIPE_KINDS,
   recipeInputSchema,

@@ -23,7 +23,7 @@ const ids = {
 };
 
 function entry(date: string, position: number, over: Partial<PlanEntry> = {}): PlanEntry {
-  return { id: ids.a, date, position, recipe: null, text: "Leftovers", servings: null, meal: null, ...over };
+  return { id: ids.a, date, position, recipe: null, text: "Leftovers", servings: null, meal: null, choices: {}, chosen: [], choosable: false, ...over };
 }
 
 // --- Dates -------------------------------------------------------------------
@@ -111,6 +111,7 @@ test("an input defaults to a plain line with no recipe and no servings", () => {
     text: "Leftovers",
     servings: null,
     meal: null,
+    choices: {},
   });
 });
 

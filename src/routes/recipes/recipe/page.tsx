@@ -7,7 +7,7 @@ import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
 import { Page } from "../../../components/shell/Page";
 import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingButton";
 import { PencilIcon } from "../../../components/ui/icons";
-import { mergeIngredients, scaledForServings } from "../../../domain/recipe";
+import { mergeIngredients, scaledForServings, withChoices } from "../../../domain/recipe";
 import { useMutate } from "../../../lib/mutate";
 import { useIngredientMode } from "../../../lib/prefs";
 import { toastError } from "../../../lib/toast";
@@ -29,15 +29,17 @@ import { Route } from "./route";
 /** A pencil, drawn the way RecipeHeader.tsx draws its own icons. */
 export function RecipePage() {
   const { recipe: stored, timeline, subRecipes, aiAvailable } = Route.useLoaderData();
-  const { servings: requested } = Route.useSearch();
-  // The stored document, scaled here rather than on the server, so a tap on
-  // plus or minus is a re-render and not a round trip. Everything below reads
+  const { servings: requested, choices } = Route.useSearch();
+  // The stored document, made with the options a plan entry chose (decisions.md
+  // row 198) and scaled here rather than on the server, so a tap on plus or
+  // minus is a re-render and not a round trip. Everything below reads
   // `recipe`, never `stored`.
-  const recipe = scaledForServings(stored, requested);
+  const chosen = withChoices(stored, choices ?? {});
+  const recipe = scaledForServings(chosen, requested);
   // Scaled away from the recipe's own servings: the ingredient amounts get a
   // "scaled" class. Identity, so a recipe with no servings recorded (nothing
   // to scale by, as on the server) does not claim to be scaled.
-  const scaled = recipe !== stored;
+  const scaled = recipe !== chosen;
   const [ingredientMode] = useIngredientMode();
   const summary = ingredientMode === "summary";
   const hasIngredients = recipe.parts.some((part) => part.ingredients.length > 0);
@@ -78,7 +80,7 @@ export function RecipePage() {
                   </Link>
                 </Button>
                 <Button asChild variant="solid" intent="brand" size="sm">
-                  <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                  <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested, choices }}>
                     Cook
                   </Link>
                 </Button>

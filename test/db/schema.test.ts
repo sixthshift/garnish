@@ -95,6 +95,8 @@ function seedRecipe() {
 test("the migrations create every table in architecture.md", () => {
   expect(tables()).toEqual([
     "aisle",
+    "alternative",
+    "alternative_item",
     "diagnostic_event",
     "food",
     "food_conversion",
@@ -444,8 +446,8 @@ test("meal_plan_entry holds a recipe or a plain line on a calendar day", () => {
   db.run("INSERT INTO meal_plan_entry (id, date, position, text) VALUES (?, ?, ?, ?)", ["mp-2", "2026-09-14", 1, "Leftovers"]);
 
   expect(db.query<Record<string, unknown>, []>("SELECT * FROM meal_plan_entry ORDER BY position").all()).toEqual([
-    { id: "mp-1", date: "2026-09-14", position: 0, recipe_id: ids.recipe, text: "", servings: 6, meal: null },
-    { id: "mp-2", date: "2026-09-14", position: 1, recipe_id: null, text: "Leftovers", servings: null, meal: null },
+    { id: "mp-1", date: "2026-09-14", position: 0, recipe_id: ids.recipe, text: "", servings: 6, meal: null, choices: "{}" },
+    { id: "mp-2", date: "2026-09-14", position: 1, recipe_id: null, text: "Leftovers", servings: null, meal: null, choices: "{}" },
   ]);
 
   // Two entries may share a day and a position: a move rewrites a day in one

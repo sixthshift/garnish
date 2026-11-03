@@ -41,6 +41,7 @@ const ingredient = (overrides: Partial<Ingredient> = {}): Ingredient => ({
   note: "",
   originalText: "",
   fixed: false,
+  alternatives: [],
   ...overrides,
 });
 
@@ -71,6 +72,21 @@ describe("IngredientRow", () => {
   test("note renders dimmed on its own line, separate from the amount/food line", () => {
     const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient({ note: "sifted" })} />);
     expect(html).toMatch(/<p[^>]*>sifted<\/p>/);
+  });
+
+  test("alternatives show under the line at its amount, in order, each with its note", () => {
+    const sugar = { ...flour, id: "33333333-3333-4333-8333-333333333333", name: "sugar" };
+    const rice = { ...flour, id: "44444444-4444-4444-8444-444444444444", name: "rice flour" };
+    const perHundred = { basisQuantity: 100, basisUnit: gram, note: "denser", planPicks: false, items: [{ quantity: 90, unit: gram, food: rice }] };
+    const straight = { basisQuantity: null, basisUnit: null, note: "", planPicks: true, items: [{ quantity: null, unit: null, food: sugar }] };
+
+    const html = renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient({ alternatives: [perHundred, straight] })} />);
+    expect(html).toContain('data-testid="ingredient-alternatives"');
+    // 250 g at 90 g per 100 g; then sugar one for one.
+    const text = html.replaceAll("<!-- -->", "");
+    expect(text).toMatch(/or 225 g rice flour · denser<\/span><span>or 250 g sugar/);
+
+    expect(renderToString(<IngredientRow recipeId={RECIPE_ID} ingredient={ingredient()} />)).not.toContain("ingredient-alternatives");
   });
 
   test("fixed marker is kept", () => {

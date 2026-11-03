@@ -35,7 +35,17 @@ function food(name: string, over: Partial<Food> = {}): Food {
 }
 
 function ingredient(id: string, over: Partial<Ingredient> = {}): Ingredient {
-  return { id, quantity: null, unit: null, food: null, note: "", originalText: "", fixed: false, ...over };
+  return {
+    id,
+    quantity: null,
+    unit: null,
+    food: null,
+    note: "",
+    originalText: "",
+    fixed: false,
+    alternatives: [],
+    ...over,
+  };
 }
 
 describe("cooklangStepText", () => {

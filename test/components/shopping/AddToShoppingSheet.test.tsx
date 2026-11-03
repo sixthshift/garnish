@@ -34,7 +34,17 @@ const gram: Unit = {
 let n = 0;
 function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {
   n += 1;
-  return { id: `ing-${n}`, quantity: null, unit: null, food: null, note: "", originalText: "", fixed: false, ...overrides };
+  return {
+    id: `ing-${n}`,
+    quantity: null,
+    unit: null,
+    food: null,
+    note: "",
+    originalText: "",
+    fixed: false,
+    alternatives: [],
+    ...overrides,
+  };
 }
 
 function part(name: string, ingredients: Ingredient[]): Part {

@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, exists, inArray, isNull, ne, type SQL, sql } from "drizzle-orm";
 import {
+  type Alternative,
   type Ingredient,
   type ParsedRecipeInput,
   type Part,
@@ -24,6 +25,7 @@ import { foodRepository } from "../food/repo";
 import { tagRepository } from "../tag/repo";
 import { tag } from "../tag/schema";
 import { unitRepository } from "../unit/repo";
+import { insertAlternatives, readAlternatives, type StoredAlternative } from "./alternatives";
 import { type RecipeRecord, type RecipeStorage, recipeRecord } from "./record";
 import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
 import { type SummaryRow, selectTags, summarise, summaryColumns } from "./summary";
@@ -180,6 +182,24 @@ export function recipeRepository(db: Database) {
     return cache.get(id) ?? null;
   }
 
+  /** A stored alternative as the document spells it, its ids read through the caches; none when no item's food is left. */
+  function alternativeDocument(stored: StoredAlternative, unitCache: Map<string, Unit | null>, foodCache: Map<string, Food | null>): Alternative[] {
+    const items = stored.items.flatMap((item) => {
+      const itemFood = readFood(item.foodId, foodCache);
+      return itemFood ? [{ quantity: item.quantity, unit: readUnit(item.unitId, unitCache), food: itemFood }] : [];
+    });
+    if (items.length === 0) return [];
+    return [
+      {
+        basisQuantity: stored.basisQuantity,
+        basisUnit: readUnit(stored.basisUnitId, unitCache),
+        note: stored.note,
+        planPicks: stored.planPicks && items.length === 1,
+        items,
+      },
+    ];
+  }
+
   // ===========================================================================
   // Reading a document: the recipe row and its children back into a Recipe.
   // ===========================================================================
@@ -209,6 +229,13 @@ export function recipeRepository(db: Database) {
       .orderBy(asc(part.position), asc(ingredient.position))
       .all();
 
+    // Each line's alternatives (decisions.md row 199), as documents: ids to
+    // the units and foods they name, through the same caches.
+    const alternatives = readAlternatives(
+      dz,
+      ingredientRows.map((i) => i.id)
+    );
+
     const ingredientsByPart = new Map<string, Ingredient[]>();
     for (const i of ingredientRows) {
       const list = ingredientsByPart.get(i.partId) ?? [];
@@ -220,6 +247,7 @@ export function recipeRepository(db: Database) {
         note: i.note,
         originalText: i.originalText,
         fixed: i.fixed,
+        alternatives: (alternatives.get(i.id) ?? []).flatMap((stored) => alternativeDocument(stored, unitCache, foodCache)),
       });
       ingredientsByPart.set(i.partId, list);
     }
@@ -400,6 +428,22 @@ export function recipeRepository(db: Database) {
             fixed: line.fixed,
           })
           .run();
+        // The line's alternatives; the old ones went with the parts' cascade.
+        // Their foods and units resolve as the line's own do.
+        insertAlternatives(
+          tx,
+          ingredientId,
+          line.alternatives.map((alt) => ({
+            basisQuantity: alt.basisQuantity,
+            basisUnitId: resolveUnit(alt.basisUnit),
+            note: alt.note,
+            planPicks: alt.planPicks,
+            items: alt.items.flatMap((item) => {
+              const itemFoodId = resolveFood(item.food);
+              return itemFoodId ? [{ foodId: itemFoodId, quantity: item.quantity, unitId: resolveUnit(item.unit) }] : [];
+            }),
+          }))
+        );
       });
       // Then the steps, then their links: a link is dropped, not raised, when it
       // names an ingredient outside this part or names one twice. A saved recipe

@@ -121,6 +121,57 @@ export const ingredient = sqliteTable(
 );
 
 /**
+ * Another way to make a line: "you can use this instead" (decisions.md row
+ * 199). One or more foods, in `alternativeItem`, measured against an optional
+ * basis ("per 1 cup"; none is a one-for-one swap). `planPicks` marks the ones
+ * the plan rotates through, each a single food. The trigger in
+ * 030_alternative.sql deletes an alternative when its last item goes.
+ */
+export const alternative = sqliteTable(
+  "alternative",
+  {
+    id: text("id").primaryKey(),
+    ingredientId: text("ingredient_id")
+      .notNull()
+      .references(() => ingredient.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    basisQuantity: real("basis_quantity"),
+    basisUnitId: text("basis_unit_id").references(() => unit.id, { onDelete: "set null" }),
+    note: text("note").notNull().default(""),
+    planPicks: integer("plan_picks", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [
+    index("alternative_ingredient_id").on(t.ingredientId),
+    index("alternative_basis_unit_id").on(t.basisUnitId),
+    check("alternative_basis_positive", sql`${t.basisQuantity} IS NULL OR ${t.basisQuantity} > 0`),
+    check("alternative_plan_picks_flag", sql`${t.planPicks} IN (0, 1)`),
+  ]
+);
+
+/** What goes in the line's place: one food, or several ("milk and lemon"). No quantity takes the line's own amount. */
+export const alternativeItem = sqliteTable(
+  "alternative_item",
+  {
+    id: text("id").primaryKey(),
+    alternativeId: text("alternative_id")
+      .notNull()
+      .references(() => alternative.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    foodId: text("food_id")
+      .notNull()
+      .references((): AnySQLiteColumn => food.id, { onDelete: "cascade" }),
+    quantity: real("quantity"),
+    unitId: text("unit_id").references(() => unit.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    unique().on(t.alternativeId, t.position),
+    index("alternative_item_food_id").on(t.foodId),
+    index("alternative_item_unit_id").on(t.unitId),
+    check("alternative_item_quantity", sql`${t.quantity} IS NULL OR ${t.quantity} >= 0`),
+  ]
+);
+
+/**
  * A method step, owned by a part. `position` is scoped to the part, so a step
  * has exactly one container and one place in it. The
  * recipe is reached through the part rather than stored again here.

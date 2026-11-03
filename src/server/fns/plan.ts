@@ -4,11 +4,12 @@ import plan from "../../db/models/plan/repo";
 import recipes from "../../db/models/recipe/repo";
 import shopping from "../../db/models/shopping/repo";
 import { isoDate, planEntryInputSchema, planEntryPatchSchema, planWeekAdditions } from "../../domain/plan";
-import { type Recipe, scaleRecipe } from "../../domain/recipe";
+import { type Recipe, scaleRecipe, withChoices } from "../../domain/recipe";
 import { Id, IdInput } from "../../domain/reference";
 import { mergeIntoList, shoppingItemInputSchema } from "../../domain/shopping";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
+import { withRotatedChoices } from "../plan/choices";
 
 /** `?week=` is the Monday's date; a date mid-week is normalised to its Monday. */
 export const PlanWeekInput = z.object({ monday: isoDate });
@@ -33,7 +34,7 @@ export const listPlanWeek = createServerFn({ method: "GET" })
 export const addPlanEntry = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(AddPlanEntryInput)
-  .handler(async ({ data }) => plan.add(data));
+  .handler(async ({ data }) => plan.add(withRotatedChoices([data])[0]!));
 
 /** Merge a patch into one entry — the servings stepper, or retyping a line. */
 export const updatePlanEntry = createServerFn({ method: "POST" })
@@ -81,7 +82,9 @@ export const addPlanWeekToShopping = createServerFn({ method: "POST" })
         if (entry.recipe === null) continue;
         const doc = recipes.get(entry.recipe.slug);
         if (doc === null) continue;
-        scaled.set(entry.id, entry.servings === null || doc.recipeServings <= 0 ? doc : scaleRecipe(doc, entry.servings));
+        // Made with what the plan chose for it (decisions.md row 198), then scaled.
+        const chosen = withChoices(doc, entry.choices);
+        scaled.set(entry.id, entry.servings === null || chosen.recipeServings <= 0 ? chosen : scaleRecipe(chosen, entry.servings));
       }
     }
 

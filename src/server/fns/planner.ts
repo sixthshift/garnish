@@ -9,6 +9,7 @@ import { Id } from "../../domain/reference";
 import { proposeWeek } from "../ai/planner";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
+import { withRotatedChoices } from "../plan/choices";
 
 /** The whole planner guide in reading order. No query: a handful of statements are always read together. */
 export const listPlannerRules = createServerFn({ method: "GET" })
@@ -114,6 +115,6 @@ export const applyPlanProposal = createServerFn({ method: "POST" })
       const recipe = required(recipes.getById(entry.recipeId), "recipe", entry.recipeId);
       return planEntryInputSchema.parse({ date: entry.date, recipeId: recipe.id, text: recipe.name, meal: entry.meal, servings: data.servings });
     });
-    plan.addMany(inputs);
+    plan.addMany(withRotatedChoices(inputs));
     return plan.week(weekMonday(data.entries[0]?.date));
   });

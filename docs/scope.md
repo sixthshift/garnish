@@ -28,12 +28,18 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 - An MCP server. Any AI assistant that speaks MCP — Claude on the web, the phone or Claude Code, ChatGPT, or another — reads and changes recipes, the shopping list and the meal plan through an MCP server, let in once with a pairing code from Settings › MCP and disconnected from Settings › MCP; the one door that faces the internet (decisions row 181).
 - Timer alerts. A device switched on in Settings › Alerts is woken by a push when a timer ends, screen off or app closed; iPhone from the home screen, Android installed or in Chrome (decisions row 111).
 - Four modes, not four drawers. Home is the day as it stands: tonight with Start cooking, the week, what is left to buy, next week, and the recipes never made (decisions row 190); the recipe grid moved to Recipes. A recipe is Rotation or Weekend as the household marks it, on its page or many at once from the grid (rows 191, 195). Plan the week fills the open nights, the planner's first pass when a model is configured and the rotation's otherwise, then the weekend, then the list (rows 192, 194). Cook mode takes changed amounts and steps as you go, and asks at the end which are kept in the recipe (row 193).
+- Alternatives. A line can say what else it can be made with: beef strips or 400 g prawns for the stir-fry's chicken, 1 cup milk and 1 tbsp lemon juice per cup of buttermilk. Each shows under the line at its amount. The ones ticked "The plan picks it" are what the plan rotates through: each new entry takes the one least used before, Choose… on the entry changes it, and the recipe page, cook mode and the shopping list follow the choice (decisions rows 196, 198, 199).
 
 ## Later, in rough order
 
-- In-editor AI help: unit conversion, rewording, substitutions.
+- In-editor AI help: unit conversion, rewording, suggesting alternatives (stored as row 199's).
+- Recipe variants: a choice that changes the steps too (prawns 2 minutes, beef seared in batches), built on parts.
+- The planner's model choosing the options, with a reason, rather than the rotation.
+- Choosing an alternative while cooking or shopping: a cook-mode change the finish card asks about (row 193), or a list line swapped for it.
+- **A headless Chromium in the image, for the import's fetch** (noted 2026-11-03). A third way to fill the `fetchPage` port, after the plain fetch and its second header profile: a real browser for pages that need JavaScript to draw the recipe or that wall off a bare fetch, with the model reading what it renders as it does now. The prod image ships with Chromium. To decide: when it runs (only after a 403 or an empty extract, or always), what it adds to the image (a few hundred MB, and Playwright is already a dev dependency for e2e), whether it gets past a Cloudflare wall that fingerprints headless browsers, and whether it keeps or retires Save to Garnish (row 122).
 
 ## Open
+
 
 - **External authoring.** Closed for now by choosing the DB as the only store. Reopens only if file export becomes bidirectional.
 

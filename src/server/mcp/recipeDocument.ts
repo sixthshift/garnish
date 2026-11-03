@@ -171,7 +171,16 @@ export function documentFromMcp(
 
     const parsed = parseIngredient(line, vocabulary);
     const id = keep?.id ?? crypto.randomUUID();
-    const base = { id, quantity: parsed.quantity, unit: parsed.unit, note: parsed.note, originalText: line, fixed: parsed.fixed };
+    // A rewritten line keeps its alternatives: they belong to the line, not to its words.
+    const base = {
+      id,
+      quantity: parsed.quantity,
+      unit: parsed.unit,
+      note: parsed.note,
+      originalText: line,
+      fixed: parsed.fixed,
+      alternatives: keep?.alternatives ?? [],
+    };
     if (parsed.food) return { ...base, food: foodReference(parsed.food) };
 
     const name = parsed.foodText.trim();

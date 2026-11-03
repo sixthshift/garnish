@@ -36,6 +36,7 @@ function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {
     note: "",
     originalText: "",
     fixed: false,
+    alternatives: [],
     ...overrides,
   };
 }

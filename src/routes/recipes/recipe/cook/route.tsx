@@ -14,6 +14,8 @@ export const CookSearch = z.object({
   step: z.number().int().nonnegative().optional(),
   /** The parent recipe's slug, when this cook session was opened from a sub-recipe link. */
   from: z.string().optional(),
+  /** Which option each row takes, as the plan entry chose (decisions.md row 198): ingredient id to food id. */
+  choices: z.record(z.string(), z.string()).optional(),
 });
 
 /** What the loader reads: the stored document, the recipes its ingredient foods are made by, and the entering parent's name, if any. */

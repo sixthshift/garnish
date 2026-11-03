@@ -23,6 +23,7 @@ function ingredient(f: Food | null, originalText = ""): Ingredient {
     note: "",
     originalText,
     fixed: false,
+    alternatives: [],
   };
 }
 

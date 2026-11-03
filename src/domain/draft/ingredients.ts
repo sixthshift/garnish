@@ -140,7 +140,7 @@ export function withIngredientReplaced(recipe: Recipe, partId: string, ingredien
         ? part
         : {
             ...part,
-            ingredients: part.ingredients.map((ingredient) => (ingredient.id === ingredientId ? { ...next, id: ingredient.id } : ingredient)),
+            ingredients: part.ingredients.map((ingredient) => (ingredient.id === ingredientId ? { ...ingredient, ...next, id: ingredient.id } : ingredient)),
           }
     ),
   };

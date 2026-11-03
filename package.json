@@ -18,6 +18,7 @@
     "dev:seed": "bun run src/db/dev/cli.ts",
     "dev:sample": "bun run src/db/dev/sample.ts",
     "db:generate": "drizzle-kit generate",
+    "db:diagram": "bun run src/db/diagram/cli.ts",
     "backup": "bun run src/server/backup/backupCli.ts",
     "restore": "bun run src/server/backup/restoreCli.ts",
     "restyle": "bun run src/server/ai/restyleLabCli.ts",

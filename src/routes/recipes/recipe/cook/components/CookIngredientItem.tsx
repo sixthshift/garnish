@@ -4,7 +4,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
 import { PencilIcon } from "../../../../../components/ui/icons";
 import { formatIngredient } from "../../../../../domain/ingredient";
-import type { Ingredient } from "../../../../../domain/recipe";
+import { alternativeText, type Ingredient } from "../../../../../domain/recipe";
 import { useIngredientTick } from "../../../../../lib/useTicks";
 import { COOK_ROW_BUTTON, COOK_TICK } from "../../components/IngredientRow";
 import { AmountForm } from "./AmountForm";
@@ -68,6 +68,14 @@ export function CookIngredientItem({
             changed
           </Muted>
         )}
+        {/* What it can be made with instead, at the amount this cook is at (decisions.md row 199). */}
+        {ingredient.alternatives.map((alt, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: read-only, in stored order
+          <Muted key={index} as="span" className={cn("basis-full text-sm", done && "line-through")} data-testid="cook-alternative">
+            or {alternativeText(ingredient, alt)}
+            {alt.note !== "" && ` · ${alt.note}`}
+          </Muted>
+        ))}
       </button>
       {canChange && (
         <button

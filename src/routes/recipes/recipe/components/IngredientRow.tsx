@@ -6,7 +6,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { useSubRecipe } from "../../../../components/recipe/SubRecipes";
 import { formatIngredient, inflectIngredient } from "../../../../domain/ingredient";
-import { type Ingredient, subRecipeCookLabel, subRecipeHint, subRecipeScale } from "../../../../domain/recipe";
+import { alternativeText, type Ingredient, subRecipeCookLabel, subRecipeHint, subRecipeScale } from "../../../../domain/recipe";
 import { useIngredientTick } from "../../../../lib/useTicks";
 import { useQuickEditIngredient } from "./useQuickEdit";
 
@@ -79,6 +79,19 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
       {note}
     </Muted>
   );
+  // What it can be made with instead, at this line's amount (decisions.md row 199).
+  // Spans, not a list: on an ordinary row this sits inside the row's button.
+  const alternativeLines = ingredient.alternatives.length > 0 && (
+    <Muted as="span" className={cn("flex flex-col text-sm", done && "line-through")} data-testid="ingredient-alternatives">
+      {ingredient.alternatives.map((alt, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: read-only, in stored order
+        <span key={index}>
+          or {alternativeText(ingredient, alt)}
+          {alt.note !== "" && ` · ${alt.note}`}
+        </span>
+      ))}
+    </Muted>
+  );
 
   return (
     <li
@@ -99,6 +112,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
         <div className={bodyClass}>
           {line}
           {noteLine}
+          {alternativeLines}
           {scale !== null && cookFrom === undefined && (
             <Muted as="p" className="text-xs" data-testid="sub-recipe-hint">
               {subRecipeHint(scale)}
@@ -120,6 +134,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
         <button type="button" onClick={toggle} className={cn(bodyClass, cook && COOK_ROW_BUTTON)}>
           {line}
           {noteLine}
+          {alternativeLines}
         </button>
       )}
       {quickEdit}

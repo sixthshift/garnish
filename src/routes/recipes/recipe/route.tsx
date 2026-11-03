@@ -8,6 +8,8 @@ import { Route as rootRoute } from "../../root";
 
 export const RecipeViewSearch = z.object({
   servings: z.number().positive().finite().optional(),
+  /** Which option each row takes, as the plan entry chose (decisions.md row 198): ingredient id to food id. */
+  choices: z.record(z.string(), z.string()).optional(),
 });
 
 /**

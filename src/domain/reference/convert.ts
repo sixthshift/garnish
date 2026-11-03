@@ -10,7 +10,7 @@ interface Edge {
 
 /** The known unit-id edges for this pair: the food's conversions, plus `unit`'s
  * and `toUnit`'s own `standard_*` link, each added both ways. */
-function buildGraph(food: Food, unit: Unit, toUnit: Unit): Map<string, Edge[]> {
+function buildGraph(food: Pick<Food, "conversions">, unit: Unit, toUnit: Unit): Map<string, Edge[]> {
   const graph = new Map<string, Edge[]>();
 
   function add(from: string, to: string, factor: number) {
@@ -58,7 +58,7 @@ function pathFactor(graph: Map<string, Edge[]>, from: string, to: string): numbe
  * links, chaining one hop of each so e.g. a food conversion to grams and a
  * unit's own gram-to-kilogram link compose. Null when no path connects them.
  */
-export function convert(quantity: number, unit: Unit, food: Food, toUnit: Unit): number | null {
+export function convert(quantity: number, unit: Unit, food: Pick<Food, "conversions">, toUnit: Unit): number | null {
   const factor = pathFactor(buildGraph(food, unit, toUnit), unit.id, toUnit.id);
   return factor === null ? null : quantity * factor;
 }

@@ -21,6 +21,8 @@ export const isoDate = z
 const id = z.uuid();
 const text = z.string().default("");
 const servings = z.number().positive().nullable().default(null);
+/** Which option each row of the recipe takes: ingredient id to food id; a row not named takes its own (decisions.md row 198). */
+const choices = z.record(id, id);
 
 /**
  * The meal an entry may name, Mealie's `entry_type` minus `side`: a side or a
@@ -54,6 +56,11 @@ export const planEntrySchema = z.object({
   text, // the whole entry when there is no recipe; '' on a recipe entry
   servings, // null: the recipe's own servings
   meal: mealSchema, // null: an entry with no slot, which is most of them
+  choices: choices.default({}),
+  /** The foods the choices pick, by name, in recipe order: "chicken thigh". Read-only. */
+  chosen: z.array(z.string()).default([]),
+  /** The recipe has a row with options, so the entry has something to choose. Read-only. */
+  choosable: z.boolean().default(false),
 });
 
 /** One day of the week, entries in position order. Empty is a normal day. */
@@ -74,6 +81,7 @@ export const planEntryInputSchema = z
     text,
     servings,
     meal: mealSchema,
+    choices: choices.default({}),
   })
   .refine((entry) => entry.recipeId !== null || entry.text.trim() !== "", {
     message: "an entry needs a recipe or some text",
@@ -87,6 +95,7 @@ export const planEntryPatchSchema = z.object({
   // Optional rather than defaulted, as every other field in a patch is:
   // absent leaves the meal alone, `null` clears it.
   meal: z.enum(MEALS).nullable().optional(),
+  choices: choices.optional(),
 });
 
 // --- Types ------------------------------------------------------------------

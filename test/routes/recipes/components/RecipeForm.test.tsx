@@ -67,7 +67,18 @@ const stored: Recipe = {
     {
       id: "33333333-3333-4333-8333-333333333333",
       name: "Pastry",
-      ingredients: [{ id: "44444444-4444-4444-8444-444444444444", quantity: 200, unit: gram, food: null, note: "flour", originalText: "", fixed: false }],
+      ingredients: [
+        {
+          id: "44444444-4444-4444-8444-444444444444",
+          quantity: 200,
+          unit: gram,
+          food: null,
+          note: "flour",
+          originalText: "",
+          fixed: false,
+          alternatives: [],
+        },
+      ],
       steps: [{ id: "55555555-5555-4555-8555-555555555555", text: "Rub in.", title: "", summary: "", ingredientIds: [], image: null }],
     },
     {

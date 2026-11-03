@@ -21,6 +21,7 @@ import {
   scaledForServings,
   stepForKey,
   totalWithFinish,
+  withChoices,
 } from "../../../../domain/recipe";
 import { swipeIntent } from "../../../../lib/swipe";
 import { useWakeLock } from "../../../../lib/useWakeLock";
@@ -61,7 +62,7 @@ function ServesControl({ servings, onChange }: { servings: number; onChange: (va
 
 export function CookPage() {
   const { recipe: stored, subRecipes, parentName } = Route.useLoaderData();
-  const { step, servings: requested, from } = Route.useSearch();
+  const { step, servings: requested, from, choices } = Route.useSearch();
   // What changed at the stove this cook (decisions.md row 193), held for the
   // session so a reload or a look at the recipe page does not lose it.
   const [changes, setChanges] = useState<CookChange[]>(() => readChanges(sessionStore(), stored.id));
@@ -72,7 +73,16 @@ export function CookPage() {
   // Scaled on the client from the search param: the deck is rebuilt from the
   // scaled document, so the stepper is a re-render and not a round trip. The
   // changes go in first, at the stored servings, and scale with the rest.
-  const recipe = scaledForServings(withChanges(stored, changes), requested);
+  // The options a plan entry chose go in before either (decisions.md row 198).
+  const chosen = withChoices(stored, choices ?? {});
+  const recipe = scaledForServings(withChanges(chosen, changes), requested);
+  // A row made with a chosen option holds the option's amount: changing it
+  // here and keeping it would write it onto the row's own food.
+  const fixedIds = new Set(
+    chosen.parts.flatMap((part) =>
+      part.ingredients.filter((row, i) => row.food?.id !== stored.parts.find((p) => p.id === part.id)?.ingredients[i]?.food?.id).map((row) => row.id)
+    )
+  );
   const factor = stored.recipeServings > 0 ? recipe.recipeServings / stored.recipeServings : 1;
   const changedIds = new Set(changes.map((change) => (change.kind === "amount" ? change.ingredientId : change.stepId)));
   const originalStep = (id: string) => stored.parts.flatMap((part) => part.steps).find((s) => s.id === id)?.text;
@@ -135,7 +145,7 @@ export function CookPage() {
               room left and wraps to a second line before it truncates. */}
             <div className="flex items-center gap-3">
               <Button asChild variant="outline" intent="neutral" size="xl" className="shrink-0 px-4">
-                <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+                <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested, choices }}>
                   Exit
                 </Link>
               </Button>
@@ -217,6 +227,7 @@ export function CookPage() {
                   cookFrom={recipe.slug}
                   partName={pills.length > 1 ? undefined : card.part}
                   changedIds={changedIds}
+                  fixedIds={fixedIds}
                   onChangeAmount={(ingredient, typed) => {
                     const change = amountChange(ingredient, typed, factor);
                     if (change) keepChanges(withChange(changes, change));

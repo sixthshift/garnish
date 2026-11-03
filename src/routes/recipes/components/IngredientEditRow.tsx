@@ -12,6 +12,7 @@ import type { ReorderRow } from "../../../components/ui/ReorderList";
 import { type DraftIngredient, type FieldErrors, ingredientSummary } from "../../../domain/draft";
 import type { Unit } from "../../../domain/reference";
 import type { PickerOption } from "../../../lib/ui/picker";
+import { IngredientAlternativesSheet } from "./IngredientAlternativesSheet";
 import { EMPTY_INGREDIENT_SUMMARY, INGREDIENT_COLUMNS, IngredientFields } from "./IngredientFields";
 import { useIngredientEditRow } from "./useIngredientEditRow";
 
@@ -38,6 +39,8 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   const path = `parts.${pi}.ingredients.${ii}`;
   const label = `Ingredient ${ii + 1}`;
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [alternativesOpen, setAlternativesOpen] = useState(false);
+  const alternativeCount = ingredient.alternatives?.length ?? 0;
   const { textOnly, setMode, fieldProps } = useIngredientEditRow({ ingredient, path, label, units, errors, disabled, onPatch, onEnter });
 
   const modeToggle = (
@@ -99,6 +102,10 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
           Parse
         </Menu.Item>
       )}
+      {/* Every width: the phone's sheet does not hold it. A text-only line has no food to stand in for. */}
+      <Menu.Item disabled={disabled === true || textOnly || !ingredient.food} onSelect={() => setAlternativesOpen(true)}>
+        Alternatives{alternativeCount > 0 && <span className="text-fg-subtle"> · {alternativeCount}</span>}
+      </Menu.Item>
       {parts.length > 0 && <Menu.Separator className="max-md:hidden" />}
       {parts.map((part) => (
         <Menu.Item key={part.value} disabled={disabled} className="max-md:hidden" onSelect={() => onMove(Number(part.value))}>
@@ -146,6 +153,14 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
         </div>
       </div>
       {menu}
+      <IngredientAlternativesSheet
+        open={alternativesOpen}
+        onOpenChange={setAlternativesOpen}
+        ingredient={ingredient}
+        label={label}
+        units={units}
+        onPatch={onPatch}
+      />
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} size="sm" closable aria-label={label}>
         <Sheet.Header>
           <h2 className="text-base font-medium">{label}</h2>

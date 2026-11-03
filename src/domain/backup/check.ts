@@ -115,6 +115,15 @@ export function referenceProblems(backup: Backup): string[] {
   const ref = (target: Table, name: string, id: string | null, where: string) => {
     if (id !== null && !target.has(id)) problems.push(`${where}: ${name} ${id} is not in the backup`);
   };
+  const alternativeRefs = (list: Backup["recipes"][number]["parts"][number]["ingredients"][number]["alternatives"], at: string) => {
+    list.forEach((alt, j) => {
+      ref(units, "unit", alt.basisUnitId, `${at}.alternatives[${j}].basisUnitId`);
+      alt.items.forEach((item, k) => {
+        ref(foods, "food", item.foodId, `${at}.alternatives[${j}].items[${k}].foodId`);
+        ref(units, "unit", item.unitId, `${at}.alternatives[${j}].items[${k}].unitId`);
+      });
+    });
+  };
 
   backup.units.forEach((unit, i) => {
     ref(units, "unit", unit.standardUnitId, `units[${i}].standardUnitId`);
@@ -146,6 +155,7 @@ export function referenceProblems(backup: Backup): string[] {
         const where = `recipes[${i}].parts[${j}].ingredients[${k}]`;
         ref(units, "unit", row.unitId, `${where}.unitId`);
         ref(foods, "food", row.foodId, `${where}.foodId`);
+        alternativeRefs(row.alternatives, where);
       });
       part.steps.forEach((step, k) => {
         step.ingredientIds.forEach((ingredientId, m) => {

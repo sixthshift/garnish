@@ -100,6 +100,7 @@ const fullRead: Recipe = {
           note: "cold, cubed",
           originalText: "50 g cold butter, cubed",
           fixed: false,
+          alternatives: [],
         },
         {
           id: ids.ing2,
@@ -109,6 +110,7 @@ const fullRead: Recipe = {
           note: "to taste",
           originalText: "salt to taste",
           fixed: false,
+          alternatives: [],
         },
       ],
       steps: [{ id: ids.step1, text: "Melt the butter over low heat.", title: "", summary: "", ingredientIds: [], image: null }],
@@ -125,6 +127,7 @@ const fullRead: Recipe = {
           note: "",
           originalText: "=200 g spaghetti",
           fixed: true,
+          alternatives: [],
         },
       ],
       steps: [

@@ -106,7 +106,25 @@ export function sampleBackup(): Backup {
             id: IDS.part,
             name: "",
             ingredients: [
-              { id: IDS.ingredient, quantity: 200, unitId: IDS.gram, foodId: IDS.butter, note: "melted", originalText: "200 g butter, melted", fixed: false },
+              {
+                id: IDS.ingredient,
+                quantity: 200,
+                unitId: IDS.gram,
+                foodId: IDS.butter,
+                note: "melted",
+                originalText: "200 g butter, melted",
+                fixed: false,
+                alternatives: [
+                  { basisQuantity: null, basisUnitId: null, note: "", planPicks: true, items: [{ foodId: IDS.hollandaise, quantity: 150, unitId: IDS.gram }] },
+                  {
+                    basisQuantity: 100,
+                    basisUnitId: IDS.gram,
+                    note: "richer",
+                    planPicks: false,
+                    items: [{ foodId: IDS.hollandaise, quantity: 120, unitId: IDS.gram }],
+                  },
+                ],
+              },
             ],
             steps: [
               { id: IDS.step, title: "", text: "Whisk in the butter.", summary: "", ingredientIds: [IDS.ingredient], image: `images/steps/${IDS.step}.png` },
@@ -128,7 +146,18 @@ export function sampleBackup(): Backup {
         createdAt: at,
       },
     ],
-    plan: [{ id: IDS.entry, date: "2026-10-08", position: 0, meal: "dinner", recipeId: IDS.recipe, text: "", servings: 4 }],
+    plan: [
+      {
+        id: IDS.entry,
+        date: "2026-10-08",
+        position: 0,
+        meal: "dinner",
+        recipeId: IDS.recipe,
+        text: "",
+        servings: 4,
+        choices: { [IDS.ingredient]: IDS.hollandaise },
+      },
+    ],
     shopping: [
       {
         id: IDS.item,

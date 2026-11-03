@@ -44,8 +44,15 @@ export function scaledForServings(doc: Recipe, targetServings: number | undefine
 }
 
 function scaleIngredient(ingredient: Ingredient, factor: number): Ingredient {
-  if (ingredient.fixed || ingredient.quantity === null) return { ...ingredient };
-  return { ...ingredient, quantity: ingredient.quantity * factor };
+  if (ingredient.fixed) return { ...ingredient };
+  // A straight swap's own amounts scale with the line; one with a basis follows the line through it (decisions.md row 199).
+  const alternatives = ingredient.alternatives.map((alt) =>
+    alt.basisQuantity !== null
+      ? alt
+      : { ...alt, items: alt.items.map((item) => (item.quantity === null ? item : { ...item, quantity: item.quantity * factor })) }
+  );
+  if (ingredient.quantity === null) return { ...ingredient, alternatives };
+  return { ...ingredient, quantity: ingredient.quantity * factor, alternatives };
 }
 
 /**

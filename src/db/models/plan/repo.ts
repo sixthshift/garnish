@@ -4,7 +4,8 @@ import { addDays, groupByDay, type ParsedPlanEntryInput, type PlanDay, type Plan
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
-import { recipe } from "../recipe/schema";
+import { food } from "../food/schema";
+import { alternative, alternativeItem, ingredient, part, recipe } from "../recipe/schema";
 import { mealPlanEntry } from "./schema";
 
 const order = [asc(mealPlanEntry.position), asc(mealPlanEntry.id)];
@@ -22,9 +23,55 @@ export function planRepository(db: Database) {
     return new Map(found.map((r) => [r.id, r]));
   }
 
+  /**
+   * The names of the foods each entry's choices pick, in recipe order: only a
+   * choice that is still one of its row's options, in that row's recipe,
+   * counts (decisions.md row 198). A row on its own food names nothing.
+   */
+  function readChosen(rows: (typeof mealPlanEntry.$inferSelect)[]): Map<string, string[]> {
+    const chosen = new Map<string, string[]>();
+    const rowIds = [...new Set(rows.flatMap((row) => Object.keys(row.choices)))];
+    if (rowIds.length === 0) return chosen;
+    const options = dz
+      .select({ ingredientId: alternative.ingredientId, foodId: alternativeItem.foodId, name: food.name, recipeId: part.recipeId })
+      .from(alternative)
+      .innerJoin(alternativeItem, eq(alternativeItem.alternativeId, alternative.id))
+      .innerJoin(food, eq(food.id, alternativeItem.foodId))
+      .innerJoin(ingredient, eq(ingredient.id, alternative.ingredientId))
+      .innerJoin(part, eq(part.id, ingredient.partId))
+      .where(and(inArray(alternative.ingredientId, rowIds), eq(alternative.planPicks, true)))
+      .orderBy(asc(part.position), asc(ingredient.position))
+      .all();
+    for (const row of rows) {
+      const names = options
+        .filter((option) => option.recipeId === row.recipeId && row.choices[option.ingredientId] === option.foodId)
+        .map((option) => option.name);
+      if (names.length > 0) chosen.set(row.id, names);
+    }
+    return chosen;
+  }
+
+  /** The recipes among `rows` with a line that has an alternative the plan picks: the entries that have something to choose. */
+  function readChoosable(rows: (typeof mealPlanEntry.$inferSelect)[]): Set<string> {
+    const ids = [...new Set(rows.map((r) => r.recipeId).filter((id): id is string => id !== null))];
+    if (ids.length === 0) return new Set();
+    return new Set(
+      dz
+        .selectDistinct({ recipeId: part.recipeId })
+        .from(alternative)
+        .innerJoin(ingredient, eq(ingredient.id, alternative.ingredientId))
+        .innerJoin(part, eq(part.id, ingredient.partId))
+        .where(and(inArray(part.recipeId, ids), eq(alternative.planPicks, true)))
+        .all()
+        .map((row) => row.recipeId)
+    );
+  }
+
   function assemble(rows: (typeof mealPlanEntry.$inferSelect)[]): PlanEntry[] {
     if (rows.length === 0) return [];
     const recipes = readRecipes(rows);
+    const chosen = readChosen(rows);
+    const choosable = readChoosable(rows);
     return rows.map((row) => ({
       id: row.id,
       date: row.date,
@@ -33,6 +80,9 @@ export function planRepository(db: Database) {
       text: row.text,
       servings: row.servings,
       meal: row.meal,
+      choices: row.choices,
+      chosen: chosen.get(row.id) ?? [],
+      choosable: row.recipeId !== null && choosable.has(row.recipeId),
     }));
   }
 
@@ -93,6 +143,7 @@ export function planRepository(db: Database) {
           text: input.text,
           servings: input.servings,
           meal: input.meal,
+          choices: input.choices,
         })
         .run();
       return get(id)!;
@@ -117,6 +168,7 @@ export function planRepository(db: Database) {
               text: input.text,
               servings: input.servings,
               meal: input.meal,
+              choices: input.choices,
             })
             .run();
           ids.push(id);
@@ -129,6 +181,17 @@ export function planRepository(db: Database) {
      * Merge `patch` into an entry. Null when `id` is unknown. The day and the
      * order are `move`'s business, so they are not in the patch.
      */
+    /** The choices of every entry of this recipe, oldest first: what `rotateChoices` varies from (decisions.md row 198). */
+    choicesOf(recipeId: string): Record<string, string>[] {
+      return dz
+        .select({ choices: mealPlanEntry.choices })
+        .from(mealPlanEntry)
+        .where(eq(mealPlanEntry.recipeId, recipeId))
+        .orderBy(asc(mealPlanEntry.date), ...order)
+        .all()
+        .map((row) => row.choices);
+    },
+
     update(id: string, patch: PlanEntryPatch): PlanEntry | null {
       if (!get(id)) return null;
       if (Object.keys(patch).length > 0) {

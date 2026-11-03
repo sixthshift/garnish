@@ -86,6 +86,26 @@ export const backupPackSchema = z.object({
   unitId: id.nullable().default(null),
 });
 
+/**
+ * A line's alternative (decisions.md row 199). No id: nothing points at one,
+ * so a restore mints its own.
+ */
+export const backupAlternativeSchema = z.object({
+  basisQuantity: z.number().positive().nullable().default(null),
+  basisUnitId: id.nullable().default(null),
+  note: text,
+  planPicks: z.boolean().default(false),
+  items: z
+    .array(
+      z.object({
+        foodId: id,
+        quantity,
+        unitId: id.nullable().default(null),
+      })
+    )
+    .min(1, "an alternative needs something to put in"),
+});
+
 export const backupFoodSchema = z.object({
   id,
   name: nonEmpty,
@@ -108,6 +128,8 @@ export const backupIngredientSchema = z.object({
   note: text,
   originalText: text,
   fixed: z.boolean().default(false),
+  // Absent from a backup made before alternatives existed.
+  alternatives: z.array(backupAlternativeSchema).default([]),
 });
 
 export const backupStepSchema = z.object({
@@ -170,6 +192,8 @@ export const backupPlanEntrySchema = z.object({
   recipeId: id.nullable().default(null),
   text,
   servings: z.number().positive().nullable().default(null),
+  // Which option each row takes (decisions.md row 198); absent from older backups.
+  choices: z.record(id, id).default({}),
 });
 
 export const backupShoppingSourceSchema = z.object({

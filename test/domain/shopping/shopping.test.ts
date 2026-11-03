@@ -398,7 +398,17 @@ const parentSource: ShoppingAdditionSource = { recipeId: "recipe-tart", recipeNa
 
 /** The parent's row: 250 g of pastry, half of the child's 500 g yield — 2 of its 4 servings. */
 function pastryRow(overrides: Partial<Ingredient> = {}): Ingredient {
-  return { id: "ing-pastry", quantity: 250, unit: gram, food: pastry, note: "", originalText: "", fixed: false, ...overrides };
+  return {
+    id: "ing-pastry",
+    quantity: 250,
+    unit: gram,
+    food: pastry,
+    note: "",
+    originalText: "",
+    fixed: false,
+    alternatives: [],
+    ...overrides,
+  };
 }
 
 /** The child recipe already scaled to `recipeServings` (as `getRecipe({ servings })` would return it): flour to buy, salt on hand. */

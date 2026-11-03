@@ -31,8 +31,26 @@ const gram: Unit = {
 
 const part = (name: string, ingredients: Part["ingredients"]): Part => ({ id: `part-${name || "main"}`, name, ingredients, steps: [] });
 
-const FLOUR = { id: "ing-flour", quantity: 200, unit: gram, food: food("flour"), note: "", originalText: "", fixed: false };
-const LEMON = { id: "ing-lemon", quantity: 2, unit: null, food: food("lemon"), note: "", originalText: "", fixed: false };
+const FLOUR = {
+  id: "ing-flour",
+  quantity: 200,
+  unit: gram,
+  food: food("flour"),
+  note: "",
+  originalText: "",
+  fixed: false,
+  alternatives: [],
+};
+const LEMON = {
+  id: "ing-lemon",
+  quantity: 2,
+  unit: null,
+  food: food("lemon"),
+  note: "",
+  originalText: "",
+  fixed: false,
+  alternatives: [],
+};
 
 /** A 4-serving tart: 200 g flour in the pastry, 2 lemons in the filling. */
 const tart: Recipe = {

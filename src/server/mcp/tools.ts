@@ -12,6 +12,7 @@ import { isoDate, MEALS, planEntryInputSchema, weekMonday } from "../../domain/p
 import { type RecipeSummary, recipeKindSchema, scaleRecipe } from "../../domain/recipe";
 import { mergeIntoList, recipeAdditions, shoppingItemInputSchema, shoppingItemLabel } from "../../domain/shopping";
 import { VERSION } from "../../lib/version";
+import { withRotatedChoices } from "../plan/choices";
 import { INSTRUCTIONS } from "./instructions";
 import type { Caller } from "./oauth/server";
 import type { Scope } from "./oauth/tokens";
@@ -278,7 +279,7 @@ export function buildMcpServer(caller: Pick<Caller, "scopes">): McpServer {
           servings: servings ?? null,
         });
         if (!parsed.success) return fail("Send a recipe or some text for the entry.");
-        const entry = plan.add(parsed.data);
+        const entry = plan.add(withRotatedChoices([parsed.data])[0]!);
         return ok({ id: entry.id, date: entry.date, recipe: entry.recipe?.name ?? null, text: entry.text, meal: entry.meal });
       }
     );

@@ -31,6 +31,8 @@ export const mealPlanEntry = sqliteTable(
     servings: real("servings"),
     /** NULL: an entry with no slot. Mealie's `entry_type` minus `side`. */
     meal: text("meal", { enum: MEALS }),
+    /** Which option each row of the recipe takes: ingredient id to food id (decisions.md row 198). */
+    choices: text("choices", { mode: "json" }).$type<Record<string, string>>().notNull().default({}),
   },
   (t) => [
     index("meal_plan_entry_date").on(t.date, t.position),

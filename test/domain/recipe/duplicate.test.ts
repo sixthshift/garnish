@@ -29,7 +29,18 @@ const tart: Recipe = {
     {
       id: id(),
       name: "Pastry",
-      ingredients: [{ id: id(), quantity: 200, unit: null, food: null, note: "sifted", originalText: "200 g flour", fixed: true }],
+      ingredients: [
+        {
+          id: id(),
+          quantity: 200,
+          unit: null,
+          food: null,
+          note: "sifted",
+          originalText: "200 g flour",
+          fixed: true,
+          alternatives: [],
+        },
+      ],
       steps: [{ id: id(), text: "Rub in the butter.", title: "", summary: "", ingredientIds: [], image: null }],
     },
     { id: id(), name: "", ingredients: [], steps: [{ id: id(), text: "Serve cold.", title: "", summary: "", ingredientIds: [], image: null }] },

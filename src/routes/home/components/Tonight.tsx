@@ -51,12 +51,19 @@ export function Tonight({ entry, totalTime, primary }: { entry: PlanEntry | null
           {entry.recipe !== null && (
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="solid" intent={primary ? "brand" : "neutral"}>
-                <Link to="/recipes/$slug/cook" params={{ slug: entry.recipe.slug }} search={entry.servings === null ? {} : { servings: entry.servings }}>
+                <Link
+                  to="/recipes/$slug/cook"
+                  params={{ slug: entry.recipe.slug }}
+                  search={{
+                    ...(entry.servings === null ? {} : { servings: entry.servings }),
+                    ...(Object.keys(entry.choices).length > 0 ? { choices: entry.choices } : {}),
+                  }}
+                >
                   Start cooking
                 </Link>
               </Button>
               <Button asChild variant="outline" intent="neutral">
-                <Link to="/recipes/$slug" params={{ slug: entry.recipe.slug }}>
+                <Link to="/recipes/$slug" params={{ slug: entry.recipe.slug }} search={Object.keys(entry.choices).length > 0 ? { choices: entry.choices } : {}}>
                   Open the recipe
                 </Link>
               </Button>

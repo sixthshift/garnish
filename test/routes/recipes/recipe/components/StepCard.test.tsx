@@ -37,6 +37,7 @@ const ingredient = (quantity: number | null, f: Food): Ingredient => ({
   note: "",
   originalText: "",
   fixed: false,
+  alternatives: [],
 });
 
 const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, title: "", summary: "", ingredientIds, image: null });

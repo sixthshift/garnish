@@ -787,7 +787,10 @@ describe("loader data types match the domain schemas", () => {
       dir?: "asc" | "desc" | undefined;
       seed?: string | undefined;
     }>();
-    expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
+    expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{
+      servings?: number | undefined;
+      choices?: Record<string, string> | undefined;
+    }>();
     expectTypeOf<(typeof EditRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
   });
 });
