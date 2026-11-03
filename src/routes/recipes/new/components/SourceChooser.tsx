@@ -50,8 +50,8 @@ function otherWays(aiAvailable: boolean): { kind: SourceKind; title: string; blu
     },
     {
       kind: "file",
-      title: "Upload an export",
-      blurb: "A Mealie or Tandoor backup, or a single recipe file.",
+      title: "Upload a recipe file",
+      blurb: "One recipe exported from Mealie or Tandoor. A whole backup is Settings › Backup's.",
       icon: icon(<path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />),
     },
     {

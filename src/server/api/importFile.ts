@@ -1,6 +1,7 @@
 import type { FileRecipe } from "../../domain/import";
 import { IMPORT_FIELD } from "../../lib/importFile";
 import { importer } from "../import/importer";
+import { checkLibrary, importLibrary } from "../import/library";
 
 export { IMPORT_FIELD } from "../../lib/importFile";
 
@@ -20,6 +21,25 @@ const badRequest = (error: string): Response => Response.json({ error }, { statu
  * message meant for the import screen for anything unreadable.
  */
 export async function handleImportFile(request: Request): Promise<Response> {
+  const read = await readUpload(request);
+  if (read instanceof Response) return read;
+  return Response.json({ recipes: read } satisfies ImportFileResult);
+}
+
+/**
+ * POST /api/import/library — the same upload, every recipe in it saved
+ * (decisions.md row 201). With `?check=1` nothing is written and the answer
+ * is what the export holds, for the confirm; otherwise it is the report.
+ */
+export async function handleImportLibrary(request: Request): Promise<Response> {
+  const read = await readUpload(request);
+  if (read instanceof Response) return read;
+  if (new URL(request.url).searchParams.get("check") === "1") return Response.json(checkLibrary(read));
+  return Response.json(await importLibrary(read));
+}
+
+/** The recipes in the uploaded export, or the 400 to answer with. */
+async function readUpload(request: Request): Promise<FileRecipe[] | Response> {
   let form: FormData;
   try {
     form = await request.formData();
@@ -34,8 +54,7 @@ export async function handleImportFile(request: Request): Promise<Response> {
   const name = file instanceof File ? file.name : "";
   const bytes = new Uint8Array(await file.arrayBuffer());
   try {
-    const recipes = await importer.import({ kind: "file", file: { name, bytes } });
-    return Response.json({ recipes } satisfies ImportFileResult);
+    return await importer.import({ kind: "file", file: { name, bytes } });
   } catch (cause) {
     return badRequest(cause instanceof Error ? cause.message : "That file could not be read");
   }

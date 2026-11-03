@@ -9,7 +9,6 @@
 // from rather than all on the main body.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
@@ -20,7 +19,6 @@ import type { Unit } from "../../../../../src/domain/reference";
 import { FileSource } from "../../../../../src/routes/recipes/new/components/FileSource";
 import { ImportReview } from "../../../../../src/routes/recipes/new/components/ImportReview";
 import { duplicateMessage } from "../../../../../src/routes/recipes/new/components/importSummary";
-import { RecipePicker } from "../../../../../src/routes/recipes/new/components/RecipePicker";
 import { SourceChooser } from "../../../../../src/routes/recipes/new/components/SourceChooser";
 
 const FIXTURE = join(import.meta.dirname, "../../../../fixtures/mealie/lemon-tart.json");
@@ -63,26 +61,12 @@ const flour: FoodRow = {
 const units = [gram];
 const foods = [flour];
 
-/** The first element in `node` carrying `prop` set to `value`. */
-function elementWithProp(node: ReactNode, prop: string, value: string): ReactElement<Record<string, any>> | null {
-  if (Array.isArray(node)) {
-    for (const child of node) {
-      const found = elementWithProp(child as ReactNode, prop, value);
-      if (found) return found;
-    }
-    return null;
-  }
-  if (!isValidElement(node)) return null;
-  const element = node as ReactElement<Record<string, any>>;
-  if (element.props[prop] === value) return element;
-  return elementWithProp(element.props.children as ReactNode, prop, value);
-}
-
 describe("the chooser", () => {
-  test("offers the export beside the web page and your own", () => {
+  test("offers one recipe's file, and sends a whole backup to Settings", () => {
     const html = renderToString(<SourceChooser onChoose={() => {}} />);
     expect(html).toContain('data-source="file"');
-    expect(html).toContain("A Mealie or Tandoor backup");
+    expect(html).toContain("Upload a recipe file");
+    expect(html).toContain("Settings › Backup");
   });
 });
 
@@ -90,7 +74,7 @@ describe("FileSource", () => {
   test("renders the picker, the file's name and the read button", () => {
     const html = renderToString(<FileSource file={new File(["{}"], "backup.zip")} onFileChange={() => {}} onRead={() => {}} onBack={() => {}} />);
     expect(html).toContain('data-source-stage="file"');
-    expect(html).toContain("Upload an export");
+    expect(html).toContain("Upload a recipe file");
     expect(html).toContain("backup.zip");
     expect(html).toContain("Read the file");
   });
@@ -100,26 +84,6 @@ describe("FileSource", () => {
     expect(html).toContain("No file chosen");
     expect(html).toContain('data-testid="import-error"');
     expect(html).toContain("That file is not JSON or a zip");
-  });
-});
-
-describe("RecipePicker", () => {
-  test("a backup with several recipes asks which one", () => {
-    const picked: number[] = [];
-    const recipes = [recipe(), { ...recipe(), name: "Pancakes" }];
-    const element = RecipePicker({ recipes, onPick: (index) => picked.push(index), onBack: () => {} });
-    const html = renderToString(element);
-    expect(html).toContain('data-source-stage="pick"');
-    expect(html).toContain("That file holds 2 recipes");
-    expect(html).toContain('data-import-choice="0"');
-    expect(html).toContain("Lemon tart");
-    expect(html).toContain("Pancakes");
-    expect(html).toContain("4 ingredients, 4 steps");
-
-    // Picking one names it by position, which is what the shell reads back.
-    const second = elementWithProp(element, "data-import-choice", "1");
-    (second!.props.onClick as () => void)();
-    expect(picked).toEqual([1]);
   });
 });
 

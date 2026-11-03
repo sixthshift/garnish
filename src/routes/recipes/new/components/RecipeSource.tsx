@@ -11,7 +11,6 @@ import { ImportSteps } from "./ImportSteps";
 import type { ModelReader, SourceKind } from "./importSummary";
 import { PageSource } from "./PageSource";
 import { PasteSource } from "./PasteSource";
-import { RecipePicker } from "./RecipePicker";
 import { SourceChooser } from "./SourceChooser";
 import { UrlSource } from "./UrlSource";
 import { useRecipeSource } from "./useRecipeSource";
@@ -58,7 +57,7 @@ export type RecipeSourceProps = {
 export function RecipeSource(props: RecipeSourceProps) {
   const { units, source, onChoose, aiAvailable = false } = props;
   const state = useRecipeSource(props);
-  const { url, text, file, choices, imported, rows, busy, error, reading, readError } = state;
+  const { url, text, file, imported, rows, busy, error, reading, readError } = state;
   // A recipe under review, or a pasted page, is work the browser's Back would
   // drop unseen: the stages share one URL, so Back leaves /recipes/new.
   const guard = useImportGuard(imported !== null || (source === "paste" && text.trim() !== ""), imported !== null ? DISCARD_RECIPE : DISCARD_PASTE);
@@ -111,10 +110,6 @@ export function RecipeSource(props: RecipeSourceProps) {
           onCreate={() => void state.create()}
         />
       );
-    }
-
-    if (choices !== null) {
-      return <RecipePicker recipes={choices} busy={busy} onPick={state.pickUploaded} onBack={state.leavePicker} />;
     }
 
     if (source === "paste") {

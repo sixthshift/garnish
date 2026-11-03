@@ -20,7 +20,7 @@ test("each other way in reports which one it is", async () => {
   const user = userEvent.setup();
   render(<SourceChooser onChoose={onChoose} />);
   await user.click(screen.getByRole("button", { name: /Paste the recipe/ }));
-  await user.click(screen.getByRole("button", { name: /Upload an export/ }));
+  await user.click(screen.getByRole("button", { name: /Upload a recipe file/ }));
   await user.click(screen.getByRole("button", { name: /Start from scratch/ }));
   expect(onChoose.mock.calls.map(([kind]) => kind)).toEqual(["paste", "file", "manual"]);
 });

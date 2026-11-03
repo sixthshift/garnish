@@ -37,9 +37,7 @@ export type UploadReview = {
 
 /** One recipe out of an upload, onto the same review the URL import uses. */
 export function reviewOfUpload(recipe: FileRecipe, units: readonly Unit[], foods: readonly FoodRow[]): UploadReview {
-  const reviewed = review.isTandoor(recipe)
-    ? review.rowsFromTandoor(recipe, { units, foods })
-    : { ...review.rowsFromMealie(recipe, { units, foods }), rowSteps: null, subRecipeNames: [] as string[] };
+  const reviewed = review.rowsFromExport(recipe, { units, foods });
   return {
     imported: { from: recipe.source, url: recipe.sourceUrl, recipe, pageText: "" },
     rows: reviewed.rows,

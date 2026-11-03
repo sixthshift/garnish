@@ -12,16 +12,16 @@ export type FileSourceProps = {
 };
 
 /**
- * An export's stage: one file. A Mealie backup zip or one recipe's JSON, or
- * Tandoor's export zip — a `recipe.json` per recipe — told apart by what is
- * in it rather than by its name.
+ * A recipe file's stage: one recipe's JSON, or a zip holding just one, from
+ * Mealie or Tandoor, told apart by what is in it rather than by its name. A
+ * whole export is Settings › Backup's (decisions.md row 201).
  */
 export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: FileSourceProps) {
   const inputId = "import-file";
   return (
     <SourceStage
       stage="file"
-      title="Upload an export"
+      title="Upload a recipe file"
       errorTitle="That file could not be read"
       error={error}
       busy={busy}
@@ -44,13 +44,14 @@ export function FileSource({ file, busy, error, onFileChange, onRead, onBack }: 
         name="file"
         type="file"
         accept=".zip,.json,application/zip,application/json"
-        aria-label="Mealie or Tandoor export"
+        aria-label="Recipe file"
         className="sr-only"
         disabled={busy}
         onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
       />
       <Muted as="p" className="text-sm">
-        A Mealie backup or a Tandoor export <code>.zip</code>, or a single recipe saved as JSON. Nothing is saved until you have looked at it.
+        One recipe exported from Mealie or Tandoor, as <code>.json</code> or <code>.zip</code>. Nothing is saved until you have looked at it. To bring a whole
+        backup in, use Settings › Backup.
       </Muted>
     </SourceStage>
   );

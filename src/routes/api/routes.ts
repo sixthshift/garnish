@@ -4,7 +4,7 @@ import { backupZipRoute, restoreRoute } from "./backup";
 import { recipeCookRoute, recipeJsonRoute } from "./export";
 import { healthRoute } from "./health";
 import { getImageRoute, uploadImageRoute } from "./images";
-import { importFileRoute } from "./importFile";
+import { importFileRoute, importLibraryRoute } from "./importFile";
 import {
   authorizationServerRoute,
   authorizeRoute,
@@ -29,6 +29,7 @@ export const apiRoutes = [
   getTimelineImageRoute,
   uploadTimelineImageRoute,
   importFileRoute,
+  importLibraryRoute,
   backupZipRoute,
   restoreRoute,
   mcpRoute,

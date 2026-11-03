@@ -7,6 +7,7 @@ import { BACKUP_URL, checkRestore, type RestoreCheck, RestoreRefused, restore } 
 import { formatDateStamp } from "../../../../lib/dates";
 import { writeOutbox } from "../../../../lib/outbox";
 import { toastError } from "../../../../lib/toast";
+import { LibraryImport } from "../LibraryImport";
 import { RestoreSheet } from "../RestoreSheet";
 import { SettingRow, SettingsColumn, SettingsPanel } from "../SettingsPanel";
 
@@ -24,7 +25,8 @@ function clearOutbox(): void {
  * to this device as one zip, nothing kept on the server — and restore from
  * one. The verb is "back up", the file "a backup". A restore replaces everything, so the file is read and
  * checked on the server first, and only a file that passes opens the confirm.
- * Export, one recipe at a time, is the recipe page's.
+ * Export, one recipe at a time, is the recipe page's. Below it, a whole
+ * Mealie or Tandoor export brought in (`LibraryImport`, decisions.md row 201).
  */
 export function BackupTab() {
   const router = useRouter();
@@ -127,6 +129,7 @@ export function BackupTab() {
         </Message>
       )}
       {check && <RestoreSheet open check={check} busy={busy} onRestore={() => void run()} onCancel={reset} />}
+      <LibraryImport />
     </SettingsColumn>
   );
 }

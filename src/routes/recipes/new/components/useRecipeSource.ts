@@ -24,7 +24,6 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const [file, setFile] = useState<File | null>(null);
   // The page the Save to Garnish bookmark sent, kept so Back from the review can read it again.
   const [sent, setSent] = useState<SentPage | null>(null);
-  const [choices, setChoices] = useState<FileRecipe[] | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
   const [rows, setRows] = useState<IngredientReview[]>([]);
   // Which step of the row's part owns the row, and the nested recipes the rows
@@ -32,8 +31,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const [rowSteps, setRowSteps] = useState<number[] | null>(null);
   const [subRecipes, setSubRecipes] = useState<string[]>([]);
   const [duplicate, setDuplicate] = useState<{ name: string; slug: string } | null>(null);
-  // The food vocabulary the upload already fetched, so picking a recipe out of
-  // a backup does not fetch it again.
+  // The food vocabulary the last read fetched, for the model's retry and a rejected answer.
   const [vocabulary, setVocabulary] = useState<readonly FoodRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,9 +157,10 @@ export function useRecipeSource(props: RecipeSourceProps) {
     try {
       const [found, foods] = await Promise.all([(loadFile ?? postImportFile)(file), fetchFoods()]);
       if (found.length === 0) throw new Error("No recipe in that file");
+      // A whole export is moving house, not adding a recipe (decisions.md row 201).
+      if (found.length > 1) throw new Error(`That file holds ${found.length} recipes. Bring a whole export in from Settings › Backup.`);
       setVocabulary(foods);
-      if (found.length === 1) await chooseUploaded(found[0]!, foods);
-      else setChoices(found);
+      await chooseUploaded(found[0]!, foods);
     } catch (cause) {
       setError(messageFrom(cause));
     } finally {
@@ -198,12 +197,6 @@ export function useRecipeSource(props: RecipeSourceProps) {
     setRows(reviewRows(review.ingredientLines(taken.recipe), { units, foods: vocabulary }));
   };
 
-  /** One recipe out of a backup, by its place in the picker. */
-  const pickUploaded = (index: number) => {
-    const recipe = choices?.[index];
-    if (recipe) void chooseUploaded(recipe, vocabulary);
-  };
-
   /** Back from the review to the source it came from. */
   const leaveReview = () => {
     setImported(null);
@@ -212,12 +205,6 @@ export function useRecipeSource(props: RecipeSourceProps) {
     setDuplicate(null);
     setError(null);
     model.reset();
-  };
-
-  /** Back from the picker to the file stage. */
-  const leavePicker = () => {
-    setChoices(null);
-    setError(null);
   };
 
   /** Back from any source stage to the chooser. */
@@ -242,7 +229,6 @@ export function useRecipeSource(props: RecipeSourceProps) {
     file,
     sent,
     sentStatus,
-    choices,
     imported,
     rows,
     busy,
@@ -264,9 +250,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
     create,
     retryRead,
     useRejected,
-    pickUploaded,
     leaveReview,
-    leavePicker,
     leaveSource,
   };
 }
