@@ -156,7 +156,9 @@ export function RecipeSource(props: RecipeSourceProps) {
         onUrlChange={state.setUrl}
         onFetch={() => void state.read()}
         onBack={state.leaveSource}
+        onPaste={state.pasteInstead}
         onBookmark={() => onChoose("browser")}
+        aiAvailable={aiAvailable}
       />
     );
   }

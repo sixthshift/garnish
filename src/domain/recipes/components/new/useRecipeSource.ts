@@ -24,6 +24,8 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const [file, setFile] = useState<File | null>(null);
   // The page the Save to Garnish bookmark sent, kept so Back from the review can read it again.
   const [sent, setSent] = useState<SentPage | null>(null);
+  // The address a failed read was of, when the reader went on to paste it instead: the paste's source.
+  const [pasteFrom, setPasteFrom] = useState<string | null>(null);
   const [imported, setImported] = useState<ImportedRecipe | null>(null);
   const [rows, setRows] = useState<IngredientReview[]>([]);
   // Which step of the row's part owns the row, and the nested recipes the rows
@@ -130,7 +132,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
     setBusy(true);
     setError(null);
     try {
-      const [found, foods] = await Promise.all([loadText ? loadText(text) : importFromText({ data: { text, sourceUrl: "" } }), fetchFoods()]);
+      const [found, foods] = await Promise.all([loadText ? loadText(text) : importFromText({ data: { text, sourceUrl: pasteFrom ?? "" } }), fetchFoods()]);
       showReview(found, foods);
       setDuplicate(findDuplicateByName ? await findDuplicateByName(found.recipe.name) : null);
     } catch (cause) {
@@ -210,7 +212,15 @@ export function useRecipeSource(props: RecipeSourceProps) {
   /** Back from any source stage to the chooser. */
   const leaveSource = () => {
     setError(null);
+    setPasteFrom(null);
     onChoose(null);
+  };
+
+  /** From a page that could not be read to the paste, carrying its address as the recipe's source. */
+  const pasteInstead = () => {
+    setError(null);
+    setPasteFrom(url.trim() === "" ? null : url.trim());
+    onChoose("paste");
   };
 
   const changeText = (next: string) => {
@@ -252,5 +262,6 @@ export function useRecipeSource(props: RecipeSourceProps) {
     useRejected,
     leaveReview,
     leaveSource,
+    pasteInstead,
   };
 }

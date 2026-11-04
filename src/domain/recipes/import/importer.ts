@@ -24,7 +24,8 @@ export type PageResponse = { status: number; url: string; bytes: Uint8Array };
  *
  * `fetchPage` GETs an address and answers with the status and body; it throws
  * when the host cannot be reached at all. How it gets past a bot wall is its
- * own business (`src/server/import/fetch.ts`).
+ * own business (`src/server/import/fetch.ts`). `renderPage`, when there is
+ * one, is the way round what a fetch cannot do (`src/server/import/render.ts`).
  *
  * `model` puts one prompt to a model, asking for an answer in the given JSON
  * Schema, and answers with the message content. The importer says what to
@@ -34,6 +35,13 @@ export type PageResponse = { status: number; url: string; bytes: Uint8Array };
  */
 export type Ports = {
   fetchPage: (url: URL) => Promise<PageResponse>;
+  /**
+   * Opens the address in a real browser and answers with the page as drawn,
+   * for a page `fetchPage` could not get or found no recipe in (decisions.md
+   * row 202). Absent when the server has no browser; the import then stops
+   * where the fetch did. Throws as `fetchPage` does.
+   */
+  renderPage?: (url: URL) => Promise<PageResponse>;
   model: (request: ModelRequest) => Promise<string>;
 };
 
@@ -99,34 +107,75 @@ export class Importer {
   }
 
   /**
-   * GET the page and read a recipe out of it. Throws with a message meant for
-   * the import screen when the URL is not http(s), unreachable, an error
-   * response, too large, or carries neither structured data nor OpenGraph
-   * tags. A 403 that survives the fetch's own retries gets its own message:
-   * this is a bot wall headers cannot pass, and the paste box is the way round
-   * it.
+   * GET the page and read a recipe out of it; when that does not end in a
+   * recipe, open it in a browser and read that (decisions.md row 202). A
+   * fetch that ends in a schema recipe is the answer. A 404 or 410, an
+   * address that is not http(s) and a page too large stop at once: a browser
+   * would only draw the same page, and a drawn 404 reads as a recipe called
+   * "Page not found". Anything else — the host unreachable, a refusal, a
+   * page with no recipe or only a stub — goes to `renderPage` when there is
+   * one. Whichever way the markup came, it is read by the same rules and
+   * goes on to the same review; `via` says which.
    */
   private async fromUrl(raw: string): Promise<ImportedRecipe> {
     const url = parsePageUrl(raw);
     if (!url) throw new ImportError("failed", "Enter an http or https address");
 
+    const fetched = await this.fetchOnce(url);
+    if (fetched.found?.from === "schema") return { ...fetched.found, via: "fetch" };
+    const render = this.ports.renderPage;
+    if (fetched.final || render === undefined) {
+      if (fetched.found) return { ...fetched.found, via: "fetch" };
+      throw fetched.error!;
+    }
+
+    let rendered: ImportedRecipe | null = null;
+    try {
+      const page = await render(url);
+      if (page.bytes.length <= MAX_PAGE_BYTES) rendered = extractRecipe(new TextDecoder().decode(page.bytes), page.url || url.href);
+    } catch {
+      rendered = null;
+    }
+    if (rendered?.from === "schema") return { ...rendered, via: "render" };
+    // The fetch reached a page: its stub, or its having none, is the page's own.
+    if (fetched.found) return { ...fetched.found, via: "fetch" };
+    if (fetched.reached) {
+      if (rendered) return { ...rendered, via: "render" };
+      throw fetched.error!;
+    }
+    // The fetch was refused and the browser drew no recipe: a wall's own page.
+    throw new ImportError("blocked", `Couldn't get this recipe from ${url.hostname}.`);
+  }
+
+  /**
+   * One plain fetch, read by the rules: the recipe it found, or the error to
+   * show if nothing better comes. `final` is a failure a browser cannot
+   * change; `reached` says the host answered 2xx with a page of its own.
+   */
+  private async fetchOnce(url: URL): Promise<{ found: ImportedRecipe | null; error: ImportError | null; final: boolean; reached: boolean }> {
+    const failed = (message: string, final = false, kind: "failed" | "blocked" = "failed") => ({
+      found: null,
+      error: new ImportError(kind, message),
+      final,
+      reached: false,
+    });
     let page: PageResponse;
     try {
       page = await this.ports.fetchPage(url);
     } catch {
-      throw new ImportError("failed", `Could not reach ${url.hostname}`);
+      return failed(`Could not reach ${url.hostname}`);
     }
-    if (page.status === 403) {
-      throw new ImportError(
-        "failed",
-        `${url.hostname} is blocking automated requests. Open the page in your browser and press the Save to Garnish bookmark, or paste the page's HTML (view source, select all, copy), instead.`
-      );
+    if (page.status === 404 || page.status === 410) return failed(`${url.hostname} returned ${page.status}`, true);
+    if (page.status === 403) return failed(`${url.hostname} is blocking automated requests.`, false, "blocked");
+    if (page.status < 200 || page.status >= 300) return failed(`${url.hostname} returned ${page.status}`);
+    if (page.bytes.length > MAX_PAGE_BYTES) return failed("That page is too large to read", true);
+    if (page.bytes.length === 0) return { ...failed(`${url.hostname} returned an empty page`), reached: true };
+    try {
+      return { found: this.readPage(new TextDecoder().decode(page.bytes), page.url || url.href), error: null, final: false, reached: true };
+    } catch (cause) {
+      if (!(cause instanceof ImportError)) throw cause;
+      return { found: null, error: cause, final: false, reached: true };
     }
-    if (page.status < 200 || page.status >= 300) throw new ImportError("failed", `${url.hostname} returned ${page.status}`);
-    if (page.bytes.length === 0) throw new ImportError("failed", `${url.hostname} returned an empty page`);
-    if (page.bytes.length > MAX_PAGE_BYTES) throw new ImportError("failed", "That page is too large to read");
-
-    return this.readPage(new TextDecoder().decode(page.bytes), page.url || url.href);
   }
 
   /**

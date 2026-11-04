@@ -10,12 +10,17 @@ export type UrlSourceProps = {
   onUrlChange: (url: string) => void;
   onFetch: () => void;
   onBack: () => void;
-  /** Set up the Save to Garnish bookmark: offered once a read has failed, since a blocked site is why it exists. */
+  /** Paste the recipe instead: the first way on from a failed read (decisions.md row 202). */
+  onPaste?: () => void;
+  /** Set up the Save to Garnish bookmark: offered once a read has failed, after paste, since a blocked site is why it exists. */
   onBookmark?: () => void;
+  /** Whether a model is configured: without one a paste reads only a page's HTML, and the offer says so. */
+  aiAvailable?: boolean;
 };
 
 /** A web page's stage: one address. Reached from the chooser's field, or a share, once reading has begun. */
-export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onBookmark }: UrlSourceProps) {
+export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPaste, onBookmark, aiAvailable = false }: UrlSourceProps) {
+  const ways = onPaste !== undefined || onBookmark !== undefined;
   return (
     <SourceStage
       stage="url"
@@ -23,10 +28,19 @@ export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onBo
       errorTitle="That page could not be read"
       error={error}
       errorAction={
-        onBookmark && (
-          <Button type="button" variant="outline" intent="neutral" size="sm" disabled={busy} onClick={onBookmark}>
-            <span aria-hidden="true">🌿</span> Send it from your browser
-          </Button>
+        ways && (
+          <span className="flex flex-wrap gap-2">
+            {onPaste && (
+              <Button type="button" variant="outline" intent="neutral" size="sm" disabled={busy} onClick={onPaste}>
+                {aiAvailable ? "Paste it instead" : "Paste the page's HTML instead"}
+              </Button>
+            )}
+            {onBookmark && (
+              <Button type="button" variant="outline" intent="neutral" size="sm" disabled={busy} onClick={onBookmark}>
+                <span aria-hidden="true">🌿</span> Send it from your browser
+              </Button>
+            )}
+          </span>
         )
       }
       busy={busy}

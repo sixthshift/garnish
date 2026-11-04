@@ -47,7 +47,7 @@ Open the same address in your phone's browser and add it to the home screen. Ins
 - **A recipe** — scale it by servings, tick off ingredients and steps as you go, and switch between each part's ingredients and one merged list. The ⋯ menu edits, duplicates, prints, copies the ingredients, or exports it.
 - **Cook** — one card per step, full screen. Start a timer from a step, and swipe or use the arrow keys between cards.
 - **Made this** — log that you cooked it, with a date, a note and a photo. The history sits under the recipe.
-- **Add a recipe** — from a web page's address, from a Mealie or Tandoor backup, or typed in yourself. On a phone where Garnish is installed, share a page to Garnish to import it.
+- **Add a recipe** — from a web page's address, from a Mealie or Tandoor backup, or typed in yourself. On a phone where Garnish is installed, share a page to Garnish to import it. When a site blocks a plain download of the page, or draws its recipe with JavaScript, Garnish opens it in a headless browser it carries in the image (about 200 MB of it); a site that blocks that too can still be pasted or sent from your own browser.
 - **Plan** — a week of meals, a recipe or a plain line in each slot; add the whole week to the shopping list in one tap.
 - **Shopping** — one list for the household, grouped by aisle, with the same food from different recipes merged into one line.
 - **Settings** — your foods, units, aisles and tags; the house style and the planner's guide; backup and restore; AI; MCP; appearance; and timer alerts for this device.
@@ -63,6 +63,7 @@ Garnish is configured with environment variables in the `environment:` section o
 | `CLAUDE_CODE_OAUTH_TOKEN` | Used by `AI_PROVIDER=claude-code` |
 | `AI_IMPORT_MODEL`, `AI_RESTYLE_MODEL`, `AI_PLANNER_MODEL` | Optional. Which model each feature asks, for either provider |
 | `GARNISH_PUBLIC_URL` | Optional. Your tunnel's public address, for Settings › MCP to show and for a tunnel that does not tell Garnish it is https. See [MCP](#mcp) |
+| `CHROMIUM_PATH` | Optional. The headless browser the import falls back to; the image sets it. Pointing it at nothing turns the fallback off |
 | `PUSH_CONTACT` | Optional. A `mailto:` or `https:` address the phone push services see for timer alerts |
 
 To keep keys out of `docker-compose.yml`, put them in a file named `.env` beside it, `AI_API_KEY=...`, and write `AI_API_KEY: ${AI_API_KEY}` in the compose file. Compose fills it in.

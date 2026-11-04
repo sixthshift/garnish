@@ -71,6 +71,19 @@ describe("runtime contract", () => {
     expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bCLAUDE_CODE_EXECUTABLE=\/usr\/local\/bin\/claude\b/));
   });
 
+  test("carries the import's headless browser, and names it (decisions.md row 202)", () => {
+    expect(lines).toContainEqual(
+      expect.stringMatching(
+        /^RUN\s+apt-get update\s+&&\s+apt-get install -y --no-install-recommends chromium-headless-shell\s+&&\s+rm -rf \/var\/lib\/apt\/lists\/\*$/
+      )
+    );
+    expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bCHROMIUM_PATH=\/usr\/bin\/chromium-headless-shell\b/));
+  });
+
+  test("the devcontainer has the same browser, so the dev server falls back to it too", () => {
+    expect(instructions(devcontainer).join("\n")).toMatch(/apt-get install[^\n]*\bchromium-headless-shell\b/);
+  });
+
   test("DATA_DIR=/data is the volume", () => {
     expect(lines).toContainEqual(expect.stringMatching(/^ENV\s.*\bDATA_DIR=\/data\b/));
     expect(lines).toContainEqual(expect.stringMatching(/^VOLUME\s+\/data$/));

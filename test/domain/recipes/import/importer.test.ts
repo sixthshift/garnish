@@ -124,10 +124,13 @@ describe('import({ kind: "url" })', () => {
     expect((await fetching(fetchPage).import({ kind: "url", url: URL_UNDER_TEST })).url).toBe("https://example.test/moved");
   });
 
-  test("a 403 the fetch could not get past names the site and suggests the paste box", async () => {
-    await expect(fetching(fakePage("", 403)).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow(
-      /example\.test is blocking automated requests.*Save to Garnish bookmark, or paste the page's HTML \(view source, select all, copy\)/
-    );
+  test("a 403 the fetch could not get past names the site; the screen offers the ways round it", async () => {
+    await expect(fetching(fakePage("", 403)).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow(/^example\.test is blocking automated requests\.$/);
+    await expect(fetching(fakePage("", 403)).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toMatchObject({ kind: "blocked" });
+  });
+
+  test("with no browser, the result says it came by the fetch", async () => {
+    expect((await fetching(fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST })).via).toBe("fetch");
   });
 
   test.each([500, 404])("a %i names the host and the status", async (status) => {
@@ -170,6 +173,96 @@ describe('import({ kind: "url" })', () => {
   });
 });
 
+describe('import({ kind: "url" }) with a browser (decisions.md row 202)', () => {
+  /** An importer over a fetch and a browser, with a model that must not be reached. */
+  const withBrowser = (fetchPage: Ports["fetchPage"], renderPage: Ports["renderPage"]) =>
+    new Importer({ fetchPage, renderPage, model: () => Promise.reject(new Error("model was called")) });
+
+  test("a schema page from the fetch never opens the browser", async () => {
+    const browser = fakePage(SCHEMA_PAGE);
+    const found = await withBrowser(fakePage(SCHEMA_PAGE), browser).import({ kind: "url", url: URL_UNDER_TEST });
+    expect(found.via).toBe("fetch");
+    expect(browser.calls).toHaveLength(0);
+  });
+
+  test.each([403, 402, 429, 503, 500])("a %i, then the browser's recipe", async (status) => {
+    const browser = fakePage(SCHEMA_PAGE);
+    const found = await withBrowser(fakePage("", status), browser).import({ kind: "url", url: URL_UNDER_TEST });
+    expect(found.from).toBe("schema");
+    expect(found.via).toBe("render");
+    expect(found.recipe.name).toBe("Anzac biscuits");
+    expect(browser.calls.map((url) => url.href)).toEqual([URL_UNDER_TEST]);
+  });
+
+  test("an unreachable host, then the browser's recipe", async () => {
+    const failing: Ports["fetchPage"] = () => Promise.reject(new Error("ETIMEDOUT"));
+    expect((await withBrowser(failing, fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST })).via).toBe("render");
+  });
+
+  test("a page with no recipe, or an empty one, then the browser's: a recipe a script draws", async () => {
+    expect((await withBrowser(fakePage(BARE_PAGE), fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST })).via).toBe("render");
+    expect((await withBrowser(fakePage(""), fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST })).via).toBe("render");
+  });
+
+  test("a stub from the fetch, then the browser's recipe", async () => {
+    const found = await withBrowser(fakePage(STUB_PAGE), fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST });
+    expect(found.from).toBe("schema");
+    expect(found.via).toBe("render");
+  });
+
+  test("a stub from the fetch stays the answer when the browser finds no more, or fails", async () => {
+    const stubAgain = await withBrowser(fakePage(STUB_PAGE), fakePage(STUB_PAGE)).import({ kind: "url", url: URL_UNDER_TEST });
+    expect([stubAgain.from, stubAgain.via]).toEqual(["stub", "fetch"]);
+    const broken: Ports["fetchPage"] = () => Promise.reject(new Error("Chromium exited 1"));
+    const stubKept = await withBrowser(fakePage(STUB_PAGE), broken).import({ kind: "url", url: URL_UNDER_TEST });
+    expect([stubKept.from, stubKept.via]).toEqual(["stub", "fetch"]);
+  });
+
+  test.each([404, 410])("a %i never opens the browser", async (status) => {
+    const browser = fakePage(SCHEMA_PAGE);
+    await expect(withBrowser(fakePage("", status), browser).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow(`example.test returned ${status}`);
+    expect(browser.calls).toHaveLength(0);
+  });
+
+  test("a page too large, or an address that is not http(s), never opens the browser", async () => {
+    const browser = fakePage(SCHEMA_PAGE);
+    const huge = `<html>${"x".repeat(MAX_PAGE_BYTES + 1)}</html>`;
+    await expect(withBrowser(fakePage(huge), browser).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow("too large");
+    await expect(withBrowser(fakePage(SCHEMA_PAGE), browser).import({ kind: "url", url: "file:///etc/passwd" })).rejects.toThrow(/http or https/);
+    expect(browser.calls).toHaveLength(0);
+  });
+
+  test("refused, and the browser drew a wall's page (no recipe, or only its title): one error naming the host", async () => {
+    for (const wall of [BARE_PAGE, STUB_PAGE]) {
+      const caught = await withBrowser(fakePage("", 403), fakePage(wall))
+        .import({ kind: "url", url: URL_UNDER_TEST })
+        .catch((cause: unknown) => cause);
+      expect(caught).toBeInstanceOf(ImportError);
+      expect((caught as ImportError).message).toBe("Couldn't get this recipe from example.test.");
+      expect((caught as ImportError).kind).toBe("blocked");
+    }
+  });
+
+  test("refused, and the browser failed too: the same one error", async () => {
+    const broken: Ports["fetchPage"] = () => Promise.reject(new Error("Chromium exited 137"));
+    await expect(withBrowser(fakePage("", 403), broken).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow(
+      "Couldn't get this recipe from example.test."
+    );
+  });
+
+  test("a page the fetch reached with no recipe, and the browser found none either, has no recipe data", async () => {
+    await expect(withBrowser(fakePage(BARE_PAGE), fakePage(BARE_PAGE)).import({ kind: "url", url: URL_UNDER_TEST })).rejects.toThrow(
+      /No recipe data on that page/
+    );
+  });
+
+  test("the browser's result is the shape the fetch's is: the same page gives the same recipe and page text", async () => {
+    const fetched = await fetching(fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST });
+    const rendered = await withBrowser(fakePage("", 403), fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST });
+    expect({ ...rendered, via: undefined }).toEqual({ ...fetched, via: undefined });
+  });
+});
+
 describe('import({ kind: "page" })', () => {
   /** An importer that may reach neither port: a sent page is read by the rules alone. */
   const sealed = () => new Importer({ fetchPage: noFetch, model: () => Promise.reject(new Error("model was called")) });
@@ -184,7 +277,8 @@ describe('import({ kind: "page" })', () => {
   test("gives exactly what a fetch of the same page gives", async () => {
     const sent = await sealed().import({ kind: "page", html: SCHEMA_PAGE, url: URL_UNDER_TEST });
     const fetched = await fetching(fakePage(SCHEMA_PAGE)).import({ kind: "url", url: URL_UNDER_TEST });
-    expect(sent).toEqual(fetched);
+    // `via` is how an address's markup was got; the bookmark's came by neither.
+    expect(sent).toEqual({ ...fetched, via: undefined });
   });
 
   test("falls back to the stub", async () => {

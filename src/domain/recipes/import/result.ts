@@ -35,4 +35,10 @@ export type ImportedRecipe = {
    * difference and offer it anyway.
    */
   rejected?: ScrapedRecipe;
+  /**
+   * How a web page's markup was got: the plain fetch, or the browser it fell
+   * back to (decisions.md row 202). Only an address import sets it; nothing
+   * after the import reads it but the server's log.
+   */
+  via?: "fetch" | "render";
 };

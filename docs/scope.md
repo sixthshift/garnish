@@ -29,6 +29,7 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 - Timer alerts. A device switched on in Settings › Alerts is woken by a push when a timer ends, screen off or app closed; iPhone from the home screen, Android installed or in Chrome (decisions row 111).
 - Four modes, not four drawers. Home is the day as it stands: tonight with Start cooking, the week, what is left to buy, next week, and the recipes never made (decisions row 190); the recipe grid moved to Recipes. A recipe is Rotation or Weekend as the household marks it, on its page or many at once from the grid (rows 191, 195). Plan the week fills the open nights, the planner's first pass when a model is configured and the rotation's otherwise, then the weekend, then the list (rows 192, 194). Cook mode takes changed amounts and steps as you go, and asks at the end which are kept in the recipe (row 193).
 - Alternatives. A line can say what else it can be made with: beef strips or 400 g prawns for the stir-fry's chicken, 1 cup milk and 1 tbsp lemon juice per cup of buttermilk. Each shows under the line at its amount. The ones ticked "The plan picks it" are what the plan rotates through: each new entry takes the one least used before, Choose… on the entry changes it, and the recipe page, cook mode and the shopping list follow the choice (decisions rows 196, 198, 199).
+- A browser for the pages a fetch cannot get. When a site blocks a plain download or draws its recipe with JavaScript, the import opens the page in a headless Chromium carried in the image and reads that, then goes on to the same review (decisions.md row 202). taste.com.au, delicious.com.au and Smitten Kitchen wall that off too, so paste and the Save to Garnish bookmark stay as the ways round.
 
 ## Later, in rough order
 
@@ -36,7 +37,6 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 - Recipe variants: a choice that changes the steps too (prawns 2 minutes, beef seared in batches), built on parts.
 - The planner's model choosing the options, with a reason, rather than the rotation.
 - Choosing an alternative while cooking or shopping: a cook-mode change the finish card asks about (row 193), or a list line swapped for it.
-- **A headless Chromium in the image, for the import's fetch** (noted 2026-11-03; settled 2026-11-04, decisions.md row 202, planned as M43). The fallback when the plain fetch fails: a page walled off from a bare fetch, or one whose recipe a script draws. The bookmark stays: on 2026-11-04 taste.com.au, delicious.com.au and Smitten Kitchen still walled off Chromium.
 
 ## Open
 

@@ -36,12 +36,22 @@ RUN bun run build
 
 # --- Stage 2: runtime ------------------------------------------------------
 # `-slim` is Debian slim plus Bun: bun:sqlite is built into the binary and
-# .output bundles every dependency, so nothing else is needed at runtime.
+# .output bundles every dependency, so nothing else is needed at runtime but
+# the import's browser below.
 FROM oven/bun:1.4.2-slim
 WORKDIR /app
 
 COPY --from=build /app/.output ./.output
 COPY --from=build /usr/local/bin/claude /usr/local/bin/claude
+
+# A headless browser for the import, for a page the plain fetch cannot get:
+# one walled off from a bare fetch, or whose recipe a script draws
+# (decisions.md row 202). The old headless shell rather than full Chromium:
+# smaller, and answered where the new headless mode was refused at connect.
+# About 200 MB installed; src/server/import/render.ts finds it by CHROMIUM_PATH.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends chromium-headless-shell \
+    && rm -rf /var/lib/apt/lists/*
 
 # Boot (src/server.ts) creates DATA_DIR, migrates and seeds before the first
 # request, so migrations run on every start; no separate step is needed.
@@ -49,6 +59,7 @@ COPY --from=build /usr/local/bin/claude /usr/local/bin/claude
 # BUN_JSC_useJIT=0 halves the memory under load (decisions.md row 188).
 ENV DATA_DIR=/data \
     CLAUDE_CODE_EXECUTABLE=/usr/local/bin/claude \
+    CHROMIUM_PATH=/usr/bin/chromium-headless-shell \
     NODE_ENV=production \
     PORT=9988 \
     HOST=0.0.0.0 \
