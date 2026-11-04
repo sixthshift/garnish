@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { desc, eq, gte, max } from "drizzle-orm";
-import type { TimelineEvent, TimelineEventInput } from "../../../domain/recipe";
+import type { TimelineEvent, TimelineEventInput } from "../../../domain/recipes/recipe";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
 import { type Executor, orm } from "../../connection/client";

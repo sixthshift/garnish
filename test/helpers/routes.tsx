@@ -4,8 +4,8 @@
 // `src/server/*` modules through `runLocally` (see ./server.ts).
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
-import { RouteError, RouteNotFound, RoutePending } from "../../src/components/shell/RouteStates";
-import { routeTree } from "../../src/routes/routes";
+import { RouteError, RouteNotFound, RoutePending } from "../../src/app/pages/RouteStates";
+import { routeTree } from "../../src/routes/tree";
 
 export async function renderRoute(path: string): Promise<string> {
   const router = testRouter(path);

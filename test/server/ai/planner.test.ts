@@ -4,14 +4,14 @@
 // path against a fake `fetch`.
 
 import { afterEach, describe, expect, test } from "vitest";
-import type { RecipeInput } from "../../../src/domain/recipe";
+import { addPlanEntry, listPlanWeek } from "../../../src/api/rpc/plan";
+import { applyPlanProposal, proposePlanWeek } from "../../../src/api/rpc/planner";
+import { createRecipe, deleteRecipe } from "../../../src/api/rpc/recipes";
+import { createTimelineEvent } from "../../../src/api/rpc/timeline";
+import type { RecipeInput } from "../../../src/domain/recipes/recipe";
 import { AiError } from "../../../src/server/ai/client";
 import { libraryRecipe, mergeRecent, proposalInput, proposeWeek, resolveProposal, runProposal, weekSlots } from "../../../src/server/ai/planner";
 import { apiProvider, DEFAULT_API_MODEL } from "../../../src/server/ai/provider/api";
-import { addPlanEntry, listPlanWeek } from "../../../src/server/fns/plan";
-import { applyPlanProposal, proposePlanWeek } from "../../../src/server/fns/planner";
-import { createRecipe, deleteRecipe } from "../../../src/server/fns/recipes";
-import { createTimelineEvent } from "../../../src/server/fns/timeline";
 import { fakeAi } from "../../helpers/ai";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 

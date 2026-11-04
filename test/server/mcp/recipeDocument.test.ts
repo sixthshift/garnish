@@ -1,7 +1,7 @@
 // Claude's recipe shape to garnish's document and back: lines parsed against the household's vocabulary.
 import { expect, test } from "vitest";
-import { recipeSchema } from "../../../src/domain/recipe";
-import type { FoodRow, Unit } from "../../../src/domain/reference";
+import { recipeSchema } from "../../../src/domain/recipes/recipe";
+import type { FoodRow, Unit } from "../../../src/domain/recipes/reference";
 import { createRecipeSchema, documentFromMcp, parseDocument, recipeForMcp, updateRecipeSchema } from "../../../src/server/mcp/recipeDocument";
 
 const unit = (id: string, name: string, abbreviation: string): Unit => ({

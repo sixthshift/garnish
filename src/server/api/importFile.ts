@@ -1,4 +1,4 @@
-import type { FileRecipe } from "../../domain/import";
+import type { FileRecipe } from "../../domain/recipes/import";
 import { IMPORT_FIELD } from "../../lib/importFile";
 import { importer } from "../import/importer";
 import { checkLibrary, importLibrary } from "../import/library";

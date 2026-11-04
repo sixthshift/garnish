@@ -17,7 +17,7 @@ test("the brand scale is declared as teal, with the values that ship", () => {
 });
 
 test("the nav's current place takes the toggles' neutral selected fill, not brand", () => {
-  const shell = src("components/shell/AppShell.tsx");
+  const shell = src("app/components/layout/AppShell.tsx");
   const active = shell.match(/const activeClass = "([^"]+)"/)?.[1] ?? "";
   expect(active).toBe("bg-bg-subtle-pressed text-fg-normal");
 });
@@ -47,12 +47,12 @@ test("red is the confirm's: a danger Button or menu item is a confirm, or a ⋯ 
   // Each allowed file, and whether its red opens a dialog it must render (false: the red is the confirm step itself).
   const allowed: Record<string, boolean> = {
     "components/ui/ConfirmDialog.tsx": false, // the confirm itself
-    "routes/recipes/recipe/components/RecipeActions.tsx": true, // Delete recipe
-    "routes/recipes/recipe/components/TimelineRow.tsx": true, // Delete a cook-log entry
-    "routes/recipes/recipe/style/page.tsx": false, // Restore, the inline confirm's second step
-    "routes/settings/components/RestoreSheet.tsx": false, // the backup restore's own confirm
-    "routes/settings/components/tabs/AislesTab.tsx": true, // Delete aisle
-    "routes/shopping/components/ShoppingRow.tsx": false, // a swiped row's Delete: the swipe is the first step, as a ⋯ press is (decisions.md row 187)
+    "domain/recipes/components/recipe/RecipeActions.tsx": true, // Delete recipe
+    "domain/recipes/components/recipe/TimelineRow.tsx": true, // Delete a cook-log entry
+    "domain/recipes/pages/StyleRecipePage.tsx": false, // Restore, the inline confirm's second step
+    "app/features/settings/components/RestoreSheet.tsx": false, // the backup restore's own confirm
+    "app/features/settings/components/tabs/AislesTab.tsx": true, // Delete aisle
+    "domain/shopping/components/ShoppingRow.tsx": false, // a swiped row's Delete: the swipe is the first step, as a ⋯ press is (decisions.md row 187)
   };
   const red = tsxFiles().filter((file) => hasRedAction(src(file)));
   expect(red.sort()).toEqual(Object.keys(allowed).sort());
@@ -63,7 +63,7 @@ test("red is the confirm's: a danger Button or menu item is a confirm, or a ⋯ 
 
 test("a neutral soft Badge is filled one step past the page, once, in the theme", () => {
   expect(theme).toMatch(/\.badge\[data-variant="soft"\]:not\([^)]*\) \{\s*--badge-bg: var\(--bg-subtle-pressed\);/);
-  expect(src("routes/settings/page.tsx")).not.toContain("--badge-bg");
+  expect(src("app/features/settings/pages/SettingsPage.tsx")).not.toContain("--badge-bg");
 });
 
 test("the selected Tab takes the neutral selected fill, in the theme", () => {
@@ -71,12 +71,12 @@ test("the selected Tab takes the neutral selected fill, in the theme", () => {
 });
 
 test("a style step's Keep and Original are outline neutral toggles, never brand", () => {
-  const step = src("routes/recipes/components/style/StyleStep.tsx");
+  const step = src("domain/recipes/components/style/StyleStep.tsx");
   expect(step).not.toContain('"brand"');
   expect(step).not.toContain('"solid"');
   expect(step.match(/className=\{cn\(choice === "(rewrite|original)" && CHOSEN\)\}/g)).toHaveLength(2);
 });
 
 test("every segmented toggle is outline, so selected reads one way", () => {
-  expect(src("routes/settings/components/ThemeToggle.tsx")).toMatch(/appearance="segmented"\s+variant="outline"/);
+  expect(src("app/features/settings/components/ThemeToggle.tsx")).toMatch(/appearance="segmented"\s+variant="outline"/);
 });

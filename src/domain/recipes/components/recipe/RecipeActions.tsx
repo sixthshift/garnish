@@ -1,0 +1,126 @@
+import { toast } from "@sixthshift/design-system/overlay";
+import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { foodForRecipe } from "../../../../api/rpc/foods";
+import { addPlanEntry } from "../../../../api/rpc/plan";
+import { deleteRecipe, duplicateRecipe } from "../../../../api/rpc/recipes";
+import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
+import { Menu } from "../../../../components/ui/Menu";
+import { writeClipboard } from "../../../../lib/clipboard";
+import { useMutate } from "../../../../lib/mutate";
+import { toastError } from "../../../../lib/toast";
+import { dayLabel } from "../../../plan/plan";
+import { ingredientsText, type Recipe, recipeUrl, toCooklang } from "../../recipe";
+import { PlanPopover, planEntryFor } from "./PlanPopover";
+import { useQuickEditContext } from "./QuickEditContext";
+
+export type RecipeActionsProps = {
+  recipe: Recipe;
+  /** Whether a model is configured. Without one, Restyle steps is not offered. */
+  aiAvailable?: boolean;
+};
+
+export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProps) {
+  const navigate = useNavigate();
+  const mutate = useMutate();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [planning, setPlanning] = useState(false);
+  // Fixing lines shows every row's quick edit; on a touch screen it is the way to them. Only inside the page's provider.
+  const quickEdit = useQuickEditContext();
+
+  const copy = async (text: string, what: string) => {
+    if (text.trim() === "") {
+      toast({ intent: "warning", title: "Nothing to copy" });
+      return;
+    }
+    if (await writeClipboard(text)) toast({ intent: "success", title: `${what} copied` });
+    else toast({ intent: "danger", title: `Could not copy ${what.toLowerCase()}` });
+  };
+
+  const copyLink = () => {
+    const origin = (globalThis as { location?: { origin?: string } }).location?.origin ?? "";
+    void copy(recipeUrl(origin, recipe.slug), "Link");
+  };
+
+  const duplicate = async () => {
+    try {
+      const copyOfRecipe = await mutate(() => duplicateRecipe({ data: { id: recipe.id } }));
+      toast({ intent: "success", title: `${copyOfRecipe.name} created` });
+      await navigate({ to: "/recipes/$slug", params: { slug: copyOfRecipe.slug } });
+    } catch (error) {
+      toastError("Could not duplicate recipe", error);
+    }
+  };
+
+  const makeFood = async () => {
+    try {
+      const food = await mutate(() => foodForRecipe({ data: { recipeId: recipe.id } }));
+      toast({ intent: "success", title: `${food.name} is now a food`, children: "Add it to another recipe's ingredients to link back here." });
+    } catch (error) {
+      toastError("Could not make this a food", error);
+    }
+  };
+
+  const planTo = async (date: string, servings: number) => {
+    try {
+      await mutate(() => addPlanEntry({ data: planEntryFor(recipe, date, servings) }));
+      toast({ intent: "success", title: `Added to ${dayLabel(date)}` });
+      setPlanning(false);
+    } catch (error) {
+      toastError("Could not plan this recipe", error);
+    }
+  };
+
+  const remove = async () => {
+    setDeleting(true);
+    try {
+      await mutate(() => deleteRecipe({ data: { id: recipe.id } }));
+      toast({ intent: "success", title: `${recipe.name} deleted` });
+      await navigate({ to: "/recipes" });
+    } catch (error) {
+      toastError("Could not delete recipe", error);
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="relative inline-block">
+        <Menu label="Recipe actions" iconOnly>
+          <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
+          <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>
+          <Menu.Item onSelect={() => setPlanning(true)}>Plan</Menu.Item>
+          {quickEdit !== null && (
+            <Menu.Item onSelect={() => quickEdit.setFixing(!quickEdit.fixing)}>{quickEdit.fixing ? "Done fixing" : "Fix a line"}</Menu.Item>
+          )}
+          {aiAvailable && <Menu.Item onSelect={() => void navigate({ to: "/recipes/$slug/style", params: { slug: recipe.slug } })}>Restyle steps</Menu.Item>}
+          <Menu.Item onSelect={copyLink}>Copy link</Menu.Item>
+          <Menu.Item onSelect={() => void copy(ingredientsText(recipe), "Ingredients")}>Copy ingredients</Menu.Item>
+          <Menu.Item onSelect={() => void copy(toCooklang(recipe), "Cooklang")}>Copy as Cooklang</Menu.Item>
+          <Menu.Item onSelect={() => (globalThis as { print?: () => void }).print?.()}>Print</Menu.Item>
+          <Menu.Separator />
+          <Menu.Item intent="danger" onSelect={() => setConfirming(true)}>
+            Delete
+          </Menu.Item>
+        </Menu>
+        <PlanPopover recipe={recipe} open={planning} onOpenChange={setPlanning} onChoose={(date, servings) => void planTo(date, servings)} />
+      </div>
+      {confirming && (
+        <ConfirmDialog
+          title={`Delete ${recipe.name}?`}
+          confirmLabel="Delete"
+          busy={deleting}
+          busyLabel="Deleting…"
+          aria-label="Delete recipe"
+          onCancel={() => {
+            if (!deleting) setConfirming(false);
+          }}
+          onConfirm={() => void remove()}
+        >
+          <p>It goes from the list for good. This cannot be undone.</p>
+        </ConfirmDialog>
+      )}
+    </>
+  );
+}

@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { type Recipe, recipeInputSchema } from "../../domain/recipe";
+import { type Recipe, recipeInputSchema } from "../../domain/recipes/recipe";
 import { slugify } from "../../lib/names";
 import { ensureDataDir } from "../../server/core/boot";
 import { orm } from "../connection/client";

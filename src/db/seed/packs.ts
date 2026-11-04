@@ -12,7 +12,7 @@
  */
 
 import type { Database } from "bun:sqlite";
-import type { FoodPackInput } from "../../domain/reference";
+import type { FoodPackInput } from "../../domain/recipes/reference";
 import { foodRepository } from "../models/food/repo";
 import { seedBatchRepository } from "../models/seed/repo";
 import { unitRepository } from "../models/unit/repo";

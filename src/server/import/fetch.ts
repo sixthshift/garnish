@@ -1,6 +1,6 @@
 // GET a page with a full browser header set; a 403 gets one retry under a second profile before it is handed back.
 
-import type { PageResponse } from "../../domain/import";
+import type { PageResponse } from "../../domain/recipes/import";
 import { FETCH_PROFILES, fetchProfileForAttempt } from "./fetchProfiles";
 
 /** How long to wait on a page before giving up. */

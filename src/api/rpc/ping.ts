@@ -1,0 +1,10 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { notFoundMiddleware } from "../../server/core/fn";
+
+export const PingInput = z.object({ echo: z.string().min(1) });
+
+export const ping = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(PingInput)
+  .handler(({ data }) => ({ ok: true as const, echo: data.echo }));

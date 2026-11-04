@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getPushPublicKey, subscribePush, unsubscribePush } from "../server/fns/push";
+import { getPushPublicKey, subscribePush, unsubscribePush } from "../api/rpc/push";
 import { messageFrom } from "./errors";
 import { disablePush, enablePush, type PushPorts, type PushState, pushSupported, readPushState } from "./push";
 

@@ -7,13 +7,13 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
+import { BACKUP_JSON, type Backup } from "../../../src/app/features/settings/model/backup";
 import { databasePath, openDatabase } from "../../../src/db/connection/open";
 import { seedSample } from "../../../src/db/dev/sample";
 import { migrate } from "../../../src/db/migrations/migrate";
 import { backupRepository } from "../../../src/db/models/backup/repo";
 import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { seed } from "../../../src/db/seed/seed";
-import { BACKUP_JSON, type Backup } from "../../../src/domain/backup";
 import { readZip, writeZip } from "../../../src/lib/zip";
 import { readBackup, restoreBackup } from "../../../src/server/backup/restore";
 import { takeBackup } from "../../../src/server/backup/take";

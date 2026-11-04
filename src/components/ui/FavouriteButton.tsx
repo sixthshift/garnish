@@ -1,8 +1,8 @@
 import { Button } from "@sixthshift/design-system/button";
 import { type MouseEvent, useEffect, useState } from "react";
+import { setFavourite } from "../../api/rpc/recipes";
 import { useMutate } from "../../lib/mutate";
 import { toastError } from "../../lib/toast";
-import { setFavourite } from "../../server/fns/recipes";
 import { HeartIcon } from "./icons";
 
 export type FavouriteToggleResult = { favourite: boolean; error?: unknown };

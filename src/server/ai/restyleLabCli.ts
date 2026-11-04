@@ -3,7 +3,7 @@
 import { databasePath, openDatabase } from "../../db/connection/open";
 import { recipeRepository } from "../../db/models/recipe/repo";
 import { styleRuleRepository } from "../../db/models/style/repo";
-import type { Recipe } from "../../domain/recipe";
+import type { Recipe } from "../../domain/recipes/recipe";
 import { ensureDataDir } from "../core/boot";
 import ai from "./provider";
 import { runRestyle } from "./restyle";

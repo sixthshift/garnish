@@ -1,4 +1,4 @@
-import type { TimelineEventInput } from "../../domain/recipe";
+import type { TimelineEventInput } from "../../domain/recipes/recipe";
 
 /**
  * "Made this" entries for the timeline demo, keyed by recipe name. Applied

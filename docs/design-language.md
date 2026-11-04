@@ -44,7 +44,7 @@ Mixing two on one surface is the "rhythm jolt" `density.md` exists to prevent. A
 
 ## 4. One measure, one header
 
-`src/components/shell/Page.tsx` owns both, so a new page cannot invent a seventh width.
+`src/components/Page.tsx` owns both, so a new page cannot invent a seventh width.
 
 - `<Page>` — `max-w-6xl`, for content laid across the width.
 - `<Page width="focus">` — `max-w-3xl`, for one column read top to bottom.

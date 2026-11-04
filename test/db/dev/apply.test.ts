@@ -13,7 +13,7 @@ import { migrate } from "../../../src/db/migrations/migrate";
 import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { seed } from "../../../src/db/seed/seed";
-import { recipeInputSchema } from "../../../src/domain/recipe";
+import { recipeInputSchema } from "../../../src/domain/recipes/recipe";
 
 let db: Database;
 let images: string;

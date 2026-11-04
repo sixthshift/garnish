@@ -8,8 +8,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { OAuthClientInformationMixed, OAuthClientMetadata, OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
 import { beforeEach, expect, test } from "vitest";
+import { restRoutes } from "../../../src/api/rest";
 import mcp from "../../../src/db/models/mcp/repo";
-import { apiRoutes } from "../../../src/routes/api/routes";
 import { resetSafetyBackups } from "../../../src/server/mcp/safety";
 import { useTempDataDir } from "../../helpers/server";
 
@@ -21,7 +21,7 @@ beforeEach(() => resetSafetyBackups());
 
 type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
 const routes = new Map(
-  apiRoutes.map((route) => {
+  restRoutes.map((route) => {
     const { path, server } = route.options as { path: string; server?: { handlers?: Record<string, Handler> } };
     return [path, server?.handlers ?? {}] as const;
   })

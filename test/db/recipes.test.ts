@@ -5,7 +5,7 @@ import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
 import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
-import { type RecipeInput, recipeInputSchema, recipeSchema, recipeSummarySchema } from "../../src/domain/recipe";
+import { type RecipeInput, recipeInputSchema, recipeSchema, recipeSummarySchema } from "../../src/domain/recipes/recipe";
 import { restyledPart } from "../helpers/restyle";
 
 let db: Database;
@@ -563,7 +563,7 @@ test("list sort random is stable for a given seed, reshuffles for a different on
   // The ids here are fresh UUIDs, so which permutation a seed lands on differs
   // every run and two seeds collide on five rows about once in 120. That a
   // given seed reshuffles a given sample is pinned deterministically over
-  // fixed ids in test/domain/recipe/sort.test.ts; what matters here is that
+  // fixed ids in test/domain/recipes/recipe/sort.test.ts; what matters here is that
   // the seed reaches the query at all, so it is enough that one of several
   // seeds reorders.
   const others = ["seed-b", "seed-c", "seed-d"].map((seed) => repo.query({ by: "filter", sort: "random", seed }).map((r) => r.id));

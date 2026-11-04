@@ -1,0 +1,119 @@
+// The fourth source: pasted text read by `claude -p` (M34.5). Static render
+// only (no jsdom in this project's vitest config), so the markup is checked
+// with `renderToString` and the decisions by calling the stage components
+// directly. The importer's own tests are in test/domain/recipes/import.
+import { renderToString } from "react-dom/server";
+import { describe, expect, test } from "vitest";
+import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
+import { importSummary } from "../../../../../src/domain/recipes/components/new/importSummary";
+import { PasteSource } from "../../../../../src/domain/recipes/components/new/PasteSource";
+import { SourceChooser } from "../../../../../src/domain/recipes/components/new/SourceChooser";
+import { draftFromScraped } from "../../../../../src/domain/recipes/draft";
+import { review, type ScrapedRecipe } from "../../../../../src/domain/recipes/import";
+import { reviewRows, rowCommit } from "../../../../../src/domain/recipes/ingredient";
+import type { Unit } from "../../../../../src/domain/recipes/reference";
+
+const gram: Unit = {
+  id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  name: "gram",
+  pluralName: "grams",
+  abbreviation: "g",
+  useAbbreviation: true,
+  fraction: false,
+  portion: false,
+  standardQuantity: null,
+  standardUnitId: null,
+};
+const flour: FoodRow = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "flour",
+  pluralName: null,
+  aliases: [],
+  aisleId: null,
+  recipeId: null,
+  skipShopping: false,
+  conversions: [],
+};
+
+describe("the chooser always offers Paste, since a page's HTML needs no model", () => {
+  test("without a model it says it takes a page's HTML", () => {
+    const html = renderToString(<SourceChooser onChoose={() => {}} />);
+    expect(html).toContain('data-source="paste"');
+    expect(html).toContain("Plain text needs a model");
+  });
+
+  test("with a model it offers plain text too", () => {
+    const html = renderToString(<SourceChooser aiAvailable onChoose={() => {}} />);
+    expect(html).toContain('data-source="paste"');
+    expect(html).toContain("Text from an email or a photo");
+  });
+});
+
+describe("PasteSource", () => {
+  test("renders the box and will not read a blank one", () => {
+    const html = renderToString(<PasteSource text="" onTextChange={() => {}} onRead={() => {}} onBack={() => {}} />);
+    expect(html).toContain('data-source-stage="paste"');
+    expect(html).toContain("Paste the recipe");
+    expect(html).toContain("Read the text");
+    expect(html).toContain("disabled");
+  });
+
+  test("typed text enables the read, and busy locks both controls", () => {
+    const read = PasteSource({ text: "1 cup flour", onTextChange: () => {}, onRead: () => {}, onBack: () => {} });
+    expect(renderToString(read)).toContain("Read the text");
+    const busy = renderToString(<PasteSource text="1 cup flour" busy onTextChange={() => {}} onRead={() => {}} onBack={() => {}} />);
+    expect(busy).toContain("Reading…");
+  });
+
+  test("a malformed answer is reported where it happened, and no draft is built", () => {
+    const message = "Claude's answer was not in the expected shape. Nothing was imported.";
+    const html = renderToString(<PasteSource text="prose" error={message} onTextChange={() => {}} onRead={() => {}} onBack={() => {}} />);
+    expect(html).toContain('data-testid="import-error"');
+    expect(html).toContain("could not be read");
+    expect(html).toContain("Nothing was imported");
+  });
+});
+
+describe("an AI answer through the review", () => {
+  // A model's answer as the importer hands it on: every field filled, the main body first.
+  const recipe: ScrapedRecipe = {
+    name: "Anzac biscuits",
+    description: "",
+    image: null,
+    servings: 24,
+    yieldText: "biscuits",
+    prepMinutes: null,
+    cookMinutes: null,
+    tags: [],
+    parts: [
+      { name: "", ingredients: ["125 g flour"], steps: ["Mix."] },
+      { name: "Syrup", ingredients: [], steps: ["Melt."] },
+    ],
+  };
+
+  test("the review says Claude read it and asks for it to be checked", () => {
+    const summary = importSummary("ai", 1, 2);
+    expect(summary).toContain("Claude read 1 ingredient and 2 steps");
+    expect(summary).toContain("Check them");
+    expect(summary).toContain("nothing is saved yet");
+  });
+
+  test("it becomes a draft the same way a scraped page does, with no source URL", () => {
+    const rows = reviewRows(review.ingredientLines(recipe), { units: [gram], foods: [flour] });
+    const draft = draftFromScraped({
+      scraped: recipe,
+      sourceUrl: "",
+      commits: rows.map(rowCommit),
+      createdFoods: new Map(),
+      createdUnits: new Map(),
+    });
+    expect(draft.name).toBe("Anzac biscuits");
+    expect(draft.sourceUrl).toBeNull();
+    expect(draft.recipeServings).toBe(24);
+    expect(draft.parts.map((part) => part.name)).toEqual(["", "Syrup"]);
+    // The ingredients land on the main body, and the known food is matched.
+    expect(draft.parts[0]!.ingredients).toHaveLength(1);
+    expect(draft.parts[0]!.ingredients[0]!.food?.id).toBe(flour.id);
+    expect(draft.parts[1]!.steps.map((step) => step.text)).toEqual(["Melt."]);
+  });
+});

@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { BACKUP_JSON, type Backup, type BackupCounts, checkBackup, countsOf, imagePathsOf } from "../../app/features/settings/model/backup";
 import { backupsDir } from "../../db/backup/snapshot";
 import type { BackupRepository } from "../../db/models/backup/repo";
-import { BACKUP_JSON, type Backup, type BackupCounts, checkBackup, countsOf, imagePathsOf } from "../../domain/backup";
 import { isZip, readZip } from "../../lib/zip";
 
 /** A backup read and checked, with its image files by path; or every reason it cannot be restored. */

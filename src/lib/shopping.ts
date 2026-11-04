@@ -1,5 +1,6 @@
 // One "Add to shopping list" tap, end to end: read the list, plan the merge, write the plan through two server functions.
 
+import { addShoppingItems, listShoppingItems, mergeShoppingItems } from "../api/rpc/shopping";
 import {
   mergeIntoList,
   type ShoppingAddition,
@@ -7,8 +8,7 @@ import {
   type ShoppingItemInput,
   type ShoppingListMerge,
   type ShoppingMergePlan,
-} from "../domain/shopping";
-import { addShoppingItems, listShoppingItems, mergeShoppingItems } from "../server/fns/shopping";
+} from "../domain/shopping/shopping";
 
 /**
  * How many lines of the list the tap touched: the ones it created plus the ones

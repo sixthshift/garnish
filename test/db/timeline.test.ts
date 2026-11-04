@@ -6,7 +6,7 @@ import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
 import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
 import { lastMadeFrom, type TimelineRepository, timelineRepository } from "../../src/db/models/timeline/repo";
-import { type RecipeInput, recipeInputSchema, timelineEventSchema } from "../../src/domain/recipe";
+import { type RecipeInput, recipeInputSchema, timelineEventSchema } from "../../src/domain/recipes/recipe";
 
 let db: Database;
 let repo: TimelineRepository;

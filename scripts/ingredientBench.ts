@@ -1,9 +1,9 @@
 // The ingredient benchmark as a scorecard: how many lines of each category the
 // parser reads right. `bun run bench:ingredients`. The ratchet itself is
-// test/domain/ingredient/benchmark.test.ts; this is the view of it.
+// test/domain/recipes/ingredient/benchmark.test.ts; this is the view of it.
 import { STARTER_FOODS } from "../src/db/seed/foods";
 import { DEFAULT_UNITS } from "../src/db/seed/units";
-import { parseIngredient } from "../src/domain/ingredient";
+import { parseIngredient } from "../src/domain/recipes/ingredient";
 import { BENCHMARK } from "../test/fixtures/ingredients/benchmark";
 
 const units = DEFAULT_UNITS.map((unit) => ({ name: unit.name, pluralName: unit.pluralName ?? null, abbreviation: unit.abbreviation ?? "" }));

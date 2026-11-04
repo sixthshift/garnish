@@ -1,0 +1,163 @@
+import { listFoods } from "../../../../api/rpc/foods";
+import type { RecipeDraft } from "../../draft";
+import type { FileRecipe, ImportedRecipe } from "../../import";
+import type { FoodRow, Tag, Unit } from "../../reference";
+import { DISCARD_PASTE, DISCARD_RECIPE, useImportGuard } from "../editor/DiscardImport";
+import { BrowserSource } from "./BrowserSource";
+import type { SentPage } from "./bookmarklet";
+import { FileSource } from "./FileSource";
+import { ImportReview } from "./ImportReview";
+import { ImportSteps } from "./ImportSteps";
+import type { ModelReader, SourceKind } from "./importSummary";
+import { PageSource } from "./PageSource";
+import { PasteSource } from "./PasteSource";
+import { SourceChooser } from "./SourceChooser";
+import { UrlSource } from "./UrlSource";
+import { useRecipeSource } from "./useRecipeSource";
+
+export type RecipeSourceProps = {
+  units: readonly Unit[];
+  tags?: readonly Tag[];
+  /** The chosen source, from the route's `?source`; null shows the chooser. */
+  source: SourceKind | null;
+  /** Choosing a source is a navigation, so the route owns it. */
+  onChoose: (kind: SourceKind | null) => void;
+  /** An address handed in by the route (a share sheet's): the URL stage opens on it and reads it at once. */
+  initialUrl?: string | null;
+  /** Called once with the draft the editor should open on. */
+  onDraft: (draft: RecipeDraft, imageUrl: string | null) => void;
+  /** Look for a recipe already imported from this address. */
+  findDuplicate?: (url: string) => Promise<{ name: string; slug: string } | null>;
+  /** Look for a recipe already here under this name, for an upload. */
+  findDuplicateByName?: (name: string) => Promise<{ name: string; slug: string } | null>;
+  /** Override the food vocabulary (tests); otherwise `listFoods` supplies it. */
+  loadFoods?: () => Promise<FoodRow[]>;
+  /** Override the fetch (tests). */
+  load?: (url: string) => Promise<ImportedRecipe>;
+  /** Override the read of a page the bookmark sent (tests). */
+  loadPage?: (page: SentPage) => Promise<ImportedRecipe>;
+  /** Override the upload (tests); otherwise `postImportFile` does it. */
+  loadFile?: (file: File) => Promise<FileRecipe[]>;
+  /** Whether a model is configured on the server; false hides the paste option and leaves every page unsorted. */
+  aiAvailable?: boolean;
+  /**
+   * Override the AI read (tests); otherwise `importFromText` does it. The
+   * anchor is the rules rung's own reading of the same page, given for
+   * a `schema` result and absent for a paste or a stub.
+   */
+  loadText?: ModelReader;
+  /**
+   * The food standing for a recipe already here under `name`, for a
+   * Tandoor export's nested recipes; null when no such recipe is here yet.
+   * Overridable for tests.
+   */
+  linkSubRecipeFood?: (name: string) => Promise<FoodRow | null>;
+};
+
+export function RecipeSource(props: RecipeSourceProps) {
+  const { units, source, onChoose, aiAvailable = false } = props;
+  const state = useRecipeSource(props);
+  const { url, text, file, imported, rows, busy, error, reading, readError } = state;
+  // A recipe under review, or a pasted page, is work the browser's Back would
+  // drop unseen: the stages share one URL, so Back leaves /recipes/new.
+  const guard = useImportGuard(imported !== null || (source === "paste" && text.trim() !== ""), imported !== null ? DISCARD_RECIPE : DISCARD_PASTE);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <ImportSteps current={imported !== null ? "Review" : "Source"} />
+      {/* The chooser and the review lay themselves out across the page; a source's one form keeps to a reading width. */}
+      {source === null || imported !== null ? stage() : <div className="w-full max-w-3xl">{stage()}</div>}
+      {guard.dialog}
+    </div>
+  );
+
+  function stage() {
+    if (source === null) {
+      return (
+        <SourceChooser
+          disabled={busy}
+          aiAvailable={aiAvailable}
+          onChoose={onChoose}
+          onReadUrl={(address) => {
+            onChoose("url");
+            void state.read(address);
+          }}
+        />
+      );
+    }
+
+    if (imported !== null) {
+      return (
+        <ImportReview
+          imported={imported}
+          rows={rows}
+          units={units}
+          searchFoods={(q) => listFoods({ data: { q } })}
+          busy={busy}
+          error={error}
+          duplicate={state.duplicate}
+          duplicateBy={imported.from === "schema" || imported.from === "stub" ? "url" : "name"}
+          aiAvailable={aiAvailable}
+          reading={reading}
+          readError={readError}
+          onRetryRead={state.retryRead}
+          onUseRejected={state.useRejected}
+          onRowsChange={state.setRows}
+          tagSuggestions={state.suggestions}
+          chosenTags={state.chosenTags}
+          onChosenTagsChange={state.setChosenTags}
+          onBack={state.leaveReview}
+          onCreate={() => void state.create()}
+        />
+      );
+    }
+
+    if (source === "paste") {
+      return (
+        <PasteSource
+          text={text}
+          busy={busy}
+          error={error}
+          aiAvailable={aiAvailable}
+          onTextChange={state.changeText}
+          onRead={() => void state.readText()}
+          onBack={state.leaveSource}
+        />
+      );
+    }
+
+    if (source === "browser") return <BrowserSource onBack={state.leaveSource} />;
+
+    if (source === "page") {
+      return (
+        <PageSource
+          sent={state.sent}
+          status={state.sentStatus}
+          busy={busy}
+          error={error}
+          onRead={() => void state.readSent()}
+          onPaste={() => onChoose("paste")}
+          onBack={state.leaveSource}
+        />
+      );
+    }
+
+    if (source === "file") {
+      return (
+        <FileSource file={file} busy={busy} error={error} onFileChange={state.changeFile} onRead={() => void state.readFile()} onBack={state.leaveSource} />
+      );
+    }
+
+    return (
+      <UrlSource
+        url={url}
+        busy={busy}
+        error={error}
+        onUrlChange={state.setUrl}
+        onFetch={() => void state.read()}
+        onBack={state.leaveSource}
+        onBookmark={() => onChoose("browser")}
+      />
+    );
+  }
+}

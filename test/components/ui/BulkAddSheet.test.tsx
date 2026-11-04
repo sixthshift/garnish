@@ -10,7 +10,7 @@ import { BulkAddFields } from "../../../src/components/ui/bulk/BulkAddFields";
 import { BulkAddSheet } from "../../../src/components/ui/bulk/BulkAddSheet";
 import { BulkInlinePanel } from "../../../src/components/ui/bulk/BulkInlinePanel";
 import { BulkReviewList } from "../../../src/components/ui/bulk/BulkReviewList";
-import { paragraphs, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/ingredient";
+import { paragraphs, splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../src/domain/recipes/ingredient";
 
 /** The first element in `node` whose `children` prop is exactly `text`, without rendering it. */
 function elementWithChildren(node: ReactNode, text: string): ReactElement<Record<string, any>> {

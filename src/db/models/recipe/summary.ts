@@ -1,7 +1,7 @@
 import { asc, eq } from "drizzle-orm";
-import { formatIngredient, totalMinutes } from "../../../domain/ingredient";
-import type { RecipeSummary } from "../../../domain/recipe";
-import type { Tag } from "../../../domain/reference";
+import { formatIngredient, totalMinutes } from "../../../domain/recipes/ingredient";
+import type { RecipeSummary } from "../../../domain/recipes/recipe";
+import type { Tag } from "../../../domain/recipes/reference";
 import type { Db } from "../../connection/client";
 import { food } from "../food/schema";
 import { tag } from "../tag/schema";

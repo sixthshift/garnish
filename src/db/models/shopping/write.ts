@@ -1,5 +1,5 @@
 import { eq, max, sql } from "drizzle-orm";
-import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemPatch, ShoppingItemSourceInput } from "../../../domain/shopping";
+import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemPatch, ShoppingItemSourceInput } from "../../../domain/shopping/shopping";
 import type { ShoppingContext } from "./context";
 import type { Readers } from "./read";
 import { shoppingItem, shoppingItemSource } from "./schema";

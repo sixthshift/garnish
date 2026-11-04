@@ -2,10 +2,10 @@
 // and the import's anchor check — become warnings in Settings › Diagnostics,
 // so "the restyle failed" can be explained afterwards. A passing check is not.
 import { expect, test } from "vitest";
-import type { ImportedRecipe } from "../../../src/domain/import";
-import type { RestyleCheck } from "../../../src/domain/style";
+import { refusedImportReport } from "../../../src/api/rpc/import";
+import type { ImportedRecipe } from "../../../src/domain/recipes/import";
+import type { RestyleCheck } from "../../../src/domain/recipes/style";
 import { type RestyleResult, refusedCheckReport } from "../../../src/server/ai/restyle";
-import { refusedImportReport } from "../../../src/server/fns/import";
 
 const passing: RestyleCheck = {
   ok: true,

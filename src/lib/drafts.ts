@@ -1,4 +1,4 @@
-import { type ParsedRecipeInput, recipeInputSchema } from "../domain/recipe";
+import { type ParsedRecipeInput, recipeInputSchema } from "../domain/recipes/recipe";
 
 /** The slice of `Storage` the controller uses. */
 export type StorageLike = {

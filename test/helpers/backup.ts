@@ -1,7 +1,7 @@
 // A garnish backup with one row of every kind and every reference filled, so
 // the format's tests (M40.1) can break one link at a time; and a restore
 // check's answer for the confirm sheet (M40.5).
-import { BACKUP_VERSION, type Backup, type BackupCounts } from "../../src/domain/backup";
+import { BACKUP_VERSION, type Backup, type BackupCounts } from "../../src/app/features/settings/model/backup";
 import type { RestoreCheck } from "../../src/lib/backup";
 
 const at = "2026-10-07T09:15:00.000Z";

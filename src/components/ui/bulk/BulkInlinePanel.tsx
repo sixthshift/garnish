@@ -1,6 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Textarea } from "@sixthshift/design-system/textarea";
-import { bulkLines } from "../../../domain/ingredient";
+import { bulkLines } from "../../../domain/recipes/ingredient";
 import { BulkReviewList } from "./BulkReviewList";
 import type { BulkReview } from "./useBulkStage";
 

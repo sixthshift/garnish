@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { expect, test } from "vitest";
 import foods from "../../../src/db/models/food/repo";
 import recipes from "../../../src/db/models/recipe/repo";
-import { type FileRecipe, Importer } from "../../../src/domain/import";
+import { type FileRecipe, Importer } from "../../../src/domain/recipes/import";
 import { handleImportLibrary, IMPORT_FIELD } from "../../../src/server/api/importFile";
 import { checkLibrary, childrenFirst, importLibrary } from "../../../src/server/import/library";
 import { useTempDataDir } from "../../helpers/server";

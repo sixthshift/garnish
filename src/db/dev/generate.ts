@@ -1,6 +1,6 @@
 import type { z } from "zod";
-import { type ingredientInputSchema, type RecipeInput, suggestLinks, type TimelineEventInput } from "../../domain/recipe";
-import type { Food, Tag } from "../../domain/reference";
+import { type ingredientInputSchema, type RecipeInput, suggestLinks, type TimelineEventInput } from "../../domain/recipes/recipe";
+import type { Food, Tag } from "../../domain/recipes/reference";
 import { STARTER_PACKS, type StarterSize } from "../seed/packs";
 import { type Random, random } from "./random";
 import { foodRef, SEEDED_FOOD_NAMES, SEEDED_UNIT_NAMES, tagRef, unitRef } from "./references";

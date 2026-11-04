@@ -2,6 +2,7 @@
 // and visible through the listRecipes server function.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
+import { listRecipes } from "../../../src/api/rpc/recipes";
 import { openDatabase } from "../../../src/db/connection/open";
 import { foodRef, unitRef } from "../../../src/db/dev/references";
 import { parseSampleArgs, seedSample } from "../../../src/db/dev/sample";
@@ -11,9 +12,8 @@ import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { seed } from "../../../src/db/seed/seed";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
-import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipe";
+import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipes/recipe";
 import { getDb } from "../../../src/server/core/db";
-import { listRecipes } from "../../../src/server/fns/recipes";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();

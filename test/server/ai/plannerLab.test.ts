@@ -1,6 +1,6 @@
 // The planner lab's pure half: flags, the week they resolve to, and the report. The CLI itself is one wiring block and is not run here.
 import { describe, expect, test } from "vitest";
-import type { LibraryRecipe, ProposalCheck, ProposalInput } from "../../../src/domain/planner";
+import type { LibraryRecipe, ProposalCheck, ProposalInput } from "../../../src/domain/plan/planner";
 import { AiError } from "../../../src/server/ai/client";
 import {
   DAY_TOKENS,

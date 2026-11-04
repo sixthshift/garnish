@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import { asc, count, eq, isNotNull, max } from "drizzle-orm";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
-import type { Backup, BackupCounts, BackupRecipe } from "../../../domain/backup";
-import { imageFileOf, imagePath } from "../../../domain/backup";
+import type { Backup, BackupCounts, BackupRecipe } from "../../../app/features/settings/model/backup";
+import { imageFileOf, imagePath } from "../../../app/features/settings/model/backup";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
 import { snapshot } from "../../backup/snapshot";

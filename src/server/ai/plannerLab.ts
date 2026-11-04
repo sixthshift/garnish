@@ -1,7 +1,7 @@
 // The planner lab's pure half: the flags, the week they resolve to, and the report.
 
-import { addDays, dayLabel, weekDates, weekMonday } from "../../domain/plan";
-import { type LibraryRecipe, MEALS, type Meal, type ProposalCheck, type ProposalInput } from "../../domain/planner";
+import { addDays, dayLabel, weekDates, weekMonday } from "../../domain/plan/plan";
+import { type LibraryRecipe, MEALS, type Meal, type ProposalCheck, type ProposalInput } from "../../domain/plan/planner";
 import type { AiClient } from "./client";
 import { runProposal } from "./planner";
 

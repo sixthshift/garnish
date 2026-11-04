@@ -1,9 +1,9 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
+import { ping } from "../../../src/api/rpc/ping";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { NotFound } from "../../../src/server/core/errors";
 import { type NotFoundData, toNotFound } from "../../../src/server/core/fn";
-import { ping } from "../../../src/server/fns/ping";
 import { explode, findThing, unitCount } from "../../helpers/fixtures";
 import { callServerFn, decodeServerFnId, useTempDataDir } from "../../helpers/server";
 

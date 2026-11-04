@@ -86,7 +86,8 @@ describe("manifest installability", () => {
 });
 
 describe("root document head", () => {
-  const source = readFileSync(resolve(root, "src/routes/root.tsx"), "utf8");
+  // The root route's head() and the document it draws (src/app/pages/Document.tsx), read as one.
+  const source = ["src/routes/root.tsx", "src/app/pages/Document.tsx"].map((path) => readFileSync(resolve(root, path), "utf8")).join("\n");
 
   test("links the manifest and apple touch icon", () => {
     expect(source).toMatch(/rel:\s*"manifest",\s*href:\s*"\/manifest\.webmanifest"/);
@@ -94,7 +95,7 @@ describe("root document head", () => {
   });
 
   test("declares theme-color for light and dark and the iOS standalone metas", () => {
-    // Rendered in RootDocument rather than head(): HeadContent dedupes meta by name.
+    // Rendered in Document rather than head(): HeadContent dedupes meta by name.
     expect(source).toMatch(/<meta name="theme-color" content=\{themeColorLight\} media="\(prefers-color-scheme: light\)"/);
     expect(source).toMatch(/<meta name="theme-color" content=\{themeColorDark\} media="\(prefers-color-scheme: dark\)"/);
     expect(source).toContain('name: "apple-mobile-web-app-capable", content: "yes"');

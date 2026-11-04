@@ -1,4 +1,4 @@
-import type { BackupCounts } from "../../domain/backup";
+import type { BackupCounts } from "../../app/features/settings/model/backup";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 

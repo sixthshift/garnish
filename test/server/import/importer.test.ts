@@ -3,7 +3,7 @@
 // and the model provider. The provider's failures arrive as the importer's own
 // `ImportError` kinds, which is what the import screen shows.
 import { afterEach, describe, expect, test } from "vitest";
-import { ImportError } from "../../../src/domain/import";
+import { ImportError } from "../../../src/domain/recipes/import";
 import type { Fetcher } from "../../../src/server/ai/client";
 import { apiProvider } from "../../../src/server/ai/provider/api";
 import { createImporter } from "../../../src/server/import/importer";

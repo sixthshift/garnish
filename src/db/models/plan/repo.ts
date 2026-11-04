@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, gte, inArray, lte, max, ne } from "drizzle-orm";
-import { addDays, groupByDay, type ParsedPlanEntryInput, type PlanDay, type PlanEntry, type PlanEntryPatch, type PlanRecipe } from "../../../domain/plan";
+import { addDays, groupByDay, type ParsedPlanEntryInput, type PlanDay, type PlanEntry, type PlanEntryPatch, type PlanRecipe } from "../../../domain/plan/plan";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";

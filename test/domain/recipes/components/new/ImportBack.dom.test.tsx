@@ -1,0 +1,144 @@
+// The browser's Back from an import stage (critique #15c). The stages share
+// one URL, so Back leaves /recipes/new; while a stage holds an import nobody
+// has saved, it asks "Discard this import?" first, as the Style stage's Cancel
+// does. The model, the guide and every read are faked: nothing here may reach
+// a hosted model.
+import { createBrowserHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
+import { expect, test, vi } from "vitest";
+import { RecipeForm } from "../../../../../src/domain/recipes/components/editor/RecipeForm";
+import { ImportStyle } from "../../../../../src/domain/recipes/components/new/ImportStyle";
+import { RecipeSource } from "../../../../../src/domain/recipes/components/new/RecipeSource";
+import { draftFromInput } from "../../../../../src/domain/recipes/draft";
+import type { ImportedRecipe } from "../../../../../src/domain/recipes/import";
+import { recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
+
+const model = vi.hoisted(() => ({ restyleDraft: vi.fn(() => new Promise(() => {})), createRestyledRecipe: vi.fn() }));
+vi.mock("../../../../../src/server/ai/restyle", () => model);
+vi.mock("../../../../../src/api/rpc/style", () => ({ listStyleRules: vi.fn(async () => []) }));
+
+/**
+ * `ui` on /recipes/new, with the page it was opened from one entry back. A
+ * browser history, not a memory one: the router blocks Back on the browser's
+ * popstate, and a memory history's Back never asks its blockers.
+ */
+async function renderStage(ui: ReactNode) {
+  window.history.replaceState(null, "", "/recipes");
+  const history = createBrowserHistory();
+  // Through the router's history, so each entry carries the index its Back reads.
+  history.push("/recipes/new");
+  await new Promise((resolve) => setTimeout(resolve));
+  const rootRoute = createRootRoute();
+  const stage = createRoute({ getParentRoute: () => rootRoute, path: "/recipes/new", component: () => <>{ui}</> });
+  const anywhere = createRoute({ getParentRoute: () => rootRoute, path: "$", component: () => null });
+  const router = createRouter({ routeTree: rootRoute.addChildren([stage, anywhere]), history });
+  await router.load();
+  render(<RouterProvider router={router} />);
+  const back = async () => {
+    await act(async () => window.history.back());
+  };
+  const where = () => router.state.location.pathname;
+  // Whether a stage has put its "Discard this import?" guard on the history.
+  // React registers it in an effect, just after the stage draws.
+  const guarded = () => history._getBlockers().length > 0;
+  return { back, where, guarded };
+}
+
+/** Back asks; staying keeps the stage; asking again and discarding leaves. */
+async function backAsksThenLeaves(stage: { back: () => Promise<void>; where: () => string; guarded: () => boolean }, stillThere: () => HTMLElement) {
+  const user = userEvent.setup();
+  // A Back pressed in the instant between the stage drawing and its guard's
+  // effect running would leave unasked: the test pressed it there under a busy
+  // suite, about one run in three. A person's Back comes after the stage has
+  // settled, so the test waits for the guard as they would.
+  await waitFor(() => expect(stage.guarded()).toBe(true));
+  await stage.back();
+  const dialog = await screen.findByRole("dialog", { name: "Discard this import" });
+  expect(stage.where()).toBe("/recipes/new");
+  await user.click(screen.getAllByRole("button", { name: "Cancel" }).find((button) => dialog.contains(button))!);
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(stage.where()).toBe("/recipes/new");
+  expect(stillThere()).toBeInTheDocument();
+
+  await stage.back();
+  await screen.findByRole("dialog", { name: "Discard this import" });
+  await user.click(screen.getByRole("button", { name: "Discard" }));
+  await waitFor(() => expect(stage.where()).toBe("/recipes"));
+}
+
+const draft = draftFromInput(
+  recipeInputSchema.parse({ name: "Kung pao chicken", parts: [{ name: "", ingredients: [], steps: [{ text: "Toast the peanuts." }] }] })
+);
+
+const found: ImportedRecipe = {
+  from: "schema",
+  url: "https://recipes.example/anzac",
+  pageText: "",
+  recipe: {
+    name: "Anzac biscuits",
+    description: "",
+    image: null,
+    servings: 24,
+    yieldText: "",
+    prepMinutes: null,
+    cookMinutes: null,
+    tags: [],
+    parts: [{ name: "", ingredients: ["200 g flour"], steps: ["Mix."] }],
+  },
+};
+
+/** A draft store of its own per test, so no stored draft greets the form. */
+function memory() {
+  const map = new Map<string, string>();
+  return {
+    getItem: (key: string) => map.get(key) ?? null,
+    setItem: (key: string, value: string) => void map.set(key, value),
+    removeItem: (key: string) => void map.delete(key),
+  };
+}
+
+const sourceProps = { units: [], onChoose: () => {}, onDraft: () => {}, loadFoods: async () => [], load: async () => found };
+
+test("Back from the Style stage asks before it drops the import", async () => {
+  const stage = await renderStage(<ImportStyle draft={draft} imageUrl={null} file={null} onEditDetails={() => {}} onCancel={() => {}} />);
+  await backAsksThenLeaves(stage, () => screen.getByRole("button", { name: "Edit details" }));
+});
+
+test("Back from the review asks before it drops the import", async () => {
+  const stage = await renderStage(<RecipeSource {...sourceProps} source="url" initialUrl="https://recipes.example/anzac" />);
+  await screen.findByText("Anzac biscuits");
+  await backAsksThenLeaves(stage, () => screen.getByText("Anzac biscuits"));
+});
+
+test("Back from an empty source stage just leaves", async () => {
+  const stage = await renderStage(<RecipeSource {...sourceProps} source="paste" aiAvailable loadText={async () => found} />);
+  await stage.back();
+  await waitFor(() => expect(stage.where()).toBe("/recipes"));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+test("Back from a paste with text in it asks", async () => {
+  const user = userEvent.setup();
+  const stage = await renderStage(<RecipeSource {...sourceProps} source="paste" aiAvailable loadText={async () => found} />);
+  await user.type(screen.getByRole("textbox", { name: "Pasted recipe" }), "1 cup flour");
+  // Only text so far: the question says so, not that a recipe would be lost.
+  await stage.back();
+  expect(await screen.findByRole("dialog", { name: "Discard this import" })).toHaveTextContent("loses the text you pasted");
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await backAsksThenLeaves(stage, () => screen.getByRole("textbox", { name: "Pasted recipe" }));
+});
+
+test("Back from Edit details asks about the import even when nothing in it was changed", async () => {
+  const stage = await renderStage(<RecipeForm initial={draft} units={[]} tags={[]} storage={memory()} isImport />);
+  await backAsksThenLeaves(stage, () => screen.getAllByDisplayValue("Kung pao chicken")[0]!);
+});
+
+test("an untouched recipe typed in by hand is not an import, and Back leaves unasked", async () => {
+  const stage = await renderStage(<RecipeForm initial={draft} units={[]} tags={[]} storage={memory()} />);
+  await stage.back();
+  await waitFor(() => expect(stage.where()).toBe("/recipes"));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});

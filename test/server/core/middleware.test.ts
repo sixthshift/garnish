@@ -17,14 +17,14 @@ afterEach(() => {
 type Server = (options: Record<string, unknown>) => Promise<unknown>;
 const functionServer = (recordFunctionFailures as unknown as { options: { server: Server } }).options.server;
 const requestServer = (recordApiFailures as unknown as { options: { server: Server } }).options.server;
-const meta = { id: "fn-1", name: "createRecipe", filename: "src/server/fns/recipes.ts" };
+const meta = { id: "fn-1", name: "createRecipe", filename: "src/api/rpc/recipes.ts" };
 
 test("a server function that throws is recorded under its name, and the error goes on to the caller", async () => {
   const error = new RangeError("out of range");
   await expect(functionServer({ next: () => Promise.reject(error), serverFnMeta: meta })).rejects.toBe(error);
   const [event] = diagnosticEvents.list();
   expect(event).toMatchObject({ source: "server", level: "error", name: "createRecipe", message: "out of range" });
-  expect(event!.detail).toMatchObject({ file: "src/server/fns/recipes.ts", error: "RangeError" });
+  expect(event!.detail).toMatchObject({ file: "src/api/rpc/recipes.ts", error: "RangeError" });
   expect(console.error).toHaveBeenCalledOnce();
 });
 

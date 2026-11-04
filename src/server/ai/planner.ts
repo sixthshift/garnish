@@ -2,14 +2,14 @@
 // `proposalInput` gathers the week — the library, the open slots, what was
 // eaten lately and the statements that are on — and `runProposal` asks the
 // model once and hands back the checked week. Nothing is written here; the
-// household accepts a proposal before `applyPlanProposal` (src/server/fns/planner.ts)
+// household accepts a proposal before `applyPlanProposal` (src/api/rpc/planner.ts)
 // writes a single row.
 
 import plan from "../../db/models/plan/repo";
 import planner from "../../db/models/planner/repo";
 import recipes from "../../db/models/recipe/repo";
 import timeline from "../../db/models/timeline/repo";
-import { addDays, entryLabel, type PlanDay, type PlanRecipe, todayIso } from "../../domain/plan";
+import { addDays, entryLabel, type PlanDay, type PlanRecipe, todayIso } from "../../domain/plan/plan";
 import {
   checkProposal,
   type DroppedEntry,
@@ -26,8 +26,8 @@ import {
   proposalPrompt,
   type RecentMeal,
   type UnfilledSlot,
-} from "../../domain/planner";
-import type { RecipeSummary } from "../../domain/recipe";
+} from "../../domain/plan/planner";
+import type { RecipeSummary } from "../../domain/recipes/recipe";
 import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
 import serverAi from "./provider";
 

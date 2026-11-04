@@ -2,7 +2,7 @@ import type { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
-import { recipeInputSchema } from "../../domain/recipe";
+import { recipeInputSchema } from "../../domain/recipes/recipe";
 import { imageFileName } from "../../lib/imageFile";
 import { dataDir } from "../../server/core/boot";
 import { orm } from "../connection/client";

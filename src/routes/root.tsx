@@ -1,23 +1,7 @@
-import { ErrorBoundary } from "@sixthshift/design-system/error-boundary";
-import { OverlayProvider, toast } from "@sixthshift/design-system/overlay";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
-import { type ReactNode, useEffect } from "react";
-import { AppShell } from "../components/shell/AppShell";
-import { AppErrorFallback } from "../components/shell/RouteStates";
-import { installErrorReporting } from "../components/shell/reportError";
-import { registerServiceWorker, updateNotice } from "../lib/sw";
-import { TOAST_POSITION } from "../lib/toast";
+import { createRootRoute } from "@tanstack/react-router";
+import { Document } from "../app/pages/Document";
+import { Root } from "../app/pages/Root";
 import appCss from "../styles.css?url";
-
-// PWA manifest colours are literal hex because a manifest cannot read CSS.
-// They mirror the Garnish theme's tokens (src/styles/theme.css):
-// light --bg-brand = teal-600 #2c666c light --bg-normal = earth-50 #fefcfb
-// dark --bg-brand = teal-400 #4ba5a9 dark --bg-normal = earth-925 #2f2520
-// public/manifest.webmanifest carries the light pair. The theme-color metas
-// carry both and live in RootDocument, not head(): HeadContent keeps one meta
-// per name, which would drop one of the two media-scoped entries.
-const themeColorLight = "#2c666c";
-const themeColorDark = "#4ba5a9";
 
 // Paint the theme attribute before first render so the shell does not flash
 // light in a dark OS. Mirrors bootstrapTheme's storage key and resolution.
@@ -28,6 +12,8 @@ const themeColorDark = "#4ba5a9";
 // its children). `bootstrapTheme()` in AppShell then only follows changes.
 const themeScript = `try{var t=JSON.parse(localStorage.getItem("theme")||'"system"');document.documentElement.dataset.theme=t==="light"||t==="dark"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}`;
 
+// Named `Route`, unlike the routes beside it: Start's route generator owns this
+// one file (vite.config.ts), and the code its plugin adds in dev refers to `Route`.
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -46,50 +32,6 @@ export const Route = createRootRoute({
     ],
     scripts: [{ children: themeScript }],
   }),
-  shellComponent: RootDocument,
-  component: RootComponent,
+  shellComponent: Document,
+  component: Root,
 });
-
-// Last line of defence: a render error that escapes every route boundary
-// (the shell itself, or a route without an errorComponent) shows a message and
-// a Retry instead of a blank page. Route loader errors never get this far;
-// the router's defaultErrorComponent renders those inside the shell.
-function RootComponent() {
-  // The provider hosts the toast stack, outside the boundary so a render
-  // error in the shell does not take a notice with it. `toast()` is callable
-  // from anywhere; the stack is placed above the phone's bottom nav.
-  return (
-    <OverlayProvider toastClassName={TOAST_POSITION}>
-      <ErrorBoundary fallback={(props) => <AppErrorFallback {...props} />}>
-        <AppShell />
-      </ErrorBoundary>
-    </OverlayProvider>
-  );
-}
-
-function RootDocument({ children }: { children: ReactNode }) {
-  // Client-only, production-only: public/sw.js exists only in a build, and a
-  // worker in dev would serve stale modules over Vite's. A deploy that lands
-  // while the app is open offers itself as a notice rather than taking over.
-  // An error no boundary catches is sent to the server's diagnostics all the same.
-  useEffect(() => installErrorReporting(window), []);
-  useEffect(() => {
-    registerServiceWorker(typeof navigator === "undefined" ? undefined : navigator, import.meta.env.PROD, {
-      onUpdateReady: (waiting) => void toast(updateNotice(waiting)),
-    });
-  }, []);
-  return (
-    <html lang="en-AU" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-        <meta name="theme-color" content={themeColorLight} media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content={themeColorDark} media="(prefers-color-scheme: dark)" />
-      </head>
-      {/* The theme's colours on the body, not only the shell: sheets, dialogs and toasts portal here, outside the shell's box. */}
-      <body className="bg-bg-subtle text-fg-normal">
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}

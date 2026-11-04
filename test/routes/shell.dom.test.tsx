@@ -10,7 +10,7 @@
 import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import { AppShell } from "../../src/components/shell/AppShell";
+import { AppShell } from "../../src/app/components/layout/AppShell";
 
 function shellAt(path: string) {
   const root = createRootRoute({ component: AppShell });
@@ -55,9 +55,9 @@ test("only the current place is marked, in both navs", async () => {
 });
 
 test("the real routes carry the flags the shell reads", async () => {
-  const cook = (await import("../../src/routes/recipes/recipe/cook/route")).Route.options.staticData;
-  const edit = (await import("../../src/routes/recipes/recipe/edit/route")).Route.options.staticData;
-  const fresh = (await import("../../src/routes/recipes/new/route")).Route.options.staticData;
+  const cook = (await import("../../src/domain/recipes/routes/cook")).recipeCook.options.staticData;
+  const edit = (await import("../../src/domain/recipes/routes/edit")).recipeEdit.options.staticData;
+  const fresh = (await import("../../src/domain/recipes/routes/new")).recipeNew.options.staticData;
   expect(cook?.fullscreen).toBe(true);
   expect(edit?.hideNav).toBe(true);
   const hideNew = fresh?.hideNav as (search: Record<string, unknown>) => boolean;

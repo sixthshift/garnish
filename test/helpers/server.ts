@@ -117,7 +117,7 @@ export async function callServerFn<F extends Fetcher>(fn: F, data?: DataOf<F>): 
  * `callServerFn`, keeping the stub's own properties so `callServerFn` still
  * works on the wrapper too. Non-function exports (zod inputs) pass through.
  *
- *   vi.mock("../../src/server/fns/recipes", async (importOriginal) => {
+ *   vi.mock("../../src/api/rpc/recipes", async (importOriginal) => {
  *     const { runLocally } = await import("./server");
  *     return runLocally(await importOriginal());
  *   });

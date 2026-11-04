@@ -1,6 +1,6 @@
 // The one offline write path: ticks, unticks, removes and typed lines queue and replay; clearing the ticked stays server-first.
 
-import type { ShoppingItem } from "../domain/shopping";
+import type { ShoppingItem } from "../domain/shopping/shopping";
 import { randomUuid } from "./id";
 
 /** What a queued write does to one line. A `remove` supersedes anything queued before it; an `add` is a line the server has not seen. */

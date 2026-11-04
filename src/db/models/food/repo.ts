@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import type { FoodConversion, FoodPack, FoodPackInput, FoodRow, FoodSummary } from "../../../domain/reference";
+import type { FoodConversion, FoodPack, FoodPackInput, FoodRow, FoodSummary } from "../../../domain/recipes/reference";
 import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";

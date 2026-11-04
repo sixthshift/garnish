@@ -1,7 +1,7 @@
 // Export is one recipe at a time, as a document or a Cooklang file; the whole
 // household is a backup (`src/server/backup/`, decisions.md row 131).
 import recipes from "../../db/models/recipe/repo";
-import { exportedRecipe, toCooklang } from "../../domain/recipe";
+import { exportedRecipe, toCooklang } from "../../domain/recipes/recipe";
 
 const notFound = (error: string): Response => Response.json({ error }, { status: 404 });
 
@@ -19,7 +19,7 @@ export async function handleRecipeJson(slug: string): Promise<Response> {
 
 /**
  * GET /api/recipes/:slug.cook — the recipe as a `.cook` file
- * (`src/domain/recipe/cooklang.ts`). 404 for an unknown slug, the same as the JSON
+ * (`src/domain/recipes/recipe/cooklang.ts`). 404 for an unknown slug, the same as the JSON
  * twin.
  */
 export async function handleRecipeCook(slug: string): Promise<Response> {

@@ -2,7 +2,7 @@
 // controller over it. No DOM anywhere — the hook's wiring is the route's, and
 // the render side is covered in test/routes/shopping.test.tsx.
 import { describe, expect, test, vi } from "vitest";
-import type { ShoppingItem } from "../../src/domain/shopping";
+import type { ShoppingItem } from "../../src/domain/shopping/shopping";
 import {
   applyOutbox,
   createOutbox,

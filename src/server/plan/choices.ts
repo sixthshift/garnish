@@ -1,10 +1,10 @@
-// Server only: kept out of src/server/fns/, whose files reach the client
+// Server only: kept out of src/api/rpc/, whose files reach the client
 // bundle with everything but their server functions' handlers.
 
 import plan from "../../db/models/plan/repo";
 import recipes from "../../db/models/recipe/repo";
-import type { ParsedPlanEntryInput } from "../../domain/plan";
-import { rotateChoices } from "../../domain/recipe";
+import type { ParsedPlanEntryInput } from "../../domain/plan/plan";
+import { rotateChoices } from "../../domain/recipes/recipe";
 
 /**
  * New entries with a choice for every row whose recipe offers options and

@@ -13,8 +13,8 @@ import {
   type SortDir,
   type SortKey,
   type Step,
-} from "../../../domain/recipe";
-import type { Food, Tag, Unit } from "../../../domain/reference";
+} from "../../../domain/recipes/recipe";
+import type { Food, Tag, Unit } from "../../../domain/recipes/reference";
 import { lazy } from "../../../lib/lazy";
 import { seededOrder } from "../../../lib/lists";
 import { slugify, uniqueSlug } from "../../../lib/names";

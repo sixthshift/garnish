@@ -1,0 +1,16 @@
+import { addShoppingItems, removeShoppingItem, tickShoppingItem } from "../../../api/rpc/shopping";
+import type { OutboxEntry } from "../../../lib/outbox";
+import type { ShoppingItem } from "../shopping";
+
+/** One queued write, sent. The list's offline-able writes and nothing else. */
+export function sendOutboxEntry(entry: OutboxEntry): Promise<unknown> {
+  if (entry.kind === "add") return addShoppingItems({ data: { items: [{ text: entry.text, ticked: entry.ticked }] } });
+  if (entry.kind === "remove") return removeShoppingItem({ data: { id: entry.itemId } });
+  return tickShoppingItem({ data: { id: entry.itemId, ticked: entry.kind === "tick" } });
+}
+
+/** "3 items" / "1 item", ticked ones excluded: what is still to buy. Pure. */
+export function toBuyLabel(items: readonly ShoppingItem[]): string {
+  const count = items.filter((item) => !item.ticked).length;
+  return `${count} ${count === 1 ? "item" : "items"} to buy`;
+}

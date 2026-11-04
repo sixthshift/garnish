@@ -6,10 +6,18 @@
 // sliced" — and garnish's own parser, the one behind the editor's Parse all, reads it against the
 // household's units and foods. Ids appear only so an edit can say which row it means.
 import { z } from "zod";
-import { foodReference, tagsFromNames } from "../../domain/draft";
-import { formatIngredient, parseIngredient } from "../../domain/ingredient";
-import { type Ingredient, type Recipe, type RecipeInput, type RecipeKind, recipeInputSchema, recipeKindSchema, suggestLinks } from "../../domain/recipe";
-import type { FoodRow, Tag, Unit } from "../../domain/reference";
+import { foodReference, tagsFromNames } from "../../domain/recipes/draft";
+import { formatIngredient, parseIngredient } from "../../domain/recipes/ingredient";
+import {
+  type Ingredient,
+  type Recipe,
+  type RecipeInput,
+  type RecipeKind,
+  recipeInputSchema,
+  recipeKindSchema,
+  suggestLinks,
+} from "../../domain/recipes/recipe";
+import type { FoodRow, Tag, Unit } from "../../domain/recipes/reference";
 
 /** What the household already has: the parser matches against it, and a write reuses it before making anything. */
 export type Vocabulary = { units: readonly Unit[]; foods: readonly FoodRow[]; tags: readonly Tag[] };

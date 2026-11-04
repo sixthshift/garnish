@@ -1,6 +1,6 @@
 // The restyle lab's pure half: the flags, the recipe rebuilt from the author's steps, and the report.
 
-import type { Recipe } from "../../domain/recipe";
+import type { Recipe } from "../../domain/recipes/recipe";
 import type { RestyleResult } from "./restyle";
 
 export type LabFlags = {

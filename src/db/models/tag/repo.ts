@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { and, asc, eq, ne, sql } from "drizzle-orm";
-import { type TagUsage, tagKey, tagName } from "../../../domain/reference";
+import { type TagUsage, tagKey, tagName } from "../../../domain/recipes/reference";
 import { lazy } from "../../../lib/lazy";
 import { cleanName, likePattern, slugify, uniqueSlug } from "../../../lib/names";
 import { getDb } from "../../../server/core/db";
@@ -34,7 +34,7 @@ export function tagRepository(db: Database) {
     });
   }
 
-  /** The house rule's name (domain/reference/tagName.ts); throws when nothing is left. */
+  /** The house rule's name (domain/recipes/reference/tagName.ts); throws when nothing is left. */
   function houseName(raw: string): string {
     return cleanName(tagName(raw));
   }

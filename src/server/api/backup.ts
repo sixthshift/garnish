@@ -2,8 +2,8 @@
 // Settings › Backup. The CLIs (`bun run backup`, `bun run restore`) do the same
 // through `src/server/backup/` without a server.
 import { basename } from "node:path";
+import { backupFileName, countsOf } from "../../app/features/settings/model/backup";
 import backups from "../../db/models/backup/repo";
-import { backupFileName, countsOf } from "../../domain/backup";
 import { BACKUP_FIELD, type RestoreCheck, type RestoreDone } from "../../lib/backup";
 import { readBackup, restoreBackup } from "../backup/restore";
 import { takeBackup } from "../backup/take";

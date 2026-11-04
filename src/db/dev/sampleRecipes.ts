@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { ingredientInputSchema, RecipeInput } from "../../domain/recipe";
+import type { ingredientInputSchema, RecipeInput } from "../../domain/recipes/recipe";
 import { foodRef, tagRef as tag, unitRef as unit } from "./references";
 
 type Ing = z.input<typeof ingredientInputSchema>;

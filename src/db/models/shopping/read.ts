@@ -1,6 +1,6 @@
 import { asc, eq, inArray, sql } from "drizzle-orm";
-import type { Food, Unit } from "../../../domain/reference";
-import type { ShoppingItem } from "../../../domain/shopping";
+import type { Food, Unit } from "../../../domain/recipes/reference";
+import type { ShoppingItem } from "../../../domain/shopping/shopping";
 import { recipe } from "../recipe/schema";
 import type { ShoppingContext } from "./context";
 import { shoppingItem, shoppingItemSource } from "./schema";

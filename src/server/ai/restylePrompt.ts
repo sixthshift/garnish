@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { formatIngredient } from "../../domain/ingredient";
-import type { ParsedRecipeInput } from "../../domain/recipe";
-import type { RestyledPart } from "../../domain/style";
+import { formatIngredient } from "../../domain/recipes/ingredient";
+import type { ParsedRecipeInput } from "../../domain/recipes/recipe";
+import type { RestyledPart } from "../../domain/recipes/style";
 import { AiError, stripFence } from "./client";
 
 /**

@@ -2,11 +2,11 @@
 // (decisions.md row 131). `bun run restore <zip>` puts one back.
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { backupFileName } from "../../app/features/settings/model/backup";
 import { backupsDir } from "../../db/backup/snapshot";
 import { databasePath, openDatabase } from "../../db/connection/open";
 import { migrate } from "../../db/migrations/migrate";
 import { backupRepository } from "../../db/models/backup/repo";
-import { backupFileName } from "../../domain/backup";
 import { ensureDataDir } from "../core/boot";
 import { describeCounts } from "./counts";
 import { takeBackup } from "./take";

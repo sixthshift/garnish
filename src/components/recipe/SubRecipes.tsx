@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useMemo } from "react";
-import { type SubRecipe, subRecipeMap } from "../../domain/recipe";
-import type { Food } from "../../domain/reference";
+import { type SubRecipe, subRecipeMap } from "../../domain/recipes/recipe";
+import type { Food } from "../../domain/recipes/reference";
 
 const SubRecipesContext = createContext<ReadonlyMap<string, SubRecipe> | null>(null);
 

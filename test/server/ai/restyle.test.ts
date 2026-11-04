@@ -5,8 +5,10 @@
 
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { createRecipe, getRecipe, listRecipes } from "../../../src/api/rpc/recipes";
+import { listStyleRules } from "../../../src/api/rpc/style";
 import recipes from "../../../src/db/models/recipe/repo";
-import type { Recipe, RecipeInput } from "../../../src/domain/recipe";
+import type { Recipe, RecipeInput } from "../../../src/domain/recipes/recipe";
 import { AiError } from "../../../src/server/ai/client";
 import { apiProvider, DEFAULT_API_MODEL } from "../../../src/server/ai/provider/api";
 import { applyRestyle, createRestyledRecipe, restoreSteps, restyleDraft, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
@@ -22,8 +24,6 @@ import {
   restylePrompt,
   withEmptyParts,
 } from "../../../src/server/ai/restylePrompt";
-import { createRecipe, getRecipe, listRecipes } from "../../../src/server/fns/recipes";
-import { listStyleRules } from "../../../src/server/fns/style";
 import { fakeAi } from "../../helpers/ai";
 import { restyledPart } from "../../helpers/restyle";
 import { callServerFn, useTempDataDir } from "../../helpers/server";

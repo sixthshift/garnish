@@ -1,9 +1,9 @@
 // One "Add to shopping list" tap (M31.3), driven through a fake writer: what
 // the sheet's Add actually sends, and what the toast counts.
 import { describe, expect, test } from "vitest";
-import { type Part, type Recipe, scaledForServings } from "../../src/domain/recipe";
-import type { Food, Unit } from "../../src/domain/reference";
-import { additionsFor, type ShoppingItem, type ShoppingItemInput, type ShoppingListMerge } from "../../src/domain/shopping";
+import { type Part, type Recipe, scaledForServings } from "../../src/domain/recipes/recipe";
+import type { Food, Unit } from "../../src/domain/recipes/reference";
+import { additionsFor, type ShoppingItem, type ShoppingItemInput, type ShoppingListMerge } from "../../src/domain/shopping/shopping";
 import { addedCount, addedMessage, addToShoppingList, type ShoppingWriter } from "../../src/lib/shopping";
 
 const food = (name: string): Food => ({

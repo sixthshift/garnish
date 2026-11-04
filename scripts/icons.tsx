@@ -1,7 +1,7 @@
 /**
  * Regenerates every file in public/icons, plus apple-touch-icon.png, from the
  * <LogoIcon> component — so the PNGs can never drift from the mark the app
- * renders. Run with `bun run icons` after changing src/components/shell/Logo.tsx.
+ * renders. Run with `bun run icons` after changing src/app/components/Logo.tsx.
  *
  * Three shapes come out of one drawing:
  *   icon.svg, icon-192, icon-512   circular, purpose "any"
@@ -12,7 +12,7 @@
  */
 import { Resvg } from "@resvg/resvg-js";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ICON_GROUND, ICON_MARK, ICON_RADIUS, LogoIcon } from "../src/components/shell/Logo";
+import { ICON_GROUND, ICON_MARK, ICON_RADIUS, LogoIcon } from "../src/app/components/Logo";
 
 const OUT = new URL("../public/", import.meta.url);
 

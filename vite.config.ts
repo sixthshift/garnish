@@ -40,7 +40,7 @@ export default defineConfig({
   plugins: [
     tanstackStart({
       spa: { enabled: true },
-      // Routing is code: src/routes/routes.ts builds the tree with createRoute.
+      // Routing is code: src/routes/tree.ts builds the tree with createRoute.
       // Start still runs its route generator to build the asset manifest, so
       // it is handed the root alone and an output path nothing imports.
       router: { virtualRouteConfig: rootRoute("root.tsx"), generatedRouteTree: "../.tanstack/routeTree.gen.ts" },

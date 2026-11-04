@@ -1,6 +1,6 @@
 import { join } from "node:path";
+import { BACKUP_FORMAT, BACKUP_JSON, BACKUP_VERSION, type Backup, type BackupCounts, countsOf } from "../../app/features/settings/model/backup";
 import type { BackupBody, BackupRepository } from "../../db/models/backup/repo";
-import { BACKUP_FORMAT, BACKUP_JSON, BACKUP_VERSION, type Backup, type BackupCounts, countsOf } from "../../domain/backup";
 import { VERSION } from "../../lib/version";
 import { writeZip, type ZipInput } from "../../lib/zip";
 

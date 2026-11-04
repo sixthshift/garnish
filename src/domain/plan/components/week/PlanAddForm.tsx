@@ -1,0 +1,224 @@
+import { Button } from "@sixthshift/design-system/button";
+import { Muted } from "@sixthshift/design-system/muted";
+import { SearchInput } from "@sixthshift/design-system/search-input";
+import { useEffect, useId, useRef, useState } from "react";
+import { clampSelection, nextSearchIndex, selectedResult } from "../../../../lib/search";
+import { toastError } from "../../../../lib/toast";
+import type { RecipeSummary } from "../../../recipes/recipe";
+import { dayName, type Meal } from "../../plan";
+import { MealPicker } from "./MealPicker";
+import { PlanSearchResult } from "./PlanSearchResult";
+import { resultOptionId, SearchResultList } from "./SearchResultList";
+
+/**
+ * How many results are drawn. On iOS the keyboard covers the bottom ~340px of
+ * an 844px screen without resizing it, leaving about 504px; three results keep
+ * the note row and the "more" line above that (measured at 390x844: note
+ * bottom 429, hint bottom 481), whatever was typed. A longer list is narrowed
+ * by typing, as the hint says.
+ */
+export const PLAN_RESULT_LIMIT = 3;
+
+/** How long typing pauses before the search runs. */
+const PLAN_SEARCH_DEBOUNCE_MS = 200;
+
+/**
+ * What the add sheet holds for one day, top to bottom: the meal chips, the
+ * search box, its results directly under it, and the typed line as an entry of
+ * its own. The chips sit above the box rather than between it and its results,
+ * where the old per-day row had them; naming a meal is optional and none is
+ * pressed to begin with, so an entry added the way it always was still lands
+ * with `meal: null`.
+ *
+ * Typing searches recipes (debounced, `PLAN_SEARCH_DEBOUNCE_MS`).
+ * Nothing is highlighted until the arrow keys move into the results, and
+ * typing again lets go of the highlight, so Enter adds what was typed as a
+ * note unless a recipe has been picked out: "out" is a note even when a
+ * recipe called "Takeout curry" matches. ArrowDown walks into the results and
+ * ArrowUp from the first one back to the box. The line is also a button ("Add
+ * “leftovers” as a note"), so a phone with no Enter in sight still gets one.
+ * Every add is one entry: `onDone` follows it, and the sheet closes on it.
+ *
+ * The box is the results' combobox (WAI-ARIA list autocomplete): focus stays
+ * in it, `aria-activedescendant` names the highlighted result and is absent
+ * while none is, and a polite status says how many recipes a search found.
+ * The note line is not an option, so the arrows never reach it.
+ */
+export function PlanAddForm({
+  date,
+  busy = false,
+  searchRecipes,
+  onAddText,
+  onAddRecipe,
+  onDone,
+}: {
+  date: string;
+  busy?: boolean;
+  searchRecipes?: (query: string) => Promise<RecipeSummary[]>;
+  onAddText: (date: string, text: string, meal: Meal | null) => void;
+  onAddRecipe: (date: string, recipe: RecipeSummary, meal: Meal | null) => void;
+  /** An entry was added. */
+  onDone?: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<RecipeSummary[]>([]);
+  /** The highlighted result, or -1 for none: Enter then adds the typed line. */
+  const [selected, setSelected] = useState(-1);
+  const [meal, setMeal] = useState<Meal | null>(null);
+  /** What the status line says once a search lands: how many recipes it found. */
+  const [status, setStatus] = useState("");
+  const listId = useId();
+  const requestId = useRef(0);
+  const input = useRef<HTMLInputElement | null>(null);
+  const line = query.trim();
+  const day = dayName(date);
+  const shown = results.slice(0, PLAN_RESULT_LIMIT);
+  const more = results.length - shown.length;
+
+  const clear = () => {
+    setQuery("");
+    setResults([]);
+    setSelected(-1);
+    setMeal(null);
+    setStatus("");
+  };
+
+  // The box takes focus two frames after the sheet opens rather than through
+  // `autoFocus`: the sheet's focus manager records what held focus when it
+  // mounted, to hand it back on close, and an autofocused box got there first,
+  // so closing the sheet left focus on the page body instead of the day's "+".
+  // Two frames because the manager moves focus to its first control in a frame
+  // of its own, which would otherwise land after this one.
+  useEffect(() => {
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => input.current?.focus());
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const term = query.trim();
+    if (searchRecipes === undefined || term === "") {
+      setResults([]);
+      setStatus("");
+      return;
+    }
+    const id = ++requestId.current;
+    const timer = setTimeout(() => {
+      void searchRecipes(term)
+        .then((found) => {
+          if (requestId.current !== id) return;
+          setResults(found);
+          setStatus(foundLine(found.length));
+          setSelected((current) => (current < 0 ? -1 : clampSelection(current, Math.min(found.length, PLAN_RESULT_LIMIT))));
+        })
+        .catch((error: unknown) => {
+          if (requestId.current !== id) return;
+          setResults([]);
+          setStatus("");
+          toastError("Search failed", error);
+        });
+    }, PLAN_SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [query, searchRecipes]);
+
+  const choose = (index: number) => {
+    const recipe = selectedResult(shown, index);
+    if (recipe === null) return;
+    onAddRecipe(date, recipe, meal);
+    clear();
+    onDone?.();
+  };
+
+  const addLine = () => {
+    if (line === "") return;
+    onAddText(date, line, meal);
+    clear();
+    onDone?.();
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (selectedResult(shown, selected) !== null) choose(selected);
+      else addLine();
+      return;
+    }
+    // ArrowUp from the box stays in the box: nothing above it to go to.
+    if (event.key === "ArrowUp" && selected < 0) return;
+    if (event.key === "ArrowUp" && selected === 0) {
+      event.preventDefault();
+      setSelected(-1);
+      return;
+    }
+    const next = nextSearchIndex(selected, shown.length, event.key);
+    if (next === null) return;
+    event.preventDefault();
+    setSelected(next);
+  };
+
+  const onQueryChange = (value: string) => {
+    setQuery(value);
+    setSelected(-1);
+  };
+
+  return (
+    <div className="flex min-w-0 flex-col gap-3" data-testid="plan-add">
+      <MealPicker value={meal} onChange={setMeal} disabled={busy} label={`Meal for ${day}`} />
+      <SearchInput
+        ref={input}
+        value={query}
+        onValueChange={onQueryChange}
+        onKeyDown={onKeyDown}
+        disabled={busy}
+        name="entry"
+        placeholder="Search recipes, or type a note"
+        aria-label="Search recipes, or type a note"
+        enterKeyHint="done"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={shown.length > 0}
+        aria-controls={shown.length > 0 ? listId : undefined}
+        aria-activedescendant={selectedResult(shown, selected) !== null ? resultOptionId(listId, selected) : undefined}
+        autoComplete="off"
+      />
+      <div role="status" className="sr-only" data-testid="plan-add-status">
+        {status}
+      </div>
+      {shown.length > 0 && (
+        <SearchResultList
+          id={listId}
+          results={shown}
+          selected={selected}
+          onSelect={setSelected}
+          onChoose={choose}
+          label={`Recipes for ${day}`}
+          renderResult={(recipe) => <PlanSearchResult recipe={recipe} />}
+        />
+      )}
+      {line === "" ? (
+        <Muted as="p" className="text-sm">
+          A recipe, or a note of its own like “leftovers” or “out”.
+        </Muted>
+      ) : (
+        // A plain line is the answer whenever nothing above is the meal, so it
+        // stays on offer under the results rather than only when they are empty.
+        <Button type="button" variant="ghost" intent="neutral" disabled={busy} className="justify-start" data-testid="plan-add-line" onClick={addLine}>
+          <span className="min-w-0 truncate">Add “{line}” as a note</span>
+        </Button>
+      )}
+      {more > 0 && (
+        <Muted as="p" className="text-sm" data-testid="plan-add-more">
+          {more === 1 ? "1 more recipe matches" : `${more} more recipes match`}: keep typing to narrow them.
+        </Muted>
+      )}
+    </div>
+  );
+}
+
+/** The status line for a search that found `count` recipes; the sheet draws `PLAN_RESULT_LIMIT` of them. Pure. */
+export function foundLine(count: number): string {
+  if (count === 0) return "No recipes match";
+  const line = count === 1 ? "1 recipe found" : `${count} recipes found`;
+  return count > PLAN_RESULT_LIMIT ? `${line}, showing ${PLAN_RESULT_LIMIT}` : line;
+}

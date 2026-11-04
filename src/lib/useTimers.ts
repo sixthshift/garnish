@@ -1,6 +1,6 @@
 import { toast } from "@sixthshift/design-system/overlay";
 import { useCallback, useEffect, useState } from "react";
-import { clearTimerAlarm, setTimerAlarm } from "../server/fns/push";
+import { clearTimerAlarm, setTimerAlarm } from "../api/rpc/push";
 import { currentEndpoint } from "./push";
 import {
   dismissTimer,

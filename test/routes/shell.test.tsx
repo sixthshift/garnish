@@ -4,8 +4,8 @@
 // functions they call are swapped for in-process wrappers (see helpers/server).
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { RouteError, RoutePending } from "../../src/components/shell/RouteStates";
-import { createRecipe } from "../../src/server/fns/recipes";
+import { createRecipe } from "../../src/api/rpc/recipes";
+import { RouteError, RoutePending } from "../../src/app/pages/RouteStates";
 import { renderRoute as render } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -15,13 +15,13 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/fns/recipes", local);
-vi.mock("../../src/server/fns/timeline", local);
-vi.mock("../../src/server/fns/units", local);
-vi.mock("../../src/server/fns/tags", local);
-vi.mock("../../src/server/fns/aisles", local);
-vi.mock("../../src/server/fns/shopping", local);
-vi.mock("../../src/server/fns/plan", local);
+vi.mock("../../src/api/rpc/recipes", local);
+vi.mock("../../src/api/rpc/timeline", local);
+vi.mock("../../src/api/rpc/units", local);
+vi.mock("../../src/api/rpc/tags", local);
+vi.mock("../../src/api/rpc/aisles", local);
+vi.mock("../../src/api/rpc/shopping", local);
+vi.mock("../../src/api/rpc/plan", local);
 
 useTempDataDir();
 beforeEach(async () => {
@@ -85,7 +85,7 @@ describe("app shell", () => {
 
   test("the style page hides the tab bar too", async () => {
     // Not rendered: its loader asks after the model. The flag is the route's.
-    const { Route } = await import("../../src/routes/recipes/recipe/style/route");
+    const { recipeStyle: Route } = await import("../../src/domain/recipes/routes/style");
     expect(Route.options.staticData?.hideNav).toBe(true);
   });
 

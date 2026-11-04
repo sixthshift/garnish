@@ -1,6 +1,6 @@
 // The domain's Importer given the server's two ports: fetch.ts for pages, the server's AI client for the model.
 
-import { ImportError, Importer, type Ports } from "../../domain/import";
+import { ImportError, Importer, type Ports } from "../../domain/recipes/import";
 import { type AiClient, AiError, type Fetcher } from "../ai/client";
 import serverAi from "../ai/provider";
 import { createPageFetcher } from "./fetch";

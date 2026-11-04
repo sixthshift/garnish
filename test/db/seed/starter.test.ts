@@ -9,7 +9,7 @@ import { STARTER_AISLES, STARTER_FOODS, type StarterFood } from "../../../src/db
 import { seed } from "../../../src/db/seed/seed";
 import { seedFoodPlurals, seedStarterFoods } from "../../../src/db/seed/starter";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
-import { parseIngredient } from "../../../src/domain/ingredient";
+import { parseIngredient } from "../../../src/domain/recipes/ingredient";
 
 let db: Database;
 beforeEach(async () => {

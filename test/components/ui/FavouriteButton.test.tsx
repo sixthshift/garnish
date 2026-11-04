@@ -4,9 +4,9 @@
 // through it, not just through a mock.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
+import { createRecipe, getRecipe, setFavourite } from "../../../src/api/rpc/recipes";
 import { FavouriteButton, toggleFavourite } from "../../../src/components/ui/FavouriteButton";
-import { recipeInputSchema } from "../../../src/domain/recipe";
-import { createRecipe, getRecipe, setFavourite } from "../../../src/server/fns/recipes";
+import { recipeInputSchema } from "../../../src/domain/recipes/recipe";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 const id = "11111111-1111-4111-8111-111111111111";

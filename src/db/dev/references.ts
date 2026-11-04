@@ -1,4 +1,4 @@
-import type { Food, Tag, Unit } from "../../domain/reference";
+import type { Food, Tag, Unit } from "../../domain/recipes/reference";
 import { slugify } from "../../lib/names";
 import { correctedStarterFoods } from "../seed/foodPlurals";
 import { STARTER_AISLES } from "../seed/foods";

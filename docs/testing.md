@@ -47,7 +47,7 @@ const local = async (importOriginal) => {
   const { runLocally } = await import("../../helpers/server");
   return runLocally(await importOriginal());
 };
-vi.mock("../../../src/server/fns/plan", local);
+vi.mock("../../../src/api/rpc/plan", local);
 ```
 
 **Interactions** are driven, not read (decisions.md row 95). A file named `*.dom.test.tsx` runs in the `dom` project — happy-dom, Testing Library, `user-event`, `jest-dom` — and `renderInRouter` (`test/helpers/dom.tsx`) mounts a component with enough router for a `Link`. Name a file `.dom.test.tsx` only when it presses something; a DOM for a file that only checks markup costs the whole suite.

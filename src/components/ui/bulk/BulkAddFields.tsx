@@ -1,6 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Textarea } from "@sixthshift/design-system/textarea";
-import { splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../domain/ingredient";
+import { splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../domain/recipes/ingredient";
 
 export type BulkAddFieldsProps = {
   /** Noun for labels and copy: "ingredient" or "step". */

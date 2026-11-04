@@ -4,11 +4,11 @@ import { ModalBody, ModalFooter, ModalHeader } from "@sixthshift/design-system/m
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { useState } from "react";
-import { formatIngredient, yieldLine } from "../../domain/ingredient";
-import { type Ingredient, type Recipe, type SubRecipe, subRecipeScale } from "../../domain/recipe";
-import { additionsForWithSubRecipes, ingredientText, type ShoppingAddition, shoppingGroups } from "../../domain/shopping";
+import { getRecipe } from "../../api/rpc/recipes";
+import { formatIngredient, yieldLine } from "../../domain/recipes/ingredient";
+import { type Ingredient, type Recipe, type SubRecipe, subRecipeScale } from "../../domain/recipes/recipe";
+import { additionsForWithSubRecipes, ingredientText, type ShoppingAddition, shoppingGroups } from "../../domain/shopping/shopping";
 import { toastError } from "../../lib/toast";
-import { getRecipe } from "../../server/fns/recipes";
 import { useSubRecipes } from "../recipe/SubRecipes";
 
 export type AddToShoppingSheetContentProps = {

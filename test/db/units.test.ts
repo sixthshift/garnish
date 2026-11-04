@@ -3,7 +3,7 @@ import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
 import { type UnitRepository, unitRepository } from "../../src/db/models/unit/repo";
-import { formatAmount } from "../../src/domain/ingredient";
+import { formatAmount } from "../../src/domain/recipes/ingredient";
 
 let db: Database;
 let repo: UnitRepository;

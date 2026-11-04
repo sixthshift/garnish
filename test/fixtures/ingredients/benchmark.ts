@@ -1,7 +1,7 @@
 // Ingredient lines from real recipes, each with what the parser should read
 // it as against the seeded vocabulary (DEFAULT_UNITS and STARTER_FOODS).
 // Drawn from the corpus the starter foods were built from (decisions.md row
-// 121); test/domain/ingredient/benchmark.test.ts runs them.
+// 121); test/domain/recipes/ingredient/benchmark.test.ts runs them.
 //
 // Only quantity, unit and food are labelled. The note is left to the review
 // step, where a reader sees it next to the line it came from.

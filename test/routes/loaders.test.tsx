@@ -5,23 +5,23 @@
 
 import { isNotFound } from "@tanstack/react-router";
 import { afterEach, describe, expect, expectTypeOf, test, vi } from "vitest";
+import { createFood, listFoods } from "../../src/api/rpc/foods";
+import type { McpStatus } from "../../src/api/rpc/mcp";
+import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/api/rpc/recipes";
+import type { listTags } from "../../src/api/rpc/tags";
+import { listUnits } from "../../src/api/rpc/units";
+import type { SettingsData, settingsRoute as SettingsRoute } from "../../src/app/features/settings/routes/settings";
 import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
-import type { PlannerRule } from "../../src/domain/planner";
-import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipe";
-import type { Aisle, FoodPack, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/reference";
-import type { StyleRule } from "../../src/domain/style";
+import type { PlannerRule } from "../../src/domain/plan/planner";
+import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
+import type { Aisle, FoodPack, FoodRow, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/recipes/reference";
+import type { recipeEdit as EditRoute } from "../../src/domain/recipes/routes/edit";
+import type { recipeNew as NewRoute } from "../../src/domain/recipes/routes/new";
+import type { RecipeViewData, recipeIndex as ViewRoute } from "../../src/domain/recipes/routes/recipeIndex";
+import type { recipesIndex as IndexRoute, RecipeListData } from "../../src/domain/recipes/routes/recipesIndex";
+import type { StyleRule } from "../../src/domain/recipes/style";
 import { searchParam } from "../../src/lib/search";
-import type { Route as IndexRoute, RecipeListData } from "../../src/routes/library/route";
-import type { Route as NewRoute } from "../../src/routes/recipes/new/route";
-import type { Route as EditRoute } from "../../src/routes/recipes/recipe/edit/route";
-import type { RecipeViewData, Route as ViewRoute } from "../../src/routes/recipes/recipe/route";
-import type { FoodRow, SettingsData, Route as SettingsRoute } from "../../src/routes/settings/route";
 import type { AiStatus } from "../../src/server/ai/client";
-import { createFood, listFoods } from "../../src/server/fns/foods";
-import type { McpStatus } from "../../src/server/fns/mcp";
-import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/server/fns/recipes";
-import type { listTags } from "../../src/server/fns/tags";
-import { listUnits } from "../../src/server/fns/units";
 import { elementHtml, renderRoute, testRouter } from "../helpers/routes";
 import { callServerFn, useTempDataDir } from "../helpers/server";
 
@@ -31,23 +31,23 @@ const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<strin
   const { runLocally } = await import("../helpers/server");
   return runLocally(await importOriginal());
 });
-vi.mock("../../src/server/fns/recipes", local);
-vi.mock("../../src/server/fns/timeline", local);
-vi.mock("../../src/server/fns/units", local);
-vi.mock("../../src/server/fns/tags", local);
-vi.mock("../../src/server/fns/aisles", local);
-vi.mock("../../src/server/fns/foods", local);
-vi.mock("../../src/server/fns/style", local);
-vi.mock("../../src/server/fns/planner", local);
-vi.mock("../../src/server/fns/ai", local);
-vi.mock("../../src/server/fns/diagnostics", local);
-vi.mock("../../src/server/fns/mcp", local);
+vi.mock("../../src/api/rpc/recipes", local);
+vi.mock("../../src/api/rpc/timeline", local);
+vi.mock("../../src/api/rpc/units", local);
+vi.mock("../../src/api/rpc/tags", local);
+vi.mock("../../src/api/rpc/aisles", local);
+vi.mock("../../src/api/rpc/foods", local);
+vi.mock("../../src/api/rpc/style", local);
+vi.mock("../../src/api/rpc/planner", local);
+vi.mock("../../src/api/rpc/ai", local);
+vi.mock("../../src/api/rpc/diagnostics", local);
+vi.mock("../../src/api/rpc/mcp", local);
 // Run locally there is no request in flight; Settings › MCP builds its address from one, so it gets the LAN's.
 vi.mock("@tanstack/react-start/server", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   getRequest: () => new Request("http://192.168.1.5:9988/settings"),
 }));
-vi.mock("../../src/server/fns/import", local);
+vi.mock("../../src/api/rpc/import", local);
 
 useTempDataDir();
 

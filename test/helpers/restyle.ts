@@ -1,7 +1,7 @@
 // Building the restyle's answer shape in a test without restating three empty
 // fields per step: a part the pass answered is `{ name, notes, steps }`, where
 // most steps carry no label and no supporting line and most rows carry no note.
-import type { RestyledPart, RestyledStep } from "../../src/domain/style";
+import type { RestyledPart, RestyledStep } from "../../src/domain/recipes/style";
 
 /** One step of an answer: the text, with no label and no supporting line unless given. */
 export function restyledStep(text: string, extra: Partial<RestyledStep> = {}): RestyledStep {

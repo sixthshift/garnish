@@ -12,8 +12,8 @@ import { foodRepository } from "../../src/db/models/food/repo";
 import { planRepository } from "../../src/db/models/plan/repo";
 import { recipeRepository } from "../../src/db/models/recipe/repo";
 import { unitRepository } from "../../src/db/models/unit/repo";
-import { planEntryInputSchema } from "../../src/domain/plan";
-import { recipeInputSchema } from "../../src/domain/recipe";
+import { planEntryInputSchema } from "../../src/domain/plan/plan";
+import { recipeInputSchema } from "../../src/domain/recipes/recipe";
 
 let db: Database;
 beforeEach(() => {

@@ -1,7 +1,7 @@
 // Two stages: the pasted text, then (only when a `review` is supplied) the reviewed rows; `splitLines` decides what one item is.
 
 import { type ReactNode, useState } from "react";
-import { bulkLines } from "../../../domain/ingredient";
+import { bulkLines } from "../../../domain/recipes/ingredient";
 
 /** The review stage a caller supplies to stop a paste committing unreviewed. `R` is whatever row type that caller reviews. */
 export type BulkReview<R> = {

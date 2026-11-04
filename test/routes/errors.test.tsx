@@ -8,7 +8,7 @@ import { OverlayProvider } from "@sixthshift/design-system/overlay";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { AppErrorFallback, ErrorView } from "../../src/components/shell/RouteStates";
+import { AppErrorFallback, ErrorView } from "../../src/app/pages/RouteStates";
 import { describeError, isNetworkError } from "../../src/lib/errors";
 import { TOAST_POSITION } from "../../src/lib/toast";
 import { buildLabel } from "../../src/lib/version";
@@ -25,11 +25,11 @@ const failing = vi.hoisted(() => async (importOriginal: () => Promise<Record<str
   }
   return out;
 });
-vi.mock("../../src/server/fns/recipes", failing);
-vi.mock("../../src/server/fns/units", failing);
-vi.mock("../../src/server/fns/tags", failing);
-vi.mock("../../src/server/fns/aisles", failing);
-vi.mock("../../src/server/fns/foods", failing);
+vi.mock("../../src/api/rpc/recipes", failing);
+vi.mock("../../src/api/rpc/units", failing);
+vi.mock("../../src/api/rpc/tags", failing);
+vi.mock("../../src/api/rpc/aisles", failing);
+vi.mock("../../src/api/rpc/foods", failing);
 
 beforeEach(() => {
   failure.error = new TypeError("fetch failed");

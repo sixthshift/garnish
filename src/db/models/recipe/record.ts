@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import { type ParsedRecipeInput, type Recipe, type RecipeKind, type SubRecipe, suggestLinks } from "../../../domain/recipe";
-import type { Unit } from "../../../domain/reference";
+import { type ParsedRecipeInput, type Recipe, type RecipeKind, type SubRecipe, suggestLinks } from "../../../domain/recipes/recipe";
+import type { Unit } from "../../../domain/recipes/reference";
 import type { Db, Executor } from "../../connection/client";
 import { nowUtc } from "../columns";
 import type { FoodRepository } from "../food/repo";
