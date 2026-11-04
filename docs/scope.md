@@ -36,7 +36,7 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 - Recipe variants: a choice that changes the steps too (prawns 2 minutes, beef seared in batches), built on parts.
 - The planner's model choosing the options, with a reason, rather than the rotation.
 - Choosing an alternative while cooking or shopping: a cook-mode change the finish card asks about (row 193), or a list line swapped for it.
-- **A headless Chromium in the image, for the import's fetch** (noted 2026-11-03). A third way to fill the `fetchPage` port, after the plain fetch and its second header profile: a real browser for pages that need JavaScript to draw the recipe or that wall off a bare fetch, with the model reading what it renders as it does now. The prod image ships with Chromium. To decide: when it runs (only after a 403 or an empty extract, or always), what it adds to the image (a few hundred MB, and Playwright is already a dev dependency for e2e), whether it gets past a Cloudflare wall that fingerprints headless browsers, and whether it keeps or retires Save to Garnish (row 122).
+- **A headless Chromium in the image, for the import's fetch** (noted 2026-11-03; settled 2026-11-04, decisions.md row 202, planned as M43). The fallback when the plain fetch fails: a page walled off from a bare fetch, or one whose recipe a script draws. The bookmark stays: on 2026-11-04 taste.com.au, delicious.com.au and Smitten Kitchen still walled off Chromium.
 
 ## Open
 
