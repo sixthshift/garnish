@@ -3,9 +3,9 @@
 // parsing and the choosing are tested without a palette; the palette brings
 // the recipes it found and the plan it read.
 
-import { addDays, dayName, dayParts, type PlanRecipe } from "../../../../domain/plan/plan";
-import type { RecipeSummary } from "../../../../domain/recipes/recipe";
-import { navItems } from "../../../components/layout/Nav";
+import { addDays, dayName, dayParts, type PlanRecipe } from "../../../domain/plan/plan";
+import type { RecipeSummary } from "../../../domain/recipes/recipe";
+import { navItems } from "../layout/Nav";
 
 /** A weekday's short name as `dayParts` writes it, for each word that names it. */
 const WEEKDAY_WORDS: Record<string, string> = {
@@ -181,4 +181,35 @@ export function highlight(label: string, query: string, today: string): LabelPar
     .split(pattern)
     .filter((text) => text !== "")
     .map((text) => ({ text, match: terms.includes(text.toLowerCase()) }));
+}
+
+/** What a suggestion that is not a recipe's shows: a line for the list, and a place a phone's tab bar no longer holds. */
+const FIXED_SUGGESTIONS = ["milk", "settings"];
+const RECIPE_SUGGESTIONS = 2;
+
+/**
+ * Examples of what can be typed, for a phone's chips: up to two of the
+ * household's own recipes put on the days after today ("ragu tue"), each
+ * by the last word of its name of three letters or more (the dish, as a
+ * name in English usually ends: Beef Ragu, Mushroom Risotto), which the
+ * chip then finds; then a line for the shopping list and a place. Built
+ * from recipes already read (the plan's), so no example names a recipe the
+ * library does not have.
+ */
+export function suggestions(recipes: readonly Pick<CommandRecipe, "name">[], today: string): string[] {
+  const found: string[] = [];
+  for (const recipe of recipes) {
+    if (found.length === RECIPE_SUGGESTIONS) break;
+    // Split at spaces only, so "Stir-fry" stays one word; the punctuation at a word's ends is not typed.
+    const word = recipe.name
+      .toLowerCase()
+      .split(/\s+/)
+      .map((part) => part.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, ""))
+      .findLast((part) => part.length >= 3);
+    if (word === undefined) continue;
+    const day = dayParts(addDays(today, found.length + 1)).weekday.toLowerCase();
+    const example = `${word} ${day}`;
+    if (!found.some((other) => other.startsWith(`${word} `))) found.push(example);
+  }
+  return [...found, ...FIXED_SUGGESTIONS];
 }

@@ -13,7 +13,8 @@ export function MobileLayout({ hideNav }: { hideNav: boolean }) {
     <div className={cn("flex min-h-dvh flex-col bg-bg-subtle text-fg-normal", hideNav ? "[--app-bar:0px]" : APP_BAR_HEIGHT)}>
       {/* `min-w-0`: as a flex child its minimum width is otherwise its content's, so one wide child (a
           scrolling tab strip, a table) widens the page instead of scrolling or wrapping (design-language rule 6). */}
-      <main className="min-w-0 flex-1 pb-(--app-bar)">
+      {/* The + rises 1.25rem above the bar (`-mt-5`), so the page's foot clears it too. */}
+      <main className={cn("min-w-0 flex-1", hideNav ? "pb-(--app-bar)" : "pb-[calc(var(--app-bar)+1.25rem)]")}>
         <Outlet />
       </main>
       {!hideNav && <TabBar />}

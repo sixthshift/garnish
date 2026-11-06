@@ -11,7 +11,8 @@ import {
   parseQuery,
   resolveDay,
   searchTermOf,
-} from "../../../src/app/desktop/components/command/commands";
+  suggestions,
+} from "../../../../src/app/components/command/commands";
 
 // A Saturday.
 const today = "2026-11-07";
@@ -128,5 +129,24 @@ describe("highlight", () => {
 
   test("a word with a regular expression's characters in it is matched as written", () => {
     expect(highlight("Add “1+1” to the shopping list", "1+1", today)).toContainEqual({ text: "1+1", match: true });
+  });
+});
+
+describe("suggestions", () => {
+  // 2026-11-07 is a Saturday.
+  test("puts up to two planned recipes on the days after today, by the last word of the name, then a line and a place", () => {
+    expect(suggestions([ragu, rice, { name: "Lemon Tart" }], today)).toEqual(["ragu sun", "rice mon", "milk", "settings"]);
+  });
+
+  test("each example finds the recipe it was made from, on the day it names", () => {
+    const [example] = suggestions([rice], today);
+    const options = buildOptions({ query: example ?? "", today, recipes: [ragu, rice] });
+    expect(options[0]).toMatchObject({ kind: "plan", recipe: rice, date: "2026-11-08" });
+  });
+
+  test("skips names with no word long enough, and with nothing planned offers the fixed two", () => {
+    expect(suggestions([{ name: "Bo ga" }, { name: "Pho ga" }], today)).toEqual(["pho sun", "milk", "settings"]);
+    expect(suggestions([{ name: "Weeknight Stir-fry" }, { name: "Pasta (Quick)" }], today)).toEqual(["stir-fry sun", "quick mon", "milk", "settings"]);
+    expect(suggestions([], today)).toEqual(["milk", "settings"]);
   });
 });

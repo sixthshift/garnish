@@ -43,7 +43,12 @@ describe("app shell", () => {
     expect(html).toContain(text);
     // Both layouts' navs are in the shell; until hydration the variants decide which shows (decisions.md row 206).
     expect(html.match(/aria-label="Main"/g)).toHaveLength(2);
+    // A desktop's top bar names the four places and Settings; a phone's tab bar the four, each under its icon, and the +.
     for (const label of ["Home", "Plan", "Shopping", "Recipes", "Settings"]) expect(html).toContain(`>${label}</a>`);
+    const tabBar = html.match(/<nav aria-label="Main" class="fixed[\s\S]*?<\/nav>/)?.[0] ?? "";
+    expect(tabBar.match(/<a /g)).toHaveLength(4);
+    expect(tabBar).not.toContain("Settings");
+    expect(tabBar).toContain('aria-label="Plan, add or find"');
     // New is an action on the recipes page, not a nav destination.
     expect(html).not.toContain(`>New</a>`);
   });
@@ -62,7 +67,7 @@ describe("app shell", () => {
         expect(nav).not.toContain('data-status="active"');
         expect(nav).not.toContain('aria-current="page"');
       }
-      expect(html).toContain("[--app-bar:calc(2.75rem_+_1px_+_max(0.5rem,env(safe-area-inset-bottom)))]");
+      expect(html).toContain("[--app-bar:calc(3.25rem_+_1px_+_max(0.375rem,env(safe-area-inset-bottom)))]");
     }
   );
 
@@ -70,7 +75,7 @@ describe("app shell", () => {
     const html = await render("/recipes/new");
     expect(html.match(/aria-label="Main"/g)).toHaveLength(2);
     // The bar's real height: 53px of bar plus the home indicator, not a round guess.
-    expect(html).toContain("[--app-bar:calc(2.75rem_+_1px_+_max(0.5rem,env(safe-area-inset-bottom)))]");
+    expect(html).toContain("[--app-bar:calc(3.25rem_+_1px_+_max(0.375rem,env(safe-area-inset-bottom)))]");
   });
 
   test("the style page hides the tab bar too", async () => {

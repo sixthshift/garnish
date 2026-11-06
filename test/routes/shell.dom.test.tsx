@@ -19,6 +19,7 @@ function shellAt(path: string) {
   const page = (at: string, staticData = {}) => createRoute({ getParentRoute: () => root, path: at, staticData, component: () => <h1>{at}</h1> });
   const tree = root.addChildren([
     page("/"),
+    page("/plan"),
     page("/settings"),
     page("/cook", { fullscreen: true }),
     page("/edit", { hideNav: true }),
@@ -57,10 +58,16 @@ test("the new-recipe chooser keeps the tab bar", async () => {
 });
 
 test("only the current place is marked", async () => {
-  shellAt("/settings");
+  shellAt("/plan");
   await screen.findByRole("heading");
   const current = screen.getAllByRole("link", { current: "page" });
-  expect(current.map((link) => link.getAttribute("href"))).toEqual(["/settings"]);
+  expect(current.map((link) => link.getAttribute("href"))).toEqual(["/plan"]);
+});
+
+test("on a phone, Settings is no place in the tab bar, so nothing there is marked", async () => {
+  shellAt("/settings");
+  await screen.findByRole("heading");
+  expect(screen.queryAllByRole("link", { current: "page" })).toEqual([]);
 });
 
 test("crossing the line swaps the layout and keeps the page", async () => {
