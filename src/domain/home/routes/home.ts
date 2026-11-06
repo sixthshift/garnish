@@ -3,20 +3,9 @@ import { listPlanWeek } from "../../../api/rpc/plan";
 import { listRecipes } from "../../../api/rpc/recipes";
 import { listShoppingItems } from "../../../api/rpc/shopping";
 import { Route as rootRoute } from "../../../routes/root";
-import { nextMonday, type PlanDay, todayIso, weekMonday } from "../../plan/plan";
-import type { RecipeSummary } from "../../recipes/recipe";
+import { nextMonday, todayIso, weekMonday } from "../../plan/plan";
 import { RecipeListSearch } from "../../recipes/routes/recipesIndex";
-
-export type HomeData = {
-  today: string;
-  monday: string;
-  days: PlanDay[];
-  nextDays: PlanDay[];
-  /** Lines still to buy, or null when the list could not be read: Home still draws the day. */
-  toBuy: number | null;
-  /** Every recipe, newest first: tonight's time comes from here, and the ones to try. */
-  recipes: RecipeSummary[];
-};
+import type { HomeData } from "../home";
 
 export const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -39,7 +28,7 @@ export const homeRoute = createRoute({
       listShoppingItems().catch(() => null),
       listRecipes({ data: { sort: "created", dir: "desc" } }),
     ]);
-    return { today, monday, days, nextDays, toBuy: items === null ? null : items.filter((item) => !item.ticked).length, recipes };
+    return { today, monday, days, nextDays, toBuy: items === null ? null : items.filter((item) => !item.ticked).length, items, recipes };
   },
   component: lazyRouteComponent(() => import("../pages/HomePage"), "HomePage"),
 });

@@ -3,13 +3,15 @@ import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { Page } from "../../../components/Page";
+import { useLayout } from "../../../lib/useLayout";
 import { isWeekend, nextMonday } from "../../plan/plan";
+import { HomeBento } from "../components/desktop/HomeBento";
 import { NextWeek } from "../components/NextWeek";
 import { ShoppingGlance } from "../components/ShoppingGlance";
 import { Tonight } from "../components/Tonight";
 import { ToTry } from "../components/ToTry";
 import { WeekGlance } from "../components/WeekGlance";
-import { entryCount, todayTitle, tonightEntry, toTry } from "../home";
+import { entryCount, type HomeData, todayTitle, tonightEntry, toTry } from "../home";
 
 const route = getRouteApi("/");
 
@@ -26,7 +28,14 @@ const TO_TRY_LIMIT = 6;
  * weekend while next week is empty, when planning it is the thing to do.
  */
 export function HomePage() {
-  const { today, monday, days, nextDays, toBuy, recipes } = route.useLoaderData();
+  const data = route.useLoaderData();
+  const layout = useLayout();
+  // A desktop's Home is a different structure, tiles across the width (decisions.md row 207).
+  return layout === "desktop" ? <HomeBento {...data} /> : <PhoneHome {...data} />;
+}
+
+/** Home on a phone: one column, the day first. */
+function PhoneHome({ today, monday, days, nextDays, toBuy, recipes }: HomeData) {
   const title = todayTitle(today);
   const tonight = tonightEntry(days.find((day) => day.date === today));
   const recipe = tonight?.recipe ? recipes.find((r) => r.id === tonight.recipe?.id) : undefined;
