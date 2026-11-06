@@ -6,7 +6,7 @@
  * `scroll-padding-bottom` is its height plus its offset (the tab bar's, where
  * one shows) plus a small gap, so Tab and `scrollIntoView` stop above it
  * rather than behind it. Measured, not a constant: the bar wraps when its
- * note or a warning is long. Cleared when the footer goes inline (from `md`)
+ * note or a warning is long. Cleared when the footer goes inline (on a desktop)
  * or unmounts.
  */
 export function scrollClearance(element: HTMLElement | null): (() => void) | undefined {

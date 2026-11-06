@@ -20,7 +20,7 @@ export type DataTableColumn<T> = {
    */
   search?: (item: T) => string;
   /**
-   * A column the phone can do without: hidden below `md`, still searched and
+   * A column the phone can do without: hidden on a phone, still searched and
    * still sortable once the width is there. Reference tables run to six
    * columns, which no phone can draw — without this the table's min-content
    * width becomes the page's and the whole layout scrolls sideways. `"lg"`

@@ -38,7 +38,7 @@ export function originalTextDiffers(ingredient: DraftIngredient): boolean {
 }
 
 /**
- * The fields of one ingredient row. Rendered inline from `md` up and inside
+ * The fields of one ingredient row. Rendered inline on a desktop and inside
  * the phone sheet below it, so both widths edit the same row through the same
  * `onPatch`. No state of its own: the row owns the mid-edit text and the food
  * suggestions, which keeps this a plain function a test can call directly.
@@ -66,7 +66,7 @@ export type IngredientFieldsProps = {
   showOriginalText?: boolean;
   /**
    * "stack" (default): the sheets' fields, a line each. "line": the editor's
-   * row from `md`, amount, unit, food and note on one line in the
+   * row on a desktop, amount, unit, food and note on one line in the
    * `INGREDIENT_COLUMNS` grid, with a quiet line under it only for a Fixed
    * row or an imported line that says more than the fields.
    */

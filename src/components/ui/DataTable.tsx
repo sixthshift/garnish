@@ -161,7 +161,7 @@ export function DataTable<T>({
       </Muted>
 
       {/* No overflow on the card: a row's menu hangs below the row and must not be clipped by it. The
-          table fits because optional columns are `secondary` (to `md` or `lg`), the row's actions are one ⋯,
+          table fits because optional columns are `secondary` (shown on a desktop, or a wide one), the row's actions are one ⋯,
           and the name column (`wrap: "anywhere"`) breaks a long unbroken name rather than widening the page. */}
       <Card size="sm" className="min-w-0 p-0">
         {/* The edge cells of every row stand off the card's border, whichever columns a table has. */}

@@ -1,4 +1,4 @@
-// One ingredient row in the editor, one line from `md` and in a sheet below it; the view page's row is recipe/components/IngredientRow.tsx.
+// One ingredient row in the editor, one line on a desktop and in a sheet below it; the view page's row is recipe/components/IngredientRow.tsx.
 
 import { Button } from "@sixthshift/design-system/button";
 import { Select } from "@sixthshift/design-system/select";
@@ -77,7 +77,7 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
       />
     ) : null;
 
-  // The sheet's controls. From md the line's live in the row's menu.
+  // The sheet's controls. On a desktop the line's live in the row's menu.
   const controls = (
     <>
       {modeToggle}
@@ -200,7 +200,7 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
 /**
  * The column labels over the editor's lines, laid out like a row (room for the
  * handle, the fields' grid, room for the menu), so Amount sits over every
- * amount. Shown only where the four columns are: from md, and where the row is
+ * amount. Shown only where the four columns are: on a desktop, and where the row is
  * wide enough for them. Each field still names itself ("Ingredient 3 food").
  */
 export function IngredientColumnsHeader() {

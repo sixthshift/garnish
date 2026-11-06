@@ -68,7 +68,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   // text starts at the same x and runs the card's width; a gutter beside it
   // either went empty on the steps that link nothing or squeezed the text to
   // a few words a line at `md` (critique #13). The deck puts them beside the
-  // text from `md`, where one card owns the screen and has the width for both.
+  // text on a desktop, where one card owns the screen and has the width for both.
   const columns = size === "cook" && showRows;
 
   return (

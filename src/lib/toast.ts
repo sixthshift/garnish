@@ -30,7 +30,7 @@ export const TIMER_STRIP_VAR = "--timer-strip";
 
 /**
  * Where the stack sits, merged over the design system's bottom-centre default:
- * on a phone, a column above the bottom nav, oldest first; from `md`, the
+ * on a phone, a column above the bottom nav, oldest first; on a desktop, the
  * bottom-right corner. Either way raised by the timer strip's height while it
  * shows. On a `data-toasts="top"` page, the top instead.
  */

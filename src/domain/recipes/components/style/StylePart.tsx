@@ -33,7 +33,7 @@ export type StylePartProps = {
 
 const author = (step: OriginalPart["steps"][number]): RestyledStep => ({ title: step.title ?? "", text: step.text, summary: step.summary ?? "" });
 
-/** A column's head on a phone, where the two sides stack, and over each column from md. */
+/** A column's head on a phone, where the two sides stack, and over each column on a desktop. */
 function ColumnHead({ label, taken }: { label: string; taken: boolean }) {
   return (
     <div className="flex items-baseline gap-2 px-4 pt-3 text-xs font-medium text-fg-subtle">
@@ -112,7 +112,7 @@ function WholePart(props: {
  * One part of the recipe in the Style space: its ingredients, the author's
  * steps and the rewrite, side by side, so the two are read together rather
  * than flipped between. From lg the ingredients are the first of three
- * columns; from md they sit above the two step columns; on a phone each step
+ * columns; on a desktop they sit above the two step columns; on a phone each step
  * shows the author's words and then the rewrite.
  */
 export function StylePart(props: StylePartProps) {
