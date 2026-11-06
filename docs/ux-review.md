@@ -157,31 +157,7 @@ Each is small enough to settle in a line.
 
 ## 8. Importing, polished
 
-**When.** After the import's two pieces of plumbing land: a headless Chromium as the fetch's fallback (decisions.md row 202, plan.md M43) and the model brought further into the import. Both change what the flow has to show, so this plan is for the screens once they settle, not before. Re-walk the import at 390px then; what is below is read from the code as it stands on 2026-11-04, not from a walk-through.
-
-**Seen.**
-- **A read has no shape.** A web page is fetched (up to 15 s), read by the rules, then sorted by the model in the background. The wait before the review is a button reading "Reading the page…"; the wait after it is a muted "Sorting into parts…" line above the recipe. A Chromium render adds seconds to the first wait, and nothing says which of the steps is under way.
-- **The review changes under the reviewer.** The rules' reading is shown first and is editable; when the model's answer lands, the rows are rebuilt from it (`useRecipeSource`, `onAnswer`), so a food matched or a row fixed while it was sorting is replaced.
-- **Notices stack.** Above the recipe there can be, at once, the no-recipe-data warning, the sorting line, "The model could not read this page", "The model changed more than the parts" (with a list of changed lines and "Use the model's version anyway") and "You already have this one". Each is a full message box, and their words are the pipeline's (model, parts, rules), not the household's.
-- **The steps marker shows a stage that never comes.** `ImportSteps` always lists Source, Review, Style, Save; without a model the import goes Review then the editor, and Style is never reached.
-- **Ways in are several, and the fallback is the household's job.** Web page, paste (with a model), file, and the Save to Garnish bookmark, which a blocked page sends you off to set up. Chromium is meant to make most blocks the server's problem.
-
-**Direction.**
-- **One read, told as it goes.** From the address to the review, one progress card naming the step it is on (fetching the page, opening it in a browser when the fetch is refused, reading the recipe, sorting it into parts), each ticking off. How the page was fetched is not shown unless every way failed.
-- **Show the review once it will hold.** Either the review waits for the model's sort (one reveal, a longer wait with the progress card), or the rules' reading shows at once but stays read-only until the sort lands. Not editable rows that are then replaced.
-- **One status line, not five boxes.** A single line under the recipe's header says what happened in the household's words ("Read from the page, sorted into 3 parts", "Already in your recipes: Lemon tart · Open it"), with a ⋯ for the detail (what the model changed, a retry). Only a stop is a warning: no recipe on the page, or nothing could fetch it.
-- **When every way fails, one place says what next**: paste the page's text, or send it with the bookmark, in that order, inside the error rather than as separate sources.
-- **The steps marker follows the path taken**: three stages without a model, four with.
-- **The review at 390px**: the header card, the tags and the ingredient rows read top to bottom without the footer covering the last row; the side-by-side layout stays from `lg`.
-
-**Settled** (with Jason, 2026-11-04; becomes a decisions row with the milestone, once M43 has landed and the import is re-walked):
-- **The review waits for the model's sort.** With a model, the progress card stays up until the sorted recipe is ready, and the review appears once and does not change under the reviewer. Without a model, the rules' reading is final and shows at once.
-- **Style stays its own stage**, after the review. Folding it into the review would bring back the review changing under the reviewer. The steps marker shows it only when there is a model.
-- **A duplicate is a note on the status line** ("Already in your recipes: Lemon tart · Open it"), not a stop.
-- **Paste stays a way in of its own.** The three ways to make a recipe are a web page, pasted text and an empty recipe (plus a file); paste is not only the fallback for a blocked page.
-- **Save to Garnish stays as the last resort** inside the one error when both the fetch and Chromium fail, after paste (row 202, M43.3), since taste.com.au, delicious.com.au and Smitten Kitchen wall off Chromium too (row 202's trial).
-
-**Touches.** `src/domain/recipes/components/new/` (`useRecipeSource` and `useModelPass` for the order of the read, `ImportReview` and `importSummary` for the status line, `ImportSteps`, `SourceChooser`, `UrlSource`, `PageSource`, `BrowserSource`), `ImportStyle` and `src/domain/recipes/pages/NewRecipePage.tsx` if Style folds in, and `src/server/import/fetch.ts` only for the progress it reports.
+Settled with Jason on 2026-11-06 after the 2026-11-05 walk: decisions.md row 203, plan.md M44.
 
 ---
 
