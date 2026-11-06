@@ -49,8 +49,8 @@ const reducedMotion = () => typeof window.matchMedia === "function" && window.ma
  * across the width, a trolley beside them that ticked lines slide into, and
  * on the right the meals the list is for, a key that lights up a meal's lines
  * across the aisles on hover and keeps them lit on a click. The key does the
- * phone's meal view's job (which dish wants what), so the Aisles/Meals toggle
- * is a phone's alone.
+ * job a phone's meal chips do (which dish wants what), lighting rather than
+ * narrowing, since here the whole walk is in view.
  */
 export function ShoppingStoreWalk({
   items,

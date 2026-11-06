@@ -1,6 +1,7 @@
 // Critique #8: "Clear ticked" deleted every ticked line at once, from a red
 // button, with nothing to bring them back. It now asks first: the button is
-// neutral and the red is the dialog's.
+// neutral and the red is the dialog's. On a phone the button is the trolley
+// sheet's Clear the trolley (decisions.md row 208).
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
@@ -24,10 +25,12 @@ const noop = () => {};
 
 async function mount(onClearTicked: () => void) {
   await renderInRouter(<ShoppingListView items={items} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={onClearTicked} />);
-  await userEvent.setup().click(screen.getByRole("button", { name: "Clear ticked" }));
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: /2 in the trolley/ }));
+  await user.click(screen.getByRole("button", { name: "Clear the trolley" }));
 }
 
-test("Clear ticked asks first, saying how many go, and clears on Clear", async () => {
+test("Clear the trolley asks first, saying how many go, and clears on Clear", async () => {
   const onClearTicked = vi.fn();
   await mount(onClearTicked);
   expect(onClearTicked).not.toHaveBeenCalled();

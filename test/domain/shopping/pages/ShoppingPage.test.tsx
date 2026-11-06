@@ -1,7 +1,8 @@
-// The shopping list page (M31.4): what `ShoppingListView` renders for a list
-// grouped by aisle, a row's sources expansion, the ticked group with its Clear
-// ticked, and the empty state — plus the route end to end, loader and all,
-// against a temp DATA_DIR.
+// The shopping list page (M31.4): what `ShoppingListView` renders on a phone
+// (decisions.md row 208) for a list grouped by aisle, the dishes under each
+// line, the meals as chips, the trolley that ticked lines leave the aisles for,
+// and the empty state — plus the route end to end, loader and all, against a
+// temp DATA_DIR. The phone's presses are in ShoppingList.dom.test.tsx.
 //
 // The view takes its writes as callbacks, so these render it directly; the
 // route test below proves the loader and the wiring.
@@ -11,7 +12,7 @@ import { findOrCreateAisle } from "../../../../src/api/rpc/aisles";
 import { createFood } from "../../../../src/api/rpc/foods";
 import { addShoppingItems, listShoppingItems } from "../../../../src/api/rpc/shopping";
 import { ShoppingListView } from "../../../../src/domain/shopping/components/ShoppingListView";
-import { sendOutboxEntry, toBuyLabel } from "../../../../src/domain/shopping/components/shoppingListActions";
+import { sendOutboxEntry } from "../../../../src/domain/shopping/components/shoppingListActions";
 import { type ShoppingItem, shoppingItemSchema } from "../../../../src/domain/shopping/shopping";
 import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../../../src/lib/outbox";
 import { elementHtml, renderRoute } from "../../../helpers/routes";
@@ -59,6 +60,9 @@ function item(overrides: Record<string, unknown> = {}): ShoppingItem {
   });
 }
 
+/** What the element with `testid` reads, its tags and React's text separators gone. */
+const textOf = (html: string, testid: string) => elementHtml(html, testid).replace(/<!-- -->|<[^>]+>/g, "");
+
 const noop = () => {};
 function render(items: ShoppingItem[]) {
   return renderToString(<ShoppingListView items={items} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} />);
@@ -73,7 +77,9 @@ describe("grouping", () => {
     expect(html).toContain("3 lemon");
     expect(html).toContain("Batteries");
     expect(html.match(/data-testid="shopping-row"/g)).toHaveLength(3);
-    expect(html).toContain("3 items to buy");
+    // How far along: none of three in the trolley, and the bar says the same.
+    expect(textOf(html, "shopping-progress-label")).toBe("0 of 3");
+    expect(html).toContain('aria-valuetext="0 of 3"');
   });
 
   test("a row is a tick box and a label, and nothing is ticked by default", () => {
@@ -83,8 +89,8 @@ describe("grouping", () => {
     expect(row).toContain('aria-checked="false"');
     expect(row).toContain('aria-label="3 lemon"');
     expect(row).toContain('data-ticked="false"');
-    // The line's text is a phone-sized target that ticks it too.
-    expect(row).toContain("min-h-11");
+    // A big row for a thumb in the shop: the line's text is a target that ticks it too.
+    expect(row).toContain("min-h-14");
   });
 });
 
@@ -114,75 +120,55 @@ describe("the row (row 187)", () => {
   });
 });
 
-describe("the ticked group", () => {
-  test("ticked rows sink to a Ticked group at the foot with Clear ticked", () => {
+describe("the trolley (row 208)", () => {
+  test("ticked lines leave the aisles for a bar at the foot that says how many are in the trolley", () => {
     const html = render([item({ quantity: 3, food: lemons, ticked: true }), item({ quantity: 250, unit: gram, food: butter })]);
     const headings = [...html.matchAll(/data-testid="shopping-group"[^>]*>.*?<h2[^>]*>([^<]+)</g)].map((match) => match[1]);
-    expect(headings).toEqual(["Dairy", "Ticked"]);
-    expect(html).toContain("Clear ticked");
-    expect(html.match(/Clear ticked/g)).toHaveLength(1);
-    expect(html).toContain('data-ticked="true"');
-    expect(html).toContain('aria-checked="true"');
-    expect(html).toContain("line-through");
-    expect(html).toContain("1 item to buy"); // the ticked one is bought, not to buy
+    expect(headings).toEqual(["Dairy"]);
+    expect(html).not.toContain("3 lemon");
+    expect(textOf(html, "shopping-trolley-bar")).toBe("1 in the trolleyShow");
+    expect(textOf(html, "shopping-progress-label")).toBe("1 of 2");
+    // The inline Ticked group and its Clear ticked are gone: the trolley's sheet holds both.
+    expect(html).not.toContain(">Ticked<");
+    expect(html).not.toContain("Clear ticked");
   });
 
-  test("no ticked line, no Ticked group and no Clear ticked", () => {
-    const html = render([item({ quantity: 3, food: lemons })]);
-    expect(html).not.toContain("Clear ticked");
-    expect(html).not.toContain(">Ticked<");
+  test("no ticked line, no trolley bar", () => {
+    expect(render([item({ quantity: 3, food: lemons })])).not.toContain("shopping-trolley-bar");
+  });
+
+  test("everything ticked: the aisles are gone and the list says so", () => {
+    const html = render([item({ quantity: 3, food: lemons, ticked: true })]);
+    expect(html).not.toContain('data-testid="shopping-groups"');
+    expect(elementHtml(html, "shopping-done")).toContain("Everything is in the trolley.");
   });
 });
 
-describe("the meal view", () => {
+describe("the meal chips (row 208)", () => {
   const TART = "a1a1a1a1-a1a1-4a1a-8a1a-a1a1a1a1a1a1";
   const tart = { id: "5a5a5a5a-5a5a-4a5a-8a5a-000000000001", recipeId: TART, recipeName: "Lemon tart", partName: "Mon 26 Oct", planDate: "2026-10-26" };
   const soup = { id: "5a5a5a5a-5a5a-4a5a-8a5a-000000000002", recipeName: "Soup", partName: "Wed 28 Oct", planDate: "2026-10-28" };
-  const renderMeals = (items: ShoppingItem[]) =>
-    renderToString(<ShoppingListView items={items} view="meals" onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} />);
-  const headings = (html: string) => [...html.matchAll(/data-testid="shopping-group"[^>]*>.*?<h2[^>]*>([^<]+)</g)].map((match) => match[1]);
 
-  test("the toggle offers both views and marks the one shown", () => {
-    for (const [html, on] of [
-      [render([item({ text: "Batteries" })]), "Aisles"],
-      [renderMeals([item({ text: "Batteries" })]), "Meals"],
-    ] as const) {
-      expect(html).toContain('aria-label="Group the list by"');
-      expect(html).toMatch(new RegExp(`aria-checked="true"[^>]*>(<[^>]+>)*${on}`));
-    }
-  });
-
-  test("a heading per dish with its day, in day order, hand-typed lines under Other", () => {
-    const html = renderMeals([
+  test("All with what is left to buy, then a chip per dish in day order with its own count, and no Aisles/Meals toggle", () => {
+    const html = render([
       item({ text: "Batteries" }),
       item({ quantity: 1, food: lemons, sources: [{ ...soup, quantity: 1 }] }),
       item({ quantity: 3, food: lemons, sources: [{ ...tart, quantity: 3 }] }),
+      item({ quantity: 250, unit: gram, food: butter, ticked: true, sources: [{ ...tart, quantity: 250 }] }),
     ]);
-    expect(html).toContain('data-view="meals"');
-    expect(headings(html)).toEqual(["Lemon tart", "Soup", "Other"]);
-    expect(html).toContain('aria-label="Lemon tart, Mon 26 Oct"');
-    expect(html).toContain("Wed 28 Oct");
+    const chips = elementHtml(html, "shopping-meal-chips");
+    expect(chips).toContain('aria-label="Meals"');
+    expect(chips).toMatch(/aria-pressed="true"[^>]*>All · (<!-- -->)?3</);
+    const labels = [...chips.matchAll(/aria-label="([^"]+: \d+ to buy)"/g)].map((match) => match[1]);
+    expect(labels).toEqual(["Lemon tart, Mon: 1 to buy", "Soup, Wed: 1 to buy"]);
+    expect(html).not.toContain("Group the list by");
   });
 
-  test("a shared line shows each dish its share", () => {
-    const html = renderMeals([
-      item({
-        quantity: 350,
-        unit: gram,
-        food: butter,
-        sources: [
-          { ...tart, quantity: 200 },
-          { ...soup, quantity: 150 },
-        ],
-      }),
-    ]);
-    const rows = html.split('data-testid="shopping-row"').slice(1);
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toContain("200 g butter");
-    expect(rows[1]).toContain("150 g butter");
+  test("a list no dish asked for has no chips", () => {
+    expect(render([item({ text: "Batteries" })])).not.toContain("shopping-meal-chips");
   });
 
-  test("the aisle view says under each line which dishes it is for, with each share of a shared line, and nothing under a typed line", () => {
+  test("each line still says which dishes it is for, with each share of a shared line, and nothing under a typed line", () => {
     const html = render([
       item({
         quantity: 350,
@@ -199,17 +185,6 @@ describe("the meal view", () => {
     expect(elementHtml(html, "shopping-meals")).toMatch(/Lemon tart Mon 200 g.* · .*Soup Wed 150 g/);
     expect(html).toContain('aria-label="350 g butter"');
   });
-
-  test("the meal view does not repeat the dish under its own rows", () => {
-    expect(renderMeals([item({ quantity: 3, food: lemons, sources: [{ ...tart, quantity: 3 }] })])).not.toContain("shopping-meals");
-  });
-
-  test("a ticked line stays under its dish, and there is no Ticked group", () => {
-    const html = renderMeals([item({ quantity: 3, food: lemons, ticked: true, sources: [{ ...tart, quantity: 3 }] })]);
-    expect(headings(html)).toEqual(["Lemon tart"]);
-    expect(elementHtml(html, "shopping-row")).toContain('data-ticked="true"');
-    expect(html).not.toContain("Clear ticked");
-  });
 });
 
 describe("pack sizes (row 184)", () => {
@@ -217,10 +192,8 @@ describe("pack sizes (row 184)", () => {
   const block250 = { id: "7a7a7a7a-7a7a-4a7a-8a7a-000000000001", foodId: butter.id, quantity: 250, unitId: gram.id };
   const block500 = { id: "7a7a7a7a-7a7a-4a7a-8a7a-000000000002", foodId: butter.id, quantity: 500, unitId: gram.id };
   const units = [{ ...gram, portion: false }];
-  const renderPacks = (items: ShoppingItem[], packs: unknown[], view: "aisles" | "meals" = "aisles") =>
-    renderToString(
-      <ShoppingListView items={items} view={view} packs={packs as never} units={units} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} />
-    );
+  const renderPacks = (items: ShoppingItem[], packs: unknown[]) =>
+    renderToString(<ShoppingListView items={items} packs={packs as never} units={units} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} />);
 
   test("the aisle view rounds a line up to whole packs", () => {
     const html = renderPacks([item({ quantity: 400, unit: gram, food: butter })], [block250]);
@@ -231,9 +204,8 @@ describe("pack sizes (row 184)", () => {
     expect(elementHtml(renderPacks([item({ quantity: 450, unit: gram, food: butter })], [block250, block500]), "shopping-packs")).toContain("→ 1 × 500 g");
   });
 
-  test("a food with no size, a typed line and the meal view say nothing about packs", () => {
+  test("a food with no size and a typed line say nothing about packs", () => {
     expect(renderPacks([item({ quantity: 400, unit: gram, food: butter }), item({ text: "Batteries" })], [])).not.toContain("shopping-packs");
-    expect(renderPacks([item({ quantity: 400, unit: gram, food: butter, sources: [] })], [block250], "meals")).not.toContain("shopping-packs");
   });
 
   test("an each size rounds a half lemon to one", () => {
@@ -255,14 +227,9 @@ describe("the empty state", () => {
     expect(html).toContain("ingredients from its page");
     expect(html).toContain('aria-label="Add an item"');
     expect(html).not.toContain('data-testid="shopping-groups"');
-    expect(html).not.toContain("items to buy");
+    expect(html).not.toContain("shopping-progress-label");
+    expect(html).not.toContain("shopping-meal-chips");
   });
-});
-
-test("toBuyLabel counts only the unticked lines", () => {
-  expect(toBuyLabel([])).toBe("0 items to buy");
-  expect(toBuyLabel([item({ text: "Milk" })])).toBe("1 item to buy");
-  expect(toBuyLabel([item({ text: "Milk" }), item({ text: "Eggs", ticked: true })])).toBe("1 item to buy");
 });
 
 describe("/shopping", () => {
@@ -292,7 +259,7 @@ describe("/shopping", () => {
     expect(elementHtml(html, "shopping-meals")).toContain("Lemon tart");
     expect(html).toContain("Batteries");
     expect(html).toContain("Other");
-    expect(html).toContain("2 items to buy");
+    expect(textOf(html, "shopping-progress-label")).toBe("0 of 2");
   });
 });
 
@@ -331,20 +298,19 @@ describe("an offline tick", () => {
         offline
       />
     );
-    expect(after).toContain('data-ticked="true"');
-    expect(after).toContain('aria-checked="true"');
+    // In the trolley: out of the aisles, and counted at the foot.
+    expect(after).not.toContain('data-ticked="false"');
+    expect(textOf(after, "shopping-trolley-bar")).toBe("1 in the trolleyShow");
     expect(after).toContain("1 change waiting");
     // And it survives the phone closing the tab in the car park.
     expect(readOutbox(storage).map((entry) => [entry.itemId, entry.kind])).toEqual([[lemon.id, "tick"]]);
   });
 
-  test("offline, clearing the ticked is refused, but the add box stays open: a typed line queues", () => {
+  test("offline, the add box stays open: a typed line queues (the trolley's Clear is refused, in ShoppingList.dom.test.tsx)", () => {
     const html = renderToString(
       <ShoppingListView items={[item({ quantity: 3, food: lemons, ticked: true })]} onAdd={noop} onTick={noop} onRemove={noop} onClearTicked={noop} offline />
     );
     expect(elementHtml(html, "shopping-add")).not.toMatch(/\sdisabled(=""|\s|>)/);
-    const clear = html.match(/<button[^>]*>Clear ticked</)?.[0] ?? "";
-    expect(clear).toMatch(/\sdisabled(=""|\s|>)/);
   });
 
   test("a line typed offline shows on the list at once, unassigned, and counts as waiting", () => {
@@ -365,7 +331,7 @@ describe("an offline tick", () => {
     );
     expect(html).toContain("Batteries");
     expect(html).toContain("1 change waiting");
-    expect(html).toContain("2 items to buy");
+    expect(textOf(html, "shopping-progress-label")).toBe("0 of 2");
     expect(readOutbox(storage)).toMatchObject([{ itemId: "local-id", kind: "add", text: "Batteries", ticked: false }]);
   });
 });

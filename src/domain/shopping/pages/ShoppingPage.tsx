@@ -5,7 +5,6 @@ import { addShoppingItems, clearTickedShoppingItems, removeShoppingItem, tickSho
 import { randomUuid } from "../../../lib/id";
 import { useMutate } from "../../../lib/mutate";
 import { applyOutbox } from "../../../lib/outbox";
-import { useShoppingView } from "../../../lib/prefs";
 import { toastError } from "../../../lib/toast";
 import { useOnline } from "../../../lib/useOnline";
 import { useOutbox } from "../../../lib/useOutbox";
@@ -28,7 +27,6 @@ export function ShoppingPage() {
   const router = useRouter();
   const online = useOnline();
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useShoppingView();
   const { queue, push, add } = useOutbox({ send: sendOutboxEntry, online, onFlushed: () => void router.invalidate() });
 
   const write = async (what: string, run: () => Promise<unknown>) => {
@@ -73,8 +71,6 @@ export function ShoppingPage() {
   return (
     <ShoppingListView
       items={applyOutbox(items, queue)}
-      view={view}
-      onViewChange={setView}
       packs={packs}
       units={units}
       busy={busy}

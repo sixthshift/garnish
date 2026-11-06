@@ -60,38 +60,14 @@ export function groupByAisle(items: readonly ShoppingItem[]): ShoppingAisleGroup
   return groups;
 }
 
-// --- By meal ----------------------------------------------------------------
-// The list's second view (decisions.md row 182): the same lines under the
-// dish that asked for them, so a week's shop can be read as what is for what.
-// A dish is a recipe on a plan day — the same recipe on Monday and Thursday is
-// two dishes — or, when the recipe came from its own page, the recipe alone.
-// A line two dishes share sits under both, each showing its own share of it;
-// it is still one line, and a tick on either is a tick on it.
-
-/** The heading for lines no dish asked for: typed by hand, or a plain-text plan entry. */
-export const NO_MEAL_GROUP = "Other";
-
-/** One line under one dish: the line, and what to call it there. */
-export interface ShoppingMealRow {
-  item: ShoppingItem;
-  /** This dish's share ("200 g butter"), or the whole line when the dish is all of it or the share cannot be said. */
-  label: string;
-  /** The whole line ("350 g butter") when `label` is only a share of it; null otherwise. */
-  whole: string | null;
-}
-
-/** One dish and its lines. */
-export interface ShoppingMealGroup {
-  /** Stable React key: the recipe and the day, or `other`. */
-  key: string;
-  /** The recipe's name, or "Other". */
-  name: string;
-  /** The live recipe, while there is one. */
-  recipeId: string | null;
-  /** The plan day that asked for it, YYYY-MM-DD; null for a recipe added from its own page, and for "Other". */
-  date: string | null;
-  rows: ShoppingMealRow[];
-}
+// --- Meals ------------------------------------------------------------------
+// Which dish asked for what (decisions.md rows 182 and 183), so a week's shop
+// can be read as what is for what: under each line, the dishes it is for; and
+// the list's dishes as a desktop's meals key and a phone's chips, which light
+// or narrow the list to one dish's lines (rows 207 and 208; the phone's own
+// meal view, row 182's, gave way to the chips). A dish is a recipe on a plan
+// day — the same recipe on Monday and Thursday is two dishes — or, when the
+// recipe came from its own page, the recipe alone.
 
 const NO_MEAL_KEY = "other";
 
@@ -127,16 +103,6 @@ function shareOf(item: ShoppingItem, sources: readonly ShoppingItemSource[]): { 
   return { quantity: total, unit: target };
 }
 
-/** `item` as `sources` see it: the whole line when they are all of it, their share when they are not. */
-function mealRow(item: ShoppingItem, sources: readonly ShoppingItemSource[]): ShoppingMealRow {
-  const whole = shoppingItemLabel(item);
-  if (sources.length === item.sources.length) return { item, label: whole, whole: null };
-  const share = shareOf(item, sources);
-  if (share === null) return { item, label: whole, whole: null };
-  const label = shoppingItemLabel({ quantity: share.quantity, unit: share.unit, food: item.food, text: "" });
-  return label === whole ? { item, label, whole: null } : { item, label, whole };
-}
-
 /** One dish a line is for: the recipe, the day the plan asked for it, and its share when the line is shared. */
 export interface ShoppingMeal {
   name: string;
@@ -148,9 +114,8 @@ export interface ShoppingMeal {
 }
 
 /**
- * The dishes a line is for, for the aisle view's second line under it: each
- * once, in the order they reached the line, as the meal view would group them
- * (decisions.md row 183), each with its recipe's slug for a link and, on a
+ * The dishes a line is for, for the second line under it: each once, in the
+ * order they reached the line (decisions.md row 183), each with its recipe's slug for a link and, on a
  * line two dishes share, its own amount (row 187): "Lemon tart 200 g · Roast
  * chicken 150 g". A hand-typed line or a plain plan entry is for no dish and
  * gives none. Pure.
@@ -176,14 +141,15 @@ export function mealsOf(item: ShoppingItem): ShoppingMeal[] {
 
 /**
  * Which dishes a line is for, as keys: the ones `shoppingMeals` gives each
- * dish, so a desktop's meals key can light the lines of the dish it points at.
- * A hand-typed line is for none. Pure.
+ * dish, so a desktop's meals key can light the lines of the dish it points at
+ * and a phone's chips narrow the list to them. A hand-typed line is for none.
+ * Pure.
  */
 export function mealKeysOf(item: Pick<ShoppingItem, "sources">): string[] {
   return [...new Set(item.sources.map(mealKey))].filter((key) => key !== NO_MEAL_KEY);
 }
 
-/** One dish the list is for, as a desktop's meals key shows it. */
+/** One dish the list is for, as a desktop's meals key and a phone's chips show it. */
 export interface ShoppingListMeal {
   /** What `mealKeysOf` calls it. */
   key: string;
@@ -199,9 +165,9 @@ export interface ShoppingListMeal {
 }
 
 /**
- * The dishes the list is for, in the meal view's order (the plan's by day,
- * then recipes added from their own page), each with how many of its lines
- * are still to buy: the desktop's meals key. A line two dishes share counts
+ * The dishes the list is for, the plan's by day, then recipes added from
+ * their own page, each with how many of its lines are still to buy: the
+ * desktop's meals key and the phone's chips. A line two dishes share counts
  * for both; lines no dish asked for are no dish's. Pure.
  */
 export function shoppingMeals(items: readonly ShoppingItem[]): ShoppingListMeal[] {
@@ -226,45 +192,6 @@ export function shoppingMeals(items: readonly ShoppingItem[]): ShoppingListMeal[
   }
   const rank = (meal: ShoppingListMeal) => (meal.date === null ? 1 : 0);
   return [...meals.values()].sort((a, b) => rank(a) - rank(b) || (a.date !== null && b.date !== null ? a.date.localeCompare(b.date) : 0));
-}
-
-/**
- * The list as the meal view draws it: one group per dish, the plan's dishes
- * first in day order, then recipes added from their own page in the order
- * they reached the list, then "Other" for every line no dish asked for. A
- * line two dishes share is a row under each, with that dish's share; ticked
- * lines stay where they are, since the view is for seeing how far along each
- * dish is. Lines keep the list's order within a group, and an empty group is
- * never returned. Pure.
- */
-export function groupByMeal(items: readonly ShoppingItem[]): ShoppingMealGroup[] {
-  const groups = new Map<string, ShoppingMealGroup>();
-
-  for (const item of items) {
-    const byKey = new Map<string, ShoppingItemSource[]>();
-    for (const source of item.sources) {
-      const key = mealKey(source);
-      byKey.set(key, [...(byKey.get(key) ?? []), source]);
-    }
-    if (byKey.size === 0) byKey.set(NO_MEAL_KEY, []);
-
-    for (const [key, sources] of byKey) {
-      let group = groups.get(key);
-      if (group === undefined) {
-        const source = sources[0];
-        group =
-          key === NO_MEAL_KEY || source === undefined
-            ? { key, name: NO_MEAL_GROUP, recipeId: null, date: null, rows: [] }
-            : { key, name: source.recipeName.trim(), recipeId: source.recipeId, date: source.planDate, rows: [] };
-        groups.set(key, group);
-      }
-      group.rows.push(key === NO_MEAL_KEY ? { item, label: shoppingItemLabel(item), whole: null } : mealRow(item, sources));
-    }
-  }
-
-  // Dated dishes by day (a stable sort keeps two on one day in list order), undated after, "Other" last.
-  const rank = (group: ShoppingMealGroup) => (group.key === NO_MEAL_KEY ? 2 : group.date === null ? 1 : 0);
-  return [...groups.values()].sort((a, b) => rank(a) - rank(b) || (a.date !== null && b.date !== null ? a.date.localeCompare(b.date) : 0));
 }
 
 /**

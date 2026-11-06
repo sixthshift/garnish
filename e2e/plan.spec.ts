@@ -29,15 +29,18 @@ test("a planned week becomes a shopping list sorted into aisles", async ({ page,
   await expect(page.getByRole("region", { name: "Pantry" }).getByRole("checkbox", { name: "200 g red lentils" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Fruit & veg" }).getByRole("checkbox", { name: "1 onion" })).toBeVisible();
 
-  // A tick moves the line under Ticked, and is stored, not just drawn: it is still there after a cold reload.
+  // A tick moves the line into the trolley, and is stored, not just drawn: it is still there after a cold reload.
   await page.getByRole("checkbox", { name: "1 onion" }).click();
-  const ticked = page.getByRole("region", { name: "Ticked" });
-  await expect(ticked.getByRole("checkbox", { name: "1 onion" })).toBeChecked();
+  await expect(page.getByRole("region", { name: "Fruit & veg" }).getByRole("checkbox", { name: "1 onion" })).toHaveCount(0);
+  const trolley = page.getByRole("dialog", { name: "In the trolley" });
+  await page.getByRole("button", { name: /in the trolley/ }).click();
+  await expect(trolley.getByRole("checkbox", { name: "1 onion" })).toBeChecked();
   await page.reload({ waitUntil: "networkidle" });
-  await expect(ticked.getByRole("checkbox", { name: "1 onion" })).toBeChecked();
+  await page.getByRole("button", { name: /in the trolley/ }).click();
+  await expect(trolley.getByRole("checkbox", { name: "1 onion" })).toBeChecked();
 });
 
-test("the list by meal shows each planned dish its own share of a line they share, and stays chosen", async ({ page, open }) => {
+test("the list shows each planned dish its own share of a line they share, and a meal chip narrows it to one dish", async ({ page, open }) => {
   const dal = unique("Meal Dal");
   const soup = unique("Meal Soup");
   await createRecipe(page, open, { name: dal, servings: 4, ingredients: ["200 g red lentils", "1 onion"], steps: ["Simmer."] });
@@ -67,22 +70,24 @@ test("the list by meal shows each planned dish its own share of a line they shar
   await expect(lentils.getByRole("link", { name: `${dal} Mon 200 g` })).toBeVisible();
   await expect(lentils.getByRole("link", { name: `${soup} Tue 100 g` })).toBeVisible();
 
-  await page.getByRole("radio", { name: "Meals" }).click();
-  // One lentil line on the list, drawn under each dish at that dish's amount.
-  const dalGroup = page.getByRole("region", { name: new RegExp(`^${dal}, Mon `) });
-  const soupGroup = page.getByRole("region", { name: new RegExp(`^${soup}, Tue `) });
-  await expect(dalGroup.getByRole("checkbox", { name: "200 g red lentils" })).toBeVisible();
-  await expect(dalGroup.getByRole("checkbox", { name: "1 onion" })).toBeVisible();
-  await expect(soupGroup.getByRole("checkbox", { name: "100 g red lentils" })).toBeVisible();
-  await expect(soupGroup.getByRole("checkbox", { name: "1 carrot" })).toBeVisible();
+  // A phone's meal chip narrows the list to one dish's lines (decisions.md row 208): the soup's carrot and
+  // the shared lentils, still saying each dish's share, and not the dal's onion.
+  const meals = page.getByRole("group", { name: "Meals" });
+  await meals.getByRole("button", { name: `${soup}, Tue: 2 to buy` }).click();
+  const list = page.getByTestId("shopping-groups");
+  await expect(list.getByRole("listitem").filter({ hasText: soup })).toHaveCount(2);
+  await expect(list.getByRole("listitem").filter({ hasText: "carrot" })).toBeVisible();
+  await expect(lentils.getByRole("link", { name: `${dal} Mon 200 g` })).toBeVisible();
+  await expect(list.getByRole("listitem").filter({ hasText: dal }).filter({ hasNotText: soup })).toHaveCount(0);
 
-  // Ticking it under one dish ticks the line, so it is ticked under both, and stays where it is.
-  await soupGroup.getByRole("checkbox", { name: "100 g red lentils" }).click();
-  await expect(dalGroup.getByRole("checkbox", { name: "200 g red lentils" })).toBeChecked();
+  // Ticking the shared line ticks it for both dishes: each chip counts one fewer to buy.
+  await lentils.getByRole("checkbox").click();
+  await expect(meals.getByRole("button", { name: `${soup}, Tue: 1 to buy` })).toBeVisible();
+  await expect(meals.getByRole("button", { name: `${dal}, Mon: 1 to buy` })).toBeVisible();
 
-  await page.reload({ waitUntil: "networkidle" });
-  await expect(page.getByRole("radio", { name: "Meals" })).toBeChecked();
-  await expect(soupGroup.getByRole("checkbox", { name: "100 g red lentils" })).toBeChecked();
+  // All brings the dal's lines back.
+  await meals.getByRole("button", { name: /^All · / }).click();
+  await expect(list.getByRole("listitem").filter({ hasText: dal })).toHaveCount(1);
 });
 
 test("a line is rounded up to the sizes its food is sold in, and its dish links back to the recipe", async ({ page, open }) => {
@@ -104,7 +109,6 @@ test("a line is rounded up to the sizes its food is sold in, and its dish links 
   await expect(page.getByRole("status").filter({ hasText: "items added" })).toBeVisible();
 
   await open("/shopping");
-  await page.getByRole("radio", { name: "Aisles" }).click();
   const butter = page
     .getByRole("region", { name: "Dairy & eggs" })
     .getByRole("listitem")
