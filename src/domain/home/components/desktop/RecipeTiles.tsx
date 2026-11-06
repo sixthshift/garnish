@@ -5,7 +5,8 @@ import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { recipeImageUrl } from "../../../../lib/images";
 import type { RecipeSummary } from "../../../recipes/recipe";
 import { sinceMadeLabel } from "../../home";
-import { Photo, PLACEHOLDER, Tile } from "./Tile";
+import { Photo, PLACEHOLDER } from "../Photo";
+import { Tile } from "./Tile";
 
 /** A recipe as a short row: its thumbnail, its name, and a line under it. Opens in the side panel. */
 function MiniRecipe({ recipe, line }: { recipe: RecipeSummary; line?: string }) {

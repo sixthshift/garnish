@@ -27,14 +27,5 @@ export function Tile({ id, title, action, className, children }: { id: string; t
   );
 }
 
-/** Where a recipe has no picture: a fill that still reads as a card on the tile's own background. */
-export const PLACEHOLDER = "bg-bg-subtle-pressed";
-
-/** A recipe's picture filling what holds it, or a quiet placeholder of the same size when it has none. */
-export function Photo({ src, className }: { src: string | null; className?: string }) {
-  if (src === null) return <div data-placeholder="image" aria-hidden="true" className={cn(PLACEHOLDER, className)} />;
-  return <img src={src} alt="" loading="lazy" className={cn("object-cover", className)} />;
-}
-
 /** The quiet link at a tile's head: brand text, no fill (rule 5 keeps the fill for the one primary action). */
 export const tileLinkClass = "text-sm font-medium text-fg-brand hover:text-fg-brand-hovered";

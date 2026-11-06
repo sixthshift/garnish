@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { entryCount, todayTitle, tonightEntry, toTry } from "../../../../src/domain/home/home";
+import { cookSearch, entryCount, shortDay, todayTitle, tonightEntry, toTry } from "../../../../src/domain/home/home";
 import { type PlanDay, planEntrySchema } from "../../../../src/domain/plan/plan";
 import type { RecipeSummary } from "../../../../src/domain/recipes/recipe";
 
@@ -47,4 +47,14 @@ test("toTry keeps the never-made recipes, in the order given, up to the limit", 
 
 test("todayTitle splits the day's full name into the title and the line under it", () => {
   expect(todayTitle(DAY)).toEqual({ weekday: "Wednesday", date: "16 September" });
+});
+
+test("shortDay is the weekday and the date's number, for a week card", () => {
+  expect(shortDay(DAY)).toBe("Wed 16");
+});
+
+test("cookSearch carries an entry's servings and choices only when it has them", () => {
+  expect(cookSearch(entry({ recipe, text: "Lemon tart" }))).toEqual({});
+  const choices = { "22222222-2222-4222-8222-222222222222": "33333333-3333-4333-8333-333333333333" };
+  expect(cookSearch(entry({ recipe, text: "Lemon tart", servings: 6, choices }))).toEqual({ servings: 6, choices });
 });

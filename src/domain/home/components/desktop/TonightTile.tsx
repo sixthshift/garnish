@@ -7,7 +7,8 @@ import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { recipeImageUrl } from "../../../../lib/images";
 import { entryLabel, mealLabel, type PlanEntry, servingsLabel } from "../../../plan/plan";
 import { formatDuration } from "../../../recipes/ingredient";
-import { Photo } from "./Tile";
+import { cookSearch } from "../../home";
+import { Photo } from "../Photo";
 
 const SPAN = "col-span-2 row-span-4";
 
@@ -102,12 +103,4 @@ export function TonightTile({ entry, totalTime, primary }: { entry: PlanEntry | 
       </div>
     </section>
   );
-}
-
-/** Cook mode at the entry's servings and with its choices, as the phone's Start cooking opens it. */
-function cookSearch(entry: PlanEntry) {
-  return {
-    ...(entry.servings === null ? {} : { servings: entry.servings }),
-    ...(Object.keys(entry.choices).length > 0 ? { choices: entry.choices } : {}),
-  };
 }

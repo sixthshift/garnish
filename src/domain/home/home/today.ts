@@ -1,4 +1,4 @@
-import { dayName, type PlanDay, type PlanEntry } from "../../plan/plan";
+import { dayName, dayParts, type PlanDay, type PlanEntry } from "../../plan/plan";
 import type { RecipeSummary } from "../../recipes/recipe";
 
 /**
@@ -31,4 +31,18 @@ export function toTry(recipes: readonly RecipeSummary[], limit: number): RecipeS
 export function todayTitle(date: string): { weekday: string; date: string } {
   const [weekday = "", ...rest] = dayName(date).split(" ");
   return { weekday, date: rest.join(" ") };
+}
+
+/** "Wed 16", the short day a week card leads with. */
+export function shortDay(date: string): string {
+  const { weekday, day } = dayParts(date);
+  return `${weekday} ${day.split(" ")[0]}`;
+}
+
+/** Cook mode's search for a plan entry: its servings and its choices, when it has them. */
+export function cookSearch(entry: PlanEntry): { servings?: number; choices?: PlanEntry["choices"] } {
+  return {
+    ...(entry.servings === null ? {} : { servings: entry.servings }),
+    ...(Object.keys(entry.choices).length > 0 ? { choices: entry.choices } : {}),
+  };
 }

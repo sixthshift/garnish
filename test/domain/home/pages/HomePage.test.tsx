@@ -29,7 +29,7 @@ describe("/ (home)", () => {
   beforeEach(() => pin(WEDNESDAY));
   afterEach(() => vi.useRealTimers());
 
-  test("tonight's recipe leads, with Start cooking into cook mode at the entry's servings", async () => {
+  test("tonight's recipe leads, with Cook into cook mode at the entry's servings", async () => {
     const tart = await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "" }], performTime: 40 });
     await callServerFn(addPlanEntry, { date: WEDNESDAY, recipeId: tart.id, text: "Lemon tart", servings: 6 });
     const html = await renderRoute("/");
@@ -47,7 +47,8 @@ describe("/ (home)", () => {
     expect(html).toContain("Nothing planned for tonight.");
     expect(html).toContain("This week");
     expect(html.match(/<li[^>]*aria-current="date"/g)).toHaveLength(1);
-    expect(html).toContain("2 things left to buy");
+    expect(html).toContain("2 to buy");
+    expect(html).toContain("0 already in the trolley");
     expect(html).toContain("Not planned yet.");
     expect(html).toContain('href="/plan/fill?week=2026-09-21"');
     // Through the week, planning next week is not the page's primary action.

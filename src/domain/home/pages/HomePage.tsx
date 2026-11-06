@@ -1,22 +1,20 @@
-import { Button } from "@sixthshift/design-system/button";
-import { Heading } from "@sixthshift/design-system/heading";
-import { Muted } from "@sixthshift/design-system/muted";
-import { getRouteApi, Link } from "@tanstack/react-router";
-import { Page } from "../../../components/Page";
+import { getRouteApi } from "@tanstack/react-router";
+import { useState } from "react";
+import { addPlanEntry, movePlanEntry, removePlanEntry } from "../../../api/rpc/plan";
+import { useMutate } from "../../../lib/mutate";
+import { toastError } from "../../../lib/toast";
 import { useLayout } from "../../../lib/useLayout";
-import { isWeekend, nextMonday } from "../../plan/plan";
+import { searchPlanRecipes } from "../../plan/components/week/searchPlanRecipes";
+import type { Meal } from "../../plan/plan";
 import { HomeBento } from "../components/desktop/HomeBento";
-import { NextWeek } from "../components/NextWeek";
-import { ShoppingGlance } from "../components/ShoppingGlance";
-import { Tonight } from "../components/Tonight";
-import { ToTry } from "../components/ToTry";
-import { WeekGlance } from "../components/WeekGlance";
-import { entryCount, type HomeData, todayTitle, tonightEntry, toTry } from "../home";
+import { PhoneHome, type PlanChoice } from "../components/mobile/PhoneHome";
 
 const route = getRouteApi("/");
 
-/** How many never-made recipes Home offers: a row of chips, not a second library. */
-const TO_TRY_LIMIT = 6;
+/** An add's input for `date`: a recipe keeps its name with its id, so the entry still reads if the recipe goes. */
+function entryInput(date: string, choice: PlanChoice, meal: Meal | null) {
+  return "recipe" in choice ? { date, recipeId: choice.recipe.id, text: choice.recipe.name, meal } : { date, text: choice.text, meal };
+}
 
 /**
  * The day as it stands: tonight's meal and the way into cooking it, the week
@@ -24,61 +22,44 @@ const TO_TRY_LIMIT = 6;
  * been kept but never made. The place a glance lands; choosing from the whole
  * library is Recipes, planning a week is Plan.
  *
- * One brand fill (design-language rule 5): Start cooking, except at the
- * weekend while next week is empty, when planning it is the thing to do.
+ * One brand fill (design-language rule 5): Cook, except at the weekend while
+ * next week is empty, when planning it is the thing to do.
  */
 export function HomePage() {
   const data = route.useLoaderData();
   const layout = useLayout();
+  const mutate = useMutate();
+  const [busy, setBusy] = useState(false);
+
+  const write = async (what: string, run: () => Promise<unknown>) => {
+    setBusy(true);
+    try {
+      await mutate(run);
+    } catch (error) {
+      toastError(what, error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // A desktop's Home is a different structure, tiles across the width (decisions.md row 207).
-  return layout === "desktop" ? <HomeBento {...data} /> : <PhoneHome {...data} />;
-}
-
-/** Home on a phone: one column, the day first. */
-function PhoneHome({ today, monday, days, nextDays, toBuy, recipes }: HomeData) {
-  const title = todayTitle(today);
-  const tonight = tonightEntry(days.find((day) => day.date === today));
-  const recipe = tonight?.recipe ? recipes.find((r) => r.id === tonight.recipe?.id) : undefined;
-  const planNow = isWeekend(today) && entryCount(nextDays) === 0;
-  const next = nextMonday(monday);
-
+  if (layout === "desktop") return <HomeBento {...data} />;
   return (
-    <Page>
-      <header className="flex flex-col gap-1">
-        <Heading as="h1">{title.weekday}</Heading>
-        <Muted as="p">{title.date}</Muted>
-      </header>
-
-      {planNow && (
-        <section
-          aria-labelledby="plan-now"
-          className="flex flex-wrap items-center gap-4 rounded-xl border border-border-brand-subtle bg-bg-brand-subtle p-4 desktop:p-5"
-        >
-          <div className="flex min-w-0 flex-[1_1_16rem] flex-col gap-1">
-            <h2 id="plan-now" className="font-display text-xl font-semibold">
-              Next week isn't planned yet
-            </h2>
-            <p className="text-fg-on-brand-subtle">Weeknights from the rotation, then something for the weekend.</p>
-          </div>
-          <Button asChild intent="brand">
-            <Link to="/plan/fill" search={{ week: next }}>
-              Plan next week
-            </Link>
-          </Button>
-        </section>
-      )}
-
-      <div className="grid gap-6 desktop:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] desktop:items-start">
-        <div className="flex min-w-0 flex-col gap-6">
-          <Tonight entry={tonight} totalTime={recipe?.totalTime ?? null} primary={!planNow} />
-          <WeekGlance days={days} today={today} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-6">
-          <ShoppingGlance toBuy={toBuy} />
-          {!planNow && <NextWeek monday={next} count={entryCount(nextDays)} />}
-          <ToTry recipes={toTry(recipes, TO_TRY_LIMIT)} />
-        </div>
-      </div>
-    </Page>
+    <PhoneHome
+      {...data}
+      busy={busy}
+      searchRecipes={searchPlanRecipes}
+      onAdd={(date, choice, meal) => void write("Couldn't add to the plan", () => addPlanEntry({ data: entryInput(date, choice, meal) }))}
+      // The new entry goes where the old one was, so it is still the one Home
+      // calls tonight's, and the old one goes.
+      onSwap={(entry, choice, meal) =>
+        void write("Couldn't swap tonight", async () => {
+          const index = data.days.find((day) => day.date === entry.date)?.entries.findIndex((e) => e.id === entry.id) ?? -1;
+          const added = await addPlanEntry({ data: entryInput(entry.date, choice, meal) });
+          if (index >= 0) await movePlanEntry({ data: { id: added.id, date: entry.date, position: index } });
+          await removePlanEntry({ data: { id: entry.id } });
+        })
+      }
+    />
   );
 }

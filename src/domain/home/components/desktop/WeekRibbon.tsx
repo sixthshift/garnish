@@ -2,15 +2,9 @@ import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { recipeImageUrl } from "../../../../lib/images";
-import { dayParts, entryLabel, type PlanDay } from "../../../plan/plan";
-import { tonightEntry } from "../../home";
-import { Photo, PLACEHOLDER } from "./Tile";
-
-/** "Wed 16", the short day a card leads with. */
-function shortDay(date: string): string {
-  const { weekday, day } = dayParts(date);
-  return `${weekday} ${day.split(" ")[0]}`;
-}
+import { entryLabel, type PlanDay } from "../../../plan/plan";
+import { shortDay, tonightEntry } from "../../home";
+import { Photo, PLACEHOLDER } from "../Photo";
 
 /**
  * This week as seven picture cards across the top of a desktop's Home: each
