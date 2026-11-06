@@ -102,8 +102,8 @@ function memory() {
 const sourceProps = { units: [], onChoose: () => {}, onDraft: () => {}, loadFoods: async () => [], load: async () => found };
 
 test("Back from the Style stage asks before it drops the import", async () => {
-  const stage = await renderStage(<ImportStyle draft={draft} imageUrl={null} file={null} onEditDetails={() => {}} onCancel={() => {}} />);
-  await backAsksThenLeaves(stage, () => screen.getByRole("button", { name: "Edit details" }));
+  const stage = await renderStage(<ImportStyle draft={draft} imageUrl={null} file={null} onBack={() => {}} onCancel={() => {}} />);
+  await backAsksThenLeaves(stage, () => screen.getByRole("button", { name: "Back" }));
 });
 
 test("Back from Check asks before it drops the import", async () => {
@@ -131,7 +131,7 @@ test("Back from a paste with text in it asks", async () => {
   await backAsksThenLeaves(stage, () => screen.getByRole("textbox", { name: "Pasted recipe" }));
 });
 
-test("Back from Edit details asks about the import even when nothing in it was changed", async () => {
+test("Back from Check asks about the import even when nothing in it was changed", async () => {
   const stage = await renderStage(<RecipeForm initial={draft} units={[]} tags={[]} storage={memory()} isImport />);
   await backAsksThenLeaves(stage, () => screen.getAllByDisplayValue("Kung pao chicken")[0]!);
 });

@@ -1,5 +1,5 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { recipeByName, recipeBySource } from "../../../api/rpc/recipes";
 import { Page, PageHeader } from "../../../components/Page";
 import { DiscardImportDialog } from "../components/editor/DiscardImport";
@@ -40,6 +40,12 @@ export function NewRecipePage() {
   };
   const leave = leaving && <DiscardImportDialog onStay={() => setLeaving(false)} onDiscard={discard} />;
 
+  // Each stage opens at its top: Style is reached from the foot of Check, and Check again from the foot of Style.
+  const stage = imported === null ? null : `${imported.stage}:${imported.version}`;
+  useEffect(() => {
+    if (stage !== null) window.scrollTo(0, 0);
+  }, [stage]);
+
   // With a model, Check continues to Style, where Save is; without one, Check saves.
   if (imported !== null && aiAvailable && imported.stage === "style") {
     return (
@@ -50,7 +56,7 @@ export function NewRecipePage() {
           draft={imported.draft}
           imageUrl={imported.check.imageUrl}
           file={imported.file}
-          onEditDetails={() => setImported({ ...imported, stage: "check", version: imported.version + 1 })}
+          onBack={() => setImported({ ...imported, stage: "check", version: imported.version + 1 })}
           onCancel={discard}
         />
       </Page>

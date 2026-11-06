@@ -17,17 +17,18 @@ import { StyleSpace } from "../style/StyleSpace";
 import { forSaving } from "../style/styleSession";
 
 export type ImportStyleProps = {
-  /** The import as the review left it, or as Edit details returned it. */
+  /** The import as Check left it. */
   draft: RecipeDraft;
   /** The page's picture, when the import found one. */
   imageUrl: string | null;
-  /** A picture picked in Edit details, which wins over `imageUrl`. */
+  /** A picture picked on Check, which wins over `imageUrl`. */
   file: File | null;
-  onEditDetails: () => void;
+  /** Back to Check, with the draft as it was handed on. */
+  onBack: () => void;
   /**
-   * Drop the import and go back to the chooser. Style and Edit details only
-   * lead to each other, and from here the phone has no tab bar, so this is
-   * the way out short of saving; it asks first, since nothing is stored yet.
+   * Drop the import and go back to the chooser. From here the phone has no
+   * tab bar, so this is the way out short of saving or going back to Check;
+   * it asks first, since nothing is stored yet.
    * Leaving the page any other way (the browser's Back) asks the same.
    */
   onCancel: () => void;
@@ -39,7 +40,7 @@ export type ImportStyleProps = {
  * Save creates it: restyled, with the author's words kept for Restore, or as
  * the author wrote it when nothing was taken.
  */
-export function ImportStyle({ draft, imageUrl, file, onEditDetails, onCancel }: ImportStyleProps) {
+export function ImportStyle({ draft, imageUrl, file, onBack, onCancel }: ImportStyleProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const checked = useMemo(() => validateDraft(draft), [draft]);
@@ -62,10 +63,10 @@ export function ImportStyle({ draft, imageUrl, file, onEditDetails, onCancel }: 
     return (
       <>
         <Message intent="warning" title="This import needs a fix first" data-testid="import-style-invalid">
-          {Object.values(checked.errors)[0] ?? "Something in the recipe is not valid."} Fix it in the details, then come back to the style.
+          {Object.values(checked.errors)[0] ?? "Something in the recipe is not valid."} Fix it on Check, then come back to the style.
           <div className="mt-2 flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant="outline" intent="neutral" onClick={onEditDetails}>
-              Edit details
+            <Button type="button" size="sm" variant="outline" intent="neutral" onClick={onBack}>
+              Back to Check
             </Button>
             <Button type="button" size="sm" variant="ghost" intent="neutral" onClick={() => setConfirmingCancel(true)}>
               Cancel
@@ -103,11 +104,12 @@ export function ImportStyle({ draft, imageUrl, file, onEditDetails, onCancel }: 
         run={(ruleIds) => restyleDraft({ data: { doc, ruleIds } })}
         onSave={save}
         saveLabel="Save recipe"
+        skipLabel="Skip, save as written"
         secondary={
           <>
             {cancel}
-            <Button type="button" variant="outline" intent="neutral" onClick={onEditDetails}>
-              Edit details
+            <Button type="button" variant="outline" intent="neutral" onClick={onBack}>
+              Back
             </Button>
           </>
         }

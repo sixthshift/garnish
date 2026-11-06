@@ -26,8 +26,10 @@ export type StyleSpaceProps = {
   onSave: (parts: RestyledPart[] | null) => Promise<void>;
   /** The primary button, e.g. "Save recipe". */
   saveLabel: string;
-  /** The buttons before Save: Back, Edit details. */
+  /** The buttons before Save: Back, Cancel. */
   secondary?: ReactNode;
+  /** While the rewrite runs, a way past it: an import's "Skip, save as written" (decisions.md row 203). */
+  skipLabel?: string;
   /** The guide; the server's by default. */
   loadRules?: () => Promise<StyleRule[]>;
 };
@@ -69,18 +71,18 @@ export function startsOf(counts: readonly number[]): number[] {
  * step by step. Shared by the import, where
  * it comes before Save, and a saved recipe's Style page.
  */
-export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules }: StyleSpaceProps) {
+export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel, loadRules }: StyleSpaceProps) {
   const style = useStyleSpace({ parts, run, loadRules });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const { original, answer, choices, assembled, counts, saveCheck, running } = style;
   const warning = saveCheck && !saveCheck.ok ? saveWarning(saveCheck) : null;
 
-  const save = async () => {
+  const save = async (asWritten = false) => {
     setSaving(true);
     setSaveError(null);
     try {
-      await onSave(style.toSave);
+      await onSave(asWritten ? null : style.toSave);
     } catch (cause) {
       setSaveError(messageFrom(cause));
       setSaving(false);
@@ -96,8 +98,13 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex min-w-0 grow items-center gap-2 text-sm" aria-live="polite">
           {running && <Spinner size="sm" />}
-          <span data-testid="style-status">{running ? "Restyling in the house style…" : counts ? statusLine(counts) : ""}</span>
+          <span data-testid="style-status">{running ? "Rewriting in your house style…" : counts ? statusLine(counts) : ""}</span>
         </div>
+        {running && skipLabel !== undefined && (
+          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={() => void save(true)}>
+            {skipLabel}
+          </Button>
+        )}
         <Button
           type="button"
           variant="outline"
@@ -112,8 +119,8 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, loadRules
       </div>
 
       {style.error !== null && (
-        <Message intent="danger" title="The restyle did not run" data-testid="style-error">
-          {style.error} The recipe is shown as the author wrote it{answer ? "" : "; Save keeps it that way"}.
+        <Message intent="warning" title="Couldn't rewrite this in your house style" data-testid="style-error">
+          {style.error} The steps are shown as written{answer ? "" : ", and Save keeps them that way"}.
           <div className="mt-2">
             <Button type="button" size="sm" variant="outline" intent="neutral" onClick={style.runAgain}>
               Try again

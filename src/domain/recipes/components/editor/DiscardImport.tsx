@@ -10,7 +10,7 @@ export const DISCARD_PASTE = "Nothing has been read yet. Leaving now loses the t
 
 /**
  * The one question every way out of an unsaved import asks: the Style stage's
- * Cancel, and leaving /recipes/new from the review, Style or Edit details by
+ * Cancel, and leaving /recipes/new from Check or Style by
  * the browser's Back, a nav link or a reload.
  */
 export function DiscardImportDialog({ onStay, onDiscard, body = DISCARD_RECIPE }: { onStay: () => void; onDiscard: () => void; body?: string }) {
