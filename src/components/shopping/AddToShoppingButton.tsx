@@ -1,7 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
 import { toast } from "@sixthshift/design-system/overlay";
 import { useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import type { Recipe } from "../../domain/recipes/recipe";
 import type { ShoppingAddition } from "../../domain/shopping/shopping";
 import { addedMessage, addToShoppingList } from "../../lib/shopping";
@@ -15,6 +15,9 @@ export type AddToShoppingButtonProps = {
   /** The recipe as the page is showing it: already scaled. */
   recipe: Recipe;
   size?: "sm" | "md" | "xl";
+  /** The button's face, when not its words: a phone's recipe page shows a cart (its name stays "Add to shopping list"). */
+  icon?: ReactNode;
+  className?: string;
 };
 
 /**
@@ -22,7 +25,7 @@ export type AddToShoppingButtonProps = {
  * finish card use the same one. The toast says how many lines the list gained
  * and offers a way to it.
  */
-export function AddToShoppingButton({ recipe, size = "sm" }: AddToShoppingButtonProps) {
+export function AddToShoppingButton({ recipe, size = "sm", icon, className }: AddToShoppingButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -49,8 +52,18 @@ export function AddToShoppingButton({ recipe, size = "sm" }: AddToShoppingButton
 
   return (
     <>
-      <Button variant="outline" intent="neutral" size={size} data-testid="shopping-list-button" data-print="hide" onClick={() => setOpen(true)}>
-        Add to shopping list
+      <Button
+        variant="outline"
+        intent="neutral"
+        size={size}
+        iconOnly={icon !== undefined}
+        aria-label={icon === undefined ? undefined : "Add to shopping list"}
+        className={className}
+        data-testid="shopping-list-button"
+        data-print="hide"
+        onClick={() => setOpen(true)}
+      >
+        {icon ?? "Add to shopping list"}
       </Button>
       <AddToShoppingSheet open={open} recipe={recipe} busy={busy} onCancel={() => setOpen(false)} onAdd={(additions) => void add(additions)} />
     </>

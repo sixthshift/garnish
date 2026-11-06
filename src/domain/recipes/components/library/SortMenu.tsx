@@ -1,23 +1,20 @@
 import { Menu } from "../../../../components/ui/Menu";
-import { useLayout } from "../../../../lib/useLayout";
 import { SORT_OPTIONS, type SortDir, type SortKey } from "../../recipe";
 
 export type SortMenuProps = {
   sort: SortKey;
   dir: SortDir;
   onChange: (sort: SortKey, dir: SortDir) => void;
-  /** Open a random recipe. Offered here on a phone, where the toolbar has no room for the dice button beside the menu. */
-  onRandom?: () => void;
   /** Forwarded to the underlying `Menu`; only tests render it open (Menu is closed by default and opens on click). */
   open?: boolean;
 };
 
-export function SortMenu({ sort, dir, onChange, onRandom, open }: SortMenuProps) {
+/** A desktop's order, in its filters column. A phone chooses the order in its filters sheet (FiltersSheet). */
+export function SortMenu({ sort, dir, onChange, open }: SortMenuProps) {
   const current = SORT_OPTIONS.find((option) => option.key === sort && option.dir === dir) ?? SORT_OPTIONS[0]!;
   const label = `Sort: ${current.label}`;
-  const phone = useLayout() === "mobile";
   return (
-    <Menu label={label} open={open} display={phone ? "Sort" : label}>
+    <Menu label={label} open={open}>
       {SORT_OPTIONS.map((option) => {
         const active = option.key === sort && option.dir === dir;
         return (
@@ -29,13 +26,6 @@ export function SortMenu({ sort, dir, onChange, onRandom, open }: SortMenuProps)
           </Menu.Item>
         );
       })}
-      {onRandom && phone && (
-        // A rule drawn on the item, not a Menu.Separator: one piece with it.
-        <Menu.Item onSelect={onRandom} className="mt-1 border-t border-border-subtle">
-          <span aria-hidden="true" className="inline-block w-4" />
-          Open a random recipe
-        </Menu.Item>
-      )}
     </Menu>
   );
 }

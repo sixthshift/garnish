@@ -1,26 +1,27 @@
 import { toast } from "@sixthshift/design-system/overlay";
+import { cn } from "@sixthshift/design-system/utils";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { foodForRecipe } from "../../../../api/rpc/foods";
-import { addPlanEntry } from "../../../../api/rpc/plan";
 import { deleteRecipe, duplicateRecipe } from "../../../../api/rpc/recipes";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { Menu } from "../../../../components/ui/Menu";
 import { writeClipboard } from "../../../../lib/clipboard";
 import { useMutate } from "../../../../lib/mutate";
 import { toastError } from "../../../../lib/toast";
-import { dayLabel } from "../../../plan/plan";
 import { ingredientsText, type Recipe, recipeUrl, toCooklang } from "../../recipe";
-import { PlanPopover, planEntryFor } from "./PlanPopover";
+import { PlanPopover, usePlanTo } from "./PlanPopover";
 import { useQuickEditContext } from "./QuickEditContext";
 
 export type RecipeActionsProps = {
   recipe: Recipe;
   /** Whether a model is configured. Without one, Restyle steps is not offered. */
   aiAvailable?: boolean;
+  /** On the menu's box: a phone's recipe page draws the trigger round over the photo. */
+  className?: string;
 };
 
-export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProps) {
+export function RecipeActions({ recipe, aiAvailable = false, className }: RecipeActionsProps) {
   const navigate = useNavigate();
   const mutate = useMutate();
   const [confirming, setConfirming] = useState(false);
@@ -62,15 +63,7 @@ export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProp
     }
   };
 
-  const planTo = async (date: string, servings: number) => {
-    try {
-      await mutate(() => addPlanEntry({ data: planEntryFor(recipe, date, servings) }));
-      toast({ intent: "success", title: `Added to ${dayLabel(date)}` });
-      setPlanning(false);
-    } catch (error) {
-      toastError("Could not plan this recipe", error);
-    }
-  };
+  const planTo = usePlanTo(recipe, () => setPlanning(false));
 
   const remove = async () => {
     setDeleting(true);
@@ -86,7 +79,7 @@ export function RecipeActions({ recipe, aiAvailable = false }: RecipeActionsProp
 
   return (
     <>
-      <div className="relative inline-block">
+      <div className={cn("relative inline-block", className)}>
         <Menu label="Recipe actions" iconOnly>
           <Menu.Item onSelect={() => void duplicate()}>Duplicate</Menu.Item>
           <Menu.Item onSelect={() => void makeFood()}>Make this a food</Menu.Item>

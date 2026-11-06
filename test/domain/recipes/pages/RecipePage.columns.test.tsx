@@ -130,15 +130,21 @@ describe("the ingredients and method columns (M24.1, critique #13; M47.4)", () =
     expect(html).not.toContain('data-testid="ingredient-mode-toggle"');
   });
 
-  test("a phone's page is one column: the ingredients, then the method, under the page's measure", async () => {
+  test("a phone's page is one column: the ingredients, then the method, as two tabs under the page's measure (row 208)", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     const columns = elementHtml(html, "recipe-columns");
     expect(columns.slice(0, columns.indexOf(">"))).toContain("flex flex-col");
     expect(columns.slice(0, columns.indexOf(">"))).not.toMatch(/grid|md:/);
     expect(html.indexOf('data-testid="ingredients-column"')).toBeLessThan(html.indexOf('data-testid="method-column"'));
-    expect(html).toMatch(/<article[^>]*class="[^"]*max-w-6xl/);
+    expect(html).toMatch(/<article[^>]*class="[^"]*max-w-3xl/);
     expect(html).not.toContain('data-testid="recipe-spread"');
+    // Both are drawn, the method hidden until its tab is chosen, so a printout has the whole recipe.
+    expect(columns).toContain('role="tablist"');
+    const method = elementHtml(html, "method-column");
+    expect(method.slice(0, method.indexOf(">"))).toMatch(/role="tabpanel"[^>]*class="[^"]*hidden print:flex/);
+    expect(columns).toMatch(/aria-selected="true"[^>]*>Ingredients</);
+    expect(columns).toContain(">Method · 3 steps<");
   });
 
   test("a desktop's page is a spread: the left page, the ingredients, the method and the notes, each scrolling on its own (row 207)", async () => {
@@ -252,7 +258,7 @@ describe("the ingredients heading's Clear link (M25.6)", () => {
 });
 
 describe("notes come after the method (critique #4)", () => {
-  test("in the method column, after every step and before Made this; the header and the ingredients come first", async () => {
+  test("on a phone, under both tabs, after every step and Made this; the header and the ingredients come first", async () => {
     await callServerFn(createRecipe, {
       name: "Lemon tart",
       notes: [{ title: "Make ahead", text: "Keeps three days." }],
@@ -264,10 +270,11 @@ describe("notes come after the method (critique #4)", () => {
     const html = await renderRoute("/recipes/lemon-tart");
     const main = elementHtml(html, "method-column");
 
+    // Notes belong to neither tab, so they follow both, read whichever is open.
     expect(elementHtml(html, "ingredients-column")).not.toContain('data-testid="recipe-notes"');
-    expect(main).toContain('data-testid="recipe-notes"');
-    expect(main.indexOf("Chill it overnight.")).toBeLessThan(main.indexOf('data-testid="recipe-notes"'));
-    expect(main.indexOf('data-testid="recipe-notes"')).toBeLessThan(main.indexOf('data-testid="made-this-row"'));
+    expect(main).not.toContain('data-testid="recipe-notes"');
+    expect(main.indexOf("Chill it overnight.")).toBeLessThan(main.indexOf('data-testid="made-this-row"'));
+    expect(html.indexOf('data-testid="made-this-row"')).toBeLessThan(html.indexOf('data-testid="recipe-notes"'));
     expect(html.indexOf('data-testid="ingredients-heading"')).toBeLessThan(html.indexOf('data-testid="recipe-notes"'));
     expect(elementHtml(html, "recipe-notes")).toContain("Keeps three days.");
   });
@@ -290,8 +297,8 @@ describe("the meta footer moves to the foot of the page (M24.3)", () => {
     expect(elementHtml(html, "recipe-header")).not.toContain('data-testid="recipe-meta"');
     expect(html.indexOf('data-testid="recipe-header"')).toBeLessThan(html.indexOf('data-testid="timeline"'));
     expect(html.indexOf('data-testid="timeline"')).toBeLessThan(html.indexOf('data-testid="recipe-meta"'));
-    // Nothing else follows the footer before the page's <article> closes.
-    expect(html).toMatch(/data-testid="recipe-meta"[\s\S]*<\/footer>\s*<\/article>/);
+    // Nothing follows the footer in the page; only the Start cooking bar under it.
+    expect(html).toMatch(/data-testid="recipe-meta"[\s\S]*<\/footer>\s*<\/div><div[^>]*data-testid="cook-bar"/);
   });
 });
 

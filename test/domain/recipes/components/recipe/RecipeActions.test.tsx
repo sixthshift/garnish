@@ -47,10 +47,11 @@ async function render(recipe: Recipe, props: Partial<RecipeActionsProps> = {}): 
   return renderToString(<RouterProvider router={router} />);
 }
 
-test("takes the recipe and M37.6's model flag", () => {
+test("takes the recipe, M37.6's model flag and a class for its box (a phone's round trigger)", () => {
   expectTypeOf<RecipeActionsProps>().toEqualTypeOf<{
     recipe: Recipe;
     aiAvailable?: boolean;
+    className?: string;
   }>();
 });
 

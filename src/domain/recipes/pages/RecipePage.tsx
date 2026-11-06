@@ -4,7 +4,6 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import { setRating } from "../../../api/rpc/recipes";
-import { Page } from "../../../components/Page";
 import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
 import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingButton";
 import { PencilIcon } from "../../../components/ui/icons";
@@ -14,6 +13,8 @@ import { toastError } from "../../../lib/toast";
 import { useLayout } from "../../../lib/useLayout";
 import { clearTicksNow, useAnyTicked } from "../../../lib/useTicks";
 import { RecipeSpread } from "../components/desktop/RecipeSpread";
+import { CookBar } from "../components/mobile/CookBar";
+import { PhoneRecipe } from "../components/mobile/PhoneRecipe";
 import { IngredientList, PartIngredients } from "../components/recipe/IngredientList";
 import { IngredientModeToggle } from "../components/recipe/IngredientModeToggle";
 import { MadeThisButton } from "../components/recipe/MadeThisButton";
@@ -30,9 +31,10 @@ import { mergeIngredients, scaledForServings, withChoices } from "../recipe";
 const route = getRouteApi("/recipes/$slug/");
 
 /**
- * A recipe's page. On a phone the header, the ingredients and the method, one
- * after another; on a desktop the same pieces laid out as a cookbook spread
- * (RecipeSpread, decisions.md row 207). Only the arrangement differs.
+ * A recipe's page. On a phone the photo with the page sliding up over it,
+ * the ingredients and the method as two tabs and Start cooking held under the
+ * thumb (PhoneRecipe, decisions.md row 208); on a desktop a cookbook spread
+ * (RecipeSpread, row 207). Both are built from the same pieces here.
  */
 export function RecipePage() {
   const { recipe: stored, timeline, subRecipes, aiAvailable } = route.useLoaderData();
@@ -72,8 +74,8 @@ export function RecipePage() {
       recipe={recipe}
       madeCount={timeline.length}
       onRate={(rating) => void rate(rating)}
-      // The spread draws the photo itself, filling the top of its left page.
-      showImage={!desktop}
+      // A desktop's header (a phone draws its own, PhoneRecipe): the spread draws the photo itself, filling the top of its left page.
+      showImage={false}
       actions={
         <>
           {/* Edit and Cook are both in the open rather than behind
@@ -109,7 +111,8 @@ export function RecipePage() {
       {/* The column's own heading, as Mealie's ingredient list header has both the title and the servings stepper together. */}
       <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
         {/* Focusable from code only: where Done fixing hands focus as it goes. */}
-        <SectionTitle as="h2" ref={ingredientsHeading} tabIndex={-1} className="outline-none">
+        {/* On a phone the tab says it, so the heading is only for a screen reader and where focus lands. */}
+        <SectionTitle as="h2" ref={ingredientsHeading} tabIndex={-1} className={desktop ? "outline-none" : "sr-only"}>
           Ingredients
         </SectionTitle>
         <div className="flex flex-wrap items-center gap-3">
@@ -189,29 +192,32 @@ export function RecipePage() {
             <TimerStrip recipeId={recipe.id} fixed />
           </>
         ) : (
-          <Page as="article">
-            {header}
-
-            {/* The ingredients, then the method (critique #13). */}
-            <div className="flex flex-col gap-6" data-testid="recipe-columns">
-              <aside data-testid="ingredients-column" data-print="keep" className="flex flex-col gap-4">
-                {ingredients}
-              </aside>
-
-              <div className="flex flex-col gap-6" data-testid="method-column">
-                {steps}
-                {notes}
-                {madeThis}
-              </div>
-            </div>
-
-            {/* Any timers started from a step, fixed above the phone tab bar. */}
-            <TimerStrip recipeId={recipe.id} fixed />
-
-            <TimelineList events={timeline} />
-
-            <RecipeMetaFooter recipe={recipe} />
-          </Page>
+          <>
+            <PhoneRecipe
+              recipe={recipe}
+              madeCount={timeline.length}
+              onRate={(rating) => void rate(rating)}
+              actions={(className) => <RecipeActions recipe={recipe} aiAvailable={aiAvailable} className={className} />}
+              servings={requested}
+              ingredients={ingredients}
+              method={
+                <>
+                  {steps}
+                  {madeThis}
+                </>
+              }
+              after={
+                <>
+                  {notes}
+                  <TimelineList events={timeline} />
+                  <RecipeMetaFooter recipe={recipe} />
+                </>
+              }
+              cookBar={<CookBar recipe={recipe} servings={requested} choices={choices} />}
+            />
+            {/* Any timers started from a step, fixed above the Start cooking bar. */}
+            <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(var(--app-bar)+4.75rem)]" />
+          </>
         )}
       </SubRecipesProvider>
     </QuickEditProvider>

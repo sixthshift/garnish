@@ -44,12 +44,18 @@ test("the view page carries the action menu trigger, closed", async () => {
 
 test("Edit and Cook are both buttons in the open, beside the menu; neither is in it", async () => {
   await seedTart();
+  const wide = await renderRoute("/recipes/lemon-tart", "desktop");
+  expect(wide).toContain('aria-label="Edit"');
+  expect(wide).toContain('href="/recipes/lemon-tart/edit');
+  expect(wide).toContain(">Cook<");
+  expect(wide).toContain('href="/recipes/lemon-tart/cook');
+  expect(wide).not.toContain('role="menuitem"'); // menu is closed by default
+  // A phone's Edit is round over the photo, and Cook is Start cooking in the bar at the foot (decisions.md row 208).
   const html = await renderRoute("/recipes/lemon-tart");
   expect(html).toContain('aria-label="Edit"');
-  expect(html).toContain('href="/recipes/lemon-tart/edit');
-  expect(html).toContain(">Cook<");
-  expect(html).toContain('href="/recipes/lemon-tart/cook');
-  expect(html).not.toContain('role="menuitem"'); // menu is closed by default
+  expect(elementHtml(html, "cook-bar")).toContain("Start cooking");
+  expect(elementHtml(html, "cook-bar")).toContain('href="/recipes/lemon-tart/cook');
+  expect(html).not.toContain('role="menuitem"');
 });
 
 test("the header's actions are marked as chrome for the print stylesheet", async () => {
@@ -103,11 +109,16 @@ test("the menu's Plan item opens a popover trigger sitting beside it, closed by 
 // said "Coming later" is gone and the button is live.
 test("a live 'Add to shopping list' button sits beside Cook", async () => {
   await seedTart();
-  const html = await renderRoute("/recipes/lemon-tart");
+  const html = await renderRoute("/recipes/lemon-tart", "desktop");
   const button = elementHtml(html, "shopping-list-button");
   expect(button).toContain(">Add to shopping list<");
   expect(button).not.toMatch(/ disabled(=""|(?=[ >]))/);
   expect(html.indexOf(button)).toBeGreaterThan(html.indexOf(">Cook<"));
   expect(html).toContain('data-print="hide"');
   expect(html).not.toContain("Coming later");
+  // A phone's is a round cart beside Start cooking, named the same, with the plan beside it.
+  const bar = elementHtml(await renderRoute("/recipes/lemon-tart"), "cook-bar");
+  expect(bar).toContain('aria-label="Add to shopping list"');
+  expect(bar.indexOf('data-testid="shopping-list-button"')).toBeGreaterThan(bar.indexOf("Start cooking"));
+  expect(bar).toContain('aria-label="Put on the plan"');
 });

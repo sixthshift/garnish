@@ -13,7 +13,10 @@ test("a recipe typed in is listed, scales, and keeps an edit", async ({ page, op
 
   const ingredients = page.getByRole("list", { name: "Ingredients" });
   await expect(ingredients.getByRole("listitem")).toHaveCount(2);
+  // A phone shows the method under its own tab (decisions.md row 208).
+  await page.getByRole("tab", { name: "Method · 2 steps" }).click();
   await expect(page.getByRole("list", { name: "Steps" }).getByRole("listitem")).toHaveCount(2);
+  await page.getByRole("tab", { name: "Ingredients" }).click();
 
   // Found from the list by search.
   await open("/recipes");

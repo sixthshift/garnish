@@ -36,6 +36,7 @@ test("an amount changed while cooking is kept in the recipe; a step changed just
 
   await open(recipe);
   await expect(page.getByRole("list", { name: "Ingredients" })).toContainText("1 tbsp soy sauce");
+  await page.getByRole("tab", { name: /^Method/ }).click();
   await expect(page.getByRole("list", { name: "Steps" })).toContainText("Cook the rice.");
   await expect(page.getByRole("list", { name: "Steps" })).not.toContainText("bay leaf");
 });

@@ -98,9 +98,10 @@ describe("/recipes (list)", () => {
     expect(html).toContain('src="/api/images/flatbread.jpg"');
     expect(html).toContain('src="/api/images/lemon%20tart.webp"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
-    // Tag chips on a phone's card; a desktop's wall names the tags under the card, and the
+    // A phone's card is the photo and the name (decisions.md row 208); a desktop's wall names the tags under the card, and the
     // filters column offers every tag with its count, none selected (decisions.md row 207).
-    expect(phone).toMatch(/class="(?:[^"]* )?tag-chip /);
+    expect(elementHtml(phone, "photo-grid").match(/data-testid="photo-card"/g)).toHaveLength(3);
+    expect(phone).toContain('src="/api/images/flatbread.jpg"');
     expect(elementHtml(html, "photo-wall")).toContain(">Weeknight</span>");
     const filters = elementHtml(html, "filters-column");
     expect(filters).toContain(">Tags<");
@@ -181,7 +182,7 @@ describe("/recipes (list)", () => {
     html = await renderRoute("/recipes?shelf=try");
     expect(html).toContain('href="/recipes/lamb-shoulder"');
     expect(html).not.toContain('href="/recipes/laksa"');
-    expect(html).toContain('aria-label="Shelf"');
+    expect(html).toContain('aria-label="Collection"');
   });
 
   describe("view mode (M12.2)", () => {
@@ -189,14 +190,12 @@ describe("/recipes (list)", () => {
       delete (globalThis as { window?: unknown }).window;
     });
 
-    test("defaults to a grid: cards in grid mode, grid selected in the toggle; a desktop's grid is the wall", async () => {
+    test("a phone has the photo grid and no view toggle; a desktop defaults to a grid, which is the wall", async () => {
       await seed("Flatbread");
       const phone = await renderRoute("/recipes");
-      expect(phone).toContain('data-card-mode="grid"');
-      expect(phone).not.toContain('data-card-mode="list"');
-      expect(phone).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
-      // A track never wider than the list, so a phone under the card's minimum gets one full-width column, not a page that scrolls.
-      expect(phone).toContain("grid-template-columns:repeat(auto-fill, minmax(min(22rem, 100%), 1fr))");
+      expect(phone).toContain('data-testid="photo-grid"');
+      expect(phone).not.toContain("data-card-mode");
+      expect(phone).not.toContain('aria-label="Grid view"');
       const html = await renderRoute("/recipes", "desktop");
       expect(html).toContain('data-testid="photo-wall"');
       expect(html).not.toContain('data-card-mode="list"');
@@ -234,7 +233,7 @@ describe("/recipes (list)", () => {
       expect(html).toContain("Sort: Name (A–Z)");
       expect(html.indexOf("Apple pie")).toBeLessThan(html.indexOf("Banana cake"));
 
-      html = await renderRoute("/recipes?sort=name&dir=desc");
+      html = await renderRoute("/recipes?sort=name&dir=desc", "desktop");
       expect(html).toContain("Sort: Name (Z–A)");
       expect(html.indexOf("Banana cake")).toBeLessThan(html.indexOf("Apple pie"));
     });
@@ -242,7 +241,7 @@ describe("/recipes (list)", () => {
     test("sort=random with a seed renders every recipe once", async () => {
       await seed("Banana cake");
       await seed("Apple pie");
-      const html = await renderRoute("/recipes?sort=random&seed=abc");
+      const html = await renderRoute("/recipes?sort=random&seed=abc", "desktop");
       expect(html).toContain("Sort: Random");
       expect(html).toContain("Banana cake");
       expect(html).toContain("Apple pie");
@@ -340,7 +339,7 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain("Lemon tart");
     expect(html).toContain("Sharp and buttery.");
     expect(html).toContain('aria-label="Rated 4 out of 5"');
-    expect(html).toContain(">Weeknight</span>");
+    expect(html).toContain(">Weeknight</a>");
     expect(html).toContain('href="/recipes?tag=weeknight"');
     for (const [label, value] of [
       ["Prep", "20 min"],
@@ -442,7 +441,9 @@ describe("/recipes/$slug (view)", () => {
     expect(html).toContain("Servings not set");
     expect(html).not.toContain('aria-label="Scale servings"');
     expect(html).not.toContain(">To finish<"); // no recipe-level steps
-    expect(html).toContain("No tags");
+    // A phone's page leaves out a tag line it has nothing for; a desktop's header says so.
+    expect(html).not.toContain('aria-label="Tags"');
+    expect(await renderRoute("/recipes/toast", "desktop")).toContain("No tags");
     // A single part: no toggle to switch between structured and one list.
     expect(html).not.toContain('data-testid="ingredient-mode-toggle"');
     // Only the steps list is empty here, so the component says nothing: a flat
@@ -450,7 +451,7 @@ describe("/recipes/$slug (view)", () => {
     expect(html).not.toContain('data-empty="part"');
   });
 
-  test("a component with neither ingredients nor steps says so, and an untagged recipe says No tags", async () => {
+  test("a component with neither ingredients nor steps says so, and an untagged recipe says No tags on a desktop", async () => {
     await callServerFn(createRecipe, {
       name: "Blank",
       parts: [{ name: "Pastry", ingredients: [], steps: [] }],
@@ -458,8 +459,7 @@ describe("/recipes/$slug (view)", () => {
     const html = await renderRoute("/recipes/blank");
     expect(html).toContain(">Pastry<");
     expect(html).toContain("No ingredients or steps yet");
-    expect(html).toContain('data-empty="tags"');
-    expect(html).toContain("No tags");
+    expect(await renderRoute("/recipes/blank", "desktop")).toContain('data-empty="tags"');
     expect(html).not.toContain('aria-label="Ingredients"');
     expect(html).not.toContain('aria-label="Steps"');
   });
@@ -635,13 +635,14 @@ describe("/recipes/$slug/edit", () => {
   test("a deleted recipe is gone from the list and its slug is not found", async () => {
     const tart = await seed("Lemon tart");
     await seed("Pancakes");
-    expect(await renderRoute("/recipes")).toContain("2 recipes");
+    // A phone's search names how many there are to search.
+    expect(await renderRoute("/recipes")).toContain('placeholder="Search 2 recipes"');
 
     const gone = await callServerFn(deleteRecipe, { id: tart.id });
     expect(gone.slug).toBe("lemon-tart");
 
     const html = await renderRoute("/recipes");
-    expect(html).toContain("1 recipe<");
+    expect(html).toContain('placeholder="Search 1 recipe"');
     expect(html).toContain("Pancakes");
     expect(html).toContain('href="/recipes/pancakes"');
     expect(html).not.toContain("Lemon tart");

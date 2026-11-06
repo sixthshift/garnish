@@ -1,7 +1,11 @@
+import { toast } from "@sixthshift/design-system/overlay";
 import { Popover } from "@sixthshift/design-system/popover";
 import { useState } from "react";
+import { addPlanEntry } from "../../../../api/rpc/plan";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
 import { nextSevenDays } from "../../../../lib/dates";
+import { useMutate } from "../../../../lib/mutate";
+import { toastError } from "../../../../lib/toast";
 import { dayLabel, type PlanEntryInput, todayIso } from "../../../plan/plan";
 import type { Recipe } from "../../recipe";
 
@@ -78,4 +82,22 @@ export function PlanPopover({ recipe, open, onOpenChange, onChoose, busy = false
  */
 export function planEntryFor(recipe: Pick<Recipe, "id" | "name">, date: string, servings: number): PlanEntryInput {
   return { date, recipeId: recipe.id, text: recipe.name, servings };
+}
+
+/**
+ * Put `recipe` on a day: the write, then a toast naming the day and `onDone`
+ * (to close whatever chose it), or a toast saying it failed. The actions
+ * menu's popover and a phone's plan sheet both choose through it.
+ */
+export function usePlanTo(recipe: Pick<Recipe, "id" | "name">, onDone: () => void): (date: string, servings: number) => Promise<void> {
+  const mutate = useMutate();
+  return async (date, servings) => {
+    try {
+      await mutate(() => addPlanEntry({ data: planEntryFor(recipe, date, servings) }));
+      toast({ intent: "success", title: `Added to ${dayLabel(date)}` });
+      onDone();
+    } catch (error) {
+      toastError("Could not plan this recipe", error);
+    }
+  };
 }
