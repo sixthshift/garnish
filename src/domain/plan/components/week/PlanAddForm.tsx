@@ -51,6 +51,8 @@ export function PlanAddForm({
   onAddText,
   onAddRecipe,
   onDone,
+  limit = PLAN_RESULT_LIMIT,
+  autoFocus = true,
 }: {
   date: string;
   busy?: boolean;
@@ -59,6 +61,10 @@ export function PlanAddForm({
   onAddRecipe: (date: string, recipe: RecipeSummary, meal: Meal | null) => void;
   /** An entry was added. */
   onDone?: () => void;
+  /** How many results are drawn: a phone's sheet keeps to `PLAN_RESULT_LIMIT`, above its keyboard; a desktop's picker has the room for more. */
+  limit?: number;
+  /** Take focus once drawn: a sheet opened for this, or a day just chosen. A desktop's picker drawn with the page does not. */
+  autoFocus?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<RecipeSummary[]>([]);
@@ -72,7 +78,7 @@ export function PlanAddForm({
   const input = useRef<HTMLInputElement | null>(null);
   const line = query.trim();
   const day = dayName(date);
-  const shown = results.slice(0, PLAN_RESULT_LIMIT);
+  const shown = results.slice(0, limit);
   const more = results.length - shown.length;
 
   const clear = () => {
@@ -90,11 +96,12 @@ export function PlanAddForm({
   // Two frames because the manager moves focus to its first control in a frame
   // of its own, which would otherwise land after this one.
   useEffect(() => {
+    if (!autoFocus) return;
     let frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => input.current?.focus());
     });
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [autoFocus]);
 
   useEffect(() => {
     const term = query.trim();
@@ -109,8 +116,8 @@ export function PlanAddForm({
         .then((found) => {
           if (requestId.current !== id) return;
           setResults(found);
-          setStatus(foundLine(found.length));
-          setSelected((current) => (current < 0 ? -1 : clampSelection(current, Math.min(found.length, PLAN_RESULT_LIMIT))));
+          setStatus(foundLine(found.length, limit));
+          setSelected((current) => (current < 0 ? -1 : clampSelection(current, Math.min(found.length, limit))));
         })
         .catch((error: unknown) => {
           if (requestId.current !== id) return;
@@ -120,7 +127,7 @@ export function PlanAddForm({
         });
     }, PLAN_SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, searchRecipes]);
+  }, [query, searchRecipes, limit]);
 
   const choose = (index: number) => {
     const recipe = selectedResult(shown, index);
@@ -216,9 +223,9 @@ export function PlanAddForm({
   );
 }
 
-/** The status line for a search that found `count` recipes; the sheet draws `PLAN_RESULT_LIMIT` of them. Pure. */
-export function foundLine(count: number): string {
+/** The status line for a search that found `count` recipes, of which `limit` are drawn. Pure. */
+export function foundLine(count: number, limit = PLAN_RESULT_LIMIT): string {
   if (count === 0) return "No recipes match";
   const line = count === 1 ? "1 recipe found" : `${count} recipes found`;
-  return count > PLAN_RESULT_LIMIT ? `${line}, showing ${PLAN_RESULT_LIMIT}` : line;
+  return count > limit ? `${line}, showing ${limit}` : line;
 }

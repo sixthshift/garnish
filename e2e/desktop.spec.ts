@@ -62,3 +62,43 @@ test("a recipe opens beside the library in the side panel; Back closes it, and O
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   await expect(panel).toHaveCount(0);
 });
+
+test("the plan's picker sits beside the week: a day's + chooses it, adds land there, and an entry opens in the panel", async ({ page, open }) => {
+  const dal = unique("Picker Dal");
+  const rice = unique("Picker Rice");
+  await createRecipe(page, open, { name: dal, servings: 4, ingredients: ["200 g red lentils"], steps: ["Simmer."] });
+  await createRecipe(page, open, { name: rice, servings: 4, ingredients: ["300 g rice"], steps: ["Steam."] });
+
+  // Next week, so the picker starts on its Monday whatever day the run lands on.
+  await open("/plan");
+  await page.getByRole("link", { name: "Next week" }).click();
+  const picker = page.getByRole("region", { name: /^Adding to Monday/ });
+  await expect(picker).toBeVisible();
+  const box = page.getByTestId("plan-picker").getByRole("combobox", { name: "Search recipes, or type a note" });
+  await box.fill(dal);
+  await picker.getByRole("option", { name: dal }).click();
+  const week = page.getByRole("list", { name: /^Week of/ });
+  await expect(
+    week
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("heading", { name: /^Mon/ }) })
+      .getByRole("link", { name: dal })
+  ).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await page.getByRole("button", { name: /^Add to Tuesday/ }).click();
+  await expect(page.getByRole("region", { name: /^Adding to Tuesday/ })).toBeVisible();
+  await expect(box).toBeFocused();
+  await box.fill(rice);
+  await page.getByRole("option", { name: rice }).click();
+  await expect(
+    week
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("heading", { name: /^Tue/ }) })
+      .getByRole("link", { name: rice })
+  ).toBeVisible();
+
+  await week.getByRole("link", { name: dal }).click();
+  await expect(page.getByRole("complementary", { name: "Recipe" }).getByRole("heading", { level: 2, name: dal })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Plan" })).toBeVisible();
+});

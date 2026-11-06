@@ -1,10 +1,10 @@
 import { Modal, ModalBody, ModalHeader } from "@sixthshift/design-system/modal";
-import { dayName } from "../../plan";
-import { PlanAddForm } from "./PlanAddForm";
-import type { PlanWeekViewProps } from "./PlanWeekView";
+import { dayName } from "../../../plan";
+import { PlanAddForm } from "../PlanAddForm";
+import type { PlanWeekViewProps } from "../PlanWeekView";
 
 /**
- * A day's "+" opened: the add form in a sheet titled with the day. `Modal`
+ * A phone's day "+" opened (a desktop's picker sits beside the week instead, decisions.md row 206): the add form in a sheet titled with the day. `Modal`
  * rather than `Sheet`, as the recipe filters are (decisions.md rows 44 and
  * 45): below `sm` it rises from the bottom at its content's height and is
  * centred above it, and it traps focus and hands it back to the "+" that

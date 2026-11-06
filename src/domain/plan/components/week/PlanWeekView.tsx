@@ -3,10 +3,12 @@ import { Card } from "@sixthshift/design-system/card";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Page, PageHeader } from "../../../../components/Page";
+import { useLayout } from "../../../../lib/useLayout";
 import type { RecipeSummary } from "../../../recipes/recipe";
 import { addDays, type Meal, type PlanDay, type PlanEntry, todayIso, weekLabel } from "../../plan";
 import { AddWeekToShoppingButton } from "./AddWeekToShoppingButton";
-import { PlanAddSheet } from "./PlanAddSheet";
+import { PlanPicker } from "./desktop/PlanPicker";
+import { PlanAddSheet } from "./mobile/PlanAddSheet";
 import { PlanDayRow } from "./PlanDayRow";
 
 export type PlanWeekViewProps = {
@@ -35,30 +37,41 @@ export type PlanWeekViewProps = {
  * week's own actions — Plan the week (which asks the planner first when a
  * model is configured, decisions.md row 194) and adding it to the shopping
  * list — after the days they act on.
+ *
+ * On a phone a day's "+" opens its add sheet; on a desktop the picker sits
+ * beside the week and the "+" chooses the day it adds to (decisions.md row
+ * 206), today's to begin with, or Monday's for another week.
  */
 export function PlanWeekView({ monday, days, today = todayIso(), onAddText, onAddRecipe, onMove, onRemove, searchRecipes, busy = false }: PlanWeekViewProps) {
+  const desktop = useLayout() === "desktop";
   const [adding, setAdding] = useState<string | null>(null);
+  // Across the line, the day chosen for the picker is not a sheet to open on a phone: let it go as the layout changes.
+  const [layoutSeen, setLayoutSeen] = useState(desktop);
+  if (layoutSeen !== desktop) {
+    setLayoutSeen(desktop);
+    setAdding(null);
+  }
+  // A desktop's picker always has a day: the one chosen, else today in this week, else its Monday.
+  const inWeek = days.some((day) => day.date === today);
+  const picking = adding !== null && days.some((day) => day.date === adding) ? adding : inWeek ? today : monday;
 
-  return (
-    <Page width="focus">
-      <PageHeader
-        title="Plan"
-        actions={
-          <div className="flex items-center gap-1">
-            <WeekArrow monday={addDays(monday, -7)} label="Previous week" glyph="‹" />
-            <p className="min-w-0 px-1 text-center font-medium text-sm sm:min-w-40" data-testid="plan-week-label">
-              {weekLabel(monday)}
-            </p>
-            <WeekArrow monday={addDays(monday, 7)} label="Next week" glyph="›" />
-          </div>
-        }
-      />
-
+  const week = (
+    <>
       {/* No overflow-hidden: an entry's menu drops down inside the card, not in a portal. The first and last day round their own tint instead. */}
       <Card className="p-0">
         <ol className="flex flex-col divide-y divide-border-subtle" data-testid="plan-week" aria-label={`Week of ${weekLabel(monday)}`}>
           {days.map((day) => (
-            <PlanDayRow key={day.date} day={day} days={days} today={today} busy={busy} onAdd={setAdding} onMove={onMove} onRemove={onRemove} />
+            <PlanDayRow
+              key={day.date}
+              day={day}
+              days={days}
+              today={today}
+              busy={busy}
+              onAdd={setAdding}
+              onMove={onMove}
+              onRemove={onRemove}
+              chosen={desktop ? day.date === picking : undefined}
+            />
           ))}
         </ol>
       </Card>
@@ -76,8 +89,34 @@ export function PlanWeekView({ monday, days, today = todayIso(), onAddText, onAd
           <AddWeekToShoppingButton monday={monday} />
         </div>
       </div>
+    </>
+  );
 
-      {adding !== null && (
+  return (
+    <Page width={desktop ? "page" : "focus"}>
+      <PageHeader
+        title="Plan"
+        actions={
+          <div className="flex items-center gap-1">
+            <WeekArrow monday={addDays(monday, -7)} label="Previous week" glyph="‹" />
+            <p className="min-w-0 px-1 text-center font-medium text-sm sm:min-w-40" data-testid="plan-week-label">
+              {weekLabel(monday)}
+            </p>
+            <WeekArrow monday={addDays(monday, 7)} label="Next week" glyph="›" />
+          </div>
+        }
+      />
+
+      {desktop ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] items-start gap-6">
+          <div className="flex min-w-0 flex-col gap-6">{week}</div>
+          <PlanPicker date={picking} focus={adding !== null} busy={busy} searchRecipes={searchRecipes} onAddText={onAddText} onAddRecipe={onAddRecipe} />
+        </div>
+      ) : (
+        week
+      )}
+
+      {!desktop && adding !== null && (
         <PlanAddSheet date={adding} busy={busy} onClose={() => setAdding(null)} searchRecipes={searchRecipes} onAddText={onAddText} onAddRecipe={onAddRecipe} />
       )}
     </Page>
