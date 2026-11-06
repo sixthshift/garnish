@@ -4,16 +4,13 @@
 //
 // The Checks the task asks for are here: the chooser and each stage render, a
 // stub says so and still reaches the editor, and `sourceUrl` is filled.
-import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
-import { ImportReview } from "../../../../../src/domain/recipes/components/new/ImportReview";
-import { importSummary, stepCount, yieldLabel } from "../../../../../src/domain/recipes/components/new/importSummary";
 import { SourceChooser } from "../../../../../src/domain/recipes/components/new/SourceChooser";
 import { UrlSource } from "../../../../../src/domain/recipes/components/new/UrlSource";
 import { draftFromScraped, isTextOnly } from "../../../../../src/domain/recipes/draft";
-import { type ImportedRecipe, review, type ScrapedRecipe } from "../../../../../src/domain/recipes/import";
+import { review, type ScrapedRecipe } from "../../../../../src/domain/recipes/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/recipes/ingredient";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
 
@@ -68,55 +65,6 @@ const stub: ScrapedRecipe = {
   tags: [],
   parts: [{ name: "", ingredients: [], steps: [] }],
 };
-
-const imported = (recipe: ScrapedRecipe, from: ImportedRecipe["from"] = "schema"): ImportedRecipe => ({ from, url: SOURCE, recipe, pageText: "" });
-
-function rows() {
-  return reviewRows(review.ingredientLines(scraped), { units, foods });
-}
-
-const reviewProps = {
-  units,
-  searchFoods: (async () => []) as (q: string) => Promise<FoodRow[]>,
-  onRowsChange: () => {},
-  onBack: () => {},
-  onCreate: () => {},
-};
-
-/** The first element in `node` whose `children` prop is exactly `text`. */
-function elementWithChildren(node: ReactNode, text: string): ReactElement<Record<string, any>> | null {
-  if (Array.isArray(node)) {
-    for (const child of node) {
-      const found = elementWithChildren(child as ReactNode, text);
-      if (found) return found;
-    }
-    return null;
-  }
-  if (!isValidElement(node)) return null;
-  const element = node as ReactElement<Record<string, any>>;
-  if (element.props.children === text) return element;
-  return elementWithChildren(element.props.children as ReactNode, text);
-}
-
-describe("yieldLabel, stepCount and importSummary", () => {
-  test("yieldLabel reads what the page said", () => {
-    expect(yieldLabel(scraped)).toBe("24 biscuits");
-    expect(yieldLabel({ ...scraped, yieldText: "" })).toBe("Serves 24");
-    expect(yieldLabel({ ...scraped, servings: 0, yieldText: "a big tray" })).toBe("a big tray");
-    expect(yieldLabel({ ...scraped, servings: 0, yieldText: "" })).toBe("");
-  });
-
-  test("stepCount counts across every part", () => {
-    expect(stepCount(scraped)).toBe(3);
-    expect(stepCount(stub)).toBe(0);
-  });
-
-  test("importSummary says what was read, or admits there was nothing", () => {
-    expect(importSummary("schema", 2, 3)).toContain("Read 2 ingredients and 3 steps");
-    expect(importSummary("schema", 1, 1)).toContain("1 ingredient and 1 step");
-    expect(importSummary("stub", 0, 0)).toContain("no recipe data");
-  });
-});
 
 describe("SourceChooser", () => {
   test("leads with the web page's address and lists the other ways in", () => {
@@ -174,74 +122,6 @@ describe("UrlSource", () => {
     const html = renderToString(<UrlSource url={SOURCE} busy onUrlChange={() => {}} onFetch={() => {}} onBack={() => {}} />);
     expect(html).toContain("Reading…");
     expect(html.match(/<button[^>]*disabled=""/g)?.length).toBeGreaterThanOrEqual(2);
-  });
-});
-
-describe("ImportReview", () => {
-  test("shows what the page gave up", () => {
-    const html = renderToString(<ImportReview {...reviewProps} imported={imported(scraped)} rows={rows()} />);
-    expect(html).toContain('data-source-stage="review"');
-    expect(html).toContain('data-import-from="schema"');
-    expect(html).toContain("Anzac biscuits");
-    expect(html).toContain("Read 2 ingredients and 3 steps");
-    expect(html).toContain("24 biscuits");
-    expect(html).toContain("Prep 20 min");
-    expect(html).toContain("Cook 15 min");
-    expect(html).toContain(SOURCE);
-    // One review row per ingredient line, in the shape bulk add reviews.
-    expect(html.match(/data-review-row=""/g)).toHaveLength(2);
-    expect(html).toContain('data-status="matched"');
-    expect(html).toMatch(/almond meal<\/span><\/span><\/div><span[^>]*>Unknown food</);
-    // The page's sections survive as named parts (decision 59).
-    expect(html).toContain("Icing");
-    expect(html).toContain("Heat the oven.");
-    expect(html).toContain("Whisk.");
-  });
-
-  test("the page's tags are offered on their own, known ticked, new marked, name repeats named as left out", () => {
-    const suggestions = {
-      suggested: [
-        { name: "Baking", known: true, ticked: true },
-        { name: "Biscuits", known: false, ticked: false },
-      ],
-      leftOut: ["Anzac biscuits recipe"],
-    };
-    const html = renderToString(
-      <ImportReview {...reviewProps} imported={imported(scraped)} rows={rows()} tagSuggestions={suggestions} chosenTags={["Baking"]} />
-    );
-    expect(html).toContain('data-testid="review-tags"');
-    expect(html).toContain("Baking");
-    expect(html).toContain("Biscuits (new)");
-    expect(html).toContain("Left out, as they repeat the name or read as search phrases: Anzac biscuits recipe.");
-  });
-
-  test("a stub says plainly that there was nothing to read", () => {
-    const html = renderToString(<ImportReview {...reviewProps} imported={imported(stub, "stub")} rows={[]} />);
-    expect(html).toContain('data-import-from="stub"');
-    expect(html).toContain('data-testid="stub-notice"');
-    expect(html).toContain("no recipe data");
-    expect(html).not.toContain("data-review-row");
-    // It still offers to create: a named, illustrated, linked shell is worth having.
-    expect(html).toContain(">Create<");
-  });
-
-  test("a duplicate source is a warning, not a refusal", () => {
-    const html = renderToString(
-      <ImportReview {...reviewProps} imported={imported(scraped)} rows={rows()} duplicate={{ name: "Anzac biscuits", slug: "anzac-biscuits" }} />
-    );
-    expect(html).toContain('data-testid="duplicate-notice"');
-    expect(html).toContain("You already have this one");
-    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Create</);
-  });
-
-  test("Create and Back report themselves", () => {
-    let creates = 0;
-    let backs = 0;
-    const node = ImportReview({ ...reviewProps, imported: imported(scraped), rows: rows(), onCreate: () => (creates += 1), onBack: () => (backs += 1) });
-    elementWithChildren(node, "Create")?.props.onClick();
-    elementWithChildren(node, "Back")?.props.onClick();
-    expect(creates).toBe(1);
-    expect(backs).toBe(1);
   });
 });
 

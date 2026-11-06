@@ -1,3 +1,4 @@
+import { Button } from "@sixthshift/design-system/button";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { useState } from "react";
@@ -27,6 +28,8 @@ export type TagFieldProps = {
   value: readonly Tag[];
   /** The household's tags, to suggest from. */
   known: readonly Tag[];
+  /** Names offered as one-press additions: an import's new tags, made only if pressed (decisions.md row 171). */
+  suggested?: readonly string[];
   disabled?: boolean;
   onChange: (tags: Tag[]) => void;
 };
@@ -38,14 +41,35 @@ export type TagFieldProps = {
  * choice rather than a typo; a list typed with commas is split by the tag
  * rule (row 170).
  */
-export function TagField({ id, value, known, disabled, onChange }: TagFieldProps) {
+export function TagField({ id, value, known, suggested = [], disabled, onChange }: TagFieldProps) {
   const [text, setText] = useState("");
   const add = (names: string[]) => {
     onChange(tagsFromNames([...value.map((tag) => tag.name), ...names], [...value, ...known]));
     setText("");
   };
+  const have = new Set(value.map((tag) => tagKey(tag.name)));
+  const offered = suggested.filter((name) => !have.has(tagKey(name)));
   return (
     <div className="flex flex-col gap-2">
+      {offered.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1" data-testid="suggested-tags">
+          <span className="text-sm text-fg-subtle">From the page:</span>
+          {offered.map((name) => (
+            <Button
+              key={name}
+              type="button"
+              variant="outline"
+              intent="neutral"
+              size="sm"
+              disabled={disabled}
+              aria-label={`Add the tag ${name}`}
+              onClick={() => add([name])}
+            >
+              + {name}
+            </Button>
+          ))}
+        </div>
+      )}
       {value.length > 0 && (
         <ul className="flex flex-wrap gap-1" aria-label="Recipe tags">
           {value.map((tag) => (

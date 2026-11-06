@@ -19,10 +19,12 @@ export type RecipeDetailsProps = {
   knownTags: readonly Tag[];
   /** Decided once from the draft the form opened on, so typing a tag does not fold the section. */
   defaultOpen: boolean;
+  /** An import's new tags, offered as one-press additions (decisions.md row 171). */
+  suggestedTags?: readonly string[];
   onPatch: (fields: Partial<RecipeDraft>) => void;
 };
 
-export function RecipeDetails({ draft, errors, saving, units, knownTags, defaultOpen, onPatch }: RecipeDetailsProps) {
+export function RecipeDetails({ draft, errors, saving, units, knownTags, defaultOpen, suggestedTags, onPatch }: RecipeDetailsProps) {
   const tagsId = useId();
   const unitOptions = units.map((unit) => ({ value: unit.id, label: unit.name }));
 
@@ -95,7 +97,7 @@ export function RecipeDetails({ draft, errors, saving, units, knownTags, default
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={tagsId}>Tags</Label>
-        <TagField id={tagsId} value={draft.tags} known={knownTags} disabled={saving} onChange={(tags) => onPatch({ tags })} />
+        <TagField id={tagsId} value={draft.tags} known={knownTags} suggested={suggestedTags} disabled={saving} onChange={(tags) => onPatch({ tags })} />
       </div>
 
       <FormField label="Source" description="Where the recipe came from" feedback={feedback(errors, "sourceUrl")}>

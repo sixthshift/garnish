@@ -1,19 +1,28 @@
-// The stage state of /recipes/new and the flows between stages; RecipeSource renders what this returns.
+// The source stage of /recipes/new: reading a recipe whole, then handing it to Check (decisions.md row 203).
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listFoods } from "../../../../api/rpc/foods";
 import { importFromPage, importFromText, importFromUrl } from "../../../../api/rpc/import";
 import { messageFrom } from "../../../../lib/errors";
 import { postImportFile } from "../../../../lib/importFile";
-import { type IngredientReview, tagSuggestions, tickedTags } from "../../draft";
+import type { IngredientReview } from "../../draft";
 import { type FileRecipe, type ImportedRecipe, review } from "../../import";
 import { reviewRows } from "../../ingredient";
 import type { FoodRow } from "../../reference";
 import type { SentPage } from "./bookmarklet";
-import { type DuplicateBy, type ModelReader, shouldReadWithModel, sortedRead } from "./importSummary";
+import { type DuplicateBy, type ModelReader, STUB_NOTE, shouldReadWithModel, sortedRead } from "./importSummary";
 import type { RecipeSourceProps } from "./RecipeSource";
-import { draftFromReview, reviewOfUpload } from "./reviewFlows";
+import { checkFromRead, reviewOfUpload } from "./reviewFlows";
 import { useSentPage } from "./useSentPage";
+
+/** What one read hands to Check beside the recipe itself. */
+type ReadExtras = {
+  rows?: IngredientReview[];
+  rowSteps?: number[] | null;
+  subRecipes?: string[];
+  by: DuplicateBy;
+  note?: string | null;
+};
 
 export function useRecipeSource(props: RecipeSourceProps) {
   const { units, tags, source, onChoose, onDraft, findDuplicate, findDuplicateByName, loadFoods, load, loadPage, loadFile, linkSubRecipeFood } = props;
@@ -21,44 +30,18 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const [url, setUrl] = useState(initialUrl ?? "");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  // The page the Save to Garnish bookmark sent, kept so Back from the review can read it again.
+  // The page the Save to Garnish bookmark sent, kept so a failed read can be tried again.
   const [sent, setSent] = useState<SentPage | null>(null);
   // The address a failed read was of, when the reader went on to paste it instead: the paste's source.
   const [pasteFrom, setPasteFrom] = useState<string | null>(null);
-  const [imported, setImported] = useState<ImportedRecipe | null>(null);
-  const [rows, setRows] = useState<IngredientReview[]>([]);
-  // Which step of the row's part owns the row, and the nested recipes the rows
-  // stand for; only a Tandoor export knows either.
-  const [rowSteps, setRowSteps] = useState<number[] | null>(null);
-  const [subRecipes, setSubRecipes] = useState<string[]>([]);
-  const [duplicate, setDuplicate] = useState<{ name: string; slug: string } | null>(null);
-  // How the duplicate was found, fixed when the read starts: a page by its address, a paste or an upload by its name.
-  const [duplicateBy, setDuplicateBy] = useState<DuplicateBy>("url");
   const [busy, setBusy] = useState(false);
   // Whether the model is sorting the read into parts; the source stage holds until it lands or is skipped.
   const [sorting, setSorting] = useState(false);
-  // The line Check shows when the sort did not land.
-  const [sortNote, setSortNote] = useState<string | null>(null);
   // Skip's way into a sort in flight: resolving it ends the wait on the rules' reading.
   const skipSort = useRef<(() => void) | null>(null);
   // Which read is current: a read that is left (Back, a new address) must not land later.
   const readToken = useRef(0);
   const [error, setError] = useState<string | null>(null);
-  // The tags ticked on the review, held against the import they were ticked
-  // on: a new import (a model's answer, another recipe out of a backup) starts
-  // again from its own suggestions rather than carrying the last one's ticks.
-  const [picked, setPicked] = useState<{ on: ImportedRecipe; names: string[] } | null>(null);
-  const suggestions = useMemo(
-    () =>
-      imported === null
-        ? null
-        : tagSuggestions(imported.recipe.tags, imported.recipe.name, tags ?? [], imported.from === "mealie" || imported.from === "tandoor"),
-    [imported, tags]
-  );
-  const chosenTags = imported !== null && picked?.on === imported ? picked.names : suggestions === null ? [] : tickedTags(suggestions);
-  const setChosenTags = (names: string[]) => {
-    if (imported !== null) setPicked({ on: imported, names });
-  };
 
   // Read at call time rather than closed over: an address typed on the chooser
   // is read in the same press that sets it, before a render has caught up.
@@ -69,12 +52,26 @@ export function useRecipeSource(props: RecipeSourceProps) {
 
   const fetchFoods = loadFoods ?? (() => listFoods({ data: {} }));
 
-  /** A page or a paste onto the review, with the vocabulary it was reviewed against. */
-  const showReview = (found: ImportedRecipe, foods: readonly FoodRow[]) => {
-    setImported(found);
-    setRows(reviewRows(review.ingredientLines(found.recipe), { units, foods }));
-    setRowSteps(null);
-    setSubRecipes([]);
+  /** A read, whole, to Check: the draft, what it still asks about, and the duplicate, if any. */
+  const toCheck = async (found: ImportedRecipe, foods: readonly FoodRow[], extras: ReadExtras) => {
+    const rows = extras.rows ?? reviewRows(review.ingredientLines(found.recipe), { units, foods });
+    const check = await checkFromRead({
+      imported: found,
+      rows,
+      rowSteps: extras.rowSteps ?? null,
+      subRecipes: extras.subRecipes ?? [],
+      tags,
+      linkSubRecipeFood,
+    });
+    const lookup = extras.by === "url" ? findDuplicate?.(found.url) : findDuplicateByName?.(found.recipe.name);
+    const duplicate = (await lookup) ?? null;
+    onDraft({
+      ...check,
+      imageUrl: found.recipe.image,
+      // A page with no recipe on it gave a title and a picture and nothing else: Check says so.
+      note: extras.note ?? (found.from === "stub" ? STUB_NOTE : null),
+      duplicate: duplicate === null ? null : { ...duplicate, by: extras.by },
+    });
   };
 
   /** Read a page: the stage's own address, or one handed in by the chooser's field. */
@@ -93,9 +90,8 @@ export function useRecipeSource(props: RecipeSourceProps) {
 
   /**
    * A page read whole before Check opens: the rules' result and, with a model,
-   * its sort into parts (decisions.md row 203). Skip ends the wait on the
-   * rules' result; a sort that fails or is rejected ends it there too, with
-   * the note.
+   * its sort into parts. Skip ends the wait on the rules' result; a sort that
+   * fails or is rejected ends it there too, with the note.
    */
   const readPageAt = async (address: string, fetchPage: () => Promise<ImportedRecipe>) => {
     setUrl(address);
@@ -103,7 +99,6 @@ export function useRecipeSource(props: RecipeSourceProps) {
     const token = ++readToken.current;
     setBusy(true);
     setError(null);
-    setSortNote(null);
     try {
       const [found, foods] = await Promise.all([fetchPage(), fetchFoods()]);
       if (token !== readToken.current) return;
@@ -123,10 +118,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
           note = sorted.note;
         }
       }
-      showReview(shown, foods);
-      setSortNote(note);
-      setDuplicateBy("url");
-      setDuplicate(findDuplicate ? await findDuplicate(found.url) : null);
+      await toCheck(shown, foods, { by: "url", note });
     } catch (cause) {
       if (token === readToken.current) setError(messageFrom(cause));
     } finally {
@@ -148,38 +140,34 @@ export function useRecipeSource(props: RecipeSourceProps) {
   });
 
   /**
-   * Pasted text through `claude -p`, onto the same review. A failed
-   * read — no binary, a timeout, an answer that was not a recipe — is shown
-   * here and nothing is written, which is true of every rung above it too.
+   * Pasted text: a page's HTML is read by the rules, plain text by the model,
+   * and either way it opens on Check. A failed read is shown here and nothing
+   * is written.
    */
   const readText = async () => {
+    const token = ++readToken.current;
     setBusy(true);
     setError(null);
     try {
       const [found, foods] = await Promise.all([loadText ? loadText(text) : importFromText({ data: { text, sourceUrl: pasteFrom ?? "" } }), fetchFoods()]);
-      showReview(found, foods);
-      setDuplicateBy("name");
-      setDuplicate(findDuplicateByName ? await findDuplicateByName(found.recipe.name) : null);
+      if (token !== readToken.current) return;
+      await toCheck(found, foods, { by: "name" });
     } catch (cause) {
-      setError(messageFrom(cause));
+      if (token === readToken.current) setError(messageFrom(cause));
     } finally {
-      setBusy(false);
+      if (token === readToken.current) setBusy(false);
     }
   };
 
-  /** One recipe out of an upload, onto the same review the URL import uses. */
+  /** One recipe out of an upload, to Check as the export states it. */
   const chooseUploaded = async (recipe: FileRecipe, foods: readonly FoodRow[]) => {
     const reviewed = reviewOfUpload(recipe, units, foods);
-    setImported(reviewed.imported);
-    setRows(reviewed.rows);
-    setRowSteps(reviewed.rowSteps);
-    setSubRecipes(reviewed.subRecipeNames);
-    setDuplicateBy("name");
-    setDuplicate(findDuplicateByName ? await findDuplicateByName(recipe.name) : null);
+    await toCheck(reviewed.imported, foods, { rows: reviewed.rows, rowSteps: reviewed.rowSteps, subRecipes: reviewed.subRecipeNames, by: "name" });
   };
 
   const readFile = async () => {
     if (file === null) return;
+    const token = ++readToken.current;
     setBusy(true);
     setError(null);
     try {
@@ -187,43 +175,17 @@ export function useRecipeSource(props: RecipeSourceProps) {
       if (found.length === 0) throw new Error("No recipe in that file");
       // A whole export is moving house, not adding a recipe (decisions.md row 201).
       if (found.length > 1) throw new Error(`That file holds ${found.length} recipes. Bring a whole export in from Settings › Backup.`);
+      if (token !== readToken.current) return;
       await chooseUploaded(found[0]!, foods);
     } catch (cause) {
-      setError(messageFrom(cause));
+      if (token === readToken.current) setError(messageFrom(cause));
     } finally {
-      setBusy(false);
+      if (token === readToken.current) setBusy(false);
     }
   };
 
-  /** Create only what the reviewer approved, then hand the draft up. */
-  const create = async () => {
-    if (imported === null) return;
-    setBusy(true);
-    setError(null);
-    try {
-      // Only the tags ticked on the review go on: a new one is made only when it was ticked.
-      const withTags = { ...imported, recipe: { ...imported.recipe, tags: chosenTags } };
-      const draft = await draftFromReview({ imported: withTags, rows, rowSteps, subRecipes, tags, linkSubRecipeFood });
-      onDraft(draft, imported.recipe.image);
-    } catch (cause) {
-      setBusy(false);
-      setError(messageFrom(cause));
-    }
-  };
-
-  /** Back from the review to the source it came from. */
-  const leaveReview = () => {
-    setImported(null);
-    setRowSteps(null);
-    setSubRecipes([]);
-    setDuplicate(null);
-    setError(null);
-    setSortNote(null);
-  };
-
-  /** Back from any source stage to the chooser. */
+  /** Back from any source stage to the chooser. A read still running is let go: it must not open Check after Back. */
   const leaveSource = () => {
-    // A read still running is let go: it must not open Check after Back.
     readToken.current += 1;
     skipSort.current = null;
     setSorting(false);
@@ -256,28 +218,17 @@ export function useRecipeSource(props: RecipeSourceProps) {
     file,
     sent,
     sentStatus,
-    imported,
-    rows,
     busy,
     error,
-    duplicate,
-    suggestions,
-    chosenTags,
-    setChosenTags,
-    duplicateBy,
     sorting,
-    sortNote,
     skip,
     setUrl,
-    setRows,
     changeText,
     changeFile,
     read,
     readSent,
     readText,
     readFile,
-    create,
-    leaveReview,
     leaveSource,
     pasteInstead,
   };

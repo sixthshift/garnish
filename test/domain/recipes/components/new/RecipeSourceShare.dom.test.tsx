@@ -2,7 +2,9 @@
 // on the review; a typed address still waits for "Read the page".
 import { screen, waitFor } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
+import { STUB_NOTE } from "../../../../../src/domain/recipes/components/new/importSummary";
 import { RecipeSource } from "../../../../../src/domain/recipes/components/new/RecipeSource";
+import type { ImportedCheck } from "../../../../../src/domain/recipes/components/new/reviewFlows";
 import type { ImportedRecipe } from "../../../../../src/domain/recipes/import";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
 import { renderInRouter } from "../../../../helpers/dom";
@@ -38,15 +40,17 @@ const found: ImportedRecipe = {
   },
 };
 
-function props(load: (url: string) => Promise<ImportedRecipe>) {
-  return { units: [gram], source: "url" as const, onChoose: () => {}, onDraft: () => {}, loadFoods: async () => [], load };
+function props(load: (url: string) => Promise<ImportedRecipe>, onDraft: (check: ImportedCheck) => void = () => {}) {
+  return { units: [gram], source: "url" as const, onChoose: () => {}, onDraft, loadFoods: async () => [], load };
 }
 
-test("a shared address is read on mount, once, and the review opens on it", async () => {
+test("a shared address is read on mount, once, and Check opens on it", async () => {
   const load = vi.fn(async () => found);
-  await renderInRouter(<RecipeSource {...props(load)} initialUrl={SOURCE} />);
+  const onDraft = vi.fn();
+  await renderInRouter(<RecipeSource {...props(load, onDraft)} initialUrl={SOURCE} />);
 
-  await waitFor(() => expect(screen.getByText("Anzac biscuits")).toBeInTheDocument());
+  await waitFor(() => expect(onDraft).toHaveBeenCalledTimes(1));
+  expect(onDraft.mock.calls[0]![0].draft.name).toBe("Anzac biscuits");
   expect(load).toHaveBeenCalledTimes(1);
   expect(load).toHaveBeenCalledWith(SOURCE);
 });
@@ -57,4 +61,15 @@ test("with nothing shared the stage waits for the button", async () => {
 
   expect(screen.getByLabelText("Recipe address")).toHaveValue("");
   expect(load).not.toHaveBeenCalled();
+});
+
+test("a page with no recipe on it still opens Check, which says so", async () => {
+  const stub: ImportedRecipe = { ...found, from: "stub", recipe: { ...found.recipe, parts: [{ name: "", ingredients: [], steps: [] }] } };
+  const onDraft = vi.fn();
+  await renderInRouter(<RecipeSource {...props(async () => stub, onDraft)} initialUrl={SOURCE} />);
+  await waitFor(() => expect(onDraft).toHaveBeenCalledTimes(1));
+  const check = onDraft.mock.calls[0]![0] as ImportedCheck;
+  expect(check.note).toBe(STUB_NOTE);
+  expect(check.draft.name).toBe("Anzac biscuits");
+  expect(check.draft.sourceUrl).toBe(SOURCE);
 });

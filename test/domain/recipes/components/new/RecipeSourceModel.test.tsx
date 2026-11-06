@@ -1,46 +1,9 @@
-// The model sorting a page into parts before Check opens (decisions.md row 203).
-// Static render only: the review is checked with `renderToString`, and the
-// sort itself is `modelPass` and `sortedRead`, ordinary async functions of a
-// reader, so a test can give one that resolves, throws or is rejected.
-import { renderToString } from "react-dom/server";
+// The model sorting a page into parts before Check opens (decisions.md row 203):
+// `modelPass` and `sortedRead` are ordinary async functions of a reader, so a
+// test can give one that resolves, throws or is rejected.
 import { describe, expect, test } from "vitest";
-import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
-import { ImportReview } from "../../../../../src/domain/recipes/components/new/ImportReview";
-import {
-  importSummary,
-  type ModelReader,
-  modelPass,
-  SORT_NOTE,
-  shouldReadWithModel,
-  sortedRead,
-} from "../../../../../src/domain/recipes/components/new/importSummary";
-import { type ImportCheck, type ImportedRecipe, review, type ScrapedRecipe } from "../../../../../src/domain/recipes/import";
-import { reviewRows } from "../../../../../src/domain/recipes/ingredient";
-import type { Unit } from "../../../../../src/domain/recipes/reference";
-
-const gram: Unit = {
-  id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-  name: "gram",
-  pluralName: "grams",
-  abbreviation: "g",
-  useAbbreviation: true,
-  fraction: false,
-  portion: false,
-  standardQuantity: null,
-  standardUnitId: null,
-};
-const flour: FoodRow = {
-  id: "11111111-1111-4111-8111-111111111111",
-  name: "flour",
-  pluralName: null,
-  aliases: [],
-  aisleId: null,
-  recipeId: null,
-  skipShopping: false,
-  conversions: [],
-};
-const units = [gram];
-const foods = [flour];
+import { type ModelReader, modelPass, SORT_NOTE, shouldReadWithModel, sortedRead } from "../../../../../src/domain/recipes/components/new/importSummary";
+import type { ImportCheck, ImportedRecipe, ScrapedRecipe } from "../../../../../src/domain/recipes/import";
 
 const SOURCE = "https://example.test/lemon-tart";
 const PAGE_TEXT = "# Pastry\n200 g flour\n# Filling\n100 g sugar\nRub in.\nBake.";
@@ -83,16 +46,6 @@ const stubResult: ImportedRecipe = {
   recipe: { ...rulesRecipe, parts: [{ name: "", ingredients: [], steps: [] }] },
   pageText: PAGE_TEXT,
 };
-
-const reviewProps = {
-  units,
-  searchFoods: (async () => []) as (q: string) => Promise<FoodRow[]>,
-  onRowsChange: () => {},
-  onBack: () => {},
-  onCreate: () => {},
-};
-
-const rows = (recipe: ScrapedRecipe) => reviewRows(review.ingredientLines(recipe), { units, foods });
 
 describe("shouldReadWithModel", () => {
   test("a page's rules result goes to the model, anchored or not", () => {
@@ -186,40 +139,5 @@ describe("sortedRead", () => {
     }));
     expect(sorted.imported).toBe(rulesResult);
     expect(sorted.note).toBe(SORT_NOTE);
-  });
-});
-
-describe("the review once the read lands", () => {
-  test("the parts are the model's, and nothing says a read is still running", () => {
-    const landed: ImportedRecipe = { from: "ai", url: SOURCE, recipe: sortedRecipe, pageText: PAGE_TEXT, check: passingCheck };
-    const html = renderToString(<ImportReview {...reviewProps} imported={landed} rows={rows(sortedRecipe)} aiAvailable />);
-    expect(html).toContain('data-import-part="Pastry"');
-    expect(html).toContain('data-import-part="Filling"');
-    expect(html).not.toContain("Sorting into parts");
-    expect(html).not.toContain('data-testid="sort-note"');
-  });
-
-  test("a sort that did not land is one quiet line, not a warning", () => {
-    const html = renderToString(<ImportReview {...reviewProps} imported={rulesResult} rows={rows(rulesRecipe)} aiAvailable sortNote={SORT_NOTE} />);
-    expect(html).toContain('data-testid="sort-note"');
-    expect(html).toContain("Couldn&#x27;t sort this into parts");
-    expect(html).not.toContain("Use the model");
-  });
-});
-
-describe("no model configured", () => {
-  test("a schema page admits its sections were not sorted", () => {
-    const html = renderToString(<ImportReview {...reviewProps} imported={rulesResult} rows={rows(rulesRecipe)} />);
-    expect(html).toContain("Read 2 ingredients and 2 steps");
-    expect(html).toContain("No model is configured");
-    expect(html).toContain("every line is on the main body");
-    expect(html).not.toContain('data-testid="sorting-notice"');
-    expect(html).not.toContain('data-testid="read-error"');
-  });
-
-  test("the note is on the summary, not on the stub, which already says worse", () => {
-    expect(importSummary("schema", 2, 2, false)).toContain("No model is configured");
-    expect(importSummary("schema", 2, 2, null)).not.toContain("No model is configured");
-    expect(importSummary("stub", 0, 0, false)).toContain("no recipe data");
   });
 });

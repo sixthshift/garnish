@@ -106,10 +106,10 @@ test("Back from the Style stage asks before it drops the import", async () => {
   await backAsksThenLeaves(stage, () => screen.getByRole("button", { name: "Edit details" }));
 });
 
-test("Back from the review asks before it drops the import", async () => {
-  const stage = await renderStage(<RecipeSource {...sourceProps} source="url" initialUrl="https://recipes.example/anzac" />);
-  await screen.findByText("Anzac biscuits");
-  await backAsksThenLeaves(stage, () => screen.getByText("Anzac biscuits"));
+test("Back from Check asks before it drops the import", async () => {
+  const check = { pending: {}, note: null, duplicate: null, suggestedTags: [], onBack: () => {} };
+  const stage = await renderStage(<RecipeForm initial={draft} units={[]} tags={[]} storage={memory()} isImport importCheck={check} />);
+  await backAsksThenLeaves(stage, () => screen.getByTestId("import-check"));
 });
 
 test("Back from an empty source stage just leaves", async () => {

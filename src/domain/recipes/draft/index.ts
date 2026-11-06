@@ -1,5 +1,16 @@
 export { draftFromInput, draftFromRecipe, emptyDraft, hasDetails, isDirty } from "./draft";
 export {
+  addedAsNew,
+  checkStatus,
+  importDraft,
+  livePending,
+  type PendingLines,
+  pendingLabel,
+  placeholderFood,
+  placeholders,
+  withIngredientPatched,
+} from "./importCheck";
+export {
   addIngredient,
   ingredientSummary,
   isTextOnly,

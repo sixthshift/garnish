@@ -5,13 +5,14 @@ import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { cn } from "@sixthshift/design-system/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight } from "../../../../components/ui/icons";
 import { Menu } from "../../../../components/ui/Menu";
 import type { ReorderRow } from "../../../../components/ui/ReorderList";
 import type { PickerOption } from "../../../../lib/ui/picker";
 import { type DraftIngredient, type FieldErrors, ingredientSummary } from "../../draft";
 import type { Unit } from "../../reference";
+import { PendingLine, useImportCheck } from "./ImportCheck";
 import { IngredientAlternativesSheet } from "./IngredientAlternativesSheet";
 import { EMPTY_INGREDIENT_SUMMARY, INGREDIENT_COLUMNS, IngredientFields } from "./IngredientFields";
 import { useIngredientEditRow } from "./useIngredientEditRow";
@@ -38,7 +39,12 @@ export type IngredientEditRowProps = {
 export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, onRemove, errors, disabled, onPatch, onMove, onEnter }: IngredientEditRowProps) {
   const path = `parts.${pi}.ingredients.${ii}`;
   const label = `Ingredient ${ii + 1}`;
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const check = useImportCheck();
+  // Check's Pick opens the row it just filled, so the food can be changed at once.
+  const [sheetOpen, setSheetOpen] = useState(() => check !== null && ingredient.id !== undefined && check.picking === ingredient.id);
+  useEffect(() => {
+    if (check !== null && ingredient.id !== undefined && check.picking === ingredient.id) check.donePicking();
+  }, [check, ingredient.id]);
   const [alternativesOpen, setAlternativesOpen] = useState(false);
   const alternativeCount = ingredient.alternatives?.length ?? 0;
   const { textOnly, setMode, fieldProps } = useIngredientEditRow({ ingredient, path, label, units, errors, disabled, onPatch, onEnter });
@@ -133,47 +139,50 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   );
 
   return (
-    <div className="flex items-center gap-2 md:items-start" data-ingredient={ii} data-mode={textOnly ? "text" : "structured"}>
-      {reorder !== undefined && <span className="flex shrink-0 md:pt-1">{reorder.handle}</span>}
-      <div className="min-w-0 flex-1">
-        {/* Phone: one line per row, tapped to open the sheet. From md the fields sit on one line. */}
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-2 py-1 text-left text-sm md:hidden"
-          aria-label={`Edit ${label.toLowerCase()}`}
-          aria-expanded={sheetOpen}
-          disabled={disabled}
-          onClick={() => setSheetOpen(true)}
-        >
-          <span className="truncate">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span>
-          <ChevronRight title="Open" />
-        </button>
-        <div className="hidden md:block" data-inline-fields="">
-          <IngredientFields {...fieldProps} layout="line" />
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2 md:items-start" data-ingredient={ii} data-mode={textOnly ? "text" : "structured"}>
+        {reorder !== undefined && <span className="flex shrink-0 md:pt-1">{reorder.handle}</span>}
+        <div className="min-w-0 flex-1">
+          {/* Phone: one line per row, tapped to open the sheet. From md the fields sit on one line. */}
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 py-1 text-left text-sm md:hidden"
+            aria-label={`Edit ${label.toLowerCase()}`}
+            aria-expanded={sheetOpen}
+            disabled={disabled}
+            onClick={() => setSheetOpen(true)}
+          >
+            <span className="truncate">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span>
+            <ChevronRight title="Open" />
+          </button>
+          <div className="hidden md:block" data-inline-fields="">
+            <IngredientFields {...fieldProps} layout="line" />
+          </div>
         </div>
+        {menu}
+        <IngredientAlternativesSheet
+          open={alternativesOpen}
+          onOpenChange={setAlternativesOpen}
+          ingredient={ingredient}
+          label={label}
+          units={units}
+          onPatch={onPatch}
+        />
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen} size="sm" closable aria-label={label}>
+          <Sheet.Header>
+            <h2 className="text-base font-medium">{label}</h2>
+          </Sheet.Header>
+          <Sheet.Body>
+            <IngredientFields {...fieldProps} controls={controls} showOriginalText />
+          </Sheet.Body>
+          <Sheet.Footer>
+            <Button type="button" variant="solid" intent="brand" onClick={() => setSheetOpen(false)}>
+              Done
+            </Button>
+          </Sheet.Footer>
+        </Sheet>
       </div>
-      {menu}
-      <IngredientAlternativesSheet
-        open={alternativesOpen}
-        onOpenChange={setAlternativesOpen}
-        ingredient={ingredient}
-        label={label}
-        units={units}
-        onPatch={onPatch}
-      />
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen} size="sm" closable aria-label={label}>
-        <Sheet.Header>
-          <h2 className="text-base font-medium">{label}</h2>
-        </Sheet.Header>
-        <Sheet.Body>
-          <IngredientFields {...fieldProps} controls={controls} showOriginalText />
-        </Sheet.Body>
-        <Sheet.Footer>
-          <Button type="button" variant="solid" intent="brand" onClick={() => setSheetOpen(false)}>
-            Done
-          </Button>
-        </Sheet.Footer>
-      </Sheet>
+      {check !== null && ingredient.id !== undefined && <PendingLine id={ingredient.id} label={label} state={check} disabled={disabled} />}
     </div>
   );
 }

@@ -13,11 +13,10 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
 import { FileSource } from "../../../../../src/domain/recipes/components/new/FileSource";
-import { ImportReview } from "../../../../../src/domain/recipes/components/new/ImportReview";
 import { duplicateMessage } from "../../../../../src/domain/recipes/components/new/importSummary";
 import { SourceChooser } from "../../../../../src/domain/recipes/components/new/SourceChooser";
 import { draftFromScraped } from "../../../../../src/domain/recipes/draft";
-import { type ImportedRecipe, Importer, type MealieRecipe, review, type TandoorRecipe } from "../../../../../src/domain/recipes/import";
+import { Importer, type MealieRecipe, review, type TandoorRecipe } from "../../../../../src/domain/recipes/import";
 import { rowCommit } from "../../../../../src/domain/recipes/ingredient";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
 
@@ -87,49 +86,7 @@ describe("FileSource", () => {
   });
 });
 
-describe("the review", () => {
-  const reviewed = () => review.rowsFromMealie(recipe(), { units, foods });
-  const imported = (): ImportedRecipe => ({ from: "mealie", url: recipe().sourceUrl, recipe: recipe(), pageText: "" });
-
-  test("the uploaded recipe lands on the same review, with its parts and steps", () => {
-    const html = renderToString(
-      <ImportReview
-        imported={imported()}
-        rows={reviewed().rows}
-        units={units}
-        searchFoods={async () => []}
-        onRowsChange={() => {}}
-        onBack={() => {}}
-        onCreate={() => {}}
-      />
-    );
-    expect(html).toContain('data-import-from="mealie"');
-    expect(html).toContain("Read 4 ingredients and 4 steps");
-    expect(html).toContain('data-import-part="Pastry"');
-    expect(html).toContain('data-import-part="Filling"');
-    // The M17.5 rows, one per ingredient, matched where the vocabulary has it.
-    expect(html.match(/data-review-row=""/g)).toHaveLength(4);
-    expect(html).toContain("200 g plain flour, sifted");
-  });
-
-  test("a recipe already here under that name is a warning, not a refusal", () => {
-    const html = renderToString(
-      <ImportReview
-        imported={imported()}
-        rows={reviewed().rows}
-        units={units}
-        searchFoods={async () => []}
-        duplicate={{ name: "Lemon tart", slug: "lemon-tart" }}
-        duplicateBy="name"
-        onRowsChange={() => {}}
-        onBack={() => {}}
-        onCreate={() => {}}
-      />
-    );
-    expect(html).toContain('data-testid="duplicate-notice"');
-    expect(html).toContain("already here under that name");
-  });
-
+describe("duplicateMessage", () => {
   test("duplicateMessage says which way it matched", () => {
     expect(duplicateMessage("Lemon tart", "name")).toContain("already here under that name");
     expect(duplicateMessage("Lemon tart", "url")).toContain("imported from the same address");
@@ -193,28 +150,6 @@ describe("the draft", () => {
 
 describe("a Tandoor export (M34.4)", () => {
   const tandoor = (): TandoorRecipe => structuredClone(TANDOOR);
-
-  test("it lands on the same review, saying which export it came from", () => {
-    const source = tandoor();
-    const { rows } = review.rowsFromTandoor(source, { units, foods });
-    const html = renderToString(
-      <ImportReview
-        imported={{ from: "tandoor", url: source.sourceUrl, recipe: source, pageText: "" }}
-        rows={rows}
-        units={units}
-        searchFoods={async () => []}
-        duplicateBy="name"
-        onRowsChange={() => {}}
-        onBack={() => {}}
-        onCreate={() => {}}
-      />
-    );
-    expect(html).toContain('data-import-from="tandoor"');
-    expect(html).toContain("Read 6 ingredients and 4 steps");
-    expect(html).toContain('data-import-part="Pastry"');
-    expect(html).toContain('data-import-part="Filling"');
-    expect(html).toContain("200 g plain flour, sifted");
-  });
 
   test("the draft keeps each step's own rows linked to it, not guessed", () => {
     const source = tandoor();

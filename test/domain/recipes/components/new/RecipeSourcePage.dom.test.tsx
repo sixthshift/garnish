@@ -35,23 +35,25 @@ function withOpener(opener: unknown) {
 
 afterEach(() => withOpener(null));
 
-function props(loadPage: (page: { html: string; url: string }) => Promise<ImportedRecipe>) {
-  return { units: [], source: "page" as const, onChoose: () => {}, onDraft: () => {}, loadFoods: async () => [], loadPage };
+function props(loadPage: (page: { html: string; url: string }) => Promise<ImportedRecipe>, onDraft: (check: { draft: { name: string } }) => void = () => {}) {
+  return { units: [], source: "page" as const, onChoose: () => {}, onDraft, loadFoods: async () => [], loadPage };
 }
 
 const post = (data: unknown, source: unknown) => act(() => void window.dispatchEvent(new MessageEvent("message", { data, source: source as Window })));
 
-test("tells the opener it is ready, reads the page it sends, and lands on the review", async () => {
+test("tells the opener it is ready, reads the page it sends, and opens Check on it", async () => {
   const opener = { postMessage: vi.fn() };
   withOpener(opener);
   const loadPage = vi.fn(async () => found);
-  await renderInRouter(<RecipeSource {...props(loadPage)} />);
+  const onDraft = vi.fn();
+  await renderInRouter(<RecipeSource {...props(loadPage, onDraft)} />);
 
   expect(screen.getByText("Waiting for the page…")).toBeInTheDocument();
   expect(opener.postMessage).toHaveBeenCalledWith({ type: READY }, "*");
 
   await post(sent, opener);
-  await waitFor(() => expect(screen.getByText("Anzac biscuits")).toBeInTheDocument());
+  await waitFor(() => expect(onDraft).toHaveBeenCalledTimes(1));
+  expect(onDraft.mock.calls[0]![0].draft.name).toBe("Anzac biscuits");
   expect(loadPage).toHaveBeenCalledTimes(1);
   expect(loadPage).toHaveBeenCalledWith({ html: "<html>…</html>", url: SOURCE, title: "Anzac biscuits | Recipes" });
 });

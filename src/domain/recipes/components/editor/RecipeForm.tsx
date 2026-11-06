@@ -4,10 +4,11 @@ import { Message } from "@sixthshift/design-system/message";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { SaveBar } from "../../../../components/ui/SaveBar";
 import type { StorageLike } from "../../../../lib/drafts";
-import type { RecipeDraft } from "../../draft";
+import type { PendingLines, RecipeDraft } from "../../draft";
 import type { Tag, Unit } from "../../reference";
 import { DiscardImportDialog } from "./DiscardImport";
 import { DraftNotice } from "./DraftNotice";
+import { ImportCheckCard, ImportCheckContext, type ImportCheckProps } from "./ImportCheck";
 import { NotesEditor } from "./NotesEditor";
 import { PartsEditor } from "./PartsEditor";
 import { RecipeDetails } from "./RecipeDetails";
@@ -16,10 +17,11 @@ import { RecipeHead } from "./RecipeHead";
 import { RecipeJsonView } from "./RecipeJsonView";
 import { useRecipeForm } from "./useRecipeForm";
 
-/** The import's "Edit details": the form checks the draft and hands it back rather than saving it. */
+/** An import's Check with a model: the form checks the draft and hands it on to Style rather than saving it. */
 export type ContinueWith = {
   label: string;
-  onContinue: (draft: RecipeDraft, file: File | null) => void;
+  /** The draft as checked, a picture picked here, and the lines Check still asks about, for a return from Style. */
+  onContinue: (draft: RecipeDraft, file: File | null, pending: PendingLines) => void;
   onBack: () => void;
 };
 
@@ -59,6 +61,8 @@ export type RecipeFormProps = {
    * other stages do.
    */
   isImport?: boolean;
+  /** The import's Check (decisions.md row 203): what the read says, the lines it asks about, the tags it offers, and Back. */
+  importCheck?: ImportCheckProps;
   /**
    * Forwarded to the JSON toggle's `Menu` (tests). The menu is closed by
    * default and opens on click, like every other `Menu` in the app; there is
@@ -78,18 +82,20 @@ export function RecipeForm({
   storage,
   continueWith,
   isImport = false,
+  importCheck,
   jsonMenuOpen,
 }: RecipeFormProps) {
-  const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, continueWith, isImport });
+  const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, continueWith, isImport, importCheck });
   const { draft, errors, saving, dirty, json, blocker } = form;
-  const cancelLink = continueWith ? (
-    <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={continueWith.onBack}>
+  const back = continueWith?.onBack ?? importCheck?.onBack;
+  const cancelLink = back ? (
+    <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={back}>
       Back
     </Button>
   ) : (
     <RecipeFormCancel existing={existing} disabled={saving} />
   );
-  const saveLabel = continueWith?.label ?? (existing ? "Save changes" : "Create recipe");
+  const saveLabel = continueWith?.label ?? (existing ? "Save changes" : importCheck ? "Save recipe" : "Create recipe");
 
   return (
     <form onSubmit={(event) => void form.submit(event)} noValidate className="flex flex-col gap-6" aria-label={existing ? "Edit recipe" : "New recipe"}>
@@ -115,7 +121,8 @@ export function RecipeForm({
       {json !== null ? (
         <RecipeJsonView json={json} error={form.jsonError} disabled={saving} onChange={form.setJson} onApply={form.applyJson} />
       ) : (
-        <>
+        <ImportCheckContext.Provider value={form.check}>
+          {importCheck !== undefined && form.check !== null && <ImportCheckCard draft={draft} check={importCheck} state={form.check} />}
           <Card size="lg" className="flex flex-col gap-4">
             <RecipeHead
               draft={draft}
@@ -139,9 +146,10 @@ export function RecipeForm({
             units={units}
             knownTags={knownTags}
             defaultOpen={form.detailsOpen}
+            suggestedTags={importCheck?.suggestedTags}
             onPatch={form.patch}
           />
-        </>
+        </ImportCheckContext.Provider>
       )}
 
       {/* The phone's footer save; from `md` the toolbar above carries it. */}

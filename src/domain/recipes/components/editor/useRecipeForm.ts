@@ -9,11 +9,15 @@ import { useMutate } from "../../../../lib/mutate";
 import { toastError } from "../../../../lib/toast";
 import { useOnline } from "../../../../lib/useOnline";
 import { draftFromInput, draftFromJson, draftToJson, type FieldErrors, hasDetails, isDirty, type RecipeDraft, validateDraft } from "../../draft";
+import { useImportCheckState } from "./ImportCheck";
 import { imageFromUrl } from "./importedImage";
 import type { RecipeFormProps } from "./RecipeForm";
 import { saveNotice } from "./recipeFormText";
 
-export type UseRecipeFormOptions = Pick<RecipeFormProps, "initial" | "existing" | "online" | "importedImageUrl" | "storage" | "continueWith" | "isImport">;
+export type UseRecipeFormOptions = Pick<
+  RecipeFormProps,
+  "initial" | "existing" | "online" | "importedImageUrl" | "storage" | "continueWith" | "isImport" | "importCheck"
+>;
 
 export function useRecipeForm({
   initial,
@@ -23,6 +27,7 @@ export function useRecipeForm({
   storage: storageProp,
   continueWith,
   isImport = false,
+  importCheck,
 }: UseRecipeFormOptions) {
   const navigate = useNavigate();
   const mutate = useMutate();
@@ -36,7 +41,7 @@ export function useRecipeForm({
   const [jsonError, setJsonError] = useState<string | null>(null);
   // Decided from the draft the form opened on, not the live one, so typing a
   // tag does not fold the section you typed it into.
-  const [detailsOpen] = useState(() => hasDetails(initial));
+  const [detailsOpen] = useState(() => hasDetails(initial) || (importCheck?.suggestedTags.length ?? 0) > 0);
   const storage = storageProp ?? browserStorage();
   // A draft left behind by an earlier visit, read once on mount and only kept
   // if it actually differs from what the form opened on. While it is here the
@@ -51,9 +56,16 @@ export function useRecipeForm({
   const dirty = (isDirty(initial, draft) || file !== null) && !saving;
   // An import is held however little it has been changed: nothing stores it but this form.
   const holding = dirty || (isImport && !saving);
-  const blocker = useBlocker({ shouldBlockFn: () => true, enableBeforeUnload: () => holding, disabled: !holding, withResolver: true });
+  // An import's stages share /recipes/new, so only leaving the page is held; Back to the chooser asks on its own.
+  const blocker = useBlocker({
+    shouldBlockFn: ({ current, next }) => !isImport || next.pathname !== current.pathname,
+    enableBeforeUnload: () => holding,
+    disabled: !holding,
+    withResolver: true,
+  });
 
   const patch = (fields: Partial<RecipeDraft>) => setDraft((current) => ({ ...current, ...fields }));
+  const check = useImportCheckState(importCheck?.pending, draft, setDraft);
 
   // Write through on every change while the form is dirty. The picked file is
   // not stored (it is a File handle, not JSON); `hadImage` remembers there was
@@ -130,7 +142,7 @@ export function useRecipeForm({
     if (continueWith) {
       // Nothing is written here: the draft goes back to the stage that saves it.
       clearStoredDraft();
-      continueWith.onContinue(draft, file);
+      continueWith.onContinue(draft, file, check?.pending ?? {});
       return;
     }
     setSaving(true);
@@ -158,6 +170,7 @@ export function useRecipeForm({
   };
 
   return {
+    check,
     online,
     draft,
     setDraft,

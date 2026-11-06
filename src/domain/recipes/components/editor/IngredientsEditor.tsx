@@ -23,6 +23,7 @@ import {
 } from "../../draft";
 import type { FoodRow, Unit } from "../../reference";
 import { EditorSectionHeader } from "./EditorSectionHeader";
+import { useImportCheck } from "./ImportCheck";
 import { IngredientColumnsHeader, IngredientEditRow } from "./IngredientEditRow";
 import { confirmReviewedIngredients, ingredientReview } from "./ingredientReview";
 import { ParseAllSheet } from "./ParseAllSheet";
@@ -43,6 +44,7 @@ export type IngredientsEditorProps = {
 
 export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
+  const check = useImportCheck();
   const [parseAllOpen, setParseAllOpen] = useState(false);
   // The whole food vocabulary, loaded once the bulk sheet opens or the list is
   // empty and showing its inline entry: parsing a pasted block needs every
@@ -145,7 +147,8 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
             onRemove={(_, ii) => onChange(removeIngredient(draft, pi, ii))}
             renderItem={(row, ii, reorder) => (
               <IngredientEditRow
-                key={row.id ?? ii}
+                // A row Check fills (Add, Pick) mounts afresh, so its fields read the new food.
+                key={`${row.id ?? ii}:${(row.id && check?.revisions[row.id]) || 0}`}
                 ingredient={row}
                 pi={pi}
                 ii={ii}
@@ -156,7 +159,11 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
                 parts={draft.parts.map((c, i) => ({ value: String(i), label: partLabel(c, i) })).filter((_, i) => i !== pi)}
                 errors={errors}
                 disabled={disabled}
-                onPatch={(patch) => onChange(updateIngredient(draft, pi, ii, patch))}
+                onPatch={(patch) => {
+                  // A line changed by hand is settled: Check stops asking about it.
+                  if (row.id) check?.settle(row.id);
+                  onChange(updateIngredient(draft, pi, ii, patch));
+                }}
                 onMove={(toPi) => onChange(moveIngredient(draft, pi, ii, toPi))}
               />
             )}

@@ -19,11 +19,20 @@ async function renderWithRouter(component: () => ReactNode): Promise<string> {
 
 describe("ImportSteps", () => {
   test("ticks the stages before the current one and marks the current one for a screen reader", () => {
-    const html = renderToString(<ImportSteps current="Style" />);
+    const html = renderToString(<ImportSteps current="Style" model />);
     expect(html.match(/data-state="complete"/g)).toHaveLength(2);
     expect(html).toMatch(/aria-current="step"[^>]*>.*Style/);
     expect(html).toContain('aria-label="Import steps"');
+    expect(html).toContain("Check");
     expect(html).toContain("Save");
+  });
+
+  test("without a model the path has no Style, so the marker does not show one (decisions.md row 203)", () => {
+    const html = renderToString(<ImportSteps current="Check" model={false} />);
+    expect(html).not.toContain("Style");
+    expect(html).not.toContain("Review");
+    expect(html.match(/data-state="complete"/g)).toHaveLength(1);
+    expect(html).toMatch(/aria-current="step"[^>]*>.*Check/);
   });
 });
 

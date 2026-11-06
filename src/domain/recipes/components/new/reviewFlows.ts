@@ -1,10 +1,9 @@
-import { findOrCreateFood, foodForRecipe } from "../../../../api/rpc/foods";
+import { foodForRecipe } from "../../../../api/rpc/foods";
 import { getRecipe, recipeByName } from "../../../../api/rpc/recipes";
-import { findOrCreateUnit } from "../../../../api/rpc/units";
-import { draftFromScraped, type IngredientReview, type RecipeDraft } from "../../draft";
+import { type IngredientReview, importDraft, type PendingLines, type RecipeDraft, tagSuggestions, tickedTags } from "../../draft";
 import { type FileRecipe, type ImportedRecipe, type MealieRecipe, review } from "../../import";
-import { pendingCreations, rowCommit } from "../../ingredient";
 import type { FoodRow, Tag, Unit } from "../../reference";
+import type { DuplicateBy } from "./importSummary";
 
 /**
  * The food that is the recipe of this name ("Make this a food"), when
@@ -46,7 +45,21 @@ export function reviewOfUpload(recipe: FileRecipe, units: readonly Unit[], foods
   };
 }
 
-export type ReviewToCreate = {
+/** What Check opens on: the draft, the lines it still asks about, and what the read has to say. */
+export type ImportedCheck = {
+  draft: RecipeDraft;
+  /** The page's picture, fetched into the form once Check opens. */
+  imageUrl: string | null;
+  pending: PendingLines;
+  /** The line saying the model's sort did not land, when it did not. */
+  note: string | null;
+  /** A recipe already here from the same address or under the same name. */
+  duplicate: { name: string; slug: string; by: DuplicateBy } | null;
+  /** The source's new tags, offered on Check and added only when chosen (decisions.md row 171). */
+  suggestedTags: string[];
+};
+
+export type ReadToCheck = {
   imported: ImportedRecipe;
   rows: readonly IngredientReview[];
   rowSteps: number[] | null;
@@ -56,31 +69,32 @@ export type ReviewToCreate = {
   linkSubRecipeFood?: (name: string) => Promise<FoodRow | null>;
 };
 
-/** Create only what the reviewer approved, and return the draft the editor opens on. */
-export async function draftFromReview({ imported, rows, rowSteps, subRecipes, tags, linkSubRecipeFood }: ReviewToCreate): Promise<RecipeDraft> {
-  const pending = pendingCreations(rows);
-  const createdFoods = new Map<string, FoodRow>();
-  const nested = new Set(subRecipes.map((name) => name.toLowerCase()));
-  for (const name of pending.foods) {
-    // A row that stands for another recipe in the export gets that
-    // recipe's food when the recipe is already here; otherwise a
-    // plain food, exactly as any other new name does.
-    const linked = nested.has(name.toLowerCase()) ? await (linkSubRecipeFood ?? foodForRecipeNamed)(name) : null;
-    createdFoods.set(name.toLowerCase(), linked ?? (await findOrCreateFood({ data: { name } })));
+/**
+ * A read as the draft Check opens on (decisions.md row 203). Nothing is
+ * created: a food, unit or tag the library lacks is a placeholder the save
+ * makes by name. The source's tags the household already has come on; new
+ * ones are offered. A Tandoor export's nested recipe links to its food when
+ * that recipe is already here.
+ */
+export async function checkFromRead({ imported, rows, rowSteps, subRecipes, tags = [], linkSubRecipeFood }: ReadToCheck) {
+  const suggestions = tagSuggestions(imported.recipe.tags, imported.recipe.name, tags, imported.from === "mealie" || imported.from === "tandoor");
+  const linked = new Map<string, FoodRow>();
+  const creates = new Set(rows.flatMap((row) => (row.food.kind === "create" ? [row.food.name.toLowerCase()] : [])));
+  for (const name of subRecipes) {
+    if (!creates.has(name.toLowerCase())) continue;
+    const food = await (linkSubRecipeFood ?? foodForRecipeNamed)(name);
+    if (food !== null) linked.set(name.toLowerCase(), food);
   }
-  const createdUnits = new Map<string, Unit>();
-  for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
   const mealie = imported.from === "mealie" ? (imported.recipe as MealieRecipe) : null;
-
-  return draftFromScraped({
-    scraped: imported.recipe,
+  const { draft, pending } = importDraft({
+    scraped: { ...imported.recipe, tags: tickedTags(suggestions) },
     sourceUrl: imported.url,
-    commits: rows.map(rowCommit),
-    createdFoods,
-    createdUnits,
+    rows,
     knownTags: tags,
-    rowSteps: rowSteps ?? undefined,
+    rowSteps,
+    linked,
     notes: mealie?.notes,
     rating: mealie?.rating ?? null,
   });
+  return { draft, pending, suggestedTags: suggestions.suggested.filter((tag) => !tag.ticked).map((tag) => tag.name) };
 }

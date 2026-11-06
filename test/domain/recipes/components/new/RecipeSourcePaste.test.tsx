@@ -5,7 +5,6 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
-import { importSummary } from "../../../../../src/domain/recipes/components/new/importSummary";
 import { PasteSource } from "../../../../../src/domain/recipes/components/new/PasteSource";
 import { SourceChooser } from "../../../../../src/domain/recipes/components/new/SourceChooser";
 import { draftFromScraped } from "../../../../../src/domain/recipes/draft";
@@ -90,13 +89,6 @@ describe("an AI answer through the review", () => {
       { name: "Syrup", ingredients: [], steps: ["Melt."] },
     ],
   };
-
-  test("the review says Claude read it and asks for it to be checked", () => {
-    const summary = importSummary("ai", 1, 2);
-    expect(summary).toContain("Claude read 1 ingredient and 2 steps");
-    expect(summary).toContain("Check them");
-    expect(summary).toContain("nothing is saved yet");
-  });
 
   test("it becomes a draft the same way a scraped page does, with no source URL", () => {
     const rows = reviewRows(review.ingredientLines(recipe), { units: [gram], foods: [flour] });

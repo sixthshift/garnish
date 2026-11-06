@@ -1,16 +1,14 @@
-import { listFoods } from "../../../../api/rpc/foods";
-import type { RecipeDraft } from "../../draft";
 import type { FileRecipe, ImportedRecipe } from "../../import";
 import type { FoodRow, Tag, Unit } from "../../reference";
-import { DISCARD_PASTE, DISCARD_RECIPE, useImportGuard } from "../editor/DiscardImport";
+import { DISCARD_PASTE, useImportGuard } from "../editor/DiscardImport";
 import { BrowserSource } from "./BrowserSource";
 import type { SentPage } from "./bookmarklet";
 import { FileSource } from "./FileSource";
-import { ImportReview } from "./ImportReview";
 import { ImportSteps } from "./ImportSteps";
 import type { ModelReader, SourceKind } from "./importSummary";
 import { PageSource } from "./PageSource";
 import { PasteSource } from "./PasteSource";
+import type { ImportedCheck } from "./reviewFlows";
 import { SourceChooser } from "./SourceChooser";
 import { UrlSource } from "./UrlSource";
 import { useRecipeSource } from "./useRecipeSource";
@@ -24,8 +22,8 @@ export type RecipeSourceProps = {
   onChoose: (kind: SourceKind | null) => void;
   /** An address handed in by the route (a share sheet's): the URL stage opens on it and reads it at once. */
   initialUrl?: string | null;
-  /** Called once with the draft the editor should open on. */
-  onDraft: (draft: RecipeDraft, imageUrl: string | null) => void;
+  /** Called once a read is whole, with what Check opens on (decisions.md row 203). */
+  onDraft: (check: ImportedCheck) => void;
   /** Look for a recipe already imported from this address. */
   findDuplicate?: (url: string) => Promise<{ name: string; slug: string } | null>;
   /** Look for a recipe already here under this name, for an upload. */
@@ -55,18 +53,18 @@ export type RecipeSourceProps = {
 };
 
 export function RecipeSource(props: RecipeSourceProps) {
-  const { units, source, onChoose, aiAvailable = false } = props;
+  const { source, onChoose, aiAvailable = false } = props;
   const state = useRecipeSource(props);
-  const { url, text, file, imported, rows, busy, error } = state;
-  // A recipe under review, or a pasted page, is work the browser's Back would
-  // drop unseen: the stages share one URL, so Back leaves /recipes/new.
-  const guard = useImportGuard(imported !== null || (source === "paste" && text.trim() !== ""), imported !== null ? DISCARD_RECIPE : DISCARD_PASTE);
+  const { url, text, file, busy, error } = state;
+  // Pasted text is work the browser's Back would drop unseen: the stages share
+  // one URL, so Back leaves /recipes/new.
+  const guard = useImportGuard(source === "paste" && text.trim() !== "", DISCARD_PASTE);
 
   return (
     <div className="flex flex-col gap-6">
-      <ImportSteps current={imported !== null ? "Review" : "Source"} />
-      {/* The chooser and the review lay themselves out across the page; a source's one form keeps to a reading width. */}
-      {source === null || imported !== null ? stage() : <div className="w-full max-w-3xl">{stage()}</div>}
+      <ImportSteps current="Source" model={aiAvailable} />
+      {/* The chooser lays itself out across the page; a source's one form keeps to a reading width. */}
+      {source === null ? stage() : <div className="w-full max-w-3xl">{stage()}</div>}
       {guard.dialog}
     </div>
   );
@@ -82,29 +80,6 @@ export function RecipeSource(props: RecipeSourceProps) {
             onChoose("url");
             void state.read(address);
           }}
-        />
-      );
-    }
-
-    if (imported !== null) {
-      return (
-        <ImportReview
-          imported={imported}
-          rows={rows}
-          units={units}
-          searchFoods={(q) => listFoods({ data: { q } })}
-          busy={busy}
-          error={error}
-          duplicate={state.duplicate}
-          duplicateBy={state.duplicateBy}
-          aiAvailable={aiAvailable}
-          sortNote={state.sortNote}
-          onRowsChange={state.setRows}
-          tagSuggestions={state.suggestions}
-          chosenTags={state.chosenTags}
-          onChosenTagsChange={state.setChosenTags}
-          onBack={state.leaveReview}
-          onCreate={() => void state.create()}
         />
       );
     }
