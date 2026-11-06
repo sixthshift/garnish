@@ -119,6 +119,8 @@ export function StylePart(props: StylePartProps) {
   const { p, original, firstStep, firstRewriteStep, answer, choices, assembled, running, failed, editing } = props;
   const part = original[p]!;
   const rewrite = answer?.parts[p];
+  // A part with nothing in it, the main body once every line sat under a heading, is not shown.
+  if (part.ingredients.length === 0 && part.steps.length === 0) return null;
   const check = answer?.check.parts[p];
   const aligned = rewrite !== undefined && isAligned(part, rewrite);
   const findings = rewrite && check ? partFindings(part, check, aligned, rewrite) : null;

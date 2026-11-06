@@ -53,7 +53,9 @@ export function useRecipeForm({
     return isDirty(initial, candidate) ? { draft: candidate, text: draftNoticeText(stored) } : null;
   });
 
-  const dirty = (isDirty(initial, draft) || file !== null) && !saving;
+  // The import's own picture, fetched into `file` on arrival, is not a change anyone made.
+  const [fileImported, setFileImported] = useState(false);
+  const dirty = (isDirty(initial, draft) || (file !== null && !fileImported)) && !saving;
   // An import is held however little it has been changed: nothing stores it but this form.
   const holding = dirty || (isImport && !saving);
   // An import's stages share /recipes/new, so only leaving the page is held; Back to the chooser asks on its own.
@@ -82,7 +84,9 @@ export function useRecipeForm({
     let stale = false;
     imageFromUrl(importedImageUrl)
       .then((fetched) => {
-        if (!stale) setFile(fetched);
+        if (stale) return;
+        setFile(fetched);
+        setFileImported(true);
       })
       .catch(() => {
         // Shown as a warning by `saveNotice` only if a save actually tries it.
@@ -176,7 +180,10 @@ export function useRecipeForm({
     setDraft,
     patch,
     errors,
-    setFile,
+    setFile: (picked: File | null) => {
+      setFile(picked);
+      setFileImported(false);
+    },
     saving,
     json,
     setJson,

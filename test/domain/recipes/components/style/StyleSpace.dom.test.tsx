@@ -144,3 +144,25 @@ test("a run that fails shows why, keeps the author's steps on screen, and can be
   await user.click(screen.getByRole("button", { name: "Try again" }));
   await waitFor(() => expect(screen.getByTestId("style-status")).toHaveTextContent("1 of 2 rewrites kept"));
 });
+
+test("a part with nothing in it, the main body once every line sat under a heading, is not shown", async () => {
+  const withEmpty = [
+    { name: "", ingredients: [], steps: [] },
+    { ...parts[0]!, name: "Stir-fry" },
+  ];
+  const answer: RestyledPart[] = [
+    { name: "", notes: [], steps: [] },
+    { ...rewrite[0]!, name: "Stir-fry" },
+  ];
+  render(
+    <StyleSpace
+      parts={withEmpty}
+      run={async () => ({ parts: answer, check: checkRestyle(styleOriginal(withEmpty), answer) })}
+      onSave={async () => {}}
+      saveLabel="Save recipe"
+      loadRules={async () => rules}
+    />
+  );
+  await waitFor(() => expect(screen.getAllByTestId("style-part")).toHaveLength(1));
+  expect(screen.queryByText("No steps")).not.toBeInTheDocument();
+});

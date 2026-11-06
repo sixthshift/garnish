@@ -23,6 +23,9 @@ vi.mock("../../../../../src/api/rpc/foods", async (importOriginal) => ({
   listFoods: vi.fn(async () => []),
   findOrCreateFood: rpc.findOrCreateFood,
 }));
+vi.mock("../../../../../src/domain/recipes/components/editor/importedImage", () => ({
+  imageFromUrl: vi.fn(async () => new File(["jpeg"], "tart.jpg", { type: "image/jpeg" })),
+}));
 vi.mock("../../../../../src/api/rpc/units", async (importOriginal) => ({ ...(await importOriginal<object>()), findOrCreateUnit: rpc.findOrCreateUnit }));
 
 beforeEach(() => {
@@ -165,4 +168,17 @@ test("with a model, Continue hands on the draft and the lines still asked about"
   expect(Object.keys(stillAsking as object)).toHaveLength(1);
   expect(Object.keys(pending)).toHaveLength(2);
   expect(rpc.createRecipe).not.toHaveBeenCalled();
+});
+
+test("the page's own picture, fetched on arrival, is not an unsaved change", async () => {
+  const { draft, pending } = opened();
+  const check = { pending, note: null, duplicate: null, suggestedTags: [], onBack: () => {} };
+  await renderInRouter(
+    <RecipeForm initial={draft} units={[gram]} tags={[]} storage={memory()} isImport importCheck={check} importedImageUrl="https://recipes.example/tart.jpg" />
+  );
+  await screen.findByTestId("import-check");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+  await userEvent.setup().type(screen.getByRole("textbox", { name: /^Name/ }), "!");
+  expect((await screen.findAllByText("Unsaved changes")).length).toBeGreaterThan(0);
 });
