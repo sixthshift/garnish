@@ -10,26 +10,12 @@ import { linkedIngredients, StepCard } from "../recipe/StepCard";
 import { AmountForm } from "./AmountForm";
 import { CookIngredientItem } from "./CookIngredientItem";
 
-/** Under every card: a dimmed, tappable preview of the card that follows. */
-function NextPreview({ preview, onNext }: { preview: string; onNext: () => void }) {
-  return (
-    <button
-      type="button"
-      data-testid="next-preview"
-      onClick={onNext}
-      className="block min-h-12 w-full py-2 text-left text-base text-fg-subtle hover:text-fg-normal desktop:text-lg"
-    >
-      Next: {preview}
-    </button>
-  );
-}
-
 /**
  * "Change this step" under a step card: the step's words in a field, to say
  * how it was actually done. Saved as a change the finish card asks about
  * (decisions.md row 193); the card shows the new words at once.
  */
-function StepChange({ step, changed, onSave }: { step: Step; changed: boolean; onSave: (text: string) => void }) {
+export function StepChange({ step, changed, onSave }: { step: Step; changed: boolean; onSave: (text: string) => void }) {
   const [text, setText] = useState<string | null>(null);
   if (text === null) {
     return (
@@ -72,7 +58,7 @@ function StepChange({ step, changed, onSave }: { step: Step; changed: boolean; o
  * the step's rows that have an amount, each opening the same field the
  * ingredients card's pencil does.
  */
-function StepAmounts({
+export function StepAmounts({
   rows,
   changedIds,
   onChangeAmount,
@@ -119,18 +105,16 @@ function StepAmounts({
 }
 
 /**
- * One card in large type: the part's ingredient list, or a single step. The
- * card is the screen's one surface (design-language rule 1): the part's name
- * is the header's current tab, and the count is the footer's, so neither is
- * repeated on it. `partName` is set only where there is no tab bar to name it.
+ * One card in large type, as a desktop's filmstrip draws the current one: the
+ * part's ingredient list, or a single step. The card is the screen's one
+ * surface (design-language rule 1): the part's name is the header's current
+ * tab and the count is the header's, so neither is repeated on it. A phone
+ * deals its own cards (`mobile/CookDeck`), reusing the change forms below.
  */
 export function CookCardView({
   card,
   recipeId,
-  preview,
-  onNext,
   cookFrom,
-  partName,
   changedIds,
   fixedIds,
   onChangeAmount,
@@ -139,13 +123,8 @@ export function CookCardView({
 }: {
   card: CookCard;
   recipeId: string;
-  /** The next card's preview line, or "Finished" past the last one (`nextPreview`). */
-  preview: string;
-  onNext: () => void;
   /** This recipe's slug, forwarded to a step card's linked rows for the sub-recipe cook link. */
   cookFrom: string;
-  /** The part's name, shown above the card when no tab bar carries it. */
-  partName?: string;
   /** Ingredient and step ids changed this cook, marked as such. */
   changedIds?: ReadonlySet<string>;
   /**
@@ -165,15 +144,9 @@ export function CookCardView({
    */
   filmstrip?: boolean;
 }) {
-  const heading = partName !== undefined && partName !== "" && (
-    <SectionTitle as="h2" data-part-name>
-      {partName}
-    </SectionTitle>
-  );
   if (card.kind === "ingredients") {
     return (
       <div className="flex flex-col gap-2" data-card="ingredients">
-        {heading}
         <Card>
           <SectionTitle as="h3" className="mb-1">
             Ingredients
@@ -190,13 +163,11 @@ export function CookCardView({
             ))}
           </ul>
         </Card>
-        {!filmstrip && <NextPreview preview={preview} onNext={onNext} />}
       </div>
     );
   }
   return (
     <div className="flex flex-col gap-2" data-card="step">
-      {heading}
       {/* Same card the recipe page deals, in the cook deck's bigger type: its
           own linked ingredients and timers come with it. */}
       <ul>
@@ -218,7 +189,6 @@ export function CookCardView({
           onSave={(text) => onChangeStep(card.step, card.number, text)}
         />
       )}
-      {!filmstrip && <NextPreview preview={preview} onNext={onNext} />}
     </div>
   );
 }

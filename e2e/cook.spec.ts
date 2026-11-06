@@ -14,7 +14,7 @@ test("an amount changed while cooking is kept in the recipe; a step changed just
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("1 change", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: "Change this step" }).click();
   await page.getByRole("textbox", { name: "How you did it" }).fill("Cook the rice with a bay leaf.");
   await page.getByRole("button", { name: "Save" }).click();
@@ -22,7 +22,8 @@ test("an amount changed while cooking is kept in the recipe; a step changed just
   await expect(page.getByText("2 changes", { exact: true })).toBeVisible();
 
   // On to the finish card.
-  const next = page.getByRole("button", { name: "Next", exact: true });
+  // Next step, and Finish on the last step.
+  const next = page.getByRole("button", { name: /^(Next step|Finish)$/ });
   while (await next.isEnabled()) await next.click();
   await expect(page.getByRole("heading", { name: "What you changed" })).toBeVisible();
   await page.getByRole("radiogroup", { name: "What to do with: Step 1 rewritten" }).getByRole("radio", { name: "Just this time" }).click();

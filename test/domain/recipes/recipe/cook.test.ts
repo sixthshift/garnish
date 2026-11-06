@@ -10,7 +10,7 @@ import {
   totalWithFinish,
 } from "../../../../src/domain/recipes/recipe/cook";
 import type { Ingredient, Part, Step } from "../../../../src/domain/recipes/recipe/recipe";
-import { SWIPE_MAX_MS, SWIPE_MIN_PX, SWIPE_RATIO, swipeIntent } from "../../../../src/lib/swipe";
+import { SWIPE_DRAG_SHARE, SWIPE_MAX_MS, SWIPE_MIN_PX, SWIPE_RATIO, swipeIntent } from "../../../../src/lib/swipe";
 
 const uuid = () => crypto.randomUUID();
 const step = (text: string, ingredientIds: string[] = []): Step => ({ id: uuid(), text, title: "", summary: "", ingredientIds, image: null });
@@ -188,35 +188,38 @@ describe("partPills", () => {
 });
 
 describe("swipeIntent", () => {
-  test("a flick up brings the next card on, a flick down the previous", () => {
-    expect(swipeIntent({ dx: 0, dy: -120, ms: 200 })).toBe("next");
-    expect(swipeIntent({ dx: 0, dy: 120, ms: 200 })).toBe("prev");
+  test("a flick left brings the next card on, a flick right the previous", () => {
+    expect(swipeIntent({ dx: -120, dy: 0, ms: 200 })).toBe("next");
+    expect(swipeIntent({ dx: 120, dy: 0, ms: 200 })).toBe("prev");
     // Exactly at the distance threshold still counts.
-    expect(swipeIntent({ dx: 0, dy: -SWIPE_MIN_PX, ms: 100 })).toBe("next");
+    expect(swipeIntent({ dx: -SWIPE_MIN_PX, dy: 0, ms: 100 })).toBe("next");
   });
 
-  test("a short drag is a scroll or a tap, not a swipe", () => {
-    expect(swipeIntent({ dx: 0, dy: -(SWIPE_MIN_PX - 1), ms: 100 })).toBeNull();
+  test("a short drag is a tap or a nudge, not a swipe", () => {
+    expect(swipeIntent({ dx: -(SWIPE_MIN_PX - 1), dy: 0, ms: 100 })).toBeNull();
     expect(swipeIntent({ dx: 0, dy: 0, ms: 40 })).toBeNull();
   });
 
-  test("a sideways drag is not vertical enough", () => {
-    expect(swipeIntent({ dx: 200, dy: -80, ms: 200 })).toBeNull();
-    expect(swipeIntent({ dx: -200, dy: 80, ms: 200 })).toBeNull();
-    // Vertical travel must beat horizontal by the ratio, not merely equal it.
-    expect(swipeIntent({ dx: 80, dy: -80, ms: 200 })).toBeNull();
-    expect(swipeIntent({ dx: 80, dy: -(80 * SWIPE_RATIO), ms: 200 })).toBe("next");
+  test("an up-and-down drag is the card's scroll, not sideways enough", () => {
+    expect(swipeIntent({ dx: -80, dy: 200, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: 80, dy: -200, ms: 200 })).toBeNull();
+    // Sideways travel must beat vertical by the ratio, not merely equal it.
+    expect(swipeIntent({ dx: -80, dy: 80, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: -(80 * SWIPE_RATIO), dy: 80, ms: 200 })).toBe("next");
   });
 
-  test("a slow drag is a scroll however far it went", () => {
-    expect(swipeIntent({ dx: 0, dy: -300, ms: SWIPE_MAX_MS + 1 })).toBeNull();
-    expect(swipeIntent({ dx: 0, dy: -300, ms: SWIPE_MAX_MS })).toBe("next");
+  test("a slow drag counts only once it has crossed a good share of the card", () => {
+    expect(swipeIntent({ dx: -100, dy: 0, ms: SWIPE_MAX_MS + 1 })).toBeNull();
+    expect(swipeIntent({ dx: -100, dy: 0, ms: SWIPE_MAX_MS })).toBe("next");
+    expect(swipeIntent({ dx: -100, dy: 0, ms: 2000, width: 390 })).toBeNull();
+    expect(swipeIntent({ dx: -(390 * SWIPE_DRAG_SHARE), dy: 0, ms: 2000, width: 390 })).toBe("next");
+    expect(swipeIntent({ dx: 200, dy: 0, ms: 2000, width: 390 })).toBe("prev");
   });
 
   test("nonsense numbers are ignored rather than moving the deck", () => {
-    expect(swipeIntent({ dx: Number.NaN, dy: -120, ms: 200 })).toBeNull();
-    expect(swipeIntent({ dx: 0, dy: Number.NEGATIVE_INFINITY, ms: 200 })).toBeNull();
-    expect(swipeIntent({ dx: 0, dy: -120, ms: -5 })).toBeNull();
+    expect(swipeIntent({ dx: Number.NaN, dy: 0, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: Number.NEGATIVE_INFINITY, dy: 0, ms: 200 })).toBeNull();
+    expect(swipeIntent({ dx: -120, dy: 0, ms: -5 })).toBeNull();
   });
 });
 

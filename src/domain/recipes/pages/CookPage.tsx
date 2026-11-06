@@ -3,29 +3,28 @@ import { Button } from "@sixthshift/design-system/button";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Popover } from "@sixthshift/design-system/popover";
-import { ProgressBar } from "@sixthshift/design-system/progress-bar";
-import { cn } from "@sixthshift/design-system/utils";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
-import { WakeLockIcon } from "../../../components/ui/icons";
+import { Cross } from "../../../components/ui/icons";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
-import { swipeIntent } from "../../../lib/swipe";
 import { useLayout } from "../../../lib/useLayout";
 import { useWakeLock } from "../../../lib/useWakeLock";
 import { CookCardView } from "../components/cook/CookCardView";
 import { amountChange, type CookChange, readChanges, sessionStore, withChange, withChanges, withoutChange, writeChanges } from "../components/cook/cookChanges";
 import { CookFilmstrip } from "../components/cook/desktop/CookFilmstrip";
 import { FinishedCard } from "../components/cook/FinishedCard";
-import { TimerStrip } from "../components/recipe/TimerStrip";
+import { CookDeck } from "../components/cook/mobile/CookDeck";
+import { CookPhoneCard } from "../components/cook/mobile/CookPhoneCard";
 import {
   buildCookCards,
   type CookCard,
   cardAnnouncement,
   clampStep,
+  type Ingredient,
   isFinishedIndex,
-  nextPreview,
   partPills,
+  type Step,
   scaledForServings,
   stepForKey,
   totalWithFinish,
@@ -36,14 +35,6 @@ const route = getRouteApi("/recipes/$slug/cook");
 
 /** What Space presses when it has focus, so a desktop's Space-for-next leaves it be. */
 const SPACE_TAKERS = "button, a, [role=button], [role=checkbox], [role=switch], [contenteditable=true]";
-
-/**
- * The deck's one column. The header and footer span the screen for their rule
- * and fill, but their controls sit in this, so on a desktop they line up with
- * the card rather than the window's edges (critique #15b). From `lg` it widens
- * with the step's type, keeping about the same measure.
- */
-const COLUMN = "mx-auto w-full max-w-3xl px-4 desktop:max-w-5xl";
 
 /**
  * "Serves 4" as one button that opens the stepper: the stepper itself is
@@ -124,27 +115,20 @@ export function CookPage() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // Vertical swipe between cards. Nothing is captured and nothing is
-  // prevented: the gesture is judged only when the pointer lifts, by
-  // `swipeIntent`, so a drag that was really a scroll scrolls and then reads as
-  // null. Touch and pen only — a mouse has the arrow keys and the buttons, and
-  // hijacking its drags would fight text selection.
-  const swipe = useRef<{ pointerId: number; x: number; y: number; at: number } | null>(null);
-
-  const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
-    if (event.pointerType === "mouse") return;
-    swipe.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, at: Date.now() };
-  };
-
-  const onPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
-    const start = swipe.current;
-    swipe.current = null;
-    if (start === null || start.pointerId !== event.pointerId) return;
-    const intent = swipeIntent({ dx: event.clientX - start.x, dy: event.clientY - start.y, ms: Date.now() - start.at });
-    if (intent === null) return;
-    const next = intent === "next" ? index + 1 : index - 1;
-    if (next < 0 || next >= total) return;
-    goTo(next);
+  // What both layouts' cards change this cook with: an amount, a step's words.
+  const changeProps = {
+    changedIds,
+    fixedIds,
+    onChangeAmount: (ingredient: Ingredient, typed: number) => {
+      const change = amountChange(ingredient, typed, factor);
+      if (change) keepChanges(withChange(changes, change));
+    },
+    onChangeStep: (changedStep: Step, position: number, text: string) =>
+      keepChanges(
+        text === originalStep(changedStep.id)
+          ? withoutChange(changes, `step:${changedStep.id}`)
+          : withChange(changes, { kind: "step", stepId: changedStep.id, position, text })
+      ),
   };
 
   // The card in front of the cook, which either layout draws in its own frame.
@@ -167,30 +151,12 @@ export function CookPage() {
         </Muted>
       }
     >
-      {card !== undefined && (
-        <CookCardView
-          card={card}
-          recipeId={recipe.id}
-          preview={nextPreview(cards, index)}
-          onNext={() => goTo(index + 1)}
-          cookFrom={recipe.slug}
-          partName={pills.length > 1 || filmstrip ? undefined : card.part}
-          filmstrip={filmstrip}
-          changedIds={changedIds}
-          fixedIds={fixedIds}
-          onChangeAmount={(ingredient, typed) => {
-            const change = amountChange(ingredient, typed, factor);
-            if (change) keepChanges(withChange(changes, change));
-          }}
-          onChangeStep={(changedStep, position, text) =>
-            keepChanges(
-              text === originalStep(changedStep.id)
-                ? withoutChange(changes, `step:${changedStep.id}`)
-                : withChange(changes, { kind: "step", stepId: changedStep.id, position, text })
-            )
-          }
-        />
-      )}
+      {card !== undefined &&
+        (filmstrip ? (
+          <CookCardView card={card} recipeId={recipe.id} cookFrom={recipe.slug} filmstrip {...changeProps} />
+        ) : (
+          <CookPhoneCard card={card} recipeId={recipe.id} cookFrom={recipe.slug} {...changeProps} />
+        ))}
     </EmptyBoundary>
   );
 
@@ -243,101 +209,33 @@ export function CookPage() {
 
   return (
     <SubRecipesProvider subRecipes={subRecipes}>
-      {/* `data-toasts="top"`: the footer is the deck's controls, so a toast (a timer done) goes to the top (lib/toast.ts). */}
-      <div className="flex min-h-dvh flex-col bg-bg-normal text-fg-normal" data-toasts="top">
-        <header className="sticky top-0 z-content-sticky border-b border-border-normal bg-bg-normal py-3">
-          <div className={cn(COLUMN, "flex flex-col gap-2")}>
-            {/* Exit, the name and Serves share the first row; the name gets the
-              room left and wraps to a second line before it truncates. */}
-            <div className="flex items-center gap-3">
-              {exit}
-              <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong desktop:text-lg" data-cook-title>
-                {recipe.name}
-              </h1>
-              {changesBadge}
-              {serves}
-            </div>
-            {pills.length > 1 && (
-              <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1" aria-label="Parts">
-                {pills.map((pill) => {
-                  const current = card !== undefined && card.part === pill.name;
-                  return (
-                    <Button
-                      key={pill.name}
-                      // The current part is a neutral fill: brand is Next's alone (rule 5).
-                      variant={current ? "solid" : "outline"}
-                      intent="neutral"
-                      size="xl"
-                      className="shrink-0 rounded-full px-5"
-                      aria-current={current ? "true" : undefined}
-                      data-pill={pill.name}
-                      onClick={() => goTo(pill.index)}
-                    >
-                      {pill.label}
-                    </Button>
-                  );
-                })}
-              </nav>
-            )}
-          </div>
-        </header>
-
-        {announce}
-
-        <main
-          // Anchored to the top, under the header, so the step reads high on a
-          // phone. `isolate`: the tick boxes lift over their rows' overlays
-          // (COOK_TICK's z-10), and that lift stays inside the deck rather
-          // than tying with the sticky header and painting over it (critique #15b).
-          className={cn(COLUMN, "isolate flex flex-1 flex-col gap-4 py-4 desktop:pt-8")}
-          onPointerDown={onPointerDown}
-          onPointerUp={onPointerUp}
-          onPointerCancel={() => (swipe.current = null)}
-        >
-          {deck}
-        </main>
-
-        <footer className="sticky bottom-0 z-content-sticky border-t border-border-normal bg-bg-normal pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className={cn(COLUMN, "flex flex-col gap-3")}>
-            {/* Timers started from any card, above the progress bar: they outlive
-              the card they were started on, so they follow you through the deck.
-              The current card's own are left out: its timer buttons count down already. */}
-            <TimerStrip recipeId={recipe.id} size="cook" hideStep={card?.kind === "step" ? card.step.id : undefined} />
-            <ProgressBar
-              completed={index + 1}
-              total={total}
-              showFraction={false}
-              label="Cook progress"
-              // A quiet track and a strong fill: what is done is the signal, not
-              // what is left. Neutral, since brand is Next's alone.
-              intent="neutral"
-              className="[--progress-bar-fill-bg:var(--fg-normal)] [--progress-bar-track-bg:var(--border-normal)]"
-            />
-            <div className="flex items-center justify-between gap-3">
-              <Button variant="outline" intent="neutral" size="xl" className="px-6" disabled={index <= 0} onClick={() => goTo(index - 1)}>
-                Prev
-              </Button>
-              <div className="flex min-w-0 flex-1 flex-col items-center gap-0.5 text-center">
-                {/* The deck's one counter, within the part; the bar shows the whole. */}
-                {card?.kind === "step" && (
-                  <span className="truncate text-sm text-fg-normal" data-position>
-                    {cardAnnouncement(card)}
-                  </span>
-                )}
-                {screenOn && (
-                  <span className="flex items-center gap-1 text-xs text-fg-subtle" data-wake-lock>
-                    <WakeLockIcon />
-                    Screen stays on
-                  </span>
-                )}
-              </div>
-              <Button variant="solid" intent="brand" size="xl" className="px-6" disabled={index >= total - 1} onClick={() => goTo(index + 1)}>
-                Next
-              </Button>
-            </div>
-          </div>
-        </footer>
-      </div>
+      {announce}
+      <CookDeck
+        name={recipe.name}
+        recipeId={recipe.id}
+        cards={cards}
+        index={index}
+        total={total}
+        pills={pills}
+        current={deck}
+        onCard={card !== undefined}
+        exit={
+          // A round ✕ on a phone, where the header's room is the name's.
+          <Button asChild variant="outline" intent="neutral" size="xl" iconOnly className="shrink-0 rounded-full">
+            <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested, choices }} aria-label="Exit">
+              <Cross />
+            </Link>
+          </Button>
+        }
+        tools={
+          <>
+            {changesBadge}
+            {serves}
+          </>
+        }
+        screenOn={screenOn}
+        goTo={goTo}
+      />
     </SubRecipesProvider>
   );
 }

@@ -11,7 +11,7 @@ test("a restored backup replaces everything with what it held", async ({ page, o
   await createRecipe(page, open, { name: kept, servings: 2, ingredients: ["1 l stock"], steps: ["Heat."] });
 
   await open("/settings");
-  await page.getByRole("tab", { name: "Backup" }).click();
+  await page.getByRole("link", { name: /^Backup/ }).click();
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Download backup" }).click()]);
   expect(download.suggestedFilename()).toMatch(/^garnish-backup-\d{8}-\d{6}\.zip$/);
   const zip = join(testInfo.outputDir, download.suggestedFilename());
@@ -20,7 +20,7 @@ test("a restored backup replaces everything with what it held", async ({ page, o
   await createRecipe(page, open, { name: lost, servings: 2, ingredients: ["1 cos lettuce"], steps: ["Toss."] });
 
   await open("/settings");
-  await page.getByRole("tab", { name: "Backup" }).click();
+  await page.getByRole("link", { name: /^Backup/ }).click();
   await page.getByLabel("Backup file").setInputFiles(zip);
   const sheet = page.getByRole("dialog", { name: "Restore from a backup" });
   const restore = sheet.getByRole("button", { name: "Restore" });

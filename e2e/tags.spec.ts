@@ -106,7 +106,7 @@ test("Settings › Tags: a rename onto another tag's name merges, and a tag nobo
   const recipe = new URL(p.url()).pathname;
 
   await open("/settings");
-  await p.getByRole("radio", { name: "Tags" }).click();
+  await p.getByRole("link", { name: /^Tags/ }).click();
   const table = p.getByRole("table", { name: "tags" });
 
   // Rename the duplicate onto the keeper's name: it offers a merge instead of failing.

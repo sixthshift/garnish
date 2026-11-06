@@ -10,7 +10,7 @@ import type { McpStatus } from "../../src/api/rpc/mcp";
 import { createRecipe, deleteRecipe, getRecipe, type listRecipes } from "../../src/api/rpc/recipes";
 import type { listTags } from "../../src/api/rpc/tags";
 import { listUnits } from "../../src/api/rpc/units";
-import type { SettingsData, settingsRoute as SettingsRoute } from "../../src/app/features/settings/routes/settings";
+import { type SettingsData, type settingsRoute as SettingsRoute, SettingsSearch } from "../../src/app/features/settings/routes/settings";
 import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/plan/planner";
 import { nextServings, type Recipe, type RecipeSummary, type ShelfCounts, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
@@ -723,31 +723,70 @@ describe("/recipes/new", () => {
 });
 
 describe("/settings", () => {
-  test("renders a tab per reference kind plus Appearance, with the Foods table open", async () => {
+  // A phone's Settings is one grouped list (decisions.md row 208); each place opens at `?section=`.
+  test("a phone's Settings is one grouped list, each place a row to its own screen, with its count", async () => {
     const foods = await callServerFn(listFoods, {});
     const html = await renderRoute("/settings");
-    expect(html).toContain("Settings");
-    for (const label of ["Foods", "Units", "Aisles", "Tags", "Style", "Planner", "Appearance"]) expect(html).toContain(`>${label}<`);
-    // Each guide's tab is badged with the number of its statements that are on.
-    expect(html).toMatch(/Style<span[^>]*>12</);
-    expect(html).toMatch(/Planner<span[^>]*>5</);
-    // Foods is the default tab: its table, its search box, its column headers.
-    expect(html).toContain('data-table="food"');
-    expect(html).toContain('aria-label="Search foods"');
-    expect(html).toContain(">On hand<");
-    expect(html).toContain(`${foods.length} food`);
+    expect(html).toContain(">Settings</h1>");
+    for (const group of ["Library", "Cooking", "Data", "App"]) expect(html).toContain(`>${group}</h2>`);
+    for (const [value, label] of [
+      ["foods", "Foods"],
+      ["units", "Units"],
+      ["aisles", "Aisles"],
+      ["tags", "Tags"],
+      ["style", "Style"],
+      ["planner", "Planner"],
+      ["backup", "Backup"],
+      ["ai", "AI"],
+      ["mcp", "MCP"],
+      ["appearance", "Appearance"],
+      ["alerts", "Alerts"],
+      ["diagnostics", "Diagnostics"],
+    ]) {
+      expect(html).toMatch(new RegExp(`href="/settings\\?section=${value}"[^>]*>[\\s\\S]*?>${label}</span>`));
+    }
+    // Each guide's row counts the statements that are on; the library's, what it holds.
+    expect(html).toMatch(/>Style<\/span><span[^>]*>12</);
+    expect(html).toMatch(/>Planner<\/span><span[^>]*>5</);
+    expect(html).toMatch(new RegExp(`>Foods</span><span[^>]*>${foods.length}<`));
+    // Home is the way out; no place is drawn until one is opened.
+    expect(html).toMatch(/<a(?=[^>]*href="\/")[^>]*aria-label="Home"/);
+    expect(html).not.toContain('aria-label="Search foods"');
   });
 
-  test("each food row opens its editor and has one actions menu, and no dialog is open by default", async () => {
+  test("?section=foods is the phone's Foods: the search held at the top, the letters, and the alphabet down the side", async () => {
+    await callServerFn(createFood, { name: "Apple" });
+    await callServerFn(createFood, { name: "Zucchini" });
+    const foods = await callServerFn(listFoods, {});
+    const html = await renderRoute("/settings?section=foods");
+    expect(html).toContain("data-back-to-settings");
+    expect(html).toContain(">Foods</h1>");
+    expect(html).toContain('aria-label="Search foods"');
+    expect(html).toContain(">On hand<");
+    expect(html).toContain(`${foods.length} foods`);
+    expect(html).toMatch(/data-letter="A"[^>]*>A</);
+    expect(html).toContain('aria-label="Jump to a letter"');
+    // A letter with foods jumps; one without is greyed and pressed in vain.
+    expect(html).toMatch(/<button type="button" aria-label="Jump to Z"/);
+    expect(html).toMatch(/<button type="button" disabled="" aria-label="Jump to Q"/);
+  });
+
+  test("another place opens on its own screen, back to the list; a place that does not exist is the list", async () => {
+    const units = await renderRoute("/settings?section=units");
+    expect(units).toContain(">Units</h1>");
+    expect(units).toContain('aria-label="Search units"');
+    expect(units).toMatch(/<a(?=[^>]*href="\/settings")[^>]*data-back-to-settings/);
+    expect(SettingsSearch.parse({ section: "nowhere" })).toEqual({ section: undefined });
+  });
+
+  test("each food row opens its sheet and has one actions menu, and no dialog is open by default", async () => {
     await callServerFn(createFood, { name: "Butter" });
     await callServerFn(createFood, { name: "Salt", skipShopping: true, aliases: ["sea salt"] });
-    const html = await renderRoute("/settings");
+    const html = await renderRoute("/settings?section=foods");
     expect(html).toContain('aria-label="Actions for Butter"');
     expect(html).toContain('aria-label="Actions for Salt"');
-    // The row's own button, not the sheet: only one of each.
-    expect(html.match(/aria-label="Edit Butter"/g)).toHaveLength(1);
     // A staple says so under its name, beside its aliases.
-    expect(html).toMatch(/on hand<\/span>.*sea salt/);
+    expect(html).toMatch(/on hand(<!-- -->)? · <\/span>sea salt/);
     // The edit sheet, delete confirm and merge dialog all start closed.
     expect(html).not.toContain("Merge into");
     expect(html).not.toContain("Always in the cupboard");

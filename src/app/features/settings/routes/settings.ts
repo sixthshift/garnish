@@ -1,4 +1,5 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import { z } from "zod";
 import { getAiStatus } from "../../../../api/rpc/ai";
 import { listAisles } from "../../../../api/rpc/aisles";
 import { listDiagnostics } from "../../../../api/rpc/diagnostics";
@@ -16,6 +17,7 @@ import type { Aisle, FoodPack, FoodRow, TagUsage, Unit } from "../../../../domai
 import type { StyleRule } from "../../../../domain/recipes/style";
 import { Route as rootRoute } from "../../../../routes/root";
 import type { AiStatus } from "../../../../server/ai/client";
+import { SETTINGS_SECTIONS } from "../components/settingsSections";
 
 export type SettingsData = {
   aisles: Aisle[];
@@ -34,9 +36,16 @@ export type SettingsData = {
   diagnostics: DiagnosticEvent[];
 };
 
+/**
+ * Which place is open: on a phone its own screen over the grouped list, on a
+ * desktop the menu's choice. An unknown name is the list, not an error.
+ */
+export const SettingsSearch = z.object({ section: z.enum(SETTINGS_SECTIONS).optional().catch(undefined) });
+
 export const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "settings",
+  validateSearch: SettingsSearch,
   loader: async (): Promise<SettingsData> => {
     const [aisles, units, foods, foodUsage, foodPacks, tags, recipes, styleRules, plannerRules, ai, mcp, diagnostics] = await Promise.all([
       listAisles({ data: {} }),

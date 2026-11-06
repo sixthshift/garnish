@@ -48,7 +48,7 @@ test("Cancel leaves the amount alone, and a row with no amount has no pencil", a
 
 test("a step whose ingredients ride on it offers Change an amount for each of them", async () => {
   const { recipeSchema, buildCookCards } = await import("../../../../../src/domain/recipes/recipe");
-  const { CookCardView } = await import("../../../../../src/domain/recipes/components/cook/CookCardView");
+  const { CookPhoneCard } = await import("../../../../../src/domain/recipes/components/cook/mobile/CookPhoneCard");
   const recipe = recipeSchema.parse({
     id: "00000000-0000-4000-8000-000000000001",
     slug: "tart",
@@ -68,7 +68,7 @@ test("a step whose ingredients ride on it offers Change an amount for each of th
   const [card] = buildCookCards(recipe);
   expect(card?.kind).toBe("step");
   const onChangeAmount = vi.fn();
-  await renderInRouter(<CookCardView card={card!} recipeId={recipe.id} preview="Finished" onNext={() => {}} cookFrom="tart" onChangeAmount={onChangeAmount} />);
+  await renderInRouter(<CookPhoneCard card={card!} recipeId={recipe.id} cookFrom="tart" onChangeAmount={onChangeAmount} />);
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Change an amount" }));
   await user.click(screen.getByRole("button", { name: "Change the amount of 3 soy sauce" }));

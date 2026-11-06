@@ -138,8 +138,8 @@ describe("on a desktop", () => {
   });
 });
 
-test("a phone keeps its one card at a time", async () => {
+test("a phone deals one card at a time instead", async () => {
   await cook("/recipes/fried-rice/cook?step=1");
   expect(document.querySelector('[data-cook-layout="filmstrip"]')).toBeNull();
-  expect(screen.getByTestId("next-preview")).toBeTruthy();
+  expect(document.querySelector('[data-cook-layout="cards"]')).not.toBeNull();
 });
