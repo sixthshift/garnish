@@ -5,8 +5,6 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { PLAN_RESULT_LIMIT, PlanAddForm } from "../../../../../src/domain/plan/components/week/PlanAddForm";
-import { PlanWeekView } from "../../../../../src/domain/plan/components/week/PlanWeekView";
-import { groupByDay } from "../../../../../src/domain/plan/plan";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
@@ -213,38 +211,4 @@ test("results stop at four, with the note row straight after them and a word on 
   const list = screen.getByRole("listbox");
   expect(list.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(screen.getByTestId("plan-add-more")).toHaveTextContent("4 more recipes match");
-});
-
-test("a day's + opens its sheet, one add closes it, and focus comes back to the +", async () => {
-  const user = userEvent.setup();
-  const onAddRecipe = vi.fn();
-  const noop = () => {};
-  await renderInRouter(
-    <PlanWeekView
-      monday={MONDAY}
-      days={groupByDay(MONDAY, [])}
-      today="2026-09-16"
-      searchRecipes={async () => [tart]}
-      onAddText={noop}
-      onAddRecipe={onAddRecipe}
-      onMove={noop}
-      onRemove={noop}
-    />
-  );
-
-  const plus = screen.getByRole("button", { name: "Add to Tuesday 15 September" });
-  await user.click(plus);
-  const dialog = await screen.findByRole("dialog");
-  expect(dialog).toHaveTextContent("Tuesday 15 September");
-  // A fixed height on a phone, so the box does not move as results arrive.
-  expect(dialog.className).toContain("max-sm:h-[92dvh]");
-  // The box takes focus once the sheet has settled, so typing goes straight into it.
-  const input = screen.getByRole("combobox", { name: "Search recipes, or type a note" });
-  await waitFor(() => expect(input).toHaveFocus());
-
-  await user.type(input, "tart");
-  await user.click(await screen.findByRole("option", { name: /Lemon tart/ }));
-  expect(onAddRecipe).toHaveBeenCalledWith("2026-09-15", tart, null);
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  await waitFor(() => expect(plus).toHaveFocus());
 });

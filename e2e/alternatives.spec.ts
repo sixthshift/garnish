@@ -36,10 +36,14 @@ test("a line's alternatives show under it, the plan picks among the ticked ones,
 
   // The plan: first time round it is the line's own food; Choose offers only the ticked one.
   await open("/plan");
-  await page.getByRole("button", { name: /^Add to Monday/ }).click();
+  await page
+    .getByRole("list", { name: /^Week of/ })
+    .getByRole("button", { name: /^Add to Monday/ })
+    .click();
   const add = page.getByRole("dialog");
   await add.getByRole("combobox", { name: "Search recipes, or type a note" }).fill(name);
   await add.getByRole("option", { name }).click();
+  await add.getByRole("button", { name: "Done" }).click();
   await expect(add).toBeHidden();
   await page.getByRole("button", { name: `Actions for ${name}` }).click();
   await page.getByRole("menuitem", { name: "Choose…" }).click();

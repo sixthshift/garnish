@@ -3,7 +3,7 @@
 import { describe, expect, test } from "vitest";
 import { boardWeekTitle } from "../../../../../src/domain/plan/components/week/desktop/BoardWeek";
 import { dropPosition } from "../../../../../src/domain/plan/components/week/desktop/PlanBoard";
-import { madeAgo, openingTab, shelfTab } from "../../../../../src/domain/plan/components/week/desktop/PlanShelf";
+import { madeAgo, openingTab, shelfTab } from "../../../../../src/domain/plan/components/week/shelf";
 import { type PlanDay, planEntrySchema, rangeLabel } from "../../../../../src/domain/plan/plan";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
 

@@ -9,53 +9,11 @@ import type { RecipeSummary } from "../../../../recipes/recipe";
 import { dayName, type Meal } from "../../../plan";
 import { PlanAddForm } from "../PlanAddForm";
 import type { PlanWeekViewProps } from "../PlanWeekView";
+import { emptyShelfLine, madeAgo, openingTab, SHELF_TABS, type ShelfTab, shelfTab } from "../shelf";
 import type { BoardDrag } from "./PlanBoard";
 
 /** How many recipes the shelf's search draws: no keyboard over it, and the tabs below wait while it runs. */
 export const SHELF_RESULT_LIMIT = 8;
-
-export type ShelfTab = "rotation" | "weekend" | "try" | "all";
-
-const TABS: ReadonlyArray<{ value: ShelfTab; label: string }> = [
-  { value: "rotation", label: "Rotation" },
-  { value: "weekend", label: "Weekend" },
-  { value: "try", label: "To try" },
-  { value: "all", label: "All" },
-];
-
-/**
- * The recipes on one of the shelf's tabs. Rotation and Weekend are the kinds
- * the household marked (decisions.md row 191), the longest since made first,
- * since that is the one a week wants next; To try is every recipe never
- * made; All is every recipe by name. Pure.
- */
-export function shelfTab(recipes: readonly RecipeSummary[], tab: ShelfTab): RecipeSummary[] {
-  if (tab === "all") return [...recipes].sort((a, b) => a.name.localeCompare(b.name));
-  if (tab === "try") return recipes.filter((recipe) => recipe.lastMade === null);
-  return recipes.filter((recipe) => recipe.kind === tab).sort((a, b) => (a.lastMade ?? "").localeCompare(b.lastMade ?? ""));
-}
-
-/**
- * The tab the shelf opens on: the first that has a recipe on it, so a
- * household that has marked nothing Rotation yet opens on recipes, not on an
- * empty shelf. Rotation while the recipes load. Pure.
- */
-export function openingTab(recipes: readonly RecipeSummary[] | null | undefined): ShelfTab {
-  if (!recipes) return "rotation";
-  return TABS.find(({ value }) => shelfTab(recipes, value).length > 0)?.value ?? "all";
-}
-
-/** How long since a recipe was last made, as the shelf says it under its name: "made 3 weeks ago", "never made". Pure. */
-export function madeAgo(lastMade: string | null, today: string): string {
-  if (lastMade === null) return "never made";
-  const days = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${lastMade.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
-  if (days <= 0) return "made today";
-  if (days === 1) return "made yesterday";
-  if (days < 14) return `made ${days} days ago`;
-  if (days < 61) return `made ${Math.floor(days / 7)} weeks ago`;
-  if (days < 730) return `made ${Math.floor(days / 30.44)} months ago`;
-  return `made ${Math.floor(days / 365.25)} years ago`;
-}
 
 /**
  * A desktop's shelf beside the board (decisions.md row 207): which day it adds
@@ -107,7 +65,7 @@ export function PlanShelf({
     />
   );
 
-  const items: TabItem[] = TABS.map(({ value, label }) => {
+  const items: TabItem[] = SHELF_TABS.map(({ value, label }) => {
     const shelf = recipes ? shelfTab(recipes, value) : [];
     return {
       value,
@@ -119,7 +77,7 @@ export function PlanShelf({
           </div>
         ) : shelf.length === 0 ? (
           <Muted as="p" className="py-4 text-sm">
-            {value === "try" ? "Every recipe here has been made." : value === "all" ? "No recipes yet." : `No recipe is marked ${label} yet.`}
+            {emptyShelfLine(value)}
           </Muted>
         ) : (
           <ul className="flex flex-col gap-1" aria-label={`${label} recipes`}>

@@ -8,11 +8,15 @@ test("a planned week becomes a shopping list sorted into aisles", async ({ page,
 
   // Monday, so the spec does not depend on what day it runs.
   await open("/plan");
-  await page.getByRole("button", { name: /^Add to Monday/ }).click();
+  await page
+    .getByRole("list", { name: /^Week of/ })
+    .getByRole("button", { name: /^Add to Monday/ })
+    .click();
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("button", { name: "Dinner" }).click();
   await sheet.getByRole("combobox", { name: "Search recipes, or type a note" }).fill(name);
   await sheet.getByRole("option", { name }).click();
+  await sheet.getByRole("button", { name: "Done" }).click();
   await expect(sheet).toBeHidden();
 
   const week = page.getByRole("list", { name: /^Week of/ });
@@ -44,10 +48,14 @@ test("the list by meal shows each planned dish its own share of a line they shar
     ["Monday", dal],
     ["Tuesday", soup],
   ] as const) {
-    await page.getByRole("button", { name: new RegExp(`^Add to ${day}`) }).click();
+    await page
+      .getByRole("list", { name: /^Week of/ })
+      .getByRole("button", { name: new RegExp(`^Add to ${day}`) })
+      .click();
     const sheet = page.getByRole("dialog");
     await sheet.getByRole("combobox", { name: "Search recipes, or type a note" }).fill(name);
     await sheet.getByRole("option", { name }).click();
+    await sheet.getByRole("button", { name: "Done" }).click();
     await expect(sheet).toBeHidden();
   }
   await page.getByRole("button", { name: "Add this week to the shopping list" }).click();
@@ -83,10 +91,14 @@ test("a line is rounded up to the sizes its food is sold in, and its dish links 
   await createRecipe(page, open, { name, servings: 4, ingredients: ["150 g butter", "300 g red lentils"], steps: ["Bake."] });
 
   await open("/plan");
-  await page.getByRole("button", { name: /^Add to Wednesday/ }).click();
+  await page
+    .getByRole("list", { name: /^Week of/ })
+    .getByRole("button", { name: /^Add to Wednesday/ })
+    .click();
   const sheet = page.getByRole("dialog");
   await sheet.getByRole("combobox", { name: "Search recipes, or type a note" }).fill(name);
   await sheet.getByRole("option", { name }).click();
+  await sheet.getByRole("button", { name: "Done" }).click();
   await expect(sheet).toBeHidden();
   await page.getByRole("button", { name: "Add this week to the shopping list" }).click();
   await expect(page.getByRole("status").filter({ hasText: "items added" })).toBeVisible();

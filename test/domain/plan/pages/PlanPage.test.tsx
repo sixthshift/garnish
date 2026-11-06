@@ -1,9 +1,10 @@
-// The meal plan week (M33.2, rebuilt as one list by critique #9): what
-// `PlanWeekView` renders for a week — the seven days as rows of one card, each
-// with its "+", today marked, the two week arrows — an entry of each kind (a
-// recipe, a plain line, a recipe that has since been deleted), the empty day,
-// and the add sheet's form; plus the route end to end, loader and all, against
-// a temp DATA_DIR.
+// The meal plan week (M33.2; a phone's page for a hand since M48.3,
+// decisions.md row 208): what `PlanWeekView` renders on a phone for a week —
+// the seven days as sections under a sticky strip of day buttons, each with
+// its one "Add to", today marked, the two week arrows — an entry of each kind
+// (a recipe, a plain line, a recipe that has since been deleted), the empty
+// day, and the add sheet's form; plus the route end to end, loader and all,
+// against a temp DATA_DIR, which draws next week under the chosen one.
 //
 // The view takes its writes as callbacks, so these render it directly; the
 // route test below proves the loader, the `?week=` param and the nav item.
@@ -75,21 +76,29 @@ function weekOf(entries: PlanEntry[]): PlanDay[] {
 }
 
 describe("the week", () => {
-  test("seven days, Monday to Sunday, in order, as rows of one card", async () => {
+  test("seven days, Monday to Sunday, in order, as sections of one list under seven day buttons", async () => {
     const html = await render(emptyWeek());
     const dates = [...html.matchAll(/data-testid="plan-day" data-date="([^"]+)"/g)].map((match) => match[1]);
     expect(dates).toEqual(weekDates(MONDAY));
-    // Rows of one list, not a card each (design-language rule 2): the days are
-    // `<li>`s of the week's `<ol>`, and the only card is the one around it.
     const week = elementHtml(html, "plan-week");
     expect(week.startsWith("<ol")).toBe(true);
-    expect(week.match(/<li /g)?.length).toBeGreaterThanOrEqual(7);
     const day = elementHtml(html, "plan-day");
-    expect(day.startsWith("<li")).toBe(true);
+    expect(day.startsWith("<section")).toBe(true);
     expect(day).toContain("<h2");
-    expect(day).toContain(">Mon<");
-    expect(day).toContain(">14 Sep<");
-    expect(html).toContain(">20 Sep<");
+    expect(day).toContain(">Monday 14<");
+    expect(html).toContain(">Sunday 20<");
+    // The strip in the sticky header: a button a day, named in full, before the days it brings up.
+    expect(html.match(/data-testid="plan-day-button"/g)).toHaveLength(7);
+    expect(html).toContain('aria-label="Monday 14 September"');
+    expect(html.indexOf('data-testid="plan-day-button"')).toBeLessThan(html.indexOf('data-testid="plan-week"'));
+    expect(/<div[^>]*data-testid="plan-head"/.exec(html)?.[0]).toContain("sticky");
+  });
+
+  test("a day button says when its day has something on it, with a dot and in words", async () => {
+    const html = await render(weekOf([entry("2026-09-18", { text: "Leftovers" })]));
+    expect(html.match(/data-testid="plan-day-dot"/g)).toHaveLength(1);
+    expect(html).toContain('aria-label="Friday 18 September, planned"');
+    expect(html).toContain('aria-label="Thursday 17 September"');
   });
 
   test("each day has one +, named with the day in full, and no form", async () => {
@@ -103,19 +112,18 @@ describe("the week", () => {
     expect(html).not.toContain("<input");
   });
 
-  test("today is the only day marked, in words and a neutral tint, never the brand", async () => {
+  test("today is the only day marked: its section says Today, and its day button is the one filled", async () => {
     const html = await render(emptyWeek());
     expect(html.match(/data-today="true"/g)).toHaveLength(1);
     expect(html).toMatch(new RegExp(`data-date="${TODAY}" data-today="true"`));
-    expect(html.match(/aria-current="date"/g)).toHaveLength(1);
-    const today = elementHtml(html, "plan-today");
-    expect(today).toContain("Today");
+    expect(elementHtml(html, "plan-today")).toContain("Today");
     expect(html.match(/data-testid="plan-today"/g)).toHaveLength(1);
-    // A step lighter than the card in dark and darker in light: never sunk below it (decision 139).
-    expect(/<li[^>]*data-today="true"[^>]*>/.exec(html)?.[0]).toContain("bg-bg-subtle-hovered");
-    // Rule 5: brand is the primary action and state, not a mark.
-    expect(html).not.toContain("text-fg-brand");
-    expect(html).not.toContain("bg-bg-brand");
+    // The day button: aria-current in words, the brand fill to the eye (the mockup's strip, row 208).
+    expect(html.match(/aria-current="date"/g)).toHaveLength(1);
+    const button = /<button[^>]*aria-current="date"[^>]*>/.exec(html)?.[0] ?? "";
+    expect(button).toContain('aria-label="Wednesday 16 September"');
+    expect(button).toContain("bg-bg-brand");
+    expect(html.match(/bg-bg-brand text-fg-on-brand/g)).toHaveLength(1);
   });
 
   test("the arrows step a week either way and the label names the span", async () => {
@@ -188,30 +196,30 @@ describe("an entry of each kind", () => {
     expect(row).not.toContain("href=");
   });
 
-  test("an entry can be dragged to another day or moved from its row menu", async () => {
+  test("an entry is a card that swipes, with its menu beside it and no drag handle", async () => {
     const html = await render(weekOf([entry(TODAY, { recipe: tart, text: tart.name })]));
-    // ReorderList's group drag: every day is a list in the one group.
-    expect(html.match(/data-reorder-group="plan-week"/g)).toHaveLength(7);
-    // The row places its own handle (`narrow="row"`), inside the entry.
-    const row = elementHtml(html, "plan-entry");
-    expect(row).toContain('aria-label="Drag entry 1"');
-    // The row menu is the phone's path and the keyboard's: other days, and up
-    // and down on a narrow list, where the arrows leave the row.
-    expect(row).toContain('aria-label="Actions for Lemon tart"');
-    expect(html).toContain('data-narrow="row"');
-    expect(html).toContain('aria-label="Move entry 1 up"');
+    expect(html.match(/data-swipe-row=""/g)).toHaveLength(1);
+    expect(html).toContain('aria-label="Actions for Lemon tart"');
+    // The menu sits outside the swipe, which clips what it moves.
+    const swipe = html.slice(html.indexOf("data-swipe-row"), html.indexOf('aria-label="Actions for Lemon tart"'));
+    expect(swipe).toContain('data-testid="plan-entry"');
+    // Reordering is the menu's now: a sideways finger on a card is the swipe.
+    expect(html).not.toContain("data-reorder-group");
+    expect(html).not.toContain("Drag entry");
   });
 });
 
 describe("the empty day", () => {
-  test("a day with nothing on it is a quiet dash, said in words to a screen reader, and still takes a drop", async () => {
+  test("an empty day to come is a dashed Add to its weekday; one gone by is a quiet dash, said in words", async () => {
     const html = await render(weekOf([entry(TODAY, { text: "Leftovers" })]));
     expect(html.match(/data-testid="plan-day-empty"/g)).toHaveLength(6); // every day but Wednesday
+    // Monday and Tuesday are gone by.
     expect(elementHtml(html, "plan-day-empty")).toContain("—");
     expect(elementHtml(html, "plan-day-empty")).toContain('aria-hidden="true"');
-    expect(html.match(/<span class="sr-only">Nothing planned<\/span>/g)).toHaveLength(6);
-    // Every day's list is drawn, empty or not: it is a drop target.
-    expect(html.match(/data-reorder-group="plan-week"/g)).toHaveLength(7);
+    expect(html.match(/<span class="sr-only">Nothing planned<\/span>/g)).toHaveLength(2);
+    // Thursday to Sunday are still to come.
+    expect(html.match(/<button[^>]*data-testid="plan-day-empty"[^>]*>\+ Add to <!-- -->\w+day<\/button>/g)).toHaveLength(4);
+    expect(html).toContain("border-dashed");
   });
 });
 
@@ -276,11 +284,12 @@ describe("the add sheet's form", () => {
 describe("/plan", () => {
   useTempDataDir();
 
-  test("an empty database renders a whole empty week inside the shell", async () => {
+  test("an empty database renders a whole empty week, and the next, inside the shell", async () => {
     const html = await renderRoute(`/plan?week=${MONDAY}`);
-    expect(html.match(/data-testid="plan-day"/g)).toHaveLength(7);
+    expect(html.match(/data-testid="plan-day"/g)).toHaveLength(14);
     expect(html).toContain("14 – 20 Sep 2026");
-    expect(html.match(/data-testid="plan-day-empty"/g)).toHaveLength(7);
+    expect(html).toContain("Next week · <!-- -->21 – 27 Sep 2026");
+    expect(html.match(/data-testid="plan-day-empty"/g)).toHaveLength(14);
     // The nav item sits between Home and Shopping, in both navs.
     expect(html.match(/>Plan<\/a>/g)).toHaveLength(2);
     expect(html.indexOf(">Home</a>")).toBeLessThan(html.indexOf(">Plan</a>"));
@@ -296,15 +305,19 @@ describe("/plan", () => {
     const recipe = await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "", ingredients: [], steps: [] }] });
     await callServerFn(addPlanEntry, { date: "2026-09-15", recipeId: recipe.id, text: recipe.name, servings: 6 });
     await callServerFn(addPlanEntry, { date: "2026-09-18", text: "Leftovers" });
-    // The week either side is not this week's business.
-    await callServerFn(addPlanEntry, { date: "2026-09-21", text: "Beyond the week" });
+    // Next week is drawn beneath; the week before and the one after that are not.
+    await callServerFn(addPlanEntry, { date: "2026-09-21", text: "Next week's line" });
+    await callServerFn(addPlanEntry, { date: "2026-09-13", text: "Before the week" });
+    await callServerFn(addPlanEntry, { date: "2026-09-28", text: "Beyond next week" });
 
     const html = await renderRoute(`/plan?week=${MONDAY}`);
     expect(html).toContain("Lemon tart");
     expect(html).toContain("serves 6");
     expect(html).toContain("Leftovers");
-    expect(html).not.toContain("Beyond the week");
-    expect(html.match(/data-testid="plan-entry"/g)).toHaveLength(2);
+    expect(elementHtml(html, "plan-next-week")).toContain("Next week&#x27;s line");
+    expect(html).not.toContain("Before the week");
+    expect(html).not.toContain("Beyond next week");
+    expect(html.match(/data-testid="plan-entry"/g)).toHaveLength(3);
   });
 
   test("adding a recipe copies its name, so the entry survives the recipe", async () => {

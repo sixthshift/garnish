@@ -54,8 +54,11 @@ export function PhoneHome({ today, monday, days, nextDays, items, recipes, busy,
   const choose = (date: string, choice: PlanChoice, meal: Meal | null) => {
     const swapping = adding?.swapping ?? null;
     // A swap keeps the meal it replaces unless another is chosen in the sheet.
-    if (swapping !== null) onSwap(swapping, choice, meal ?? swapping.meal);
-    else onAdd(date, choice, meal);
+    // The plan's sheet stays open for the next add (row 208), but a swap is one choice: the entry it replaces is gone after it.
+    if (swapping !== null) {
+      onSwap(swapping, choice, meal ?? swapping.meal);
+      setAdding(null);
+    } else onAdd(date, choice, meal);
   };
 
   return (
@@ -93,6 +96,8 @@ export function PhoneHome({ today, monday, days, nextDays, items, recipes, busy,
         <PlanAddSheet
           date={adding.date}
           busy={busy}
+          planned={[...days, ...nextDays].find((day) => day.date === adding.date)?.entries ?? []}
+          recipes={recipes}
           onClose={() => setAdding(null)}
           searchRecipes={searchRecipes}
           onAddText={(date, text, meal) => choose(date, { text }, meal)}

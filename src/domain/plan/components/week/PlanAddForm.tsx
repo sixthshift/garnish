@@ -37,7 +37,8 @@ const PLAN_SEARCH_DEBOUNCE_MS = 200;
  * recipe called "Takeout curry" matches. ArrowDown walks into the results and
  * ArrowUp from the first one back to the box. The line is also a button ("Add
  * “leftovers” as a note"), so a phone with no Enter in sight still gets one.
- * Every add is one entry: `onDone` follows it, and the sheet closes on it.
+ * Every add is one entry, and the form starts afresh after it, ready for the
+ * next: a phone's sheet stays open for several (decisions.md row 208).
  *
  * The box is the results' combobox (WAI-ARIA list autocomplete): focus stays
  * in it, `aria-activedescendant` names the highlighted result and is absent

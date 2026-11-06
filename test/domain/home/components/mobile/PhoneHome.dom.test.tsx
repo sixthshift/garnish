@@ -101,7 +101,7 @@ test("Swap opens today's add sheet, and what is chosen takes tonight's place at 
   const { onSwap, onAdd } = await renderHome();
   await user.click(screen.getByRole("button", { name: "Swap" }));
 
-  const sheet = await screen.findByRole("dialog", { name: "Wednesday 16 September" });
+  const sheet = await screen.findByRole("dialog", { name: "Adding to Wednesday 16 September" });
   await user.type(within(sheet).getByRole("combobox"), "Pizza night");
   await user.click(within(sheet).getByRole("button", { name: "Add “Pizza night” as a note" }));
 
@@ -129,7 +129,7 @@ test("an empty day's + opens the add sheet for that day, and a recipe picked the
   const { onAdd, onSwap } = await renderHome();
   await user.click(screen.getByRole("button", { name: "Plan Friday 18 September" }));
 
-  const sheet = await screen.findByRole("dialog", { name: "Friday 18 September" });
+  const sheet = await screen.findByRole("dialog", { name: "Adding to Friday 18 September" });
   await user.type(within(sheet).getByRole("combobox"), "tart");
   await user.click(await within(sheet).findByRole("option", { name: /Lemon tart/ }));
 
@@ -172,7 +172,7 @@ test("nothing planned tonight says so and offers to plan it; an unread list and 
   expect(screen.queryByRole("region", { name: "Haven't made in a while" })).toBeNull();
 
   await user.click(within(hero).getByRole("button", { name: "Plan tonight" }));
-  const sheet = await screen.findByRole("dialog", { name: "Wednesday 16 September" });
+  const sheet = await screen.findByRole("dialog", { name: "Adding to Wednesday 16 September" });
   await user.type(within(sheet).getByRole("combobox"), "Out");
   await user.click(within(sheet).getByRole("button", { name: "Add “Out” as a note" }));
   expect(onAdd).toHaveBeenCalledWith(WEDNESDAY, { text: "Out" }, null);
