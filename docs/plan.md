@@ -196,6 +196,13 @@ The import's screens as settled with Jason on 2026-11-06 (decisions.md row 203, 
 - [x] **M44.5 Plain text without a model.** Paste with no model: HTML is read by the rules as now; plain text opens Check on an empty recipe with the text in the first part's ingredient bulk box. Check: `.dom.test.tsx`.
 - [x] **M44.6 Words and marks.** The steps marker shows only the stages the path reaches (Check, not Review); no message names a model when none is configured; a blocked import records its warning and not also an error. Check: unit tests; e2e over the production build imports a page served from the spec without a model, from the address to the saved recipe.
 
+## M45 A recipe card's ingredient groups
+
+Decisions.md row 204: WP Recipe Maker's ingredient groups read from the page, laid over the JSON-LD's lines, and the model's sort skipped when the page's own groups place everything.
+
+- [ ] **M45.1 The reader.** `src/domain/recipes/import/page/recipeCard.ts`: `ingredientGroups(html)` (the first container's groups, names tidied, items counted with each one's food name) and `withIngredientGroups(recipe, groups)` (laid over the lines by count, checked by name, merged with step sections by tidied name; null when anything disagrees). `extractRecipe` applies it to a JSON-LD recipe and sets `partsFromPage` when complete. Check: unit tests over trimmed pages in each of the four sites' shapes, a mismatched count, a mismatched name, and the chasseur case (groups found, not complete).
+- [ ] **M45.2 No sort when the page said.** `shouldReadWithModel` and the importer's pasted-page read leave a `partsFromPage` result alone. Check: unit tests; a live import of the four sites with and without a model.
+
 ## Blocked
 
 _(none)_
