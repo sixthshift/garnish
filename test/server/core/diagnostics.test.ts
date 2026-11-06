@@ -3,6 +3,7 @@
 import { notFound, redirect } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import type { DiagnosticInput } from "../../../src/db/models/diagnostic/repo";
+import { ImportError } from "../../../src/domain/recipes/import";
 import { createDiagnostics, DETAIL_LIMIT, describeThrown, fitDetail, isExpected, MESSAGE_LIMIT } from "../../../src/server/core/diagnostics";
 import { NotFound } from "../../../src/server/core/errors";
 
@@ -107,6 +108,9 @@ test("describeThrown reads an Error, a string and anything else", () => {
 test("a redirect and a not-found are answers, not failures", () => {
   expect(isExpected(redirect({ to: "/" }))).toBe(true);
   expect(isExpected(notFound())).toBe(true);
+  // A page walled off from every way in is recorded once, as the import's warning, not again as a fault.
+  expect(isExpected(new ImportError("blocked", "Couldn't get this recipe from www.taste.com.au."))).toBe(true);
+  expect(isExpected(new ImportError("failed", "www.example.com returned 500"))).toBe(false);
   expect(isExpected(new NotFound("recipe", "r1"))).toBe(true);
   expect(isExpected(new Error("boom"))).toBe(false);
 });

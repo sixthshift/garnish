@@ -30,6 +30,8 @@ export type TagFieldProps = {
   known: readonly Tag[];
   /** Names offered as one-press additions: an import's new tags, made only if pressed (decisions.md row 171). */
   suggested?: readonly string[];
+  /** An import's tags left out, as repeating the name or reading as search phrases. */
+  leftOut?: readonly string[];
   disabled?: boolean;
   onChange: (tags: Tag[]) => void;
 };
@@ -41,7 +43,7 @@ export type TagFieldProps = {
  * choice rather than a typo; a list typed with commas is split by the tag
  * rule (row 170).
  */
-export function TagField({ id, value, known, suggested = [], disabled, onChange }: TagFieldProps) {
+export function TagField({ id, value, known, suggested = [], leftOut = [], disabled, onChange }: TagFieldProps) {
   const [text, setText] = useState("");
   const add = (names: string[]) => {
     onChange(tagsFromNames([...value.map((tag) => tag.name), ...names], [...value, ...known]));
@@ -69,6 +71,11 @@ export function TagField({ id, value, known, suggested = [], disabled, onChange 
             </Button>
           ))}
         </div>
+      )}
+      {leftOut.length > 0 && (
+        <p className="text-xs text-fg-subtle" data-testid="tags-left-out">
+          {`Left out, as they repeat the name or read as search phrases: ${leftOut.join(", ")}.`}
+        </p>
       )}
       {value.length > 0 && (
         <ul className="flex flex-wrap gap-1" aria-label="Recipe tags">

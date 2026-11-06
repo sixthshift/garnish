@@ -156,6 +156,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
         note: PASTE_NOTE,
         duplicate: null,
         suggestedTags: [],
+        leftOutTags: [],
         pastedText: text.trim(),
       });
       return;

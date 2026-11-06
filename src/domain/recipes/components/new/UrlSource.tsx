@@ -25,7 +25,6 @@ export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPa
     <SourceStage
       stage="url"
       title="Import from a web page"
-      errorTitle="That page could not be read"
       error={error}
       errorAction={
         ways && (

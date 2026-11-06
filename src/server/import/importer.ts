@@ -9,6 +9,9 @@ import { createPageRenderer, findChromium } from "./render";
 /** The model port over an AI client: whatever the importer asks, in whatever shape it asks for, of the import's model. */
 export function createModelPort(ai: AiClient = serverAi): Ports["model"] {
   return async ({ prompt, schema, schemaName, timeoutMs }) => {
+    // No model is the app working without one, not a failure to record (decisions.md row 203): a
+    // pasted page's HTML is read by the rules, which is what the importer falls back to.
+    if (!ai.configured()) throw new ImportError("unavailable", "No model is configured.");
     try {
       return await ai.ask({ prompt, schema, schemaName, model: ai.model("import"), timeoutMs });
     } catch (cause) {

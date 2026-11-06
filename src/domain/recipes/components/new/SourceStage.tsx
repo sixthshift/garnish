@@ -7,8 +7,8 @@ export type SourceStageProps = {
   /** Which source this is, for `data-source-stage`. */
   stage: "url" | "paste" | "file" | "page";
   title: string;
-  /** The title of the error message, when there is one. */
-  errorTitle: string;
+  /** The title of the error message; none when the error is a whole sentence of its own. */
+  errorTitle?: string;
   error?: string | null;
   /** A way on from the error, drawn inside its message. */
   errorAction?: ReactNode;

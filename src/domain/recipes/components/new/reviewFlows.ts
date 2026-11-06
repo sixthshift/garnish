@@ -57,6 +57,8 @@ export type ImportedCheck = {
   duplicate: { name: string; slug: string; by: DuplicateBy } | null;
   /** The source's new tags, offered on Check and added only when chosen (decisions.md row 171). */
   suggestedTags: string[];
+  /** The source's tags left out, named so a vanished keyword is not a mystery (decisions.md row 171). */
+  leftOutTags: string[];
   /** Plain text pasted with no model to read it, for the household to sort on Check. */
   pastedText?: string;
 };
@@ -98,5 +100,5 @@ export async function checkFromRead({ imported, rows, rowSteps, subRecipes, tags
     notes: mealie?.notes,
     rating: mealie?.rating ?? null,
   });
-  return { draft, pending, suggestedTags: suggestions.suggested.filter((tag) => !tag.ticked).map((tag) => tag.name) };
+  return { draft, pending, suggestedTags: suggestions.suggested.filter((tag) => !tag.ticked).map((tag) => tag.name), leftOutTags: suggestions.leftOut };
 }

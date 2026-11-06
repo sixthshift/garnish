@@ -61,12 +61,23 @@ export function describeThrown(error: unknown): { message: string; detail: Recor
 }
 
 /**
+ * A web page every way of reading was walled off from: the importer's
+ * `ImportError` of kind `blocked`, which the import already records as a
+ * warning (decisions.md rows 202 and 203). Told by its name and kind, so the
+ * core does not import a domain. Pure.
+ */
+function isBlockedImport(error: unknown): boolean {
+  return error instanceof Error && error.name === "ImportError" && (error as Error & { kind?: unknown }).kind === "blocked";
+}
+
+/**
  * Whether a thrown value is the app working as designed rather than failing:
- * a redirect, or a not-found — the router's, or a repository's before the
- * middleware turns it into the router's. Those are answers, not faults. Pure.
+ * a redirect, a not-found — the router's, or a repository's before the
+ * middleware turns it into the router's — or a page that walled off every
+ * way in. Those are answers, not faults. Pure.
  */
 export function isExpected(error: unknown): boolean {
-  return isRedirect(error) || isNotFound(error) || isNotFoundError(error);
+  return isRedirect(error) || isNotFound(error) || isNotFoundError(error) || isBlockedImport(error);
 }
 
 export type DiagnosticsDeps = {

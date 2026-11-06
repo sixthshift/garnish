@@ -21,10 +21,12 @@ export type RecipeDetailsProps = {
   defaultOpen: boolean;
   /** An import's new tags, offered as one-press additions (decisions.md row 171). */
   suggestedTags?: readonly string[];
+  /** An import's tags left out, named. */
+  leftOutTags?: readonly string[];
   onPatch: (fields: Partial<RecipeDraft>) => void;
 };
 
-export function RecipeDetails({ draft, errors, saving, units, knownTags, defaultOpen, suggestedTags, onPatch }: RecipeDetailsProps) {
+export function RecipeDetails({ draft, errors, saving, units, knownTags, defaultOpen, suggestedTags, leftOutTags, onPatch }: RecipeDetailsProps) {
   const tagsId = useId();
   const unitOptions = units.map((unit) => ({ value: unit.id, label: unit.name }));
 
@@ -97,7 +99,15 @@ export function RecipeDetails({ draft, errors, saving, units, knownTags, default
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={tagsId}>Tags</Label>
-        <TagField id={tagsId} value={draft.tags} known={knownTags} suggested={suggestedTags} disabled={saving} onChange={(tags) => onPatch({ tags })} />
+        <TagField
+          id={tagsId}
+          value={draft.tags}
+          known={knownTags}
+          suggested={suggestedTags}
+          leftOut={leftOutTags}
+          disabled={saving}
+          onChange={(tags) => onPatch({ tags })}
+        />
       </div>
 
       <FormField label="Source" description="Where the recipe came from" feedback={feedback(errors, "sourceUrl")}>

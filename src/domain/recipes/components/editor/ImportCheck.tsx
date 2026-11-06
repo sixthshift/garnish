@@ -29,6 +29,8 @@ export type ImportCheckProps = {
   duplicate: { name: string; slug: string; by: DuplicateBy } | null;
   /** The source's new tags, offered as one-press additions. */
   suggestedTags: readonly string[];
+  /** The source's tags left out, named beside the offered ones. */
+  leftOutTags?: readonly string[];
   /** Leave Check for the chooser; the page asks first. */
   onBack: () => void;
   /** Plain text pasted with no model to read it: it starts in the first part's ingredient box, to be sorted by hand. */

@@ -1,6 +1,6 @@
-// A page's tags are offered on the review, not taken (decisions.md rows 170,
-// 171): a new tag is made only when it is ticked, the household's own comes
-// ticked under its own spelling, and keywords that repeat the name are left out.
+// A page's tags are offered on Check, not taken (decisions.md rows 170, 171,
+// 203): a new tag is made only when it is added, the household's own comes on
+// under its own spelling, and keywords that repeat the name are left out.
 import type { Page } from "@playwright/test";
 import { expect, test, unique } from "./fixtures";
 
@@ -18,44 +18,43 @@ function page(recipe: { name: string; cuisine: string; keywords: string }): stri
   return `<html><head><title>${recipe.name}</title><script type="application/ld+json">${JSON.stringify(node)}</script></head><body></body></html>`;
 }
 
-/** Paste `html` and land on the review. */
-async function review(p: Page, open: (path: string) => Promise<void>, html: string) {
+/** Paste `html` and land on Check. */
+async function check(p: Page, open: (path: string) => Promise<void>, html: string) {
   await open("/recipes/new?source=paste");
   await p.getByRole("textbox", { name: "Pasted recipe" }).fill(html);
   await p.getByRole("button", { name: "Read the text" }).click();
-  await expect(p.getByTestId("review-tags")).toBeVisible();
+  await expect(p.getByTestId("import-check")).toBeVisible();
 }
 
-/** Create from the review, then save the form; resolves on the recipe's page. */
-async function create(p: Page, name: string) {
-  await p.getByRole("button", { name: "Create", exact: true }).click();
-  await p.getByRole("button", { name: "Create recipe" }).click();
+/** Save from Check; resolves on the recipe's page. */
+async function save(p: Page, name: string) {
+  await p.getByRole("button", { name: "Save recipe" }).last().click();
   await expect(p.getByRole("heading", { level: 1, name })).toBeVisible();
 }
 
-test("a new tag is made only when ticked, and the next import finds it ticked", async ({ page: p, open }) => {
+test("a new tag is made only when added, and the next import finds it on", async ({ page: p, open }) => {
   // A cuisine no other spec or run has, so it is new here; the page spells it
   // in lower case and the tag rule gives it a capital.
   const cuisine = unique("cuisine").replace(" ", "");
   const made = `C${cuisine.slice(1)}`;
   const first = unique("Chicken Fried Rice");
 
-  await review(p, open, page({ name: first, cuisine, keywords: "easy, chicken fried rice, fried rice recipe" }));
-  const newTag = p.getByRole("checkbox", { name: `${made} (new)` });
-  await expect(newTag).not.toBeChecked();
-  await expect(p.getByRole("checkbox", { name: "Easy (new)" })).not.toBeChecked();
-  await expect(p.getByTestId("review-tags-left-out")).toContainText("Fried rice recipe");
-  await newTag.click();
-  await create(p, first);
+  await check(p, open, page({ name: first, cuisine, keywords: "easy, chicken fried rice, fried rice recipe" }));
+  await expect(p.getByRole("button", { name: "Add the tag Easy" })).toBeVisible();
+  await expect(p.getByTestId("tags-left-out")).toContainText("Fried rice recipe");
+  await p.getByRole("button", { name: `Add the tag ${made}` }).click();
+  await expect(p.getByRole("list", { name: "Recipe tags" })).toContainText(made);
+  await save(p, first);
 
   await expect(p.getByRole("main").getByRole("link", { name: made })).toBeVisible();
   await expect(p.getByRole("main").getByRole("link", { name: "Easy" })).toHaveCount(0);
 
-  // Another site, shouting the same cuisine: the household's tag, ticked, not a new one.
+  // Another site, shouting the same cuisine: the household's tag, already on, not a new one.
   const second = unique("Egg Fried Rice");
-  await review(p, open, page({ name: second, cuisine: made.toUpperCase(), keywords: "egg fried rice" }));
-  await expect(p.getByRole("checkbox", { name: made, exact: true })).toBeChecked();
-  await create(p, second);
+  await check(p, open, page({ name: second, cuisine: made.toUpperCase(), keywords: "egg fried rice" }));
+  await expect(p.getByRole("list", { name: "Recipe tags" })).toContainText(made);
+  await expect(p.getByRole("button", { name: `Add the tag ${made}` })).toHaveCount(0);
+  await save(p, second);
   await expect(p.getByRole("main").getByRole("link", { name: made })).toBeVisible();
 });
 

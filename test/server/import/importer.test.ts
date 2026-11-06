@@ -7,6 +7,7 @@ import { ImportError } from "../../../src/domain/recipes/import";
 import type { Fetcher } from "../../../src/server/ai/client";
 import { apiProvider } from "../../../src/server/ai/provider/api";
 import { createImporter } from "../../../src/server/import/importer";
+import { fakeAi } from "../../helpers/ai";
 
 /** The importer with one fake `fetch` behind both its ports: the page and the model. */
 const importerOver = (fetcher: Fetcher) => createImporter(fetcher, apiProvider(fetcher));
@@ -77,5 +78,23 @@ describe("createImporter", () => {
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("unavailable");
     expect(fetcher.calls).toHaveLength(0);
+  });
+});
+
+describe("with no model configured (decisions.md row 203)", () => {
+  test("a pasted page is read by the rules, and the absent model is never asked", async () => {
+    const ai = { ...fakeAi(answer), configured: () => false };
+    const importer = createImporter(async () => new Response("unused"), ai);
+    const result = await importer.import({ kind: "text", text: SCHEMA_PAGE });
+    expect(result.from).toBe("schema");
+    expect(result.recipe.name).toBe("Anzac biscuits");
+    expect(ai.calls).toEqual([]);
+  });
+
+  test("plain text is an unavailable read, said once, not a call that fails", async () => {
+    const ai = { ...fakeAi(answer), configured: () => false };
+    const importer = createImporter(async () => new Response("unused"), ai);
+    await expect(importer.import({ kind: "text", text: "1 cup plain flour\nMix." })).rejects.toMatchObject({ kind: "unavailable" });
+    expect(ai.calls).toEqual([]);
   });
 });

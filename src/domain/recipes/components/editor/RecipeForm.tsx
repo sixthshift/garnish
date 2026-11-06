@@ -148,6 +148,7 @@ export function RecipeForm({
               knownTags={knownTags}
               defaultOpen={form.detailsOpen}
               suggestedTags={importCheck?.suggestedTags}
+              leftOutTags={importCheck?.leftOutTags}
               onPatch={form.patch}
             />
           </PastedTextContext.Provider>
