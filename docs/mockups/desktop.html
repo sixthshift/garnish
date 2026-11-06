@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Garnish desktop concepts</title>
+<title>Garnish concepts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <!--
@@ -11,7 +11,9 @@
   shows the household's own photos from data/images (gitignored); elsewhere a
   warm gradient stands in for each one. Every page inside the frame responds
   to the frame's width (container queries), so the width buttons show the
-  same page at 1024, 1440, 1920 and 2560.
+  same page at 1024, 1440, 1920 and 2560. "Phone" shows the same nine pages
+  as a phone's concepts, in a 390 × 844 frame: swipes, sheets from the
+  bottom, and the "+" in the tab bar as the command bar.
 -->
 <style>
 :root {
@@ -412,21 +414,276 @@ table.dg { width: 100%; border-collapse: separate; border-spacing: 0; background
 .palette .opt .hint { margin-left: auto; font-size: 12px; color: var(--muted); }
 .palette .foot { display: flex; gap: 16px; padding: 10px 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); background: var(--sunk); }
 .palette mark { background: var(--hi); color: inherit; border-radius: 3px; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   The phone: the same pages for a hand, not a desk. Everything below is
+   scoped to the phone frame's own classes (m-*), so the desktop is untouched.
+   ═════════════════════════════════════════════════════════════════════════ */
+#frame.phone { border-radius: 48px; box-shadow: 0 0 0 11px #0e0b0a, 0 0 0 13px #4a403a, 0 30px 90px rgba(0,0,0,.55); }
+.statusbar, .tabbar, .homebar { display: none; }
+.phone .statusbar { display: flex; flex: none; height: 50px; padding: 15px 32px 0; justify-content: space-between; align-items: flex-start; font: 600 15px var(--ui); position: relative; background: var(--bg); z-index: 6; }
+.statusbar .island { position: absolute; left: 50%; top: 11px; transform: translateX(-50%); width: 120px; height: 34px; border-radius: 20px; background: #050404; }
+.statusbar .sig { letter-spacing: 1px; font-size: 13px; }
+.phone .topbar { display: none; }
+.phone .tabbar { display: grid; flex: none; grid-template-columns: repeat(5, 1fr); height: 84px; padding: 8px 6px 0; background: rgba(255,252,249,.94); backdrop-filter: blur(14px); border-top: 1px solid var(--line); position: relative; z-index: 6; }
+.tabbar button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 500; color: var(--muted); padding: 2px 0; }
+.tabbar button svg { width: 25px; height: 25px; }
+.tabbar button.on { color: var(--brand); }
+.tabbar .fab { width: 56px; height: 56px; border-radius: 19px; background: var(--brand); color: #fff; margin: -20px auto 0; box-shadow: 0 10px 22px rgba(44,102,108,.42); display: grid; place-items: center; padding: 0; }
+.tabbar .fab svg { width: 26px; height: 26px; }
+.phone .homebar { display: block; position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 3px; background: #1d1714; z-index: 70; pointer-events: none; }
+.phone.frame-cook .statusbar { background: #1d1714; color: #f3ebe3; }
+.phone.frame-cook .tabbar { display: none; }
+.phone.frame-cook .homebar { background: #f3ebe3; }
+.phone .toasts { top: 58px; bottom: auto; width: 92%; }
+.phone .toast { width: 100%; justify-content: center; text-align: center; }
+.phone #view { scrollbar-width: none; }
+.phone #view::-webkit-scrollbar { display: none; }
+
+.mp { padding: 6px 18px 28px; display: flex; flex-direction: column; gap: 16px; }
+.mhead { display: flex; align-items: flex-end; justify-content: space-between; }
+.mround { width: 40px; height: 40px; border-radius: 99px; border: 1px solid var(--line); background: var(--paper); display: grid; place-items: center; font-size: 17px; flex: none; position: relative; padding: 0; }
+.mround.glass { background: rgba(255,252,249,.85); border-color: transparent; backdrop-filter: blur(8px); }
+.mround.dark { background: #2f2723; border-color: #3a302b; color: #f3ebe3; }
+.mround .badge { position: absolute; top: -3px; right: -3px; background: var(--brand); color: #fff; font-size: 10px; border-radius: 99px; min-width: 17px; height: 17px; display: grid; place-items: center; }
+.msh { font: 600 18px var(--display); margin: 0; }
+.mlink { border: 0; background: none; color: var(--brand); font-weight: 600; font-size: 14px; padding: 4px 0; align-self: flex-start; }
+.msec { display: flex; flex-direction: column; gap: 10px; }
+.mcard { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+.btn.big { padding: 12px 18px; font-size: 15px; border-radius: 12px; }
+.btn.glass { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.35); color: #fff; backdrop-filter: blur(6px); }
+
+/* Home */
+.mhero { position: relative; aspect-ratio: 4/5; border-radius: 26px; overflow: hidden; color: #fff; display: flex; align-items: flex-end; box-shadow: var(--shadow); flex: none; }
+.mhero .photo { position: absolute; inset: 0; }
+.mhero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(20,12,8,.86)); }
+.mhero .in { position: relative; z-index: 1; padding: 20px; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.mhero .name { font: 600 30px/1.08 var(--display); }
+.mhero .btn.primary { background: #fff; color: var(--brand); border-color: #fff; }
+.mstrip, .mstories, .mchips { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 18px; margin: 0 -18px; padding: 2px 18px 4px; scrollbar-width: none; flex: none; }
+.mstrip::-webkit-scrollbar, .mstories::-webkit-scrollbar, .mchips::-webkit-scrollbar { display: none; }
+.mday-card { flex: 0 0 108px; height: 148px; border-radius: 16px; overflow: hidden; position: relative; scroll-snap-align: start; border: 0; padding: 0; color: #fff; text-align: left; display: flex; align-items: flex-end; background: var(--sunk); }
+.mday-card .photo { position: absolute; inset: 0; }
+.mday-card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(20,12,8,.78)); }
+.mday-card .in { position: relative; z-index: 1; padding: 9px; display: flex; flex-direction: column; font-size: 12.5px; line-height: 1.25; }
+.mday-card .in b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+.mday-card .in span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500; }
+.mday-card.empty { background: none; border: 1.5px dashed var(--line2); color: var(--muted); flex-direction: column; justify-content: center; align-items: center; gap: 2px; }
+.mday-card.empty::after { display: none; }
+.mday-card.empty b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.mday-card.empty i { font-style: normal; font-size: 22px; color: var(--brand); }
+.mday-card.today { outline: 3px solid var(--brand); outline-offset: -3px; }
+.mday-card.past { opacity: .7; filter: saturate(.6); }
+.mshopcard { display: flex; align-items: center; gap: 14px; text-align: left; width: 100%; }
+.mbrand { background: var(--brand); color: #fff; border-color: var(--brand); }
+.mbrand .btn { background: #fff; color: var(--brand); border-color: #fff; }
+.story { flex: 0 0 76px; border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; line-height: 1.2; text-align: center; scroll-snap-align: start; }
+.story .ringp { width: 72px; height: 72px; border-radius: 99px; padding: 3px; background: conic-gradient(from 200deg, #2c666c, #4ba5a9, #e3ac35, #2c666c); display: block; }
+.story .ringp .photo { width: 100%; height: 100%; border-radius: 99px; border: 3px solid var(--bg); }
+.story > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mrow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--sunk); cursor: pointer; }
+.mrow:last-child { border-bottom: 0; }
+.mrow .photo { width: 46px; height: 46px; border-radius: 12px; flex: none; }
+
+/* Plan */
+.mplanhead { position: sticky; top: 0; z-index: 4; background: var(--bg); margin: 0 -18px; padding: 6px 18px 12px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--line); }
+.dpills { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.dpill { border: 1px solid var(--line); background: var(--paper); border-radius: 14px; padding: 6px 0 7px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.dpill span { font-size: 11px; color: var(--muted); font-weight: 600; }
+.dpill b { font-size: 17px; }
+.dpill i { width: 5px; height: 5px; border-radius: 99px; background: transparent; }
+.dpill.has i { background: var(--brand); }
+.dpill.today { background: var(--brand); border-color: var(--brand); color: #fff; }
+.dpill.today span { color: #d6eef0; }
+.dpill.today.has i { background: #fff; }
+.mhint { font-size: 12.5px; color: var(--muted); }
+.mdaysec { display: flex; flex-direction: column; gap: 8px; scroll-margin-top: 140px; }
+.mdaysec.past { opacity: .6; }
+.mdayh { display: flex; align-items: center; gap: 8px; }
+.mdayh b { font-size: 15px; }
+.mentry { display: flex; align-items: center; gap: 12px; padding: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; }
+.mentry .photo { width: 56px; height: 56px; border-radius: 11px; flex: none; }
+.mentry .nm { font-weight: 500; line-height: 1.3; }
+.mentry.note { font-style: italic; color: var(--fg2); padding: 14px; background: var(--sunk); border-color: transparent; }
+.mempty { border: 1.5px dashed var(--line2); background: none; border-radius: 14px; padding: 14px; color: var(--muted); font-weight: 500; width: 100%; }
+.mfloat { position: sticky; bottom: 12px; display: flex; justify-content: center; z-index: 3; margin-top: 4px; }
+.mfloat .btn { box-shadow: 0 10px 26px rgba(44,102,108,.35); }
+
+/* A row that swipes: right to do the kind thing, left to remove */
+.sw { position: relative; border-radius: 14px; overflow: hidden; touch-action: pan-y; user-select: none; flex: none; }
+.sw .under { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font-weight: 600; color: #fff; font-size: 14px; opacity: 0; }
+.sw.dir-r .under { opacity: 1; background: var(--ok); }
+.sw.dir-l .under { opacity: 1; background: var(--danger); }
+.sw.dir-r .ur, .sw.dir-l .ul { visibility: hidden; }
+.sw .under span { transition: transform .15s; }
+.sw.armed .under span { transform: scale(1.15); }
+.sw-in { position: relative; transition: transform .22s cubic-bezier(.2,.9,.3,1); background: var(--bg); }
+.sw.dragging .sw-in { transition: none; }
+
+/* Shopping */
+.mbar { height: 8px; background: var(--sunk); border-radius: 99px; overflow: hidden; margin-top: -8px; flex: none; }
+.mbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), #4ba5a9); border-radius: 99px; transition: width .4s; }
+.maddrow { position: relative; flex: none; }
+.maddrow .input { padding: 13px 14px 13px 40px; font-size: 16px; border-radius: 14px; }
+.maddrow .plus { position: absolute; left: 15px; top: 11px; font-size: 20px; color: var(--muted); }
+.maddrow .guess { position: absolute; right: 10px; top: 11px; }
+.mchip { flex: none; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--paper); border-radius: 99px; padding: 5px 12px; font-size: 13px; font-weight: 500; scroll-snap-align: start; white-space: nowrap; }
+.mchip .photo { width: 24px; height: 24px; border-radius: 99px; margin-left: -6px; }
+.mchip.on { background: var(--fg); border-color: var(--fg); color: #fff; }
+.maisle { display: flex; flex-direction: column; }
+.maisleh { position: sticky; top: 0; z-index: 2; background: var(--bg); margin: 0 -18px; padding: 10px 18px 6px; display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mitem { display: flex; gap: 14px; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--sunk); min-height: 58px; cursor: pointer; transition: opacity .22s, transform .22s; }
+.mitem .t { font-size: 16.5px; }
+.mitem .m { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+.mitem.leaving { opacity: 0; transform: translateX(40px); }
+.check.big { width: 26px; height: 26px; border-radius: 8px; border-width: 2px; }
+.check.big.on::after { width: 12px; height: 7px; }
+.mtrolley { position: sticky; bottom: 10px; margin: 6px 0 4px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 16px; background: var(--fg); color: #fff; padding: 14px 18px; font-size: 15px; box-shadow: 0 10px 26px rgba(30,20,14,.3); z-index: 3; flex: none; }
+
+/* Recipes */
+.mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mrc { position: relative; aspect-ratio: 4/5; border-radius: 18px; overflow: hidden; border: 0; padding: 0; color: #fff; text-align: left; display: flex; align-items: flex-end; }
+.mrc .photo { position: absolute; inset: 0; }
+.mrc::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(20,12,8,.8)); }
+.mrc .nm { position: relative; z-index: 1; padding: 10px 11px; font-weight: 600; font-size: 14px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mrc .time { position: absolute; top: 9px; left: 9px; z-index: 1; background: rgba(20,12,8,.55); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; backdrop-filter: blur(4px); }
+.mrc .heart { position: absolute; top: 7px; right: 7px; z-index: 1; width: 30px; height: 30px; border-radius: 99px; background: rgba(255,252,249,.85); color: var(--fg); display: grid; place-items: center; font-size: 14px; }
+.msearch { position: sticky; bottom: 12px; display: flex; gap: 8px; z-index: 3; margin-top: 4px; flex: none; }
+.msearch .pill { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--paper); border: 1px solid var(--line2); border-radius: 99px; padding: 0 16px; box-shadow: 0 10px 26px rgba(30,20,14,.16); }
+.msearch .pill input { border: 0; outline: none; background: none; flex: 1; padding: 12px 0; font-size: 15px; min-width: 0; }
+.msearch .mround { width: 48px; height: 48px; box-shadow: 0 10px 26px rgba(30,20,14,.16); }
+
+/* Recipe: the photo stays put and the page slides up over it */
+.mrec { position: relative; min-height: 100%; }
+.mrhero { height: 360px; position: sticky; top: 0; }
+.mrhero .photo { position: absolute; inset: 0; }
+.mrtop { position: absolute; top: 8px; left: 14px; right: 14px; display: flex; gap: 8px; z-index: 2; }
+.mrbody { position: relative; z-index: 2; margin-top: -30px; background: var(--bg); border-radius: 26px 26px 0 0; padding: 22px 18px 110px; display: flex; flex-direction: column; gap: 14px; min-height: 520px; box-shadow: 0 -10px 30px rgba(30,20,14,.14); }
+.mfacts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 10px 6px; text-align: center; }
+.mfacts div { display: flex; flex-direction: column; }
+.mfacts b { font-size: 15px; }
+.mfacts span { font-size: 11.5px; color: var(--muted); }
+.mseg { display: flex; background: var(--sunk); border-radius: 12px; padding: 3px; gap: 2px; }
+.mrbody .mseg { position: sticky; top: 8px; z-index: 3; box-shadow: 0 4px 14px rgba(30,20,14,.08); }
+.mseg button { flex: 1; border: 0; background: none; padding: 9px; border-radius: 10px; font-weight: 500; color: var(--fg2); }
+.mseg button.on { background: var(--paper); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.mseg.small button { padding: 6px 12px; font-size: 13px; }
+.mserves { display: flex; align-items: center; gap: 8px; }
+.mserves button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line2); background: var(--paper); font-size: 18px; }
+.ming { display: flex; gap: 14px; align-items: flex-start; padding: 11px 2px; border-bottom: 1px solid var(--sunk); font-size: 16px; line-height: 1.4; cursor: pointer; }
+.ming .nt { font-size: 13.5px; color: var(--muted); }
+.ming.done > span:last-child { color: var(--muted); text-decoration: line-through; }
+.mstep { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.mstep .tx { font-size: 16px; line-height: 1.55; }
+.mstep .nt { font-size: 13.5px; color: var(--muted); }
+.mneed { display: flex; flex-wrap: wrap; gap: 6px; }
+.mstep .timerchip { margin: 0; cursor: pointer; }
+.mcookbar { position: sticky; bottom: 0; z-index: 4; display: flex; gap: 8px; padding: 26px 18px 14px; background: linear-gradient(180deg, rgba(247,242,237,0), var(--bg) 40%); margin-top: -100px; }
+.mcookbar .btn.primary { flex: 1; }
+.mcookbar .mround { width: 50px; height: 50px; }
+
+/* Cook: one step a card, swiped */
+.mcook { height: 100%; background: #1d1714; color: #f3ebe3; display: flex; flex-direction: column; }
+.mctop { display: flex; gap: 12px; align-items: center; padding: 6px 16px 12px; }
+.mctop .segs { display: flex; gap: 3px; margin-top: 7px; }
+.mctop .segs i { flex: 1; height: 4px; border-radius: 9px; background: #3a302b; transition: background .2s; }
+.mctop .segs i.done { background: #4ba5a9; }
+.mctop .segs i.on { background: #f3ebe3; }
+.mcards { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; min-height: 0; }
+.mcards::-webkit-scrollbar { display: none; }
+.mccard { flex: 0 0 100%; scroll-snap-align: start; padding: 4px 16px; display: flex; }
+.mccard .box { flex: 1; background: #f7f0e9; color: #2a1f19; border-radius: 26px; padding: 24px 22px; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.mccard .k { font-size: 12px; color: #8a7468; }
+.mccard .lbl { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+.mccard .tx { font-size: 25px; line-height: 1.4; }
+.mccard .nt { font-size: 15px; color: #8a7468; }
+.chip.dark { background: #efe4d9; border-color: transparent; color: #2a1f19; font-size: 13px; padding: 4px 10px; }
+.mstart { align-self: flex-start; border: 0; background: var(--brand); color: #fff; border-radius: 12px; padding: 12px 16px; font-weight: 600; font-size: 15px; margin-top: auto; }
+.mcfoot { padding: 12px 16px 30px; display: flex; flex-direction: column; gap: 10px; }
+.mtimer { display: flex; justify-content: space-between; align-items: center; background: #2a221f; border-radius: 14px; padding: 9px 14px; font-size: 13px; color: #b5a69a; }
+.mtimer b { font-size: 22px; color: #f3ebe3; font-variant-numeric: tabular-nums; }
+.mcfoot .bigbtn { padding: 16px 22px; }
+
+/* Import */
+.mstepper { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.mstepper i { flex: 1; height: 1.5px; background: var(--line2); }
+.mstepper .done { color: var(--brand); font-weight: 600; }
+.mstepper .on { color: var(--fg); font-weight: 700; }
+.mwarn { background: var(--hi); border: 1px solid #efd18b; border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.mwarnrow { display: flex; gap: 10px; align-items: center; border: 0; background: rgba(255,255,255,.6); border-radius: 12px; padding: 10px 12px; text-align: left; font-size: 14.5px; }
+.mok { background: var(--ok-soft); color: var(--ok); border-radius: 14px; padding: 12px 16px; font-weight: 600; }
+.mpl { display: flex; gap: 10px; align-items: flex-start; width: 100%; border: 0; background: none; text-align: left; padding: 10px; border-bottom: 1px solid var(--sunk); font-size: 15px; line-height: 1.4; }
+.mpl:last-child { border-bottom: 0; }
+.msrc { background: var(--sunk); border-radius: 14px; padding: 8px 0; font-size: 13.5px; line-height: 1.5; }
+.msrc p { margin: 0; padding: 4px 14px; color: #b0a096; }
+.msrc p.lit { background: var(--hi); color: var(--fg); box-shadow: inset 3px 0 0 var(--hi-line); font-weight: 500; }
+
+/* Editor */
+.mform { display: flex; flex-direction: column; gap: 12px; }
+.mform label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 13px; flex: 1; min-width: 0; }
+.mform textarea { resize: vertical; line-height: 1.6; font-size: 15px; }
+.mparsed { display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+.mparsed .pq { background: var(--brand-50); color: var(--brand); border: 1px solid var(--brand-soft); border-radius: 6px; padding: 0 6px; font-weight: 600; font-size: 12.5px; }
+.mprev .photo { aspect-ratio: 21/10; }
+.mprev .in { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Settings */
+.mlist { padding: 0; overflow: hidden; }
+.mli { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; padding: 12px 14px; border-bottom: 1px solid var(--sunk); font-size: 15.5px; text-align: left; }
+.mli:last-child { border-bottom: 0; }
+.mli .ico { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 15px; }
+.msticky { position: sticky; top: 0; z-index: 3; background: var(--bg); margin: 0 -18px; padding: 6px 18px 8px; }
+.mfoods { padding-right: 16px; }
+.mletter { position: sticky; top: 60px; z-index: 2; background: var(--bg); font-weight: 700; color: var(--brand); font-size: 13px; padding: 8px 2px 4px; scroll-margin-top: 60px; }
+.mfood { display: flex; gap: 10px; align-items: center; padding: 11px 4px; border-bottom: 1px solid var(--sunk); cursor: pointer; }
+.mscrub { position: fixed; right: 3px; top: 230px; display: flex; flex-direction: column; z-index: 5; }
+.mscrub button { border: 0; background: none; font-size: 10px; font-weight: 700; color: var(--brand); padding: 1px 4px; line-height: 1.25; }
+.mscrub button.off { color: var(--line2); }
+
+/* Sheets, from the bottom, under the thumb */
+.msheet-scrim { position: absolute; inset: 0; background: rgba(20,12,8,.38); z-index: 40; display: flex; align-items: flex-end; animation: fadein .2s; }
+.msheet-scrim.still, .msheet-scrim.still .msheet { animation: none; }
+@keyframes fadein { from { opacity: 0; } }
+.msheet { width: 100%; max-height: 86%; background: var(--paper); border-radius: 24px 24px 0 0; padding: 8px 18px 34px; display: flex; flex-direction: column; gap: 12px; animation: sheetup .3s cubic-bezier(.2,.9,.3,1); overflow: auto; }
+.msheet.tall { height: 86%; }
+@keyframes sheetup { from { transform: translateY(100%); } }
+.msheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line2); align-self: center; flex: none; margin-bottom: 4px; }
+.mpgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; overflow: auto; padding-bottom: 10px; }
+.mptile { position: relative; border: 0; background: none; padding: 0; text-align: left; display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; font-weight: 500; line-height: 1.3; }
+.mptile .photo { aspect-ratio: 1; border-radius: 14px; transition: transform .2s; }
+.mptile:active .photo { transform: scale(.95); }
+.mptile.added .photo { outline: 3px solid var(--brand); outline-offset: -3px; opacity: .85; }
+.mptile .tick { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 99px; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 700; }
+.mqres { display: flex; flex-direction: column; }
+.mqres .opt { display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-radius: 12px; cursor: pointer; }
+.mqres .opt.on { background: var(--brand-50); box-shadow: inset 0 0 0 1px var(--brand-soft); }
+.mqres .opt .photo, .mqres .opt .ic { width: 38px; height: 38px; border-radius: 10px; flex: none; }
+.mqres .opt .ic { background: var(--sunk); display: grid; place-items: center; }
+.mqres mark { background: var(--hi); color: inherit; border-radius: 3px; }
+.mtries { display: flex; gap: 6px; flex-wrap: wrap; }
+.mtries .chip { cursor: pointer; padding: 4px 11px; font-size: 13px; }
+.mqin .input { font-size: 17px; padding: 13px 14px; border-radius: 14px; }
+.maisles { display: flex; flex-wrap: wrap; gap: 6px; }
+.maisles .chip { cursor: pointer; padding: 6px 12px; font-size: 13px; }
+.maisles .chip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+#devices button.on { background: #9fd6d9; color: #10282a; }
 </style>
 </head>
 <body>
 <div id="chrome">
   <div class="row">
-    <h1>Garnish · desktop concepts</h1>
+    <h1>Garnish · concepts</h1>
     <div class="seg" id="screens"></div>
   </div>
   <div class="row">
+    <div class="seg" id="devices"><button data-d="desktop">Desktop</button><button data-d="phone">Phone</button></div>
     <div class="seg" id="widths"></div>
     <div class="note" id="note"></div>
     <div class="scale" id="scale"></div>
   </div>
 </div>
 <div id="stage"><div id="holder"><div id="frame">
+  <div class="statusbar"><span>9:41</span><span class="island"></span><span class="sig">▂▄▆█ ◖▮</span></div>
   <header class="topbar">
     <button class="logo" data-go="home"><svg viewBox="0 0 18 22" fill="none"><path d="M9 21V6" stroke="#2c666c" stroke-width="1.6" stroke-linecap="round"/><path d="M9 9c-3-.5-5-2.5-5.5-5 3 .2 5 2 5.5 5zm0 4c3-.5 5-2.5 5.5-5-3 .2-5 2-5.5 5zm0 4c-3-.5-5-2.5-5.5-5 3 .2 5 2 5.5 5zM9 6C9 4 9.5 2.5 11 1" fill="#2c666c" stroke="#2c666c" stroke-width=".6"/></svg>Garnish</button>
     <button class="nav" data-go="home">Home</button>
@@ -437,6 +694,14 @@ table.dg { width: 100%; border-collapse: separate; border-spacing: 0; background
     <button class="nav" data-go="settings">Settings</button>
   </header>
   <main id="view"></main>
+  <nav class="tabbar" aria-label="Places">
+    <button data-go="home" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+    <button data-go="plan" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Plan</button>
+    <button class="fab" data-mquick aria-label="Plan, add or find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button data-go="shop" data-tab="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6.2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>Shopping</button>
+    <button data-go="recipes" data-tab="recipes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v16H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M4 20.5A1.5 1.5 0 0 0 5.5 22H20M8 7h8"/></svg>Recipes</button>
+  </nav>
+  <div class="homebar"></div>
   <div id="overlay"></div>
   <div class="toasts" id="toasts"></div>
 </div></div></div>
@@ -520,7 +785,7 @@ const TODAY = "2026-11-07";
 const ALLDAYS = [...WEEKS[0].days, ...WEEKS[1].days];
 
 const S = {
-  screen: "home", width: "fit",
+  screen: "home", width: "fit", device: "desktop", msheet: null, mMeal: null, mcook: 0, mset: "menu",
   plan: {
     "2026-11-02": [{ slug: "chicken-fried-rice" }], "2026-11-03": [{ slug: "beef-and-broccoli-stir-fry" }],
     "2026-11-04": [{ slug: "chickpea-curry" }], "2026-11-05": [{ text: "Leftovers" }], "2026-11-06": [{ slug: "fish-tacos" }],
@@ -591,7 +856,7 @@ function fmtQ(q) {
   const W = w + (best[0] === 1 ? 1 : 0);
   return (W ? String(W) : "") + best[1] || "0";
 }
-function toast(html) { const t = document.createElement("div"); t.className = "toast"; t.innerHTML = html; $("#toasts").append(t); setTimeout(() => t.remove(), 3200); }
+function toast(html) { if (S.device === "phone") $("#toasts").replaceChildren(); const t = document.createElement("div"); t.className = "toast"; t.innerHTML = html; $("#toasts").append(t); setTimeout(() => t.remove(), 3200); }
 function dayOf(iso) { return ALLDAYS.find((d) => d.iso === iso); }
 function shortList(slug) {
   const src = SHORT[slug] || GENERIC;
@@ -906,14 +1171,20 @@ const NAVOF = { home: "home", plan: "plan", shop: "shop", recipes: "recipes", re
 function render(keepScroll) {
   const v = $("#view"), top = v.scrollTop;
   const inner = $$(".wallpane,.reader,.grid-wrap,.shelflist", v).map((e) => e.scrollTop);
-  v.innerHTML = RENDER[S.screen]();
+  const phone = S.device === "phone";
+  v.innerHTML = (phone ? MRENDER : RENDER)[S.screen]();
   if (keepScroll) { v.style.scrollBehavior = "auto"; v.scrollTop = top; $$(".wallpane,.reader,.grid-wrap,.shelflist", v).forEach((e, i) => (e.scrollTop = inner[i] || 0)); v.style.scrollBehavior = ""; }
   $("#frame").classList.toggle("frame-cook", S.screen === "cook");
   $$(".nav").forEach((b) => b.classList.toggle("on", b.dataset.go === NAVOF[S.screen]));
   $$("#screens button").forEach((b) => b.classList.toggle("on", b.dataset.s === S.screen));
-  $("#note").innerHTML = NOTES[S.screen];
+  $("#frame").classList.toggle("phone", phone);
+  $$(".tabbar [data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === NAVOF[S.screen]));
+  $$("#devices button").forEach((b) => b.classList.toggle("on", b.dataset.d === S.device));
+  $("#note").innerHTML = (phone ? MNOTES : NOTES)[S.screen];
+  if (phone) { renderSheet(); afterPhoneRender(keepScroll); }
 }
-function go(screen) { S.screen = screen; render(false); $("#view").scrollTop = 0; try { localStorage.setItem("garnish-mock", JSON.stringify({ screen, width: S.width })); } catch {} }
+function save() { try { localStorage.setItem("garnish-mock", JSON.stringify({ screen: S.screen, width: S.width, device: S.device })); } catch {} }
+function go(screen) { S.screen = screen; S.msheet = null; if (screen === "cook") S.mcook = 0; $("#view").scrollTop = 0; render(false); save(); }
 
 /* ═════════════════════════════════════════════════════════════════════════
    Frame sizing: the app at a chosen width, scaled to fit the window
@@ -921,9 +1192,21 @@ function go(screen) { S.screen = screen; render(false); $("#view").scrollTop = 0
 const WIDTHS = [["fit", "Fit window"], [1024, "1024"], [1440, "1440"], [1920, "1920"], [2560, "2560 ultrawide"]];
 function layout() {
   const availW = window.innerWidth - 32, availH = window.innerHeight - $("#chrome").offsetHeight - 24;
+  const f0 = $("#frame");
+  $("#widths").style.display = S.device === "phone" ? "none" : "";
+  if (S.device === "phone") {
+    const W = 390, H = 844, pad = 14, s = Math.min(1, (availH - 2 * pad) / H, (availW - 2 * pad) / W);
+    SCALE = s;
+    f0.style.width = W + "px"; f0.style.height = H + "px"; f0.style.left = pad + "px"; f0.style.top = pad + "px"; f0.style.transform = `scale(${s})`;
+    $("#holder").style.width = W * s + 2 * pad + "px"; $("#holder").style.height = availH + "px";
+    $("#scale").textContent = `A phone, 390 × 844${s < 1 ? ` · shown at ${Math.round(s * 100)}%` : ""}`;
+    return;
+  }
+  f0.style.left = "0"; f0.style.top = "0";
   const W = S.width === "fit" ? Math.max(1024, availW) : S.width;
   const s = Math.min(1, availW / W), H = availH / s;
   const f = $("#frame");
+  SCALE = s;
   f.style.width = W + "px"; f.style.height = H + "px"; f.style.transform = `scale(${s})`;
   $("#holder").style.width = W * s + "px"; $("#holder").style.height = availH + "px";
   $("#scale").textContent = `${W} px wide${s < 1 ? ` · shown at ${Math.round(s * 100)}%` : ""}`;
@@ -932,7 +1215,8 @@ function layout() {
 $("#screens").innerHTML = Object.entries(LABELS).map(([k, l]) => `<button data-s="${k}">${l}</button>`).join("");
 $("#widths").innerHTML = WIDTHS.map(([w, l]) => `<button data-w="${w}">${l}</button>`).join("");
 $("#screens").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) go(b.dataset.s); });
-$("#widths").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; S.width = b.dataset.w === "fit" ? "fit" : Number(b.dataset.w); layout(); try { localStorage.setItem("garnish-mock", JSON.stringify({ screen: S.screen, width: S.width })); } catch {} });
+$("#widths").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; S.width = b.dataset.w === "fit" ? "fit" : Number(b.dataset.w); layout(); save(); });
+$("#devices").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; S.device = b.dataset.d; S.msheet = null; $("#overlay").innerHTML = ""; render(false); layout(); save(); });
 window.addEventListener("resize", layout);
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -992,7 +1276,7 @@ frame.addEventListener("input", (e) => {
   if (t.id === "shelfq") { S.shelfQ = t.value; const pos = t.selectionStart; render(true); const n = $("#shelfq"); n.focus(); n.setSelectionRange(pos, pos); }
   if (t.id === "libq") { S.lib.q = t.value; const pos = t.selectionStart; render(true); const n = $("#libq"); n.focus(); n.setSelectionRange(pos, pos); }
   if (t.id === "addq") { const v = t.value.toLowerCase().trim(); const k = Object.keys(GUESS).find((g) => v.includes(g)); $("#guess").innerHTML = v ? `<span class="chip solid">→ ${k ? AISLES[GUESS[k]] : "Other"}</span>` : ""; }
-  if (t.dataset.ed) { S.edit[t.dataset.ed] = t.value; $("#sheet").innerHTML = sheetBody(); }
+  if (t.dataset.ed) { S.edit[t.dataset.ed] = t.value; const sh = $("#sheet"), mp = $("#mparse"), ms = $("#msteps"); if (sh) sh.innerHTML = sheetBody(); if (mp) mp.innerHTML = mParse(); if (ms) ms.innerHTML = mStepsParse(); }
 });
 frame.addEventListener("keydown", (e) => {
   if (e.target.id === "addq" && e.key === "Enter" && e.target.value.trim()) {
@@ -1048,6 +1332,13 @@ setInterval(() => { let ch = false; TIMERS.forEach((t) => { if (t.run && t.left 
 
 /* Keyboard: the command bar everywhere, arrows in the library and cook mode */
 document.addEventListener("keydown", (e) => {
+  if (S.device === "phone") {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); return S.msheet ? closeSheet() : openSheet({ kind: "quick" }); }
+    if (e.key === "Escape" && S.msheet) return closeSheet();
+    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+    if (!typing && S.screen === "cook") { if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); mCookGo((S.mcook || 0) + 1); } if (e.key === "ArrowLeft") mCookGo((S.mcook || 0) - 1); }
+    return;
+  }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); return $("#overlay").innerHTML ? closePalette() : openPalette(); }
   if ($("#overlay").innerHTML) return;
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
@@ -1118,8 +1409,352 @@ function palDo(o) {
   if (o.kind === "shop") { SHOP.unshift({ id: "s" + Date.now(), q: "", name: o.text, aisle: AISLES[5], meals: [], done: false }); toast(`Added <b>${esc(o.text)}</b> to the shopping list`); if (S.screen === "shop" || S.screen === "home") render(true); }
 }
 
+
+/* ═════════════════════════════════════════════════════════════════════════
+   The phone: the same nine pages, for one hand. Swipes, sheets from the
+   bottom, the thumb's half of the screen for what is pressed most, and a
+   "+" in the middle of the tab bar that is the desktop's command bar.
+   ═════════════════════════════════════════════════════════════════════════ */
+const MNOTES = {
+  home: "<b>Home as tonight.</b> Tonight fills the screen; the week is a strip you flick through; the list is one tap from “Start shopping”; To try sits in circles like stories. <span class='try'>Try: flick the week, tap an empty night to plan it, tap a circle.</span>",
+  plan: "<b>Plan as a list you swipe.</b> The days sit in a strip at the top to jump between; each entry swipes right to push it a day and left to remove it; a sheet of photos adds to any day and stays open for the next. <span class='try'>Try: drag an entry sideways with the mouse; tap “+ Add to …” and add two recipes.</span>",
+  shop: "<b>Shopping in the shop.</b> Big rows, a swipe or a tap puts a line in the trolley, the aisle you are in stays at the top, the meals are chips that narrow the list to one dish, and the trolley waits at the bottom. <span class='try'>Try: swipe a line right, tap a meal chip, open the trolley, type “milk”.</span>",
+  recipes: "<b>The library as photos.</b> Two columns of pictures, the collections as chips, and the search at the bottom where the thumb is, with filters in a sheet. <span class='try'>Try: type in the search, open Filters, tap a recipe.</span>",
+  recipe: "<b>The recipe: the photo stays, the page slides over it.</b> Ingredients and Method are two tabs that stay at the top as you scroll; each step lists what it needs; Start cooking is always under the thumb. <span class='try'>Try: scroll, change the servings, tick ingredients, start a step's timer.</span>",
+  import: "<b>Importing on a phone: check only what needs it.</b> What garnish is unsure of comes first; tap any line to see it beside the page it came from, and say it's right. <span class='try'>Try: tap an amber line, then “Looks right”.</span>",
+  editor: "<b>The editor reads as you type.</b> Each ingredient line shows how garnish understood it, underneath; Preview flips to the finished recipe. <span class='try'>Try: type a new ingredient line; drop a step's label; flip to Preview.</span>",
+  cook: "<b>Cook mode: one step a card, swiped.</b> What the step needs at its top, its timer one press away, the running timers and a big Next at the bottom. <span class='try'>Try: swipe the cards (or ← →), start a timer.</span>",
+  settings: "<b>Settings as a phone's settings.</b> One grouped list; Foods is an alphabet you scrub down the side, rows swipe left to delete, and a food opens in a sheet. <span class='try'>Try: Foods, scrub the letters, swipe a row left, tap a food and change its aisle.</span>",
+};
+const ICON = (d) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${d}</svg>`;
+const ICART = ICON('<path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6.2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/>');
+const ICAL = ICON('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>');
+let SCALE = 1;
+const ring = (frac, size = 64, stroke = 7) => { const r = size / 2 - stroke / 2 - 1, C = 2 * Math.PI * r; return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex:none"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="#f1e9e2" stroke-width="${stroke}"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="#2c666c" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 ${size / 2} ${size / 2})"/><text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-size="${size / 4.2}" font-weight="600" fill="#2a1f19">${Math.round(frac * 100)}%</text></svg>`; };
+const shortName = (s) => (s.length > 20 ? s.slice(0, 18).trimEnd() + "…" : s);
+function swipeRow(key, inner, right, left) {
+  return `<div class="sw" data-swipe="${key}" ${right ? "data-r" : ""} ${left ? "data-l" : ""}><div class="under"><span class="ul">${right || ""}</span><span class="ur">${left || ""}</span></div><div class="sw-in">${inner}</div></div>`;
+}
+
+function mHome() {
+  const t = R["slow-cooked-shredded-beef-ragu-pasta"];
+  const left = SHOP.filter((i) => !i.done).length, done = SHOP.length - left;
+  const strip = WEEKS[0].days.map((d) => {
+    const e = (S.plan[d.iso] || [])[0];
+    const cls = `mday-card ${d.iso === TODAY ? "today" : ""} ${d.iso < TODAY ? "past" : ""}`;
+    if (!e) return d.iso < TODAY ? `<div class="${cls} empty"><b>${d.dow}</b><span>${d.d}</span><i style="font-size:14px">—</i></div>` : `<button class="${cls} empty" data-mpick="${d.iso}"><b>${d.dow}</b><span>${d.d}</span><i>+</i></button>`;
+    if (e.text) return `<div class="${cls} empty"><b>${d.dow}</b><span>${d.d}</span><i style="font-size:13px;font-style:italic;color:var(--fg2)">${esc(e.text)}</i></div>`;
+    const r = R[e.slug];
+    return `<button class="${cls}" data-open="${r.slug}">${photo(r)}<div class="in"><b>${d.iso === TODAY ? "Tonight" : d.dow + " " + d.d}</b><span>${esc(r.name)}</span></div></button>`;
+  }).join("");
+  const tries = RECIPES.filter((r) => r.coll === "totry");
+  const stale = RECIPES.filter((r) => r.coll === "rotation" && r.last >= 6).sort((a, b) => b.last - a.last).slice(0, 3);
+  return `<div class="mp">
+    <div class="mhead"><div><div class="sub">Saturday 7 November</div><h1 class="h1">Tonight</h1></div><button class="mround" data-go="settings" aria-label="Settings">⚙</button></div>
+    <div class="mhero">${photo(t)}<div class="in">
+      <div class="label" style="color:#f1d9c8">Dinner · on at 2 pm</div>
+      <div class="name">${esc(t.name)}</div>
+      <div style="opacity:.85;font-size:14px">3 hr 50 min · Serves 6</div>
+      <div class="row" style="margin-top:8px"><button class="btn primary big" data-go="cook">▶ Cook</button><button class="btn glass big" data-open="${t.slug}">Recipe</button><button class="btn glass big" data-mpick="${TODAY}">Swap</button></div>
+    </div></div>
+    <div class="msec"><div class="row"><h2 class="msh grow">This week</h2><button class="mlink" data-go="plan">Plan →</button></div><div class="mstrip">${strip}</div></div>
+    <button class="mcard mshopcard" data-go="shop">${ring(done / SHOP.length)}<div class="grow"><div style="font:600 19px var(--display)">${left} to buy</div><div class="sub">${done} already in the trolley</div></div><span class="btn primary">Start</span></button>
+    <div class="mcard mbrand"><div style="font:600 18px var(--display)">Next week is half planned</div><div style="opacity:.85;font-size:14px;margin:4px 0 12px">2 of 7 nights. Fill the rest from the rotation, then something for the weekend.</div><button class="btn" data-go="plan">Fill next week</button></div>
+    <div class="msec"><h2 class="msh">To try</h2><div class="mstories">${tries.map((r) => `<button class="story" data-open="${r.slug}"><span class="ringp">${photo(r)}</span><span>${esc(r.name)}</span></button>`).join("")}</div></div>
+    <div class="msec"><h2 class="msh">Haven't made in a while</h2><div class="mcard" style="padding:2px 14px">${stale.map((r) => `<div class="mrow" data-open="${r.slug}">${photo(r)}<div class="grow"><div style="font-weight:500">${esc(r.name)}</div><div class="sub" style="font-size:12.5px">${r.last} weeks ago</div></div><button class="chip" data-mpick="2026-11-10">+ Tue</button></div>`).join("")}</div></div>
+  </div>`;
+}
+
+function mPlan() {
+  const pills = WEEKS[0].days.map((d) => `<button class="dpill ${d.iso === TODAY ? "today" : ""} ${(S.plan[d.iso] || []).length ? "has" : ""}" data-mjump="${d.iso}"><span>${d.dow[0]}</span><b>${d.d}</b><i></i></button>`).join("");
+  const day = (d) => {
+    const es = S.plan[d.iso] || [], past = d.iso < TODAY;
+    return `<section class="mdaysec ${past ? "past" : ""}" id="d-${d.iso}">
+      <div class="mdayh"><b>${d.long} ${d.d}</b>${d.iso === TODAY ? '<span class="pill">Today</span>' : ""}${past && es.length ? '<span class="sub" style="font-size:12px">eaten</span>' : ""}<span class="grow"></span>${es.length && !past ? `<button class="mlink" data-mpick="${d.iso}">+ Add</button>` : ""}</div>
+      ${es.map((e, i) => swipeRow(`plan:${d.iso}:${i}`, e.text ? `<div class="mentry note">${esc(e.text)}</div>` : `<div class="mentry" data-open="${e.slug}">${photo(R[e.slug])}<div class="grow"><div class="nm">${esc(R[e.slug].name)}</div><div class="sub" style="font-size:12.5px">${e.meal || mins(R[e.slug].mins)}</div></div><span class="sub">›</span></div>`, past ? null : "Push to tomorrow →", "Remove ✕")).join("")}
+      ${es.length ? "" : past ? `<div class="sub" style="padding:2px 2px 6px">—</div>` : `<button class="mempty" data-mpick="${d.iso}">+ Add to ${d.long}</button>`}
+    </section>`;
+  };
+  const empty = WEEKS[1].days.filter((d) => !(S.plan[d.iso] || []).length).length;
+  return `<div class="mp" style="padding-top:0">
+    <div class="mplanhead"><div class="row"><h1 class="h1 grow">Plan</h1><button class="mround">‹</button><span class="sub" style="font-size:13px">2 – 8 Nov</span><button class="mround">›</button></div><div class="dpills">${pills}</div></div>
+    <div class="mhint">Swipe an entry right to push it a day, left to remove it.</div>
+    ${WEEKS[0].days.map(day).join("")}
+    <h2 class="msh" style="margin-top:10px">Next week · 9 – 15 Nov</h2>
+    ${WEEKS[1].days.map(day).join("")}
+    ${empty ? `<div class="mfloat"><button class="btn primary big">✦ Fill next week's ${empty} empty nights</button></div>` : ""}
+  </div>`;
+}
+
+function mShop() {
+  const left = SHOP.filter((i) => !i.done), done = SHOP.filter((i) => i.done);
+  const meals = [...new Set(SHOP.flatMap((i) => i.meals))];
+  const vis = left.filter((i) => !S.mMeal || i.meals.includes(S.mMeal));
+  return `<div class="mp" style="padding-bottom:0">
+    <div class="row" style="align-items:flex-end"><h1 class="h1 grow">Shopping</h1><span class="sub"><b style="color:var(--fg)">${done.length}</b> of ${SHOP.length}</span></div>
+    <div class="mbar"><i style="width:${(done.length / SHOP.length) * 100}%"></i></div>
+    <div class="maddrow"><span class="plus">+</span><input class="input" id="addq" placeholder="Add an item"><span class="guess" id="guess"></span></div>
+    <div class="mchips"><button class="mchip ${!S.mMeal ? "on" : ""}" data-mmeal="">All · ${left.length}</button>${meals.map((m) => `<button class="mchip ${S.mMeal === m ? "on" : ""}" data-mmeal="${m}">${photo(R[m])}${esc(shortName(R[m].name))} · ${left.filter((i) => i.meals.includes(m)).length}</button>`).join("")}</div>
+    ${AISLES.map((a) => { const its = vis.filter((i) => i.aisle === a); return its.length ? `<section class="maisle"><h3 class="maisleh"><span>${a}</span><span>${its.length}</span></h3>${its.map((i) => swipeRow("shop:" + i.id, `<div class="mitem" data-tick="${i.id}"><span class="check big"></span><div class="grow"><div class="t">${i.q ? `<b>${esc(i.q)}</b> ` : ""}${esc(i.name)}</div><div class="m">${i.meals.map((m) => esc(R[m].name)).join(" · ")}</div></div></div>`, "✓ In the trolley", null)).join("")}</section>` : ""; }).join("")}
+    ${vis.length ? `<div class="mhint" style="text-align:center">Swipe right, or tap, to put a line in the trolley.</div>` : `<div class="mok" style="text-align:center">✓ All of ${S.mMeal ? esc(R[S.mMeal].name) : "it"} is in the trolley</div>`}
+    <button class="mtrolley" data-msheet="trolley">${ICART} <b>${done.length}</b> in the trolley<span class="grow"></span>Show ⌃</button>
+  </div>`;
+}
+
+function mRecipes() {
+  const vis = libVisible(), nf = S.lib.tags.size;
+  return `<div class="mp" style="padding-bottom:0">
+    <div class="row"><h1 class="h1 grow">Recipes</h1><button class="btn" data-go="import">+ New</button></div>
+    <div class="mchips">${[["all", "Everything"], ["rotation", "Rotation"], ["weekend", "Weekend"], ["totry", "To try"]].map(([k, l]) => `<button class="mchip ${S.lib.coll === k ? "on" : ""}" data-coll="${k}">${l}</button>`).join("")}<button class="mchip ${S.lib.fav ? "on" : ""}" data-fav>♥ Favourites</button></div>
+    <div class="mgrid">${vis.map((r) => `<button class="mrc" data-open="${r.slug}">${photo(r)}<span class="time">${mins(r.mins)}</span><span class="heart">${r.fav ? "♥" : "♡"}</span><span class="nm">${esc(r.name)}</span></button>`).join("") || '<div class="sub">Nothing matches.</div>'}</div>
+    <div class="msearch"><div class="pill"><span style="color:var(--muted)">⌕</span><input id="libq" placeholder="Search ${RECIPES.length} recipes" value="${esc(S.lib.q)}"></div><button class="mround" data-msheet="filters" aria-label="Filters">☰${nf ? `<b class="badge">${nf}</b>` : ""}</button></div>
+  </div>`;
+}
+
+function recipeParts(r) {
+  if (r.slug === "chicken-fried-rice") return { parts: FR.parts, steps: FR.steps };
+  const s = shortList(r.slug);
+  return { parts: [{ name: "", ings: s.ings.map((x, i) => ["g" + i, null, x[0], x[1], x[2]]) }], steps: s.steps.map((x, i) => [x[0], x[1], "", "g" + Math.min(i * 2, s.ings.length - 1) + ",g" + Math.min(i * 2 + 1, s.ings.length - 1)]) };
+}
+function mRecipe() {
+  const r = R[S.recipe] || R["chicken-fried-rice"], full = r.slug === "chicken-fried-rice", k = S.serves / 4;
+  const { parts, steps } = recipeParts(r);
+  const byId = Object.fromEntries(parts.flatMap((p) => p.ings).map((i) => [i[0], i]));
+  const q = (i) => (i[1] == null ? i[2] : `${fmtQ(i[1] * k)} ${i[2]}`.trim());
+  const seg = S.mseg || "ing";
+  const body = seg === "ing"
+    ? `<div class="mserves"><span class="grow">Serves <b style="font-size:17px">${S.serves}</b>${S.serves !== 4 ? ' <span class="sub">(the recipe makes 4)</span>' : ""}</span><button data-serves="-1">−</button><button data-serves="1">+</button></div>
+       <div>${parts.map((p) => `${p.name ? `<div class="label" style="margin:16px 0 2px">${p.name}</div>` : ""}${p.ings.map((i) => `<div class="ming" data-mcheck><span class="check big"></span><span><b>${esc(q(i))}</b> ${esc(i[3])}${i[4] ? `<div class="nt">${esc(i[4])}</div>` : ""}</span></div>`).join("")}`).join("")}</div>`
+    : steps.map((s, n) => { const need = (s[3] || "").split(",").filter((x) => byId[x]); return `<div class="mstep"><div class="row"><span class="num">${n + 1}</span><b class="grow">${esc(s[0])}</b>${s[4] ? `<button class="timerchip" data-mtimer="${n}">◷ ${fmtQ(s[4])} min</button>` : ""}</div>${need.length ? `<div class="mneed">${need.map((x) => `<span class="chip">${esc(q(byId[x]))} ${esc(byId[x][3])}</span>`).join("")}</div>` : ""}<div class="tx">${esc(s[1])}</div>${s[2] ? `<div class="nt">${esc(s[2])}</div>` : ""}</div>`; }).join("");
+  return `<div class="mrec">
+    <div class="mrhero">${photo(r)}<div class="mrtop"><button class="mround glass" data-go="recipes">‹</button><span class="grow"></span><button class="mround glass">♡</button><button class="mround glass" data-go="editor">✎</button></div></div>
+    <div class="mrbody">
+      <div><div class="label">${r.tags.join(" · ")}</div><h1 class="h1" style="font-size:28px;margin-top:4px">${esc(r.name)}</h1></div>
+      <div class="mfacts"><div><b>${full ? "10 min" : mins(Math.round(r.mins / 3))}</b><span>Prep</span></div><div><b>${full ? "10 min" : mins(r.mins - Math.round(r.mins / 3))}</b><span>Cook</span></div><div><b>${mins(r.mins)}</b><span>Total</span></div><div><b class="stars" style="font-size:12px">★★★★☆</b><span>Made 4×</span></div></div>
+      <div class="mseg"><button class="${seg === "ing" ? "on" : ""}" data-mseg="ing">Ingredients</button><button class="${seg === "method" ? "on" : ""}" data-mseg="method">Method · ${steps.length} steps</button></div>
+      ${body}
+    </div>
+    <div class="mcookbar"><button class="btn primary big" data-go="cook">▶ Start cooking</button><button class="mround" title="Add to the shopping list">${ICART}</button><button class="mround" data-mpick="2026-11-10" title="Put on the plan">${ICAL}</button></div>
+  </div>`;
+}
+
+function mCook() {
+  const st = FR.steps, i = S.mcook || 0, all = FR.parts.flatMap((p) => p.ings);
+  const cards = st.map((s, j) => {
+    const need = all.filter((x) => (s[3] || "").split(",").includes(x[0]));
+    return `<div class="mccard"><div class="box"><div class="k">Step ${j + 1} of ${st.length}</div><div class="lbl">${esc(s[0])}</div>${need.length ? `<div class="mneed">${need.map((x) => `<span class="chip dark">${fmtQ(x[1])} ${x[2]} ${esc(x[3])}</span>`).join("")}</div>` : ""}<div class="tx">${esc(s[1])}</div>${s[2] ? `<div class="nt">${esc(s[2])}</div>` : ""}${s[4] ? `<button class="mstart" data-tstart-m="${j}">◷ Start the ${fmtQ(s[4])} min timer</button>` : ""}</div></div>`;
+  }).join("");
+  const tm = (t) => (t.left <= 0 ? "Done" : `${Math.floor(t.left / 60)}:${String(t.left % 60).padStart(2, "0")}`);
+  return `<div class="mcook">
+    <div class="mctop"><button class="mround dark" data-go="recipe">✕</button><div class="grow"><div style="font-weight:600">Chicken Fried Rice</div><div class="segs" id="msegs">${[...st, 0].map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div></div></div>
+    <div class="mcards" id="mcards">${cards}<div class="mccard"><div class="box" style="align-items:center;justify-content:center;text-align:center"><div class="lbl">Done</div><div class="tx">How was it?</div><div style="font-size:38px;letter-spacing:8px;color:#e3ac35">★★★★★</div><button class="mstart" style="align-self:center;margin-top:10px" data-go="recipe">Save and finish</button></div></div></div>
+    <div class="mcfoot">${TIMERS.map((t, k) => `<div class="mtimer"><span>◷ ${esc(t.label)}</span><b data-timer="${k}">${tm(t)}</b></div>`).join("")}<div class="row"><button class="bigbtn" data-mcstep="-1">‹</button><button class="bigbtn go grow" data-mcstep="1">Next step →</button></div><div style="text-align:center;font-size:11.5px;color:#8b7a6e">☀ The screen stays on while you cook</div></div>
+  </div>`;
+}
+
+const MFLAGS = { dc37: "“small” was read as the unit; check it isn't part of the name", c0e7: "The asterisk was dropped", adc0: "“packed” moved to the note" };
+function mImport() {
+  const fixed = S.mfixed || new Set();
+  const open = Object.keys(MFLAGS).filter((k) => !fixed.has(k));
+  const ingLine = (i) => `<button class="mpl" data-mflag="${i[0]}">${open.includes(i[0]) ? '<span class="flag"></span>' : '<span class="ok"></span>'}<span class="grow"><b>${fmtQ(i[1])} ${i[2]}</b> ${esc(i[3])}${i[4] ? ` <span class="sub">${esc(i[4])}</span>` : ""}</span><span class="sub">›</span></button>`;
+  return `<div class="mp">
+    <div class="row"><button class="mround" data-go="recipes">‹</button><h1 class="h1 grow" style="font-size:26px">New recipe</h1></div>
+    <div class="mstepper"><span class="done">✓ Source</span><i></i><span class="on">Check</span><i></i><span>Save</span></div>
+    ${open.length ? `<div class="mwarn"><b>${open.length} line${open.length > 1 ? "s" : ""} to check</b><div style="color:#8a5a0c;font-size:13px">Tap one to see it beside the page it came from.</div>${open.map((k) => { const i = FR.parts[0].ings.find((x) => x[0] === k); return `<button class="mwarnrow" data-mflag="${k}"><span class="flag" style="margin:0"></span><span class="grow"><b>${fmtQ(i[1])} ${i[2]}</b> ${esc(i[3])}</span>›</button>`; }).join("")}</div>` : `<div class="mok">✓ Everything checked</div>`}
+    <div class="mcard" style="padding:0;overflow:hidden">${photo(R["chicken-fried-rice"], "height:170px")}<div style="padding:14px 16px"><div style="font:600 22px var(--display)">Chicken Fried Rice</div><div class="sub">Serves 4 · 20 min · recipetineats.com</div></div></div>
+    <h2 class="msh">Ingredients</h2><div class="mcard" style="padding:2px 6px">${FR.parts[0].ings.map(ingLine).join("")}<div class="label" style="margin:12px 10px 2px">Sauce</div>${FR.parts[1].ings.map(ingLine).join("")}</div>
+    <h2 class="msh">Method</h2><div class="mcard" style="padding:2px 6px">${FR.steps.slice(0, 8).map((s, n) => `<button class="mpl" data-mflag="st${n}"><span class="ok"></span><span class="grow"><b>${esc(s[0])}</b><div class="sub" style="font-size:13.5px">${esc(s[1])}</div></span></button>`).join("")}</div>
+    <div class="mfloat"><button class="btn primary big" style="width:100%">Save recipe</button></div>
+  </div>`;
+}
+
+function mParse() {
+  return S.edit.ings.split("\n").filter(Boolean).map((l) => { const m = l.match(/^([\d½¼¾⅓⅔.\/ ]+(?:g|kg|ml|l|cups?|tbsp|tsp)?\b)?\s*(.*)$/); const [name, note] = (m[2] || "").split(/,\s*(.*)/); return `<div class="mparsed">${m[1] ? `<span class="pq">${esc(m[1].trim())}</span>` : `<span class="pq" style="background:var(--hi);border-color:#efd18b;color:#8a5a0c">no amount</span>`}<b>${esc(name)}</b>${note ? `<span class="sub">${esc(note)}</span>` : ""}</div>`; }).join("");
+}
+function mStepsParse() {
+  return S.edit.steps.split("\n").filter(Boolean).map((l, n) => { const i = l.indexOf(":"); return `<div class="mparsed"><span class="num" style="width:20px;height:20px;font-size:11px">${n + 1}</span>${i > 0 ? `<b>${esc(l.slice(0, i))}</b>` : `<b style="color:#a8771c">Needs a label</b>`}</div>`; }).join("");
+}
+function mEditor() {
+  const E = S.edit, mode = S.medit || "edit";
+  return `<div class="mp">
+    <div class="row"><button class="btn ghost" data-go="recipe">Cancel</button><span class="grow"></span><div class="mseg small"><button class="${mode === "edit" ? "on" : ""}" data-medit="edit">Edit</button><button class="${mode === "preview" ? "on" : ""}" data-medit="preview">Preview</button></div><span class="grow"></span><button class="btn primary">Save</button></div>
+    ${mode === "preview" ? `<div class="mcard mprev" style="padding:0;overflow:hidden" id="sheet">${sheetBody()}</div>` : `
+    <div class="mcard mform"><label>Name<input class="input" data-ed="name" value="${esc(E.name)}"></label><div class="row" style="gap:8px"><label>Serves<input class="input" data-ed="serves" value="${esc(E.serves)}" inputmode="numeric"></label><label>Prep min<input class="input" data-ed="prep" value="${esc(E.prep)}" inputmode="numeric"></label><label>Cook min<input class="input" data-ed="cook" value="${esc(E.cook)}" inputmode="numeric"></label></div></div>
+    <div class="mcard mform"><label>Ingredients <span class="sub" style="font-weight:400">one a line; read as you type</span><textarea class="input" data-ed="ings" rows="6">${esc(E.ings)}</textarea></label><div id="mparse">${mParse()}</div></div>
+    <div class="mcard mform"><label>Method <span class="sub" style="font-weight:400">a step a line, “Label: what to do”</span><textarea class="input" data-ed="steps" rows="7">${esc(E.steps)}</textarea></label><div id="msteps">${mStepsParse()}</div></div>`}
+  </div>`;
+}
+
+function mSettings() {
+  if (S.mset === "foods") return mFoods();
+  const groups = [["Library", [["Foods", "765", "❦", "#e3efdf"], ["Units", "42", "⚖", "#ece4f3"], ["Aisles", "12", "▤", "#e1ecf5"], ["Tags", "26", "#", "#f5ead9"]]], ["Cooking", [["Style", "12", "✎", "#f5e3e1"], ["Planner", "6", "▦", "#dff0f1"]]], ["Data", [["Backup", "", "⇩", "#ece6e0"], ["AI", "", "✦", "#ece6e0"], ["MCP", "", "⌘", "#ece6e0"]]], ["App", [["Appearance", "", "◐", "#ece6e0"], ["Alerts", "", "♪", "#ece6e0"], ["Diagnostics", "7", "!", "#fbe8c2"]]]];
+  return `<div class="mp"><div class="row"><button class="mround" data-go="home">‹</button><h1 class="h1 grow">Settings</h1></div>${groups.map(([g, rows]) => `<div><div class="label" style="margin:4px 6px 6px">${g}</div><div class="mcard mlist">${rows.map(([n, c, ic, bg]) => `<button class="mli" data-mset="${n.toLowerCase()}"><span class="ico" style="background:${bg}">${ic}</span><span class="grow">${n}</span>${c ? `<span class="sub">${c}</span>` : ""}<span class="sub">›</span></button>`).join("")}</div></div>`).join("")}<div class="sub" style="text-align:center;font-size:12px">Garnish 1.9.0</div></div>`;
+}
+function mFoods() {
+  const q = (S.mfoodq || "").toLowerCase();
+  const list = FOODS.filter((f) => !q || f.name.toLowerCase().includes(q) || f.aliases.toLowerCase().includes(q));
+  const letters = [...new Set(list.map((f) => f.name[0].toUpperCase()))];
+  return `<div class="mp" style="padding-top:4px;gap:6px">
+    <button class="mlink" data-mset="menu">‹ Settings</button>
+    <div class="row"><h1 class="h1 grow">Foods</h1><button class="mround">+</button></div>
+    <div class="msticky"><input class="input" id="mfoodq" placeholder="Search foods and their other names" value="${esc(S.mfoodq || "")}"></div>
+    <div class="mfoods">${letters.map((L) => `<div class="mletter" id="L-${L}">${L}</div>${list.filter((f) => f.name[0].toUpperCase() === L).map((f) => swipeRow("food:" + f.id, `<div class="mfood" data-mfood="${f.id}"><div class="grow" style="min-width:0"><div style="font-weight:500">${esc(f.name)}</div><div class="sub" style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.aliases) || "—"}</div></div><span class="chip">${f.aisle}</span></div>`, null, "Delete")).join("")}`).join("")}</div>
+    <div class="mscrub">${"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((L) => `<button data-mletter="${L}" class="${letters.includes(L) ? "" : "off"}">${L}</button>`).join("")}</div>
+  </div>`;
+}
+
+const MRENDER = { home: mHome, plan: mPlan, shop: mShop, recipes: mRecipes, recipe: mRecipe, import: mImport, editor: mEditor, cook: mCook, settings: mSettings };
+
+/* The sheets */
+function quickRes() {
+  PAL.opts = palOptions(PAL.q); PAL.i = 0;
+  let g = null;
+  return PAL.opts.map((o, i) => `${o.g !== g ? `<div class="label" style="margin:10px 6px 2px">${(g = o.g)}</div>` : ""}<div class="opt ${i === 0 && PAL.q ? "on" : ""}" data-pi="${i}">${o.r ? photo(o.r) : `<span class="ic">${o.icon}</span>`}<span class="grow">${mark(o.label, PAL.q)}</span></div>`).join("");
+}
+function sheetHtml() {
+  const s = S.msheet;
+  if (s.kind === "quick") return `<div class="msheet tall"><div class="grab"></div><div style="font:600 21px var(--display)">Plan, add or find</div><div class="mqin"><input id="mq" class="input" placeholder="“ragu tue”, “milk”, “foods”…" autocomplete="off" value="${esc(PAL.q)}"></div><div class="mtries">${["ragu tue", "risotto wed", "milk", "foods"].map((x) => `<button class="chip" data-mtry="${x}">${x}</button>`).join("")}</div><div class="mqres" id="mqres">${quickRes()}</div><div class="sub" style="font-size:12.5px">End with a day to plan it. Anything else goes on the shopping list.</div></div>`;
+  if (s.kind === "picker") {
+    const d = dayOf(s.iso), tab = S.mpTab || "rotation", q = S.mpq || "";
+    const pool = q ? RECIPES.filter((r) => r.name.toLowerCase().includes(q.toLowerCase())) : RECIPES.filter((r) => tab === "all" || r.coll === tab);
+    return `<div class="msheet tall"><div class="grab"></div>
+      <div class="row"><div class="grow"><div class="label" style="color:var(--brand)">Adding to</div><div style="font:600 21px var(--display)">${d.long} ${d.d} November</div></div><button class="btn primary" data-msheet-close>Done</button></div>
+      <input class="input" id="mpq" placeholder="Search, or type a note like “out”" value="${esc(q)}">
+      ${q ? "" : `<div class="mseg small">${[["rotation", "Rotation"], ["weekend", "Weekend"], ["totry", "To try"], ["all", "All"]].map(([k, l]) => `<button class="${tab === k ? "on" : ""}" data-mptab="${k}">${l}</button>`).join("")}</div>`}
+      <div class="mpgrid">${pool.map((r) => { const added = (S.plan[s.iso] || []).some((e) => e.slug === r.slug); return `<button class="mptile ${added ? "added" : ""}" data-madd="${r.slug}">${photo(r)}<span>${esc(r.name)}</span>${added ? '<span class="tick">✓</span>' : ""}</button>`; }).join("")}${q && !pool.length ? `<button class="mempty" style="grid-column:1/-1" data-mnote="${esc(q)}">Add “${esc(q)}” as a note</button>` : ""}</div></div>`;
+  }
+  if (s.kind === "trolley") {
+    const done = SHOP.filter((i) => i.done);
+    return `<div class="msheet"><div class="grab"></div><div class="row"><div style="font:600 21px var(--display);display:flex;gap:8px;align-items:center" class="grow">${ICART} In the trolley · ${done.length}</div><button class="btn" data-msheet-close>Close</button></div><div class="sub" style="font-size:13px">Tap a line to take it back out.</div>${done.map((i) => `<div class="mitem" data-tick="${i.id}" style="opacity:.75"><span class="check big on"></span><div class="grow"><div class="t" style="text-decoration:line-through">${i.q ? `<b>${esc(i.q)}</b> ` : ""}${esc(i.name)}</div></div></div>`).join("")}<button class="btn big">Clear the trolley</button></div>`;
+  }
+  if (s.kind === "filters") {
+    const tags = [...new Set(RECIPES.flatMap((r) => r.tags))].sort();
+    return `<div class="msheet"><div class="grab"></div><div class="row"><div style="font:600 21px var(--display)" class="grow">Filters</div><button class="mlink" data-mclear>Clear</button></div>
+      <div class="label">Tags</div><div class="maisles">${tags.map((t) => `<button class="chip ${S.lib.tags.has(t) ? "on" : ""}" data-tag="${t}">${t} <span class="sub" style="color:inherit;opacity:.7">${RECIPES.filter((r) => r.tags.includes(t)).length}</span></button>`).join("")}</div>
+      <div class="label">Made with</div><input class="input" placeholder="A food, like “chicken”">
+      <div class="label">Order</div><div class="maisles">${["Newest", "Name", "Quickest", "Longest since made", "Rating"].map((o, i) => `<button class="chip ${i === 0 ? "on" : ""}">${o}</button>`).join("")}</div>
+      <button class="btn primary big" data-msheet-close>Show ${libVisible().length} recipes</button></div>`;
+  }
+  if (s.kind === "flag") {
+    const idx = SRC.findIndex((x) => x[2] === s.key), flag = MFLAGS[s.key] && !(S.mfixed || new Set()).has(s.key) ? MFLAGS[s.key] : null;
+    const ing = FR.parts.flatMap((p) => p.ings).find((x) => x[0] === s.key), st = s.key.startsWith("st") ? FR.steps[Number(s.key.slice(2))] : null;
+    const ctx = SRC.slice(Math.max(0, idx - 2), idx + 3).map((x, j) => `<p class="${x[2] === s.key ? "lit" : ""}">${esc(x[1])}</p>`).join("");
+    return `<div class="msheet"><div class="grab"></div>
+      <div class="label">On the page · line ${idx + 1}</div><div class="msrc">${ctx}</div>
+      <div class="label">Garnish read it as</div><div class="mcard" style="font-size:16px">${ing ? `<b>${fmtQ(ing[1])} ${ing[2]}</b> ${esc(ing[3])}${ing[4] ? ` <span class="sub">${esc(ing[4])}</span>` : ""}` : st ? `<b>${esc(st[0])}</b><div class="sub">${esc(st[1])}</div>` : ""}</div>
+      ${flag ? `<div style="color:#8a5a0c;background:var(--hi);border-radius:12px;padding:10px 12px;font-size:14px">● ${esc(flag)}</div>` : ""}
+      <div class="row"><button class="btn big grow">Edit the line</button>${flag ? `<button class="btn primary big grow" data-mfixok>Looks right</button>` : `<button class="btn primary big grow" data-msheet-close>Close</button>`}</div></div>`;
+  }
+  if (s.kind === "food") {
+    const f = FOODS.find((x) => x.id === s.id);
+    if (!f) return `<div class="msheet"><div class="grab"></div><div class="sub">Gone.</div></div>`;
+    return `<div class="msheet"><div class="grab"></div><div class="row"><div style="font:600 24px var(--display)" class="grow">${esc(f.name)}</div><button class="btn" data-msheet-close>Done</button></div>
+      <div class="label">Also called</div><div class="maisles">${(f.aliases ? f.aliases.split(", ") : []).map((a) => `<span class="chip">${esc(a)} <button style="border:0;background:none;padding:0;color:var(--muted)" data-malias="${esc(a)}">×</button></span>`).join("")}<span class="chip" style="border-style:dashed">+ Add a name</span></div>
+      <div class="label">Aisle</div><div class="maisles">${AISLES.map((a) => `<button class="chip ${a === f.aisle ? "on" : ""}" data-maisle="${a}">${a}</button>`).join("")}</div>
+      <div class="label">Used in ${f.n} recipe${f.n === 1 ? "" : "s"}</div><div class="mstrip" style="margin:0">${RECIPES.slice(hue(f.name) % 10, (hue(f.name) % 10) + Math.min(f.n, 6)).map((r) => `<button class="mday-card" style="flex-basis:96px;height:110px" data-open="${r.slug}">${photo(r)}<div class="in"><span>${esc(r.name)}</span></div></button>`).join("") || '<span class="sub">None yet.</span>'}</div>
+      <div class="row"><button class="btn big grow">Merge into…</button><button class="btn big grow" style="color:var(--danger)">Delete</button></div></div>`;
+  }
+  return "";
+}
+let lastSheet = null;
+function renderSheet() {
+  const o = $("#overlay");
+  if (!S.msheet) { if (S.device === "phone") o.innerHTML = ""; lastSheet = null; return; }
+  const key = S.msheet.kind + ":" + (S.msheet.iso || S.msheet.id || S.msheet.key || "");
+  o.innerHTML = `<div class="msheet-scrim ${lastSheet === key ? "still" : ""}">${sheetHtml()}</div>`;
+  lastSheet = key;
+}
+function openSheet(s) { S.msheet = s; if (s.kind === "quick") PAL = { q: "", i: 0, opts: [] }; lastSheet = null; renderSheet(); if (s.kind === "quick") $("#mq")?.focus(); }
+function closeSheet() { S.msheet = null; renderSheet(); }
+
+/* Cook's cards follow the swipe */
+function mCookGo(n) { const c = $("#mcards"); if (!c) return; n = Math.max(0, Math.min(FR.steps.length, n)); c.scrollTo({ left: n * c.clientWidth, behavior: "smooth" }); }
+function afterPhoneRender(keepScroll) {
+  if (S.screen === "plan" && !keepScroll) { const v = $("#view"), d = $("#d-" + TODAY); if (d) { v.style.scrollBehavior = "auto"; v.scrollTop = d.offsetTop - 150; v.style.scrollBehavior = ""; } }
+  if (S.screen !== "cook") return;
+  const c = $("#mcards"); if (!c) return;
+  c.scrollLeft = (S.mcook || 0) * c.clientWidth;
+  c.onscroll = () => { const i = Math.round(c.scrollLeft / c.clientWidth); if (i !== S.mcook) { S.mcook = i; $$("#msegs i").forEach((el, j) => (el.className = j < i ? "done" : j === i ? "on" : "")); } };
+}
+
+/* Swipes: a row follows the finger (or the mouse) and does its thing past 90px */
+let SW = null, swiped = false;
+frame.addEventListener("pointerdown", (e) => { if (S.device !== "phone") return; const row = e.target.closest("[data-swipe]"); if (row) SW = { row, x: e.clientX, y: e.clientY, dx: 0, active: false, id: e.pointerId }; });
+frame.addEventListener("pointermove", (e) => {
+  if (!SW) return;
+  const dx = (e.clientX - SW.x) / SCALE, dy = (e.clientY - SW.y) / SCALE;
+  if (!SW.active) { if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { SW.active = true; SW.row.classList.add("dragging"); try { SW.row.setPointerCapture(SW.id); } catch {} } else if (Math.abs(dy) > 8) { SW = null; return; } else return; }
+  let x = dx; if (x > 0 && !SW.row.hasAttribute("data-r")) x = 0; if (x < 0 && !SW.row.hasAttribute("data-l")) x = 0;
+  SW.dx = x; SW.row.querySelector(".sw-in").style.transform = `translateX(${x}px)`;
+  SW.row.classList.toggle("dir-r", x > 0); SW.row.classList.toggle("dir-l", x < 0); SW.row.classList.toggle("armed", Math.abs(x) > 90);
+});
+function swipeEnd() {
+  if (!SW) return; const { row, dx, active } = SW; SW = null; if (!active) return;
+  swiped = true; setTimeout(() => (swiped = false), 60);
+  const inn = row.querySelector(".sw-in"); row.classList.remove("dragging");
+  if (Math.abs(dx) > 90) { inn.style.transform = `translateX(${dx > 0 ? 110 : -110}%)`; setTimeout(() => doSwipe(row.dataset.swipe, dx > 0 ? "r" : "l"), 200); }
+  else { inn.style.transform = ""; row.classList.remove("dir-r", "dir-l", "armed"); }
+}
+frame.addEventListener("pointerup", swipeEnd); frame.addEventListener("pointercancel", swipeEnd);
+function doSwipe(key, dir) {
+  const [kind, a, b] = key.split(":");
+  if (kind === "shop") { const it = SHOP.find((i) => i.id === a); it.done = true; toast(`<b>${esc(it.name)}</b> is in the trolley`); }
+  if (kind === "plan") {
+    const es = S.plan[a], e = es[Number(b)], nm = esc(e.text || R[e.slug].name);
+    if (dir === "l") { es.splice(Number(b), 1); toast(`Removed ${nm} · <b>Undo</b>`); }
+    else { const nx = ALLDAYS[ALLDAYS.findIndex((d) => d.iso === a) + 1]; if (nx) { es.splice(Number(b), 1); (S.plan[nx.iso] ||= []).push(e); toast(`${nm} → <b>${nx.long}</b>`); } }
+  }
+  if (kind === "food") { const i = FOODS.findIndex((f) => f.id === a); const f = FOODS.splice(i, 1)[0]; toast(`Deleted <b>${esc(f.name)}</b> · Undo`); }
+  render(true);
+}
+
+/* The phone's own presses, caught before the shared handler */
+frame.addEventListener("click", (e) => {
+  if (swiped) { e.stopImmediatePropagation(); e.preventDefault(); return; }
+  if (S.device !== "phone") return;
+  const t = e.target, stop = () => e.stopImmediatePropagation();
+  let x;
+  if (t.closest("[data-mquick]")) { stop(); return openSheet({ kind: "quick" }); }
+  if (t.closest("[data-msheet-close]") || t.classList.contains("msheet-scrim")) { stop(); return closeSheet(); }
+  if ((x = t.closest("[data-msheet]"))) { stop(); return openSheet({ kind: x.dataset.msheet }); }
+  if ((x = t.closest("[data-mpick]"))) { stop(); S.mpq = ""; return openSheet({ kind: "picker", iso: x.dataset.mpick }); }
+  if ((x = t.closest("[data-madd]"))) { stop(); addToPlan(S.msheet.iso, { slug: x.dataset.madd }); render(true); return; }
+  if ((x = t.closest("[data-mnote]"))) { stop(); addToPlan(S.msheet.iso, { text: x.dataset.mnote }); S.mpq = ""; render(true); return; }
+  if ((x = t.closest("[data-mptab]"))) { stop(); S.mpTab = x.dataset.mptab; return renderSheet(); }
+  if ((x = t.closest("[data-mjump]"))) { stop(); $("#d-" + x.dataset.mjump)?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  if ((x = t.closest("[data-mmeal]"))) { stop(); S.mMeal = x.dataset.mmeal || null; return render(true); }
+  if ((x = t.closest("[data-mseg]"))) { stop(); S.mseg = x.dataset.mseg; return render(true); }
+  if ((x = t.closest("[data-mcheck]"))) { stop(); x.querySelector(".check").classList.toggle("on"); x.classList.toggle("done"); return; }
+  if ((x = t.closest("[data-mtimer]"))) { stop(); const s = FR.steps[Number(x.dataset.mtimer)]; TIMERS.push({ label: s[0], left: Math.round(s[4] * 60), run: true }); return toast(`◷ <b>${esc(s[0])}</b> · ${fmtQ(s[4])} min`); }
+  if ((x = t.closest("[data-mcstep]"))) { stop(); return mCookGo((S.mcook || 0) + Number(x.dataset.mcstep)); }
+  if ((x = t.closest("[data-tstart-m]"))) { stop(); const s = FR.steps[Number(x.dataset.tstartM)]; TIMERS.push({ label: s[0], left: Math.round(s[4] * 60), run: true }); return render(true); }
+  if ((x = t.closest("[data-mfixok]"))) { stop(); (S.mfixed ||= new Set()).add(S.msheet.key); S.msheet = null; toast("Marked as right"); return render(true); }
+  if ((x = t.closest("[data-mflag]"))) { stop(); return openSheet({ kind: "flag", key: x.dataset.mflag }); }
+  if ((x = t.closest("[data-medit]"))) { stop(); S.medit = x.dataset.medit; return render(true); }
+  if ((x = t.closest("[data-mset]"))) { stop(); const v = x.dataset.mset; if (v === "menu" || v === "foods") { S.mset = v; render(false); $("#view").scrollTop = 0; } else toast(`${v[0].toUpperCase() + v.slice(1)} isn't in this mockup`); return; }
+  if ((x = t.closest("[data-mfood]"))) { stop(); return openSheet({ kind: "food", id: x.dataset.mfood }); }
+  if ((x = t.closest("[data-maisle]"))) { stop(); const f = FOODS.find((y) => y.id === S.msheet.id); f.aisle = x.dataset.maisle; toast(`<b>${esc(f.name)}</b> → ${f.aisle}`); return render(true); }
+  if ((x = t.closest("[data-malias]"))) { stop(); const f = FOODS.find((y) => y.id === S.msheet.id); f.aliases = f.aliases.split(", ").filter((a) => a !== x.dataset.malias).join(", "); return render(true); }
+  if ((x = t.closest("[data-mletter]"))) { stop(); $("#L-" + x.dataset.mletter)?.scrollIntoView({ block: "start" }); return; }
+  if ((x = t.closest("[data-mtry]"))) { stop(); PAL.q = x.dataset.mtry; $("#mq").value = PAL.q; $("#mqres").innerHTML = quickRes(); return; }
+  if ((x = t.closest("[data-mclear]"))) { stop(); S.lib.tags.clear(); return render(true); }
+  if ((x = t.closest("[data-pi]")) && S.msheet?.kind === "quick") { stop(); S.msheet = null; return palDo(PAL.opts[Number(x.dataset.pi)]); }
+  if ((x = t.closest("[data-open]")) && S.msheet) S.msheet = null;
+}, true);
+frame.addEventListener("input", (e) => {
+  if (S.device !== "phone") return;
+  const t = e.target;
+  if (t.id === "mq") { PAL.q = t.value; $("#mqres").innerHTML = quickRes(); }
+  if (t.id === "mpq") { S.mpq = t.value; const pos = t.selectionStart; renderSheet(); const n = $("#mpq"); n.focus(); n.setSelectionRange(pos, pos); }
+  if (t.id === "mfoodq") { S.mfoodq = t.value; const pos = t.selectionStart; render(true); const n = $("#mfoodq"); n.focus(); n.setSelectionRange(pos, pos); }
+});
+frame.addEventListener("keydown", (e) => {
+  if (S.device !== "phone") return;
+  if (e.target.id === "mq" && e.key === "Enter" && PAL.opts[0]) { e.preventDefault(); S.msheet = null; palDo(PAL.opts[0]); }
+});
+
 /* Start where the last visit left off */
-try { const m = JSON.parse(localStorage.getItem("garnish-mock") || "null"); if (m) { S.screen = m.screen in RENDER ? m.screen : "home"; S.width = m.width; } } catch {}
+try { const m = JSON.parse(localStorage.getItem("garnish-mock") || "null"); if (m) { S.screen = m.screen in RENDER ? m.screen : "home"; S.width = m.width; S.device = m.device === "phone" ? "phone" : "desktop"; } } catch {}
 render(false); layout();
 </script>
 </body>
