@@ -219,6 +219,8 @@ export class Importer {
     // is handing back its text; only a bare paste can be markup.
     if (anchor === null && looksLikeHtml(body)) {
       const found = extractRecipe(body, sourceUrl);
+      // A page whose own recipe card placed every line and step needs no sort (decisions.md row 204).
+      if (found?.partsFromPage === "complete") return found;
       if (found !== null) {
         try {
           return await this.modelRead(found.pageText, {

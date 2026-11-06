@@ -122,3 +122,52 @@ test("without a model there is nothing to skip and Check opens at once", async (
   expect(loadText).not.toHaveBeenCalled();
   expect(screen.queryByRole("button", { name: "Skip sorting into parts" })).not.toBeInTheDocument();
 });
+
+test("a recipe card's groups with every step placed need no sort: Check opens at once (decisions.md row 204)", async () => {
+  const grouped: ImportedRecipe = {
+    from: "schema",
+    url: SOURCE,
+    pageText: "# Pastry\n200 g flour\n# Filling\n100 g sugar",
+    partsFromPage: "ingredients",
+    recipe: {
+      ...rulesRecipe,
+      parts: [
+        { name: "", ingredients: [], steps: ["Rub the flour in.", "Bake the sugar filling."] },
+        { name: "Pastry", ingredients: ["200 g flour"], steps: [] },
+        { name: "Filling", ingredients: ["100 g sugar"], steps: [] },
+      ],
+    },
+  };
+  const foods = [
+    {
+      id: "11111111-1111-4111-8111-111111111111",
+      name: "flour",
+      pluralName: null,
+      aliases: [],
+      aisleId: null,
+      recipeId: null,
+      skipShopping: false,
+      conversions: [],
+    },
+    {
+      id: "22222222-2222-4222-8222-222222222222",
+      name: "sugar",
+      pluralName: null,
+      aliases: [],
+      aisleId: null,
+      recipeId: null,
+      skipShopping: false,
+      conversions: [],
+    },
+  ];
+  const model = slowModel();
+  const onDraft = vi.fn();
+  await renderInRouter(<RecipeSource {...props(model.loadText, onDraft)} load={async () => grouped} loadFoods={async () => foods} />);
+  await waitFor(() => expect(onDraft).toHaveBeenCalledTimes(1));
+  expect(model.loadText).not.toHaveBeenCalled();
+  const parts = (onDraft.mock.calls[0]![0] as ImportedCheck).draft.parts;
+  expect(parts.map((part) => [part.name, part.steps.map((s) => s.text)])).toEqual([
+    ["Pastry", ["Rub the flour in."]],
+    ["Filling", ["Bake the sugar filling."]],
+  ]);
+});

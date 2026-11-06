@@ -41,4 +41,12 @@ export type ImportedRecipe = {
    * after the import reads it but the server's log.
    */
   via?: "fetch" | "render";
+  /**
+   * How far the page's own recipe card placed the recipe into parts
+   * (decisions.md row 204): `complete` when its ingredient groups and step
+   * sections say where every line and step goes, so the model is not asked
+   * to sort it; `ingredients` when it grouped the lines but left the steps in
+   * the main body, for `placeSteps` to place against the library's foods.
+   */
+  partsFromPage?: "complete" | "ingredients";
 };

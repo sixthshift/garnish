@@ -4,6 +4,7 @@ import { isTandoorRecipe } from "./sources/fileRecipe";
 import { reviewRowsFromMealie } from "./sources/mealie/review";
 import { reviewRowsFromTandoor } from "./sources/tandoor/review";
 
+export { placeSteps } from "./placeSteps";
 export { ingredientLines } from "./scraped/parts";
 export { isTandoorRecipe as isTandoor } from "./sources/fileRecipe";
 export { reviewRowsFromMealie as rowsFromMealie } from "./sources/mealie/review";

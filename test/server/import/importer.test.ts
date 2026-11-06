@@ -98,3 +98,22 @@ describe("with no model configured (decisions.md row 203)", () => {
     expect(ai.calls).toEqual([]);
   });
 });
+
+test("a pasted page whose recipe card placed everything is not sent to the model (decisions.md row 204)", async () => {
+  const ai = fakeAi(answer);
+  const importer = createImporter(async () => new Response("unused"), ai);
+  const node = {
+    "@type": "Recipe",
+    name: "Grouped",
+    recipeIngredient: ["1 cup plain flour"],
+    recipeInstructions: [{ "@type": "HowToSection", name: "Dough", itemListElement: [{ "@type": "HowToStep", text: "Mix." }] }],
+  };
+  const card = `<div class="wprm-recipe-ingredients-container"><div class="wprm-recipe-ingredient-group"><h4 class="wprm-recipe-group-name">Dough</h4><ul><li class="wprm-recipe-ingredient"><span class="wprm-recipe-ingredient-name">plain flour</span></li></ul></div></div>`;
+  const result = await importer.import({
+    kind: "text",
+    text: `<html><head><script type="application/ld+json">${JSON.stringify(node)}</script></head><body>${card}</body></html>`,
+  });
+  expect(result.partsFromPage).toBe("complete");
+  expect(result.recipe.parts.map((part) => part.name)).toEqual(["Dough"]);
+  expect(ai.calls).toEqual([]);
+});

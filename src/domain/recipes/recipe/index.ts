@@ -39,7 +39,7 @@ export {
 export { nextServings, scaledForServings, scaleRecipe } from "./scale";
 export type { SortDir, SortKey } from "./sort";
 export { resolveSort, SORT_OPTIONS } from "./sort";
-export { suggestLinks } from "./stepIngredients";
+export { ingredientsInStep, suggestLinks } from "./stepIngredients";
 export type { SubRecipe } from "./subRecipe";
 export { subRecipeCookLabel, subRecipeHint, subRecipeMap, subRecipeScale } from "./subRecipe";
 export { type RecipeSummary, recipeSummarySchema } from "./summary";

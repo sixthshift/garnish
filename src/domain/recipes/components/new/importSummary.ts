@@ -59,6 +59,8 @@ export async function sortedRead(found: ImportedRecipe, read: ModelReader): Prom
 export function shouldReadWithModel(imported: ImportedRecipe, aiAvailable: boolean): boolean {
   if (!aiAvailable) return false;
   if (imported.check !== undefined) return false;
+  // The page's own recipe card already placed every line and step (decisions.md row 204).
+  if (imported.partsFromPage === "complete") return false;
   if (imported.from !== "schema" && imported.from !== "stub") return false;
   return imported.pageText.trim() !== "";
 }

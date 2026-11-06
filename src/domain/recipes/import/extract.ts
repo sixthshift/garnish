@@ -3,6 +3,7 @@
 import { type JsonLdNode, recipeNodeFromHtml } from "./page/jsonLd";
 import { recipeNodeFromMicrodata } from "./page/microdata";
 import { openGraphStub } from "./page/openGraph";
+import { ingredientGroups, withIngredientGroups } from "./page/recipeCard";
 import { readableText } from "./page/text";
 import type { ImportedRecipe } from "./result";
 import { hasContent } from "./scraped/schema";
@@ -49,7 +50,11 @@ export function extractRecipe(html: string, url: string): ImportedRecipe | null 
     if (node === null) continue;
     const recipe = scrapedFromSchema(node);
     // A Recipe node with nothing in it is an SEO shell, not a recipe.
-    if (hasContent(recipe)) return { from: "schema", url, recipe, pageText };
+    if (!hasContent(recipe)) continue;
+    // A recipe card's ingredient groups, which the JSON-LD has nowhere to say (decisions.md row 204).
+    const grouped = withIngredientGroups(recipe, ingredientGroups(html) ?? []);
+    if (grouped === null) return { from: "schema", url, recipe, pageText };
+    return { from: "schema", url, recipe: grouped.recipe, pageText, partsFromPage: grouped.complete ? "complete" : "ingredients" };
   }
   const stub = openGraphStub(html);
   return stub === null ? null : { from: "stub", url, recipe: scrapedFromStub(stub), pageText };

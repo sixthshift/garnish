@@ -10,13 +10,13 @@ import { BLOCK_TAGS } from "./text";
 // still write it and no `ld+json` at all.
 
 /** One tag: closing slash, name, attribute list, self-closing slash. Quoted values may hold `>`. */
-const TAG = /<(\/?)([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/g;
+export const TAG = /<(\/?)([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/g;
 
 /** One attribute in an attribute list, valued or bare. */
 const ATTRIBUTE = /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
 
 /** Elements that never have a closing tag, so are never pushed. */
-const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
+export const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
 
 /** Elements a page often leaves open, closed by the next of their kind. */
 const SELF_ENDING = new Set(["li", "p", "dt", "dd", "tr", "td", "th", "option"]);
@@ -37,7 +37,7 @@ const URL_ATTRIBUTE: Record<string, string> = {
 };
 
 /** A tag's attributes by lower-cased name, values decoded; a bare attribute is the empty string. Pure. */
-function attributesOf(list: string): Map<string, string> {
+export function attributesOf(list: string): Map<string, string> {
   const attributes = new Map<string, string>();
   for (const match of list.matchAll(ATTRIBUTE)) {
     const name = match[1]!.toLowerCase();

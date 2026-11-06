@@ -74,6 +74,17 @@ export function useRecipeSource(props: RecipeSourceProps) {
     });
   };
 
+  /**
+   * A page whose recipe card grouped its ingredients and not its steps, with
+   * the steps placed in the parts whose ingredients they name; settled, the
+   * model has nothing left to sort (decisions.md row 204).
+   */
+  const withPlacedSteps = (found: ImportedRecipe, foods: readonly FoodRow[]): ImportedRecipe => {
+    if (found.partsFromPage !== "ingredients") return found;
+    const placed = review.placeSteps(found.recipe, { units, foods });
+    return { ...found, recipe: placed.recipe, partsFromPage: placed.settled ? "complete" : "ingredients" };
+  };
+
   /** Read a page: the stage's own address, or one handed in by the chooser's field. */
   const read = (address: string = url) => readPageAt(address, () => (load ? load(address) : importFromUrl({ data: { url: address } })));
 
@@ -100,8 +111,9 @@ export function useRecipeSource(props: RecipeSourceProps) {
     setBusy(true);
     setError(null);
     try {
-      const [found, foods] = await Promise.all([fetchPage(), fetchFoods()]);
+      const [fetched, foods] = await Promise.all([fetchPage(), fetchFoods()]);
       if (token !== readToken.current) return;
+      const found = withPlacedSteps(fetched, foods);
       let shown = found;
       let note: string | null = null;
       if (shouldReadWithModel(found, aiAvailable)) {
