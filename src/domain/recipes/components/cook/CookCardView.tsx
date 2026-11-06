@@ -135,6 +135,7 @@ export function CookCardView({
   fixedIds,
   onChangeAmount,
   onChangeStep,
+  filmstrip = false,
 }: {
   card: CookCard;
   recipeId: string;
@@ -157,6 +158,12 @@ export function CookCardView({
   onChangeAmount?: (ingredient: Ingredient, typed: number) => void;
   /** The cook rewrote a step. Without it a step card has no "Change this step". */
   onChangeStep?: (step: Step, position: number, text: string) => void;
+  /**
+   * Drawn in a desktop's filmstrip (CookFilmstrip), which shows the step's
+   * ingredients down its left and the next card beside this one: the card
+   * leaves out both rather than say them twice.
+   */
+  filmstrip?: boolean;
 }) {
   const heading = partName !== undefined && partName !== "" && (
     <SectionTitle as="h2" data-part-name>
@@ -183,7 +190,7 @@ export function CookCardView({
             ))}
           </ul>
         </Card>
-        <NextPreview preview={preview} onNext={onNext} />
+        {!filmstrip && <NextPreview preview={preview} onNext={onNext} />}
       </div>
     );
   }
@@ -193,7 +200,7 @@ export function CookCardView({
       {/* Same card the recipe page deals, in the cook deck's bigger type: its
           own linked ingredients and timers come with it. */}
       <ul>
-        <StepCard recipeId={recipeId} step={card.step} position={card.number} ingredients={card.ingredients} size="cook" cookFrom={cookFrom} />
+        <StepCard recipeId={recipeId} step={card.step} position={card.number} ingredients={filmstrip ? [] : card.ingredients} size="cook" cookFrom={cookFrom} />
       </ul>
       {onChangeAmount && (
         <StepAmounts
@@ -211,7 +218,7 @@ export function CookCardView({
           onSave={(text) => onChangeStep(card.step, card.number, text)}
         />
       )}
-      <NextPreview preview={preview} onNext={onNext} />
+      {!filmstrip && <NextPreview preview={preview} onNext={onNext} />}
     </div>
   );
 }

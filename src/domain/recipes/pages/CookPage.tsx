@@ -11,9 +11,11 @@ import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
 import { WakeLockIcon } from "../../../components/ui/icons";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { swipeIntent } from "../../../lib/swipe";
+import { useLayout } from "../../../lib/useLayout";
 import { useWakeLock } from "../../../lib/useWakeLock";
 import { CookCardView } from "../components/cook/CookCardView";
 import { amountChange, type CookChange, readChanges, sessionStore, withChange, withChanges, withoutChange, writeChanges } from "../components/cook/cookChanges";
+import { CookFilmstrip } from "../components/cook/desktop/CookFilmstrip";
 import { FinishedCard } from "../components/cook/FinishedCard";
 import { TimerStrip } from "../components/recipe/TimerStrip";
 import {
@@ -31,6 +33,9 @@ import {
 } from "../recipe";
 
 const route = getRouteApi("/recipes/$slug/cook");
+
+/** What Space presses when it has focus, so a desktop's Space-for-next leaves it be. */
+const SPACE_TAKERS = "button, a, [role=button], [role=checkbox], [role=switch], [contenteditable=true]";
 
 /**
  * The deck's one column. The header and footer span the screen for their rule
@@ -100,11 +105,17 @@ export function CookPage() {
   const goTo = (next: number) => void navigate({ search: (prev) => ({ ...prev, step: next }) });
   const scaleTo = (value: number) => void navigate({ search: (prev) => ({ ...prev, servings: value }), replace: true });
 
+  const layout = useLayout();
+  const filmstrip = layout === "desktop";
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       // Typing in the servings field must not flip cards.
       if (event.target instanceof HTMLElement && event.target.closest("input, textarea, select")) return;
-      const next = stepForKey(event.key, index, total);
+      // A desktop's Space goes on, as a slideshow's does (decisions.md row 207), unless it is pressing
+      // something with the keyboard: a timer's Pause, a tick box.
+      const space = filmstrip && event.key === " " && !(event.target instanceof HTMLElement && event.target.closest(SPACE_TAKERS));
+      const next = stepForKey(space ? "ArrowRight" : event.key, index, total);
       if (next === null) return;
       event.preventDefault();
       goTo(next);
@@ -136,6 +147,100 @@ export function CookPage() {
     goTo(next);
   };
 
+  // The card in front of the cook, which either layout draws in its own frame.
+  const deck = finished ? (
+    <FinishedCard
+      recipe={recipe}
+      stored={stored}
+      servings={requested}
+      from={from}
+      parentName={parentName}
+      changes={changes}
+      onChangesDone={() => keepChanges([])}
+    />
+  ) : (
+    <EmptyBoundary
+      isEmpty={card === undefined}
+      fallback={
+        <Muted as="p" className="text-center text-xl">
+          Nothing to cook yet: this recipe has no ingredients or steps.
+        </Muted>
+      }
+    >
+      {card !== undefined && (
+        <CookCardView
+          card={card}
+          recipeId={recipe.id}
+          preview={nextPreview(cards, index)}
+          onNext={() => goTo(index + 1)}
+          cookFrom={recipe.slug}
+          partName={pills.length > 1 || filmstrip ? undefined : card.part}
+          filmstrip={filmstrip}
+          changedIds={changedIds}
+          fixedIds={fixedIds}
+          onChangeAmount={(ingredient, typed) => {
+            const change = amountChange(ingredient, typed, factor);
+            if (change) keepChanges(withChange(changes, change));
+          }}
+          onChangeStep={(changedStep, position, text) =>
+            keepChanges(
+              text === originalStep(changedStep.id)
+                ? withoutChange(changes, `step:${changedStep.id}`)
+                : withChange(changes, { kind: "step", stepId: changedStep.id, position, text })
+            )
+          }
+        />
+      )}
+    </EmptyBoundary>
+  );
+
+  const exit = (
+    <Button asChild variant="outline" intent="neutral" size="xl" className="shrink-0 px-4">
+      <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested, choices }}>
+        Exit
+      </Link>
+    </Button>
+  );
+  const changesBadge = changes.length > 0 && (
+    <Badge variant="soft" intent="neutral" className="shrink-0" data-cook-changes>
+      {changes.length === 1 ? "1 change" : `${changes.length} changes`}
+    </Badge>
+  );
+  const serves = recipe.recipeServings > 0 && <ServesControl servings={recipe.recipeServings} onChange={scaleTo} />;
+  // Politely spoken on every card change; the visible position line is silent so it is not said twice.
+  const announce = (
+    <p className="sr-only" aria-live="polite" data-announce>
+      {finished ? "Finished" : card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
+    </p>
+  );
+
+  if (filmstrip) {
+    return (
+      <SubRecipesProvider subRecipes={subRecipes}>
+        {announce}
+        <CookFilmstrip
+          recipeId={recipe.id}
+          slug={recipe.slug}
+          name={recipe.name}
+          cards={cards}
+          index={index}
+          total={total}
+          pills={pills}
+          current={deck}
+          exit={exit}
+          tools={
+            <>
+              {changesBadge}
+              {serves}
+            </>
+          }
+          screenOn={screenOn}
+          goTo={goTo}
+        />
+      </SubRecipesProvider>
+    );
+  }
+
   return (
     <SubRecipesProvider subRecipes={subRecipes}>
       {/* `data-toasts="top"`: the footer is the deck's controls, so a toast (a timer done) goes to the top (lib/toast.ts). */}
@@ -145,20 +250,12 @@ export function CookPage() {
             {/* Exit, the name and Serves share the first row; the name gets the
               room left and wraps to a second line before it truncates. */}
             <div className="flex items-center gap-3">
-              <Button asChild variant="outline" intent="neutral" size="xl" className="shrink-0 px-4">
-                <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings: requested, choices }}>
-                  Exit
-                </Link>
-              </Button>
+              {exit}
               <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong desktop:text-lg" data-cook-title>
                 {recipe.name}
               </h1>
-              {changes.length > 0 && (
-                <Badge variant="soft" intent="neutral" className="shrink-0" data-cook-changes>
-                  {changes.length === 1 ? "1 change" : `${changes.length} changes`}
-                </Badge>
-              )}
-              {recipe.recipeServings > 0 && <ServesControl servings={recipe.recipeServings} onChange={scaleTo} />}
+              {changesBadge}
+              {serves}
             </div>
             {pills.length > 1 && (
               <nav className="-mx-1 flex w-full gap-2 overflow-x-auto px-1" aria-label="Parts">
@@ -185,10 +282,7 @@ export function CookPage() {
           </div>
         </header>
 
-        {/* Politely spoken on every card change; the visible position line below is silent so it is not said twice. */}
-        <p className="sr-only" aria-live="polite" data-announce>
-          {finished ? "Finished" : card === undefined ? "Nothing to cook" : cardAnnouncement(card)}
-        </p>
+        {announce}
 
         <main
           // Anchored to the top, under the header, so the step reads high on a
@@ -200,50 +294,7 @@ export function CookPage() {
           onPointerUp={onPointerUp}
           onPointerCancel={() => (swipe.current = null)}
         >
-          {finished ? (
-            <FinishedCard
-              recipe={recipe}
-              stored={stored}
-              servings={requested}
-              from={from}
-              parentName={parentName}
-              changes={changes}
-              onChangesDone={() => keepChanges([])}
-            />
-          ) : (
-            <EmptyBoundary
-              isEmpty={card === undefined}
-              fallback={
-                <Muted as="p" className="text-center text-xl">
-                  Nothing to cook yet: this recipe has no ingredients or steps.
-                </Muted>
-              }
-            >
-              {card !== undefined && (
-                <CookCardView
-                  card={card}
-                  recipeId={recipe.id}
-                  preview={nextPreview(cards, index)}
-                  onNext={() => goTo(index + 1)}
-                  cookFrom={recipe.slug}
-                  partName={pills.length > 1 ? undefined : card.part}
-                  changedIds={changedIds}
-                  fixedIds={fixedIds}
-                  onChangeAmount={(ingredient, typed) => {
-                    const change = amountChange(ingredient, typed, factor);
-                    if (change) keepChanges(withChange(changes, change));
-                  }}
-                  onChangeStep={(changedStep, position, text) =>
-                    keepChanges(
-                      text === originalStep(changedStep.id)
-                        ? withoutChange(changes, `step:${changedStep.id}`)
-                        : withChange(changes, { kind: "step", stepId: changedStep.id, position, text })
-                    )
-                  }
-                />
-              )}
-            </EmptyBoundary>
-          )}
+          {deck}
         </main>
 
         <footer className="sticky bottom-0 z-content-sticky border-t border-border-normal bg-bg-normal pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
