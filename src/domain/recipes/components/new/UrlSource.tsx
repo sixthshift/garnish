@@ -14,12 +14,14 @@ export type UrlSourceProps = {
   onPaste?: () => void;
   /** Set up the Save to Garnish bookmark: offered once a read has failed, after paste, since a blocked site is why it exists. */
   onBookmark?: () => void;
+  /** End the model's sort and open Check on the page's own reading; present only while it runs. */
+  onSkip?: () => void;
   /** Whether a model is configured: without one a paste reads only a page's HTML, and the offer says so. */
   aiAvailable?: boolean;
 };
 
 /** A web page's stage: one address. Reached from the chooser's field, or a share, once reading has begun. */
-export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPaste, onBookmark, aiAvailable = false }: UrlSourceProps) {
+export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPaste, onBookmark, onSkip, aiAvailable = false }: UrlSourceProps) {
   const ways = onPaste !== undefined || onBookmark !== undefined;
   return (
     <SourceStage
@@ -47,6 +49,7 @@ export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPa
       action="Read the page"
       canSubmit={url.trim() !== ""}
       onSubmit={onFetch}
+      onSkip={onSkip}
       onBack={onBack}
     >
       <Input
@@ -61,7 +64,7 @@ export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPa
         onChange={(event) => onUrlChange(event.target.value)}
       />
       <Muted as="p" className="text-sm">
-        {busy ? "Reading the page…" : "The recipe is read off the page and shown to you before anything is saved."}
+        {busy ? "Reading the recipe…" : "The recipe is read off the page and shown to you before anything is saved."}
       </Muted>
     </SourceStage>
   );

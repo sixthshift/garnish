@@ -1,5 +1,5 @@
 import { messageFrom } from "../../../../lib/errors";
-import { type ImportCheck, type ImportedRecipe, type ImportSource, review, type ScrapedRecipe } from "../../import";
+import { type ImportedRecipe, type ImportSource, review, type ScrapedRecipe } from "../../import";
 
 /** Which source the chooser is on. `paste` is the AI rung and only appears when `claude` is installed. */
 export type SourceKind = "url" | "manual" | "file" | "paste" | "browser" | "page";
@@ -22,6 +22,21 @@ export async function modelPass(imported: ImportedRecipe, read: ModelReader): Pr
   } catch (cause) {
     return { ok: false, error: messageFrom(cause) };
   }
+}
+
+/** The one line Check shows when the model's sort did not land (decisions.md row 203). */
+export const SORT_NOTE = "Couldn't sort this into parts. You can add parts yourself.";
+
+/**
+ * The read as Check opens on it: the model's sort when it answered and the
+ * check kept it, otherwise the rules' own reading with the quiet note. A
+ * rejected answer is not offered: everything the sort could have done can be
+ * done by hand on Check.
+ */
+export async function sortedRead(found: ImportedRecipe, read: ModelReader): Promise<{ imported: ImportedRecipe; note: string | null }> {
+  const outcome = await modelPass(found, read);
+  if (!outcome.ok || outcome.result.rejected !== undefined) return { imported: found, note: SORT_NOTE };
+  return { imported: outcome.result, note: null };
 }
 
 export function yieldLabel(scraped: ScrapedRecipe): string {
@@ -70,44 +85,6 @@ export function importSummary(from: ImportSource, ingredients: number, steps: nu
 }
 
 /**
- * What the model's version did to the page's, as the review says it: "dropped
- * 1 line and reworded 2 steps". A line missing on one side and one added on
- * the other is one rewording rather than two changes, because that is what it
- * is and counting it twice would overstate the damage. Pure.
- */
-export function changeSummary(check: ImportCheck): string {
-  const clauses: string[] = [];
-  const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
-  for (const [missing, added, noun] of [
-    [check.missingLines, check.addedLines, "line"],
-    [check.missingSteps, check.addedSteps, "step"],
-  ] as const) {
-    const reworded = Math.min(missing.length, added.length);
-    if (missing.length - reworded > 0) clauses.push(`dropped ${count(missing.length - reworded, noun)}`);
-    if (added.length - reworded > 0) clauses.push(`added ${count(added.length - reworded, noun)}`);
-    if (reworded > 0) clauses.push(`reworded ${count(reworded, noun)}`);
-  }
-  if (clauses.length === 0) return "changed nothing";
-  if (clauses.length === 1) return clauses[0]!;
-  return `${clauses.slice(0, -1).join(", ")} and ${clauses[clauses.length - 1]}`;
-}
-
-/** The rejection notice in one sentence. Pure. */
-export function rejectionMessage(check: ImportCheck): string {
-  return `The model's version ${changeSummary(check)}, so the page's version is shown.`;
-}
-
-/** Every line the check objected to, labelled for the list under the notice. Pure. */
-export function changedLines(check: ImportCheck): { label: string; text: string }[] {
-  return [
-    ...check.missingLines.map((text) => ({ label: "Dropped", text })),
-    ...check.addedLines.map((text) => ({ label: "Added", text })),
-    ...check.missingSteps.map((text) => ({ label: "Dropped step", text })),
-    ...check.addedSteps.map((text) => ({ label: "Added step", text })),
-  ];
-}
-
-/**
  * Whether this result is worth handing to the model on arrival. Only
  * a page: an upload already states its parts and a paste has already been
  * read. A `schema` result goes anchored and a `stub` result goes bare, and
@@ -123,16 +100,6 @@ export function shouldReadWithModel(imported: ImportedRecipe, aiAvailable: boole
   if (imported.check !== undefined) return false;
   if (imported.from !== "schema" && imported.from !== "stub") return false;
   return imported.pageText.trim() !== "";
-}
-
-/**
- * The rejected answer put in the accepted one's place ("Use the
- * model's version anyway"). `check` stays so the summary still says the parts
- * are the model's; `rejected` goes, because it is now what is on the screen.
- */
-export function withRejectedAnswer(imported: ImportedRecipe): ImportedRecipe {
-  if (imported.rejected === undefined) return imported;
-  return { from: "ai", url: imported.url, recipe: imported.rejected, pageText: imported.pageText, check: imported.check };
 }
 
 /** The review's duplicate warning: the same recipe by address or by name. Pure. */

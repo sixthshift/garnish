@@ -57,7 +57,7 @@ export type RecipeSourceProps = {
 export function RecipeSource(props: RecipeSourceProps) {
   const { units, source, onChoose, aiAvailable = false } = props;
   const state = useRecipeSource(props);
-  const { url, text, file, imported, rows, busy, error, reading, readError } = state;
+  const { url, text, file, imported, rows, busy, error } = state;
   // A recipe under review, or a pasted page, is work the browser's Back would
   // drop unseen: the stages share one URL, so Back leaves /recipes/new.
   const guard = useImportGuard(imported !== null || (source === "paste" && text.trim() !== ""), imported !== null ? DISCARD_RECIPE : DISCARD_PASTE);
@@ -96,12 +96,9 @@ export function RecipeSource(props: RecipeSourceProps) {
           busy={busy}
           error={error}
           duplicate={state.duplicate}
-          duplicateBy={imported.from === "schema" || imported.from === "stub" ? "url" : "name"}
+          duplicateBy={state.duplicateBy}
           aiAvailable={aiAvailable}
-          reading={reading}
-          readError={readError}
-          onRetryRead={state.retryRead}
-          onUseRejected={state.useRejected}
+          sortNote={state.sortNote}
           onRowsChange={state.setRows}
           tagSuggestions={state.suggestions}
           chosenTags={state.chosenTags}
@@ -136,6 +133,7 @@ export function RecipeSource(props: RecipeSourceProps) {
           busy={busy}
           error={error}
           onRead={() => void state.readSent()}
+          onSkip={state.sorting ? state.skip : undefined}
           onPaste={() => onChoose("paste")}
           onBack={state.leaveSource}
         />
@@ -158,6 +156,7 @@ export function RecipeSource(props: RecipeSourceProps) {
         onBack={state.leaveSource}
         onPaste={state.pasteInstead}
         onBookmark={() => onChoose("browser")}
+        onSkip={state.sorting ? state.skip : undefined}
         aiAvailable={aiAvailable}
       />
     );

@@ -9,7 +9,7 @@ import type { IngredientReview, TagSuggestions } from "../../draft";
 import type { ImportedRecipe } from "../../import";
 import type { FoodRow, Unit } from "../../reference";
 import { IngredientReviewList, ReviewSteps } from "./IngredientReviewList";
-import { changedLines, type DuplicateBy, duplicateMessage, importSummary, ingredientCount, rejectionMessage, stepCount, yieldLabel } from "./importSummary";
+import { type DuplicateBy, duplicateMessage, importSummary, ingredientCount, stepCount, yieldLabel } from "./importSummary";
 
 export type ImportReviewProps = {
   imported: ImportedRecipe;
@@ -24,14 +24,8 @@ export type ImportReviewProps = {
   duplicateBy?: DuplicateBy;
   /** Whether a model is configured; without one a `schema` page says its sections were not sorted. */
   aiAvailable?: boolean;
-  /** Whether the model's read of this page is still running; the rows are the rules result meanwhile. */
-  reading?: boolean;
-  /** Why the model's read did not happen, shown beside the rules result with a retry. */
-  readError?: string | null;
-  /** Run the read again after a failure. */
-  onRetryRead?: () => void;
-  /** Take the rejected answer anyway. */
-  onUseRejected?: () => void;
+  /** The line saying the model's sort did not land, when it did not. */
+  sortNote?: string | null;
   onRowsChange: (rows: IngredientReview[]) => void;
   /** The source's tags as offered: known ones ticked, new ones not, name repeats left out (decisions.md row 171). */
   tagSuggestions?: TagSuggestions | null;
@@ -45,7 +39,7 @@ export type ImportReviewProps = {
 /** The third stage: what the page gave up, before any of it is written. */
 export function ImportReview(props: ImportReviewProps) {
   const { imported, rows, units, searchFoods, busy, error, duplicate, duplicateBy = "url", onRowsChange, onBack, onCreate } = props;
-  const { aiAvailable = false, reading = false, readError = null, onRetryRead, onUseRejected } = props;
+  const { aiAvailable = false, sortNote = null } = props;
   const { tagSuggestions = null, chosenTags = [], onChosenTagsChange } = props;
   const { recipe, from } = imported;
   const label = yieldLabel(recipe);
@@ -55,7 +49,6 @@ export function ImportReview(props: ImportReviewProps) {
   // no model configured is the one case worth admitting to: its lines are all
   // on the main body because nothing was there to put them anywhere else.
   const sorted = from === "ai" ? (imported.check === undefined ? null : true) : from === "schema" && !aiAvailable ? false : null;
-  const rejected = imported.rejected !== undefined && imported.check !== undefined ? imported.check : null;
 
   return (
     <div className="flex flex-col gap-6" data-source-stage="review" data-import-from={from}>
@@ -69,44 +62,10 @@ export function ImportReview(props: ImportReviewProps) {
         </Muted>
       )}
 
-      {reading && (
-        <Muted as="p" className="text-sm" data-testid="sorting-notice">
-          Sorting into parts…
+      {sortNote !== null && (
+        <Muted as="p" className="text-sm" data-testid="sort-note">
+          {sortNote}
         </Muted>
-      )}
-
-      {readError !== null && (
-        <Message intent="warning" title="The model could not read this page" data-testid="read-error">
-          <div className="flex flex-col items-start gap-2">
-            <span>{`${readError} The page's own reading is below and can be saved as it is.`}</span>
-            {onRetryRead !== undefined && (
-              <Button type="button" variant="ghost" intent="neutral" disabled={busy || reading} onClick={onRetryRead}>
-                Try again
-              </Button>
-            )}
-          </div>
-        </Message>
-      )}
-
-      {rejected !== null && (
-        <Message intent="warning" title="The model changed more than the parts" data-testid="rejected-notice">
-          <div className="flex flex-col items-start gap-2">
-            <span>{rejectionMessage(rejected)}</span>
-            <ul className="flex list-disc flex-col gap-0.5 pl-5 text-sm">
-              {changedLines(rejected).map((line, index) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: a one-shot report of what the model changed; the rows have no ids and are never reordered.
-                <li key={`${index}-${line.label}`} data-changed-line={line.label}>
-                  {`${line.label}: “${line.text}”`}
-                </li>
-              ))}
-            </ul>
-            {onUseRejected !== undefined && (
-              <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onUseRejected}>
-                Use the model's version anyway
-              </Button>
-            )}
-          </div>
-        </Message>
       )}
 
       {duplicate != null && (

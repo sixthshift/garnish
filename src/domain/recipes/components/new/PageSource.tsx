@@ -12,6 +12,8 @@ export type PageSourceProps = {
   busy?: boolean;
   error?: string | null;
   onRead: () => void;
+  /** End the model's sort and open Check on the page's own reading; present only while it runs. */
+  onSkip?: () => void;
   onPaste: () => void;
   onBack: () => void;
 };
@@ -21,7 +23,7 @@ export type PageSourceProps = {
  * send its page, then reading it at once. Back from the review returns here,
  * with the page kept, to read it again.
  */
-export function PageSource({ sent, status, busy, error, onRead, onPaste, onBack }: PageSourceProps) {
+export function PageSource({ sent, status, busy, error, onRead, onSkip, onPaste, onBack }: PageSourceProps) {
   return (
     <SourceStage
       stage="page"
@@ -32,6 +34,7 @@ export function PageSource({ sent, status, busy, error, onRead, onPaste, onBack 
       action="Read the page"
       canSubmit={sent !== null}
       onSubmit={onRead}
+      onSkip={onSkip}
       onBack={onBack}
     >
       {sent !== null ? (

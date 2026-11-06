@@ -18,6 +18,8 @@ export type SourceStageProps = {
   busyAction?: string;
   canSubmit: boolean;
   onSubmit: () => void;
+  /** End the model's sort and go on without it: offered only while it runs (decisions.md row 203). */
+  onSkip?: () => void;
   onBack: () => void;
   children: ReactNode;
 };
@@ -38,6 +40,7 @@ export function SourceStage({
   busyAction = "Reading…",
   canSubmit,
   onSubmit,
+  onSkip,
   onBack,
   children,
 }: SourceStageProps) {
@@ -66,9 +69,16 @@ export function SourceStage({
           <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
             Back
           </Button>
-          <Button type="submit" variant="solid" intent="brand" disabled={busy || !canSubmit}>
-            {busy ? busyAction : action}
-          </Button>
+          <span className="flex flex-wrap items-center gap-2">
+            {onSkip !== undefined && (
+              <Button type="button" variant="ghost" intent="neutral" onClick={onSkip}>
+                Skip sorting into parts
+              </Button>
+            )}
+            <Button type="submit" variant="solid" intent="brand" disabled={busy || !canSubmit}>
+              {busy ? busyAction : action}
+            </Button>
+          </span>
         </div>
       </Card>
     </form>
