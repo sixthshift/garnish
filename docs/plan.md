@@ -214,6 +214,19 @@ Decisions.md row 206: the phone's layout under 1024px and the desktop's from it,
 - [x] **M46.4 The plan on a desktop.** The week beside its picker: the day's "+" chooses the day, the picker is the add form in a column, and each add lands on the week beside it. Check: a `.dom.test.tsx`; e2e adds a recipe at a desktop's size.
 - [x] **M46.5 Docs.** architecture.md's Adaptive section, design-language.md's breakpoint note, CLAUDE.md's Frontend line.
 
+## M47 A desktop's width, used
+
+Decisions.md row 207: every desktop page redesigned from `docs/mockups/desktop.html`; phones unchanged.
+
+- [ ] **M47.1 Plan as a board.** This week and next as seven day columns (rows under about 1280px), a recipe shelf (Rotation, Weekend, To try, search) to drag onto a day or click into the chosen one, entries dragged between days.
+- [ ] **M47.2 Shopping as a store walk.** Aisles in columns in shop order, a trolley column (from about 1360px), the week's meals as a key that lights up their items.
+- [ ] **M47.3 The command bar.** Ctrl K or / on every desktop page: open a recipe, put one on a day, add a line to the shopping list, go to a page.
+- [ ] **M47.4 The library in three panes and the recipe page as a spread.** Filters, a photo wall and the open recipe; the recipe page's photo and story, ingredients, method and, from about 1800px, notes and history, with steps and ingredients lighting each other up.
+- [ ] **M47.5 Home as tiles.**
+- [ ] **M47.6 Import's Check beside what it read; the editor beside a live preview.**
+- [ ] **M47.7 Settings as a menu, Foods as a grid with a details pane; Cook mode as a filmstrip.**
+- [ ] **M47.8 Docs.**
+
 ## Blocked
 
 _(none)_

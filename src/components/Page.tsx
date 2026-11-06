@@ -10,6 +10,9 @@ import type { ReactNode } from "react";
  *   focus  one column read top to bottom — the shopping list, the source
  *          chooser. Cook mode is the same idea and sets its own, since it is
  *          a fullscreen route with no page chrome at all.
+ *   full   a desktop's page that lays itself out to whatever width it has,
+ *          1024 to 2560 (decisions.md row 207): no measure, the page's own
+ *          columns decide, and prose inside keeps its own max-w.
  *
  * Before this the six pages used `max-w-5xl`, `6xl`, `7xl`, `3xl` and nothing
  * at all, which is five answers to a question nobody had asked. The design
@@ -19,6 +22,7 @@ import type { ReactNode } from "react";
 const WIDTH = {
   page: "max-w-6xl",
   focus: "max-w-3xl",
+  full: "max-w-none desktop:px-8",
 } as const;
 
 export type PageWidth = keyof typeof WIDTH;

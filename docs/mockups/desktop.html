@@ -1,0 +1,1126 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garnish desktop concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  Desktop concepts for garnish: one file, no build. Opened from the repo it
+  shows the household's own photos from data/images (gitignored); elsewhere a
+  warm gradient stands in for each one. Every page inside the frame responds
+  to the frame's width (container queries), so the width buttons show the
+  same page at 1024, 1440, 1920 and 2560.
+-->
+<style>
+:root {
+  --bg: #f7f2ed; --paper: #fffcf9; --sunk: #f1e9e2; --line: #e8ddd4; --line2: #d8c9bd;
+  --fg: #2a1f19; --fg2: #57473d; --muted: #8a7468;
+  --brand: #2c666c; --brand-hover: #245358; --brand-soft: #d6eef0; --brand-50: #f2fafb;
+  --hi: #fdeec9; --hi-line: #e3ac35; --ok: #3d7a4a; --ok-soft: #e1f0e3; --danger: #b3412e;
+  --r: 12px; --r-sm: 8px;
+  --shadow: 0 1px 2px rgba(60,40,30,.06), 0 6px 20px rgba(60,40,30,.07);
+  --display: "Fraunces", Georgia, serif;
+  --ui: "Inter", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #2b2420; font-family: var(--ui); color: var(--fg); font-size: 14px; overflow: hidden; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, textarea, select { font: inherit; color: inherit; }
+kbd { font: 500 11px var(--ui); border: 1px solid var(--line2); border-bottom-width: 2px; border-radius: 5px; padding: 1px 5px; background: var(--paper); color: var(--muted); }
+
+/* ── The mockup's own chrome, outside the app ───────────────────────────── */
+#chrome { background: #1d1815; color: #efe6de; padding: 10px 16px 8px; display: flex; flex-direction: column; gap: 8px; }
+#chrome .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+#chrome h1 { font: 600 15px var(--display); margin: 0 6px 0 0; letter-spacing: .01em; }
+#chrome .seg { display: flex; background: #2d2622; border-radius: 9px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+#chrome .seg button { background: none; border: 0; color: #cbbcb0; padding: 5px 10px; border-radius: 7px; font-size: 12.5px; }
+#chrome .seg button:hover { color: #fff; }
+#chrome .seg button.on { background: #efe6de; color: #1d1815; font-weight: 600; }
+#chrome .scale { font-size: 12px; color: #a8988b; margin-left: auto; }
+#chrome .note { font-size: 13px; color: #d8cabe; line-height: 1.45; max-width: 1400px; }
+#chrome .note b { color: #fff; font-weight: 600; }
+#chrome .note .try { color: #e9c67a; }
+#stage { display: flex; justify-content: center; padding: 12px 16px; overflow: hidden; }
+#holder { position: relative; flex: none; }
+
+/* ── The app frame ──────────────────────────────────────────────────────── */
+#frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; background: var(--bg); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+#view { flex: 1; overflow: auto; container-type: inline-size; container-name: page; position: relative; scroll-behavior: smooth; }
+.topbar { height: 56px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 20px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.logo { display: flex; align-items: center; gap: 8px; font: 600 19px var(--display); margin-right: 18px; color: var(--fg); background: none; border: 0; padding: 0; }
+.logo svg { width: 18px; height: 22px; }
+.nav { background: none; border: 0; padding: 8px 12px; border-radius: 8px; color: var(--fg2); font-size: 14.5px; }
+.nav:hover { background: var(--sunk); }
+.nav.on { background: #eadfd7; color: var(--fg); font-weight: 500; }
+.cmdk { margin: 0 auto; width: min(460px, 36%); display: flex; align-items: center; gap: 10px; background: var(--sunk); border: 1px solid transparent; border-radius: 10px; padding: 8px 12px; color: var(--muted); text-align: left; }
+.cmdk:hover { border-color: var(--line2); background: var(--paper); }
+.cmdk span { flex: 1; }
+.frame-cook .topbar { display: none; }
+
+/* ── Shared pieces ──────────────────────────────────────────────────────── */
+.page { padding: 24px 32px 48px; }
+.h1 { font: 600 34px/1.1 var(--display); letter-spacing: -.01em; margin: 0; }
+.h2 { font: 600 22px/1.2 var(--display); margin: 0; }
+.label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sub { color: var(--muted); }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); }
+.btn { border: 1px solid var(--line2); background: var(--paper); border-radius: 8px; padding: 7px 13px; font-size: 13.5px; font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--sunk); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.primary:hover { background: var(--brand-hover); }
+.btn.ghost { border-color: transparent; background: none; }
+.btn.sm { padding: 4px 9px; font-size: 12.5px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; font-size: 12px; color: var(--fg2); background: var(--paper); white-space: nowrap; }
+.chip.solid { background: var(--sunk); border-color: transparent; }
+.photo { background-size: cover; background-position: center; background-color: #d9c4b4; }
+.input { width: 100%; border: 1px solid var(--line2); background: var(--paper); border-radius: 9px; padding: 9px 12px; outline: none; }
+.input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.row { display: flex; align-items: center; gap: 10px; }
+.grow { flex: 1; min-width: 0; }
+.check { width: 18px; height: 18px; border: 1.5px solid var(--line2); border-radius: 5px; flex: none; display: grid; place-items: center; background: var(--paper); }
+.check.on { background: var(--brand); border-color: var(--brand); }
+.check.on::after { content: ""; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px,-1px); }
+.toasts { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; z-index: 50; pointer-events: none; }
+.toast { background: #2a1f19; color: #fff; padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow); font-size: 13.5px; animation: toast .25s ease-out; display: flex; gap: 12px; align-items: center; }
+.toast b { color: #9fd6d9; font-weight: 600; }
+@keyframes toast { from { opacity: 0; transform: translateY(8px); } }
+@keyframes pop { 0% { transform: scale(.92); opacity: 0; } 60% { transform: scale(1.02); } 100% { transform: none; opacity: 1; } }
+.pop { animation: pop .35s ease-out; }
+
+/* ── Home: the bento ────────────────────────────────────────────────────── */
+.home-head { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 20px; }
+.bento { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); grid-auto-rows: 118px; grid-auto-flow: dense; gap: 16px; }
+.tile { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 18px; overflow: hidden; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.t-week { grid-column: 1 / -1; grid-row: span 2; padding: 14px; }
+.t-tonight { grid-column: span 2; grid-row: span 4; padding: 0; border: 0; color: #fff; justify-content: flex-end; }
+.t-tonight .photo { position: absolute; inset: 0; }
+.t-tonight::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(20,12,8,.82)); }
+.t-tonight .in { position: relative; z-index: 1; padding: 26px 28px; display: flex; flex-direction: column; gap: 10px; }
+.t-tonight .name { font: 600 38px/1.05 var(--display); max-width: 18ch; }
+.t-tonight .btn { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.35); color: #fff; backdrop-filter: blur(6px); }
+.t-tonight .btn.primary { background: #fff; color: var(--brand); border-color: #fff; }
+.t-shop { grid-row: span 4; }
+.t-next { grid-row: span 2; background: var(--brand); color: #fff; border-color: var(--brand); justify-content: space-between; }
+.t-next .btn { background: #fff; color: var(--brand); border-color: #fff; align-self: flex-start; }
+.t-while { grid-row: span 3; }
+.t-try { grid-column: span 2; grid-row: span 3; }
+.t-nextweek { grid-column: span 2; grid-row: span 2; }
+.t-recent { grid-row: span 3; }
+@container page (max-width: 700px) { .t-tonight, .t-try, .t-nextweek { grid-column: span 1; } }
+.weekribbon { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; height: 100%; }
+.wday { border-radius: 11px; overflow: hidden; position: relative; background: var(--sunk); display: flex; flex-direction: column; justify-content: flex-end; color: #fff; min-width: 0; }
+.wday .photo { position: absolute; inset: 0; }
+.wday::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.05), rgba(20,12,8,.72)); }
+.wday .in { position: relative; z-index: 1; padding: 9px 11px; }
+.wday .d { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+.wday .n { font-weight: 500; font-size: 13.5px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wday.empty { background: none; border: 1.5px dashed var(--line2); color: var(--muted); justify-content: center; align-items: center; text-align: center; }
+.wday.empty::after { display: none; }
+.wday.today { outline: 3px solid var(--brand); outline-offset: 2px; }
+.wday.past { filter: saturate(.6); opacity: .75; }
+.ring { width: 84px; height: 84px; flex: none; }
+.shoprow { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--sunk); cursor: pointer; }
+.shoprow.done .t { text-decoration: line-through; color: var(--muted); }
+.mini { display: flex; align-items: center; gap: 11px; padding: 6px 0; }
+.mini .photo { width: 46px; height: 46px; border-radius: 9px; flex: none; }
+.trystrip { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); gap: 12px; flex: 1; min-height: 0; overflow-x: auto; scroll-snap-type: x mandatory; }
+.trystrip > * { scroll-snap-align: start; }
+.trycard { border-radius: 12px; overflow: hidden; position: relative; color: #fff; display: flex; align-items: flex-end; }
+.trycard .photo { position: absolute; inset: 0; transition: transform .4s; }
+.trycard:hover .photo { transform: scale(1.05); }
+.trycard::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(20,12,8,.8)); }
+.trycard span { position: relative; z-index: 1; padding: 10px 12px; font-weight: 500; line-height: 1.25; }
+.slots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; flex: 1; }
+.slot { border: 1.5px dashed var(--line2); border-radius: 9px; display: flex; flex-direction: column; justify-content: space-between; padding: 7px 8px; font-size: 12px; color: var(--muted); min-width: 0; }
+.slot.full { border: 0; background: var(--brand-50); color: var(--fg); box-shadow: inset 0 0 0 1px var(--brand-soft); }
+.slot b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.slot span { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* ── Plan: the board ────────────────────────────────────────────────────── */
+.planpage { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 0; height: 100%; }
+.board { padding: 22px 28px 48px; container-type: inline-size; container-name: board; min-width: 0; overflow: auto; }
+.board-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.weekarrows { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+.weekarrows .btn { width: 38px; height: 38px; padding: 0; font-size: 18px; }
+.weekblock { margin-bottom: 26px; }
+.weekbar { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+.weekbar .h2 { font-size: 19px; }
+.meter { flex: 0 0 120px; height: 6px; background: var(--sunk); border-radius: 9px; overflow: hidden; align-self: center; }
+.meter i { display: block; height: 100%; background: var(--brand); border-radius: 9px; }
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.day { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 250px; transition: box-shadow .15s, border-color .15s, background .15s; min-width: 0; }
+.day.past { background: transparent; }
+.day.past .entry { opacity: .7; }
+.day.today { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
+.day.picked { background: var(--brand-50); border-color: var(--brand); }
+.day.over { background: var(--hi); border-color: var(--hi-line); box-shadow: 0 0 0 3px rgba(227,172,53,.25); }
+.dayhead { display: flex; align-items: baseline; gap: 6px; }
+.dayhead b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.dayhead .sub { font-size: 12.5px; }
+.pill { font-size: 11px; font-weight: 600; background: var(--brand); color: #fff; border-radius: 99px; padding: 1px 7px; }
+.entry { border-radius: 10px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); cursor: grab; transition: transform .15s, box-shadow .15s; }
+.entry:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+.entry .photo { aspect-ratio: 16/10; }
+.entry .in { padding: 7px 9px 8px; display: flex; flex-direction: column; gap: 3px; }
+.entry .nm { font-weight: 500; font-size: 13px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.entry.note { padding: 9px; font-style: italic; color: var(--fg2); background: var(--sunk); border-color: transparent; }
+.drop { flex: 1; min-height: 56px; border: 1.5px dashed var(--line2); border-radius: 10px; display: grid; place-items: center; color: var(--muted); font-size: 12.5px; background: none; text-align: center; padding: 6px; }
+.entry ~ .drop { flex: 0 0 auto; }
+.drop:hover { border-color: var(--brand); color: var(--brand); }
+.dayfoot { font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--sunk); padding-top: 7px; }
+@container board (max-width: 880px) {
+  .week { grid-template-columns: 1fr; gap: 8px; }
+  .day { min-height: 0; flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .dayhead { width: 100px; flex-direction: column; gap: 0; }
+  .entry { display: flex; align-items: center; width: 220px; }
+  .entry .photo { width: 56px; aspect-ratio: 1; flex: none; }
+  .drop { flex: 1; min-height: 40px; }
+  .dayfoot { border: 0; padding: 0; }
+}
+.shelf { border-left: 1px solid var(--line); background: var(--paper); padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+.shelf .tabs { display: flex; gap: 2px; background: var(--sunk); padding: 3px; border-radius: 9px; }
+.shelf .tabs button { flex: 1; border: 0; background: none; padding: 6px; border-radius: 7px; font-size: 12.5px; color: var(--fg2); }
+.shelf .tabs button.on { background: var(--paper); color: var(--fg); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.shelflist { overflow: auto; display: flex; flex-direction: column; gap: 6px; margin: 0 -6px; padding: 0 6px; flex: 1; }
+.scard { display: flex; align-items: center; gap: 10px; padding: 6px; border-radius: 10px; border: 1px solid transparent; cursor: grab; background: none; text-align: left; width: 100%; }
+.scard:hover { background: var(--sunk); border-color: var(--line); }
+.scard .photo { width: 52px; height: 52px; border-radius: 9px; flex: none; }
+.scard .nm { font-weight: 500; line-height: 1.3; }
+.scard .grip { color: var(--line2); letter-spacing: -2px; margin-left: auto; }
+.target { background: var(--brand-50); border: 1px solid var(--brand-soft); border-radius: 10px; padding: 10px 12px; }
+
+/* ── Shopping ───────────────────────────────────────────────────────────── */
+.shop-head { display: flex; align-items: center; gap: 22px; margin-bottom: 18px; flex-wrap: wrap; }
+.progress { flex: 1; min-width: 240px; max-width: 560px; }
+.progress .bar { height: 10px; background: var(--sunk); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+.progress .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), #4ba5a9); border-radius: 99px; transition: width .4s; }
+.addrow { position: relative; margin-bottom: 20px; max-width: 760px; }
+.addrow .input { padding: 12px 14px 12px 40px; font-size: 15px; }
+.addrow .plus { position: absolute; left: 14px; top: 11px; color: var(--muted); font-size: 18px; }
+.addrow .guess { position: absolute; right: 10px; top: 9px; }
+.shopgrid { display: grid; grid-template-columns: minmax(0, 1fr) 260px 290px; gap: 24px; align-items: start; }
+.aisles { columns: 250px; column-gap: 22px; }
+.aisle { break-inside: avoid; margin-bottom: 20px; }
+.aisle h3 { margin: 0 0 6px; display: flex; justify-content: space-between; }
+.item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 6px; border-radius: 8px; cursor: pointer; transition: opacity .2s, background .2s, transform .25s; }
+.item:hover { background: var(--paper); }
+.item .q { font-weight: 600; }
+.item .m { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.item.leaving { opacity: 0; transform: translateX(30px); }
+.shopgrid.focus .item { opacity: .28; }
+.shopgrid.focus .item.lit { opacity: 1; background: var(--hi); box-shadow: inset 3px 0 0 var(--hi-line); }
+.trolley { background: var(--sunk); border-radius: 14px; padding: 14px; position: sticky; top: 16px; }
+.trolley .item { opacity: .65; padding: 5px 4px; }
+.trolley .item .t { text-decoration: line-through; }
+.trolleybar { display: none; }
+.mealkey { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 4px; }
+.meal { display: flex; gap: 10px; align-items: center; padding: 7px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; background: none; text-align: left; width: 100%; }
+.meal:hover, .meal.on { background: var(--paper); border-color: var(--hi-line); }
+.meal .photo { width: 40px; height: 40px; border-radius: 8px; flex: none; }
+.meal .ct { margin-left: auto; font-size: 12px; color: var(--muted); }
+@container page (max-width: 1360px) {
+  .shopgrid { grid-template-columns: minmax(0, 1fr) 260px; }
+  .trolley { display: none; }
+  .trolleybar { display: flex; }
+}
+
+/* ── Recipes: three panes ───────────────────────────────────────────────── */
+.lib { display: grid; grid-template-columns: 250px minmax(0, 1fr) 0; height: 100%; transition: grid-template-columns .3s; }
+.lib.reading { grid-template-columns: 250px minmax(0, 1fr) clamp(420px, 34%, 720px); }
+.facets { border-right: 1px solid var(--line); padding: 20px 16px; overflow: auto; display: flex; flex-direction: column; gap: 18px; background: var(--paper); }
+.facet { display: flex; flex-direction: column; gap: 2px; }
+.facet .label { margin-bottom: 6px; }
+.fbtn { display: flex; justify-content: space-between; align-items: center; border: 0; background: none; padding: 6px 9px; border-radius: 7px; color: var(--fg2); text-align: left; }
+.fbtn:hover { background: var(--sunk); }
+.fbtn.on { background: var(--brand-50); color: var(--brand); font-weight: 600; }
+.fbtn .ct { font-size: 12px; color: var(--muted); }
+.wallpane { overflow: auto; padding: 20px 26px 40px; }
+.wallhead { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.wall { columns: 220px; column-gap: 16px; }
+.rcard { break-inside: avoid; margin-bottom: 16px; display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; border-radius: 14px; outline-offset: 3px; }
+.rcard .photo { border-radius: 14px; position: relative; transition: transform .25s, box-shadow .25s; }
+.rcard:hover .photo { transform: translateY(-2px); box-shadow: var(--shadow); }
+.rcard.sel .photo { outline: 3px solid var(--brand); outline-offset: 3px; }
+.rcard .heart { position: absolute; top: 9px; right: 9px; width: 30px; height: 30px; border-radius: 99px; background: rgba(255,252,249,.88); display: grid; place-items: center; font-size: 14px; }
+.rcard .time { position: absolute; left: 9px; bottom: 9px; background: rgba(20,12,8,.62); color: #fff; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; backdrop-filter: blur(4px); }
+.rcard .nm { font-weight: 500; font-size: 14.5px; margin: 8px 2px 2px; line-height: 1.3; }
+.rcard .tg { font-size: 12px; color: var(--muted); margin: 0 2px; }
+.reader { border-left: 1px solid var(--line); background: var(--paper); overflow: auto; container-type: inline-size; container-name: reader; min-width: 0; }
+.reader .hero { aspect-ratio: 16/9; position: relative; }
+.reader .x { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 99px; border: 0; background: rgba(255,252,249,.9); font-size: 18px; }
+.reader .in { padding: 18px 22px 30px; display: flex; flex-direction: column; gap: 14px; }
+.reader .cols { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@container reader (min-width: 600px) { .reader .cols { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); } }
+.ing { display: flex; gap: 10px; padding: 5px 0; line-height: 1.4; }
+.ing .q { font-weight: 600; white-space: nowrap; }
+.ing .nt { color: var(--muted); font-size: 12.5px; }
+.ol { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.ol li { display: flex; gap: 10px; line-height: 1.5; }
+.num { width: 24px; height: 24px; border-radius: 99px; background: var(--sunk); font-size: 12px; font-weight: 600; display: grid; place-items: center; flex: none; margin-top: 1px; }
+
+/* ── Recipe: the spread ─────────────────────────────────────────────────── */
+.spread { display: grid; grid-template-columns: minmax(340px, .95fr) minmax(280px, .75fr) minmax(400px, 1.3fr); gap: 0; height: 100%; }
+.spread > * { overflow: auto; min-height: 0; }
+.leftpage { display: flex; flex-direction: column; background: var(--paper); border-right: 1px solid var(--line); overflow: auto; }
+.leftpage .photo { flex: 1 1 45%; min-height: 260px; }
+.leftpage .in { padding: 22px 26px 26px; display: flex; flex-direction: column; gap: 12px; }
+.leftpage .title { font: 600 34px/1.1 var(--display); margin: 0; }
+.facts { display: flex; gap: 18px; flex-wrap: wrap; }
+.facts div { display: flex; flex-direction: column; }
+.facts b { font-size: 16px; }
+.facts span { font-size: 12px; color: var(--muted); }
+.stars { color: #d39b2a; letter-spacing: 2px; }
+.ingpage { padding: 26px 22px 60px; border-right: 1px solid var(--line); }
+.methodpage { padding: 26px 34px 80px; }
+.methodpage .step { display: grid; grid-template-columns: 34px minmax(0, 62ch); gap: 12px; padding: 14px; border-radius: 12px; transition: background .15s; }
+.step .num { width: 30px; height: 30px; font-size: 13px; }
+.step .lbl { font-weight: 600; margin-bottom: 2px; }
+.step .tx { line-height: 1.6; font-size: 15px; }
+.step .nt { color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+.timerchip { display: inline-flex; gap: 5px; align-items: center; margin-top: 8px; background: var(--brand-50); color: var(--brand); border: 1px solid var(--brand-soft); border-radius: 99px; font-size: 12px; font-weight: 600; padding: 2px 10px; }
+.serves { display: flex; align-items: center; gap: 6px; margin: 10px 0 14px; }
+.serves button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line2); background: var(--paper); font-size: 16px; }
+.serves b { min-width: 74px; text-align: center; }
+.ilist .ing { padding: 6px 8px; border-radius: 8px; transition: background .15s; cursor: default; }
+.lit-i { background: var(--hi); box-shadow: inset 3px 0 0 var(--hi-line); }
+.dim-s { opacity: .35; }
+.step.lit-s { background: var(--hi); }
+.notespage { display: none; padding: 26px 26px 60px; border-left: 1px solid var(--line); background: var(--paper); }
+.notespage .card { padding: 14px; margin-bottom: 12px; }
+.tl { border-left: 2px solid var(--line); padding-left: 14px; display: flex; flex-direction: column; gap: 12px; }
+.tl > div { position: relative; }
+.tl > div::before { content: ""; position: absolute; left: -20px; top: 5px; width: 10px; height: 10px; border-radius: 99px; background: var(--paper); border: 2px solid var(--brand); }
+@container page (min-width: 1800px) {
+  .spread { grid-template-columns: minmax(380px, .9fr) minmax(300px, .7fr) minmax(460px, 1.2fr) minmax(320px, .6fr); }
+  .notespage { display: block; }
+}
+@container page (max-width: 1250px) {
+  .spread { grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); height: auto; }
+  .spread > * { overflow: visible; }
+  .leftpage { grid-column: 1 / -1; flex-direction: row; border-right: 0; border-bottom: 1px solid var(--line); }
+  .leftpage .photo { flex: 0 0 42%; min-height: 320px; }
+}
+
+/* ── Import: side by side ───────────────────────────────────────────────── */
+.steps3 { display: flex; align-items: center; gap: 12px; }
+.steps3 .s { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.steps3 .s i { width: 26px; height: 26px; border-radius: 99px; border: 1.5px solid var(--line2); display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 600; }
+.steps3 .s.done i { background: var(--brand); border-color: var(--brand); color: #fff; }
+.steps3 .s.on { color: var(--fg); font-weight: 600; }
+.steps3 .s.on i { border-color: var(--brand); color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.steps3 hr { width: 40px; border: 0; border-top: 1.5px solid var(--line2); }
+.imp { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; height: calc(100% - 90px); }
+.imp .pane { display: flex; flex-direction: column; min-height: 0; }
+.pane .bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.src { overflow: auto; padding: 12px 0; font-size: 13.5px; line-height: 1.55; flex: 1; scroll-behavior: smooth; }
+.src p { margin: 0; padding: 3px 18px 3px 44px; position: relative; transition: background .2s; }
+.src p::before { content: attr(data-n); position: absolute; left: 10px; width: 24px; text-align: right; color: var(--line2); font-size: 11px; top: 5px; font-variant-numeric: tabular-nums; }
+.src p.skip { color: #b9aaa0; }
+.src p.used { color: var(--fg2); }
+.src p.lit { background: var(--hi); color: var(--fg); box-shadow: inset 3px 0 0 var(--hi-line); }
+.src h4 { margin: 10px 18px 4px 44px; font-size: 15px; }
+.parsed { overflow: auto; flex: 1; padding: 16px 18px 30px; display: flex; flex-direction: column; gap: 16px; }
+.pl { display: flex; gap: 10px; padding: 6px 8px; border-radius: 8px; cursor: pointer; align-items: flex-start; line-height: 1.45; transition: background .15s; }
+.pl:hover, .pl.lit { background: var(--hi); }
+.pl .src-n { margin-left: auto; font-size: 11px; color: var(--line2); flex: none; padding-top: 2px; }
+.flag { width: 8px; height: 8px; border-radius: 99px; background: var(--hi-line); flex: none; margin-top: 7px; }
+.ok { width: 8px; height: 8px; border-radius: 99px; background: #9cc7a4; flex: none; margin-top: 7px; }
+.impside { display: none; }
+@container page (min-width: 1900px) {
+  .imp { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 360px; }
+  .impside { display: flex; }
+}
+
+/* ── Editor: form and preview ───────────────────────────────────────────── */
+.ed { display: grid; grid-template-columns: minmax(460px, 1fr) minmax(460px, 1fr); height: 100%; }
+.edform { overflow: auto; padding: 22px 30px 60px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--line); }
+.edform label { display: flex; flex-direction: column; gap: 6px; font-weight: 500; font-size: 13px; }
+.edform textarea { resize: vertical; min-height: 200px; line-height: 1.6; font-size: 13.5px; }
+.edgrid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; }
+.edprev { overflow: auto; background: var(--sunk); padding: 22px 30px 60px; }
+.edprev .sheet { max-width: 820px; margin: 0 auto; background: var(--paper); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+.edprev .sheet .photo { aspect-ratio: 21/9; }
+.edprev .sheet .in { padding: 22px 28px 30px; display: flex; flex-direction: column; gap: 16px; }
+.edprev .cols { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.3fr); gap: 26px; }
+.flash { animation: flash .6s ease-out; }
+@keyframes flash { from { background: var(--hi); } }
+
+/* ── Cook: the filmstrip ────────────────────────────────────────────────── */
+.cook { height: 100%; background: #1d1714; color: #f3ebe3; display: grid; grid-template-rows: auto 1fr auto; }
+.cooktop { display: flex; align-items: center; gap: 16px; padding: 14px 24px; }
+.cooktop .x { background: #2f2723; border: 0; color: #f3ebe3; border-radius: 10px; padding: 8px 14px; }
+.segs { display: flex; gap: 4px; flex: 1; max-width: 640px; margin-left: auto; }
+.segs i { flex: 1; height: 5px; border-radius: 9px; background: #3a302b; }
+.segs i.done { background: #4ba5a9; }
+.segs i.on { background: #f3ebe3; }
+.cookbody { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 0; }
+.forstep { padding: 18px 24px; border-right: 1px solid #2f2723; overflow: auto; }
+.forstep .label { color: #a8968a; }
+.forstep .ing { display: block; font-size: 17px; padding: 9px 0; border-bottom: 1px solid #2a221f; }
+.forstep .ing .nt { color: #a8968a; }
+.film { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 20px 30px; overflow: hidden; }
+.fcard { flex: 0 0 24%; background: #2a221f; border-radius: 20px; padding: 26px; color: #b5a69a; transition: all .35s; cursor: pointer; font-size: 16px; line-height: 1.5; max-height: 70%; overflow: hidden; border: 0; text-align: left; }
+.fcard .lbl { font-weight: 600; color: #d9cbbf; margin-bottom: 8px; }
+.fcard.cur { flex: 0 0 min(46%, 900px); background: #f7f0e9; color: #2a1f19; padding: 40px 44px; font-size: clamp(22px, 1.9cqw, 34px); line-height: 1.45; max-height: none; cursor: default; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+.fcard.cur .lbl { color: var(--brand); font-size: .62em; letter-spacing: .08em; text-transform: uppercase; }
+.fcard.cur .nt { color: #8a7468; font-size: .6em; margin-top: 16px; }
+.fcard .k { font-size: 12px; color: #8b7a6e; margin-bottom: 10px; }
+.cookfoot { display: flex; align-items: center; gap: 14px; padding: 14px 24px 20px; }
+.ctimer { display: flex; align-items: center; gap: 12px; background: #2a221f; border-radius: 14px; padding: 10px 16px; }
+.ctimer b { font-size: 24px; font-variant-numeric: tabular-nums; }
+.ctimer.done b { color: #8fd19e; }
+.bigbtn { padding: 14px 28px; border-radius: 14px; border: 0; font-size: 17px; font-weight: 600; background: #2f2723; color: #f3ebe3; }
+.bigbtn.go { background: #4ba5a9; color: #0f2a2c; }
+
+/* ── Settings ───────────────────────────────────────────────────────────── */
+.set { display: grid; grid-template-columns: 230px minmax(0, 1fr) 0; height: 100%; }
+.set.inspecting { grid-template-columns: 230px minmax(0, 1fr) 380px; }
+.rail { border-right: 1px solid var(--line); padding: 20px 12px; overflow: auto; background: var(--paper); display: flex; flex-direction: column; gap: 16px; }
+.rail .label { padding: 0 9px 4px; }
+.grid-wrap { overflow: auto; padding: 20px 26px 40px; }
+table.dg { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.dg th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--sunk); position: sticky; top: 0; white-space: nowrap; }
+.dg td { padding: 8px 12px; border-bottom: 1px solid var(--sunk); vertical-align: middle; }
+.dg tr:hover td { background: #fbf6f1; }
+.dg tr.sel td { background: var(--brand-50); }
+.dg td.cell { cursor: text; }
+.dg td.cell:hover { box-shadow: inset 0 0 0 1px var(--line2); }
+.dg td[contenteditable="true"] { box-shadow: inset 0 0 0 2px var(--brand); background: #fff; outline: none; }
+.dg .col-wide { display: none; }
+@container page (min-width: 1700px) { .dg .col-wide { display: table-cell; } }
+.bulk { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); background: #2a1f19; color: #fff; padding: 8px 8px 8px 16px; border-radius: 12px; display: flex; gap: 8px; align-items: center; box-shadow: var(--shadow); z-index: 20; animation: toast .2s; }
+.bulk .btn { background: #3a2f29; border-color: #4a3d36; color: #fff; }
+.inspector { border-left: 1px solid var(--line); background: var(--paper); overflow: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.inspector .field { display: flex; flex-direction: column; gap: 6px; }
+.aliases { display: flex; flex-wrap: wrap; gap: 6px; }
+.aliases .chip button { border: 0; background: none; padding: 0; color: var(--muted); }
+
+/* ── Command bar ────────────────────────────────────────────────────────── */
+.scrim { position: absolute; inset: 0; background: rgba(30,20,14,.35); backdrop-filter: blur(2px); z-index: 40; display: flex; justify-content: center; align-items: flex-start; padding-top: 11vh; animation: toast .15s; }
+.palette { width: min(680px, 90%); background: var(--paper); border-radius: 16px; box-shadow: 0 30px 80px rgba(30,20,14,.35); overflow: hidden; }
+.palette .q { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.palette .q input { flex: 1; border: 0; outline: none; font-size: 18px; background: none; }
+.palette .res { max-height: 440px; overflow: auto; padding: 8px; }
+.palette .grp { padding: 8px 10px 4px; }
+.palette .opt { display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 10px; cursor: pointer; }
+.palette .opt.on { background: var(--brand-50); box-shadow: inset 0 0 0 1px var(--brand-soft); }
+.palette .opt .photo, .palette .opt .ic { width: 34px; height: 34px; border-radius: 8px; flex: none; }
+.palette .opt .ic { background: var(--sunk); display: grid; place-items: center; font-size: 16px; }
+.palette .opt .hint { margin-left: auto; font-size: 12px; color: var(--muted); }
+.palette .foot { display: flex; gap: 16px; padding: 10px 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); background: var(--sunk); }
+.palette mark { background: var(--hi); color: inherit; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="chrome">
+  <div class="row">
+    <h1>Garnish · desktop concepts</h1>
+    <div class="seg" id="screens"></div>
+  </div>
+  <div class="row">
+    <div class="seg" id="widths"></div>
+    <div class="note" id="note"></div>
+    <div class="scale" id="scale"></div>
+  </div>
+</div>
+<div id="stage"><div id="holder"><div id="frame">
+  <header class="topbar">
+    <button class="logo" data-go="home"><svg viewBox="0 0 18 22" fill="none"><path d="M9 21V6" stroke="#2c666c" stroke-width="1.6" stroke-linecap="round"/><path d="M9 9c-3-.5-5-2.5-5.5-5 3 .2 5 2 5.5 5zm0 4c3-.5 5-2.5 5.5-5-3 .2-5 2-5.5 5zm0 4c-3-.5-5-2.5-5.5-5 3 .2 5 2 5.5 5zM9 6C9 4 9.5 2.5 11 1" fill="#2c666c" stroke="#2c666c" stroke-width=".6"/></svg>Garnish</button>
+    <button class="nav" data-go="home">Home</button>
+    <button class="nav" data-go="plan">Plan</button>
+    <button class="nav" data-go="shop">Shopping</button>
+    <button class="nav" data-go="recipes">Recipes</button>
+    <button class="cmdk" data-cmd><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="m11 11 3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span>Search, plan or add anything…</span><kbd>Ctrl</kbd><kbd>K</kbd></button>
+    <button class="nav" data-go="settings">Settings</button>
+  </header>
+  <main id="view"></main>
+  <div id="overlay"></div>
+  <div class="toasts" id="toasts"></div>
+</div></div></div>
+
+<script>
+/* ═════════════════════════════════════════════════════════════════════════
+   Data: the household's own recipes and photos (data/images, beside the repo)
+   ═════════════════════════════════════════════════════════════════════════ */
+const IMG = "../../data/images/";
+const RECIPES = [
+  ["chicken-fried-rice", "Chicken Fried Rice", "270d050a-b55c-4f94-80b5-d068bf6e7637.jpg", 20, ["Weeknight", "One Pot"], "rotation"],
+  ["slow-cooked-shredded-beef-ragu-pasta", "Slow Cooked Shredded Beef Ragu Pasta", "4c2dbacc-ba99-4044-9843-d48b4b5b9537.jpg", 230, ["Slow Cooked", "Kid Approved"], "weekend"],
+  ["beef-and-broccoli-stir-fry", "Beef and Broccoli Stir-Fry", "3a3a18f7-4b1f-4738-b5dc-953b350bff1f.png", 25, ["Weeknight"], "rotation"],
+  ["fish-tacos", "Fish Tacos", "6876a90f-e8c2-4ef4-97b7-9b9b7bad230b.png", 30, ["Weeknight", "Kid Approved"], "rotation"],
+  ["steak-and-mushroom-pie", "Steak and Mushroom Pie", "4277a90a-4ff0-40f2-8dfb-4585c04c3708.png", 180, ["Baking"], "weekend"],
+  ["mushroom-risotto", "Mushroom Risotto", "c257104c-e093-461c-9b6f-7fef867b6b0b.png", 45, ["One Pot"], "rotation"],
+  ["chicken-and-potato-tray-bake", "Chicken and Potato Tray Bake", "b0a2fc77-5ece-4976-9576-7885e47d19df.png", 60, ["One Pot", "Weeknight"], "rotation"],
+  ["lemon-tart", "Lemon Tart", "727f6535-0188-4ba9-9b3e-7c0292245f6d.png", 90, ["Dessert", "Baking"], "totry"],
+  ["banana-cake", "Banana Cake", "50bd6825-e565-448b-ae71-8adb2a5cb7a4.png", 70, ["Dessert", "Baking"], "totry"],
+  ["tomato-and-basil-pasta", "Tomato and Basil Pasta", "ef617603-40f6-4709-8692-9b63a68f9c4c.png", 25, ["Weeknight"], "totry"],
+  ["roast-pumpkin-soup", "Roast Pumpkin Soup", "f798ccd0-16e1-46c2-86c3-9a7a02446415.png", 50, ["One Pot"], "rotation"],
+  ["slow-cooked-lamb-shoulder", "Slow-Cooked Lamb Shoulder", "14a9ce35-7345-4e11-9610-231c24005c8e.png", 300, ["Slow Cooked"], "weekend"],
+  ["roast-chicken", "Roast Chicken with Charred Corn, Pickled Onion and a Whipped Fetta That Is Frankly the Best Part", "1521c5b0-f335-4c68-b4c4-1f110be62aef.png", 90, ["BBQ"], "weekend"],
+  ["chickpea-curry", "Chickpea Curry", null, 35, ["Curry", "Weeknight"], "rotation"],
+  ["roast-pumpkin-and-fetta-salad", "Roast Pumpkin and Fetta Salad", null, 40, [], "totry"],
+  ["anzac-biscuits", "Anzac Biscuits", null, 30, ["Baking", "Dessert"], ""],
+  ["beef-burgers", "Beef Burgers", null, 30, ["BBQ", "Kid Approved"], "weekend"],
+  ["weeknight-stir-fry", "Weeknight Stir-fry", null, 20, ["Weeknight"], "rotation"],
+].map(([slug, name, img, mins, tags, coll], i) => ({ slug, name, img, mins, tags, coll, fav: i % 5 === 1, last: [3, 9, 1, 2, 14, 7, 4, 0, 0, 0, 6, 11, 8, 2, 0, 20, 5, 1][i] }));
+const R = Object.fromEntries(RECIPES.map((r) => [r.slug, r]));
+
+// A short card for every recipe; Chicken Fried Rice has the whole thing below.
+const SHORT = {
+  "slow-cooked-shredded-beef-ragu-pasta": ["1.5 kg|beef chuck|in 4 large pieces", "2|brown onions|finely chopped", "2|carrots|finely chopped", "4|garlic cloves|minced", "800 g|tinned tomatoes|", "1 cup|red wine|", "500 g|pappardelle|", "Brown the beef: Sear the beef in batches until deeply browned, 3–4 minutes a side.", "Soften the vegetables: Cook the onion, carrot and garlic in the same pot until soft, 5 minutes.", "Braise: Return the beef with the wine and tomatoes, cover and simmer until it falls apart, 3 hours.", "Shred and toss: Shred the beef in the pot and toss through the cooked pappardelle."],
+  "beef-and-broccoli-stir-fry": ["500 g|rump steak|thinly sliced", "2 heads|broccoli|in florets", "2 tbsp|oyster sauce|", "1 tbsp|soy sauce|", "2|garlic cloves|minced", "1 knob|ginger|grated", "Sear the beef: Stir-fry the beef in batches over high heat until just browned, then remove.", "Cook the broccoli: Add the broccoli with a splash of water and cook until bright green, 2 minutes.", "Toss with the sauce: Return the beef with the sauces, garlic and ginger, and toss until glossy."],
+  "fish-tacos": ["4|barramundi fillets|", "12|corn tortillas|", "¼|red cabbage|finely shredded", "200 g|sour cream|", "2|limes|", "1 tsp|smoked paprika|", "Season the fish: Rub the fish with the paprika and a good pinch of salt.", "Cook the fish: Pan-fry until it flakes, 2–3 minutes a side.", "Build the tacos: Warm the tortillas and fill with fish, cabbage, sour cream and lime."],
+};
+const GENERIC = ["2 tbsp|olive oil|", "1|brown onion|finely chopped", "2|garlic cloves|minced", "400 g|tinned tomatoes|", "1 bunch|coriander|", "Soften the base: Cook the onion and garlic in the oil until soft and golden, 5 minutes.", "Simmer: Add the rest and simmer until thickened, 15–20 minutes.", "Finish: Season, scatter with herbs and serve."];
+
+const FR = {
+  serves: 4, prep: 10, cook: 10,
+  desc: "A fully loaded fried rice that works as a side or as dinner on its own. Day-old rice is the whole trick.",
+  parts: [
+    { name: "", ings: [
+      ["3603", 2, "tbsp", "vegetable oil", "peanut, vegetable or canola"],
+      ["6ff3", 2, "", "eggs", "lightly whisked"],
+      ["17e5", 150, "g", "chicken breast", "finely sliced into small pieces"],
+      ["dee0", 2, "", "garlic cloves", "minced"],
+      ["a9f8", 0.5, "", "onion", "finely chopped"],
+      ["704f", 120, "g", "bacon", "excess fat trimmed, chopped"],
+      ["dc37", 1, "small", "carrot", "peeled and diced 0.75 cm"],
+      ["c0e7", 0.5, "cup", "corn kernels", "frozen, tinned or fresh"],
+      ["e5d6", 0.5, "cup", "frozen peas", ""],
+      ["adc0", 2, "cups", "cooked white rice", "packed, day old"],
+      ["e65b", 0.75, "cup", "spring onion", "finely sliced"],
+    ] },
+    { name: "Sauce", ings: [
+      ["d76b", 2.5, "tbsp", "Chinese cooking wine", "or mirin"],
+      ["8172", 1, "tbsp", "oyster sauce", ""],
+      ["e722", 3, "tbsp", "light soy sauce", ""],
+      ["04a2", 0.5, "tsp", "sesame oil", "optional"],
+      ["7c74", 0.25, "tsp", "white pepper", "optional"],
+    ] },
+  ],
+  steps: [
+    ["Marinate the chicken", "Mix the sauce in a bowl. Pour 2 tsp of it over the chicken, toss to coat, then set aside for 10 minutes.", "", "d76b,8172,e722,04a2,7c74,17e5", 10],
+    ["Scramble the egg", "Heat 1 tbsp of the vegetable oil in a wok over medium heat. Add the egg and scramble until just cooked, then remove.", "The egg will still look a touch wet; it finishes in the rice.", "3603,6ff3"],
+    ["Start the bacon", "Turn the heat up to high, add the remaining 1 tbsp of the oil and the bacon. Cook until the fat starts to melt, about 1 minute, then add the onion and the garlic.", "", "3603,704f,a9f8,dee0"],
+    ["Brown the bacon", "Cook until the bacon is light golden, about 1½ minutes.", "", "704f", 1.5],
+    ["Add the vegetables", "Add the carrot, the corn and the peas. Cook for 1 minute.", "Still frozen is fine.", "dc37,c0e7,e5d6", 1],
+    ["Cook the chicken", "Add the chicken and cook until it turns from pink to white, about 1½ minutes.", "", "17e5", 1.5],
+    ["Fry the rice", "Add the rice and the rest of the sauce. Cook for 1½ minutes, stirring constantly, until every grain is coated.", "", "adc0,d76b,8172,e722,04a2,7c74", 1.5],
+    ["Finish with the egg", "Add the egg and the spring onion, toss through to break up the egg, then take it off the heat.", "", "6ff3,e65b"],
+    ["Serve", "Serve straight away, while the rice is still crackling.", "Keeps 3 days in the fridge; reheat in a hot wok, not the microwave.", ""],
+  ],
+};
+
+const DAYS = (start, n) => Array.from({ length: n }, (_, i) => { const d = new Date(Date.UTC(2026, 10, start + i)); return { iso: d.toISOString().slice(0, 10), dow: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getUTCDay()], long: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getUTCDay()], d: d.getUTCDate() }; });
+const WEEKS = [{ label: "This week", range: "2 – 8 Nov", days: DAYS(2, 7) }, { label: "Next week", range: "9 – 15 Nov", days: DAYS(9, 7) }];
+const TODAY = "2026-11-07";
+const ALLDAYS = [...WEEKS[0].days, ...WEEKS[1].days];
+
+const S = {
+  screen: "home", width: "fit",
+  plan: {
+    "2026-11-02": [{ slug: "chicken-fried-rice" }], "2026-11-03": [{ slug: "beef-and-broccoli-stir-fry" }],
+    "2026-11-04": [{ slug: "chickpea-curry" }], "2026-11-05": [{ text: "Leftovers" }], "2026-11-06": [{ slug: "fish-tacos" }],
+    "2026-11-07": [{ slug: "slow-cooked-shredded-beef-ragu-pasta" }], "2026-11-08": [{ slug: "roast-chicken" }, { slug: "lemon-tart", meal: "Dessert" }],
+    "2026-11-09": [{ slug: "mushroom-risotto" }], "2026-11-11": [{ slug: "chicken-and-potato-tray-bake" }],
+  },
+  picked: "2026-11-10", shelfTab: "rotation", shelfQ: "",
+  lib: { coll: "all", tags: new Set(), fav: false, q: "", sel: "chicken-fried-rice" },
+  recipe: "chicken-fried-rice", serves: 4,
+  meal: null, mealPinned: false,
+  cookStep: 2, settingsSel: null, settingsChecked: new Set(),
+  edit: { name: "Lemon Myrtle Shortbread", serves: "24", prep: "20", cook: "15",
+    ings: "250 g butter, softened\n½ cup icing sugar\n1 tsp ground lemon myrtle\n2 cups plain flour\n¼ cup rice flour\npinch of salt",
+    steps: "Cream the butter: Beat the butter and icing sugar until pale and fluffy, 3 minutes.\nBring the dough together: Add the lemon myrtle, both flours and the salt, and mix until it just comes together.\nShape: Roll into a log 5 cm across, wrap and chill until firm, 30 minutes.\nBake: Slice 1 cm thick and bake at 160°C fan (180°C conventional) until pale gold at the edges, 15 minutes." },
+};
+
+const AISLES = ["Fruit & veg", "Bakery", "Meat", "Seafood", "Dairy & eggs", "Pantry", "Spices", "Freezer", "Drinks"];
+let SHOP = [
+  ["2 heads", "broccoli", 0, "beef-and-broccoli-stir-fry"], ["1 bulb", "garlic", 0, "beef-and-broccoli-stir-fry,chickpea-curry,slow-cooked-shredded-beef-ragu-pasta", 1],
+  ["3", "brown onions", 0, "chickpea-curry,slow-cooked-shredded-beef-ragu-pasta,chicken-and-potato-tray-bake", 1], ["2", "carrots", 0, "slow-cooked-shredded-beef-ragu-pasta"],
+  ["1 bunch", "spring onions", 0, "chicken-fried-rice"], ["4", "lemons", 0, "lemon-tart,fish-tacos"], ["2", "limes", 0, "fish-tacos"],
+  ["1 bunch", "coriander", 0, "chickpea-curry,fish-tacos"], ["¼", "red cabbage", 0, "fish-tacos"], ["120 g", "baby spinach", 0, "chickpea-curry", 1],
+  ["1 kg", "potatoes", 0, "chicken-and-potato-tray-bake"], ["1 knob", "ginger", 0, "beef-and-broccoli-stir-fry"],
+  ["12", "corn tortillas", 1, "fish-tacos"],
+  ["1.5 kg", "beef chuck", 2, "slow-cooked-shredded-beef-ragu-pasta", 1], ["500 g", "rump steak", 2, "beef-and-broccoli-stir-fry"], ["800 g", "chicken thigh fillets", 2, "chicken-and-potato-tray-bake"], ["120 g", "bacon", 2, "chicken-fried-rice", 1],
+  ["4", "barramundi fillets", 3, "fish-tacos"],
+  ["6", "eggs", 4, "chicken-fried-rice,lemon-tart", 1], ["250 g", "butter", 4, "lemon-tart"], ["300 ml", "thickened cream", 4, "lemon-tart"], ["100 g", "parmesan", 4, "slow-cooked-shredded-beef-ragu-pasta,mushroom-risotto"], ["200 g", "sour cream", 4, "fish-tacos"],
+  ["2 × 400 g", "chickpeas", 5, "chickpea-curry", 1], ["2 × 400 g", "tinned tomatoes", 5, "chickpea-curry,slow-cooked-shredded-beef-ragu-pasta"], ["400 ml", "coconut milk", 5, "chickpea-curry"],
+  ["500 g", "pappardelle", 5, "slow-cooked-shredded-beef-ragu-pasta", 1], ["1 bottle", "oyster sauce", 5, "beef-and-broccoli-stir-fry,chicken-fried-rice"], ["1 kg", "jasmine rice", 5, "beef-and-broccoli-stir-fry,chickpea-curry"], ["400 g", "arborio rice", 5, "mushroom-risotto"],
+  ["", "garam masala", 6, "chickpea-curry"], ["", "smoked paprika", 6, "fish-tacos", 1],
+  ["500 g", "frozen peas", 7, "chicken-fried-rice"],
+  ["1 bottle", "red wine", 8, "slow-cooked-shredded-beef-ragu-pasta", 1],
+].map(([q, name, a, meals, done], i) => ({ id: "s" + i, q, name, aisle: AISLES[a], meals: meals.split(","), done: !!done }));
+const GUESS = { milk: 4, cheese: 4, yoghurt: 4, cream: 4, bread: 1, rolls: 1, apples: 0, bananas: 0, tomatoes: 0, mince: 2, sausages: 2, salmon: 3, prawns: 3, pasta: 5, flour: 5, sugar: 5, coffee: 8, juice: 8, "ice cream": 7, cumin: 6, oregano: 6 };
+
+const FOODS = [
+  ["aioli", "garlic aioli, garlic mayonnaise", "Pantry", 0], ["arborio rice", "risotto rice", "Pantry", 1], ["bacon", "rindless bacon, bacon rashers", "Meat", 2],
+  ["barramundi", "barra, barramundi fillets", "Seafood", 1], ["beef chuck", "chuck steak, braising beef", "Meat", 2], ["broccoli", "broccoli florets", "Fruit & veg", 2],
+  ["brown onion", "onion, yellow onion", "Fruit & veg", 9], ["butter", "unsalted butter, salted butter", "Dairy & eggs", 6], ["carrot", "carrots", "Fruit & veg", 5],
+  ["chickpeas", "garbanzo beans, tinned chickpeas", "Pantry", 2], ["chicken breast", "chicken breast fillet", "Meat", 3], ["chicken thigh", "thigh fillets, chicken thighs", "Meat", 4],
+  ["Chinese cooking wine", "Shaoxing wine, rice wine", "Pantry", 2], ["coconut milk", "coconut cream (light)", "Pantry", 2], ["coriander", "cilantro, fresh coriander", "Fruit & veg", 4],
+  ["corn kernels", "sweetcorn, frozen corn", "Freezer", 2], ["eggs", "egg, free-range eggs", "Dairy & eggs", 8], ["frozen peas", "peas, baby peas", "Freezer", 3],
+  ["garlic", "garlic cloves, garlic bulb", "Fruit & veg", 12], ["ginger", "fresh ginger, ginger root", "Fruit & veg", 3], ["lemon", "lemons, lemon juice", "Fruit & veg", 5],
+  ["oyster sauce", "", "Pantry", 2], ["pappardelle", "egg pappardelle", "Pantry", 1], ["parmesan", "parmigiano, parmigiano reggiano", "Dairy & eggs", 4],
+  ["potatoes", "potato, washed potatoes", "Fruit & veg", 3], ["red wine", "dry red wine", "Drinks", 2], ["rump steak", "rump, beef rump", "Meat", 1],
+  ["sesame oil", "toasted sesame oil", "Pantry", 3], ["soy sauce", "light soy sauce, tamari", "Pantry", 5], ["spring onion", "green onions, scallions", "Fruit & veg", 4],
+].map(([name, aliases, aisle, n], i) => ({ id: "f" + i, name, aliases, aisle, n }));
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Helpers
+   ═════════════════════════════════════════════════════════════════════════ */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+function hue(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360; return h; }
+function photo(r, extra = "") {
+  const h = hue(r.slug), g = `linear-gradient(135deg, hsl(${(h % 50) + 15} 45% 72%), hsl(${(h % 40) + 5} 40% 48%))`;
+  const bg = r.img ? `url('${IMG}${r.img}'), ${g}` : g;
+  return `<div class="photo" style="background-image:${bg};${extra}"></div>`;
+}
+function mins(m) { if (m < 60) return `${m} min`; const h = Math.floor(m / 60), r = m % 60; return r ? `${h} hr ${r} min` : `${h} hr`; }
+function fmtQ(q) {
+  if (q >= 10) return String(Math.round(q));
+  const w = Math.floor(q + 1e-9), f = q - w;
+  const fr = [[0, ""], [0.125, "⅛"], [0.25, "¼"], [1 / 3, "⅓"], [0.5, "½"], [2 / 3, "⅔"], [0.75, "¾"], [1, ""]];
+  let best = fr[0], d = 9; for (const x of fr) { const dd = Math.abs(f - x[0]); if (dd < d) { d = dd; best = x; } }
+  if (d > 0.04) return String(Math.round(q * 10) / 10);
+  const W = w + (best[0] === 1 ? 1 : 0);
+  return (W ? String(W) : "") + best[1] || "0";
+}
+function toast(html) { const t = document.createElement("div"); t.className = "toast"; t.innerHTML = html; $("#toasts").append(t); setTimeout(() => t.remove(), 3200); }
+function dayOf(iso) { return ALLDAYS.find((d) => d.iso === iso); }
+function shortList(slug) {
+  const src = SHORT[slug] || GENERIC;
+  const ings = src.filter((x) => x.includes("|")).map((x) => x.split("|"));
+  const steps = src.filter((x) => !x.includes("|")).map((x) => x.split(": "));
+  return { ings, steps };
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Screens
+   ═════════════════════════════════════════════════════════════════════════ */
+const NOTES = {
+  home: "<b>Home as a dashboard of tiles.</b> Tonight is the biggest tile; the week runs across the top; the tiles reflow from 3 columns to 8 as the width grows. <span class='try'>Try: tick items on the shopping tile, click an empty night.</span>",
+  plan: "<b>Plan as a board.</b> This week and next, seven day columns each, with a recipe shelf to drag from. Below about 1280px the days fall back to rows. <span class='try'>Try: drag a recipe from the shelf onto a day, drag an entry between days, or click a day then click a recipe.</span>",
+  shop: "<b>Shopping as a store walk.</b> Aisles flow into columns in shop order; ticked items move to the trolley; this week's meals sit on the right. <span class='try'>Try: hover a meal to light up its items across the aisles, click to pin it; tick items; type “milk” in the add box.</span>",
+  recipes: "<b>The library in three panes:</b> filters, a photo wall, and the open recipe. The wall narrows to make room rather than being covered. <span class='try'>Try: the arrow keys flip through recipes; Esc closes; the filters on the left.</span>",
+  recipe: "<b>The recipe as a cookbook spread:</b> the photo and story on the left, ingredients and method side by side, and notes and history as a fourth column from about 1800px. <span class='try'>Try: hover a step to light up its ingredients, hover an ingredient to find its steps, change the servings.</span>",
+  import: "<b>Importing, side by side:</b> the page as garnish read it on the left, what it understood on the right, linked line by line. Amber dots are worth a look. <span class='try'>Try: hover or click any line on the right to see where it came from. From about 1900px the new foods it will create get their own column.</span>",
+  editor: "<b>The editor with a live preview:</b> type on the left, see the finished recipe on the right. <span class='try'>Try: change the name, an ingredient line, or add a step as “Label: text”.</span>",
+  cook: "<b>Cook mode on a laptop as a filmstrip:</b> the current step large in the middle, the steps either side visible, this step's ingredients on the left and the timers along the bottom. <span class='try'>Try: ← → or click a neighbouring step; start the timer.</span>",
+  settings: "<b>Settings with a menu, a spreadsheet and a details pane.</b> Foods becomes an editable grid with bulk actions; a selected food opens its details on the right. <span class='try'>Try: double-click a cell to edit it, tick several rows, click a row.</span>",
+};
+const LABELS = { home: "Home", plan: "Plan", shop: "Shopping", recipes: "Recipes", recipe: "Recipe page", import: "Import", editor: "Editor", cook: "Cook", settings: "Settings" };
+
+function renderHome() {
+  const tonight = R["slow-cooked-shredded-beef-ragu-pasta"];
+  const planned = WEEKS[0].days.filter((d) => (S.plan[d.iso] || []).length).length;
+  const shopDone = SHOP.filter((i) => i.done).length, frac = shopDone / SHOP.length;
+  const C = 2 * Math.PI * 34;
+  const ribbon = WEEKS[0].days.map((d) => {
+    const e = (S.plan[d.iso] || [])[0];
+    const cls = `wday ${d.iso === TODAY ? "today" : ""} ${d.iso < TODAY ? "past" : ""}`;
+    if (!e) return `<div class="${cls} empty" data-go="plan"><div class="in"><div class="d">${d.dow} ${d.d}</div><div>+ Plan a meal</div></div></div>`;
+    if (e.text) return `<div class="${cls} empty"><div class="in"><div class="d">${d.dow} ${d.d}</div><div style="font-style:italic">${esc(e.text)}</div></div></div>`;
+    const r = R[e.slug];
+    return `<div class="${cls}" data-open="${r.slug}" style="cursor:pointer">${photo(r)}<div class="in"><div class="d">${d.iso === TODAY ? "Tonight" : d.dow + " " + d.d}</div><div class="n">${esc(r.name)}</div></div></div>`;
+  }).join("");
+  const next = WEEKS[1].days.map((d) => { const e = (S.plan[d.iso] || [])[0]; return e ? `<div class="slot full"><b>${d.dow}</b><span>${esc(e.text || R[e.slug].name)}</span></div>` : `<div class="slot"><b>${d.dow}</b><span>—</span></div>`; }).join("");
+  const toBuy = SHOP.filter((i) => !i.done).slice(0, 7);
+  const stale = RECIPES.filter((r) => r.coll === "rotation" && r.last >= 6).sort((a, b) => b.last - a.last).slice(0, 4);
+  const tries = RECIPES.filter((r) => r.coll === "totry");
+  const recent = [R["roast-chicken"], R["slow-cooked-lamb-shoulder"], R["steak-and-mushroom-pie"]];
+  return `<div class="page">
+    <div class="home-head"><h1 class="h1">Saturday</h1><div class="sub" style="padding-bottom:5px">7 November · ${planned} of 7 nights planned · ${SHOP.length - shopDone} things to buy</div></div>
+    <div class="bento">
+      <div class="tile t-week"><div class="weekribbon">${ribbon}</div></div>
+      <div class="tile t-tonight">${photo(tonight)}<div class="in">
+        <div class="label" style="color:#f1d9c8">Tonight</div>
+        <div class="name">${esc(tonight.name)}</div>
+        <div style="opacity:.85">3 hr 50 min · Serves 6 · started at 2 pm for 6 pm</div>
+        <div class="row" style="margin-top:6px"><button class="btn primary" data-go="cook">Cook</button><button class="btn" data-open="${tonight.slug}">Open the recipe</button><button class="btn" data-go="plan">Swap</button></div>
+      </div></div>
+      <div class="tile t-shop">
+        <div class="row"><svg class="ring" viewBox="0 0 84 84"><circle cx="42" cy="42" r="34" fill="none" stroke="#f1e9e2" stroke-width="9"/><circle cx="42" cy="42" r="34" fill="none" stroke="#2c666c" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}" transform="rotate(-90 42 42)" style="transition:stroke-dashoffset .4s"/><text x="42" y="47" text-anchor="middle" font-size="17" font-weight="600" fill="#2a1f19">${Math.round(frac * 100)}%</text></svg>
+          <div><div class="h2" style="font-size:20px">${SHOP.length - shopDone} to buy</div><div class="sub">${shopDone} in the trolley</div></div></div>
+        <div style="flex:1;overflow:hidden">${toBuy.map((i) => `<div class="shoprow" data-tick="${i.id}"><span class="check"></span><span class="t grow"><b>${esc(i.q)}</b> ${esc(i.name)}</span><span class="sub" style="font-size:12px">${i.aisle}</span></div>`).join("")}</div>
+        <button class="btn" data-go="shop" style="align-self:flex-start">Open the list</button>
+      </div>
+      <div class="tile t-next"><div><div class="h2" style="font-size:20px;color:#fff">Next week is half planned</div><div style="opacity:.85;margin-top:4px">2 of 7 nights. Fill the rest from the rotation, then something for the weekend.</div></div><button class="btn" data-go="plan">Plan next week</button></div>
+      <div class="tile t-nextweek"><div class="row"><div class="label grow">Next week</div><button class="btn sm ghost" data-go="plan">Open the plan →</button></div><div class="slots">${next}</div></div>
+      <div class="tile t-while"><div class="label">Haven't made in a while</div>${stale.map((r) => `<div class="mini" data-open="${r.slug}" style="cursor:pointer">${photo(r)}<div class="grow"><div style="font-weight:500">${esc(r.name)}</div><div class="sub" style="font-size:12px">${r.last} weeks ago</div></div><button class="btn sm" title="Put it on next week" data-go="plan">+</button></div>`).join("")}</div>
+      <div class="tile t-try"><div class="label">To try</div><div class="trystrip">${tries.map((r) => `<div class="trycard" data-open="${r.slug}" style="cursor:pointer">${photo(r)}<span>${esc(r.name)}</span></div>`).join("")}</div></div>
+      <div class="tile t-recent"><div class="label">Recently added</div>${recent.map((r) => `<div class="mini" data-open="${r.slug}" style="cursor:pointer">${photo(r)}<div class="grow" style="font-weight:500;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(r.name)}</div></div>`).join("")}<button class="btn" data-go="import" style="align-self:flex-start;margin-top:auto">Import a recipe</button></div>
+    </div>
+  </div>`;
+}
+
+function itemsFor(slug) { return slug ? [5, 7, 4, 6, 8, 3, 6, 5, 9][hue(slug) % 9] : 0; }
+function renderPlan() {
+  const weeks = WEEKS.map((w, wi) => {
+    const planned = w.days.filter((d) => (S.plan[d.iso] || []).length).length;
+    const days = w.days.map((d) => {
+      const es = S.plan[d.iso] || [];
+      const cls = `day ${d.iso === TODAY ? "today" : ""} ${d.iso < TODAY ? "past" : ""} ${d.iso === S.picked ? "picked" : ""}`;
+      const n = es.reduce((a, e) => a + itemsFor(e.slug), 0);
+      return `<div class="${cls}" data-day="${d.iso}">
+        <div class="dayhead"><b>${d.dow}</b><span class="sub">${d.d} Nov</span>${d.iso === TODAY ? '<span class="pill">Today</span>' : ""}</div>
+        ${es.map((e, i) => e.text ? `<div class="entry note" draggable="true" data-entry="${d.iso}:${i}">${esc(e.text)}</div>` : `<div class="entry" draggable="true" data-entry="${d.iso}:${i}" data-open-panel="${e.slug}">${photo(R[e.slug])}<div class="in"><div class="nm">${esc(R[e.slug].name)}</div>${e.meal ? `<span class="chip" style="align-self:flex-start">${e.meal}</span>` : `<span class="sub" style="font-size:11.5px">${mins(R[e.slug].mins)}</span>`}</div></div>`).join("")}
+        ${d.iso < TODAY ? "" : `<button class="drop" data-pick="${d.iso}">${es.length ? "+ Add another" : d.iso === S.picked ? "Pick from the shelf →" : "Drop a recipe, or click to choose"}</button>`}
+        ${n ? `<div class="dayfoot">+${n} to buy${d.iso < TODAY ? " · eaten" : n > 6 ? " · 2 already on the list" : ""}</div>` : ""}
+      </div>`;
+    }).join("");
+    return `<section class="weekblock"><div class="weekbar"><h2 class="h2">${w.label}</h2><span class="sub">${w.range} · ${planned} of 7 nights</span><span class="meter"><i style="width:${(planned / 7) * 100}%"></i></span><span class="grow"></span>${wi === 1 ? '<button class="btn sm">Fill the empty nights</button>' : ""}<button class="btn sm">Add to shopping</button></div><div class="week">${days}</div></section>`;
+  }).join("");
+  const pd = dayOf(S.picked);
+  const pool = RECIPES.filter((r) => (S.shelfQ ? r.name.toLowerCase().includes(S.shelfQ.toLowerCase()) : S.shelfTab === "all" || r.coll === S.shelfTab));
+  return `<div class="planpage">
+    <div class="board"><div class="board-head"><h1 class="h1">Plan</h1><div class="weekarrows"><button class="btn">‹</button><span class="sub" style="padding:0 8px">2 – 15 Nov</span><button class="btn">›</button></div></div>${weeks}</div>
+    <aside class="shelf">
+      <div class="target"><div class="label" style="color:var(--brand)">Adding to</div><div style="font:600 18px var(--display);margin-top:2px">${pd ? `${pd.long} ${pd.d} November` : "—"}</div><div class="sub" style="font-size:12.5px;margin-top:2px">Click a recipe, or drag one onto any day.</div></div>
+      <input class="input" id="shelfq" placeholder="Search, or type a note like “out”" value="${esc(S.shelfQ)}">
+      <div class="tabs">${[["rotation", "Rotation"], ["weekend", "Weekend"], ["totry", "To try"], ["all", "All"]].map(([k, l]) => `<button data-shelf="${k}" class="${S.shelfTab === k && !S.shelfQ ? "on" : ""}">${l}</button>`).join("")}</div>
+      <div class="shelflist">${pool.map((r) => `<button class="scard" draggable="true" data-slug="${r.slug}">${photo(r)}<div class="grow"><div class="nm">${esc(r.name)}</div><div class="sub" style="font-size:12px">${mins(r.mins)}${r.last ? ` · ${r.last} wk ago` : " · never made"}</div></div><span class="grip">⋮⋮</span></button>`).join("")}${S.shelfQ && !pool.length ? `<button class="scard" data-note="${esc(S.shelfQ)}"><div class="photo" style="background:var(--sunk);display:grid;place-items:center">✎</div><div class="grow"><div class="nm">Add “${esc(S.shelfQ)}” as a note</div></div></button>` : ""}</div>
+    </aside>
+  </div>`;
+}
+
+function renderShop() {
+  const left = SHOP.filter((i) => !i.done), done = SHOP.filter((i) => i.done);
+  const meals = [...new Set(SHOP.flatMap((i) => i.meals))];
+  const item = (i) => `<div class="item ${S.meal && i.meals.includes(S.meal) ? "lit" : ""}" data-tick="${i.id}"><span class="check ${i.done ? "on" : ""}" style="margin-top:2px"></span><div class="grow"><div class="t">${i.q ? `<span class="q">${esc(i.q)}</span> ` : ""}${esc(i.name)}</div><div class="m">${i.meals.map((m) => esc(R[m].name)).join(" · ")}</div></div></div>`;
+  return `<div class="page">
+    <div class="shop-head"><h1 class="h1">Shopping</h1>
+      <div class="progress"><div class="row"><b>${done.length} of ${SHOP.length}</b><span class="sub">in the trolley</span></div><div class="bar"><i style="width:${(done.length / SHOP.length) * 100}%"></i></div></div>
+      <div class="row"><button class="btn">Clear the trolley</button><button class="btn">Print for the shop</button></div></div>
+    <div class="addrow"><span class="plus">+</span><input class="input" id="addq" placeholder="Add an item — it goes to its aisle"><span class="guess" id="guess"></span></div>
+    <div class="trolleybar row" style="margin:-8px 0 16px"><span class="chip solid">🛒 ${done.length} in the trolley</span><span class="sub" style="font-size:12.5px">The trolley gets its own column from about 1360px.</span></div>
+    <div class="shopgrid ${S.meal ? "focus" : ""}" id="shopgrid">
+      <div class="aisles">${AISLES.map((a) => { const its = left.filter((i) => i.aisle === a); return its.length ? `<section class="aisle"><h3 class="label"><span>${a}</span><span>${its.length}</span></h3>${its.map(item).join("")}</section>` : ""; }).join("")}</div>
+      <aside class="trolley"><div class="label" style="margin-bottom:8px">🛒 In the trolley · ${done.length}</div>${done.map(item).join("")}</aside>
+      <aside class="mealkey"><div class="label" style="margin:0 7px 6px">This week's meals</div>${meals.map((m) => `<button class="meal ${S.meal === m && S.mealPinned ? "on" : ""}" data-meal="${m}">${photo(R[m])}<span style="font-weight:500;line-height:1.3">${esc(R[m].name)}</span><span class="ct">${SHOP.filter((i) => !i.done && i.meals.includes(m)).length}</span></button>`).join("")}
+        <div class="sub" style="font-size:12.5px;margin:10px 7px">Hover a meal to see its items light up; click to keep it lit.</div></aside>
+    </div>
+  </div>`;
+}
+
+function libVisible() {
+  const L = S.lib;
+  return RECIPES.filter((r) => (L.coll === "all" || r.coll === L.coll) && (!L.fav || r.fav) && [...L.tags].every((t) => r.tags.includes(t)) && (!L.q || r.name.toLowerCase().includes(L.q.toLowerCase())));
+}
+function renderRecipes() {
+  const L = S.lib, vis = libVisible();
+  const tags = [...new Set(RECIPES.flatMap((r) => r.tags))].sort();
+  const ratios = ["4/5", "1/1", "3/4", "4/3", "5/6", "1/1.15"];
+  const sel = L.sel && R[L.sel];
+  return `<div class="lib ${sel ? "reading" : ""}">
+    <aside class="facets">
+      <input class="input" id="libq" placeholder="Search recipes" value="${esc(L.q)}">
+      <div class="facet"><div class="label">Collections</div>${[["all", "Everything"], ["rotation", "Rotation"], ["weekend", "Weekend"], ["totry", "To try"]].map(([k, l]) => `<button class="fbtn ${L.coll === k ? "on" : ""}" data-coll="${k}"><span>${l}</span><span class="ct">${k === "all" ? RECIPES.length : RECIPES.filter((r) => r.coll === k).length}</span></button>`).join("")}</div>
+      <div class="facet"><div class="label">Tags</div>${tags.map((t) => `<button class="fbtn ${L.tags.has(t) ? "on" : ""}" data-tag="${t}"><span>${L.tags.has(t) ? "✓ " : ""}${t}</span><span class="ct">${RECIPES.filter((r) => r.tags.includes(t)).length}</span></button>`).join("")}</div>
+      <div class="facet"><div class="label">Made with</div><input class="input" placeholder="A food, like “chicken”"></div>
+      <div class="facet"><button class="fbtn ${L.fav ? "on" : ""}" data-fav><span>♥ Favourites only</span></button></div>
+    </aside>
+    <div class="wallpane">
+      <div class="wallhead"><h1 class="h1">Recipes</h1><span class="sub">${vis.length} recipes</span><span class="grow"></span><button class="btn">Sort: Newest</button><button class="btn" title="Open a random recipe" data-random>⚄</button><button class="btn primary" data-go="import">New recipe</button></div>
+      <div class="wall">${vis.map((r, i) => `<button class="rcard ${L.sel === r.slug ? "sel" : ""}" data-sel="${r.slug}"><div class="photo" style="aspect-ratio:${ratios[i % ratios.length]};background-image:${photo(r).match(/background-image:([^;]*);/)[1]}"><span class="heart">${r.fav ? "♥" : "♡"}</span><span class="time">${mins(r.mins)}</span></div><div class="nm">${esc(r.name)}</div><div class="tg">${r.tags.join(" · ") || "&nbsp;"}</div></button>`).join("")}</div>
+    </div>
+    <aside class="reader">${sel ? readerBody(sel) : ""}</aside>
+  </div>`;
+}
+function readerBody(r) {
+  let ings, steps;
+  if (r.slug === "chicken-fried-rice") { ings = FR.parts.flatMap((p) => p.ings.map((i) => [`${fmtQ(i[1])} ${i[2]}`.trim(), i[3], i[4]])); steps = FR.steps.map((s) => [s[0], s[1]]); }
+  else ({ ings, steps } = shortList(r.slug));
+  return `<div class="hero">${photo(r, "position:absolute;inset:0")}<button class="x" data-close title="Close (Esc)">×</button></div>
+  <div class="in">
+    <h2 class="h2" style="font-size:26px">${esc(r.name)}</h2>
+    <div class="row sub">${mins(r.mins)} · Serves 4 · ${r.last ? `made ${r.last} weeks ago` : "never made"}</div>
+    <div class="row"><button class="btn primary" data-go="cook">Cook</button><button class="btn" data-open="${r.slug}">Open the recipe</button><button class="btn">Put on the plan</button><span class="grow"></span><span class="sub" style="font-size:12px"><kbd>←</kbd> <kbd>→</kbd> to flip</span></div>
+    <div class="cols"><div><div class="label" style="margin-bottom:6px">Ingredients</div>${ings.map(([q, n, nt]) => `<div class="ing"><span class="q">${esc(q)}</span><span>${esc(n)}${nt ? ` <span class="nt">${esc(nt)}</span>` : ""}</span></div>`).join("")}</div>
+    <div><div class="label" style="margin-bottom:8px">Method</div><ol class="ol">${steps.map(([l, t], i) => `<li><span class="num">${i + 1}</span><div><b>${esc(l)}</b><div style="color:var(--fg2)">${esc(t)}</div></div></li>`).join("")}</ol></div></div>
+  </div>`;
+}
+
+function renderRecipe() {
+  const r = R[S.recipe] || R["chicken-fried-rice"];
+  const full = r.slug === "chicken-fried-rice";
+  const k = S.serves / 4;
+  let parts, steps;
+  if (full) { parts = FR.parts; steps = FR.steps; }
+  else { const s = shortList(r.slug); parts = [{ name: "", ings: s.ings.map((x, i) => ["g" + i, null, x[0], x[1], x[2]]) }]; steps = s.steps.map((x, i) => [x[0], x[1], "", "g" + Math.min(i * 2, s.ings.length - 1) + ",g" + Math.min(i * 2 + 1, s.ings.length - 1)]); }
+  const q = (i) => i[1] == null ? i[2] : `${fmtQ(i[1] * k)} ${i[2]}`.trim();
+  return `<div class="spread">
+    <div class="leftpage">${photo(r)}<div class="in">
+      <div class="label">Recipes · ${r.tags.join(" · ")}</div>
+      <h1 class="title">${esc(r.name)}</h1>
+      <div style="color:var(--fg2);line-height:1.55">${full ? FR.desc : "A household favourite, written the house way."}</div>
+      <div class="facts"><div><b>${full ? "10 min" : mins(Math.round(r.mins / 3))}</b><span>Prep</span></div><div><b>${full ? "10 min" : mins(r.mins - Math.round(r.mins / 3))}</b><span>Cook</span></div><div><b>${mins(r.mins)}</b><span>Total</span></div><div><b class="stars">★★★★☆</b><span>Made 4 times</span></div></div>
+      <div class="row" style="flex-wrap:wrap"><button class="btn primary" data-go="cook">Cook</button><button class="btn">Add to shopping</button><button class="btn">Put on the plan</button><button class="btn" data-go="editor">Edit</button><button class="btn ghost">♡</button><button class="btn ghost">⋯</button></div>
+      <div class="row" style="flex-wrap:wrap;gap:6px"><span class="chip">Rotation</span><span class="chip">Fried rice</span><span class="chip">Leftovers</span></div>
+    </div></div>
+    <div class="ingpage">
+      <div class="label">Ingredients</div>
+      <div class="serves"><button data-serves="-1">−</button><b>Serves ${S.serves}</b><button data-serves="1">+</button>${S.serves !== 4 ? `<button class="btn sm ghost" data-serves="0" style="width:auto">Reset</button>` : ""}</div>
+      <div class="ilist">${parts.map((p) => `${p.name ? `<div class="label" style="margin:16px 8px 4px">${p.name}</div>` : ""}${p.ings.map((i) => `<div class="ing" data-ing="${i[0]}"><span class="check"></span><span><span class="q">${esc(q(i))}</span> ${esc(i[3])}${i[4] ? `<div class="nt">${esc(i[4])}</div>` : ""}</span></div>`).join("")}`).join("")}</div>
+    </div>
+    <div class="methodpage">
+      <div class="label" style="margin:0 14px 10px">Method</div>
+      ${steps.map((s, n) => `<div class="step" data-uses="${s[3] || ""}"><span class="num">${n + 1}</span><div><div class="lbl">${esc(s[0])}</div><div class="tx">${esc(s[1])}</div>${s[2] ? `<div class="nt">${esc(s[2])}</div>` : ""}${s[4] ? `<span class="timerchip">◷ ${fmtQ(s[4])} min</span>` : ""}</div></div>`).join("")}
+    </div>
+    <aside class="notespage">
+      <div class="label" style="margin-bottom:10px">Notes</div>
+      <div class="card"><b>Bacon</b><div class="sub" style="margin-top:4px;line-height:1.5">Ham, Chinese sausage or more chicken all work in its place.</div></div>
+      <div class="card"><b>Day-old rice</b><div class="sub" style="margin-top:4px;line-height:1.5">It's drier, so it fries rather than steams. Freshly cooked rice spread on a tray and chilled for an hour works in a pinch.</div></div>
+      <div class="card"><b>Cooking wine</b><div class="sub" style="margin-top:4px;line-height:1.5">Mirin is sweeter; use a little less soy with it.</div></div>
+      <div class="label" style="margin:22px 0 12px">History</div>
+      <div class="tl"><div><b>On the plan</b><div class="sub">Monday 2 November</div></div><div><b>Made it</b><div class="sub">12 October · ★★★★☆ “more sauce”</div></div><div><b>Made it</b><div class="sub">21 September</div></div><div><b>Restyled</b><div class="sub">3 September · labels added</div></div><div><b>Imported</b><div class="sub">recipetineats.com · 14 March</div></div></div>
+    </aside>
+  </div>`;
+}
+
+const SRC = [
+  ["h", "Chicken Fried Rice"], ["s", "Jump to Recipe · Print Recipe · Pin"], ["s", "By Nagi · Published 9 Mar · 4.98 from 312 votes"],
+  ["u", "A fully loaded, completely delicious Chicken Fried Rice! Serve it as a side - or have it as a main!", "desc"],
+  ["s", "Advertisement"], ["s", "Why you'll love this: it's quick, it's cheap and it uses up leftover rice."],
+  ["h", "Ingredients"], ["u", "Servings: 4", "serves"], ["h", "Sauce"],
+  ["u", "2.5 tbsp Chinese cooking wine or Mirin (Note 3)", "d76b"], ["u", "1 tbsp oyster sauce (Note 4)", "8172"], ["u", "3 tbsp light soy sauce (Note 5)", "e722"], ["u", "1/2 tsp sesame oil, optional", "04a2"], ["u", "1/4 tsp white pepper, optional", "7c74"],
+  ["h", "Fried Rice"], ["u", "2 tbsp oil, peanut, vegetable or canola", "3603"], ["u", "2 eggs, lightly whisked", "6ff3"], ["u", "150g (5oz) chicken breast, finely sliced into small pieces", "17e5"],
+  ["u", "2 garlic cloves, minced", "dee0"], ["u", "1/2 onion, finely chopped", "a9f8"], ["u", "120g (4oz) bacon, excess fat trimmed, chopped (Note 1)", "704f"],
+  ["u", "1 small carrot*, peeled and diced 0.75cm / 1/3\"", "dc37"], ["u", "1/2 cup frozen corn* (or can or fresh)", "c0e7"], ["u", "1/2 cup frozen peas*", "e5d6"],
+  ["u", "2 cups (packed) cooked white rice, day old (Note 2)", "adc0"], ["u", "3/4 cup green onions, finely sliced", "e65b"],
+  ["s", "Advertisement"], ["h", "Instructions"],
+  ["u", "Sauce – Mix in a bowl. Pour 2 tsp over chicken, toss to coat, set aside 10 minutes.", "st0"],
+  ["u", "Egg – Heat 1 tbsp oil in wok or skillet over medium heat. Add egg, scramble until just cooked then remove.", "st1"],
+  ["u", "Turn heat up to high. Add remaining oil and bacon. Cook until fat starts to melt, then add onion and garlic.", "st2"],
+  ["u", "Cook until bacon is light golden, about 1 1/2 minutes.", "st3"],
+  ["u", "Add carrot, corn and peas. Cook for 1 minute.", "st4"],
+  ["u", "Add chicken and cook until it changes from pink to white, about 1 1/2 minutes.", "st5"],
+  ["u", "Add rice and Sauce. Cook for 1 1/2 minutes, stirring constantly.", "st6"],
+  ["u", "Add egg and green onion, toss through then remove from heat. Serve immediately.", "st7"],
+  ["h", "Notes"], ["u", "1. Bacon – sub with ham, Chinese sausage or more chicken.", "n1"], ["u", "2. Day old rice – it's drier, so it fries rather than steams.", "n2"],
+  ["s", "Did you make this recipe? Tag @recipetineats"], ["s", "Comments (1,284) · Leave a reply"], ["s", "You might also like: Egg Fried Rice · Nasi Goreng · Pad See Ew"],
+];
+function renderImport() {
+  const n = (key) => SRC.findIndex((x) => x[2] === key) + 1;
+  const used = SRC.filter((x) => x[0] === "u").length;
+  const flags = { dc37: "“small” read as the unit; check it's not part of the name", c0e7: "The asterisk was dropped", adc0: "“packed” moved to the note" };
+  const pl = (key, html, flag) => `<div class="pl" data-src="${key}">${flag ? `<span class="flag" title="${esc(flag)}"></span>` : '<span class="ok"></span>'}<div class="grow">${html}${flag ? `<div class="sub" style="font-size:12px;color:#a8771c">${esc(flag)}</div>` : ""}</div><span class="src-n">line ${n(key)}</span></div>`;
+  return `<div class="page" style="height:100%;display:flex;flex-direction:column;padding-bottom:20px">
+    <div class="row" style="margin-bottom:18px;gap:24px"><h1 class="h1">New recipe</h1><div class="steps3"><span class="s done"><i>✓</i>Source</span><hr><span class="s on"><i>2</i>Check</span><hr><span class="s"><i>3</i>Save</span></div><span class="grow"></span><button class="btn">Back</button><button class="btn primary">Save recipe</button></div>
+    <div class="imp">
+      <div class="card pane"><div class="bar"><span class="label grow">The page, as garnish read it</span><span class="chip">${used} of ${SRC.length} lines used</span><span class="chip" style="background:#f6f1ec">greyed: skipped</span></div>
+        <div class="src" id="src">${SRC.map((x, i) => x[0] === "h" ? `<h4 data-k="${x[2] || ""}">${esc(x[1])}</h4>` : `<p data-n="${i + 1}" class="${x[0] === "u" ? "used" : "skip"}" data-k="${x[2] || ""}">${esc(x[1])}</p>`).join("")}</div></div>
+      <div class="card pane"><div class="bar"><span class="label grow">What it understood</span><span class="chip" style="border-color:var(--hi-line);background:var(--hi)">● 3 to check</span><span class="chip">recipetineats.com</span></div>
+        <div class="parsed">
+          <div><input class="input" value="Chicken Fried Rice" style="font:600 22px var(--display);border-color:transparent;padding-left:8px"></div>
+          ${pl("desc", "A fully loaded, completely delicious Chicken Fried Rice! Serve it as a side, or have it as a main.")}
+          <div class="row" style="gap:20px">${pl("serves", "<b>Serves 4</b>")}</div>
+          <div><div class="label" style="margin:0 8px 4px">Ingredients</div>${FR.parts[0].ings.map((i) => pl(i[0], `<b>${fmtQ(i[1])} ${i[2]}</b> ${esc(i[3])}${i[4] ? ` <span class="sub">${esc(i[4])}</span>` : ""}`, flags[i[0]])).join("")}
+            <div class="label" style="margin:12px 8px 4px">Sauce</div>${FR.parts[1].ings.map((i) => pl(i[0], `<b>${fmtQ(i[1])} ${i[2]}</b> ${esc(i[3])}${i[4] ? ` <span class="sub">${esc(i[4])}</span>` : ""}`)).join("")}</div>
+          <div><div class="label" style="margin:0 8px 4px">Method</div>${FR.steps.slice(0, 8).map((s, i) => pl("st" + i, `<b>${esc(s[0])}</b> — ${esc(s[1])}`)).join("")}</div>
+          <div><div class="label" style="margin:0 8px 4px">Notes</div>${pl("n1", "<b>Bacon</b> — sub with ham, Chinese sausage or more chicken.")}${pl("n2", "<b>Day-old rice</b> — it's drier, so it fries rather than steams.")}</div>
+        </div></div>
+      <div class="card pane impside" style="padding:18px;gap:14px;overflow:auto">
+        <div class="label">What saving will change</div>
+        <div><b>2 new foods</b><div class="sub" style="margin-top:6px;line-height:1.7">Chinese cooking wine → Pantry<br>white pepper → Spices</div></div>
+        <div><b>14 foods matched</b><div class="sub" style="margin-top:6px;line-height:1.7">eggs, chicken breast, garlic, onion, bacon, carrot, corn kernels, frozen peas, rice, spring onion, oil, oyster sauce, soy sauce, sesame oil</div></div>
+        <div><b>Looks like one you have</b><div class="row" style="margin-top:8px">${photo(R["weeknight-stir-fry"], "width:44px;height:44px;border-radius:8px")}<div>Weeknight Stir-fry<div class="sub" style="font-size:12px">6 ingredients in common</div></div></div></div>
+        <div><b>Restyle</b><div class="sub" style="margin-top:6px;line-height:1.6">Every step will get a label and the times go after the cue, as the house style asks.</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderEditor() {
+  return `<div class="ed">
+    <div class="edform">
+      <div class="row"><h1 class="h1 grow" style="font-size:28px">Edit recipe</h1><button class="btn">Cancel</button><button class="btn primary">Save</button></div>
+      <div class="edgrid"><label>Name<input class="input" data-ed="name" value="${esc(S.edit.name)}"></label><label>Serves<input class="input" data-ed="serves" value="${esc(S.edit.serves)}"></label><label>Prep (min)<input class="input" data-ed="prep" value="${esc(S.edit.prep)}"></label><label>Cook (min)<input class="input" data-ed="cook" value="${esc(S.edit.cook)}"></label></div>
+      <label>Ingredients <span class="sub" style="font-weight:400">one a line</span><textarea class="input" data-ed="ings">${esc(S.edit.ings)}</textarea></label>
+      <label>Method <span class="sub" style="font-weight:400">one step a line, as “Label: what to do”</span><textarea class="input" data-ed="steps" style="min-height:260px">${esc(S.edit.steps)}</textarea></label>
+    </div>
+    <div class="edprev"><div class="label" style="text-align:center;margin-bottom:12px">Preview · as it will look</div><div class="sheet" id="sheet">${sheetBody()}</div></div>
+  </div>`;
+}
+function sheetBody() {
+  const E = S.edit;
+  const ings = E.ings.split("\n").filter(Boolean).map((l) => { const m = l.match(/^([\d½¼¾⅓⅔.\/ ]+(?:g|kg|ml|l|cups?|tbsp|tsp)?\b)?\s*(.*)$/); const [name, note] = (m[2] || "").split(/,\s*(.*)/); return [m[1] || "", name, note || ""]; });
+  const steps = E.steps.split("\n").filter(Boolean).map((l) => { const i = l.indexOf(":"); return i > 0 ? [l.slice(0, i), l.slice(i + 1).trim()] : ["", l]; });
+  return `<div class="photo" style="background-image:linear-gradient(135deg,#e9d3b4,#c99a62)"></div><div class="in">
+    <h2 style="font:600 30px var(--display);margin:0">${esc(E.name) || "Untitled"}</h2>
+    <div class="facts"><div><b>${esc(E.prep) || "–"} min</b><span>Prep</span></div><div><b>${esc(E.cook) || "–"} min</b><span>Cook</span></div><div><b>${esc(E.serves) || "–"}</b><span>Serves</span></div></div>
+    <div class="cols"><div><div class="label" style="margin-bottom:6px">Ingredients</div>${ings.map(([q, n, nt]) => `<div class="ing"><span class="q">${esc(q.trim())}</span><span>${esc(n)}${nt ? ` <span class="nt">${esc(nt)}</span>` : ""}</span></div>`).join("")}</div>
+    <div><div class="label" style="margin-bottom:8px">Method</div><ol class="ol">${steps.map(([l, t], i) => `<li><span class="num">${i + 1}</span><div>${l ? `<b>${esc(l)}</b>` : `<b style="color:#a8771c">Needs a label</b>`}<div style="color:var(--fg2)">${esc(t)}</div></div></li>`).join("")}</ol></div></div>
+  </div>`;
+}
+
+let TIMERS = [{ label: "Marinate the chicken", left: 412, run: true }];
+function renderCook() {
+  const st = FR.steps, i = S.cookStep, s = st[i];
+  const ids = (s[3] || "").split(",").filter(Boolean);
+  const ings = FR.parts.flatMap((p) => p.ings).filter((x) => ids.includes(x[0]));
+  const card = (j, cls) => j < 0 || j >= st.length ? `<div class="fcard" style="visibility:hidden"></div>` : `<button class="fcard ${cls}" data-step="${j}"><div class="k">Step ${j + 1}</div><div class="lbl">${esc(st[j][0])}</div><div>${esc(st[j][1])}</div>${cls === "cur" && st[j][2] ? `<div class="nt">${esc(st[j][2])}</div>` : ""}</button>`;
+  return `<div class="cook">
+    <div class="cooktop"><button class="x" data-go="recipe">× Exit</button><div style="font:600 20px var(--display)">Chicken Fried Rice</div><span style="color:#a8968a">Step ${i + 1} of ${st.length}</span><div class="segs">${st.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div></div>
+    <div class="cookbody">
+      <div class="forstep"><div class="label" style="margin-bottom:8px">For this step</div>${ings.length ? ings.map((x) => `<div class="ing"><span class="q">${fmtQ(x[1])} ${x[2]}</span>&nbsp;${esc(x[3])}${x[4] ? `<div class="nt" style="font-size:13px">${esc(x[4])}</div>` : ""}</div>`).join("") : `<div style="color:#a8968a">Nothing new; keep going with what's in the wok.</div>`}
+        <div class="label" style="margin:26px 0 8px">Coming up</div><div style="color:#a8968a;line-height:1.5">${st[i + 1] ? esc(st[i + 1][0]) : "Done"}${st[i + 2] ? " · " + esc(st[i + 2][0]) : ""}</div></div>
+      <div class="film">${card(i - 1, "")}${card(i, "cur")}${card(i + 1, "")}</div>
+    </div>
+    <div class="cookfoot">${TIMERS.map((t, k) => `<div class="ctimer ${t.left <= 0 ? "done" : ""}"><div><div style="font-size:12px;color:#a8968a">${esc(t.label)}</div><b data-timer="${k}">${t.left <= 0 ? "Done" : `${Math.floor(t.left / 60)}:${String(t.left % 60).padStart(2, "0")}`}</b></div><button class="btn sm" data-tpause="${k}" style="background:#3a2f29;border-color:#4a3d36;color:#fff">${t.run ? "Pause" : "Resume"}</button></div>`).join("")}
+      ${s[4] ? `<button class="btn" data-tstart style="background:#2f2723;border-color:#4a3d36;color:#fff;padding:12px 16px">◷ Start ${fmtQ(s[4])} min</button>` : ""}
+      <span class="grow"></span><button class="bigbtn" data-cstep="-1">← Back</button><button class="bigbtn go" data-cstep="1">${i === st.length - 1 ? "Finish" : "Next →"}</button></div>
+  </div>`;
+}
+
+function renderSettings() {
+  const sel = FOODS.find((f) => f.id === S.settingsSel);
+  const rail = [["Library", ["Foods", "Units", "Aisles", "Tags"]], ["Cooking", ["Style", "Planner"]], ["Data", ["Backup", "AI", "MCP"]], ["App", ["Appearance", "Alerts", "Diagnostics"]]];
+  const n = S.settingsChecked.size;
+  return `<div class="set ${sel ? "inspecting" : ""}">
+    <nav class="rail"><h1 class="h1" style="font-size:24px;padding:0 9px">Settings</h1>${rail.map(([g, xs]) => `<div class="facet"><div class="label">${g}</div>${xs.map((x) => `<button class="fbtn ${x === "Foods" ? "on" : ""}"><span>${x}</span>${x === "Style" ? '<span class="ct">12</span>' : x === "Diagnostics" ? '<span class="ct">7</span>' : ""}</button>`).join("")}</div>`).join("")}</nav>
+    <div class="grid-wrap">
+      <div class="row" style="margin-bottom:14px"><h2 class="h2 grow">Foods <span class="sub" style="font:400 14px var(--ui)">765 foods · showing ${FOODS.length}</span></h2><input class="input" style="width:280px" placeholder="Search foods"><button class="btn">Aisle: any ▾</button><button class="btn">Used: any ▾</button><button class="btn primary">Add food</button></div>
+      <table class="dg"><thead><tr><th style="width:36px"><span class="check"></span></th><th>Name</th><th>Also called</th><th>Aisle</th><th class="col-wide">Shops as</th><th class="col-wide">Converts</th><th style="text-align:right">Recipes</th></tr></thead>
+      <tbody>${FOODS.map((f) => `<tr data-row="${f.id}" class="${S.settingsSel === f.id || S.settingsChecked.has(f.id) ? "sel" : ""}"><td><span class="check ${S.settingsChecked.has(f.id) ? "on" : ""}" data-chk="${f.id}"></span></td><td class="cell" data-cell="name" style="font-weight:500">${esc(f.name)}</td><td class="cell sub" data-cell="aliases">${esc(f.aliases) || "—"}</td><td class="cell" data-cell="aisle"><span class="chip">${f.aisle}</span></td><td class="col-wide sub">${f.n > 4 ? "1 pack" : "by weight"}</td><td class="col-wide sub">${f.n > 5 ? "1 cup = 150 g" : "—"}</td><td style="text-align:right;font-variant-numeric:tabular-nums">${f.n}</td></tr>`).join("")}</tbody></table>
+    </div>
+    <aside class="inspector">${sel ? `
+      <div class="row"><h2 class="h2 grow">${esc(sel.name)}</h2><button class="btn ghost" data-uninspect>×</button></div>
+      <div class="field"><span class="label">Also called</span><div class="aliases">${(sel.aliases ? sel.aliases.split(", ") : []).map((a) => `<span class="chip">${esc(a)} <button>×</button></span>`).join("")}<span class="chip" style="border-style:dashed">+ add</span></div></div>
+      <div class="field"><span class="label">Aisle</span><select class="input">${AISLES.map((a) => `<option ${a === sel.aisle ? "selected" : ""}>${a}</option>`).join("")}</select></div>
+      <div class="field"><span class="label">On the shopping list as</span><input class="input" value="${sel.n > 4 ? "1 pack" : "by weight"}"></div>
+      <div class="field"><span class="label">Used in ${sel.n} recipes</span>${RECIPES.slice(hue(sel.name) % 10, (hue(sel.name) % 10) + Math.min(sel.n, 5)).map((r) => `<div class="mini">${photo(r)}<span>${esc(r.name)}</span></div>`).join("")}</div>
+      <div class="row" style="margin-top:auto"><button class="btn">Merge into…</button><button class="btn" style="color:var(--danger)">Delete</button></div>` : ""}</aside>
+    ${n ? `<div class="bulk"><b>${n} selected</b><button class="btn sm">Set aisle ▾</button><button class="btn sm">Merge</button><button class="btn sm">Delete</button><button class="btn sm" data-clearchk>Clear</button></div>` : ""}
+  </div>`;
+}
+
+const RENDER = { home: renderHome, plan: renderPlan, shop: renderShop, recipes: renderRecipes, recipe: renderRecipe, import: renderImport, editor: renderEditor, cook: renderCook, settings: renderSettings };
+const NAVOF = { home: "home", plan: "plan", shop: "shop", recipes: "recipes", recipe: "recipes", import: "recipes", editor: "recipes", settings: "settings" };
+
+function render(keepScroll) {
+  const v = $("#view"), top = v.scrollTop;
+  const inner = $$(".wallpane,.reader,.grid-wrap,.shelflist", v).map((e) => e.scrollTop);
+  v.innerHTML = RENDER[S.screen]();
+  if (keepScroll) { v.style.scrollBehavior = "auto"; v.scrollTop = top; $$(".wallpane,.reader,.grid-wrap,.shelflist", v).forEach((e, i) => (e.scrollTop = inner[i] || 0)); v.style.scrollBehavior = ""; }
+  $("#frame").classList.toggle("frame-cook", S.screen === "cook");
+  $$(".nav").forEach((b) => b.classList.toggle("on", b.dataset.go === NAVOF[S.screen]));
+  $$("#screens button").forEach((b) => b.classList.toggle("on", b.dataset.s === S.screen));
+  $("#note").innerHTML = NOTES[S.screen];
+}
+function go(screen) { S.screen = screen; render(false); $("#view").scrollTop = 0; try { localStorage.setItem("garnish-mock", JSON.stringify({ screen, width: S.width })); } catch {} }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Frame sizing: the app at a chosen width, scaled to fit the window
+   ═════════════════════════════════════════════════════════════════════════ */
+const WIDTHS = [["fit", "Fit window"], [1024, "1024"], [1440, "1440"], [1920, "1920"], [2560, "2560 ultrawide"]];
+function layout() {
+  const availW = window.innerWidth - 32, availH = window.innerHeight - $("#chrome").offsetHeight - 24;
+  const W = S.width === "fit" ? Math.max(1024, availW) : S.width;
+  const s = Math.min(1, availW / W), H = availH / s;
+  const f = $("#frame");
+  f.style.width = W + "px"; f.style.height = H + "px"; f.style.transform = `scale(${s})`;
+  $("#holder").style.width = W * s + "px"; $("#holder").style.height = availH + "px";
+  $("#scale").textContent = `${W} px wide${s < 1 ? ` · shown at ${Math.round(s * 100)}%` : ""}`;
+  $$("#widths button").forEach((b) => b.classList.toggle("on", String(b.dataset.w) === String(S.width)));
+}
+$("#screens").innerHTML = Object.entries(LABELS).map(([k, l]) => `<button data-s="${k}">${l}</button>`).join("");
+$("#widths").innerHTML = WIDTHS.map(([w, l]) => `<button data-w="${w}">${l}</button>`).join("");
+$("#screens").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) go(b.dataset.s); });
+$("#widths").addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; S.width = b.dataset.w === "fit" ? "fit" : Number(b.dataset.w); layout(); try { localStorage.setItem("garnish-mock", JSON.stringify({ screen: S.screen, width: S.width })); } catch {} });
+window.addEventListener("resize", layout);
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Interactions
+   ═════════════════════════════════════════════════════════════════════════ */
+const frame = $("#frame");
+frame.addEventListener("click", (e) => {
+  const t = e.target;
+  const g = t.closest("[data-go]"); if (g) return go(g.dataset.go);
+  if (t.closest("[data-cmd]")) return openPalette();
+  const o = t.closest("[data-open]"); if (o) { S.recipe = o.dataset.open; S.serves = 4; return go("recipe"); }
+  // Home: tick from the tile
+  const tick = t.closest("[data-tick]");
+  if (tick) {
+    const it = SHOP.find((i) => i.id === tick.dataset.tick);
+    if (S.screen === "shop") { tick.classList.add("leaving"); setTimeout(() => { it.done = !it.done; render(true); }, 220); }
+    else { it.done = !it.done; render(true); }
+    return;
+  }
+  // Plan
+  const op = t.closest("[data-open-panel]"); if (op && S.screen === "plan") { S.lib.sel = op.dataset.openPanel; S.lib.coll = "all"; return go("recipes"); }
+  const pk = t.closest("[data-pick]"); if (pk) { S.picked = pk.dataset.pick; render(true); $("#shelfq")?.focus(); return; }
+  const sh = t.closest("[data-shelf]"); if (sh) { S.shelfTab = sh.dataset.shelf; S.shelfQ = ""; return render(true); }
+  const sc = t.closest(".scard"); if (sc) { addToPlan(S.picked, sc.dataset.slug ? { slug: sc.dataset.slug } : { text: sc.dataset.note }); S.shelfQ = ""; return; }
+  // Shopping
+  const ml = t.closest("[data-meal]"); if (ml) { const m = ml.dataset.meal; if (S.mealPinned && S.meal === m) { S.mealPinned = false; S.meal = null; } else { S.meal = m; S.mealPinned = true; } return render(true); }
+  // Library
+  const co = t.closest("[data-coll]"); if (co) { S.lib.coll = co.dataset.coll; return render(true); }
+  const tg = t.closest("[data-tag]"); if (tg) { const s = S.lib.tags; s.has(tg.dataset.tag) ? s.delete(tg.dataset.tag) : s.add(tg.dataset.tag); return render(true); }
+  if (t.closest("[data-fav]")) { S.lib.fav = !S.lib.fav; return render(true); }
+  const sl = t.closest("[data-sel]"); if (sl) { S.lib.sel = sl.dataset.sel; return render(true); }
+  if (t.closest("[data-close]")) { S.lib.sel = null; return render(true); }
+  if (t.closest("[data-random]")) { const v = libVisible(); S.lib.sel = v[Math.floor(Math.random() * v.length)].slug; return render(true); }
+  // Recipe
+  const sv = t.closest("[data-serves]"); if (sv) { const d = Number(sv.dataset.serves); S.serves = d === 0 ? 4 : Math.max(1, S.serves + d); return render(true); }
+  // Cook
+  const cs = t.closest("[data-cstep]"); if (cs) return cookMove(Number(cs.dataset.cstep));
+  const fc = t.closest("[data-step]"); if (fc) { S.cookStep = Number(fc.dataset.step); return render(true); }
+  const tp = t.closest("[data-tpause]"); if (tp) { const k = TIMERS[Number(tp.dataset.tpause)]; k.run = !k.run; return render(true); }
+  if (t.closest("[data-tstart]")) { const s = FR.steps[S.cookStep]; TIMERS.push({ label: s[0], left: Math.round(s[4] * 60), run: true }); return render(true); }
+  // Settings
+  const ck = t.closest("[data-chk]"); if (ck) { const s = S.settingsChecked, id = ck.dataset.chk; s.has(id) ? s.delete(id) : s.add(id); return render(true); }
+  if (t.closest("[data-clearchk]")) { S.settingsChecked.clear(); return render(true); }
+  if (t.closest("[data-uninspect]")) { S.settingsSel = null; return render(true); }
+  const row = t.closest("[data-row]"); if (row && !t.closest("[contenteditable=true]")) { S.settingsSel = row.dataset.row; return render(true); }
+});
+frame.addEventListener("dblclick", (e) => {
+  const c = e.target.closest("td.cell"); if (!c) return;
+  c.contentEditable = "true"; c.focus();
+  const r = document.createRange(); r.selectNodeContents(c); getSelection().removeAllRanges(); getSelection().addRange(r);
+  const done = () => { c.contentEditable = "false"; const f = FOODS.find((x) => x.id === c.closest("tr").dataset.row); if (c.dataset.cell !== "aisle") f[c.dataset.cell] = c.textContent.trim(); toast(`Saved <b>${esc(f.name)}</b>`); c.removeEventListener("blur", done); };
+  c.addEventListener("blur", done);
+  c.addEventListener("keydown", (k) => { if (k.key === "Enter") { k.preventDefault(); c.blur(); } });
+});
+frame.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.id === "shelfq") { S.shelfQ = t.value; const pos = t.selectionStart; render(true); const n = $("#shelfq"); n.focus(); n.setSelectionRange(pos, pos); }
+  if (t.id === "libq") { S.lib.q = t.value; const pos = t.selectionStart; render(true); const n = $("#libq"); n.focus(); n.setSelectionRange(pos, pos); }
+  if (t.id === "addq") { const v = t.value.toLowerCase().trim(); const k = Object.keys(GUESS).find((g) => v.includes(g)); $("#guess").innerHTML = v ? `<span class="chip solid">→ ${k ? AISLES[GUESS[k]] : "Other"}</span>` : ""; }
+  if (t.dataset.ed) { S.edit[t.dataset.ed] = t.value; $("#sheet").innerHTML = sheetBody(); }
+});
+frame.addEventListener("keydown", (e) => {
+  if (e.target.id === "addq" && e.key === "Enter" && e.target.value.trim()) {
+    const v = e.target.value.trim(), k = Object.keys(GUESS).find((g) => v.toLowerCase().includes(g));
+    SHOP.unshift({ id: "s" + Date.now(), q: "", name: v, aisle: AISLES[k ? GUESS[k] : 5], meals: [], done: false });
+    toast(`Added <b>${esc(v)}</b> to ${AISLES[k ? GUESS[k] : 5]}`); render(true); $("#addq").focus();
+  }
+});
+// Shopping: hover a meal to light up its items
+frame.addEventListener("mouseover", (e) => {
+  if (S.screen === "shop" && !S.mealPinned) {
+    const ml = e.target.closest("[data-meal]"), grid = $("#shopgrid"); if (!grid) return;
+    const m = ml ? ml.dataset.meal : null;
+    if (m !== S.meal) { S.meal = m; grid.classList.toggle("focus", !!m); $$(".item", grid).forEach((it) => { const i = SHOP.find((x) => x.id === it.dataset.tick); it.classList.toggle("lit", !!m && i.meals.includes(m)); }); }
+  }
+  if (S.screen === "recipe") {
+    const st = e.target.closest(".step"), ing = e.target.closest("[data-ing]");
+    $$(".lit-i,.lit-s,.dim-s").forEach((x) => x.classList.remove("lit-i", "lit-s", "dim-s"));
+    if (st && st.dataset.uses) st.dataset.uses.split(",").forEach((id) => $(`[data-ing="${id}"]`)?.classList.add("lit-i"));
+    if (ing) { const id = ing.dataset.ing; ing.classList.add("lit-i"); $$(".step").forEach((s) => s.classList.add((s.dataset.uses || "").split(",").includes(id) ? "lit-s" : "dim-s")); }
+  }
+  if (S.screen === "import") {
+    const p = e.target.closest("[data-src]");
+    $$(".src .lit, .pl.lit").forEach((x) => x.classList.remove("lit"));
+    if (p) { p.classList.add("lit"); const s = $(`.src [data-k="${p.dataset.src}"]`); if (s) { s.classList.add("lit"); const box = $("#src"), top = s.offsetTop - box.clientHeight / 2; if (s.offsetTop < box.scrollTop + 40 || s.offsetTop > box.scrollTop + box.clientHeight - 40) box.scrollTop = top; } }
+  }
+});
+// Plan: drag and drop
+let drag = null;
+frame.addEventListener("dragstart", (e) => {
+  const sc = e.target.closest(".scard"), en = e.target.closest("[data-entry]");
+  if (sc) drag = { add: { slug: sc.dataset.slug } };
+  else if (en) { const [iso, i] = en.dataset.entry.split(":"); drag = { from: iso, i: Number(i) }; }
+  e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", "x");
+});
+frame.addEventListener("dragover", (e) => { const d = e.target.closest("[data-day]"); if (d && drag && d.dataset.day >= TODAY) { e.preventDefault(); $$(".day.over").forEach((x) => x !== d && x.classList.remove("over")); d.classList.add("over"); } });
+frame.addEventListener("dragleave", (e) => { const d = e.target.closest("[data-day]"); if (d && !d.contains(e.relatedTarget)) d.classList.remove("over"); });
+frame.addEventListener("drop", (e) => {
+  const d = e.target.closest("[data-day]"); if (!d || !drag) return; e.preventDefault();
+  if (drag.add) addToPlan(d.dataset.day, drag.add);
+  else { const e0 = S.plan[drag.from].splice(drag.i, 1)[0]; (S.plan[d.dataset.day] ||= []).push(e0); toast(`Moved to <b>${dayOf(d.dataset.day).long}</b>`); render(true); }
+  drag = null;
+});
+frame.addEventListener("dragend", () => { drag = null; $$(".day.over").forEach((x) => x.classList.remove("over")); });
+function addToPlan(iso, entry) {
+  (S.plan[iso] ||= []).push(entry);
+  const d = dayOf(iso);
+  toast(`${esc(entry.slug ? R[entry.slug].name : entry.text)} → <b>${d.long} ${d.d}</b>`);
+  if (S.screen === "plan") { render(true); const es = $$(`[data-day="${iso}"] [data-entry]`); es[es.length - 1]?.classList.add("pop"); }
+}
+function cookMove(d) { const n = S.cookStep + d; if (n >= FR.steps.length) { toast("All done. <b>Rate it?</b> ★★★★★"); return go("recipe"); } S.cookStep = Math.max(0, n); render(true); }
+setInterval(() => { let ch = false; TIMERS.forEach((t) => { if (t.run && t.left > 0) { t.left--; ch = true; if (!t.left) toast(`⏰ <b>${esc(t.label)}</b> is done`); } }); if (ch && S.screen === "cook") $$("[data-timer]").forEach((b) => { const t = TIMERS[Number(b.dataset.timer)]; b.textContent = t.left <= 0 ? "Done" : `${Math.floor(t.left / 60)}:${String(t.left % 60).padStart(2, "0")}`; }); }, 1000);
+
+/* Keyboard: the command bar everywhere, arrows in the library and cook mode */
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); return $("#overlay").innerHTML ? closePalette() : openPalette(); }
+  if ($("#overlay").innerHTML) return;
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
+  if (typing) return;
+  if (e.key === "/") { e.preventDefault(); return openPalette(); }
+  if (S.screen === "recipes") {
+    const v = libVisible(), i = v.findIndex((r) => r.slug === S.lib.sel);
+    if (e.key === "Escape") { S.lib.sel = null; return render(true); }
+    if (["ArrowRight", "ArrowDown", "j"].includes(e.key)) { e.preventDefault(); S.lib.sel = v[Math.min(v.length - 1, i + 1)].slug; render(true); $(".rcard.sel")?.scrollIntoView({ block: "nearest" }); }
+    if (["ArrowLeft", "ArrowUp", "k"].includes(e.key)) { e.preventDefault(); S.lib.sel = v[Math.max(0, i - 1)].slug; render(true); $(".rcard.sel")?.scrollIntoView({ block: "nearest" }); }
+    if (e.key === "Enter" && S.lib.sel) { S.recipe = S.lib.sel; go("recipe"); }
+  }
+  if (S.screen === "cook") { if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); cookMove(1); } if (e.key === "ArrowLeft") cookMove(-1); if (e.key === "Escape") go("recipe"); }
+});
+
+/* ═════════════════════════════════════════════════════════════════════════
+   The command bar
+   ═════════════════════════════════════════════════════════════════════════ */
+const DAYWORDS = { mon: 0, monday: 0, tue: 1, tues: 1, tuesday: 1, wed: 2, wednesday: 2, thu: 3, thur: 3, thurs: 3, thursday: 3, fri: 4, friday: 4, sat: 5, saturday: 5, sun: 6, sunday: 6 };
+let PAL = { q: "", i: 0, opts: [] };
+function palOptions(q) {
+  const words = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const opts = [];
+  if (!words.length) {
+    opts.push({ g: "Tonight", kind: "open", r: R["slow-cooked-shredded-beef-ragu-pasta"], label: "Open Slow Cooked Shredded Beef Ragu Pasta", hint: "on tonight" });
+    opts.push({ g: "Do", kind: "go", to: "plan", icon: "▦", label: "Plan next week", hint: "5 empty nights" });
+    opts.push({ g: "Do", kind: "go", to: "import", icon: "⇣", label: "Import a recipe from a link" });
+    opts.push({ g: "Do", kind: "go", to: "cook", icon: "◷", label: "Resume cooking Chicken Fried Rice", hint: "step 3" });
+    ["Home", "Plan", "Shopping", "Recipes", "Settings"].forEach((n) => opts.push({ g: "Go to", kind: "go", to: { Shopping: "shop" }[n] || n.toLowerCase(), icon: "→", label: n }));
+    return opts;
+  }
+  let day = null, w = words;
+  const last = words[words.length - 1];
+  if (last in DAYWORDS || last === "tonight" || last === "tomorrow") { day = last === "tonight" ? TODAY : last === "tomorrow" ? "2026-11-08" : (() => { const idx = DAYWORDS[last]; const d = WEEKS[0].days[idx]; return d.iso >= TODAY ? d.iso : WEEKS[1].days[idx].iso; })(); w = words.slice(0, -1); }
+  const hits = w.length ? RECIPES.filter((r) => w.every((x) => r.name.toLowerCase().includes(x) || r.tags.some((t) => t.toLowerCase().includes(x)))) : [];
+  if (day) { const d = dayOf(day); hits.slice(0, 4).forEach((r) => opts.push({ g: "Plan", kind: "plan", r, day, label: `Put ${r.name} on ${d.long} ${d.d}`, hint: "↵" })); }
+  hits.slice(0, 6).forEach((r) => opts.push({ g: "Recipes", kind: "open", r, label: r.name, hint: `${mins(r.mins)}` }));
+  ["Home", "Plan", "Shopping", "Recipes", "Settings", "Foods", "Backup", "Style"].filter((n) => n.toLowerCase().startsWith(words[0])).forEach((n) => opts.push({ g: "Go to", kind: "go", to: { Shopping: "shop", Foods: "settings", Backup: "settings", Style: "settings" }[n] || n.toLowerCase(), icon: "→", label: n }));
+  if (!day) opts.push({ g: "Shopping", kind: "shop", text: q.trim(), icon: "+", label: `Add “${q.trim()}” to the shopping list` });
+  return opts;
+}
+function mark(s, q) { const ws = q.toLowerCase().split(/\s+/).filter((x) => x.length > 1 && !(x in DAYWORDS)); let out = esc(s); ws.forEach((w) => { out = out.replace(new RegExp(`(${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "ig"), "<mark>$1</mark>"); }); return out; }
+function palRender() {
+  PAL.opts = palOptions(PAL.q); PAL.i = Math.min(PAL.i, Math.max(0, PAL.opts.length - 1));
+  let g = null;
+  $("#palres").innerHTML = PAL.opts.map((o, i) => `${o.g !== g ? `<div class="grp label">${(g = o.g)}</div>` : ""}<div class="opt ${i === PAL.i ? "on" : ""}" data-pi="${i}">${o.r ? photo(o.r) : `<span class="ic">${o.icon}</span>`}<span>${mark(o.label, PAL.q)}</span><span class="hint">${o.hint || ""}</span></div>`).join("") || `<div class="sub" style="padding:16px">Nothing matches.</div>`;
+  $(".opt.on")?.scrollIntoView({ block: "nearest" });
+}
+function openPalette() {
+  $("#overlay").innerHTML = `<div class="scrim" id="scrim"><div class="palette"><div class="q"><svg width="18" height="18" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8a7468" stroke-width="1.5"/><path d="m11 11 3.5 3.5" stroke="#8a7468" stroke-width="1.5" stroke-linecap="round"/></svg><input id="palq" placeholder="Try “ragu tue”, “milk”, or “foods”" autocomplete="off"><kbd>Esc</kbd></div><div class="res" id="palres"></div><div class="foot"><span><kbd>↑</kbd> <kbd>↓</kbd> choose</span><span><kbd>↵</kbd> do it</span><span>End with a day to plan it: “risotto wed”</span><span>Anything else goes on the shopping list</span></div></div></div>`;
+  PAL = { q: "", i: 0, opts: [] }; palRender();
+  const inp = $("#palq"); inp.focus();
+  inp.addEventListener("input", () => { PAL.q = inp.value; PAL.i = 0; palRender(); });
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); PAL.i = Math.min(PAL.opts.length - 1, PAL.i + 1); palRender(); }
+    if (e.key === "ArrowUp") { e.preventDefault(); PAL.i = Math.max(0, PAL.i - 1); palRender(); }
+    if (e.key === "Enter") { e.preventDefault(); palDo(PAL.opts[PAL.i]); }
+    if (e.key === "Escape") closePalette();
+  });
+  $("#scrim").addEventListener("click", (e) => { const o = e.target.closest("[data-pi]"); if (o) palDo(PAL.opts[Number(o.dataset.pi)]); else if (e.target.id === "scrim") closePalette(); });
+}
+function closePalette() { $("#overlay").innerHTML = ""; }
+function palDo(o) {
+  if (!o) return; closePalette();
+  if (o.kind === "open") { S.recipe = o.r.slug; S.serves = 4; go("recipe"); }
+  if (o.kind === "go") go(o.to);
+  if (o.kind === "plan") { addToPlan(o.day, { slug: o.r.slug }); if (S.screen !== "plan") { S.picked = o.day; } }
+  if (o.kind === "shop") { SHOP.unshift({ id: "s" + Date.now(), q: "", name: o.text, aisle: AISLES[5], meals: [], done: false }); toast(`Added <b>${esc(o.text)}</b> to the shopping list`); if (S.screen === "shop" || S.screen === "home") render(true); }
+}
+
+/* Start where the last visit left off */
+try { const m = JSON.parse(localStorage.getItem("garnish-mock") || "null"); if (m) { S.screen = m.screen in RENDER ? m.screen : "home"; S.width = m.width; } } catch {}
+render(false); layout();
+</script>
+</body>
+</html>
