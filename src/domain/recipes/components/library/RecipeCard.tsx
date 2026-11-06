@@ -2,8 +2,8 @@ import { Badge } from "@sixthshift/design-system/badge";
 import { Card } from "@sixthshift/design-system/card";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
-import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
 import { Rating } from "../../../../components/ui/Rating";
 import { recipeImageUrl } from "../../../../lib/images";
@@ -141,14 +141,13 @@ export function RecipeCard({ recipe, mode = "grid", priority = false }: RecipeCa
     );
 
   const link = (
-    <Link
-      to="/recipes/$slug"
-      params={{ slug: recipe.slug }}
+    <RecipeLink
+      slug={recipe.slug}
       className="block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand"
       data-ingredient-preview={recipe.ingredientPreview.length > 0 ? JSON.stringify(recipe.ingredientPreview) : undefined}
     >
       {body}
-    </Link>
+    </RecipeLink>
   );
 
   return (

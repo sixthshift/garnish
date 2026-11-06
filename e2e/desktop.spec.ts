@@ -1,6 +1,6 @@
 // A desktop's layout (decisions.md row 206): from 1024px the top bar and no
 // tab bar, every page at a laptop's size with nothing wider than the screen.
-import { expect, test } from "./fixtures";
+import { createRecipe, expect, test, unique } from "./fixtures";
 
 test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false });
 
@@ -35,4 +35,30 @@ test("narrowing the window past the line swaps the top bar for the tab bar", asy
   await expect(nav).toBeVisible();
   expect(await nav.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
   await expect(page.getByRole("heading", { level: 1, name: "Plan" })).toBeVisible();
+});
+
+test("a recipe opens beside the library in the side panel; Back closes it, and Open the recipe goes to its page", async ({ page, open }) => {
+  const name = unique("Panel Soup");
+  await createRecipe(page, open, { name, servings: 2, ingredients: ["1 onion"], steps: ["Soften the onion."] });
+
+  await open(`/recipes?q=${encodeURIComponent(name)}`);
+  await page.getByRole("link", { name: new RegExp(name) }).click();
+  const panel = page.getByRole("complementary", { name: "Recipe" });
+  await expect(panel.getByRole("heading", { level: 2, name })).toBeVisible();
+  await expect(panel).toContainText("Soften the onion.");
+  await expect(page.getByRole("heading", { level: 1, name: "Recipes" })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/recipes");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.goBack();
+  await expect(panel).toHaveCount(0);
+  await page.goForward();
+  await expect(panel.getByRole("heading", { level: 2, name })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+
+  await page.getByRole("link", { name: new RegExp(name) }).click();
+  await panel.getByRole("link", { name: "Open the recipe" }).click();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await expect(panel).toHaveCount(0);
 });

@@ -1,4 +1,5 @@
 import { createRootRoute } from "@tanstack/react-router";
+import { PanelSearch } from "../app/model/panel";
 import { Document } from "../app/pages/Document";
 import { Root } from "../app/pages/Root";
 import { LAYOUT_BOOT_SCRIPT } from "../lib/layout";
@@ -16,6 +17,8 @@ const themeScript = `try{var t=JSON.parse(localStorage.getItem("theme")||'"syste
 // Named `Route`, unlike the routes beside it: Start's route generator owns this
 // one file (vite.config.ts), and the code its plugin adds in dev refers to `Route`.
 export const Route = createRootRoute({
+  // What a desktop's side panel shows, on every page (src/app/model/panel.ts).
+  validateSearch: PanelSearch,
   head: () => ({
     meta: [
       { charSet: "utf-8" },

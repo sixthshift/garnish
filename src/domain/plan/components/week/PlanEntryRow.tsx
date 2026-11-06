@@ -1,7 +1,7 @@
 import { Badge } from "@sixthshift/design-system/badge";
 import { Caption } from "@sixthshift/design-system/caption";
-import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { Menu } from "../../../../components/ui/Menu";
 import type { ReorderRow } from "../../../../components/ui/ReorderList";
 import { recipeImageUrl } from "../../../../lib/images";
@@ -54,7 +54,7 @@ export function PlanEntryRow({
       {entry.recipe === null ? (
         <span className="min-w-0 flex-1 truncate py-1 text-sm">{label}</span>
       ) : (
-        <Link to="/recipes/$slug" params={{ slug: entry.recipe.slug }} search={{ choices }} className="flex min-w-0 flex-1 items-center gap-2">
+        <RecipeLink slug={entry.recipe.slug} choices={choices} className="flex min-w-0 flex-1 items-center gap-2">
           <EntryImage src={recipeImageUrl(entry.recipe.image)} />
           <span className="min-w-0 flex-1 truncate text-sm">
             {label}
@@ -65,7 +65,7 @@ export function PlanEntryRow({
               </span>
             )}
           </span>
-        </Link>
+        </RecipeLink>
       )}
       {meal !== null && (
         <Caption className="shrink-0" data-testid="plan-entry-meal">

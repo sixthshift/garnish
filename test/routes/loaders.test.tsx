@@ -82,6 +82,8 @@ describe("/recipes (list)", () => {
     await seed("Pancakes");
     await seed("Lemon tart", { image: "lemon tart.webp" });
     const html = await renderRoute("/recipes", "desktop");
+    // A phone's card goes to the recipe's page; a desktop's opens it in the side panel (decisions.md row 206).
+    const phone = await renderRoute("/recipes");
     expect(html).toContain("3 recipes");
     for (const [name, slug] of [
       ["Flatbread", "flatbread"],
@@ -89,7 +91,8 @@ describe("/recipes (list)", () => {
       ["Lemon tart", "lemon-tart"],
     ]) {
       expect(html).toContain(name);
-      expect(html).toContain(`href="/recipes/${slug}"`);
+      expect(phone).toContain(`href="/recipes/${slug}"`);
+      expect(html).toContain(`href="/recipes?panel=${encodeURIComponent(JSON.stringify({ slug }))}"`);
     }
     // Image URLs come from the stored file name; a recipe without one gets the placeholder.
     expect(html).toContain('src="/api/images/flatbread.jpg"');
@@ -170,10 +173,10 @@ describe("/recipes (list)", () => {
     const laksa = await callServerFn(createRecipe, { name: "Laksa", parts: [{ name: "" }], kind: "rotation", lastMade: "2026-09-01T08:00:00.000Z" });
     await callServerFn(createRecipe, { name: "Lamb shoulder", parts: [{ name: "" }], kind: "weekend" });
     expect(laksa.kind).toBe("rotation");
-    let html = await renderRoute("/recipes?shelf=rotation", "desktop");
+    let html = await renderRoute("/recipes?shelf=rotation");
     expect(html).toContain('href="/recipes/laksa"');
     expect(html).not.toContain('href="/recipes/lamb-shoulder"');
-    html = await renderRoute("/recipes?shelf=try", "desktop");
+    html = await renderRoute("/recipes?shelf=try");
     expect(html).toContain('href="/recipes/lamb-shoulder"');
     expect(html).not.toContain('href="/recipes/laksa"');
     expect(html).toContain('aria-label="Shelf"');

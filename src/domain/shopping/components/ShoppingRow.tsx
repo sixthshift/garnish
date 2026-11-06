@@ -1,7 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
-import { Link } from "@tanstack/react-router";
 import { Fragment, useRef, useState } from "react";
+import { RecipeLink } from "../../../components/recipe/RecipeLink";
 import { TrashIcon } from "../../../components/ui/icons";
 import { dayParts } from "../../plan/plan";
 import { type PackSize, packsFor, packsLabel, packsRepeatNeed, type ShoppingItem, type ShoppingMeal, shoppingItemLabel } from "../shopping";
@@ -151,9 +151,9 @@ export function ShoppingRow({
                   {meal.slug === null ? (
                     mealText(meal)
                   ) : (
-                    <Link to="/recipes/$slug" params={{ slug: meal.slug }} className="underline-offset-2 hover:text-fg-normal hover:underline">
+                    <RecipeLink slug={meal.slug} className="underline-offset-2 hover:text-fg-normal hover:underline">
                       {mealText(meal)}
-                    </Link>
+                    </RecipeLink>
                   )}
                 </Fragment>
               ))}

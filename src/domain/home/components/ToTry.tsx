@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { RecipeLink } from "../../../components/recipe/RecipeLink";
 import type { RecipeSummary } from "../../recipes/recipe";
 import { GlanceHeader } from "./GlanceHeader";
 
@@ -15,13 +15,12 @@ export function ToTry({ recipes }: { recipes: readonly RecipeSummary[] }) {
       <ul className="flex flex-wrap gap-2">
         {recipes.map((recipe) => (
           <li key={recipe.id}>
-            <Link
-              to="/recipes/$slug"
-              params={{ slug: recipe.slug }}
+            <RecipeLink
+              slug={recipe.slug}
               className="inline-flex min-h-11 items-center rounded-full border border-border-normal bg-bg-normal px-4 text-sm font-medium hover:bg-bg-normal-hovered"
             >
               {recipe.name}
-            </Link>
+            </RecipeLink>
           </li>
         ))}
       </ul>

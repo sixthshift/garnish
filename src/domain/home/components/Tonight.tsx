@@ -3,6 +3,7 @@ import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Link } from "@tanstack/react-router";
+import { RecipeLink } from "../../../components/recipe/RecipeLink";
 import { recipeImageUrl } from "../../../lib/images";
 import { entryLabel, mealLabel, type PlanEntry, servingsLabel } from "../../plan/plan";
 import { formatDuration } from "../../recipes/ingredient";
@@ -63,9 +64,9 @@ export function Tonight({ entry, totalTime, primary }: { entry: PlanEntry | null
                 </Link>
               </Button>
               <Button asChild variant="outline" intent="neutral">
-                <Link to="/recipes/$slug" params={{ slug: entry.recipe.slug }} search={Object.keys(entry.choices).length > 0 ? { choices: entry.choices } : {}}>
+                <RecipeLink slug={entry.recipe.slug} choices={entry.choices}>
                   Open the recipe
-                </Link>
+                </RecipeLink>
               </Button>
             </div>
           )}
