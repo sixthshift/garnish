@@ -11,7 +11,6 @@ import {
   partFindings,
   type StyleAnswer,
   type StyleChoices,
-  stepDroppedWords,
   stepKey,
   styleOriginal,
   takesRewrite,
@@ -93,11 +92,6 @@ describe("where a finding is shown", () => {
     const findings = partFindings(original()[0]!, answer.check.parts[0]!, true, parts[0]);
     expect(findings.steps.map((list) => list.map((finding) => finding.kind))).toEqual([[], [], ["added"]]);
     expect(findings.steps[2]![0]!.message).toBe("The rewrite adds “until glossy, then serve”, which the recipe never says.");
-  });
-
-  test("dropped words are placed on the step that used them", () => {
-    const answer = answerFor(droppingCondition());
-    expect(stepDroppedWords(original()[0]!, answer.check.parts[0]!)[2]).toContain("finally");
   });
 });
 

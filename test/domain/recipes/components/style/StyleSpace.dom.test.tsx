@@ -85,21 +85,24 @@ test("keeping the flagged rewrite anyway warns before Save, and putting every st
   await waitFor(() => expect(onSave).toHaveBeenCalledWith(null));
 });
 
-test("each step shows the author's words beside the rewrite, with nothing to flip, and either side can be taken", async () => {
+test("each step reads as the recipe will: the rewrite, the original one press away, and either side can be taken", async () => {
   const { user } = setup();
   await waitFor(() => expect(screen.getAllByTestId("style-step")[0]).toHaveAttribute("data-choice", "rewrite"));
   expect(screen.queryByRole("radio")).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Compare" })).not.toBeInTheDocument();
   const first = screen.getAllByTestId("style-step")[0]!;
-  expect(within(first).getByTestId("style-step-original")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
   expect(within(first).getByTestId("style-step-rewrite")).toHaveTextContent("Heat 2 tbsp of the oil in the wok over high heat.");
+  expect(within(first).queryByText("Heat 2 tablespoons oil in a wok over high heat.")).not.toBeInTheDocument();
+
+  await user.click(within(first).getByRole("button", { name: "Show the original of step 1" }));
+  expect(within(first).getByTestId("style-step-other")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
 
   await user.click(within(first).getByRole("button", { name: "Use the original of step 1" }));
   expect(first).toHaveAttribute("data-choice", "original");
+  expect(within(first).getByTestId("style-step-original")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
   expect(within(first).getByRole("button", { name: "Keep the rewrite of step 1" })).toHaveAttribute("aria-pressed", "false");
 });
 
-test("a part whose rewrite merged its steps shows both lists side by side and is taken whole", async () => {
+test("a part whose rewrite merged its steps is taken whole, with the other side one press away", async () => {
   const merged: RestyledPart[] = [
     {
       name: "",
@@ -118,12 +121,14 @@ test("a part whose rewrite merged its steps shows both lists side by side and is
       loadRules={async () => rules}
     />
   );
-  await waitFor(() => expect(screen.getByTestId("style-rewrite-column")).toHaveTextContent("then add the garlic"));
+  await user.click(await screen.findByRole("button", { name: "Keep all" }));
+  expect(screen.getByTestId("style-rewrite-column")).toHaveTextContent("then add the garlic");
+  expect(screen.getAllByTestId("style-plain-step")).toHaveLength(1);
+
+  await user.click(screen.getByRole("button", { name: "Show original" }));
   expect(screen.getAllByTestId("style-plain-step")).toHaveLength(3);
   expect(screen.getByText("Add the garlic and cook for a minute or two until fragrant.")).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "Keep all" }));
-  expect(screen.getByTestId("style-rewrite-column")).toHaveTextContent("Taken");
   await user.click(screen.getByTestId("style-save"));
   await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
   expect(onSave.mock.calls[0]![0]![0]!.steps).toHaveLength(1);

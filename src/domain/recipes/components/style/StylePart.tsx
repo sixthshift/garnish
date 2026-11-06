@@ -3,22 +3,11 @@ import { Card } from "@sixthshift/design-system/card";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { Spinner } from "@sixthshift/design-system/spinner";
 import { cn } from "@sixthshift/design-system/utils";
+import { useState } from "react";
 import type { OriginalPart, RestyledPart, RestyledStep } from "../../style";
-import { STEP_COLUMNS, StepWords, StyleStep } from "./StyleStep";
-import {
-  type Choice,
-  isAligned,
-  partFindings,
-  partHeading,
-  type StyleAnswer,
-  type StyleChoices,
-  sameStep,
-  stepDroppedWords,
-  stepKey,
-  takesRewrite,
-} from "./styleSession";
+import { StepWords, StyleStep } from "./StyleStep";
+import { type Choice, isAligned, partFindings, partHeading, type StyleAnswer, type StyleChoices, sameStep, stepKey, takesRewrite } from "./styleSession";
 
 export type StylePartProps = {
   /** The part's position in the recipe. */
@@ -67,6 +56,59 @@ function PlainStep({ n, step, quiet }: { n: number; step: RestyledStep; quiet: b
 }
 
 /**
+ * A part kept or put back whole, because the rewrite changed its step count:
+ * the side being taken, numbered, with the other one press away.
+ */
+function WholePart(props: {
+  heading: string;
+  original: readonly RestyledStep[];
+  rewrite: readonly RestyledStep[] | null;
+  taking: boolean;
+  firstStep: number;
+  firstRewriteStep: number;
+  note: string;
+}) {
+  const { heading, original, rewrite, taking, firstStep, firstRewriteStep, note } = props;
+  const [showOther, setShowOther] = useState(false);
+  const shown = taking && rewrite ? rewrite : original;
+  const first = taking && rewrite ? firstRewriteStep : firstStep;
+  const other = rewrite === null ? null : taking ? original : rewrite;
+  const otherFirst = taking ? firstStep : firstRewriteStep;
+  return (
+    <div className="flex min-w-0 flex-col" data-testid={taking ? "style-rewrite-column" : "style-original-column"}>
+      <ColumnHead label={taking ? "Rewritten" : "As written"} taken={false} />
+      <ol className="flex flex-col" aria-label={`${heading} steps`}>
+        {shown.map((step, s) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the steps, in order; the list is only ever replaced.
+          <PlainStep key={s} n={first + s} step={step} quiet={false} />
+        ))}
+      </ol>
+      {note !== "" && <p className="px-4 py-4 text-sm text-fg-subtle">{note}</p>}
+      {other !== null && (
+        <div className="flex flex-col gap-2 px-4 pb-3">
+          <div>
+            <Button type="button" size="sm" variant="ghost" intent="neutral" aria-expanded={showOther} onClick={() => setShowOther(!showOther)}>
+              {showOther ? "Hide" : taking ? "Show original" : "Show the rewrite"}
+            </Button>
+          </div>
+          {showOther && (
+            <ol
+              className="flex flex-col border-l-2 border-border-normal text-fg-subtle"
+              aria-label={`${heading} steps, ${taking ? "the author's" : "the rewrite"}`}
+            >
+              {other.map((step, s) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: the other side's steps, in order; the list is only ever replaced.
+                <PlainStep key={s} n={otherFirst + s} step={step} quiet />
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * One part of the recipe in the Style space: its ingredients, the author's
  * steps and the rewrite, side by side, so the two are read together rather
  * than flipped between. From lg the ingredients are the first of three
@@ -80,7 +122,6 @@ export function StylePart(props: StylePartProps) {
   const check = answer?.check.parts[p];
   const aligned = rewrite !== undefined && isAligned(part, rewrite);
   const findings = rewrite && check ? partFindings(part, check, aligned, rewrite) : null;
-  const dropped = check ? stepDroppedWords(part, check) : null;
   const choosable = rewrite !== undefined && choices !== null && rewrite.steps.length > 0;
   const wholeChoice = choices?.parts[p] ?? "original";
   const changedNotes = rewrite ? rewrite.notes.filter((note, i) => note.trim() !== (part.ingredients[i]?.note ?? "").trim()).length : 0;
@@ -150,11 +191,6 @@ export function StylePart(props: StylePartProps) {
           <p className="px-4 py-4 text-sm text-fg-subtle">No steps</p>
         ) : aligned && choices && rewrite ? (
           <div className="flex min-w-0 flex-col">
-            <div className={cn(STEP_COLUMNS, "hidden border-b border-border-subtle pb-2 md:grid")} aria-hidden="true">
-              <span />
-              <ColumnHead label="Original" taken={false} />
-              <ColumnHead label="Restyled" taken={false} />
-            </div>
             <ol className="flex flex-col" aria-label={`${heading} steps`}>
               {part.steps.map((step, s) => {
                 const key = stepKey(p, s);
@@ -169,7 +205,6 @@ export function StylePart(props: StylePartProps) {
                     choice={taking ? "rewrite" : "original"}
                     edited={choices.edits[key] !== undefined}
                     findings={findings?.steps[s] ?? []}
-                    droppedWords={dropped?.[s] ?? []}
                     editing={editing === key}
                     draft={choices.edits[key] ?? rewrite.steps[s]!.text}
                     onKeep={() => props.onStep(s, "rewrite")}
@@ -183,40 +218,15 @@ export function StylePart(props: StylePartProps) {
             </ol>
           </div>
         ) : (
-          <div className="grid min-w-0 md:grid-cols-2">
-            <div
-              className={cn(
-                "flex min-w-0 flex-col border-b border-border-subtle md:border-r md:border-b-0",
-                choosable && wholeChoice === "original" && "bg-bg-subtle"
-              )}
-            >
-              <ColumnHead label="Original" taken={choosable && wholeChoice === "original"} />
-              <ol className="flex flex-col" aria-label={`${heading} steps, the author’s`}>
-                {part.steps.map((step, s) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: the author's steps, in order; the list is only ever replaced.
-                  <PlainStep key={s} n={firstStep + s} step={author(step)} quiet={choosable && wholeChoice !== "original"} />
-                ))}
-              </ol>
-            </div>
-            <div className={cn("flex min-w-0 flex-col", choosable && wholeChoice === "rewrite" && "bg-bg-subtle")} data-testid="style-rewrite-column">
-              <ColumnHead label="Restyled" taken={choosable && wholeChoice === "rewrite"} />
-              {running ? (
-                <div className="flex items-center gap-2 px-4 py-4 text-sm text-fg-subtle">
-                  <Spinner size="sm" />
-                  Restyling…
-                </div>
-              ) : choosable ? (
-                <ol className="flex flex-col" aria-label={`${heading} steps, the rewrite`}>
-                  {rewrite.steps.map((step, s) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: the rewrite's steps, in order; the list is only ever replaced.
-                    <PlainStep key={s} n={firstRewriteStep + s} step={step} quiet={wholeChoice !== "rewrite"} />
-                  ))}
-                </ol>
-              ) : (
-                <p className="px-4 py-4 text-sm text-fg-subtle">{failed || answer ? "No rewrite for this part." : ""}</p>
-              )}
-            </div>
-          </div>
+          <WholePart
+            heading={heading}
+            original={part.steps.map(author)}
+            rewrite={choosable ? rewrite.steps : null}
+            taking={choosable && wholeChoice === "rewrite"}
+            firstStep={firstStep}
+            firstRewriteStep={firstRewriteStep}
+            note={running ? "" : choosable ? "" : failed || answer ? "No rewrite for this part." : ""}
+          />
         )}
       </Card>
     </section>

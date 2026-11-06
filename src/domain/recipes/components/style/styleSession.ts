@@ -117,16 +117,6 @@ export function partFindings(
   return { steps, part };
 }
 
-/** The author's words the rewrite of each step no longer uses, placed as `partFindings` places findings. Reported, never failed. */
-export function stepDroppedWords(original: OriginalPart, check: PartRestyleCheck): string[][] {
-  const words: string[][] = original.steps.map(() => []);
-  for (const word of check.droppedWords) {
-    const at = original.steps.findIndex((step) => stepProse(step).includes(word.toLowerCase()));
-    if (at !== -1) words[at]!.push(word);
-  }
-  return words;
-}
-
 /**
  * Where each step starts: on the rewrite, unless the check found something in
  * it, which starts it on the author's words until someone chooses otherwise.
