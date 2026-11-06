@@ -227,6 +227,20 @@ Decisions.md row 207: every desktop page redesigned from `docs/mockups/desktop.h
 - [x] **M47.7 Settings as a menu, Foods as a grid with a details pane; Cook mode as a filmstrip.**
 - [x] **M47.8 Docs.**
 
+## M48 A phone's pages, for a hand
+
+Decisions.md row 208: every phone page redesigned from the Phone half of `docs/mockups/desktop.html`; desktops unchanged.
+
+- [x] **M48.0 The swipe row.** `SwipeRow` (src/components/ui/) over `lib/ui/swipeRow.ts`: past 90px a drag right or left does that side's action, short of it the row springs back; a drag never also counts as a tap.
+- [ ] **M48.1 The tab bar and the + sheet.** Home, Plan, +, Shopping, Recipes; the + is the phone's command bar.
+- [ ] **M48.2 Home.**
+- [ ] **M48.3 Plan.**
+- [ ] **M48.4 Shopping.**
+- [ ] **M48.5 Recipes and the recipe page.**
+- [ ] **M48.6 Import's Check and the editor.**
+- [ ] **M48.7 Cook and Settings.**
+- [ ] **M48.8 Docs.**
+
 ## Blocked
 
 _(none)_
