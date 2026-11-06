@@ -15,7 +15,7 @@ import { toastError } from "../../../../lib/toast";
  * this is one self-contained write, not one of the entry writes the page
  * threads through `onAddText`/`onAddRecipe`/`onMove`/`onRemove`.
  */
-export function AddWeekToShoppingButton({ monday }: { monday: string }) {
+export function AddWeekToShoppingButton({ monday, label = "Add this week to the shopping list" }: { monday: string; label?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -38,7 +38,7 @@ export function AddWeekToShoppingButton({ monday }: { monday: string }) {
 
   return (
     <Button variant="outline" intent="neutral" size="sm" disabled={busy} data-testid="plan-add-week" onClick={() => void add()}>
-      {busy ? "Adding…" : "Add this week to the shopping list"}
+      {busy ? "Adding…" : label}
     </Button>
   );
 }

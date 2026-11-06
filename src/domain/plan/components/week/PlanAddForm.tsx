@@ -53,6 +53,8 @@ export function PlanAddForm({
   onDone,
   limit = PLAN_RESULT_LIMIT,
   autoFocus = true,
+  onQueryChange,
+  onMealChange,
 }: {
   date: string;
   busy?: boolean;
@@ -65,12 +67,16 @@ export function PlanAddForm({
   limit?: number;
   /** Take focus once drawn: a sheet opened for this, or a day just chosen. A desktop's picker drawn with the page does not. */
   autoFocus?: boolean;
+  /** What is typed, as it changes: a desktop's shelf sets its tabs aside while a search runs. */
+  onQueryChange?: (query: string) => void;
+  /** The meal chip pressed, as it changes: a desktop's shelf adds its clicked recipes with it too. */
+  onMealChange?: (meal: Meal | null) => void;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<RecipeSummary[]>([]);
   /** The highlighted result, or -1 for none: Enter then adds the typed line. */
   const [selected, setSelected] = useState(-1);
-  const [meal, setMeal] = useState<Meal | null>(null);
+  const [meal, setMealState] = useState<Meal | null>(null);
   /** What the status line says once a search lands: how many recipes it found. */
   const [status, setStatus] = useState("");
   const listId = useId();
@@ -81,8 +87,14 @@ export function PlanAddForm({
   const shown = results.slice(0, limit);
   const more = results.length - shown.length;
 
+  const setMeal = (next: Meal | null) => {
+    setMealState(next);
+    onMealChange?.(next);
+  };
+
   const clear = () => {
     setQuery("");
+    onQueryChange?.("");
     setResults([]);
     setSelected(-1);
     setMeal(null);
@@ -164,9 +176,10 @@ export function PlanAddForm({
     setSelected(next);
   };
 
-  const onQueryChange = (value: string) => {
+  const changeQuery = (value: string) => {
     setQuery(value);
     setSelected(-1);
+    onQueryChange?.(value);
   };
 
   return (
@@ -175,7 +188,7 @@ export function PlanAddForm({
       <SearchInput
         ref={input}
         value={query}
-        onValueChange={onQueryChange}
+        onValueChange={changeQuery}
         onKeyDown={onKeyDown}
         disabled={busy}
         name="entry"

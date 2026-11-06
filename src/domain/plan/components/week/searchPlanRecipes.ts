@@ -5,3 +5,8 @@ import type { RecipeSummary } from "../../../recipes/recipe";
 export function searchPlanRecipes(query: string): Promise<RecipeSummary[]> {
   return listRecipes({ data: { q: query } });
 }
+
+/** Every recipe, by name, for a desktop's shelf to sort into its tabs. The route's default; tests inject their own. */
+export function shelfPlanRecipes(): Promise<RecipeSummary[]> {
+  return listRecipes({ data: { sort: "name" } });
+}

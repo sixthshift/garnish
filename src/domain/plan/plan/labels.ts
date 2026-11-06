@@ -38,8 +38,13 @@ export function dayParts(date: string): { weekday: string; day: string } {
  * month, "28 Sep – 4 Oct 2026" across two, and both years across New Year.
  */
 export function weekLabel(monday: string): string {
-  const from = utc(monday);
-  const to = utc(addDays(monday, 6));
+  return rangeLabel(monday, addDays(monday, 6));
+}
+
+/** Any run of days said the way `weekLabel` says a week: a desktop's board shows two weeks at once, "14 – 27 Sep 2026". */
+export function rangeLabel(first: string, last: string): string {
+  const from = utc(first);
+  const to = utc(last);
   const part = (at: Date) => `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}`;
   if (from.getUTCFullYear() !== to.getUTCFullYear()) {
     return `${part(from)} ${from.getUTCFullYear()} – ${part(to)} ${to.getUTCFullYear()}`;

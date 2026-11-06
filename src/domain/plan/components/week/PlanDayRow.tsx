@@ -34,16 +34,13 @@ export function PlanDayRow({
   onAdd,
   onMove,
   onRemove,
-  chosen,
 }: {
   day: PlanDay;
   days: readonly PlanDay[];
   today: string;
   busy: boolean;
-  /** The "+" was pressed: open this day's add sheet (a phone), or choose it for the picker beside the week (a desktop). */
+  /** The "+" was pressed: open this day's add sheet. */
   onAdd: (date: string) => void;
-  /** A desktop's: whether this is the day the picker adds to. Left out on a phone, where the "+" opens a sheet and is not a choice. */
-  chosen?: boolean;
 } & Pick<PlanWeekViewProps, "onMove" | "onRemove">) {
   const marked = isToday(day.date, today);
   const { weekday, day: dayOfMonth } = dayParts(day.date);
@@ -58,12 +55,7 @@ export function PlanDayRow({
       data-date={day.date}
       data-today={marked ? "true" : "false"}
       aria-current={marked ? "date" : undefined}
-      data-chosen={chosen === true ? "true" : undefined}
-      className={cn(
-        "grid grid-cols-[minmax(0,1fr)_auto] items-start py-1 pr-1 pl-4 first:rounded-t-xl last:rounded-b-xl",
-        marked && "bg-bg-subtle-hovered",
-        chosen === true && "shadow-[inset_3px_0_0_var(--border-normal-pressed)]"
-      )}
+      className={cn("grid grid-cols-[minmax(0,1fr)_auto] items-start py-1 pr-1 pl-4 first:rounded-t-xl last:rounded-b-xl", marked && "bg-bg-subtle-hovered")}
     >
       <h2 className="col-start-1 row-start-1 flex min-w-0 items-baseline gap-1.5 pt-2.5">
         <SectionTitle as="span" className={cn(marked && "text-fg-normal")}>
@@ -86,8 +78,7 @@ export function PlanDayRow({
         intent="neutral"
         iconOnly
         aria-label={`Add to ${dayName(day.date)}`}
-        aria-pressed={chosen}
-        className={cn("col-start-2 row-start-1 h-11 w-11", empty && "row-span-2 self-center", chosen === true && "bg-bg-subtle-pressed")}
+        className={cn("col-start-2 row-start-1 h-11 w-11", empty && "row-span-2 self-center")}
         onClick={() => onAdd(day.date)}
       >
         <PlusIcon />
