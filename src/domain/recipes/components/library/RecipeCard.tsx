@@ -2,6 +2,7 @@ import { Badge } from "@sixthshift/design-system/badge";
 import { Card } from "@sixthshift/design-system/card";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Tooltip } from "@sixthshift/design-system/tooltip";
+import { cn } from "@sixthshift/design-system/utils";
 import type { ReactNode } from "react";
 import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { FavouriteButton } from "../../../../components/ui/FavouriteButton";
@@ -33,9 +34,9 @@ export type RecipeCardProps = {
  */
 export const CARD_MIN_WIDTH = "22rem";
 
-function ImagePlaceholder({ className }: { className: string }) {
+export function ImagePlaceholder({ className }: { className: string }) {
   return (
-    <div data-placeholder="image" aria-hidden="true" className={`flex items-center justify-center bg-bg-subtle text-fg-subtle ${className}`}>
+    <div data-placeholder="image" aria-hidden="true" className={cn("flex items-center justify-center bg-bg-subtle text-fg-subtle", className)}>
       <svg
         aria-hidden="true"
         width="40"

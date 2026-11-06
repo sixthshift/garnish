@@ -629,6 +629,12 @@ test("list filters by kind and by never made", () => {
   expect(slugs({ kind: "weekend" })).toEqual(["birria", "lamb-shoulder"]);
   expect(slugs({ neverMade: true })).toEqual(["birria", "eggplant"]);
   expect(slugs({ kind: "weekend", neverMade: true })).toEqual(["birria"]);
+  // A desktop's filters column counts each shelf over the whole library (M47.4).
+  expect(repo.shelfCounts()).toEqual({ all: 4, rotation: 1, weekend: 2, try: 2 });
+});
+
+test("shelfCounts is all zeros with no recipes", () => {
+  expect(repo.shelfCounts()).toEqual({ all: 0, rotation: 0, weekend: 0, try: 0 });
 });
 
 test("ref(id).rate writes the rating, clears it with null, and reports whether the id exists", () => {

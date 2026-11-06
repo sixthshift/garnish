@@ -1,9 +1,9 @@
 import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
 import { z } from "zod";
 import { listFoodSummaries } from "../../../api/rpc/foods";
-import { listRecipes } from "../../../api/rpc/recipes";
+import { listRecipes, recipeShelfCounts } from "../../../api/rpc/recipes";
 import { listTagUsage } from "../../../api/rpc/tags";
-import type { RecipeSummary } from "../recipe";
+import type { RecipeSummary, ShelfCounts } from "../recipe";
 import type { FoodSummary, TagUsage } from "../reference";
 import { recipes } from "./recipes";
 
@@ -22,7 +22,8 @@ export const RecipeListSearch = z.object({
   seed: z.string().optional(),
 });
 
-export type RecipeListData = { recipes: RecipeSummary[]; tags: TagUsage[]; foods: FoodSummary[] };
+/** `shelves` is how many recipes each shelf holds over the whole library, for a desktop's filters column. */
+export type RecipeListData = { recipes: RecipeSummary[]; tags: TagUsage[]; foods: FoodSummary[]; shelves: ShelfCounts };
 
 export const recipesIndex = createRoute({
   getParentRoute: () => recipes,
@@ -42,8 +43,8 @@ export const recipesIndex = createRoute({
     seed,
   }),
   loader: async ({ deps }): Promise<RecipeListData> => {
-    const [recipes, tags, foods] = await Promise.all([listRecipes({ data: deps }), listTagUsage(), listFoodSummaries()]);
-    return { recipes, tags, foods };
+    const [recipes, tags, foods, shelves] = await Promise.all([listRecipes({ data: deps }), listTagUsage(), listFoodSummaries(), recipeShelfCounts()]);
+    return { recipes, tags, foods, shelves };
   },
   component: lazyRouteComponent(() => import("../pages/RecipesPage"), "RecipesPage"),
 });

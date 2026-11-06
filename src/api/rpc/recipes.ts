@@ -80,6 +80,9 @@ export const listRecipes = createServerFn({ method: "GET" })
   .validator(ListRecipesInput)
   .handler(async ({ data }) => recipes.query(data));
 
+/** How many recipes each shelf holds (everything, Rotation, Weekend, To try), for a desktop's filters column. */
+export const recipeShelfCounts = createServerFn({ method: "GET" }).handler(async () => recipes.shelfCounts());
+
 /** What the import's duplicate warning needs of a match: the name to show and the slug to link to. */
 const nameAndSlug = (found?: RecipeSummary): { name: string; slug: string } | null => (found ? { name: found.name, slug: found.slug } : null);
 

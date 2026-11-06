@@ -25,3 +25,6 @@ export const recipeSummarySchema = z.object({
 });
 
 export type RecipeSummary = z.infer<typeof recipeSummarySchema>;
+
+/** How many recipes each shelf of the library holds, over the whole collection: `all` every recipe, `try` the never made. */
+export type ShelfCounts = { all: number; rotation: number; weekend: number; try: number };

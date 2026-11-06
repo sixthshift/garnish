@@ -8,6 +8,7 @@ import { useSubRecipe } from "../../../../components/recipe/SubRecipes";
 import { useIngredientTick } from "../../../../lib/useTicks";
 import { formatIngredient, inflectIngredient } from "../../ingredient";
 import { alternativeText, type Ingredient, subRecipeCookLabel, subRecipeHint, subRecipeScale } from "../../recipe";
+import { LIT, useIngredientLink } from "./StepLinks";
 import { useQuickEditIngredient } from "./useQuickEdit";
 
 export type IngredientRowProps = {
@@ -39,6 +40,9 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
   const quickEdit = useQuickEditIngredient(partId, ingredient.id);
   // The recipe this row's food is made by, when the page fetched one.
   const child = useSubRecipe(ingredient.food);
+  // Lit with the steps that use it, on a desktop's recipe (StepLinks.tsx). A
+  // row without a part (merged, or repeated in a step card) takes no part.
+  const link = useIngredientLink(partId === undefined ? undefined : ingredient.id);
   const scale = child === null ? null : subRecipeScale(ingredient, child);
   // Tokens, so the food can be bold and the amount can carry the "scaled" class.
   const tokens = inflectIngredient(ingredient);
@@ -95,7 +99,14 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
 
   return (
     <li
-      className={cn("group/quick-edit flex items-start gap-2.5", cook && "relative gap-3")}
+      className={cn(
+        "group/quick-edit flex items-start gap-2.5",
+        cook && "relative gap-3",
+        link.linking && "-mx-2 rounded-md px-2 py-0.5 transition-colors",
+        link.lit && LIT
+      )}
+      {...link.props}
+      data-lit={link.lit ? "true" : undefined}
       data-testid="ingredient-row"
       data-ticked={done ? "true" : undefined}
       data-fixed={ingredient.fixed ? "true" : undefined}

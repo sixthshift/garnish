@@ -1,6 +1,7 @@
-// M24.1: from `lg` (critique #13; `md` until then) the recipe page is two columns — every ingredient list in
-// the sticky aside, every step list in the main column — in both ingredient
-// modes. Rendered through the real route tree (see test/helpers/routes.tsx);
+// M24.1, then M47.4: every ingredient list in the ingredients column, every
+// step list in the method column, in both ingredient modes; on a phone one
+// after the other, on a desktop the spread (decisions.md row 207). Rendered
+// through the real route tree (see test/helpers/routes.tsx);
 // `elementHtml` slices one column out of the markup so containment, not just
 // presence, can be asserted.
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -53,7 +54,7 @@ function seedTart() {
 
 const count = (html: string, needle: string) => html.split(needle).length - 1;
 
-describe("two columns from lg (M24.1, critique #13)", () => {
+describe("the ingredients and method columns (M24.1, critique #13; M47.4)", () => {
   test("structured mode: the aside holds every part's ingredient list, the main column every step list", async () => {
     await seedTart();
     storeMode("structured");
@@ -129,29 +130,75 @@ describe("two columns from lg (M24.1, critique #13)", () => {
     expect(html).not.toContain('data-testid="ingredient-mode-toggle"');
   });
 
-  test("the grid is a desktop's, the aside sticks under the top bar and scrolls itself", async () => {
+  test("a phone's page is one column: the ingredients, then the method, under the page's measure", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     const columns = elementHtml(html, "recipe-columns");
-    expect(columns).toMatch(/class="[^"]*flex flex-col[^"]*desktop:grid[^"]*desktop:grid-cols-3/);
-    // Critique #13: at md a third of the page was 144px, too narrow for the list.
-    expect(columns.slice(0, columns.indexOf(">"))).not.toContain("md:");
-    const aside = elementHtml(html, "ingredients-column");
-    expect(aside.startsWith("<aside")).toBe(true);
-    expect(aside).toMatch(/class="[^"]*desktop:sticky[^"]*desktop:top-\[calc\(var\(--top-bar\)\+1\.5rem\)\]/);
-    expect(aside.slice(0, aside.indexOf(">"))).not.toContain("md:");
-    expect(aside).toMatch(/class="[^"]*desktop:overflow-y-auto/);
+    expect(columns.slice(0, columns.indexOf(">"))).toContain("flex flex-col");
+    expect(columns.slice(0, columns.indexOf(">"))).not.toMatch(/grid|md:/);
+    expect(html.indexOf('data-testid="ingredients-column"')).toBeLessThan(html.indexOf('data-testid="method-column"'));
     expect(html).toMatch(/<article[^>]*class="[^"]*max-w-6xl/);
+    expect(html).not.toContain('data-testid="recipe-spread"');
   });
 
-  test("the method column runs its track's full width, so its right edge meets the header's (critique #13)", async () => {
+  test("a desktop's page is a spread: the left page, the ingredients, the method and the notes, each scrolling on its own (row 207)", async () => {
     await seedTart();
-    const html = await renderRoute("/recipes/lemon-tart");
+    const html = await renderRoute("/recipes/lemon-tart", "desktop");
+    expect(html).toContain('data-testid="recipe-spread"');
+    const columns = elementHtml(html, "recipe-columns");
+    const open = columns.slice(0, columns.indexOf(">"));
+    // Two columns under the page's 1250px, the left page across the top; three from there, a screen tall; four from 1800px.
+    expect(open).toContain("desktop:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.2fr)]");
+    expect(open).toContain("desktop:@min-[1250px]/spread:h-[calc(100dvh-var(--top-bar))]");
+    expect(open).toMatch(/desktop:@min-\[1250px\]\/spread:grid-cols-\[[^ ]*_[^ ]*_[^ ]*\]/);
+    expect(open).toMatch(/desktop:@min-\[1800px\]\/spread:grid-cols-\[[^ ]*_[^ ]*_[^ ]*_[^ ]*\]/);
+    expect(open).not.toContain("md:");
+    // The order across: the left page (the header in it), the ingredients, then the method.
+    const left = html.indexOf('data-testid="left-page"');
+    expect(left).toBeGreaterThan(-1);
+    expect(left).toBeLessThan(html.indexOf('data-testid="recipe-header"'));
+    expect(html.indexOf('data-testid="recipe-header"')).toBeLessThan(html.indexOf('data-testid="ingredients-column"'));
+    expect(html.indexOf('data-testid="ingredients-column"')).toBeLessThan(html.indexOf('data-testid="method-column"'));
+    // Each column scrolls itself once the spread is a screen tall.
+    for (const id of ["left-page", "ingredients-column"]) {
+      const column = elementHtml(html, id);
+      expect(column.slice(0, column.indexOf(">"))).toContain("desktop:@min-[1250px]/spread:overflow-y-auto");
+    }
+    // The method keeps a reading measure however wide its column (row 207).
+    expect(elementHtml(html, "method-column")).toContain("max-w-[62ch]");
+    // The notes' column steps aside into its own grid column from 1800px rather than being drawn twice.
+    const wrap = elementHtml(html, "method-and-notes");
+    expect(wrap.slice(0, wrap.indexOf(">"))).toContain("desktop:@min-[1800px]/spread:contents");
+    expect(count(html, 'data-testid="notes-column"')).toBe(1);
+  });
+
+  test("a desktop's spread keeps every part's ingredients in their column and every step list in the method's", async () => {
+    await seedTart();
+    const html = await renderRoute("/recipes/lemon-tart", "desktop");
+    const aside = elementHtml(html, "ingredients-column");
     const main = elementHtml(html, "method-column");
-    expect(main.slice(0, main.indexOf(">"))).toContain("desktop:col-span-2");
-    // The page's max-w-6xl already caps the step text near a reading measure;
-    // a second cap here left the steps 70px short of everything above them.
-    expect(main.slice(0, main.indexOf(">"))).not.toContain("max-w-");
+    expect(count(aside, 'aria-label="Ingredients"')).toBe(2);
+    expect(count(main, 'aria-label="Ingredients"')).toBe(0);
+    expect(count(main, 'aria-label="Steps"')).toBe(3);
+    expect(elementHtml(html, "ingredients-heading")).toContain('aria-label="Scale servings"');
+    // The photo is the left page's own, not the header's.
+    expect(elementHtml(html, "recipe-header")).not.toContain("<img");
+  });
+
+  test("a desktop's notes and history follow the method, in the notes column", async () => {
+    const tart = await callServerFn(createRecipe, {
+      name: "Lemon tart",
+      notes: [{ title: "Make ahead", text: "Keeps three days." }],
+      parts: [{ name: "", ingredients: [], steps: [{ text: "Chill it overnight." }] }],
+    });
+    await callServerFn(createTimelineEvent, { recipeId: tart.id, event: { occurredOn: "2026-09-11", message: "Crispier at 220.", image: null } });
+    const html = await renderRoute("/recipes/lemon-tart", "desktop");
+    const notes = elementHtml(html, "notes-column");
+    expect(notes).toContain('data-testid="recipe-notes"');
+    expect(notes).toContain('data-testid="timeline"');
+    expect(notes).toContain('data-testid="recipe-meta"');
+    expect(elementHtml(html, "method-column")).not.toContain('data-testid="recipe-notes"');
+    expect(elementHtml(html, "method-column")).toContain('data-testid="made-this-row"');
   });
 
   test("the ingredients aside opts out of the print rule that hides the shell's aside", async () => {

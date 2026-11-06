@@ -10,6 +10,7 @@ import { formatDuration, totalMinutes } from "../../ingredient";
 import { type Recipe, type SubRecipe, scaledForServings, withChoices } from "../../recipe";
 import { PartIngredients } from "../recipe/IngredientList";
 import { PartSteps } from "../recipe/PartSteps";
+import { StepLinksProvider } from "../recipe/StepLinks";
 
 export type RecipeInsetProps = {
   slug: string;
@@ -106,21 +107,30 @@ export function RecipeInset({ slug, choices, servings, focusOnOpen = false }: Re
           </div>
         </header>
 
-        {recipe.parts.some((part) => part.ingredients.length > 0) && (
-          <section className="flex flex-col gap-4" aria-label="Ingredients">
-            <SectionTitle as="h3">Ingredients</SectionTitle>
-            {recipe.parts.map((part) => (
-              <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />
-            ))}
-          </section>
-        )}
+        {/* The panel's own width decides, not the screen's: wide enough for
+            both (a wide screen's panel, row 207), the list sits beside the
+            method rather than above it. */}
+        <div className="@container">
+          <StepLinksProvider recipe={recipe}>
+            <div className="flex flex-col gap-6 @min-[36rem]:grid @min-[36rem]:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] @min-[36rem]:items-start">
+              {recipe.parts.some((part) => part.ingredients.length > 0) && (
+                <section className="flex flex-col gap-4" aria-label="Ingredients" data-testid="inset-ingredients">
+                  <SectionTitle as="h3">Ingredients</SectionTitle>
+                  {recipe.parts.map((part) => (
+                    <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />
+                  ))}
+                </section>
+              )}
 
-        <section className="flex flex-col gap-4" aria-label="Method">
-          <SectionTitle as="h3">Method</SectionTitle>
-          {recipe.parts.map((part) => (
-            <PartSteps key={part.id} part={part} recipeId={recipe.id} />
-          ))}
-        </section>
+              <section className="flex flex-col gap-4" aria-label="Method" data-testid="inset-method">
+                <SectionTitle as="h3">Method</SectionTitle>
+                {recipe.parts.map((part) => (
+                  <PartSteps key={part.id} part={part} recipeId={recipe.id} />
+                ))}
+              </section>
+            </div>
+          </StepLinksProvider>
+        </div>
       </article>
     </SubRecipesProvider>
   );

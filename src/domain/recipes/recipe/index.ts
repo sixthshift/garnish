@@ -42,4 +42,4 @@ export { resolveSort, SORT_OPTIONS } from "./sort";
 export { ingredientsInStep, suggestLinks } from "./stepIngredients";
 export type { SubRecipe } from "./subRecipe";
 export { subRecipeCookLabel, subRecipeHint, subRecipeMap, subRecipeScale } from "./subRecipe";
-export { type RecipeSummary, recipeSummarySchema } from "./summary";
+export { type RecipeSummary, recipeSummarySchema, type ShelfCounts } from "./summary";

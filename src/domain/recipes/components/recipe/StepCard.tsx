@@ -8,6 +8,7 @@ import { useStepTick } from "../../../../lib/useTicks";
 import { useTimers } from "../../../../lib/useTimers";
 import { durationsIn, type Ingredient, type Step } from "../../recipe";
 import { IngredientRow } from "./IngredientRow";
+import { LIT, useStepLink } from "./StepLinks";
 import { TimerChip } from "./TimerChip";
 import { useQuickEditStep } from "./useQuickEdit";
 
@@ -51,6 +52,8 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   const [done, toggle] = useStepTick(recipeId, step.id);
   // The corner "…" menu and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditStep(partId, step.id);
+  // Lit or dimmed by the ingredient pointed at, on a desktop's recipe (StepLinks.tsx).
+  const link = useStepLink(step.id);
   // `find` closes over the current timers, so it changes on every second's
   // tick; that is exactly when a running chip has to repaint.
   const { start, pause, resume, find } = useTimers(recipeId);
@@ -78,7 +81,16 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
       // list. Borrowing the recipe keeps the surface identical to every other
       // card — including the `bg-bg-normal` that now lifts it off the base page
       // — without restating the treatment here, where it would drift.
-      className={cn(cardVariants({ size: "md" }), "group/quick-edit", done && "opacity-60")}
+      className={cn(
+        cardVariants({ size: "md" }),
+        "group/quick-edit",
+        done && "opacity-60",
+        link.linking && "transition-[background-color,opacity]",
+        link.state === "lit" && LIT,
+        link.state === "dim" && "opacity-35"
+      )}
+      {...link.props}
+      data-lit={link.state ?? undefined}
       data-testid="step-card"
       data-size={size}
       data-ticked={done ? "true" : undefined}

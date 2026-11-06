@@ -1,13 +1,11 @@
 import { Button } from "@sixthshift/design-system/button";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Switch } from "@sixthshift/design-system/switch";
-import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { useState } from "react";
-import { addUnique, withoutId } from "../../../../lib/lists";
-import { type PickerOption, picker } from "../../../../lib/ui/picker";
 import type { TagMatch } from "../../recipe";
 import type { FoodSummary, TagUsage } from "../../reference";
+import { FoodFilter } from "./FoodFilter";
 import { tagShelves } from "./tagUse";
 
 /** A tag as a toggle: its name, and how many recipes carry it. */
@@ -37,7 +35,6 @@ export type FilterBarProps = {
 };
 
 export function FilterBar({ allTags, allFoods, tags, match, foods, favourite, onTagsChange, onMatchChange, onFoodsChange, onFavouriteChange }: FilterBarProps) {
-  const [foodText, setFoodText] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const [tagText, setTagText] = useState("");
   const { top, more } = tagShelves(allTags, tags, tagText);
@@ -48,11 +45,6 @@ export function FilterBar({ allTags, allFoods, tags, match, foods, favourite, on
     const own = within(group);
     onTagsChange([...tags.filter((slug) => !own.has(slug)), ...next]);
   };
-  const foodById = new Map(allFoods.map((food) => [food.id, food]));
-  const q = foodText.trim().toLowerCase();
-  const options: PickerOption[] = allFoods
-    .filter((food) => !foods.includes(food.id) && (q === "" || food.name.toLowerCase().includes(q)))
-    .map((food) => ({ value: food.id, label: food.name }));
 
   return (
     <div className="flex flex-col gap-3">
@@ -101,33 +93,7 @@ export function FilterBar({ allTags, allFoods, tags, match, foods, favourite, on
           )}
         </div>
       )}
-      <div className="flex flex-col gap-2">
-        <SearchInput
-          value={foodText}
-          onValueChange={setFoodText}
-          aria-label="Filter by food"
-          placeholder="Filter by food"
-          className="max-w-xs"
-          {...picker({
-            options,
-            text: foodText,
-            label: "Food filter suggestions",
-            onSelect: (option) => {
-              onFoodsChange(addUnique(foods, option.value));
-              setFoodText("");
-            },
-          })}
-        />
-        {foods.length > 0 && (
-          <ul className="flex flex-wrap gap-1" aria-label="Food filters">
-            {foods.map((id) => (
-              <li key={id}>
-                <TagChip tag={foodById.get(id)?.name ?? id} onRemove={() => onFoodsChange(withoutId(foods, id))} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <FoodFilter allFoods={allFoods} foods={foods} onFoodsChange={onFoodsChange} inputClassName="max-w-xs" />
       <Switch checked={favourite} onCheckedChange={onFavouriteChange} label="Favourites only" />
     </div>
   );

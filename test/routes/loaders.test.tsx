@@ -13,7 +13,7 @@ import { listUnits } from "../../src/api/rpc/units";
 import type { SettingsData, settingsRoute as SettingsRoute } from "../../src/app/features/settings/routes/settings";
 import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/plan/planner";
-import { nextServings, type Recipe, type RecipeSummary, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
+import { nextServings, type Recipe, type RecipeSummary, type ShelfCounts, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/recipes/reference";
 import type { recipeEdit as EditRoute } from "../../src/domain/recipes/routes/edit";
 import type { recipeNew as NewRoute } from "../../src/domain/recipes/routes/new";
@@ -98,12 +98,14 @@ describe("/recipes (list)", () => {
     expect(html).toContain('src="/api/images/flatbread.jpg"');
     expect(html).toContain('src="/api/images/lemon%20tart.webp"');
     expect(html.match(/data-placeholder="image"/g)).toHaveLength(1);
-    // Tag chips on the card, and the tag filter offers every tag, none selected.
-    expect(html).toMatch(/class="(?:[^"]* )?tag-chip /);
-    expect(html).toContain(">Weeknight</span>");
-    expect(html).toContain('aria-label="Filter by tag"');
-    expect(html).not.toContain(">All<");
-    expect(html).toMatch(/data-state="off"[^>]*>Weeknight/);
+    // Tag chips on a phone's card; a desktop's wall names the tags under the card, and the
+    // filters column offers every tag with its count, none selected (decisions.md row 207).
+    expect(phone).toMatch(/class="(?:[^"]* )?tag-chip /);
+    expect(elementHtml(html, "photo-wall")).toContain(">Weeknight</span>");
+    const filters = elementHtml(html, "filters-column");
+    expect(filters).toContain(">Tags<");
+    expect(filters).not.toContain(">All<");
+    expect(filters).toMatch(/data-state="off"[^>]*><span[^>]*>Weeknight<\/span><span[^>]*>1<\/span>/);
   });
 
   test("q and tag search params filter the list", async () => {
@@ -130,7 +132,7 @@ describe("/recipes (list)", () => {
     expect(html).toContain("<search>"); // the search landmark, as an element rather than a role
     expect(html).toContain('value="flat"');
     // The legacy singular `tag` param still selects its chip (M12.3 folds it into `tags`).
-    expect(html).toMatch(/data-state="on"[^>]*>Weeknight/);
+    expect(html).toMatch(/data-state="on"[^>]*><span[^>]*>Weeknight/);
   });
 
   test("tags[], match, foods[] and favourite search params filter the list and render as selected", async () => {
@@ -145,8 +147,8 @@ describe("/recipes (list)", () => {
     expect(html).toContain("Flatbread");
     expect(html).toContain("Pancakes");
     expect(html).toContain("Toast");
-    expect(html).toMatch(/data-state="on"[^>]*>Weeknight/);
-    expect(html).toMatch(/data-state="on"[^>]*>Pasta/);
+    expect(html).toMatch(/data-state="on"[^>]*><span[^>]*>Weeknight/);
+    expect(html).toMatch(/data-state="on"[^>]*><span[^>]*>Pasta/);
 
     // all: only the recipe carrying both.
     html = await renderRoute(`/recipes?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}&match=all`, "desktop");
@@ -187,14 +189,18 @@ describe("/recipes (list)", () => {
       delete (globalThis as { window?: unknown }).window;
     });
 
-    test("defaults to a grid: cards in grid mode, grid selected in the toggle", async () => {
+    test("defaults to a grid: cards in grid mode, grid selected in the toggle; a desktop's grid is the wall", async () => {
       await seed("Flatbread");
+      const phone = await renderRoute("/recipes");
+      expect(phone).toContain('data-card-mode="grid"');
+      expect(phone).not.toContain('data-card-mode="list"');
+      expect(phone).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
+      // A track never wider than the list, so a phone under the card's minimum gets one full-width column, not a page that scrolls.
+      expect(phone).toContain("grid-template-columns:repeat(auto-fill, minmax(min(22rem, 100%), 1fr))");
       const html = await renderRoute("/recipes", "desktop");
-      expect(html).toContain('data-card-mode="grid"');
+      expect(html).toContain('data-testid="photo-wall"');
       expect(html).not.toContain('data-card-mode="list"');
       expect(html).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
-      // A track never wider than the list, so a phone under the card's minimum gets one full-width column, not a page that scrolls.
-      expect(html).toContain("grid-template-columns:repeat(auto-fill, minmax(min(22rem, 100%), 1fr))");
     });
 
     test("a stored list preference renders every card in list mode", async () => {
@@ -759,7 +765,7 @@ describe("loader data types match the domain schemas", () => {
     // ...and each route hands its component the same shape (`types` is the
     // route's phantom type bag; `useLoaderData()` returns `types.loaderData`).
     expectTypeOf<(typeof IndexRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeListData>();
-    expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: TagUsage[]; foods: FoodSummary[] }>();
+    expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: TagUsage[]; foods: FoodSummary[]; shelves: ShelfCounts }>();
     expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeViewData>();
     expectTypeOf<RecipeViewData>().toEqualTypeOf<{ recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[]; aiAvailable: boolean }>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();

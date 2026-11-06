@@ -31,10 +31,12 @@ export type RecipeHeaderProps = {
    * "4 times") after the date.
    */
   madeCount?: number;
+  /** Draw the photo beside the text. A desktop's spread draws it itself, filling the top of its left page. */
+  showImage?: boolean;
 };
 
-export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeaderProps) {
-  const src = recipeImageUrl(recipe.image);
+export function RecipeHeader({ recipe, actions, onRate, madeCount, showImage = true }: RecipeHeaderProps) {
+  const src = showImage ? recipeImageUrl(recipe.image) : null;
   const stats = timeStats(recipe);
   const yielded = yieldLine(recipe.recipeYieldQuantity, recipe.yieldUnit, recipe.recipeYield);
   const lastMade = formatDateStamp(recipe.lastMade);

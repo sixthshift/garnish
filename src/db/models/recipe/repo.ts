@@ -10,6 +10,7 @@ import {
   type RecipeNote,
   type RecipeSummary,
   resolveSort,
+  type ShelfCounts,
   type SortDir,
   type SortKey,
   type Step,
@@ -590,6 +591,24 @@ export function recipeRepository(db: Database) {
      */
     query(q: RecipeQuery = { by: "filter" }): RecipeSummary[] {
       return queryRows(q).map((row) => summarise(dz, row));
+    },
+
+    /**
+     * How many recipes each of the library's shelves holds, over the whole
+     * collection: everything, the two kinds, and the never made (the "To try"
+     * shelf). One pass, for a desktop's filters column to show beside each.
+     */
+    shelfCounts(): ShelfCounts {
+      const row = dz
+        .select({
+          all: sql<number>`count(*)`,
+          rotation: sql<number>`coalesce(sum(${recipe.kind} = 'rotation'), 0)`,
+          weekend: sql<number>`coalesce(sum(${recipe.kind} = 'weekend'), 0)`,
+          try: sql<number>`coalesce(sum(${recipe.lastMade} is null), 0)`,
+        })
+        .from(recipe)
+        .get();
+      return row ?? { all: 0, rotation: 0, weekend: 0, try: 0 };
     },
 
     /** Insert a recipe and its children in one transaction; the slug comes from the name. */

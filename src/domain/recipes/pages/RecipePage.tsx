@@ -11,7 +11,9 @@ import { PencilIcon } from "../../../components/ui/icons";
 import { useMutate } from "../../../lib/mutate";
 import { useIngredientMode } from "../../../lib/prefs";
 import { toastError } from "../../../lib/toast";
+import { useLayout } from "../../../lib/useLayout";
 import { clearTicksNow, useAnyTicked } from "../../../lib/useTicks";
+import { RecipeSpread } from "../components/desktop/RecipeSpread";
 import { IngredientList, PartIngredients } from "../components/recipe/IngredientList";
 import { IngredientModeToggle } from "../components/recipe/IngredientModeToggle";
 import { MadeThisButton } from "../components/recipe/MadeThisButton";
@@ -27,7 +29,11 @@ import { mergeIngredients, scaledForServings, withChoices } from "../recipe";
 
 const route = getRouteApi("/recipes/$slug/");
 
-/** A pencil, drawn the way RecipeHeader.tsx draws its own icons. */
+/**
+ * A recipe's page. On a phone the header, the ingredients and the method, one
+ * after another; on a desktop the same pieces laid out as a cookbook spread
+ * (RecipeSpread, decisions.md row 207). Only the arrangement differs.
+ */
 export function RecipePage() {
   const { recipe: stored, timeline, subRecipes, aiAvailable } = route.useLoaderData();
   const { servings: requested, choices } = route.useSearch();
@@ -49,6 +55,7 @@ export function RecipePage() {
   // there is something ticked to clear.
   const anyTicked = useAnyTicked(recipe.id);
   const ingredientsHeading = useRef<HTMLElement>(null);
+  const desktop = useLayout() === "desktop";
 
   // The header's stars write straight through: 0 clears the rating,
   // and the loader re-reads it, so there is nothing optimistic to unwind.
@@ -60,113 +67,152 @@ export function RecipePage() {
     }
   };
 
+  const header = (
+    <RecipeHeader
+      recipe={recipe}
+      madeCount={timeline.length}
+      onRate={(rating) => void rate(rating)}
+      // The spread draws the photo itself, filling the top of its left page.
+      showImage={!desktop}
+      actions={
+        <>
+          {/* Edit and Cook are both in the open rather than behind
+              the menu; each carries the currently requested scale so it
+              round-trips through the edit page and into cook mode. */}
+          <Button asChild variant="outline" intent="neutral" size="sm" iconOnly aria-label="Edit">
+            <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }} search={{ servings: requested }}>
+              <PencilIcon />
+            </Link>
+          </Button>
+          <Button asChild variant="solid" intent="brand" size="sm">
+            <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested, choices }}>
+              Cook
+            </Link>
+          </Button>
+          {/* Takes the scaled document, so what the sheet offers is what the page is showing. */}
+          <AddToShoppingButton recipe={recipe} />
+          <RecipeActions recipe={recipe} aiAvailable={aiAvailable} />
+        </>
+      }
+    />
+  );
+
+  const lists = (
+    <>
+      {summary && <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />}
+      {!summary && recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
+    </>
+  );
+
+  const ingredients = (
+    <>
+      {/* The column's own heading, as Mealie's ingredient list header has both the title and the servings stepper together. */}
+      <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
+        {/* Focusable from code only: where Done fixing hands focus as it goes. */}
+        <SectionTitle as="h2" ref={ingredientsHeading} tabIndex={-1} className="outline-none">
+          Ingredients
+        </SectionTitle>
+        <div className="flex flex-wrap items-center gap-3">
+          <ScaleControl servings={recipe.recipeServings} />
+          {anyTicked && (
+            <Button inline intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
+              Clear
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Structured vs. one merged list only means something once there is
+          more than one part to merge; a flat recipe has nothing to
+          toggle. */}
+      <IngredientsToolbar toggle={recipe.parts.length > 1 && <IngredientModeToggle />} returnFocus={ingredientsHeading} />
+
+      {/* A card on a phone lifts the list off the page; a desktop's column is a page of the spread already. */}
+      {hasIngredients && desktop && <div className="flex flex-col gap-6">{lists}</div>}
+      {hasIngredients && !desktop && (
+        <Card size="lg" className="flex flex-col gap-6">
+          {lists}
+        </Card>
+      )}
+    </>
+  );
+
+  const steps = recipe.parts.map((part) => <PartSteps key={part.id} part={part} recipeId={recipe.id} />);
+
+  // Notes after the method: a cook opens the page for what to get out and
+  // what to do, and "Make ahead" or "Why it works" is read once that is in
+  // hand. Mealie's order.
+  const notes = recipe.notes.length > 0 && (
+    <section className="flex flex-col gap-3" aria-label="Notes" data-testid="recipe-notes">
+      <SectionTitle as="h2">Notes</SectionTitle>
+      {recipe.notes.map((note) => (
+        <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
+          <p className="whitespace-pre-line">{note.text}</p>
+        </Card>
+      ))}
+    </section>
+  );
+
+  // Under the last step card, not above the History
+  // disclosure — the button belongs to the method, not the log.
+  const madeThis = (
+    <div className="flex justify-end" data-testid="made-this-row" data-print="hide">
+      <MadeThisButton recipe={recipe} />
+    </div>
+  );
+
   // Quick edit hangs off the stored document, not `recipe`: a row's
   // sheet writes back what was stored, whatever scale the page is showing.
   return (
     <QuickEditProvider recipe={stored}>
       <SubRecipesProvider subRecipes={subRecipes}>
-        <Page as="article">
-          <RecipeHeader
-            recipe={recipe}
-            madeCount={timeline.length}
-            onRate={(rating) => void rate(rating)}
-            actions={
-              <>
-                {/* Edit and Cook are both in the open rather than behind
-                    the menu; each carries the currently requested scale so it
-                    round-trips through the edit page and into cook mode. */}
-                <Button asChild variant="outline" intent="neutral" size="sm" iconOnly aria-label="Edit">
-                  <Link to="/recipes/$slug/edit" params={{ slug: recipe.slug }} search={{ servings: requested }}>
-                    <PencilIcon />
-                  </Link>
-                </Button>
-                <Button asChild variant="solid" intent="brand" size="sm">
-                  <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings: requested, choices }}>
-                    Cook
-                  </Link>
-                </Button>
-                {/* Takes the scaled document, so what the sheet offers is what the page is showing. */}
-                <AddToShoppingButton recipe={recipe} />
-                <RecipeActions recipe={recipe} aiAvailable={aiAvailable} />
-              </>
-            }
-          />
+        {desktop ? (
+          <>
+            <RecipeSpread
+              recipe={recipe}
+              header={header}
+              ingredients={ingredients}
+              method={
+                <>
+                  {steps}
+                  {madeThis}
+                </>
+              }
+              notes={notes}
+              history={
+                <>
+                  <TimelineList events={timeline} defaultOpen />
+                  <RecipeMetaFooter recipe={recipe} />
+                </>
+              }
+            />
+            <TimerStrip recipeId={recipe.id} fixed />
+          </>
+        ) : (
+          <Page as="article">
+            {header}
 
-          {/* Two columns on a desktop: the ingredients stick beside the
-              method rather than scrolling away above it. A third for the list, two
-              thirds for the steps; the aside scrolls itself when it is taller than
-              the viewport. On a phone the two stack, ingredients first (critique #13, decisions.md row 206). */}
-          <div className="flex flex-col gap-6 desktop:grid desktop:grid-cols-3 desktop:items-start desktop:gap-8" data-testid="recipe-columns">
-            <aside
-              data-testid="ingredients-column"
-              data-print="keep"
-              className="flex flex-col gap-4 desktop:sticky desktop:top-[calc(var(--top-bar)+1.5rem)] desktop:max-h-[calc(100dvh-var(--top-bar)-3rem)] desktop:overflow-y-auto"
-            >
-              {/* The aside's own heading, as Mealie's ingredient list header has both the title and the servings stepper together. */}
-              <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
-                {/* Focusable from code only: where Done fixing hands focus as it goes. */}
-                <SectionTitle as="h2" ref={ingredientsHeading} tabIndex={-1} className="outline-none">
-                  Ingredients
-                </SectionTitle>
-                <div className="flex flex-wrap items-center gap-3">
-                  <ScaleControl servings={recipe.recipeServings} />
-                  {anyTicked && (
-                    <Button inline intent="neutral" size="sm" data-print="hide" onClick={() => clearTicksNow(recipe.id)}>
-                      Clear
-                    </Button>
-                  )}
-                </div>
-              </div>
+            {/* The ingredients, then the method (critique #13). */}
+            <div className="flex flex-col gap-6" data-testid="recipe-columns">
+              <aside data-testid="ingredients-column" data-print="keep" className="flex flex-col gap-4">
+                {ingredients}
+              </aside>
 
-              {/* Structured vs. one merged list only means something once there is
-                  more than one part to merge; a flat recipe has nothing to
-                  toggle. */}
-              <IngredientsToolbar toggle={recipe.parts.length > 1 && <IngredientModeToggle />} returnFocus={ingredientsHeading} />
-
-              {hasIngredients && (
-                <Card size="lg" className="flex flex-col gap-6">
-                  {summary && <IngredientList ingredients={mergeIngredients(recipe)} recipeId={recipe.id} scaled={scaled} />}
-
-                  {!summary && recipe.parts.map((part) => <PartIngredients key={part.id} part={part} recipeId={recipe.id} scaled={scaled} />)}
-                </Card>
-              )}
-            </aside>
-
-            <div className="flex flex-col gap-6 desktop:col-span-2" data-testid="method-column">
-              {recipe.parts.map((part) => (
-                <PartSteps key={part.id} part={part} recipeId={recipe.id} />
-              ))}
-
-              {/* Notes after the method, in its column: a cook opens the page
-                  for what to get out and what to do, and "Make ahead" or "Why
-                  it works" is read once that is in hand. Mealie's order; the
-                  ingredients stay stuck beside them on a desktop. */}
-              {recipe.notes.length > 0 && (
-                <section className="flex flex-col gap-3" aria-label="Notes" data-testid="recipe-notes">
-                  <SectionTitle as="h2">Notes</SectionTitle>
-                  {recipe.notes.map((note) => (
-                    <Card key={note.id} title={note.title.trim() !== "" ? note.title : undefined}>
-                      <p className="whitespace-pre-line">{note.text}</p>
-                    </Card>
-                  ))}
-                </section>
-              )}
-
-              {/* Under the last step card, not above the History
-                  disclosure — the button belongs to the method, not the log. */}
-              <div className="flex justify-end" data-testid="made-this-row" data-print="hide">
-                <MadeThisButton recipe={recipe} />
+              <div className="flex flex-col gap-6" data-testid="method-column">
+                {steps}
+                {notes}
+                {madeThis}
               </div>
             </div>
-          </div>
 
-          {/* Any timers started from a step, fixed above the phone tab bar. */}
-          <TimerStrip recipeId={recipe.id} fixed />
+            {/* Any timers started from a step, fixed above the phone tab bar. */}
+            <TimerStrip recipeId={recipe.id} fixed />
 
-          <TimelineList events={timeline} />
+            <TimelineList events={timeline} />
 
-          <RecipeMetaFooter recipe={recipe} />
-        </Page>
+            <RecipeMetaFooter recipe={recipe} />
+          </Page>
+        )}
       </SubRecipesProvider>
     </QuickEditProvider>
   );
