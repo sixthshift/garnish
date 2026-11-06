@@ -310,7 +310,7 @@ describe("StepsEditor", () => {
     expect(row).toContain("items-start");
     expect(row).not.toContain("items-center");
     // The row's own handle too, which a stretched flex child would centre.
-    expect(html).toMatch(/<div class="flex items-start gap-2[^"]*" data-step="0">/);
+    expect(html).toMatch(/<div class="flex items-start gap-2[^"]*" data-step="0"[^>]*>/);
   });
 
   // M35.1: the row menu's "Add image" opens a hidden file input per row. The

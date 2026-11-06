@@ -22,6 +22,8 @@ type ReadExtras = {
   subRecipes?: string[];
   by: DuplicateBy;
   note?: string | null;
+  /** What the read was made from, when it was not a page's readable text: the text pasted. */
+  sourceText?: string;
 };
 
 export function useRecipeSource(props: RecipeSourceProps) {
@@ -65,8 +67,10 @@ export function useRecipeSource(props: RecipeSourceProps) {
     });
     const lookup = extras.by === "url" ? findDuplicate?.(found.url) : findDuplicateByName?.(found.recipe.name);
     const duplicate = (await lookup) ?? null;
+    const sourceText = extras.sourceText ?? found.pageText;
     onDraft({
       ...check,
+      ...(sourceText.trim() !== "" && { sourceText }),
       imageUrl: found.recipe.image,
       // A page with no recipe on it gave a title and a picture and nothing else: Check says so.
       note: extras.note ?? (found.from === "stub" ? STUB_NOTE : null),
@@ -170,6 +174,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
         suggestedTags: [],
         leftOutTags: [],
         pastedText: text.trim(),
+        sourceText: text.trim(),
       });
       return;
     }
@@ -179,7 +184,8 @@ export function useRecipeSource(props: RecipeSourceProps) {
     try {
       const [found, foods] = await Promise.all([loadText ? loadText(text) : importFromText({ data: { text, sourceUrl: pasteFrom ?? "" } }), fetchFoods()]);
       if (token !== readToken.current) return;
-      await toCheck(found, foods, { by: "name" });
+      // Prose pasted is itself what was read; a page's markup is shown as its readable text, as an address's is.
+      await toCheck(found, foods, { by: "name", sourceText: looksLikeHtml(text.trim()) ? found.pageText : text.trim() });
     } catch (cause) {
       if (token === readToken.current) setError(messageFrom(cause));
     } finally {

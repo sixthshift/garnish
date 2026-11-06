@@ -58,6 +58,18 @@ test("tells the opener it is ready, reads the page it sends, and opens Check on 
   expect(loadPage).toHaveBeenCalledWith({ html: "<html>…</html>", url: SOURCE, title: "Anzac biscuits | Recipes" });
 });
 
+test("hands Check the page's text as what it read, for a desktop to show beside it (decisions.md row 207)", async () => {
+  const opener = { postMessage: vi.fn() };
+  withOpener(opener);
+  const loadPage = vi.fn(async () => ({ ...found, pageText: "# Anzac biscuits\n200 g flour\nMix." }));
+  const onDraft = vi.fn();
+  await renderInRouter(<RecipeSource {...props(loadPage, onDraft)} />);
+
+  await post(sent, opener);
+  await waitFor(() => expect(onDraft).toHaveBeenCalledTimes(1));
+  expect(onDraft.mock.calls[0]![0].sourceText).toBe("# Anzac biscuits\n200 g flour\nMix.");
+});
+
 test("ignores a page from any window but the opener", async () => {
   const opener = { postMessage: vi.fn() };
   withOpener(opener);

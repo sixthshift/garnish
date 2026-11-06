@@ -61,6 +61,8 @@ export type ImportedCheck = {
   leftOutTags: string[];
   /** Plain text pasted with no model to read it, for the household to sort on Check. */
   pastedText?: string;
+  /** What the read was made from, as text, for a desktop's Check to show beside the editor; absent for a file. */
+  sourceText?: string;
 };
 
 export type ReadToCheck = {

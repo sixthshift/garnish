@@ -180,6 +180,7 @@ export function useRecipeForm({
     setDraft,
     patch,
     errors,
+    file,
     setFile: (picked: File | null) => {
       setFile(picked);
       setFileImported(false);

@@ -36,6 +36,7 @@ export {
 } from "./links";
 export { addNote, moveNote, newNote, removeNote, updateNote } from "./notes";
 export { addPart, hasContent, ingredientLine, isBare, movePart, newPart, removePart, renamePart } from "./parts";
+export { PREVIEW_ID, previewRecipe } from "./preview";
 export type { IngredientReview } from "./review";
 export {
   addReviewedIngredients,
@@ -48,6 +49,7 @@ export {
   unparsedIndices,
 } from "./review";
 export { draftFromScraped } from "./scraped";
+export { DESCRIPTION_ROW, type IndexedSource, indexSource, linkSource, NAME_ROW, type SourceLine, wordsOf } from "./sourceLines";
 export {
   addBulkSteps,
   addStep,

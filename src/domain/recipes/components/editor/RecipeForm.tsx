@@ -9,6 +9,7 @@ import type { PendingLines, RecipeDraft } from "../../draft";
 import type { Tag, Unit } from "../../reference";
 import { DiscardImportDialog } from "./DiscardImport";
 import { DraftNotice } from "./DraftNotice";
+import { EditorBeside } from "./desktop/EditorBeside";
 import { ImportCheckCard, ImportCheckContext, type ImportCheckProps, PastedTextContext } from "./ImportCheck";
 import { NotesEditor } from "./NotesEditor";
 import { PartsEditor } from "./PartsEditor";
@@ -99,7 +100,7 @@ export function RecipeForm({
   );
   const saveLabel = continueWith?.label ?? (existing ? "Save changes" : importCheck ? "Save recipe" : "Create recipe");
 
-  return (
+  const editor = (
     <form onSubmit={(event) => void form.submit(event)} noValidate className="flex flex-col gap-6" aria-label={existing ? "Edit recipe" : "New recipe"}>
       {!form.online && (
         <Message intent="warning" title="You are offline" data-testid="offline-notice">
@@ -186,5 +187,13 @@ export function RecipeForm({
         </ConfirmDialog>
       )}
     </form>
+  );
+
+  // A phone has one column and the form is all of it; a desktop draws the recipe beside it as it is typed (decisions.md row 207).
+  if (phone) return editor;
+  return (
+    <EditorBeside draft={draft} initial={initial} file={form.file} importedImageUrl={importedImageUrl} sourceText={importCheck?.sourceText}>
+      {editor}
+    </EditorBeside>
   );
 }

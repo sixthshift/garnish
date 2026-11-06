@@ -35,6 +35,12 @@ export type ImportCheckProps = {
   onBack: () => void;
   /** Plain text pasted with no model to read it: it starts in the first part's ingredient box, to be sorted by hand. */
   pastedText?: string;
+  /**
+   * What the import read, as text: a page's readable text, or what was
+   * pasted. A desktop shows it beside Check, each line lit by the row made
+   * from it. Absent for an uploaded file, which brings a recipe and no page.
+   */
+  sourceText?: string;
 };
 
 /** The pasted text the first part's empty ingredient box starts with, outside an import nothing. */

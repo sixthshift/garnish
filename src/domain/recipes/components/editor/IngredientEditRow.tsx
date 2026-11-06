@@ -146,7 +146,8 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   );
 
   return (
-    <div className="flex flex-col gap-1">
+    // `data-row-id` is what a desktop's Check lights the source line by (desktop/EditorBeside).
+    <div className="flex flex-col gap-1" data-row-id={ingredient.id}>
       <div className="flex items-center gap-2 desktop:items-start" data-ingredient={ii} data-mode={textOnly ? "text" : "structured"}>
         {reorder !== undefined && <span className="flex shrink-0 desktop:pt-1">{reorder.handle}</span>}
         <div className="min-w-0 flex-1">

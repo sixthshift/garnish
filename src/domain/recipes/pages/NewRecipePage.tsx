@@ -2,6 +2,7 @@ import { getRouteApi } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { recipeByName, recipeBySource } from "../../../api/rpc/recipes";
 import { Page, PageHeader } from "../../../components/Page";
+import { useLayout } from "../../../lib/useLayout";
 import { DiscardImportDialog } from "../components/editor/DiscardImport";
 import { RecipeForm } from "../components/editor/RecipeForm";
 import { ImportSteps } from "../components/new/ImportSteps";
@@ -31,6 +32,8 @@ export function NewRecipePage() {
   const [imported, setImported] = useState<Imported | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [blank] = useState(emptyDraft);
+  // The editor, on Check or typed by hand, sits beside its preview across a desktop's width (decisions.md row 207).
+  const editorWidth = useLayout() === "desktop" ? "full" : "page";
 
   const choose = (kind: SourceKind | null) => void navigate({ search: kind === null ? {} : { source: kind }, replace: true });
   const discard = () => {
@@ -65,7 +68,7 @@ export function NewRecipePage() {
 
   if (imported !== null) {
     return (
-      <Page>
+      <Page width={editorWidth}>
         <PageHeader title="New recipe" />
         <ImportSteps current="Check" model={aiAvailable} />
         <RecipeForm
@@ -82,6 +85,7 @@ export function NewRecipePage() {
             suggestedTags: imported.check.suggestedTags,
             leftOutTags: imported.check.leftOutTags,
             pastedText: imported.check.pastedText,
+            sourceText: imported.check.sourceText,
             onBack: () => setLeaving(true),
           }}
           continueWith={
@@ -101,7 +105,7 @@ export function NewRecipePage() {
 
   if (source === "manual") {
     return (
-      <Page>
+      <Page width={editorWidth}>
         <PageHeader title="New recipe" />
         <RecipeForm initial={blank} units={units} tags={tags} />
       </Page>
