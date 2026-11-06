@@ -44,9 +44,8 @@ test("Send it from your browser opens the bookmark's card", async () => {
   expect(onChoose).toHaveBeenCalledWith("browser");
 });
 
-test("with no model, the paste offer asks for the page's HTML, which is all a paste reads then", async () => {
+test("with no model, Paste it instead is offered all the same: plain text is sorted by hand on Check", async () => {
   const { onChoose, user } = await failedRead(false);
-  expect(screen.queryByRole("button", { name: "Paste it instead" })).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Paste the page's HTML instead" }));
+  await user.click(screen.getByRole("button", { name: "Paste it instead" }));
   expect(onChoose).toHaveBeenCalledWith("paste");
 });

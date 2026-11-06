@@ -57,6 +57,8 @@ export type ImportedCheck = {
   duplicate: { name: string; slug: string; by: DuplicateBy } | null;
   /** The source's new tags, offered on Check and added only when chosen (decisions.md row 171). */
   suggestedTags: string[];
+  /** Plain text pasted with no model to read it, for the household to sort on Check. */
+  pastedText?: string;
 };
 
 export type ReadToCheck = {

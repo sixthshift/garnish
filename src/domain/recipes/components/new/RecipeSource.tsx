@@ -132,7 +132,6 @@ export function RecipeSource(props: RecipeSourceProps) {
         onPaste={state.pasteInstead}
         onBookmark={() => onChoose("browser")}
         onSkip={state.sorting ? state.skip : undefined}
-        aiAvailable={aiAvailable}
       />
     );
   }

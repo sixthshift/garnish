@@ -16,12 +16,10 @@ export type UrlSourceProps = {
   onBookmark?: () => void;
   /** End the model's sort and open Check on the page's own reading; present only while it runs. */
   onSkip?: () => void;
-  /** Whether a model is configured: without one a paste reads only a page's HTML, and the offer says so. */
-  aiAvailable?: boolean;
 };
 
 /** A web page's stage: one address. Reached from the chooser's field, or a share, once reading has begun. */
-export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPaste, onBookmark, onSkip, aiAvailable = false }: UrlSourceProps) {
+export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPaste, onBookmark, onSkip }: UrlSourceProps) {
   const ways = onPaste !== undefined || onBookmark !== undefined;
   return (
     <SourceStage
@@ -34,7 +32,7 @@ export function UrlSource({ url, busy, error, onUrlChange, onFetch, onBack, onPa
           <span className="flex flex-wrap gap-2">
             {onPaste && (
               <Button type="button" variant="outline" intent="neutral" size="sm" disabled={busy} onClick={onPaste}>
-                {aiAvailable ? "Paste it instead" : "Paste the page's HTML instead"}
+                Paste it instead
               </Button>
             )}
             {onBookmark && (

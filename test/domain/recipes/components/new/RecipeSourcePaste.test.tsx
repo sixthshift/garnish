@@ -35,10 +35,11 @@ const flour: FoodRow = {
 };
 
 describe("the chooser always offers Paste, since a page's HTML needs no model", () => {
-  test("without a model it says it takes a page's HTML", () => {
+  test("without a model it takes plain text to sort by hand, or a page's HTML", () => {
     const html = renderToString(<SourceChooser onChoose={() => {}} />);
     expect(html).toContain('data-source="paste"');
-    expect(html).toContain("Plain text needs a model");
+    expect(html).toContain("to sort into ingredients and steps");
+    expect(html).not.toContain("needs a model");
   });
 
   test("with a model it offers plain text too", () => {

@@ -36,10 +36,12 @@ export type BulkStageOptions<R> = {
    * step from the next rather than a newline, matching how a method reads.
    */
   splitLines?: (text: string) => string[];
+  /** What the box starts with: text handed in to be sorted by hand (an import's pasted text with no model). */
+  initialText?: string;
 };
 
-export function useBulkStage<R>({ itemName, review, onAdd, onDone, splitLines = bulkLines }: BulkStageOptions<R>) {
-  const [text, setText] = useState("");
+export function useBulkStage<R>({ itemName, review, onAdd, onDone, splitLines = bulkLines, initialText = "" }: BulkStageOptions<R>) {
+  const [text, setText] = useState(initialText);
   // Null until the first stage has been committed: still on the textarea.
   const [rows, setRows] = useState<R[] | null>(null);
   const [busy, setBusy] = useState(false);

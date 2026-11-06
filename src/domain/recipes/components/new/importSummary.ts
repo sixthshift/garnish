@@ -24,6 +24,9 @@ export async function modelPass(imported: ImportedRecipe, read: ModelReader): Pr
   }
 }
 
+/** What Check says over pasted text there was no model to read. */
+export const PASTE_NOTE = "Your pasted text is in the ingredient box. Keep the ingredient lines there, and move the method into Steps.";
+
 /** What Check says when the page had no recipe on it, only a title and a picture. */
 export const STUB_NOTE = "That page has no recipe data, so this is just its title and picture. The rest is yours to type in.";
 

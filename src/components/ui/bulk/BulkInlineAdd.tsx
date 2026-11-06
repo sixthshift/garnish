@@ -9,6 +9,8 @@ export type BulkInlineAddProps<R> = {
   placeholder?: string;
   /** How pasted text becomes lines. Default: `bulkLines` (one per line). */
   splitLines?: (text: string) => string[];
+  /** What the box starts with. */
+  initialText?: string;
 } & (
   | {
       /** Called once, with one string per split line, when "Add" is pressed. No review stage: the steps side. */
@@ -19,8 +21,8 @@ export type BulkInlineAddProps<R> = {
 );
 
 /** `BulkInlinePanel` with the shared stage state around it. What an empty list renders instead of "nothing yet". */
-export function BulkInlineAdd<R>({ itemName, review, onAdd, disabled, placeholder, splitLines }: BulkInlineAddProps<R>) {
-  const stage = useBulkStage<R>({ itemName, review, onAdd, splitLines });
+export function BulkInlineAdd<R>({ itemName, review, onAdd, disabled, placeholder, splitLines, initialText }: BulkInlineAddProps<R>) {
+  const stage = useBulkStage<R>({ itemName, review, onAdd, splitLines, initialText });
   return (
     <BulkInlinePanel
       itemName={itemName}

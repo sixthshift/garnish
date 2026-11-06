@@ -8,7 +8,7 @@ import type { PendingLines, RecipeDraft } from "../../draft";
 import type { Tag, Unit } from "../../reference";
 import { DiscardImportDialog } from "./DiscardImport";
 import { DraftNotice } from "./DraftNotice";
-import { ImportCheckCard, ImportCheckContext, type ImportCheckProps } from "./ImportCheck";
+import { ImportCheckCard, ImportCheckContext, type ImportCheckProps, PastedTextContext } from "./ImportCheck";
 import { NotesEditor } from "./NotesEditor";
 import { PartsEditor } from "./PartsEditor";
 import { RecipeDetails } from "./RecipeDetails";
@@ -122,33 +122,35 @@ export function RecipeForm({
         <RecipeJsonView json={json} error={form.jsonError} disabled={saving} onChange={form.setJson} onApply={form.applyJson} />
       ) : (
         <ImportCheckContext.Provider value={form.check}>
-          {importCheck !== undefined && form.check !== null && <ImportCheckCard draft={draft} check={importCheck} state={form.check} />}
-          <Card size="lg" className="flex flex-col gap-4">
-            <RecipeHead
+          <PastedTextContext.Provider value={importCheck?.pastedText}>
+            {importCheck !== undefined && form.check !== null && <ImportCheckCard draft={draft} check={importCheck} state={form.check} />}
+            <Card size="lg" className="flex flex-col gap-4">
+              <RecipeHead
+                draft={draft}
+                errors={errors}
+                saving={saving}
+                existing={existing !== undefined}
+                importedImageUrl={importedImageUrl}
+                onPatch={form.patch}
+                onFile={form.setFile}
+              />
+            </Card>
+
+            <PartsEditor draft={draft} onChange={form.setDraft} units={units} errors={errors} disabled={saving} />
+
+            <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
+
+            <RecipeDetails
               draft={draft}
               errors={errors}
               saving={saving}
-              existing={existing !== undefined}
-              importedImageUrl={importedImageUrl}
+              units={units}
+              knownTags={knownTags}
+              defaultOpen={form.detailsOpen}
+              suggestedTags={importCheck?.suggestedTags}
               onPatch={form.patch}
-              onFile={form.setFile}
             />
-          </Card>
-
-          <PartsEditor draft={draft} onChange={form.setDraft} units={units} errors={errors} disabled={saving} />
-
-          <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
-
-          <RecipeDetails
-            draft={draft}
-            errors={errors}
-            saving={saving}
-            units={units}
-            knownTags={knownTags}
-            defaultOpen={form.detailsOpen}
-            suggestedTags={importCheck?.suggestedTags}
-            onPatch={form.patch}
-          />
+          </PastedTextContext.Provider>
         </ImportCheckContext.Provider>
       )}
 

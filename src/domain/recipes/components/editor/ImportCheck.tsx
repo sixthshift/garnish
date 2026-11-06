@@ -31,7 +31,12 @@ export type ImportCheckProps = {
   suggestedTags: readonly string[];
   /** Leave Check for the chooser; the page asks first. */
   onBack: () => void;
+  /** Plain text pasted with no model to read it: it starts in the first part's ingredient box, to be sorted by hand. */
+  pastedText?: string;
 };
+
+/** The pasted text the first part's empty ingredient box starts with, outside an import nothing. */
+export const PastedTextContext = createContext<string | undefined>(undefined);
 
 /** The lines still asked about and what can be done with each, shared with the ingredient rows. */
 export type ImportCheckState = {

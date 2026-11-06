@@ -2,7 +2,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Message } from "@sixthshift/design-system/message";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { listFoods } from "../../../../api/rpc/foods";
 import { BulkAddSheet } from "../../../../components/ui/bulk/BulkAddSheet";
 import { BulkInlineAdd } from "../../../../components/ui/bulk/BulkInlineAdd";
@@ -23,7 +23,7 @@ import {
 } from "../../draft";
 import type { FoodRow, Unit } from "../../reference";
 import { EditorSectionHeader } from "./EditorSectionHeader";
-import { useImportCheck } from "./ImportCheck";
+import { PastedTextContext, useImportCheck } from "./ImportCheck";
 import { IngredientColumnsHeader, IngredientEditRow } from "./IngredientEditRow";
 import { confirmReviewedIngredients, ingredientReview } from "./ingredientReview";
 import { ParseAllSheet } from "./ParseAllSheet";
@@ -45,6 +45,8 @@ export type IngredientsEditorProps = {
 export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   const check = useImportCheck();
+  // Pasted text with no model to read it starts in the first part's box (decisions.md row 203).
+  const pasted = useContext(PastedTextContext);
   const [parseAllOpen, setParseAllOpen] = useState(false);
   // The whole food vocabulary, loaded once the bulk sheet opens or the list is
   // empty and showing its inline entry: parsing a pasted block needs every
@@ -130,7 +132,7 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
       <Card size="sm">
         <EmptyBoundary
           isEmpty={ingredients.length === 0}
-          fallback={<BulkInlineAdd<IngredientReview> itemName="ingredient" review={review} disabled={disabled} />}
+          fallback={<BulkInlineAdd<IngredientReview> itemName="ingredient" review={review} disabled={disabled} initialText={pi === 0 ? pasted : undefined} />}
         >
           <ReorderList
             items={ingredients}

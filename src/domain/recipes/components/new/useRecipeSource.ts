@@ -5,12 +5,12 @@ import { listFoods } from "../../../../api/rpc/foods";
 import { importFromPage, importFromText, importFromUrl } from "../../../../api/rpc/import";
 import { messageFrom } from "../../../../lib/errors";
 import { postImportFile } from "../../../../lib/importFile";
-import type { IngredientReview } from "../../draft";
-import { type FileRecipe, type ImportedRecipe, review } from "../../import";
+import { emptyDraft, type IngredientReview } from "../../draft";
+import { type FileRecipe, type ImportedRecipe, looksLikeHtml, review } from "../../import";
 import { reviewRows } from "../../ingredient";
 import type { FoodRow } from "../../reference";
 import type { SentPage } from "./bookmarklet";
-import { type DuplicateBy, type ModelReader, STUB_NOTE, shouldReadWithModel, sortedRead } from "./importSummary";
+import { type DuplicateBy, type ModelReader, PASTE_NOTE, STUB_NOTE, shouldReadWithModel, sortedRead } from "./importSummary";
 import type { RecipeSourceProps } from "./RecipeSource";
 import { checkFromRead, reviewOfUpload } from "./reviewFlows";
 import { useSentPage } from "./useSentPage";
@@ -145,6 +145,21 @@ export function useRecipeSource(props: RecipeSourceProps) {
    * is written.
    */
   const readText = async () => {
+    // Prose with no model to read it: Check opens on an empty recipe with the
+    // text in the ingredient box, to be sorted by hand (decisions.md row 203).
+    if (!aiAvailable && !looksLikeHtml(text.trim())) {
+      setError(null);
+      onDraft({
+        draft: { ...emptyDraft(), sourceUrl: pasteFrom },
+        imageUrl: null,
+        pending: {},
+        note: PASTE_NOTE,
+        duplicate: null,
+        suggestedTags: [],
+        pastedText: text.trim(),
+      });
+      return;
+    }
     const token = ++readToken.current;
     setBusy(true);
     setError(null);

@@ -2,11 +2,9 @@ import { Button } from "@sixthshift/design-system/button";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useEffect, useRef, useState } from "react";
-import { findOrCreateFood, listFoods } from "../../../../api/rpc/foods";
-import { findOrCreateUnit } from "../../../../api/rpc/units";
+import { listFoods } from "../../../../api/rpc/foods";
 import { messageFrom } from "../../../../lib/errors";
-import { applyParsedRows, type DraftIngredient, filterUnits, type IngredientReview, parseAllRows, type RecipeDraft } from "../../draft";
-import { pendingCreations } from "../../ingredient";
+import { applyParsedRows, type DraftIngredient, filterUnits, type IngredientReview, parseAllRows, placeholders, type RecipeDraft } from "../../draft";
 import type { FoodRow, Unit } from "../../reference";
 import { IngredientReviewRow } from "./IngredientReviewRow";
 
@@ -122,13 +120,10 @@ export function ParseAllSheet({ open, onOpenChange, draft, pi, units, disabled, 
     setBusy(true);
     setError(null);
     try {
-      const pending = pendingCreations(rows);
-      const createdFoods = new Map<string, FoodRow>();
-      for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
-      const createdUnits = new Map<string, Unit>();
-      for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
+      // A new food or unit is a placeholder by name, made when the recipe is saved (decisions.md row 203).
+      const made = placeholders(rows);
       // Only the parsed fields are patched; `originalText` survives whatever the parse decided.
-      onChange(applyParsedRows(draft, pi, rows, createdFoods, createdUnits));
+      onChange(applyParsedRows(draft, pi, rows, made.foods, made.units));
       close();
     } catch (cause) {
       setBusy(false);

@@ -80,6 +80,7 @@ export function NewRecipePage() {
             note: imported.check.note,
             duplicate: imported.check.duplicate,
             suggestedTags: imported.check.suggestedTags,
+            pastedText: imported.check.pastedText,
             onBack: () => setLeaving(true),
           }}
           continueWith={

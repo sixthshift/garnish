@@ -35,11 +35,7 @@ export function PasteSource({ text, busy, error, aiAvailable = false, onTextChan
         name="text"
         rows={10}
         aria-label="Pasted recipe"
-        placeholder={
-          aiAvailable
-            ? "Anzac biscuits&#10;&#10;1 cup plain flour&#10;125 g butter&#10;&#10;Mix the dry ingredients…".replaceAll("&#10;", "\n")
-            : "<!doctype html>…"
-        }
+        placeholder={"Anzac biscuits&#10;&#10;1 cup plain flour&#10;125 g butter&#10;&#10;Mix the dry ingredients…".replaceAll("&#10;", "\n")}
         value={text}
         disabled={busy}
         onChange={(event) => onTextChange(event.target.value)}
@@ -47,7 +43,7 @@ export function PasteSource({ text, busy, error, aiAvailable = false, onTextChan
       <Muted as="p" className="text-sm">
         {aiAvailable
           ? "The whole recipe, ingredients and method in any order. If a site blocked the import, paste the page's HTML instead: view source, select all, copy."
-          : "The page's HTML, when a site blocked the import: view source, select all, copy. Reading plain text needs a model (AI_PROVIDER, in Settings › AI)."}
+          : "The recipe's text, to sort into ingredients and steps on the next screen. If a site blocked the import, the page's HTML is read for you: view source, select all, copy."}
       </Muted>
     </SourceStage>
   );

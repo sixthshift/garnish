@@ -40,7 +40,7 @@ function otherWays(aiAvailable: boolean): { kind: SourceKind; title: string; blu
       title: "Paste the recipe",
       blurb: aiAvailable
         ? "Text from an email or a photo, or a page's HTML when a site blocks the import."
-        : "A page's HTML, when a site blocks the import. Plain text needs a model.",
+        : "Text from an email or a book, to sort into ingredients and steps, or a page's HTML when a site blocks the import.",
       icon: icon(
         <>
           <rect x="8" y="3" width="8" height="4" rx="1" />

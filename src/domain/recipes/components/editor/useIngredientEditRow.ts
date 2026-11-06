@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { findOrCreateFood, listFoods } from "../../../../api/rpc/foods";
-import { findOrCreateUnit } from "../../../../api/rpc/units";
+import { listFoods } from "../../../../api/rpc/foods";
 import {
   type DraftIngredient,
   type FieldErrors,
@@ -10,10 +9,10 @@ import {
   matchUnit,
   parsedRowPatch,
   parseRowFor,
+  placeholders,
   textOnlyPatch,
   unitReference,
 } from "../../draft";
-import { pendingCreations } from "../../ingredient";
 import type { FoodRow, Unit } from "../../reference";
 import { FOOD_SEARCH_DEBOUNCE_MS, type IngredientFieldsProps } from "./IngredientFields";
 
@@ -141,12 +140,9 @@ export function useIngredientEditRow({ ingredient, path, label, units, errors, d
     setParseBusy(true);
     setParseError(null);
     try {
-      const pending = pendingCreations([parseReview]);
-      const createdFoods = new Map<string, FoodRow>();
-      for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
-      const createdUnits = new Map<string, Unit>();
-      for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
-      const patch = parsedRowPatch(parseReview, createdFoods, createdUnits);
+      // A new food or unit is a placeholder by name, made when the recipe is saved (decisions.md row 203).
+      const made = placeholders([parseReview]);
+      const patch = parsedRowPatch(parseReview, made.foods, made.units);
       if (patch !== null) {
         onPatch(patch);
         setTextOnly(false);

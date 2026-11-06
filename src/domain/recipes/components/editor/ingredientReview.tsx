@@ -1,27 +1,23 @@
 import { Button } from "@sixthshift/design-system/button";
 import type { ReactNode } from "react";
-import { findOrCreateFood, listFoods } from "../../../../api/rpc/foods";
-import { findOrCreateUnit } from "../../../../api/rpc/units";
+import { listFoods } from "../../../../api/rpc/foods";
 import type { BulkReview } from "../../../../components/ui/bulk/useBulkStage";
-import { addReviewedIngredients, filterUnits, type IngredientReview, type RecipeDraft } from "../../draft";
-import { pendingCreations, reviewRows, rowCommit } from "../../ingredient";
+import { addReviewedIngredients, filterUnits, type IngredientReview, placeholders, type RecipeDraft } from "../../draft";
+import { reviewRows, rowCommit } from "../../ingredient";
 import type { FoodRow, Unit } from "../../reference";
 import { IngredientReviewRow } from "./IngredientReviewRow";
 
 /**
- * Confirm a set of reviewed lines: create only the foods and units the
- * reviewer approved, then return the draft with one row appended per line.
- * The one path that creates vocabulary up front, shared by the bulk-add sheet
- * and the empty list's inline entry, so both land rows identically —
- * a line whose food was declined lands text-only either way.
+ * Confirm a set of reviewed lines: the draft with one row appended per line,
+ * shared by the bulk-add sheet and the empty list's inline entry, so both land
+ * rows identically — a line whose food was declined lands text-only either
+ * way. A food or unit the reviewer approved and the library lacks is a
+ * placeholder by name, which the recipe's save creates (decisions.md row
+ * 203): a row removed before saving leaves nothing behind.
  */
 export async function confirmReviewedIngredients(rows: readonly IngredientReview[], draft: RecipeDraft, pi: number): Promise<RecipeDraft> {
-  const pending = pendingCreations(rows);
-  const createdFoods = new Map<string, FoodRow>();
-  for (const name of pending.foods) createdFoods.set(name.toLowerCase(), await findOrCreateFood({ data: { name } }));
-  const createdUnits = new Map<string, Unit>();
-  for (const name of pending.units) createdUnits.set(name.toLowerCase(), await findOrCreateUnit({ data: { name } }));
-  return addReviewedIngredients(draft, pi, rows.map(rowCommit), createdFoods, createdUnits);
+  const made = placeholders(rows);
+  return addReviewedIngredients(draft, pi, rows.map(rowCommit), made.foods, made.units);
 }
 
 /**
