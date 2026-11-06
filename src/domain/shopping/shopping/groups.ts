@@ -175,6 +175,60 @@ export function mealsOf(item: ShoppingItem): ShoppingMeal[] {
 }
 
 /**
+ * Which dishes a line is for, as keys: the ones `shoppingMeals` gives each
+ * dish, so a desktop's meals key can light the lines of the dish it points at.
+ * A hand-typed line is for none. Pure.
+ */
+export function mealKeysOf(item: Pick<ShoppingItem, "sources">): string[] {
+  return [...new Set(item.sources.map(mealKey))].filter((key) => key !== NO_MEAL_KEY);
+}
+
+/** One dish the list is for, as a desktop's meals key shows it. */
+export interface ShoppingListMeal {
+  /** What `mealKeysOf` calls it. */
+  key: string;
+  name: string;
+  /** The plan day that asked for it, YYYY-MM-DD; null for a recipe added from its own page. */
+  date: string | null;
+  /** The live recipe's slug and photo; null once the recipe is gone, and the photo null when it has none. */
+  slug: string | null;
+  image: string | null;
+  /** Its lines still to buy, and all of them. */
+  left: number;
+  total: number;
+}
+
+/**
+ * The dishes the list is for, in the meal view's order (the plan's by day,
+ * then recipes added from their own page), each with how many of its lines
+ * are still to buy: the desktop's meals key. A line two dishes share counts
+ * for both; lines no dish asked for are no dish's. Pure.
+ */
+export function shoppingMeals(items: readonly ShoppingItem[]): ShoppingListMeal[] {
+  const meals = new Map<string, ShoppingListMeal>();
+  for (const item of items) {
+    for (const source of item.sources) {
+      const key = mealKey(source);
+      if (key === NO_MEAL_KEY) continue;
+      let meal = meals.get(key);
+      if (meal === undefined) {
+        meal = { key, name: source.recipeName.trim(), date: source.planDate, slug: null, image: null, left: 0, total: 0 };
+        meals.set(key, meal);
+      }
+      meal.slug ??= source.recipeSlug;
+      meal.image ??= source.recipeImage;
+    }
+    for (const key of mealKeysOf(item)) {
+      const meal = meals.get(key)!;
+      meal.total += 1;
+      if (!item.ticked) meal.left += 1;
+    }
+  }
+  const rank = (meal: ShoppingListMeal) => (meal.date === null ? 1 : 0);
+  return [...meals.values()].sort((a, b) => rank(a) - rank(b) || (a.date !== null && b.date !== null ? a.date.localeCompare(b.date) : 0));
+}
+
+/**
  * The list as the meal view draws it: one group per dish, the plan's dishes
  * first in day order, then recipes added from their own page in the order
  * they reached the list, then "Other" for every line no dish asked for. A

@@ -1,6 +1,6 @@
 export { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "./additions";
-export type { ShoppingMeal, ShoppingMealGroup, ShoppingMealRow } from "./groups";
-export { groupByAisle, groupByMeal, mealsOf, shoppingItemLabel } from "./groups";
+export type { ShoppingListMeal, ShoppingMeal, ShoppingMealGroup, ShoppingMealRow } from "./groups";
+export { groupByAisle, groupByMeal, mealKeysOf, mealsOf, shoppingItemLabel, shoppingMeals } from "./groups";
 export type { ShoppingAddition, ShoppingListMerge, ShoppingMergePlan } from "./merge";
 export { mergeIntoList } from "./merge";
 export type { PackCount, PackNeed, PackPlan, PackSize } from "./packs";

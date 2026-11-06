@@ -1,5 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
+import { cn } from "@sixthshift/design-system/utils";
 import { Fragment, useRef, useState } from "react";
 import { RecipeLink } from "../../../components/recipe/RecipeLink";
 import { TrashIcon } from "../../../components/ui/icons";
@@ -43,6 +44,8 @@ export function ShoppingRow({
   onTick,
   onRemove,
   busy,
+  className,
+  surface = "bg-bg-subtle",
 }: {
   item: ShoppingItem;
   /** What the row reads: the line, or in the meal view one dish's share of it. */
@@ -58,6 +61,10 @@ export function ShoppingRow({
   onTick: (id: string, ticked: boolean) => void;
   onRemove: (id: string) => void;
   busy: boolean;
+  /** The row's own classes: the desktop's walk dims a row, or slides it out to the trolley. */
+  className?: string;
+  /** The row's background, which must match what it sits on so the Delete behind it never shows: the page's, unless it sits on a panel or is lit. */
+  surface?: string;
 }) {
   const food = item.food;
   // On hand is ticked and not bought, so there is nothing to round.
@@ -77,7 +84,7 @@ export function ShoppingRow({
   };
 
   return (
-    <li className="group relative overflow-hidden" data-testid="shopping-row" data-ticked={item.ticked ? "true" : "false"}>
+    <li className={cn("group relative overflow-hidden", className)} data-testid="shopping-row" data-ticked={item.ticked ? "true" : "false"}>
       {/* Transparent while the row is closed, so its edges never show past the sliding row; a screen reader still reaches it. */}
       <div
         className={
@@ -101,7 +108,7 @@ export function ShoppingRow({
         </Button>
       </div>
       <div
-        className="relative flex touch-pan-y items-start gap-3 bg-bg-subtle transition-transform duration-150"
+        className={cn("relative flex touch-pan-y items-start gap-3 transition-transform duration-150", surface)}
         style={{ transform: `translateX(${offset}px)` }}
         data-testid="shopping-row-body"
         onPointerDown={(event) => {

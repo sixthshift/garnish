@@ -17,6 +17,8 @@ export const shoppingItemSourceSchema = z.object({
   recipeId: id.nullable().default(null),
   /** The live recipe's slug, read beside the source for a link to it; null once the recipe is gone. Never written. */
   recipeSlug: z.string().nullable().default(null),
+  /** The live recipe's photo (its stored file name), read beside the slug for a desktop's meals key; null with no photo or no recipe. Never written. */
+  recipeImage: z.string().nullable().default(null),
   recipeName: text,
   partName: text, // '' is the unnamed part: the recipe's main body
   servings: quantity, // the scale the recipe was added at

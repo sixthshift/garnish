@@ -5,9 +5,11 @@ import { type Ingredient, mergeIngredients, type Recipe, recipeSchema, type SubR
 import {
   groupByAisle,
   groupByMeal,
+  mealKeysOf,
   mealsOf,
   NO_MEAL_GROUP,
   shoppingItemLabel,
+  shoppingMeals,
   TICKED_GROUP,
   UNASSIGNED_GROUP,
 } from "../../../../src/domain/shopping/shopping/groups";
@@ -52,6 +54,7 @@ test("a source defaults to no recipe, no names and no amounts", () => {
     id,
     recipeId: null,
     recipeSlug: null,
+    recipeImage: null,
     recipeName: "",
     partName: "",
     servings: null,
@@ -653,6 +656,24 @@ describe("groupByMeal", () => {
       { name: "Lemon tart", date: "2026-10-26", slug: null, amount: "" },
     ]);
     expect(mealsOf(existingItem({ text: "Batteries" }))).toEqual([]);
+  });
+
+  test("shoppingMeals is the desktop's meals key: each dish once, in day order, with its photo and its lines left to buy", () => {
+    const shared = existingItem({ quantity: 350, unit: gram, food: butter, sources: [source(chicken, 150, gram), source(tart, 200, gram)] });
+    const flourLine = existingItem({
+      quantity: 1,
+      food: flour,
+      ticked: true,
+      sources: [{ ...source(tart, 1), recipeSlug: "lemon-tart", recipeImage: "tart.jpg" }],
+    });
+    const typed = existingItem({ text: "Batteries" });
+    const meals = shoppingMeals([shared, flourLine, typed]);
+    expect(meals).toEqual([
+      { key: mealKeysOf(flourLine)[0], name: "Lemon tart", date: "2026-10-26", slug: "lemon-tart", image: "tart.jpg", left: 1, total: 2 },
+      { key: mealKeysOf(shared)[0], name: "Roast chicken", date: "2026-10-28", slug: null, image: null, left: 1, total: 1 },
+    ]);
+    expect(mealKeysOf(shared)).toEqual([meals[1]!.key, meals[0]!.key]);
+    expect(mealKeysOf(typed)).toEqual([]);
   });
 });
 

@@ -51,17 +51,17 @@ export function readers({ dz, units, foods, aisles }: ShoppingContext) {
       .orderBy(sql`rowid`)
       .all();
 
-    // The live recipes' slugs, for the row's link to each; a deleted recipe has none.
+    // The live recipes' slugs, for the row's link to each, and their photos, for a desktop's meals key; a deleted recipe has neither.
     const recipeIds = [...new Set(sourceRows.flatMap((s) => (s.recipeId === null ? [] : [s.recipeId])))];
-    const slugs = new Map(
+    const live = new Map(
       recipeIds.length === 0
         ? []
         : dz
-            .select({ id: recipe.id, slug: recipe.slug })
+            .select({ id: recipe.id, slug: recipe.slug, image: recipe.image })
             .from(recipe)
             .where(inArray(recipe.id, recipeIds))
             .all()
-            .map((row) => [row.id, row.slug])
+            .map((row) => [row.id, row])
     );
 
     const sourcesByItem = new Map<string, ShoppingItem["sources"]>();
@@ -70,7 +70,8 @@ export function readers({ dz, units, foods, aisles }: ShoppingContext) {
       list.push({
         id: s.id,
         recipeId: s.recipeId,
-        recipeSlug: s.recipeId === null ? null : (slugs.get(s.recipeId) ?? null),
+        recipeSlug: s.recipeId === null ? null : (live.get(s.recipeId)?.slug ?? null),
+        recipeImage: s.recipeId === null ? null : (live.get(s.recipeId)?.image ?? null),
         recipeName: s.recipeName,
         partName: s.partName,
         servings: s.servings,
