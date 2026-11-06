@@ -7,7 +7,8 @@ test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: fa
 
 test("a tick moves a line into the trolley, and a meal in the key lights up its lines until it is let go", async ({ page, open }) => {
   const name = unique("Walk Dal");
-  await createRecipe(page, open, { name, servings: 4, ingredients: ["200 g red lentils", "1 onion"], steps: ["Simmer."] });
+  // Foods no other spec lists: the specs share one list, and a line here would merge into theirs.
+  await createRecipe(page, open, { name, servings: 4, ingredients: ["100 g walnuts", "1 parsnip"], steps: ["Simmer."] });
   await page.getByRole("button", { name: "Add to shopping list" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Add", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "added" })).toBeVisible();
@@ -25,13 +26,17 @@ test("a tick moves a line into the trolley, and a meal in the key lights up its 
   await meal.click();
   await expect(meal).toHaveAttribute("aria-pressed", "false");
 
-  const onion = page.getByRole("region", { name: "Fruit & veg" }).getByRole("listitem").filter({ hasText: name }).getByRole("checkbox", { name: "1 onion" });
-  await onion.click();
+  const parsnip = page
+    .getByRole("region", { name: "Fruit & veg" })
+    .getByRole("listitem")
+    .filter({ hasText: name })
+    .getByRole("checkbox", { name: "1 parsnip" });
+  await parsnip.click();
   const trolley = page.getByRole("complementary", { name: "In the trolley" });
-  await expect(trolley.getByRole("listitem").filter({ hasText: name }).getByRole("checkbox", { name: "1 onion" })).toBeChecked();
+  await expect(trolley.getByRole("listitem").filter({ hasText: name }).getByRole("checkbox", { name: "1 parsnip" })).toBeChecked();
   await expect(page.getByRole("complementary", { name: "Meals" }).getByRole("button", { name: new RegExp(`^${name}: 1 to buy$`) })).toBeVisible();
 
   // Stored, not just drawn.
   await page.reload({ waitUntil: "networkidle" });
-  await expect(trolley.getByRole("listitem").filter({ hasText: name }).getByRole("checkbox", { name: "1 onion" })).toBeChecked();
+  await expect(trolley.getByRole("listitem").filter({ hasText: name }).getByRole("checkbox", { name: "1 parsnip" })).toBeChecked();
 });

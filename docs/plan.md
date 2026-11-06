@@ -218,14 +218,14 @@ Decisions.md row 206: the phone's layout under 1024px and the desktop's from it,
 
 Decisions.md row 207: every desktop page redesigned from `docs/mockups/desktop.html`; phones unchanged.
 
-- [ ] **M47.1 Plan as a board.** This week and next as seven day columns (rows under about 1280px), a recipe shelf (Rotation, Weekend, To try, search) to drag onto a day or click into the chosen one, entries dragged between days.
-- [ ] **M47.2 Shopping as a store walk.** Aisles in columns in shop order, a trolley column (from about 1360px), the week's meals as a key that lights up their items.
-- [ ] **M47.3 The command bar.** Ctrl K or / on every desktop page: open a recipe, put one on a day, add a line to the shopping list, go to a page.
-- [ ] **M47.4 The library in three panes and the recipe page as a spread.** Filters, a photo wall and the open recipe; the recipe page's photo and story, ingredients, method and, from about 1800px, notes and history, with steps and ingredients lighting each other up.
-- [ ] **M47.5 Home as tiles.**
-- [ ] **M47.6 Import's Check beside what it read; the editor beside a live preview.**
-- [ ] **M47.7 Settings as a menu, Foods as a grid with a details pane; Cook mode as a filmstrip.**
-- [ ] **M47.8 Docs.**
+- [x] **M47.1 Plan as a board.** This week and next as seven day columns (rows under about 1280px), a recipe shelf (Rotation, Weekend, To try, search) to drag onto a day or click into the chosen one, entries dragged between days.
+- [x] **M47.2 Shopping as a store walk.** Aisles in columns in shop order, a trolley column (from about 1360px), the week's meals as a key that lights up their items.
+- [x] **M47.3 The command bar.** Ctrl K or / on every desktop page: open a recipe, put one on a day, add a line to the shopping list, go to a page.
+- [x] **M47.4 The library in three panes and the recipe page as a spread.** Filters, a photo wall and the open recipe; the recipe page's photo and story, ingredients, method and, from about 1800px, notes and history, with steps and ingredients lighting each other up.
+- [x] **M47.5 Home as tiles.**
+- [x] **M47.6 Import's Check beside what it read; the editor beside a live preview.**
+- [x] **M47.7 Settings as a menu, Foods as a grid with a details pane; Cook mode as a filmstrip.**
+- [x] **M47.8 Docs.**
 
 ## Blocked
 
@@ -324,3 +324,5 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-11-06  M46.3  done   —        opus   ?panel={slug, choices?, servings?} on the root's search (src/app/model/panel.ts, a bad value dropped, not an error); RecipeLink (src/components/recipe/) opens the panel on a desktop and the page on a phone, used by Home's Tonight and To try, the plan's entries, the library's cards and the shopping list's meals; RecipePanel in DesktopLayout draws the domain's desktop/RecipeInset (picture, name, time, Cook, Open the recipe, ingredients and method, live ticks and timers), Close and Esc (not while typing or under a dialog) take it off the address, its title takes focus. A sub-recipe's link stays a page link, since cook mode has no panel. .dom.test over open, close, Esc, a failed load, the plan's servings and the phone; e2e opens one from the library, Back and Forward, Esc, and Open the recipe
 2026-11-06  M46.4  done   —        opus   PlanWeekView on a desktop is the week (6xl page) beside desktop/PlanPicker, the add form in a card titled "Adding to <day>", 8 results (a phone's sheet keeps 3 for its keyboard), not focused as the page opens; a day's "+" chooses the day (aria-pressed, a neutral rule down its left) and focuses the box, and adds keep the day. PlanAddSheet moved to week/mobile/. .dom.test over the default day, another week's Monday, choosing and adding twice; e2e adds to next week's Monday and Tuesday at 1440 and opens an entry in the panel
 2026-11-06  M46.5  done   —        opus   architecture.md's Frontend gains Adaptive (the line, structure vs variants, the mirror folders, a desktop's frame and side panel, how tests choose a layout) and the code layout names app/mobile, app/desktop, panel.ts and RecipeLink; design-language.md's md: divergence replaced by the two experiences; CLAUDE.md's Frontend line says how to follow the line
+2026-11-07  M47    done   —        opus   row 207 and the mockup (docs/mockups/desktop.html); Page width "full"; seven areas built in parallel worktrees and merged without conflict; gate 3982 unit, lint, tsc, e2e 53 (desktop-<area>.spec.ts per page; desktop-shopping lists walnuts and a parsnip so its lines never merge into plan.spec's, and desktop.spec's picker journey retired for desktop-plan's)
+2026-11-07  M47.8  note   —        opus   gaps left honest: no per-day "+N to buy" on the board (a plan entry does not know its lines); no aisle hint as a line is typed (typed lines are never matched to a food); no print button on the store walk; Home's "+" to plan from Haven't made in a while; the Settings place and the command bar's settings sections have no address; import's source lines matched word for word only (a step keeps no source line; a WPRM line drawn unlike its JSON-LD stays grey); no bulk merge of foods

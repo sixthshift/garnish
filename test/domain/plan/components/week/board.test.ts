@@ -3,7 +3,7 @@
 import { describe, expect, test } from "vitest";
 import { boardWeekTitle } from "../../../../../src/domain/plan/components/week/desktop/BoardWeek";
 import { dropPosition } from "../../../../../src/domain/plan/components/week/desktop/PlanBoard";
-import { madeAgo, shelfTab } from "../../../../../src/domain/plan/components/week/desktop/PlanShelf";
+import { madeAgo, openingTab, shelfTab } from "../../../../../src/domain/plan/components/week/desktop/PlanShelf";
 import { type PlanDay, planEntrySchema, rangeLabel } from "../../../../../src/domain/plan/plan";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
 
@@ -59,6 +59,13 @@ describe("the shelf", () => {
     expect(shelfTab(recipes, "weekend").map((x) => x.name)).toEqual(["Lamb"]);
     expect(shelfTab(recipes, "try").map((x) => x.name)).toEqual(["Lamb", "Bread"]);
     expect(shelfTab(recipes, "all").map((x) => x.name)).toEqual(["Bread", "Dal", "Lamb", "Tacos"]);
+  });
+
+  test("the shelf opens on the first tab with a recipe on it, Rotation while they load", () => {
+    expect(openingTab(recipes)).toBe("rotation");
+    expect(openingTab(recipes.filter((x) => x.kind !== "rotation"))).toBe("weekend");
+    expect(openingTab([r("Bread", null, "2026-09-01T00:00:00.000Z")])).toBe("all");
+    expect(openingTab(null)).toBe("rotation");
   });
 
   test("madeAgo says how long since, in the unit that reads easiest", () => {

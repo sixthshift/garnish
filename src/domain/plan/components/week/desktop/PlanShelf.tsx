@@ -35,6 +35,16 @@ export function shelfTab(recipes: readonly RecipeSummary[], tab: ShelfTab): Reci
   return recipes.filter((recipe) => recipe.kind === tab).sort((a, b) => (a.lastMade ?? "").localeCompare(b.lastMade ?? ""));
 }
 
+/**
+ * The tab the shelf opens on: the first that has a recipe on it, so a
+ * household that has marked nothing Rotation yet opens on recipes, not on an
+ * empty shelf. Rotation while the recipes load. Pure.
+ */
+export function openingTab(recipes: readonly RecipeSummary[] | null | undefined): ShelfTab {
+  if (!recipes) return "rotation";
+  return TABS.find(({ value }) => shelfTab(recipes, value).length > 0)?.value ?? "all";
+}
+
 /** How long since a recipe was last made, as the shelf says it under its name: "made 3 weeks ago", "never made". Pure. */
 export function madeAgo(lastMade: string | null, today: string): string {
   if (lastMade === null) return "never made";
@@ -76,7 +86,8 @@ export function PlanShelf({
   onDragStart: (drag: BoardDrag) => void;
   onDragEnd: () => void;
 } & Pick<PlanWeekViewProps, "searchRecipes" | "onAddText" | "onAddRecipe">) {
-  const [tab, setTab] = useState<ShelfTab>("rotation");
+  const [chosen, setTab] = useState<ShelfTab | null>(null);
+  const tab = chosen ?? openingTab(recipes);
   // The form's own query and meal, mirrored for the tabs: the form starts afresh on each day chosen, and so do these.
   const [typed, setTyped] = useState({ date, query: "", meal: null as Meal | null });
   const current = typed.date === date ? typed : { date, query: "", meal: null };

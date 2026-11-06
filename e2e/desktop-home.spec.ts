@@ -46,5 +46,6 @@ test("a line ticked from the shopping tile is ticked on the list", async ({ page
   await expect(page.getByRole("img", { name: `${(ticked ?? 0) + 1} of ${total} ticked` })).toBeVisible();
 
   await open("/shopping");
-  await expect(page.getByRole("region", { name: "Ticked" }).getByRole("checkbox", { name: label }).first()).toBeChecked();
+  // A desktop's list keeps what is ticked in the trolley (the store walk, row 207).
+  await expect(page.getByRole("complementary", { name: "In the trolley" }).getByRole("checkbox", { name: label }).first()).toBeChecked();
 });
