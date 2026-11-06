@@ -16,6 +16,8 @@ import type { Unit } from "../../reference";
 import { PendingLine, useImportCheck } from "./ImportCheck";
 import { IngredientAlternativesSheet } from "./IngredientAlternativesSheet";
 import { EMPTY_INGREDIENT_SUMMARY, INGREDIENT_COLUMNS, IngredientFields } from "./IngredientFields";
+import { checkedRead, useLineSource } from "./mobile/LineSource";
+import { FlagDot, ReadLine } from "./mobile/ReadLine";
 import { useIngredientEditRow } from "./useIngredientEditRow";
 
 export type IngredientEditRowProps = {
@@ -46,6 +48,13 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   useEffect(() => {
     if (check !== null && ingredient.id !== undefined && check.picking === ingredient.id) check.donePicking();
   }, [check, ingredient.id]);
+  // A phone's Check: the line's sheet beside its page, whose Edit the line opens this row's fields.
+  const lines = useLineSource();
+  useEffect(() => {
+    if (lines === null || ingredient.id === undefined || lines.editing !== ingredient.id) return;
+    setSheetOpen(true);
+    lines.doneEditing();
+  }, [lines, ingredient.id]);
   const [alternativesOpen, setAlternativesOpen] = useState(false);
   const alternativeCount = ingredient.alternatives?.length ?? 0;
   const { textOnly, setMode, fieldProps } = useIngredientEditRow({ ingredient, path, label, units, errors, disabled, onPatch, onEnter });
@@ -88,6 +97,8 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   const desktop = useLayout() === "desktop";
   const summary = ingredientSummary(ingredient);
   const parse = fieldProps.parse;
+  const read = desktop ? null : checkedRead(check, ingredient);
+  const flagged = check?.flags.some((flag) => flag.id === ingredient.id) === true;
 
   // On a desktop the menu holds what the line leaves out (Fixed, Text only,
   // Parse, Move to); a phone's sheet has them, so its menu does not. On a
@@ -114,6 +125,7 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
           )}
         </>
       )}
+      {lines?.hasSource && ingredient.id !== undefined && <Menu.Item onSelect={() => lines.show(ingredient.id!)}>Where's this from?</Menu.Item>}
       {/* Every width: the phone's sheet does not hold it. A text-only line has no food to stand in for. */}
       <Menu.Item disabled={disabled === true || textOnly || !ingredient.food} onSelect={() => setAlternativesOpen(true)}>
         Alternatives{alternativeCount > 0 && <span className="text-fg-subtle"> · {alternativeCount}</span>}
@@ -164,8 +176,13 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
               aria-expanded={sheetOpen}
               disabled={disabled}
               onClick={() => setSheetOpen(true)}
+              data-flagged={flagged ? "true" : undefined}
             >
-              <span className="truncate">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span>
+              {/* How garnish read the line, apart: the amount as a chip, the food in bold, the note quieter (decisions.md row 208). */}
+              {flagged && <FlagDot className="mt-0 self-center" />}
+              <span className="min-w-0 flex-1">
+                {read === null ? <span className="text-fg-subtle">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span> : <ReadLine read={read} />}
+              </span>
               <ChevronRight title="Open" />
             </button>
           )}

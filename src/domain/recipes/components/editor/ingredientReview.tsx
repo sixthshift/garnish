@@ -6,6 +6,7 @@ import { addReviewedIngredients, filterUnits, type IngredientReview, placeholder
 import { reviewRows, rowCommit } from "../../ingredient";
 import type { FoodRow, Unit } from "../../reference";
 import { IngredientReviewRow } from "./IngredientReviewRow";
+import { ReadAsYouType } from "./mobile/ReadLine";
 
 /**
  * Confirm a set of reviewed lines: the draft with one row appended per line,
@@ -31,9 +32,12 @@ export function ingredientReview(args: {
   foods: readonly FoodRow[];
   disabled?: boolean;
   confirm: (rows: IngredientReview[]) => void | Promise<void>;
+  /** Show how each line reads under the box as it is typed: a phone's (decisions.md row 208). */
+  readAsYouType?: boolean;
 }): BulkReview<IngredientReview> {
-  const { units, foods, disabled, confirm } = args;
+  const { units, foods, disabled, confirm, readAsYouType = false } = args;
   return {
+    readAs: readAsYouType ? (lines) => <ReadAsYouType lines={lines} units={units} foods={foods} /> : undefined,
     rows: (lines) => reviewRows(lines, { units, foods }),
     keyOf: (row) => row.key,
     confirm,

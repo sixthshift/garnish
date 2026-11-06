@@ -8,6 +8,7 @@ import { Menu } from "../../../../components/ui/Menu";
 import type { ReorderRow } from "../../../../components/ui/ReorderList";
 import { stepImageUrl } from "../../../../lib/images";
 import { picker } from "../../../../lib/ui/picker";
+import { useLayout } from "../../../../lib/useLayout";
 import {
   type DraftPart,
   ingredientLine,
@@ -25,6 +26,7 @@ import {
   updateStep,
 } from "../../draft";
 import { paragraphs } from "../../ingredient";
+import { useLineSource } from "./mobile/LineSource";
 
 type DraftStep = DraftPart["steps"][number];
 
@@ -79,6 +81,9 @@ export function StepEditRow({
   const fileInput = useRef<HTMLInputElement | null>(null);
   const linked = linkedIngredients(part, step);
   const linkable = linkableIngredients(part, step);
+  // A phone's Check: the step's sheet beside the page it came from.
+  const lines = useLineSource();
+  const phone = useLayout() === "mobile";
   return (
     // On a narrow list (ReorderList's `@2xl` container) the handle, the step's
     // name and the menu share a line and the text takes the full width below
@@ -91,6 +96,12 @@ export function StepEditRow({
       <span className="text-sm font-medium text-fg-subtle @2xl:hidden" aria-hidden="true">
         Step {si + 1}
       </span>
+      {/* The label a step came with (an export's, or the restyle's), which the form keeps but has no field for; a phone names it beside the number. */}
+      {phone && (step.title ?? "").trim() !== "" && (
+        <span className="min-w-0 truncate text-sm font-semibold text-fg-strong" data-step-label={si}>
+          {step.title}
+        </span>
+      )}
       <div className="flex min-w-0 flex-1 flex-col gap-1 @max-2xl:order-last @max-2xl:basis-full">
         {preview ? (
           <div className="min-h-16 rounded-md border border-border-normal bg-bg-subtle px-3 py-2 text-sm" data-step-preview={si}>
@@ -181,6 +192,7 @@ export function StepEditRow({
         />
       </div>
       <Menu label={`Step ${si + 1} actions`} iconOnly className="@max-2xl:ml-auto">
+        {lines?.hasSource && step.id !== undefined && <Menu.Item onSelect={() => lines.show(step.id!)}>Where's this from?</Menu.Item>}
         <Menu.Item onSelect={onTogglePreview}>{preview ? "Edit" : "Preview"}</Menu.Item>
         <Menu.Item onSelect={() => fileInput.current?.click()}>{step.image ? "Replace image" : "Add image"}</Menu.Item>
         {step.image != null && step.image !== "" && <Menu.Item onSelect={() => onChange(setStepImage(draft, pi, si, null))}>Remove image</Menu.Item>}

@@ -1,13 +1,16 @@
 export { draftFromInput, draftFromRecipe, emptyDraft, hasDetails, isDirty } from "./draft";
 export {
   addedAsNew,
+  type CheckFlag,
   checkStatus,
   importDraft,
+  linesToCheck,
   livePending,
   type PendingLines,
   pendingLabel,
   placeholderFood,
   placeholders,
+  textLines,
   withIngredientPatched,
 } from "./importCheck";
 export {
@@ -24,6 +27,7 @@ export {
   withIngredients,
 } from "./ingredients";
 export { draftFromJson, draftToJson } from "./json";
+export { type LineRead, lineRead, reviewRead, rowRead } from "./lineRead";
 export {
   linkableIngredients,
   linkedIngredients,
@@ -49,7 +53,17 @@ export {
   unparsedIndices,
 } from "./review";
 export { draftFromScraped } from "./scraped";
-export { DESCRIPTION_ROW, type IndexedSource, indexSource, linkSource, NAME_ROW, type SourceLine, wordsOf } from "./sourceLines";
+export {
+  DESCRIPTION_ROW,
+  type IndexedSource,
+  indexSource,
+  linkSource,
+  NAME_ROW,
+  type SourceContext,
+  type SourceLine,
+  sourceContext,
+  wordsOf,
+} from "./sourceLines";
 export {
   addBulkSteps,
   addStep,

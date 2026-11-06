@@ -103,9 +103,14 @@ export function textOnlyPatch(textOnly: boolean): Partial<DraftIngredient> {
 
 /** The summary line a phone row shows: the formatted ingredient, or the raw line for a text-only row. Blank for an empty row. Pure. */
 export function ingredientSummary(ingredient: DraftIngredient): string {
+  return formatIngredient(displayIngredient(ingredient));
+}
+
+/** A draft row as the formatter reads one: every field present, the unit's display flags defaulted as the save would. Pure. */
+export function displayIngredient(ingredient: DraftIngredient): Parameters<typeof formatIngredient>[0] {
   const unit = ingredient.unit ?? null;
   const food = ingredient.food ?? null;
-  return formatIngredient({
+  return {
     quantity: ingredient.quantity ?? null,
     unit:
       unit === null
@@ -121,7 +126,7 @@ export function ingredientSummary(ingredient: DraftIngredient): string {
     food: food === null ? null : { name: food.name, pluralName: food.pluralName ?? null },
     note: ingredient.note ?? "",
     originalText: ingredient.originalText ?? "",
-  });
+  };
 }
 
 /**

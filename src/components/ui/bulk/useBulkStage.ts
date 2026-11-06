@@ -13,6 +13,8 @@ export type BulkReview<R> = {
   renderRow: (row: R, index: number, onChange: (next: R) => void) => ReactNode;
   /** Commit the reviewed rows, creating only what the reviewer approved. */
   confirm: (rows: R[]) => void | Promise<void>;
+  /** How the lines read so far, drawn under the box as they are typed (a phone's ingredients). Optional. */
+  readAs?: (lines: string[]) => ReactNode;
 };
 
 /**

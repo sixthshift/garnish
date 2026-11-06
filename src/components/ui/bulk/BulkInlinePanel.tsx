@@ -65,6 +65,7 @@ export function BulkInlinePanel<R>({
             disabled={off}
             onChange={(event) => onTextChange(event.target.value)}
           />
+          {review?.readAs?.(splitLines(text))}
           <div className="flex justify-end">
             <Button type="button" variant="solid" intent="brand" size="sm" disabled={off || splitLines(text).length === 0} onClick={onAdvance}>
               Add

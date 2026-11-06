@@ -6,10 +6,15 @@ import {
   addedAsNew,
   checkStatus,
   importDraft,
+  lineRead,
+  linesToCheck,
   livePending,
   pendingLabel,
   placeholders,
   removeIngredient,
+  reviewRead,
+  rowRead,
+  textLines,
   withIngredientPatched,
 } from "../../../../src/domain/recipes/draft";
 import type { ScrapedRecipe } from "../../../../src/domain/recipes/import";
@@ -136,5 +141,44 @@ describe("placeholders", () => {
     expect(row.food?.name).toBe("butter");
     expect(row.unit?.name).toBe("knob");
     expect(pending).toEqual({});
+  });
+});
+
+describe("linesToCheck, what a phone's Check puts first (decisions.md row 208)", () => {
+  const rows = reviewRows(lines, vocabulary);
+  const { draft, pending } = importDraft({ scraped, sourceUrl: "https://example.test/tart", rows });
+  const quince = draft.parts[0]!.ingredients[1]!.id!;
+  const notes = draft.parts[1]!.ingredients[0]!.id!;
+  const text = textLines(draft, pending);
+
+  test("a food the library lacks, and a line no food was read from; never a matched line", () => {
+    expect(text).toEqual([notes]);
+    expect(linesToCheck(draft, pending, text, new Set())).toEqual([
+      { id: quince, kind: "food", reason: "“quince paste” isn't one of your foods yet" },
+      { id: notes, kind: "text", reason: "No food was read from this line, so it is kept as written" },
+    ]);
+  });
+
+  test("a line passed as right, given a food or removed is not asked about again", () => {
+    expect(linesToCheck(draft, pending, text, new Set([notes])).map((flag) => flag.id)).toEqual([quince]);
+    const given = withIngredientPatched(draft, notes, { food: { id: flour.id, name: "flour" } as never });
+    expect(linesToCheck(given, pending, text, new Set()).map((flag) => flag.id)).toEqual([quince]);
+    expect(linesToCheck(removeIngredient(draft, 0, 1), pending, text, new Set()).map((flag) => flag.id)).toEqual([notes]);
+  });
+});
+
+describe("how a line reads on a phone", () => {
+  test("a typed line by the parser: the amount and unit, the food, the note, and whether the food is known", () => {
+    expect(lineRead("200 g flour, sifted", vocabulary)).toEqual({ kind: "read", amount: "200 g", food: "flour", note: "sifted", fixed: false, known: true });
+    expect(lineRead("salt", vocabulary)).toMatchObject({ amount: "", food: "salt", known: false });
+    expect(lineRead("(see notes)", vocabulary)).toEqual({ kind: "text", text: "(see notes)" });
+  });
+
+  test("a draft row by its fields, and a line still asked about as the parse proposed it", () => {
+    const rows = reviewRows(lines, vocabulary);
+    const { draft, pending } = importDraft({ scraped, sourceUrl: "", rows });
+    expect(rowRead(draft.parts[0]!.ingredients[0]!)).toMatchObject({ amount: "200 g", food: "flour", known: true });
+    expect(rowRead(draft.parts[0]!.ingredients[1]!)).toEqual({ kind: "text", text: "100 g quince paste" });
+    expect(reviewRead(pending[draft.parts[0]!.ingredients[1]!.id!]!)).toMatchObject({ amount: "100 g", food: "quince paste", known: false });
   });
 });

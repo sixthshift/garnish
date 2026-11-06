@@ -1,5 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Textarea } from "@sixthshift/design-system/textarea";
+import type { ReactNode } from "react";
 import { splitOnBlankLines, stripLeadingNumbers, trimLines } from "../../../domain/recipes/ingredient";
 
 export type BulkAddFieldsProps = {
@@ -8,9 +9,11 @@ export type BulkAddFieldsProps = {
   text: string;
   disabled?: boolean;
   onTextChange: (text: string) => void;
+  /** How the lines read so far, under the box. */
+  readAs?: ReactNode;
 };
 
-export function BulkAddFields({ itemName, text, disabled, onTextChange }: BulkAddFieldsProps) {
+export function BulkAddFields({ itemName, text, disabled, onTextChange, readAs }: BulkAddFieldsProps) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-fg-subtle">{`One ${itemName} per line.`}</p>
@@ -22,6 +25,7 @@ export function BulkAddFields({ itemName, text, disabled, onTextChange }: BulkAd
         disabled={disabled}
         onChange={(event) => onTextChange(event.target.value)}
       />
+      {readAs}
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled} onClick={() => onTextChange(trimLines(text))}>
           Trim whitespace

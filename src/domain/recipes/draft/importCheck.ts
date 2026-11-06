@@ -7,6 +7,7 @@ import { randomUuid } from "../../../lib/id";
 import { review, type ScrapedRecipe } from "../import";
 import { pendingCreations, type RowCommit, rowCommit, rowStatus } from "../ingredient";
 import type { FoodRow, Tag, Unit } from "../reference";
+import { isTextOnly } from "./ingredients";
 import { type IngredientReview, parsedRowPatch } from "./review";
 import { draftFromScraped } from "./scraped";
 import type { DraftIngredient, RecipeDraft } from "./types";
@@ -138,4 +139,41 @@ export function checkStatus(draft: RecipeDraft, pending: PendingLines): string {
     (clause) => clause !== ""
   );
   return clauses.join(" · ");
+}
+
+/**
+ * A line Check puts first on a phone (decisions.md row 208), and why. `food`
+ * and `unit` are the pending lines, a food or a unit the library lacks; `text`
+ * is a line the read found no food in at all, so it is kept as written.
+ * Nothing else the import does is unsure of itself: a matched line is matched.
+ */
+export type CheckFlag = { id: string; kind: "food" | "unit" | "text"; reason: string };
+
+/** The rows of a draft with no food read from them, by id: what Check opens on as text without asking. Pure. */
+export function textLines(draft: RecipeDraft, pending: PendingLines): string[] {
+  return draft.parts.flatMap((part) => part.ingredients.flatMap((row) => (row.id !== undefined && !(row.id in pending) && isTextOnly(row) ? [row.id] : [])));
+}
+
+/**
+ * The lines still to check, in the draft's order: each pending line, and each
+ * line the import kept as text that is still text and has not been passed as
+ * right (`seen`). A line removed, or given a food, is no longer asked about. Pure.
+ */
+export function linesToCheck(draft: RecipeDraft, pending: PendingLines, text: readonly string[], seen: ReadonlySet<string>): CheckFlag[] {
+  const live = livePending(draft, pending);
+  return draft.parts.flatMap((part) =>
+    part.ingredients.flatMap((row): CheckFlag[] => {
+      const id = row.id;
+      if (id === undefined) return [];
+      const asking = live[id];
+      if (asking !== undefined) {
+        return asking.food.kind === "none"
+          ? [{ id, kind: "food", reason: `“${asking.foodText}” isn't one of your foods yet` }]
+          : [{ id, kind: "unit", reason: `“${asking.unitText}” isn't one of your units yet` }];
+      }
+      if (text.includes(id) && !seen.has(id) && isTextOnly(row))
+        return [{ id, kind: "text", reason: "No food was read from this line, so it is kept as written" }];
+      return [];
+    })
+  );
 }

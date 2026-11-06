@@ -2,14 +2,14 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { cn } from "@sixthshift/design-system/utils";
-import { useMemo } from "react";
-import { Markdown } from "../../../../../components/ui/Markdown";
-import { stepImageUrl } from "../../../../../lib/images";
-import { previewRecipe, type RecipeDraft } from "../../../draft";
-import { formatIngredient, inflectIngredient, yieldLine } from "../../../ingredient";
-import { alternativeText, type Ingredient, type Part, type Step } from "../../../recipe";
-import { StatIcon } from "../../recipe/StatIcon";
-import { timeStats } from "../../recipe/timeStats";
+import { useEffect, useMemo, useState } from "react";
+import { Markdown } from "../../../../components/ui/Markdown";
+import { recipeImageUrl, stepImageUrl } from "../../../../lib/images";
+import { previewRecipe, type RecipeDraft } from "../../draft";
+import { formatIngredient, inflectIngredient, yieldLine } from "../../ingredient";
+import { alternativeText, type Ingredient, type Part, type Step } from "../../recipe";
+import { StatIcon } from "../recipe/StatIcon";
+import { timeStats } from "../recipe/timeStats";
 
 export type DraftPreviewProps = {
   draft: RecipeDraft;
@@ -17,9 +17,25 @@ export type DraftPreviewProps = {
   image: string | null;
 };
 
+/** The picture as the form has it, as an address an `<img>` can show; a picked file's is let go when it changes. */
+export function usePictureUrl(file: File | null, stored: string | null, imported: string | null | undefined): string | null {
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (file === null || typeof URL.createObjectURL !== "function") {
+      setFileUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setFileUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  return fileUrl ?? recipeImageUrl(stored) ?? (imported || null);
+}
+
 /**
  * The recipe as it will be saved, drawn beside the editor on a desktop
- * (decisions.md row 207) and redrawn as the draft changes: the picture, the
+ * (decisions.md row 207) and behind the phone's Preview (row 208), redrawn
+ * as the draft changes: the picture, the
  * name, the times and servings, then the ingredients beside the method, as
  * the recipe page lays them out, with its formatting (`inflectIngredient`,
  * `timeStats`, `Markdown`). It is a picture of the recipe and nothing in it

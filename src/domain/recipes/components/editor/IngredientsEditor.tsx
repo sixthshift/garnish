@@ -78,7 +78,7 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
     onChange(await confirmReviewedIngredients(rows, draft, pi));
   };
 
-  const review = ingredientReview({ units, foods: vocabularyFoods, disabled, confirm: confirmBulk });
+  const review = ingredientReview({ units, foods: vocabularyFoods, disabled, confirm: confirmBulk, readAsYouType: !desktop });
 
   if (!part) return null;
   const { ingredients } = part;

@@ -2,9 +2,8 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { cn } from "@sixthshift/design-system/utils";
 import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { recipeImageUrl } from "../../../../../lib/images";
 import { indexSource, linkSource, type RecipeDraft } from "../../../draft";
-import { DraftPreview } from "./DraftPreview";
+import { DraftPreview, usePictureUrl } from "../DraftPreview";
 import { SourceView } from "./SourceView";
 
 /** From here a desktop has the width for the source and the preview both, beside the editor, rather than a toggle between them. */
@@ -39,21 +38,6 @@ function useThreeColumns(): boolean {
     () => typeof window.matchMedia === "function" && window.matchMedia(THREE_COLUMNS_MEDIA).matches,
     () => false
   );
-}
-
-/** The picture as the form has it, as an address an `<img>` can show; a picked file's is let go when it changes. */
-function usePictureUrl(file: File | null, stored: string | null, imported: string | null | undefined): string | null {
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (file === null || typeof URL.createObjectURL !== "function") {
-      setFileUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setFileUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
-  return fileUrl ?? recipeImageUrl(stored) ?? (imported || null);
 }
 
 /** The draft row an event happened in, by the `data-row-id` the editor's ingredient and step rows carry. */

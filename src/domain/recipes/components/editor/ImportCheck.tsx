@@ -9,12 +9,15 @@ import { Link } from "@tanstack/react-router";
 import { createContext, useContext, useState } from "react";
 import {
   addedAsNew,
+  type CheckFlag,
   checkStatus,
   type DraftIngredient,
+  linesToCheck,
   livePending,
   type PendingLines,
   pendingLabel,
   type RecipeDraft,
+  textLines,
   withIngredientPatched,
 } from "../../draft";
 import type { DuplicateBy } from "../new/importSummary";
@@ -53,6 +56,10 @@ export type ImportCheckState = {
   picking: string | null;
   /** How many times Check has filled each row: a row it fills mounts afresh, so its fields read the new food. */
   revisions: Readonly<Record<string, number>>;
+  /** The lines to look at first, in the draft's order: the pending ones, and those read as text (a phone's to-check card). */
+  flags: readonly CheckFlag[];
+  /** "Looks right" on a line read as text: it stays as written and is not asked about again on this Check. */
+  pass: (id: string) => void;
   add: (id: string) => void;
   pick: (id: string) => void;
   keep: (id: string) => void;
@@ -79,7 +86,11 @@ export function useImportCheckState(
   const [pending, setPending] = useState<PendingLines>(initial ?? {});
   const [picking, setPicking] = useState<string | null>(null);
   const [revisions, setRevisions] = useState<Record<string, number>>({});
+  // The lines Check opened on as text, fixed then: one turned to text later by hand is the household's own doing.
+  const [text] = useState(() => textLines(draft, initial ?? {}));
+  const [passed, setPassed] = useState<ReadonlySet<string>>(() => new Set());
   if (initial === undefined) return null;
+  const pass = (id: string) => setPassed((current) => new Set([...current, id]));
   const live = livePending(draft, pending);
   const drop = (ids: readonly string[]) => setPending((current) => Object.fromEntries(Object.entries(current).filter(([id]) => !ids.includes(id))));
   const apply = (ids: readonly string[]) => {
@@ -96,6 +107,8 @@ export function useImportCheckState(
     pending: live,
     picking,
     revisions,
+    flags: linesToCheck(draft, live, text, passed),
+    pass,
     add: (id) => apply([id]),
     pick: (id) => {
       apply([id]);
@@ -104,6 +117,7 @@ export function useImportCheckState(
     keep: (id) => drop([id]),
     settle: (id) => {
       if (id in live) drop([id]);
+      if (text.includes(id) && !passed.has(id)) pass(id);
     },
     donePicking: () => setPicking(null),
     addAll: () => apply(Object.keys(live)),

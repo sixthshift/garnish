@@ -83,3 +83,23 @@ export function linkSource(source: IndexedSource, read: RecipeDraft, live: Recip
   }
   return source.lines.map((line, index) => ({ ...line, rows: rows[index]! }));
 }
+
+/** The line a row was made from, numbered from 1, with up to `around` lines either side of it, for a phone's sheet. */
+export type SourceContext = { number: number; lines: { number: number; text: string; heading: boolean; lit: boolean }[] };
+
+/**
+ * Where row `id` came from, amid the lines around it, or null when no line
+ * matches it word for word (a line typed or changed past recognition on
+ * Check, or a row the read made up from several). Pure.
+ */
+export function sourceContext(lines: readonly SourceLine[], id: string, around = 2): SourceContext | null {
+  const at = lines.findIndex((line) => line.rows.includes(id));
+  if (at === -1) return null;
+  const from = Math.max(0, at - around);
+  return {
+    number: at + 1,
+    lines: lines
+      .slice(from, at + around + 1)
+      .map((line, offset) => ({ number: from + offset + 1, text: line.text, heading: line.heading, lit: from + offset === at })),
+  };
+}

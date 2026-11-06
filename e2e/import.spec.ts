@@ -1,6 +1,6 @@
 // A recipe imported from a web page with no model (decisions.md row 203): the
-// address, one wait, Check with a line asked about, Add, Save, and the recipe
-// page. The page is served by the spec itself, so nothing leaves the machine.
+// address, one wait, Check with a line asked about first and shown beside the
+// page it came from (row 208), Add, Save, and the recipe page. The page is served by the spec itself, so nothing leaves the machine.
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { expect, test, unique } from "./fixtures";
@@ -21,7 +21,9 @@ function recipePage(name: string): string {
       { "@type": "HowToStep", text: "Beat in the eggs and bake for 40 minutes." },
     ],
   };
-  return `<!doctype html><html><head><title>${name}</title><script type="application/ld+json">${JSON.stringify(recipe)}</script></head><body><h1>${name}</h1></body></html>`;
+  const list = (items: string[]) => items.map((item) => `<li>${item}</li>`).join("");
+  const steps = recipe.recipeInstructions.map((step) => step.text);
+  return `<!doctype html><html><head><title>${name}</title><script type="application/ld+json">${JSON.stringify(recipe)}</script></head><body><h1>${name}</h1><p>A short, sharp tart.</p><ul>${list(recipe.recipeIngredient)}</ul><ol>${list(steps)}</ol></body></html>`;
 }
 
 test.beforeAll(async () => {
@@ -48,8 +50,17 @@ test("a web page becomes a recipe: read whole, checked, a new food added, saved"
   await expect(page.getByTestId("import-check")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue(name);
   await expect(page.getByTestId("import-status")).toContainText("1 needs a food");
-  await page.getByRole("button", { name: "Add new food: quince paste" }).click();
+
+  // A phone puts the line first, and shows it lit on the page it came from.
+  const toCheck = page.getByRole("region", { name: "Lines to check" });
+  await expect(toCheck.getByRole("heading")).toHaveText("1 line to check");
+  await toCheck.getByRole("button", { name: "Check 100 g quince paste" }).click();
+  const sheet = page.getByRole("dialog", { name: "Ingredient 2, where it came from" });
+  await expect(sheet.locator("[data-lit]")).toHaveText("100 g quince paste");
+  await sheet.getByRole("button", { name: "Add as a new food" }).click();
+  await expect(sheet).toBeHidden();
   await expect(page.getByTestId("import-status")).not.toContainText("needs a food");
+  await expect(page.getByTestId("lines-checked")).toBeVisible();
 
   // No model, so Check saves.
   await page.getByRole("button", { name: "Save recipe" }).last().click();

@@ -1,7 +1,7 @@
 // What an import read beside Check (decisions.md row 207): each line is linked
 // only to the rows the import itself made from it, word for word.
 import { expect, test } from "vitest";
-import { emptyDraft, indexSource, linkSource, NAME_ROW, previewRecipe, type RecipeDraft, wordsOf } from "../../../../src/domain/recipes/draft";
+import { emptyDraft, indexSource, linkSource, NAME_ROW, previewRecipe, type RecipeDraft, sourceContext, wordsOf } from "../../../../src/domain/recipes/draft";
 
 function draft(): RecipeDraft {
   const base = emptyDraft();
@@ -50,6 +50,21 @@ test("a step keeps its line while it is edited, by its text as the import read i
   const read = draft();
   const live = { ...read, parts: [{ ...read.parts[0]!, steps: [{ ...read.parts[0]!.steps[0]!, text: "Fry the rice until it crackles." }] }] };
   expect(linkSource(indexSource(PAGE), read, live)[6]!.rows).toEqual(["s1"]);
+});
+
+test("a phone's sheet shows a row's line lit with two either side, cut short at the page's ends", () => {
+  const lines = linkSource(indexSource(PAGE), draft(), draft());
+  const soy = sourceContext(lines, "i2");
+  expect(soy?.number).toBe(4);
+  expect(soy?.lines.map((line) => [line.number, line.lit])).toEqual([
+    [2, false],
+    [3, false],
+    [4, true],
+    [5, false],
+    [6, false],
+  ]);
+  expect(sourceContext(lines, NAME_ROW)?.lines.map((line) => line.number)).toEqual([1, 2, 3]);
+  expect(sourceContext(lines, "nowhere")).toBeNull();
 });
 
 test("a line that differs by a word is not matched: nothing is guessed", () => {

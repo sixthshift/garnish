@@ -1,5 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Sheet } from "@sixthshift/design-system/sheet";
+import { bulkLines } from "../../../domain/recipes/ingredient";
 import { BulkAddFields } from "./BulkAddFields";
 import { BulkReviewList } from "./BulkReviewList";
 import { type BulkReview, useBulkStage } from "./useBulkStage";
@@ -43,7 +44,7 @@ export function BulkAddSheet<R>({ open, onOpenChange, itemName, onAdd, review, d
         {review !== undefined && rows !== null ? (
           <BulkReviewList itemName={itemName} rows={rows} review={review} onRowsChange={setRows} />
         ) : (
-          <BulkAddFields itemName={itemName} text={text} disabled={disabled} onTextChange={setText} />
+          <BulkAddFields itemName={itemName} text={text} disabled={disabled} onTextChange={setText} readAs={review?.readAs?.(bulkLines(text))} />
         )}
         {error !== null && (
           <p className="mt-3 text-sm text-fg-danger" role="alert">

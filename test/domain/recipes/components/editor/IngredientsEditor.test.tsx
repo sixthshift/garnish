@@ -684,14 +684,17 @@ describe("ingredientSummary", () => {
 });
 
 describe("IngredientsEditor at both widths", () => {
-  test("a phone gets a one-line summary with a chevron; a desktop the inline fields (decisions.md row 206)", () => {
+  test("a phone gets a one-line summary with a chevron, read apart; a desktop the inline fields (decisions.md rows 206, 208)", () => {
     const html = render(<IngredientsEditor draft={tart()} pi={0} units={units} onChange={() => {}} />, "mobile");
 
     // Phone: one tappable line per row, and no inline fields.
     const summary = html.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>/)?.[0] ?? "";
     expect(summary).toContain('aria-expanded="false"');
-    expect(html).toContain(">200 g flour<");
-    expect(html).toContain(">1 cup, cold<");
+    // How garnish read each line: the amount as a chip, the food in bold, the note quieter, and a row with no food yet says so.
+    expect(html).toContain('data-read-amount="">200 g</span> <strong class="font-semibold text-fg-strong">flour</strong>');
+    expect(html).toContain('data-read-amount="">1 cup</span>');
+    expect(html).toContain("no food yet");
+    expect(html).toMatch(/>, <!-- -->cold</);
     expect(html.match(/aria-label="Edit ingredient \d"/g)).toHaveLength(2);
     expect(html).toContain("m9 18 6-6-6-6");
     expect(html).not.toContain("data-inline-fields");
@@ -725,7 +728,8 @@ describe("IngredientsEditor at both widths", () => {
     // The phone summary shows the formatted line, not the raw original text.
     const phone = render(<IngredientsEditor draft={draft} pi={0} units={units} onChange={() => {}} />, "mobile");
     const summary = phone.match(/<button[^>]*aria-label="Edit ingredient 1"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? "";
-    expect(summary).toContain(">200 g flour<");
+    expect(summary).toContain(">200 g</span>");
+    expect(summary).toContain(">flour</strong>");
     expect(summary).not.toContain("200g plain flour");
   });
 

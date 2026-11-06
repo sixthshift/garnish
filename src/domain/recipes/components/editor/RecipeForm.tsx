@@ -11,6 +11,7 @@ import { DiscardImportDialog } from "./DiscardImport";
 import { DraftNotice } from "./DraftNotice";
 import { EditorBeside } from "./desktop/EditorBeside";
 import { ImportCheckCard, ImportCheckContext, type ImportCheckProps, PastedTextContext } from "./ImportCheck";
+import { PhoneEditor } from "./mobile/PhoneEditor";
 import { NotesEditor } from "./NotesEditor";
 import { PartsEditor } from "./PartsEditor";
 import { RecipeDetails } from "./RecipeDetails";
@@ -100,6 +101,38 @@ export function RecipeForm({
   );
   const saveLabel = continueWith?.label ?? (existing ? "Save changes" : importCheck ? "Save recipe" : "Create recipe");
 
+  const fields = (
+    <>
+      <Card size="lg" className="flex flex-col gap-4">
+        <RecipeHead
+          draft={draft}
+          errors={errors}
+          saving={saving}
+          existing={existing !== undefined}
+          importedImageUrl={importedImageUrl}
+          onPatch={form.patch}
+          onFile={form.setFile}
+        />
+      </Card>
+
+      <PartsEditor draft={draft} onChange={form.setDraft} units={units} errors={errors} disabled={saving} />
+
+      <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
+
+      <RecipeDetails
+        draft={draft}
+        errors={errors}
+        saving={saving}
+        units={units}
+        knownTags={knownTags}
+        defaultOpen={form.detailsOpen}
+        suggestedTags={importCheck?.suggestedTags}
+        leftOutTags={importCheck?.leftOutTags}
+        onPatch={form.patch}
+      />
+    </>
+  );
+
   const editor = (
     <form onSubmit={(event) => void form.submit(event)} noValidate className="flex flex-col gap-6" aria-label={existing ? "Edit recipe" : "New recipe"}>
       {!form.online && (
@@ -126,34 +159,17 @@ export function RecipeForm({
       ) : (
         <ImportCheckContext.Provider value={form.check}>
           <PastedTextContext.Provider value={importCheck?.pastedText}>
-            {importCheck !== undefined && form.check !== null && <ImportCheckCard draft={draft} check={importCheck} state={form.check} />}
-            <Card size="lg" className="flex flex-col gap-4">
-              <RecipeHead
-                draft={draft}
-                errors={errors}
-                saving={saving}
-                existing={existing !== undefined}
-                importedImageUrl={importedImageUrl}
-                onPatch={form.patch}
-                onFile={form.setFile}
-              />
-            </Card>
-
-            <PartsEditor draft={draft} onChange={form.setDraft} units={units} errors={errors} disabled={saving} />
-
-            <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
-
-            <RecipeDetails
-              draft={draft}
-              errors={errors}
-              saving={saving}
-              units={units}
-              knownTags={knownTags}
-              defaultOpen={form.detailsOpen}
-              suggestedTags={importCheck?.suggestedTags}
-              leftOutTags={importCheck?.leftOutTags}
-              onPatch={form.patch}
-            />
+            {phone ? (
+              // A phone's Check puts the lines to look at first, each opening beside its page (decisions.md row 208).
+              <PhoneEditor draft={draft} initial={initial} file={form.file} importedImageUrl={importedImageUrl} importCheck={importCheck} check={form.check}>
+                {fields}
+              </PhoneEditor>
+            ) : (
+              <>
+                {importCheck !== undefined && form.check !== null && <ImportCheckCard draft={draft} check={importCheck} state={form.check} />}
+                {fields}
+              </>
+            )}
           </PastedTextContext.Provider>
         </ImportCheckContext.Provider>
       )}
