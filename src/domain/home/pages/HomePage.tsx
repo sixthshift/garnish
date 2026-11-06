@@ -43,7 +43,7 @@ export function HomePage() {
       {planNow && (
         <section
           aria-labelledby="plan-now"
-          className="flex flex-wrap items-center gap-4 rounded-xl border border-border-brand-subtle bg-bg-brand-subtle p-4 md:p-5"
+          className="flex flex-wrap items-center gap-4 rounded-xl border border-border-brand-subtle bg-bg-brand-subtle p-4 desktop:p-5"
         >
           <div className="flex min-w-0 flex-[1_1_16rem] flex-col gap-1">
             <h2 id="plan-now" className="font-display text-xl font-semibold">
@@ -59,7 +59,7 @@ export function HomePage() {
         </section>
       )}
 
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:items-start">
+      <div className="grid gap-6 desktop:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] desktop:items-start">
         <div className="flex min-w-0 flex-col gap-6">
           <Tonight entry={tonight} totalTime={recipe?.totalTime ?? null} primary={!planNow} />
           <WeekGlance days={days} today={today} />

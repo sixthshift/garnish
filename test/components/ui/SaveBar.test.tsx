@@ -51,8 +51,8 @@ describe("SaveBar", () => {
     expect(classes).toContain("pb-[max(0.75rem,env(safe-area-inset-bottom))]");
     expect(classes).toContain("border-t");
     expect(classes).toContain("bg-bg-normal");
-    expect(classes).toContain("md:static");
-    expect(classes).toContain("md:border-0");
-    expect(classes).toContain("md:bg-transparent");
+    expect(classes).toContain("desktop:static");
+    expect(classes).toContain("desktop:border-0");
+    expect(classes).toContain("desktop:bg-transparent");
   });
 });

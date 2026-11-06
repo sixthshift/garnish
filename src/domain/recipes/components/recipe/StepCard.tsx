@@ -19,10 +19,10 @@ export type StepCardSize = "page" | "cook";
 const SCALE: Record<StepCardSize, { text: string; title: string; summary: string; ingredients: string; image: string }> = {
   page: { text: "", title: "text-sm", summary: "text-sm", ingredients: "text-sm", image: "max-h-48" },
   cook: {
-    text: "text-3xl leading-snug lg:text-4xl",
-    title: "text-xl lg:text-2xl",
-    summary: "text-lg lg:text-xl",
-    ingredients: "text-lg lg:text-xl",
+    text: "text-3xl leading-snug desktop:text-4xl",
+    title: "text-xl desktop:text-2xl",
+    summary: "text-lg desktop:text-xl",
+    ingredients: "text-lg desktop:text-xl",
     image: "max-h-80",
   },
 };
@@ -98,15 +98,19 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
           </span>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className={cn("flex flex-col gap-3", columns && "md:grid md:grid-cols-3 md:items-start md:gap-4")}>
+          <div className={cn("flex flex-col gap-3", columns && "desktop:grid desktop:grid-cols-3 desktop:items-start desktop:gap-4")}>
             {showRows && (
-              <ul className={cn("flex flex-col gap-2 md:col-span-1", scale.ingredients)} aria-label="Ingredients for this step" data-testid="step-ingredients">
+              <ul
+                className={cn("flex flex-col gap-2 desktop:col-span-1", scale.ingredients)}
+                aria-label="Ingredients for this step"
+                data-testid="step-ingredients"
+              >
                 {rows.map((ingredient) => (
                   <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} cookFrom={cookFrom} size={size} />
                 ))}
               </ul>
             )}
-            <div className={cn("flex flex-col gap-2", columns && "md:col-span-2 md:col-start-2")}>
+            <div className={cn("flex flex-col gap-2", columns && "desktop:col-span-2 desktop:col-start-2")}>
               {photo !== null && !done && (
                 <img
                   src={photo}

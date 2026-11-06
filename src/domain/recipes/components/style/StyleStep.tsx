@@ -67,10 +67,10 @@ export function StyleStep(props: StyleStepProps) {
   const status = !choosable ? "Unchanged" : takingRewrite ? (edited ? "Edited" : "Rewritten") : "As written";
   return (
     <li className={cn(STEP_COLUMNS, "border-b border-border-subtle last:border-b-0")} data-testid="style-step" data-choice={choosable ? choice : "none"}>
-      <span className="pt-3 pl-4 font-display text-lg font-semibold text-fg-subtle md:pt-4" aria-hidden="true">
+      <span className="pt-3 pl-4 font-display text-lg font-semibold text-fg-subtle desktop:pt-4" aria-hidden="true">
         {n}
       </span>
-      <div className="flex min-w-0 flex-col gap-2 px-4 py-3 md:py-4" data-testid={takingRewrite ? "style-step-rewrite" : "style-step-original"}>
+      <div className="flex min-w-0 flex-col gap-2 px-4 py-3 desktop:py-4" data-testid={takingRewrite ? "style-step-rewrite" : "style-step-original"}>
         <span className="text-xs font-medium text-fg-subtle" data-testid="style-step-status">
           <span className="sr-only">Step {n}: </span>
           {status}

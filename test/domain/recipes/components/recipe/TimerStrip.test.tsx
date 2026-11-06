@@ -120,9 +120,9 @@ describe("TimerStrip", () => {
     // Fixed just above the phone tab bar, whose height the shell gives as `--app-bar`, on its layer.
     expect(html).toContain("bottom-[calc(var(--app-bar)+0.5rem)]");
     expect(html).toContain("z-app-bar");
-    expect(html).toContain("md:bottom-4");
-    // Clear of the side nav from md, not under it (critique #15b).
-    expect(html).toContain("md:left-56");
+    expect(html).toContain("desktop:bottom-4");
+    // A desktop has no side nav to clear (decisions.md row 206): the strip runs the screen's width.
+    expect(html).not.toContain("left-56");
   });
 
   test("hideStep leaves out that step's timers and keeps the rest (critique #15b)", () => {

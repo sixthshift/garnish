@@ -53,9 +53,9 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount }: RecipeHeade
       {/* Stacked below lg, image beside the text from lg up, as the recipe's
           columns are (critique #13: at md a long title ran 7 lines in 274px). No image, no
           space held for one: the name leads, and the editor adds a photo. */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6" data-layout="split">
+      <div className="flex flex-col gap-4 desktop:flex-row desktop:items-start desktop:gap-6" data-split="">
         {src && (
-          <div className="w-full lg:w-2/5 lg:shrink-0">
+          <div className="w-full desktop:w-2/5 desktop:shrink-0">
             <img src={src} alt="" className="aspect-video w-full rounded-xl object-cover" />
           </div>
         )}

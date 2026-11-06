@@ -30,8 +30,8 @@ test("the position merges over the design system's bottom-centre default rather 
       "inset-x-0",
       "bottom-[calc(6rem+var(--timer-strip,0px))]",
       "flex-col",
-      "md:right-6",
-      "md:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
+      "desktop:right-6",
+      "desktop:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
     ])
   );
 });
@@ -39,9 +39,9 @@ test("the position merges over the design system's bottom-centre default rather 
 test("the stack stands on the recipe page's timer strip, by the height the strip publishes (critique #15c)", () => {
   const classes = cn(TOAST_STACK_CLASS, TOAST_POSITION).split(" ");
   // Only the raised offsets are left: the design system's own bottom is merged away.
-  expect(classes.filter((c) => /^(md:)?bottom-/.test(c))).toEqual([
+  expect(classes.filter((c) => /^(desktop:)?bottom-/.test(c))).toEqual([
     "bottom-[calc(6rem+var(--timer-strip,0px))]",
-    "md:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
+    "desktop:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
   ]);
   expect(TIMER_STRIP_VAR).toBe("--timer-strip");
 });
@@ -52,10 +52,10 @@ test("a page marked data-toasts=top moves the stack to the top at every width (c
   expect(classes).toEqual(
     expect.arrayContaining([
       "bottom-[calc(6rem+var(--timer-strip,0px))]",
-      "md:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
+      "desktop:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
       "[:root:has([data-toasts=top])_&]:bottom-auto",
       "[:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))]",
-      "md:[:root:has([data-toasts=top])_&]:top-6",
+      "desktop:[:root:has([data-toasts=top])_&]:top-[calc(var(--top-bar,0px)+1.5rem)]",
     ])
   );
 });

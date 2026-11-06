@@ -87,7 +87,7 @@ export function WeekendStep({
       {shelf.length === 0 ? (
         <Muted as="p">No recipes are marked Weekend yet, and none are waiting to be tried.</Muted>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-3 desktop:grid-cols-3">
           {shelf.map((recipe) => {
             const image = recipeImageUrl(recipe.image);
             const taken = chosen.includes(recipe.id);

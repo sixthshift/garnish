@@ -129,18 +129,18 @@ describe("two columns from lg (M24.1, critique #13)", () => {
     expect(html).not.toContain('data-testid="ingredient-mode-toggle"');
   });
 
-  test("the grid starts at lg, the aside sticks and scrolls itself, and the page widens at lg", async () => {
+  test("the grid is a desktop's, the aside sticks under the top bar and scrolls itself", async () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     const columns = elementHtml(html, "recipe-columns");
-    expect(columns).toMatch(/class="[^"]*flex flex-col[^"]*lg:grid[^"]*lg:grid-cols-3/);
+    expect(columns).toMatch(/class="[^"]*flex flex-col[^"]*desktop:grid[^"]*desktop:grid-cols-3/);
     // Critique #13: at md a third of the page was 144px, too narrow for the list.
     expect(columns.slice(0, columns.indexOf(">"))).not.toContain("md:");
     const aside = elementHtml(html, "ingredients-column");
     expect(aside.startsWith("<aside")).toBe(true);
-    expect(aside).toMatch(/class="[^"]*lg:sticky[^"]*lg:top-6/);
+    expect(aside).toMatch(/class="[^"]*desktop:sticky[^"]*desktop:top-\[calc\(var\(--top-bar\)\+1\.5rem\)\]/);
     expect(aside.slice(0, aside.indexOf(">"))).not.toContain("md:");
-    expect(aside).toMatch(/class="[^"]*lg:overflow-y-auto/);
+    expect(aside).toMatch(/class="[^"]*desktop:overflow-y-auto/);
     expect(html).toMatch(/<article[^>]*class="[^"]*max-w-6xl/);
   });
 
@@ -148,7 +148,7 @@ describe("two columns from lg (M24.1, critique #13)", () => {
     await seedTart();
     const html = await renderRoute("/recipes/lemon-tart");
     const main = elementHtml(html, "method-column");
-    expect(main.slice(0, main.indexOf(">"))).toContain("lg:col-span-2");
+    expect(main.slice(0, main.indexOf(">"))).toContain("desktop:col-span-2");
     // The page's max-w-6xl already caps the step text near a reading measure;
     // a second cap here left the steps 70px short of everything above them.
     expect(main.slice(0, main.indexOf(">"))).not.toContain("max-w-");

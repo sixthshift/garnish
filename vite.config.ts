@@ -76,6 +76,10 @@ export default defineConfig({
           name: "dom",
           include: ["test/**/*.dom.test.tsx"],
           environment: "happy-dom",
+          // A phone's window (decisions.md row 206), so a part drawn per layout
+          // draws the phone's; a test of the desktop's resizes it
+          // (`test/helpers/layout.ts`).
+          environmentOptions: { happyDOM: { width: 390, height: 844 } },
           setupFiles: ["./vitest.env.ts", "./vitest.setup.ts"],
         },
       },

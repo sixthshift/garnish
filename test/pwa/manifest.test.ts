@@ -105,7 +105,7 @@ describe("root document head", () => {
   test("sets data-theme from <head> before hydration, and <html> lets that one attribute differ (critique #15c)", () => {
     // A head script, so the attribute is on <html> before the body paints; the
     // server cannot know the stored choice, so React must not report it.
-    expect(source).toContain("scripts: [{ children: themeScript }]");
+    expect(source).toContain("scripts: [{ children: themeScript }, { children: LAYOUT_BOOT_SCRIPT }]");
     expect(source).toMatch(/const themeScript = `try\{[^`]*localStorage\.getItem\("theme"\)[^`]*prefers-color-scheme: dark[^`]*`/);
     expect(source).toContain('<html lang="en-AU" suppressHydrationWarning>');
   });

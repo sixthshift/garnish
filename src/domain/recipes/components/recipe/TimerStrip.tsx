@@ -127,8 +127,7 @@ export function TimerStrip({ recipeId, fixed, hideStep, size, className }: Timer
       onResume={resume}
       onDismiss={dismiss}
       size={size}
-      // From md the shell's side nav (AppShell's `w-56`) holds the left edge, so the strip starts after it.
-      className={cn(fixed && "fixed inset-x-0 bottom-[calc(var(--app-bar)+0.5rem)] z-app-bar px-4 md:bottom-4 md:left-56", className)}
+      className={cn(fixed && "fixed inset-x-0 bottom-[calc(var(--app-bar)+0.5rem)] z-app-bar px-4 desktop:bottom-4", className)}
     />
   );
 }

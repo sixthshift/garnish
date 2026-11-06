@@ -19,6 +19,7 @@ import {
   renamePart,
   validateDraft,
 } from "../../../../../src/domain/recipes/draft";
+import { LayoutContext } from "../../../../../src/lib/useLayout";
 import { callServerFn, useTempDataDir } from "../../../../helpers/server";
 
 useTempDataDir();
@@ -167,7 +168,12 @@ describe("ingredientLine", () => {
 
 describe("PartsEditor", () => {
   test("renders a name input per component in order, with its ingredient and step rows", () => {
-    const html = renderToString(<PartsEditor draft={tart()} onChange={() => {}} />);
+    // A desktop's rows, whose fields sit on one line.
+    const html = renderToString(
+      <LayoutContext value="desktop">
+        <PartsEditor draft={tart()} onChange={() => {}} />
+      </LayoutContext>
+    );
     expect(html).toContain('aria-label="Parts"');
     expect(html).toContain(">Add part<");
     expect(tagWithLabel(html, "Part 1 name")).toContain('value="Pastry"');

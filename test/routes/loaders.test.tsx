@@ -69,7 +69,7 @@ function seed(
 
 describe("/recipes (list)", () => {
   test("empty database renders the empty state with a link to the editor", async () => {
-    const html = await renderRoute("/recipes");
+    const html = await renderRoute("/recipes", "desktop");
     expect(html).toContain("No recipes yet.");
     expect(html).toContain('href="/recipes/new"');
     expect(html).not.toContain("No recipes match");
@@ -81,7 +81,7 @@ describe("/recipes (list)", () => {
     await seed("Flatbread", { tags: [weeknight], image: "flatbread.jpg" });
     await seed("Pancakes");
     await seed("Lemon tart", { image: "lemon tart.webp" });
-    const html = await renderRoute("/recipes");
+    const html = await renderRoute("/recipes", "desktop");
     expect(html).toContain("3 recipes");
     for (const [name, slug] of [
       ["Flatbread", "flatbread"],
@@ -106,16 +106,16 @@ describe("/recipes (list)", () => {
   test("q and tag search params filter the list", async () => {
     await seed("Flatbread", { tags: [weeknight] });
     await seed("Pancakes");
-    let html = await renderRoute("/recipes?q=flat");
+    let html = await renderRoute("/recipes?q=flat", "desktop");
     expect(html).toContain("1 recipe<");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
 
-    html = await renderRoute("/recipes?tag=weeknight");
+    html = await renderRoute("/recipes?tag=weeknight", "desktop");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
 
-    html = await renderRoute("/recipes?q=pan&tag=weeknight");
+    html = await renderRoute("/recipes?q=pan&tag=weeknight", "desktop");
     expect(html).toContain("No recipes match that search.");
     expect(html).not.toContain("No recipes yet.");
     expect(html).toContain('href="/recipes"'); // clear filters
@@ -123,7 +123,7 @@ describe("/recipes (list)", () => {
 
   test("the search box and active tag reflect the URL", async () => {
     await seed("Flatbread", { tags: [weeknight] });
-    const html = await renderRoute("/recipes?q=flat&tag=weeknight");
+    const html = await renderRoute("/recipes?q=flat&tag=weeknight", "desktop");
     expect(html).toContain("<search>"); // the search landmark, as an element rather than a role
     expect(html).toContain('value="flat"');
     // The legacy singular `tag` param still selects its chip (M12.3 folds it into `tags`).
@@ -138,7 +138,7 @@ describe("/recipes (list)", () => {
     const flourId = flat.parts[0]!.ingredients[0]!.food!.id;
 
     // any (the default): either tag matches.
-    let html = await renderRoute(`/recipes?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}`);
+    let html = await renderRoute(`/recipes?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}`, "desktop");
     expect(html).toContain("Flatbread");
     expect(html).toContain("Pancakes");
     expect(html).toContain("Toast");
@@ -146,7 +146,7 @@ describe("/recipes (list)", () => {
     expect(html).toMatch(/data-state="on"[^>]*>Pasta/);
 
     // all: only the recipe carrying both.
-    html = await renderRoute(`/recipes?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}&match=all`);
+    html = await renderRoute(`/recipes?tags=${encodeURIComponent(JSON.stringify(["weeknight", "pasta"]))}&match=all`, "desktop");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
     expect(html).not.toContain("Toast");
@@ -154,13 +154,13 @@ describe("/recipes (list)", () => {
     expect(html).toContain('data-state="checked"');
 
     // foods[]: only the recipe with that ingredient's food.
-    html = await renderRoute(`/recipes?foods=${encodeURIComponent(JSON.stringify([flourId]))}`);
+    html = await renderRoute(`/recipes?foods=${encodeURIComponent(JSON.stringify([flourId]))}`, "desktop");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
     expect(html).toContain('aria-label="Remove flour"'); // selected food renders as a removable chip
 
     // favourite.
-    html = await renderRoute("/recipes?favourite=true");
+    html = await renderRoute("/recipes?favourite=true", "desktop");
     expect(html).toContain("Flatbread");
     expect(html).not.toContain("Pancakes");
     expect(html).not.toContain("Toast");
@@ -170,10 +170,10 @@ describe("/recipes (list)", () => {
     const laksa = await callServerFn(createRecipe, { name: "Laksa", parts: [{ name: "" }], kind: "rotation", lastMade: "2026-09-01T08:00:00.000Z" });
     await callServerFn(createRecipe, { name: "Lamb shoulder", parts: [{ name: "" }], kind: "weekend" });
     expect(laksa.kind).toBe("rotation");
-    let html = await renderRoute("/recipes?shelf=rotation");
+    let html = await renderRoute("/recipes?shelf=rotation", "desktop");
     expect(html).toContain('href="/recipes/laksa"');
     expect(html).not.toContain('href="/recipes/lamb-shoulder"');
-    html = await renderRoute("/recipes?shelf=try");
+    html = await renderRoute("/recipes?shelf=try", "desktop");
     expect(html).toContain('href="/recipes/lamb-shoulder"');
     expect(html).not.toContain('href="/recipes/laksa"');
     expect(html).toContain('aria-label="Shelf"');
@@ -186,7 +186,7 @@ describe("/recipes (list)", () => {
 
     test("defaults to a grid: cards in grid mode, grid selected in the toggle", async () => {
       await seed("Flatbread");
-      const html = await renderRoute("/recipes");
+      const html = await renderRoute("/recipes", "desktop");
       expect(html).toContain('data-card-mode="grid"');
       expect(html).not.toContain('data-card-mode="list"');
       expect(html).toMatch(/aria-label="Grid view"[^>]*aria-checked="true"/);
@@ -202,7 +202,7 @@ describe("/recipes (list)", () => {
       (globalThis as { window?: unknown }).window = {
         localStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => void storage.set(key, value) },
       };
-      const html = await renderRoute("/recipes");
+      const html = await renderRoute("/recipes", "desktop");
       expect(html.match(/data-card-mode="list"/g)).toHaveLength(2);
       expect(html).not.toContain('data-card-mode="grid"');
       expect(html).toMatch(/aria-label="List view"[^>]*aria-checked="true"/);
@@ -212,7 +212,7 @@ describe("/recipes (list)", () => {
   describe("sort and dice (M12.4)", () => {
     test("defaults to the newest-created sort, and the dice button renders", async () => {
       await seed("Flatbread");
-      const html = await renderRoute("/recipes");
+      const html = await renderRoute("/recipes", "desktop");
       expect(html).toContain("Sort: Newest created");
       expect(html).toContain('aria-label="Open a random recipe"');
     });
@@ -221,7 +221,7 @@ describe("/recipes (list)", () => {
       await seed("Banana cake");
       await seed("Apple pie");
 
-      let html = await renderRoute("/recipes?sort=name&dir=asc");
+      let html = await renderRoute("/recipes?sort=name&dir=asc", "desktop");
       expect(html).toContain("Sort: Name (A–Z)");
       expect(html.indexOf("Apple pie")).toBeLessThan(html.indexOf("Banana cake"));
 
@@ -546,9 +546,11 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toContain('data-testid="menu-trigger"');
     // The toolbar comes first, before any field.
     expect(html.indexOf('data-testid="editor-toolbar"')).toBeLessThan(html.indexOf('name="name"'));
-    // The phone footer is still there, hidden from md up.
+    // A phone saves from the footer; a desktop from the toolbar, with no footer (decisions.md row 206).
     expect(html).toContain('data-testid="save-bar"');
-    expect(html).toMatch(/data-testid="save-bar"[^>]*class="[^"]*md:hidden/);
+    const wide = await renderRoute("/recipes/lemon-tart/edit", "desktop");
+    expect(wide).not.toContain('data-testid="save-bar"');
+    expect(elementHtml(wide, "editor-toolbar")).toContain(">Save changes<");
     // Nothing is dirty on open, so neither bar says so.
     expect(html).not.toContain("Unsaved changes");
   });

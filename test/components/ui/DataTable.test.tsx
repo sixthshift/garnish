@@ -123,9 +123,9 @@ describe("sortItems", () => {
 });
 
 describe("secondaryClass", () => {
-  test("a secondary column hides below md, an lg one below lg, others never", () => {
-    expect(secondaryClass(true)).toBe("hidden md:table-cell");
-    expect(secondaryClass("lg")).toBe("hidden lg:table-cell");
+  test("a secondary column hides on a phone, an lg one until a desktop is wide (xl), others never", () => {
+    expect(secondaryClass(true)).toBe("hidden desktop:table-cell");
+    expect(secondaryClass("lg")).toBe("hidden desktop:xl:table-cell");
     expect(secondaryClass(undefined)).toBe(false);
     expect(secondaryClass(false)).toBe(false);
   });

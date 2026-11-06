@@ -1,6 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import type { ReactNode } from "react";
+import { useLayout } from "../../lib/useLayout";
 
 export type EditorToolbarProps = {
   /** What is being edited: the recipe's name, or what it will be called. */
@@ -37,11 +38,12 @@ export function EditorToolbar({
   className,
 }: EditorToolbarProps) {
   const shown = title.trim();
+  const desktop = useLayout() === "desktop";
   return (
     <div
       data-testid="editor-toolbar"
       className={cn(
-        "-mx-4 flex flex-wrap items-center gap-3 border-b border-border-normal bg-bg-normal px-4 py-3 md:sticky md:top-0 md:z-content-sticky md:-mx-6 md:px-6",
+        "-mx-4 flex flex-wrap items-center gap-3 border-b border-border-normal bg-bg-normal px-4 py-3 desktop:sticky desktop:top-(--top-bar) desktop:z-content-sticky desktop:-mx-6 desktop:px-6",
         className
       )}
     >
@@ -56,11 +58,13 @@ export function EditorToolbar({
         )}
       </div>
       {actions}
-      {/* Save and Cancel are the phone's `SaveBar` job; here they are the wide layout's. */}
-      <div className="hidden md:contents">{cancel}</div>
-      <Button type="submit" variant="solid" intent="brand" size="sm" disabled={busy || disabled} className="hidden md:inline-flex">
-        {busy ? (busyLabel ?? label) : label}
-      </Button>
+      {/* Save and Cancel are the phone's `SaveBar` job; here they are a desktop's (decisions.md row 206). */}
+      {desktop && cancel}
+      {desktop && (
+        <Button type="submit" variant="solid" intent="brand" size="sm" disabled={busy || disabled}>
+          {busy ? (busyLabel ?? label) : label}
+        </Button>
+      )}
     </div>
   );
 }

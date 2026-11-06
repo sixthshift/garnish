@@ -46,7 +46,7 @@ function ColumnHead({ label, taken }: { label: string; taken: boolean }) {
 /** A step in a part chosen whole: numbered words, nothing to press. */
 function PlainStep({ n, step, quiet }: { n: number; step: RestyledStep; quiet: boolean }) {
   return (
-    <li className="grid grid-cols-[2.75rem_minmax(0,1fr)] border-b border-border-subtle py-3 last:border-b-0 md:py-4" data-testid="style-plain-step">
+    <li className="grid grid-cols-[2.75rem_minmax(0,1fr)] border-b border-border-subtle py-3 last:border-b-0 desktop:py-4" data-testid="style-plain-step">
       <span className="pl-4 font-display text-lg font-semibold text-fg-subtle" aria-hidden="true">
         {n}
       </span>
@@ -164,8 +164,8 @@ export function StylePart(props: StylePartProps) {
           or put back whole.
         </Muted>
       )}
-      <Card size="sm" className="grid overflow-hidden p-0 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <ul className="flex flex-col gap-2.5 border-b border-border-subtle px-4 py-4 lg:border-r lg:border-b-0" aria-label={`${heading} ingredients`}>
+      <Card size="sm" className="grid overflow-hidden p-0 desktop:grid-cols-[15rem_minmax(0,1fr)]">
+        <ul className="flex flex-col gap-2.5 border-b border-border-subtle px-4 py-4 desktop:border-r desktop:border-b-0" aria-label={`${heading} ingredients`}>
           {part.ingredients.length === 0 && <li className="text-sm text-fg-subtle">No ingredients</li>}
           {part.ingredients.map((row, i) => {
             const authorNote = (row.note ?? "").trim();

@@ -38,7 +38,7 @@ const route = getRouteApi("/recipes/$slug/cook");
  * the card rather than the window's edges (critique #15b). From `lg` it widens
  * with the step's type, keeping about the same measure.
  */
-const COLUMN = "mx-auto w-full max-w-3xl px-4 lg:max-w-5xl";
+const COLUMN = "mx-auto w-full max-w-3xl px-4 desktop:max-w-5xl";
 
 /**
  * "Serves 4" as one button that opens the stepper: the stepper itself is
@@ -150,7 +150,7 @@ export function CookPage() {
                   Exit
                 </Link>
               </Button>
-              <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong lg:text-lg" data-cook-title>
+              <h1 className="line-clamp-2 min-w-0 flex-1 font-semibold leading-tight text-fg-strong desktop:text-lg" data-cook-title>
                 {recipe.name}
               </h1>
               {changes.length > 0 && (
@@ -195,7 +195,7 @@ export function CookPage() {
           // phone. `isolate`: the tick boxes lift over their rows' overlays
           // (COOK_TICK's z-10), and that lift stays inside the deck rather
           // than tying with the sticky header and painting over it (critique #15b).
-          className={cn(COLUMN, "isolate flex flex-1 flex-col gap-4 py-4 lg:pt-8")}
+          className={cn(COLUMN, "isolate flex flex-1 flex-col gap-4 py-4 desktop:pt-8")}
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerCancel={() => (swipe.current = null)}

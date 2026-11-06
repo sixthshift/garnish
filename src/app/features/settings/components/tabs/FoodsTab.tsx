@@ -178,7 +178,7 @@ export function foodColumns(aisles: readonly Aisle[], usage: Readonly<Record<str
       render: (food) => <FoodName food={food} />,
       wrap: "anywhere",
     },
-    { key: "aisle", header: "Aisle", value: (food) => aisleName(food.aisleId), className: "md:whitespace-nowrap" },
+    { key: "aisle", header: "Aisle", value: (food) => aisleName(food.aisleId), className: "desktop:whitespace-nowrap" },
     { key: "recipes", header: "Recipes", value: (food) => usage[food.id] ?? 0, searchable: false, className: "w-px text-right" },
   ];
 }

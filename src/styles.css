@@ -6,6 +6,31 @@
    after the theme import, and stays unlayered so it outranks the library. */
 @import "./styles/theme.css";
 
+/* The two experiences (decisions.md row 206, src/lib/layout.ts): `mobile:` and
+   `desktop:` follow <html data-layout>, which a boot script sets before the
+   first paint on the same line `useLayout()` follows. Use them for a small
+   change of the same structure (a gap, a size); where the structure differs,
+   choose with `useLayout()`. There is no `md:` or `lg:` (test/app/layout.test.ts):
+   within each layout the page still flows with `sm:`, `xl:` and `2xl:`, stacked
+   after the variant on the same property (`desktop:2xl:grid-cols-3`), since the
+   variant is an attribute selector and a bare breakpoint loses to it. */
+@custom-variant mobile {
+  &:where([data-layout="mobile"] *) {
+    @slot;
+  }
+  /* A printed page is a phone's width, whatever it is printed from. */
+  @media print {
+    @slot;
+  }
+}
+@custom-variant desktop {
+  @media not print {
+    &:where([data-layout="desktop"] *) {
+      @slot;
+    }
+  }
+}
+
 /* Loading: the sprig that fills a page while it loads (RoutePending) and the
    bar along the top during a navigation (NavigationProgress). Each waits
    before it shows, so a load that finishes quickly shows nothing. CSS, not
@@ -141,8 +166,9 @@
   }
 
   /* Chrome and controls: nav, the action menu, the view toggles and the tick
-     boxes. The shell's side nav is an aside; the recipe page's ingredients
-     column is one too (M24.1), and it opts out with data-print="keep". */
+     boxes. A desktop's top bar says data-print="hide"; its side panel is an
+     aside, and so is the recipe page's ingredients column (M24.1), which opts
+     out with data-print="keep". */
   nav,
   aside:not([data-print="keep"]),
   [data-print="hide"],
@@ -162,13 +188,13 @@
   }
 
   /* Image left, text beside it, at any paper width. */
-  [data-layout="split"] {
+  [data-split] {
     display: flex !important;
     flex-direction: row !important;
     gap: 1rem;
   }
 
-  [data-layout="split"] > :first-child {
+  [data-split] > :first-child {
     width: 33% !important;
   }
 
@@ -205,4 +231,15 @@
   [aria-label="Steps"] li {
     break-inside: avoid;
   }
+}
+
+/* A desktop's top bar (TopBar, decisions.md row 206): its height, for what
+   sticks under it while a page scrolls and for the toasts placed from the top.
+   Nothing on a phone, which has no top bar. On :root, not the shell, since
+   sheets and toasts portal outside it. */
+:root {
+  --top-bar: 0px;
+}
+:root[data-layout="desktop"] {
+  --top-bar: 3.5rem;
 }

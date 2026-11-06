@@ -15,7 +15,7 @@ test("a page visited online opens cold offline from the cached shell", async ({ 
   await expect(page.getByRole("heading", { level: 1, name: "Plan" })).toBeVisible();
   // The cached shell is the one fetched for "/": had it marked Recipes as the
   // current place, that mark would outlive hydration here. It marks nothing,
-  // and the browser marks Plan.
-  await expect(page.locator('nav[aria-label="Main"] a[aria-current="page"]')).toHaveText(["Plan", "Plan"]);
+  // and the browser draws the phone's one nav and marks Plan (decisions.md row 206).
+  await expect(page.locator('nav[aria-label="Main"] a[aria-current="page"]')).toHaveText(["Plan"]);
   await context.setOffline(false);
 });

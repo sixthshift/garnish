@@ -8,6 +8,7 @@ import { BulkAddSheet } from "../../../../components/ui/bulk/BulkAddSheet";
 import { BulkInlineAdd } from "../../../../components/ui/bulk/BulkInlineAdd";
 import { ReorderList } from "../../../../components/ui/ReorderList";
 import { focusNamed, rowEnter, rowFieldName } from "../../../../lib/rowKeys";
+import { useLayout } from "../../../../lib/useLayout";
 import {
   addIngredient,
   type FieldErrors,
@@ -43,6 +44,8 @@ export type IngredientsEditorProps = {
 };
 
 export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
+  // A desktop reads its rows as a table under one header; a phone's rows are one tappable line each.
+  const desktop = useLayout() === "desktop";
   const [bulkOpen, setBulkOpen] = useState(false);
   const check = useImportCheck();
   // Pasted text with no model to read it starts in the first part's box (decisions.md row 203).
@@ -139,8 +142,7 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
             keyOf={(row) => row.id ?? "unsaved"}
             itemName="ingredient"
             narrow="row"
-            header={<IngredientColumnsHeader />}
-            headerClassName="hidden md:flex"
+            header={desktop ? <IngredientColumnsHeader /> : undefined}
             align="start"
             group={INGREDIENT_DRAG_GROUP}
             listKey={String(pi)}

@@ -127,6 +127,6 @@ export function headerChecked(selected: readonly string[], keys: readonly string
 
 /** Classes that hide a `secondary` column below its breakpoint. */
 export function secondaryClass(secondary: boolean | "lg" | undefined): string | false {
-  if (secondary === "lg") return "hidden lg:table-cell";
-  return secondary === true && "hidden md:table-cell";
+  if (secondary === "lg") return "hidden desktop:xl:table-cell";
+  return secondary === true && "hidden desktop:table-cell";
 }

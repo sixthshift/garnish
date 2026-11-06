@@ -36,7 +36,7 @@ export function Page({
   ...rest
 }: { children: ReactNode; width?: PageWidth; as?: "div" | "article" } & React.HTMLAttributes<HTMLElement>) {
   return (
-    <Element className={cn("mx-auto flex w-full flex-col gap-6 p-4 md:p-6", WIDTH[width], className)} {...rest}>
+    <Element className={cn("mx-auto flex w-full flex-col gap-6 p-4 desktop:p-6", WIDTH[width], className)} {...rest}>
       {children}
     </Element>
   );

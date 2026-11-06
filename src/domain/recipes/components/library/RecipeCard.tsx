@@ -156,7 +156,7 @@ export function RecipeCard({ recipe, mode = "grid", priority = false }: RecipeCa
       {recipe.ingredientPreview.length > 0 ? (
         <Tooltip>
           <Tooltip.Trigger asChild>{link}</Tooltip.Trigger>
-          <Tooltip.Body className="hidden max-w-xs text-left md:block">
+          <Tooltip.Body className="max-w-xs text-left mobile:hidden">
             <ul>
               {recipe.ingredientPreview.map((line, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: the preview is a positional list of plain strings with no id; it is replaced wholesale, never reordered.

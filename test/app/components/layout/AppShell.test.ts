@@ -8,8 +8,9 @@ import { expect, test } from "vitest";
 
 const src = (path: string) => readFileSync(join(import.meta.dirname, "..", "..", "..", "..", "src", path), "utf8");
 
-test("the phone tab bar sits on the app-bar layer", () => {
-  expect(src("app/components/layout/AppShell.tsx")).toMatch(/<Nav className="fixed inset-x-0 bottom-0 z-app-bar /);
+test("the phone's tab bar and a desktop's top bar sit on the app-bar layer", () => {
+  expect(src("app/mobile/components/TabBar.tsx")).toMatch(/"fixed inset-x-0 bottom-0 z-app-bar /);
+  expect(src("app/desktop/components/TopBar.tsx")).toMatch(/"sticky top-0 z-app-bar /);
 });
 
 test("the menu's scrim and panel sit on the popover layer, above the tab bar", () => {

@@ -17,7 +17,7 @@ test("the brand scale is declared as teal, with the values that ship", () => {
 });
 
 test("the nav's current place takes the toggles' neutral selected fill, not brand", () => {
-  const shell = src("app/components/layout/AppShell.tsx");
+  const shell = src("app/components/layout/Nav.tsx");
   const active = shell.match(/const activeClass = "([^"]+)"/)?.[1] ?? "";
   expect(active).toBe("bg-bg-subtle-pressed text-fg-normal");
 });

@@ -10,6 +10,7 @@ import { ChevronRight } from "../../../../components/ui/icons";
 import { Menu } from "../../../../components/ui/Menu";
 import type { ReorderRow } from "../../../../components/ui/ReorderList";
 import type { PickerOption } from "../../../../lib/ui/picker";
+import { useLayout } from "../../../../lib/useLayout";
 import { type DraftIngredient, type FieldErrors, ingredientSummary } from "../../draft";
 import type { Unit } from "../../reference";
 import { PendingLine, useImportCheck } from "./ImportCheck";
@@ -84,43 +85,49 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
     </>
   );
 
+  const desktop = useLayout() === "desktop";
   const summary = ingredientSummary(ingredient);
   const parse = fieldProps.parse;
 
-  // From md the menu holds what the line leaves out (Fixed, Text only, Parse,
-  // Move to), each hidden below md, where the sheet has them; on a narrow list
-  // (ReorderList's `@2xl` container) it also holds the moves and Remove.
+  // On a desktop the menu holds what the line leaves out (Fixed, Text only,
+  // Parse, Move to); a phone's sheet has them, so its menu does not. On a
+  // narrow list (ReorderList's `@2xl` container) it also holds the moves and
+  // Remove.
   const menu = (
     <Menu label={`${label} actions`} iconOnly className="flex w-9 shrink-0 justify-end">
-      <Menu.Item
-        checked={ingredient.fixed === true && !textOnly}
-        disabled={disabled === true || textOnly}
-        className="max-md:hidden"
-        onSelect={() => onPatch({ fixed: ingredient.fixed !== true })}
-      >
-        Fixed <span className="text-fg-subtle">· doesn't scale</span>
-      </Menu.Item>
-      <Menu.Item checked={textOnly} disabled={disabled} className="max-md:hidden" onSelect={() => setMode(!textOnly)}>
-        Text only
-      </Menu.Item>
-      {parse !== undefined && parse.review === null && (
-        <Menu.Item disabled={disabled === true || parse.busy} className="max-md:hidden" onSelect={parse.onStart}>
-          Parse
-        </Menu.Item>
+      {desktop && (
+        <>
+          <Menu.Item
+            checked={ingredient.fixed === true && !textOnly}
+            disabled={disabled === true || textOnly}
+            onSelect={() => onPatch({ fixed: ingredient.fixed !== true })}
+          >
+            Fixed <span className="text-fg-subtle">· doesn't scale</span>
+          </Menu.Item>
+          <Menu.Item checked={textOnly} disabled={disabled} onSelect={() => setMode(!textOnly)}>
+            Text only
+          </Menu.Item>
+          {parse !== undefined && parse.review === null && (
+            <Menu.Item disabled={disabled === true || parse.busy} onSelect={parse.onStart}>
+              Parse
+            </Menu.Item>
+          )}
+        </>
       )}
       {/* Every width: the phone's sheet does not hold it. A text-only line has no food to stand in for. */}
       <Menu.Item disabled={disabled === true || textOnly || !ingredient.food} onSelect={() => setAlternativesOpen(true)}>
         Alternatives{alternativeCount > 0 && <span className="text-fg-subtle"> · {alternativeCount}</span>}
       </Menu.Item>
-      {parts.length > 0 && <Menu.Separator className="max-md:hidden" />}
-      {parts.map((part) => (
-        <Menu.Item key={part.value} disabled={disabled} className="max-md:hidden" onSelect={() => onMove(Number(part.value))}>
-          Move to {part.label}
-        </Menu.Item>
-      ))}
+      {desktop && parts.length > 0 && <Menu.Separator />}
+      {desktop &&
+        parts.map((part) => (
+          <Menu.Item key={part.value} disabled={disabled} onSelect={() => onMove(Number(part.value))}>
+            Move to {part.label}
+          </Menu.Item>
+        ))}
       {reorder !== undefined && (
         <>
-          <Menu.Separator className="max-md:hidden @2xl:hidden" />
+          {desktop && <Menu.Separator className="@2xl:hidden" />}
           <Menu.Item disabled={!reorder.moveUp} onSelect={reorder.moveUp} className="@2xl:hidden">
             Move up
           </Menu.Item>
@@ -140,24 +147,27 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2 md:items-start" data-ingredient={ii} data-mode={textOnly ? "text" : "structured"}>
-        {reorder !== undefined && <span className="flex shrink-0 md:pt-1">{reorder.handle}</span>}
+      <div className="flex items-center gap-2 desktop:items-start" data-ingredient={ii} data-mode={textOnly ? "text" : "structured"}>
+        {reorder !== undefined && <span className="flex shrink-0 desktop:pt-1">{reorder.handle}</span>}
         <div className="min-w-0 flex-1">
-          {/* Phone: one line per row, tapped to open the sheet. From md the fields sit on one line. */}
-          <button
-            type="button"
-            className="flex w-full items-center justify-between gap-2 py-1 text-left text-sm md:hidden"
-            aria-label={`Edit ${label.toLowerCase()}`}
-            aria-expanded={sheetOpen}
-            disabled={disabled}
-            onClick={() => setSheetOpen(true)}
-          >
-            <span className="truncate">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span>
-            <ChevronRight title="Open" />
-          </button>
-          <div className="hidden md:block" data-inline-fields="">
-            <IngredientFields {...fieldProps} layout="line" />
-          </div>
+          {/* Phone: one line per row, tapped to open the sheet. On a desktop the fields sit on one line. */}
+          {desktop ? (
+            <div data-inline-fields="">
+              <IngredientFields {...fieldProps} layout="line" />
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-2 py-1 text-left text-sm"
+              aria-label={`Edit ${label.toLowerCase()}`}
+              aria-expanded={sheetOpen}
+              disabled={disabled}
+              onClick={() => setSheetOpen(true)}
+            >
+              <span className="truncate">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span>
+              <ChevronRight title="Open" />
+            </button>
+          )}
         </div>
         {menu}
         <IngredientAlternativesSheet

@@ -22,7 +22,7 @@ export type SaveBarProps = {
 /**
  * On a phone, sticky at the foot of the screen: `--app-bar` is the shell's tab
  * bar, none on the routes that hide it (the editor), so the bar sits at the
- * very bottom and pads itself clear of the home indicator. Inline from `md`.
+ * very bottom and pads itself clear of the home indicator. Inline on a desktop.
  * While it is stuck, focus scrolls clear of it (`scrollClearance`).
  */
 export function SaveBar({ label, busyLabel, busy = false, disabled = false, cancel, note, className }: SaveBarProps) {
@@ -31,7 +31,7 @@ export function SaveBar({ label, busyLabel, busy = false, disabled = false, canc
       ref={scrollClearance}
       data-testid="save-bar"
       className={cn(
-        "sticky bottom-(--app-bar) z-content-sticky -mx-4 -mb-4 flex flex-wrap items-center gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:mx-0 md:mb-0 md:border-0 md:bg-transparent md:px-0 md:py-0",
+        "sticky bottom-(--app-bar) z-content-sticky -mx-4 -mb-4 flex flex-wrap items-center gap-3 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] desktop:static desktop:mx-0 desktop:mb-0 desktop:border-0 desktop:bg-transparent desktop:px-0 desktop:py-0",
         className
       )}
     >

@@ -4,6 +4,7 @@ import { Message } from "@sixthshift/design-system/message";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { SaveBar } from "../../../../components/ui/SaveBar";
 import type { StorageLike } from "../../../../lib/drafts";
+import { useLayout } from "../../../../lib/useLayout";
 import type { PendingLines, RecipeDraft } from "../../draft";
 import type { Tag, Unit } from "../../reference";
 import { DiscardImportDialog } from "./DiscardImport";
@@ -85,6 +86,7 @@ export function RecipeForm({
   importCheck,
   jsonMenuOpen,
 }: RecipeFormProps) {
+  const phone = useLayout() === "mobile";
   const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, continueWith, isImport, importCheck });
   const { draft, errors, saving, dirty, json, blocker } = form;
   const back = continueWith?.onBack ?? importCheck?.onBack;
@@ -155,16 +157,10 @@ export function RecipeForm({
         </ImportCheckContext.Provider>
       )}
 
-      {/* The phone's footer save; from `md` the toolbar above carries it. */}
-      <SaveBar
-        className="md:hidden"
-        label={saveLabel}
-        busyLabel="Saving…"
-        busy={saving}
-        disabled={!form.online}
-        note={dirty ? "Unsaved changes" : undefined}
-        cancel={cancelLink}
-      />
+      {/* The phone's footer save; on a desktop the toolbar above carries it. */}
+      {phone && (
+        <SaveBar label={saveLabel} busyLabel="Saving…" busy={saving} disabled={!form.online} note={dirty ? "Unsaved changes" : undefined} cancel={cancelLink} />
+      )}
 
       {blocker.status === "blocked" && isImport && (
         <DiscardImportDialog

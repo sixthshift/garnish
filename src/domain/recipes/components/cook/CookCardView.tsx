@@ -17,7 +17,7 @@ function NextPreview({ preview, onNext }: { preview: string; onNext: () => void 
       type="button"
       data-testid="next-preview"
       onClick={onNext}
-      className="block min-h-12 w-full py-2 text-left text-base text-fg-subtle hover:text-fg-normal lg:text-lg"
+      className="block min-h-12 w-full py-2 text-left text-base text-fg-subtle hover:text-fg-normal desktop:text-lg"
     >
       Next: {preview}
     </button>
@@ -171,7 +171,7 @@ export function CookCardView({
           <SectionTitle as="h3" className="mb-1">
             Ingredients
           </SectionTitle>
-          <ul className="flex flex-col text-2xl leading-snug lg:text-3xl" aria-label="Ingredients">
+          <ul className="flex flex-col text-2xl leading-snug desktop:text-3xl" aria-label="Ingredients">
             {card.ingredients.map((ingredient) => (
               <CookIngredientItem
                 key={ingredient.id}

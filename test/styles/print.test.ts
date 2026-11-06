@@ -6,9 +6,9 @@ import { describe, expect, test } from "vitest";
 
 const css = readFileSync(new URL("../../src/styles.css", import.meta.url), "utf8");
 
-/** The body of the `@media print` block, brace-matched from its opening. Pure. */
+/** The body of the top-level `@media print` block (not a variant's, which is indented), brace-matched from its opening. Pure. */
 function printBlock(source: string): string {
-  const start = source.indexOf("@media print");
+  const start = source.search(/^@media print/m);
   if (start < 0) return "";
   let depth = 0;
   for (let i = source.indexOf("{", start); i < source.length; i++) {
@@ -42,7 +42,7 @@ describe("print stylesheet", () => {
   });
 
   test("keeps the image beside the text", () => {
-    expect(block).toContain('[data-layout="split"]');
+    expect(block).toContain("[data-split]");
     expect(block).toContain("flex-direction: row !important");
   });
 

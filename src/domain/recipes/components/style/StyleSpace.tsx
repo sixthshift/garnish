@@ -142,7 +142,7 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
               No statements yet. Add some under Settings, Style.
             </Muted>
           ) : (
-            <ul className="grid gap-2 md:grid-cols-2">
+            <ul className="grid gap-2 desktop:grid-cols-2">
               {style.rules.map((rule) => (
                 <li key={rule.id} className="flex items-start gap-2.5">
                   <Checkbox checked={style.selected.has(rule.id)} className="mt-0.5" aria-label={rule.text} onCheckedChange={() => style.toggleRule(rule.id)} />
@@ -187,7 +187,7 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
 
       <div
         ref={scrollClearance}
-        className="sticky bottom-(--app-bar) z-content-sticky -mx-4 -mb-4 flex flex-col gap-2 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:mb-0 md:mx-0 md:rounded-t-lg md:px-4"
+        className="sticky bottom-(--app-bar) z-content-sticky -mx-4 -mb-4 flex flex-col gap-2 border-t border-border-normal bg-bg-normal px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] desktop:mb-0 desktop:mx-0 desktop:rounded-t-lg desktop:px-4"
         data-testid="style-footer"
       >
         {warning !== null && (

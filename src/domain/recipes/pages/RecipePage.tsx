@@ -92,16 +92,15 @@ export function RecipePage() {
             }
           />
 
-          {/* Two columns from `lg`: the ingredients stick beside the
+          {/* Two columns on a desktop: the ingredients stick beside the
               method rather than scrolling away above it. A third for the list, two
               thirds for the steps; the aside scrolls itself when it is taller than
-              the viewport. Below `lg` the two stack, ingredients first: at `md` a
-              third of the page was 144px, too narrow for the list (critique #13). */}
-          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:items-start lg:gap-8" data-testid="recipe-columns">
+              the viewport. On a phone the two stack, ingredients first (critique #13, decisions.md row 206). */}
+          <div className="flex flex-col gap-6 desktop:grid desktop:grid-cols-3 desktop:items-start desktop:gap-8" data-testid="recipe-columns">
             <aside
               data-testid="ingredients-column"
               data-print="keep"
-              className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto"
+              className="flex flex-col gap-4 desktop:sticky desktop:top-[calc(var(--top-bar)+1.5rem)] desktop:max-h-[calc(100dvh-var(--top-bar)-3rem)] desktop:overflow-y-auto"
             >
               {/* The aside's own heading, as Mealie's ingredient list header has both the title and the servings stepper together. */}
               <div className="flex flex-wrap items-center justify-between gap-3" data-testid="ingredients-heading">
@@ -133,7 +132,7 @@ export function RecipePage() {
               )}
             </aside>
 
-            <div className="flex flex-col gap-6 lg:col-span-2" data-testid="method-column">
+            <div className="flex flex-col gap-6 desktop:col-span-2" data-testid="method-column">
               {recipe.parts.map((part) => (
                 <PartSteps key={part.id} part={part} recipeId={recipe.id} />
               ))}
@@ -141,7 +140,7 @@ export function RecipePage() {
               {/* Notes after the method, in its column: a cook opens the page
                   for what to get out and what to do, and "Make ahead" or "Why
                   it works" is read once that is in hand. Mealie's order; the
-                  ingredients stay stuck beside them from `lg`. */}
+                  ingredients stay stuck beside them on a desktop. */}
               {recipe.notes.length > 0 && (
                 <section className="flex flex-col gap-3" aria-label="Notes" data-testid="recipe-notes">
                   <SectionTitle as="h2">Notes</SectionTitle>

@@ -41,21 +41,11 @@ describe("app shell", () => {
   test.each(pages)("%s renders inside the shell", async (path, text) => {
     const html = await render(path);
     expect(html).toContain(text);
-    // Both navs are in the DOM; CSS decides which shows.
+    // Both layouts' navs are in the shell; until hydration the variants decide which shows (decisions.md row 206).
     expect(html.match(/aria-label="Main"/g)).toHaveLength(2);
     for (const label of ["Home", "Plan", "Shopping", "Recipes", "Settings"]) expect(html).toContain(`>${label}</a>`);
     // New is an action on the recipes page, not a nav destination.
     expect(html).not.toContain(`>New</a>`);
-  });
-
-  test("the side nav is one screen tall and sticky, so the footer item stays in view on a long page", async () => {
-    const html = await render("/");
-    const aside = html.match(/<aside[^>]*class="([^"]*)"/)?.[1] ?? "";
-    // As a plain flex child the aside stretches to the content's height, and
-    // Settings' mt-auto would then sit below the fold.
-    expect(aside).toContain("md:h-dvh");
-    expect(aside).toContain("md:sticky");
-    expect(aside).toContain("md:top-0");
   });
 
   // decisions.md row 169: the shell is drawn before the page is the

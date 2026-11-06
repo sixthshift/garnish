@@ -3,6 +3,7 @@
 // theme), not household data: it survives a reload and never reaches the
 // server or another device.
 
+import { DESKTOP_MEDIA } from "./layout";
 import { readItem, type StorageLike, useLocalStorage, writeItem } from "./useLocalStorage";
 
 export type ViewMode = "grid" | "list";
@@ -52,13 +53,13 @@ export function usePref<T>(pref: Pref<T>): [T, (value: T) => void] {
   return useLocalStorage(pref.key, pref.fallback, pref.isValid);
 }
 
-/** Tailwind's `md:`, the width the home page's grid starts at when no one has chosen a view. */
-export const VIEW_MODE_GRID_QUERY = "(min-width: 48rem)";
+/** A desktop's layout (decisions.md row 206), where the home page's grid starts when no one has chosen a view. */
+export const VIEW_MODE_GRID_QUERY = DESKTOP_MEDIA;
 
 /**
  * The view the home page shows while nothing is stored: a list on a phone,
  * where the grid's tall cards fit two to a screen and the index is for
- * scanning, and the table's grid from `md:` up. With no screen to ask (the
+ * scanning, and the table's grid on a desktop. With no screen to ask (the
  * server, a test without a window) it is the table's fallback. Read when the
  * hook first renders, so the first paint is already right; a choice, once
  * stored, wins at every width.

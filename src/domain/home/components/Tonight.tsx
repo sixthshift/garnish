@@ -39,8 +39,8 @@ export function Tonight({ entry, totalTime, primary }: { entry: PlanEntry | null
   return (
     <section aria-labelledby="tonight">
       <Card className="flex flex-col overflow-hidden p-0">
-        {image !== null && <img src={image} alt="" className="aspect-[2/1] w-full object-cover md:aspect-[5/2]" />}
-        <div className="flex flex-col gap-4 p-4 md:p-5">
+        {image !== null && <img src={image} alt="" className="aspect-[2/1] w-full object-cover desktop:aspect-[5/2]" />}
+        <div className="flex flex-col gap-4 p-4 desktop:p-5">
           <div className="flex flex-col gap-1">
             <SectionTitle as="h2" id="tonight">
               Tonight

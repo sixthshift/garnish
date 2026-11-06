@@ -7,6 +7,7 @@ import { beforeEach, expect, test } from "vitest";
 import { ViewModeToggle } from "../../../../../src/domain/recipes/components/library/ViewModeToggle";
 import { IngredientModeToggle } from "../../../../../src/domain/recipes/components/recipe/IngredientModeToggle";
 import { useIngredientMode, useViewMode } from "../../../../../src/lib/prefs";
+import { atDesktop } from "../../../../helpers/layout";
 
 function ViewProbe() {
   const [mode] = useViewMode();
@@ -21,6 +22,9 @@ function IngredientProbe() {
 beforeEach(() => {
   window.localStorage.clear();
 });
+
+// A desktop's, where the grid is what nobody has chosen yet (decisions.md rows 146, 206).
+atDesktop();
 
 test("pressing List view switches every reader of the preference, and it is stored", async () => {
   const user = userEvent.setup();

@@ -19,7 +19,7 @@ export function toastError(title: string, error: unknown): ToastHandle {
  * Tailwind finds classes by scanning the source as text.
  */
 const TOAST_TOP =
-  "[:root:has([data-toasts=top])_&]:bottom-auto [:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))] md:[:root:has([data-toasts=top])_&]:top-6";
+  "[:root:has([data-toasts=top])_&]:bottom-auto [:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))] desktop:[:root:has([data-toasts=top])_&]:top-[calc(var(--top-bar,0px)+1.5rem)]";
 
 /**
  * The height of the recipe page's fixed timer strip, set on the document while
@@ -34,4 +34,4 @@ export const TIMER_STRIP_VAR = "--timer-strip";
  * bottom-right corner. Either way raised by the timer strip's height while it
  * shows. On a `data-toasts="top"` page, the top instead.
  */
-export const TOAST_POSITION = `inset-x-0 bottom-[calc(6rem+var(--timer-strip,0px))] translate-x-0 flex-col gap-2 px-4 md:inset-x-auto md:right-6 md:bottom-[calc(1.5rem+var(--timer-strip,0px))] md:items-end md:px-0 ${TOAST_TOP}`;
+export const TOAST_POSITION = `inset-x-0 bottom-[calc(6rem+var(--timer-strip,0px))] translate-x-0 flex-col gap-2 px-4 desktop:inset-x-auto desktop:right-6 desktop:bottom-[calc(1.5rem+var(--timer-strip,0px))] desktop:items-end desktop:px-0 ${TOAST_TOP}`;

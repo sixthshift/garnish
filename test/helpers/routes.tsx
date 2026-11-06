@@ -5,12 +5,16 @@
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
 import { RouteError, RouteNotFound, RoutePending } from "../../src/app/pages/RouteStates";
+import type { Layout } from "../../src/lib/layout";
+import { LayoutContext } from "../../src/lib/useLayout";
 import { routeTree } from "../../src/routes/tree";
 
-export async function renderRoute(path: string): Promise<string> {
+/** `layout` draws a desktop's page (decisions.md row 206); left out, a phone's, as the server's answer is. */
+export async function renderRoute(path: string, layout?: Layout): Promise<string> {
   const router = testRouter(path);
   await router.load();
-  return renderToString(<RouterProvider router={router} />);
+  const page = <RouterProvider router={router} />;
+  return renderToString(layout === undefined ? page : <LayoutContext value={layout}>{page}</LayoutContext>);
 }
 
 /**

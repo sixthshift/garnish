@@ -1,6 +1,7 @@
 import { createRootRoute } from "@tanstack/react-router";
 import { Document } from "../app/pages/Document";
 import { Root } from "../app/pages/Root";
+import { LAYOUT_BOOT_SCRIPT } from "../lib/layout";
 import appCss from "../styles.css?url";
 
 // Paint the theme attribute before first render so the shell does not flash
@@ -30,7 +31,10 @@ export const Route = createRootRoute({
       { rel: "icon", href: "/icons/icon.svg", type: "image/svg+xml" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
     ],
-    scripts: [{ children: themeScript }],
+    // The layout beside the theme, for the same reason: `data-layout` is on
+    // <html> before the first paint, so the `mobile:` and `desktop:` variants
+    // never flash the other (decisions.md row 206).
+    scripts: [{ children: themeScript }, { children: LAYOUT_BOOT_SCRIPT }],
   }),
   shellComponent: Document,
   component: Root,
