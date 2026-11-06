@@ -1,5 +1,6 @@
 import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
+import { Fragment } from "react";
 import { useHydrated } from "../../../lib/useHydrated";
 
 // Home is the day as it stands (tonight, the week, the list); Recipes is the
@@ -40,22 +41,21 @@ const activeClass = "bg-bg-subtle-pressed text-fg-normal";
  * copy answers them all (decisions.md row 169). A router `Link` marks itself
  * `aria-current` as it renders, and React would leave a stale one in place.
  */
-export function Nav({ placement, className, ...props }: React.HTMLAttributes<HTMLElement> & { placement: NavPlacement }) {
+export function Nav({ placement, className, children, ...props }: React.HTMLAttributes<HTMLElement> & { placement: NavPlacement }) {
   const hydrated = useHydrated();
+  // `children` sit between the places and the `end` ones (a desktop's command
+  // bar) and take the free width themselves; without them the end is pushed over.
+  const firstEnd = navItems.findIndex((item) => item.end);
   return (
     <nav aria-label="Main" className={className} {...props}>
-      {navItems.map((item) => {
-        const base = cn(itemClass[placement], placement === "top" && item.end && "ml-auto");
-        if (!hydrated) {
-          return (
-            <a key={item.to} href={item.to} className={cn(base, inactiveClass)}>
-              {item.label}
-            </a>
-          );
-        }
-        return (
+      {navItems.map((item, index) => {
+        const base = cn(itemClass[placement], placement === "top" && item.end && children == null && "ml-auto");
+        const link = !hydrated ? (
+          <a href={item.to} className={cn(base, inactiveClass)}>
+            {item.label}
+          </a>
+        ) : (
           <Link
-            key={item.to}
             to={item.to}
             activeOptions={{ exact: item.exact }}
             className={base}
@@ -64,6 +64,12 @@ export function Nav({ placement, className, ...props }: React.HTMLAttributes<HTM
           >
             {item.label}
           </Link>
+        );
+        return (
+          <Fragment key={item.to}>
+            {index === firstEnd && children}
+            {link}
+          </Fragment>
         );
       })}
     </nav>
