@@ -232,14 +232,14 @@ Decisions.md row 207: every desktop page redesigned from `docs/mockups/desktop.h
 Decisions.md row 208: every phone page redesigned from the Phone half of `docs/mockups/desktop.html`; desktops unchanged.
 
 - [x] **M48.0 The swipe row.** `SwipeRow` (src/components/ui/) over `lib/ui/swipeRow.ts`: past 90px a drag right or left does that side's action, short of it the row springs back; a drag never also counts as a tap.
-- [ ] **M48.1 The tab bar and the + sheet.** Home, Plan, +, Shopping, Recipes; the + is the phone's command bar.
-- [ ] **M48.2 Home.**
-- [ ] **M48.3 Plan.**
-- [ ] **M48.4 Shopping.**
-- [ ] **M48.5 Recipes and the recipe page.**
-- [ ] **M48.6 Import's Check and the editor.**
-- [ ] **M48.7 Cook and Settings.**
-- [ ] **M48.8 Docs.**
+- [x] **M48.1 The tab bar and the + sheet.** Home, Plan, +, Shopping, Recipes; the + is the phone's command bar.
+- [x] **M48.2 Home.**
+- [x] **M48.3 Plan.**
+- [x] **M48.4 Shopping.**
+- [x] **M48.5 Recipes and the recipe page.**
+- [x] **M48.6 Import's Check and the editor.**
+- [x] **M48.7 Cook and Settings.**
+- [x] **M48.8 Docs.**
 
 ## Blocked
 
@@ -340,3 +340,5 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-11-06  M46.5  done   —        opus   architecture.md's Frontend gains Adaptive (the line, structure vs variants, the mirror folders, a desktop's frame and side panel, how tests choose a layout) and the code layout names app/mobile, app/desktop, panel.ts and RecipeLink; design-language.md's md: divergence replaced by the two experiences; CLAUDE.md's Frontend line says how to follow the line
 2026-11-07  M47    done   —        opus   row 207 and the mockup (docs/mockups/desktop.html); Page width "full"; seven areas built in parallel worktrees and merged without conflict; gate 3982 unit, lint, tsc, e2e 53 (desktop-<area>.spec.ts per page; desktop-shopping lists walnuts and a parsnip so its lines never merge into plan.spec's, and desktop.spec's picker journey retired for desktop-plan's)
 2026-11-07  M47.8  note   —        opus   gaps left honest: no per-day "+N to buy" on the board (a plan entry does not know its lines); no aisle hint as a line is typed (typed lines are never matched to a food); no print button on the store walk; Home's "+" to plan from Haven't made in a while; the Settings place and the command bar's settings sections have no address; import's source lines matched word for word only (a step keeps no source line; a WPRM line drawn unlike its JSON-LD stays grey); no bulk merge of foods
+2026-11-07  M48    done   —        opus   row 208; SwipeRow first, then seven areas built in parallel worktrees and merged without a conflict; Home's Swap moved onto the plan's new sheet (the day's entries and the shelf passed, closed after its one choice); gate 4052 unit, lint, tsc, e2e 74 (phone-<area>.spec.ts per page; the phone specs list foods no other spec plans, and swipe a row only once it is scrolled mid-screen)
+2026-11-07  M48.8  note   —        opus   choices to review: today's day button on the phone's plan is brand-filled (design-language rule 5 keeps brand for identity); the saved Aisles/Meals choice is gone (row 182's phone meal view), the chips narrow for a visit; steps get no "Needs a label" (the editor has no label field); Looks right lasts the Check only; the + sheet has no grab handle (the Modal has none); rounded-2xl and up generate nothing in this theme, so nine older uses are square; the desktop library's first e2e journey flakes about 1 in 3 on Back/Forward then Enter, on the base commit too
