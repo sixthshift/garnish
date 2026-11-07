@@ -10,9 +10,10 @@
  * the theme's radius scale and a Tailwind `@theme` block for the display
  * face. Component tokens
  * (tier 3, `--button-bg` and friends) are left alone: nothing here re-wires a
- * component, it only changes what the meanings resolve to — with four
+ * component, it only changes what the meanings resolve to — with five
  * exceptions, the off Switch's track, the neutral soft Badge, the disabled
- * brand Button and the selected Tab, at the end of the file.
+ * brand Button, the selected Tab and the ProgressBar's track, at the end of
+ * the file.
  *
  *   brand     teal     (a deep blue-green: #2c666c fills in light, #4ba5a9 in dark)
  *   neutrals  earth    (warm paper instead of cool slate)
@@ -366,4 +367,15 @@ h1 {
 .tabs-trigger[data-selected="true"] {
   --tabs-trigger-bg: var(--bg-subtle-pressed);
   --tabs-trigger-fg: var(--fg-normal);
+}
+
+/* The ProgressBar's track. The library paints it `--bg-strong`, the inverse
+   surface: near-black in light, and in dark a cream bar, so the part of the
+   shopping list still to buy was the brightest thing on the page and the
+   teal of what is done sat dimmer than it. It takes the neutral selected
+   step instead, one past the page and a card in both modes (earth-300 in
+   light, earth-800 in dark), the track Home's ProgressRing draws too, so
+   the fill is what stands out. */
+.progress-bar {
+  --progress-bar-track-bg: var(--bg-subtle-pressed);
 }

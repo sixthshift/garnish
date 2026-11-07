@@ -5,7 +5,7 @@ import type { FoodRow, Unit } from "../../../reference";
 
 /** The amber dot of a line Check wants looked at. */
 export function FlagDot({ className }: { className?: string }) {
-  return <span className={cn("mt-1.5 size-2 shrink-0 rounded-full bg-[var(--color-border-warning)]", className)} aria-hidden="true" />;
+  return <span className={cn("mt-1.5 size-2 shrink-0 rounded-full bg-bg-warning", className)} aria-hidden="true" />;
 }
 
 /**

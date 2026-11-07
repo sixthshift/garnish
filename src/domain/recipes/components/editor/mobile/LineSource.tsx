@@ -169,7 +169,7 @@ function LineSheet({
                     className={cn(
                       "px-3.5 py-1",
                       line.heading && "font-semibold",
-                      line.lit ? "bg-bg-warning-subtle font-medium text-fg-strong shadow-[inset_3px_0_0_var(--color-border-warning)]" : "text-fg-subtle"
+                      line.lit ? "bg-bg-warning-subtle font-medium text-fg-strong shadow-[inset_3px_0_0_var(--color-bg-warning)]" : "text-fg-subtle"
                     )}
                     data-source-line={line.number}
                     data-lit={line.lit ? "true" : undefined}
@@ -204,7 +204,7 @@ function LineSheet({
 
         {flag !== null && (
           <p className="flex gap-2 rounded-xl bg-bg-warning-subtle px-3 py-2.5 text-sm text-fg-strong" data-testid="line-flag">
-            <span className="mt-1.5 size-2 shrink-0 rounded-full bg-[var(--color-border-warning)]" aria-hidden="true" />
+            <span className="mt-1.5 size-2 shrink-0 rounded-full bg-bg-warning" aria-hidden="true" />
             {flag.reason}
           </p>
         )}

@@ -46,7 +46,7 @@ export function SourceView({ lines, lit }: SourceViewProps) {
                 "relative py-0.5 pr-4 pl-12 transition-colors",
                 line.heading && "mt-2 font-semibold",
                 line.rows.length === 0 ? "text-fg-subtle opacity-70" : "text-fg-normal",
-                on && "bg-bg-warning-subtle text-fg-strong opacity-100 shadow-[inset_3px_0_0_var(--color-border-warning)]"
+                on && "bg-bg-warning-subtle text-fg-strong opacity-100 shadow-[inset_3px_0_0_var(--color-bg-warning)]"
               )}
               data-source-line={index + 1}
               data-used={line.rows.length > 0 ? "true" : undefined}

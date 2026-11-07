@@ -8,7 +8,7 @@ export function ProgressRing({ ticked, total, className }: { ticked: number; tot
   const fraction = total === 0 ? 0 : ticked / total;
   return (
     <svg viewBox="0 0 84 84" className={cn("size-21 shrink-0", className)} role="img" aria-label={`${ticked} of ${total} ticked`}>
-      <circle cx="42" cy="42" r={RADIUS} fill="none" strokeWidth="9" className="stroke-bg-subtle" />
+      <circle cx="42" cy="42" r={RADIUS} fill="none" strokeWidth="9" className="stroke-bg-subtle-pressed" />
       <circle
         cx="42"
         cy="42"

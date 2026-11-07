@@ -15,7 +15,8 @@ const SPAN = "col-span-2 row-span-4";
 /**
  * Tonight on a desktop: the biggest tile, the photo edge to edge under a
  * gradient, the name in display type, and Cook and Open the recipe. Over a
- * photo the buttons are white and glass, which reads on any picture; without
+ * photo the buttons are white and glass, which reads on any picture (Cook's
+ * ink fixed at teal-700 in either theme, as on the phone's TonightHero); without
  * one the tile is a plain card and the buttons are the app's own, Cook the
  * brand fill unless planning next week has it (`primary`, rule 5).
  */
@@ -71,7 +72,7 @@ export function TonightTile({ entry, totalTime, primary }: { entry: PlanEntry | 
                   to="/recipes/$slug/cook"
                   params={{ slug: recipe.slug }}
                   search={cookSearch(entry)}
-                  className={cn(glass, "border-white bg-white text-fg-brand hover:bg-white/90")}
+                  className={cn(glass, "border-white bg-white text-[var(--color-teal-700)] hover:bg-white/90")}
                 >
                   Cook
                 </Link>

@@ -81,9 +81,10 @@ export function SwipeRow({ children, right, left, className }: { children: React
         <div
           aria-hidden="true"
           className={cn(
-            "absolute inset-0 flex items-center px-5 font-semibold text-sm text-white",
+            "absolute inset-0 flex items-center px-5 font-semibold text-sm",
             showing === "right" ? "justify-start" : "justify-end",
-            action.tone === "go" ? "bg-bg-success-strong" : "bg-bg-danger-strong"
+            // Each fill with its own ink: in dark the strong fills go pale (green-300, red-300) and take dark text, where white vanished.
+            action.tone === "go" ? "bg-bg-success-strong text-[var(--fg-on-success-strong)]" : "bg-bg-danger-strong text-[var(--fg-on-danger-strong)]"
           )}
         >
           <span className={cn("transition-transform", armed && "scale-110")}>{action.label}</span>

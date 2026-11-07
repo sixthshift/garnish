@@ -9,7 +9,7 @@ import type { Recipe } from "../../recipe";
 // whether or not anything is lit.
 
 /** How a lit row or step looks: the highlighter's yellow, with a mark down its edge so it reads without the colour. */
-export const LIT = "bg-bg-warning-subtle shadow-[inset_3px_0_0_var(--color-border-warning)]";
+export const LIT = "bg-bg-warning-subtle shadow-[inset_3px_0_0_var(--color-bg-warning)]";
 
 type Pointed = { kind: "step" | "ingredient"; id: string } | null;
 

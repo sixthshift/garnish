@@ -17,7 +17,10 @@ const ON_PHOTO = "inline-flex min-h-12 items-center gap-2 rounded-xl border px-4
  * Tonight on a phone: the dish filling the screen, its photo edge to edge in
  * a 4:5 card under a gradient, the name in display type, then Cook, Recipe
  * and Swap under the thumb. Over a photo Cook is white and the others glass,
- * which reads on any picture; a recipe with no photo, or a note, is a plain
+ * which reads on any picture, and Cook's ink is the light theme's brand
+ * (teal-700) in either theme, since the photo and its gradient do not change
+ * with it: dark mode's brand ink is pale, for a dark page, and vanished on
+ * white; a recipe with no photo, or a note, is a plain
  * card with the app's own buttons, Cook the brand fill unless planning next
  * week has it (`primary`, rule 5).
  *
@@ -94,7 +97,7 @@ export function TonightHero({
                 to="/recipes/$slug/cook"
                 params={{ slug: recipe.slug }}
                 search={cookSearch(entry)}
-                className={cn(ON_PHOTO, "border-white bg-white text-fg-brand hover:bg-white/90")}
+                className={cn(ON_PHOTO, "border-white bg-white text-[var(--color-teal-700)] hover:bg-white/90")}
               >
                 <PlayIcon />
                 Cook
