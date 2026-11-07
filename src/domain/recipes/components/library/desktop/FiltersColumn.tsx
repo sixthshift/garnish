@@ -73,8 +73,7 @@ function FacetToggle({
  * place. The shelf counts are over the whole library; the tag counts are each
  * tag's own (TagUsage). Under the shelves, what a recipe is (decisions.md row
  * 209), a list a layer of the values some recipe has, with their counts over
- * the whole library: any of a layer's values, every layer asked. A layer no
- * recipe has a value on yet is still named, and says so.
+ * the whole library: any of a layer's values, every layer asked.
  */
 export function FiltersColumn(props: FiltersColumnProps) {
   const { allTags, allFoods, tags, match, foods, favourite, onTagsChange, onMatchChange, onFoodsChange, onFavouriteChange } = props;
@@ -118,16 +117,11 @@ export function FiltersColumn(props: FiltersColumnProps) {
 
       {FACET_LAYERS.map((layer) => {
         const values = offeredValues(props.facetCounts, props.facets, layer);
+        if (values.length === 0) return null;
         const chosen: readonly string[] = props.facets[layer];
         return (
           <section key={layer} aria-labelledby={`facet-${layer}`} className="flex flex-col gap-0.5">
             <FacetLabel id={`facet-${layer}`}>{LAYER_NAMES[layer]}</FacetLabel>
-            {/* Named even before anything is marked, so the column says what can be filtered by. */}
-            {values.length === 0 && (
-              <p className="px-2 text-sm text-fg-subtle" data-empty-layer={layer}>
-                None marked yet
-              </p>
-            )}
             {values.map((value) => (
               <FacetToggle
                 key={value}

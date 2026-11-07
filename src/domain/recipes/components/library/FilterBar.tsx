@@ -41,44 +41,38 @@ export type FilterBarProps = {
 
 /**
  * What a recipe is, a row of toggles a layer, each value with how many recipes
- * carry it: any of a layer's values, every layer asked. Every layer is
- * named, so the filters say what can be filtered by; one no recipe has a
- * value on yet says so, rather than offering values that would find nothing.
+ * carry it: any of a layer's values, every layer asked. A layer no recipe has
+ * said anything on is left out, so a library not yet marked shows none.
  */
 function FacetRows({ facets, facetCounts, onFacetsChange }: Pick<FilterBarProps, "facets" | "facetCounts" | "onFacetsChange">) {
   return FACET_LAYERS.map((layer) => {
     const values = offeredValues(facetCounts, facets, layer);
+    if (values.length === 0) return null;
     return (
       <section key={layer} className="flex flex-col gap-1.5" aria-labelledby={`filter-${layer}`}>
         <h3 id={`filter-${layer}`} className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">
           {LAYER_NAMES[layer]}
         </h3>
-        {values.length === 0 ? (
-          <p className="text-sm text-fg-subtle" data-empty-layer={layer}>
-            None marked yet
-          </p>
-        ) : (
-          <ToggleGroup
-            type="multiple"
-            aria-label={`Filter by ${LAYER_NAMES[layer].toLowerCase()}`}
-            appearance="separate"
-            variant="outline"
-            intent="neutral"
-            size="sm"
-            className="flex-wrap"
-            value={[...facets[layer]]}
-            onValueChange={(next) => onFacetsChange({ ...facets, [layer]: values.filter((value) => next.includes(value)) })}
-            options={values.map((value) => ({
-              value,
-              label: (
-                <>
-                  {facetLabel(layer, value)}
-                  <span className="text-fg-subtle tabular-nums">{countOf(facetCounts, layer, value)}</span>
-                </>
-              ),
-            }))}
-          />
-        )}
+        <ToggleGroup
+          type="multiple"
+          aria-label={`Filter by ${LAYER_NAMES[layer].toLowerCase()}`}
+          appearance="separate"
+          variant="outline"
+          intent="neutral"
+          size="sm"
+          className="flex-wrap"
+          value={[...facets[layer]]}
+          onValueChange={(next) => onFacetsChange({ ...facets, [layer]: values.filter((value) => next.includes(value)) })}
+          options={values.map((value) => ({
+            value,
+            label: (
+              <>
+                {facetLabel(layer, value)}
+                <span className="text-fg-subtle tabular-nums">{countOf(facetCounts, layer, value)}</span>
+              </>
+            ),
+          }))}
+        />
       </section>
     );
   });
@@ -114,10 +108,7 @@ export function FilterBar({
     <div className="flex flex-col gap-3">
       <FacetRows facets={facets} facetCounts={facetCounts} onFacetsChange={onFacetsChange} />
       {allTags.length > 0 && (
-        <section className="flex flex-col gap-2" aria-labelledby="filter-tags">
-          <h3 id="filter-tags" className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">
-            Tags
-          </h3>
+        <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <ToggleGroup
               type="multiple"
@@ -159,7 +150,7 @@ export function FilterBar({
               )}
             </div>
           )}
-        </section>
+        </div>
       )}
       <FoodFilter allFoods={allFoods} foods={foods} onFoodsChange={onFoodsChange} inputClassName="max-w-xs" />
       <Switch checked={favourite} onCheckedChange={onFavouriteChange} label="Favourites only" />

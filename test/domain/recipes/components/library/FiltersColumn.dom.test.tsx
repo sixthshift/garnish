@@ -116,16 +116,14 @@ const counts = [
   { layer: "cuisine" as const, value: "thai", count: 3 },
 ];
 
-test("each layer lists the values some recipe has, with their counts, and a layer none has is named and says so", () => {
+test("each layer some recipe has lists its values with their counts, and a layer none has is left out", () => {
   column({ facetCounts: counts });
   const course = within(screen.getByRole("region", { name: "Course" }));
   expect(course.getByRole("button", { name: "Main 9" })).toHaveAttribute("aria-pressed", "false");
   expect(course.getByRole("button", { name: "Sauce or dressing 2" })).toBeInTheDocument();
   expect(course.queryByRole("button", { name: /Side/ })).toBeNull();
   expect(screen.getByRole("region", { name: "Cuisine" })).toBeInTheDocument();
-  const diet = within(screen.getByRole("region", { name: "Diet" }));
-  expect(diet.getByText("None marked yet")).toBeInTheDocument();
-  expect(diet.queryByRole("button")).toBeNull();
+  expect(screen.queryByRole("region", { name: "Diet" })).toBeNull();
 });
 
 test("pressing a value asks for it beside the layer's others, and pressing it again lets it go", async () => {

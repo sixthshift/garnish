@@ -148,7 +148,7 @@ describe("FilterBar", () => {
 });
 
 describe("FilterBar's layers (decisions.md row 209)", () => {
-  test("a row of toggles a layer some recipe has, with counts; every layer named, an unmarked one saying so", () => {
+  test("a row of toggles a layer some recipe has, with counts; none when nothing has been said", () => {
     const props = {
       allTags: [],
       allFoods: [],
@@ -168,11 +168,7 @@ describe("FilterBar's layers (decisions.md row 209)", () => {
     expect(html).toContain('aria-label="Filter by diet"');
     expect(html).toContain("Vegetarian");
     expect(html).toContain("Vegan");
-    // A layer nothing is marked with is still named, and says so rather than offering values that find nothing.
     expect(html).not.toContain('aria-label="Filter by course"');
-    expect(html).toContain('data-empty-layer="course"');
-    const unmarked = renderToString(<FilterBar {...props} facets={noFacets()} facetCounts={[]} />);
-    expect(unmarked).not.toContain("Filter by diet");
-    expect(unmarked.match(/None marked yet/g)).toHaveLength(7);
+    expect(renderToString(<FilterBar {...props} facets={noFacets()} facetCounts={[]} />)).not.toContain("Filter by diet");
   });
 });
