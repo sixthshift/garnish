@@ -55,7 +55,7 @@ export function FacetSheet({ name, facets, onClose }: { name: string; facets: Fa
   const close = () => onClose(draft);
 
   return (
-    <Modal size="md" closable aria-label={`What ${name} is`} onOpenChange={(open) => !open && close()}>
+    <Modal size="full" closable aria-label={`What ${name} is`} onOpenChange={(open) => !open && close()}>
       <ModalHeader>What it is</ModalHeader>
       <ModalBody className="flex flex-col gap-5" data-testid="facet-sheet">
         {FACET_LAYERS.map((layer) => (

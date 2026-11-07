@@ -39,10 +39,23 @@ export type RecipeFormToolbarProps = {
   /** Forwarded to the `Menu` (tests); see `RecipeFormProps.jsonMenuOpen`. */
   jsonMenuOpen?: boolean;
   onToggleJson: () => void;
+  className?: string;
 };
 
 /** The editor toolbar above the form: name, save, cancel, the dirty note, and the one-item editor menu. */
-export function RecipeFormToolbar({ title, existing, label, saving, online, dirty, cancel, jsonOpen, jsonMenuOpen, onToggleJson }: RecipeFormToolbarProps) {
+export function RecipeFormToolbar({
+  title,
+  existing,
+  label,
+  saving,
+  online,
+  dirty,
+  cancel,
+  jsonOpen,
+  jsonMenuOpen,
+  onToggleJson,
+  className,
+}: RecipeFormToolbarProps) {
   return (
     <EditorToolbar
       title={title}
@@ -53,6 +66,7 @@ export function RecipeFormToolbar({ title, existing, label, saving, online, dirt
       disabled={!online}
       note={dirty ? "Unsaved changes" : undefined}
       cancel={cancel}
+      className={className}
       actions={
         <Menu label="Editor actions" iconOnly open={jsonMenuOpen}>
           <Menu.Item data-testid="json-toggle" disabled={saving} onSelect={onToggleJson}>

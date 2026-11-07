@@ -2,6 +2,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
 import { Message } from "@sixthshift/design-system/message";
+import { Muted } from "@sixthshift/design-system/muted";
 import { useContext, useEffect, useState } from "react";
 import { listFoods } from "../../../../api/rpc/foods";
 import { BulkAddSheet } from "../../../../components/ui/bulk/BulkAddSheet";
@@ -25,10 +26,10 @@ import {
 import type { FoodRow, Unit } from "../../reference";
 import { EditorSectionHeader } from "./EditorSectionHeader";
 import { PastedTextContext, useImportCheck } from "./ImportCheck";
-import { IngredientColumnsHeader, IngredientEditRow } from "./IngredientEditRow";
+import { IngredientEditRow } from "./IngredientEditRow";
 import { confirmReviewedIngredients, ingredientReview } from "./ingredientReview";
 import { ParseAllSheet } from "./ParseAllSheet";
-import { partLabel } from "./PartsEditor";
+import { partLabel } from "./PartsColumns";
 
 /** Every part's ingredient list shares this drag group, so a row can be dragged from one to another. */
 export const INGREDIENT_DRAG_GROUP = "recipe-ingredients";
@@ -41,9 +42,22 @@ export type IngredientsEditorProps = {
   onChange: (draft: RecipeDraft) => void;
   errors?: FieldErrors;
   disabled?: boolean;
+  /** The list's heading: "Ingredients", or the part's name where the column already says what it lists. */
+  heading?: string;
+  /** With no lines, one quiet line rather than the paste box: a part whose ingredients are all in another (decisions.md row 211). */
+  quietWhenEmpty?: boolean;
 };
 
-export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, disabled }: IngredientsEditorProps) {
+export function IngredientsEditor({
+  draft,
+  pi,
+  units,
+  onChange,
+  errors = {},
+  disabled,
+  heading = "Ingredients",
+  quietWhenEmpty = false,
+}: IngredientsEditorProps) {
   // A desktop reads its rows as a table under one header; a phone's rows are one tappable line each.
   const desktop = useLayout() === "desktop";
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -116,7 +130,7 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
           </>
         }
       >
-        Ingredients
+        {heading}
       </EditorSectionHeader>
       {needsParseAll(part) && (
         <Message intent="info" title="Nothing here is parsed" data-testid="parse-all-banner">
@@ -135,14 +149,21 @@ export function IngredientsEditor({ draft, pi, units, onChange, errors = {}, dis
       <Card size="sm">
         <EmptyBoundary
           isEmpty={ingredients.length === 0}
-          fallback={<BulkInlineAdd<IngredientReview> itemName="ingredient" review={review} disabled={disabled} initialText={pi === 0 ? pasted : undefined} />}
+          fallback={
+            quietWhenEmpty && !(pi === 0 && pasted) ? (
+              <Muted as="p" className="text-sm" data-empty="ingredients">
+                No ingredients of its own
+              </Muted>
+            ) : (
+              <BulkInlineAdd<IngredientReview> itemName="ingredient" review={review} disabled={disabled} initialText={pi === 0 ? pasted : undefined} />
+            )
+          }
         >
           <ReorderList
             items={ingredients}
             keyOf={(row) => row.id ?? "unsaved"}
             itemName="ingredient"
             narrow="row"
-            header={desktop ? <IngredientColumnsHeader /> : undefined}
             align="start"
             group={INGREDIENT_DRAG_GROUP}
             listKey={String(pi)}

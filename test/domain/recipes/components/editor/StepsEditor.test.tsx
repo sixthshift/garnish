@@ -385,11 +385,11 @@ describe("StepsEditor", () => {
     expect(html).not.toContain('role="menu"');
   });
 
-  test("each step places the list's one drag handle and names itself for a narrow list", () => {
+  test("each step is a card with the list's one drag handle and its number in a circle, as the recipe page's step is", () => {
     const html = renderToString(<StepsEditor draft={focaccia()} pi={0} onChange={() => {}} />);
     expect(html).toContain('data-narrow="row"');
     expect(html.match(/aria-label="Drag step \d"/g)).toHaveLength(3);
-    expect(html.match(/<span[^>]*@2xl:hidden[^>]*>Step <!-- -->\d<\/span>/g)).toHaveLength(3);
+    expect(html.match(/<span[^>]*rounded-full[^>]*aria-hidden="true"[^>]*>\d<\/span>/g)).toHaveLength(3);
   });
 
   test("split all and merge all sit once in the header, disabled when they would do nothing", () => {

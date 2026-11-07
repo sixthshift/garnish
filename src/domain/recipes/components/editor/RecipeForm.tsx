@@ -1,6 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
-import { Card } from "@sixthshift/design-system/card";
 import { Message } from "@sixthshift/design-system/message";
+import { Toggle } from "@sixthshift/design-system/toggle";
+import { type ReactNode, useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { SaveBar } from "../../../../components/ui/SaveBar";
 import type { StorageLike } from "../../../../lib/drafts";
@@ -9,14 +10,12 @@ import type { PendingLines, RecipeDraft } from "../../draft";
 import type { Tag, Unit } from "../../reference";
 import { DiscardImportDialog } from "./DiscardImport";
 import { DraftNotice } from "./DraftNotice";
-import { EditorBeside } from "./desktop/EditorBeside";
+import { EditorColumns } from "./desktop/EditorColumns";
 import { ImportCheckCard, ImportCheckContext, type ImportCheckProps, PastedTextContext } from "./ImportCheck";
 import { PhoneEditor } from "./mobile/PhoneEditor";
-import { NotesEditor } from "./NotesEditor";
-import { PartsEditor } from "./PartsEditor";
-import { RecipeDetails } from "./RecipeDetails";
+import { IngredientsColumn, MethodColumn } from "./PartsColumns";
+import { AboutColumn, type RecipeAboutProps } from "./RecipeAbout";
 import { RecipeFormCancel, RecipeFormToolbar } from "./RecipeFormToolbar";
-import { RecipeHead } from "./RecipeHead";
 import { RecipeJsonView } from "./RecipeJsonView";
 import { useRecipeForm } from "./useRecipeForm";
 
@@ -73,6 +72,8 @@ export type RecipeFormProps = {
    * it open and instead renders it open through this prop.
    */
   jsonMenuOpen?: boolean;
+  /** On a desktop, what sits above the toolbar inside the editor's screen-tall frame: an import's steps. */
+  above?: ReactNode;
 };
 
 export function RecipeForm({
@@ -87,6 +88,7 @@ export function RecipeForm({
   isImport = false,
   importCheck,
   jsonMenuOpen,
+  above,
 }: RecipeFormProps) {
   const phone = useLayout() === "mobile";
   const form = useRecipeForm({ initial, existing, online, importedImageUrl, storage, continueWith, isImport, importCheck });
@@ -101,83 +103,110 @@ export function RecipeForm({
   );
   const saveLabel = continueWith?.label ?? (existing ? "Save changes" : importCheck ? "Save recipe" : "Create recipe");
 
-  const fields = (
+  const [preview, setPreview] = useState(false);
+  const about: RecipeAboutProps = {
+    draft,
+    errors,
+    saving,
+    existing: existing !== undefined,
+    importedImageUrl,
+    units,
+    knownTags,
+    suggestedTags: importCheck?.suggestedTags,
+    leftOutTags: importCheck?.leftOutTags,
+    onPatch: form.patch,
+    onChange: form.setDraft,
+    onFile: form.setFile,
+  };
+  const notices = (
     <>
-      <Card size="lg" className="flex flex-col gap-4">
-        <RecipeHead
-          draft={draft}
-          errors={errors}
-          saving={saving}
-          existing={existing !== undefined}
-          importedImageUrl={importedImageUrl}
-          onPatch={form.patch}
-          onFile={form.setFile}
-        />
-      </Card>
-
-      <PartsEditor draft={draft} onChange={form.setDraft} units={units} errors={errors} disabled={saving} />
-
-      <NotesEditor draft={draft} onChange={form.setDraft} errors={errors} disabled={saving} />
-
-      <RecipeDetails
-        draft={draft}
-        errors={errors}
-        saving={saving}
-        units={units}
-        knownTags={knownTags}
-        defaultOpen={form.detailsOpen}
-        suggestedTags={importCheck?.suggestedTags}
-        leftOutTags={importCheck?.leftOutTags}
-        onPatch={form.patch}
-      />
-    </>
-  );
-
-  const editor = (
-    <form onSubmit={(event) => void form.submit(event)} noValidate className="flex flex-col gap-6" aria-label={existing ? "Edit recipe" : "New recipe"}>
       {!form.online && (
         <Message intent="warning" title="You are offline" data-testid="offline-notice">
           Changes cannot be saved offline. Keep editing; Save comes back with the connection.
         </Message>
       )}
       {form.pending !== null && <DraftNotice text={form.pending.text} onResume={form.resumePending} onDiscard={form.discardPending} />}
-      <RecipeFormToolbar
-        title={draft.name}
-        existing={existing !== undefined}
+    </>
+  );
+  const toolbar = (
+    <RecipeFormToolbar
+      title={draft.name}
+      existing={existing !== undefined}
+      label={saveLabel}
+      saving={saving}
+      online={form.online}
+      dirty={dirty}
+      cancel={cancelLink}
+      jsonOpen={json !== null}
+      jsonMenuOpen={jsonMenuOpen}
+      onToggleJson={form.toggleJson}
+      className={phone ? undefined : "desktop:mx-0 desktop:top-0"}
+    />
+  );
+  const jsonView = json !== null && <RecipeJsonView json={json} error={form.jsonError} disabled={saving} onChange={form.setJson} onApply={form.applyJson} />;
+  const parts = { draft, onChange: form.setDraft, units, errors, disabled: saving };
+
+  const body = phone ? (
+    <>
+      {toolbar}
+      {notices}
+      {jsonView || <PhoneEditor about={about} initial={initial} file={form.file} importCheck={importCheck} check={form.check} preview={preview} />}
+      <SaveBar
         label={saveLabel}
-        saving={saving}
-        online={form.online}
-        dirty={dirty}
+        busyLabel="Saving…"
+        busy={saving}
+        disabled={!form.online}
+        note={dirty ? "Unsaved changes" : undefined}
         cancel={cancelLink}
-        jsonOpen={json !== null}
-        jsonMenuOpen={jsonMenuOpen}
-        onToggleJson={form.toggleJson}
+        extra={
+          json === null && (
+            <Toggle variant="outline" intent="neutral" size="sm" pressed={preview} onPressedChange={setPreview}>
+              Preview
+            </Toggle>
+          )
+        }
       />
-
-      {json !== null ? (
-        <RecipeJsonView json={json} error={form.jsonError} disabled={saving} onChange={form.setJson} onApply={form.applyJson} />
+    </>
+  ) : (
+    // A desktop's editor is the recipe page's three columns under the toolbar, a screen tall (decisions.md row 211).
+    <div className="flex h-[calc(100dvh-var(--top-bar))] flex-col">
+      {above !== undefined && <div className="px-6 pt-4">{above}</div>}
+      {toolbar}
+      {jsonView ? (
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">{jsonView}</div>
       ) : (
-        <ImportCheckContext.Provider value={form.check}>
-          <PastedTextContext.Provider value={importCheck?.pastedText}>
-            {phone ? (
-              // A phone's Check puts the lines to look at first, each opening beside its page (decisions.md row 208).
-              <PhoneEditor draft={draft} initial={initial} file={form.file} importedImageUrl={importedImageUrl} importCheck={importCheck} check={form.check}>
-                {fields}
-              </PhoneEditor>
-            ) : (
-              <>
-                {importCheck !== undefined && form.check !== null && <ImportCheckCard draft={draft} check={importCheck} state={form.check} />}
-                {fields}
-              </>
-            )}
-          </PastedTextContext.Provider>
-        </ImportCheckContext.Provider>
+        <EditorColumns
+          draft={draft}
+          initial={initial}
+          sourceText={importCheck?.sourceText}
+          about={
+            <AboutColumn
+              {...about}
+              top={
+                <>
+                  {notices}
+                  {importCheck !== undefined && form.check !== null && <ImportCheckCard draft={draft} check={importCheck} state={form.check} />}
+                </>
+              }
+            />
+          }
+          ingredients={<IngredientsColumn {...parts} />}
+          method={<MethodColumn {...parts} />}
+        />
       )}
+    </div>
+  );
 
-      {/* The phone's footer save; on a desktop the toolbar above carries it. */}
-      {phone && (
-        <SaveBar label={saveLabel} busyLabel="Saving…" busy={saving} disabled={!form.online} note={dirty ? "Unsaved changes" : undefined} cancel={cancelLink} />
-      )}
+  return (
+    <form
+      onSubmit={(event) => void form.submit(event)}
+      noValidate
+      className={phone ? "flex flex-col gap-6" : undefined}
+      aria-label={existing ? "Edit recipe" : "New recipe"}
+    >
+      <ImportCheckContext.Provider value={form.check}>
+        <PastedTextContext.Provider value={importCheck?.pastedText}>{body}</PastedTextContext.Provider>
+      </ImportCheckContext.Provider>
 
       {blocker.status === "blocked" && isImport && (
         <DiscardImportDialog
@@ -203,13 +232,5 @@ export function RecipeForm({
         </ConfirmDialog>
       )}
     </form>
-  );
-
-  // A phone has one column and the form is all of it; a desktop draws the recipe beside it as it is typed (decisions.md row 207).
-  if (phone) return editor;
-  return (
-    <EditorBeside draft={draft} initial={initial} file={form.file} importedImageUrl={importedImageUrl} sourceText={importCheck?.sourceText}>
-      {editor}
-    </EditorBeside>
   );
 }

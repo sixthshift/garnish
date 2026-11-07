@@ -40,6 +40,25 @@ export function KindToggle({ id, kind, label = "How you cook it" }: { id: string
     }
   }
 
+  return <KindChoice kind={current} label={label} onChange={(next) => void choose(next ?? "")} />;
+}
+
+/**
+ * The two segments alone, controlled: what the recipe page writes at once and
+ * the editor keeps in its draft until Save (decisions.md row 191). Pressing
+ * the chosen one again clears it.
+ */
+export function KindChoice({
+  kind,
+  onChange,
+  label = "How you cook it",
+  disabled,
+}: {
+  kind: RecipeKind | null;
+  onChange: (kind: RecipeKind | null) => void;
+  label?: string;
+  disabled?: boolean;
+}) {
   return (
     <ToggleGroup
       type="single"
@@ -48,8 +67,9 @@ export function KindToggle({ id, kind, label = "How you cook it" }: { id: string
       size="sm"
       aria-label={label}
       options={kindOptions}
-      value={current ?? ""}
-      onValueChange={choose}
+      value={kind ?? ""}
+      disabled={disabled}
+      onValueChange={(value) => onChange(kindFromValue(value))}
       className="self-start"
       data-print="hide"
     />

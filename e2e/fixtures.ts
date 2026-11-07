@@ -56,12 +56,17 @@ export async function createRecipe(
   await open("/recipes/new?source=manual");
   await page.getByRole("textbox", { name: "Name" }).fill(recipe.name);
   await page.getByRole("textbox", { name: "Servings" }).fill(String(recipe.servings));
-  const parts = page.getByRole("region", { name: "Parts" });
-  await page.getByRole("textbox", { name: "New ingredients" }).fill(recipe.ingredients.join("\n"));
-  await parts.getByRole("button", { name: "Add", exact: true }).first().click();
-  await parts.getByRole("button", { name: "Confirm" }).click();
-  await page.getByRole("textbox", { name: "New steps" }).fill(recipe.steps.join("\n\n"));
-  await parts.getByRole("button", { name: "Add", exact: true }).last().click();
+  // The editor is the recipe page's shape (decisions.md row 211): the ingredients and the method in their own columns, or on
+  // a phone their own tabs.
+  const ingredients = page.getByRole("region", { name: "Ingredients" });
+  await ingredients.getByRole("textbox", { name: "New ingredients" }).fill(recipe.ingredients.join("\n"));
+  await ingredients.getByRole("button", { name: "Add", exact: true }).click();
+  await ingredients.getByRole("button", { name: "Confirm" }).click();
+  const methodTab = page.getByRole("tab", { name: /^Method/ });
+  if (await methodTab.isVisible()) await methodTab.click();
+  const method = page.getByRole("region", { name: "Method" });
+  await method.getByRole("textbox", { name: "New steps" }).fill(recipe.steps.join("\n\n"));
+  await method.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByRole("button", { name: "Create recipe" }).click();
   await expect(page.getByRole("heading", { level: 1, name: recipe.name })).toBeVisible();
 }

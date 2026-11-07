@@ -46,7 +46,7 @@ const row = (ii: number) => document.querySelector<HTMLElement>(`[data-ingredien
 describe("on a desktop", () => {
   atDesktop();
 
-  test("Fixed is a checkbox in the row's menu, and a Fixed row shows a badge on its line", async () => {
+  test("Fixed is a checkbox in the row's menu, and a Fixed line reads back with = before its amount", async () => {
     const user = userEvent.setup();
     const state = harness(tart());
 
@@ -55,7 +55,7 @@ describe("on a desktop", () => {
     expect(fixed).toHaveAttribute("aria-checked", "false");
     await user.click(fixed);
     expect(state.latest.parts[0]!.ingredients[1]!.fixed).toBe(true);
-    expect(within(row(1)).getByText("Fixed")).toHaveAttribute("data-fixed-badge");
+    expect(within(row(1)).getByRole("button", { name: "Edit ingredient 2" }).querySelector("[data-read-amount]")?.textContent).toMatch(/^= /);
 
     await user.click(screen.getByRole("button", { name: "Ingredient 2 actions" }));
     expect(screen.getByRole("menuitemcheckbox", { name: /Fixed/ })).toHaveAttribute("aria-checked", "true");
@@ -102,6 +102,8 @@ describe("on a desktop", () => {
     const user = userEvent.setup();
     const state = harness(tart());
 
+    // A line reads back until clicked, then opens into its fields in place (decisions.md row 211).
+    await user.click(screen.getByRole("button", { name: "Edit ingredient 2" }));
     await user.click(screen.getByRole("textbox", { name: "Ingredient 2 note" }));
     await user.keyboard("{Enter}");
     expect(state.latest.parts[0]!.ingredients).toHaveLength(3);

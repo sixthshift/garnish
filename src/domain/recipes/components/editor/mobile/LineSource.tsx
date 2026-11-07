@@ -1,7 +1,7 @@
 // A line beside the page it came from, on a phone's Check (decisions.md row
 // 208): a sheet with the source line lit amid its neighbours, what garnish made
 // of it, and what can be done about it. A desktop shows the whole source beside
-// the editor instead (desktop/EditorBeside).
+// the editor instead (desktop/EditorColumns).
 
 import { Button } from "@sixthshift/design-system/button";
 import { Modal, ModalBody, ModalHeader } from "@sixthshift/design-system/modal";

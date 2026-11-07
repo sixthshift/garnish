@@ -16,6 +16,8 @@ export type SaveBarProps = {
   cancel: ReactNode;
   /** A standing line beside the buttons, e.g. "Unsaved changes". */
   note?: ReactNode;
+  /** More controls at the end of the bar, e.g. the editor's Preview. */
+  extra?: ReactNode;
   className?: string;
 };
 
@@ -25,7 +27,7 @@ export type SaveBarProps = {
  * very bottom and pads itself clear of the home indicator. Inline on a desktop.
  * While it is stuck, focus scrolls clear of it (`scrollClearance`).
  */
-export function SaveBar({ label, busyLabel, busy = false, disabled = false, cancel, note, className }: SaveBarProps) {
+export function SaveBar({ label, busyLabel, busy = false, disabled = false, cancel, note, extra, className }: SaveBarProps) {
   return (
     <div
       ref={scrollClearance}
@@ -40,6 +42,7 @@ export function SaveBar({ label, busyLabel, busy = false, disabled = false, canc
       </Button>
       {cancel}
       {note !== undefined && <span className="text-sm text-fg-subtle">{note}</span>}
+      {extra !== undefined && <div className="ml-auto flex items-center gap-2">{extra}</div>}
     </div>
   );
 }

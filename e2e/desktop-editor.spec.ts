@@ -1,34 +1,50 @@
-// The editor on a desktop (decisions.md row 207): the recipe as it will be
-// saved, beside the form and redrawn as it is typed; on an import's Check, the
-// text it read beside it too.
+// The editor on a desktop (decisions.md row 211): the recipe page's three
+// columns, each thing changed where the page shows it; on an import's Check,
+// the text it read in the method's column.
 import { expect, test, unique } from "./fixtures";
 
 test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false });
 
-test("a recipe typed by hand shows in the preview beside the form as it is typed", async ({ page, open }) => {
-  const name = unique("Preview Tart");
+test("a recipe typed by hand is written in the page's three columns, and saves to the page it mirrors", async ({ page, open }) => {
+  const name = unique("Columns Tart");
   await open("/recipes/new?source=manual");
-  const preview = page.getByRole("article", { name: "Preview" });
-  await expect(preview).toContainText("Untitled recipe");
+  const about = page.getByTestId("about-column");
+  const ingredients = page.getByRole("region", { name: "Ingredients" });
+  const method = page.getByRole("region", { name: "Method" });
+  await expect(about).toBeVisible();
+  await expect(ingredients).toBeVisible();
+  await expect(method).toBeVisible();
 
-  await page.getByRole("textbox", { name: "Name" }).fill(name);
-  await expect(preview.getByRole("heading", { level: 2, name })).toBeVisible();
+  await about.getByRole("textbox", { name: "Name" }).fill(name);
+  await about.getByRole("spinbutton", { name: "Prep time (minutes)" }).fill("15");
+  await about.getByRole("spinbutton", { name: "Cook time (minutes)" }).fill("30");
+  await expect(about.getByTestId("times")).toContainText("Total 45 min");
+  await about.getByRole("radio", { name: "Weekend" }).click();
 
-  const parts = page.getByRole("region", { name: "Parts" });
-  await page.getByRole("textbox", { name: "New ingredients" }).fill("200 g plain flour");
-  await parts.getByRole("button", { name: "Add", exact: true }).first().click();
-  await parts.getByRole("button", { name: "Confirm" }).click();
-  await expect(preview.getByRole("region", { name: "Ingredients" })).toContainText("plain flour");
+  await ingredients.getByRole("textbox", { name: "New ingredients" }).fill("200 g plain flour");
+  await ingredients.getByRole("button", { name: "Add", exact: true }).click();
+  await ingredients.getByRole("button", { name: "Confirm" }).click();
+  // The line reads back as the page shows it, and opens in place.
+  const line = ingredients.getByRole("button", { name: "Edit ingredient 1" });
+  await expect(line).toContainText("plain flour");
+  await line.click();
+  await ingredients.getByRole("textbox", { name: "Ingredient 1 note" }).fill("sifted");
+  await ingredients.getByRole("button", { name: "Done" }).click();
+  await expect(ingredients.getByRole("button", { name: "Edit ingredient 1" })).toContainText("sifted");
 
-  await page.getByRole("textbox", { name: "New steps" }).fill("Rub in the butter.");
-  await parts.getByRole("button", { name: "Add", exact: true }).last().click();
-  await expect(preview.getByRole("region", { name: "Method" })).toContainText("Rub in the butter.");
+  await method.getByRole("textbox", { name: "New steps" }).fill("Rub in the butter.");
+  await method.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(method.getByRole("textbox", { name: "Step 1" })).toHaveValue("Rub in the butter.");
 
-  // The preview stays in view beside the form, and the page is no wider than the window.
+  // A screen tall, no wider than the window: each column scrolls on its own.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.getByRole("button", { name: "Create recipe" }).click();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Weekend" })).toBeChecked();
 });
 
-test("Check shows the text it read beside the form, and an ingredient lights its line", async ({ page, open }) => {
+test("Check turns the method's column to the text it read, and an ingredient lights its line", async ({ page, open }) => {
   await open("/recipes/new?source=paste");
   const html = `<html><head><script type="application/ld+json">${JSON.stringify({
     "@context": "https://schema.org",
@@ -40,13 +56,14 @@ test("Check shows the text it read beside the form, and an ingredient lights its
   await page.getByRole("textbox", { name: "Pasted recipe" }).fill(html);
   await page.getByRole("button", { name: "Read the text" }).click();
 
-  const source = page.getByRole("region", { name: "Source" });
+  await page.getByRole("radio", { name: "What the import read" }).click();
+  const source = page.getByTestId("source-view");
   await expect(source).toBeVisible();
   await expect(source.locator("[data-used]")).toHaveCount(3);
 
-  await page.locator("[data-row-id]").first().hover();
+  await page.getByRole("region", { name: "Ingredients" }).locator("[data-row-id]").first().hover();
   await expect(source.locator("[data-lit]")).toHaveText(/1 onion, diced/);
 
-  await page.getByRole("radio", { name: "Preview" }).click();
-  await expect(page.getByRole("article", { name: "Preview" })).toContainText("Simmer the onion in the stock.");
+  await page.getByRole("radio", { name: "Method" }).click();
+  await expect(page.getByRole("textbox", { name: "Step 1" })).toHaveValue("Simmer the onion in the stock.");
 });

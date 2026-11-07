@@ -202,13 +202,13 @@ function typed(): RecipeDraft {
   };
 }
 
-test("Preview shows the recipe as it will be saved, and Edit brings the form back as it was", async () => {
+test("Preview in the save bar shows the recipe as it will be saved, and pressing it again brings the form back as it was", async () => {
   const user = userEvent.setup();
   await renderInRouter(<RecipeForm initial={typed()} units={[]} tags={[]} storage={memory()} existing={{ id: "r", slug: "fried-rice" }} />);
   expect(screen.queryByTestId("draft-preview")).not.toBeInTheDocument();
 
   await user.type(screen.getByRole("textbox", { name: /^Name/ }), " with egg");
-  await user.click(screen.getByRole("radio", { name: "Preview" }));
+  await user.click(screen.getByRole("button", { name: "Preview" }));
   const preview = screen.getByTestId("draft-preview");
   expect(within(preview).getByTestId("preview-name")).toHaveTextContent("Fried rice with egg");
   expect(within(preview).getAllByTestId("preview-step")[0]).toHaveTextContent("Fry the rice.");
@@ -216,7 +216,21 @@ test("Preview shows the recipe as it will be saved, and Edit brings the form bac
   // Save stays under the thumb either way.
   expect(screen.getAllByRole("button", { name: "Save changes" }).length).toBeGreaterThan(0);
 
-  await user.click(screen.getByRole("radio", { name: "Edit" }));
+  await user.click(screen.getByRole("button", { name: "Preview" }));
   expect(screen.queryByTestId("draft-preview")).not.toBeInTheDocument();
   expect(screen.getByRole("textbox", { name: /^Name/ })).toHaveValue("Fried rice with egg");
+});
+
+test("the phone's editor is the phone page's shape: the details, then Ingredients and Method as two tabs", async () => {
+  const user = userEvent.setup();
+  await renderInRouter(<RecipeForm initial={typed()} units={[]} tags={[]} storage={memory()} existing={{ id: "r", slug: "fried-rice" }} />);
+  expect(screen.getByRole("radiogroup", { name: "How you cook it" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Add course, cuisine and more" })).toBeInTheDocument();
+  const tabs = screen.getByRole("tablist", { name: "Recipe" });
+  expect(within(tabs).getByRole("tab", { name: /^Ingredients/ })).toHaveAttribute("aria-selected", "true");
+  // The other tab is drawn and hidden by its class (RecipeTabs), so a half-typed step keeps its words.
+  const panel = () => screen.getByRole("textbox", { name: "Step 1", hidden: true }).closest('[role="tabpanel"]')!;
+  expect(panel()).toHaveClass("hidden");
+  await user.click(within(tabs).getByRole("tab", { name: /^Method/ }));
+  expect(panel()).toHaveClass("flex");
 });

@@ -342,16 +342,20 @@ describe("detailsHint", () => {
 // form needs a router (useNavigate, useBlocker). There is no DOM here, so the
 // autofocus is asserted as the attribute React serialises, not as
 // document.activeElement.
+// The order is the phone's recipe page (decisions.md row 211; a route renders as a phone here): the photo, the name, the
+// description, the times, the servings, then the kind and what it is.
 describe("the head of the form", () => {
   const head = (html: string) =>
-    ['name="name"', 'name="description"', 'data-placeholder="image"', 'aria-label="Servings"'].map((needle) => html.indexOf(needle));
+    ['data-placeholder="image"', 'name="name"', 'name="description"', 'name="prepTime"', 'aria-label="Servings"', 'aria-label="How you cook it"'].map(
+      (needle) => html.indexOf(needle)
+    );
 
-  test("a new recipe: name, description, image, servings, and the name is autofocused", async () => {
+  test("a new recipe: the photo, the name, the description, the times, the servings, the kind, and the name is autofocused", async () => {
     const html = await renderRoute("/recipes/new?source=manual");
     const at = head(html);
     expect(at.every((index) => index >= 0)).toBe(true);
     expect(at).toEqual([...at].sort((a, b) => a - b));
-    const nameInput = /<input[^>]*name="name"[^>]*>/.exec(html)?.[0] ?? "";
+    const nameInput = /<textarea[^>]*name="name"[^>]*>/.exec(html)?.[0] ?? "";
     expect(nameInput).toContain('autofocus=""');
   });
 

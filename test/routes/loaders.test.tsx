@@ -528,15 +528,14 @@ describe("/recipes/$slug/edit", () => {
       parts: [{ name: "", ingredients: [], steps: [] }],
     });
     const html = await renderRoute("/recipes/lemon-tart/edit");
-    expect(html).toContain("Edit recipe");
     expect(html).toContain('aria-label="Edit recipe"');
-    expect(html).toMatch(/<input[^>]*name="name"[^>]*value="Lemon tart"/);
+    expect(html).toMatch(/<textarea[^>]*name="name"[^>]*>Lemon tart<\/textarea>/);
     expect(html).toMatch(/<textarea[^>]*name="description"[^>]*>Sharp and buttery\.<\/textarea>/);
     expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="6"/);
     // Rating and last made are set from the view page, not here (decisions row 51).
     expect(html).not.toContain('aria-label="Rated 4 out of 5"');
-    // A recipe with a yield and times opens its Details section (decisions row 50).
-    expect(html).toMatch(/<details open=""[^>]*aria-label="Details"/);
+    // A recipe with a yield opens it where the servings are (decisions rows 50, 211).
+    expect(html).toMatch(/<details open=""[^>]*aria-label="Yield"/);
     expect(html).toMatch(/<input[^>]*name="recipeYieldQuantity"[^>]*value="1"/);
     expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">gram<\/span>/);
     expect(html).toMatch(/<input[^>]*name="recipeYield"[^>]*value="tart"/);
@@ -565,26 +564,30 @@ describe("/recipes/$slug/edit", () => {
     expect(html).not.toContain("Unsaved changes");
   });
 
-  test("the editor's sections run in the view page's order (decisions rows 50, 135)", async () => {
+  test("the editor runs in the recipe page's order: the name, the ingredients, the method, then the notes (decisions rows 135, 211)", async () => {
     await callServerFn(createRecipe, {
       name: "Lemon tart",
       recipeYield: "tart",
       notes: [{ title: "Tip", text: "Chill the pastry." }],
       parts: [{ name: "", ingredients: [], steps: [{ text: "Bake it blind." }] }],
     });
-    const edit = await renderRoute("/recipes/lemon-tart/edit");
     const order = (html: string, needles: string[]) => needles.map((needle) => html.indexOf(needle));
-    const editAt = order(edit, ['name="name"', 'aria-label="Parts"', 'aria-label="Notes"', 'aria-label="Details"']);
+    const edit = await renderRoute("/recipes/lemon-tart/edit");
+    const editAt = order(edit, ['name="name"', 'aria-label="Ingredients"', 'aria-label="Method"', 'aria-label="Notes"']);
     for (const at of editAt) expect(at).toBeGreaterThan(-1);
-    expect(editAt[0]).toBeLessThan(editAt[1]!);
-    expect(editAt[1]).toBeLessThan(editAt[2]!);
-    expect(editAt[2]).toBeLessThan(editAt[3]!);
+    expect(editAt).toEqual([...editAt].sort((a, b) => a - b));
 
     // The view page runs the same way: the method, then the notes.
     const view = await renderRoute("/recipes/lemon-tart");
     const [lastStep, notes] = order(view, ["Bake it blind.", 'aria-label="Notes"']);
     expect(lastStep).toBeGreaterThan(-1);
     expect(notes).toBeGreaterThan(lastStep!);
+
+    // A desktop's three columns: what it is, then the ingredients, then the method; the notes stay in the first.
+    const wide = await renderRoute("/recipes/lemon-tart/edit", "desktop");
+    const wideAt = order(wide, ['data-testid="about-column"', 'aria-label="Notes"', 'aria-label="Ingredients"', 'aria-label="Method"']);
+    for (const at of wideAt) expect(at).toBeGreaterThan(-1);
+    expect(wideAt).toEqual([...wideAt].sort((a, b) => a - b));
   });
 
   test("shows both components of a two-component recipe in order, each with its rows read-only", async () => {
@@ -596,7 +599,6 @@ describe("/recipes/$slug/edit", () => {
       ],
     });
     const html = await renderRoute("/recipes/lemon-tart/edit");
-    expect(html).toContain('aria-label="Parts"');
     expect(html).toMatch(/<input[^>]*name="parts\.0\.name"[^>]*value="Pastry"/);
     expect(html).toMatch(/<input[^>]*name="parts\.1\.name"[^>]*value="Filling"/);
     const pastry = html.indexOf('value="Pastry"');
@@ -606,7 +608,9 @@ describe("/recipes/$slug/edit", () => {
     expect(html.indexOf("Rub the butter in.")).toBeGreaterThan(pastry);
     expect(html.indexOf("Rub the butter in.")).toBeLessThan(filling);
     expect(html.indexOf("Whisk everything together.")).toBeGreaterThan(filling);
-    expect(html.match(/aria-label="Remove part \d"/g)).toHaveLength(2);
+    // Each part is moved and removed from its own menu, beside its name.
+    expect(html).toContain('aria-label="Pastry actions"');
+    expect(html).toContain('aria-label="Filling actions"');
     expect(html).toContain(">Add part<");
   });
 
@@ -707,13 +711,13 @@ describe("/recipes/new", () => {
     const html = await renderRoute("/recipes/new?source=manual");
     expect(html).toContain("New recipe");
     expect(html).toContain('aria-label="New recipe"');
-    expect(html).toMatch(/<input[^>]*name="name"[^>]*value=""/);
+    expect(html).toMatch(/<textarea[^>]*name="name"[^>]*><\/textarea>/);
     expect(html).toMatch(/<textarea[^>]*name="description"[^>]*><\/textarea>/);
     expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="0"/);
     expect(html).not.toContain('aria-label="Rated 0 out of 5"'); // decisions row 51
-    // A blank recipe has nothing in Details, so it opens folded — but the
-    // fields are still in the form (decisions row 50).
-    expect(html).toMatch(/<details data-disclosure[^>]*aria-label="Details"/);
+    // A blank recipe makes nothing, so the yield opens folded — but its
+    // fields are still in the form (decisions rows 50, 211).
+    expect(html).toMatch(/<details data-disclosure[^>]*aria-label="Yield"/);
     expect(html).not.toContain('<details open=""');
     expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">No unit<\/span>/);
     expect(html).toMatch(/<input[^>]*name="prepTime"[^>]*value=""/);

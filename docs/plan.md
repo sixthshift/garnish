@@ -254,6 +254,12 @@ Decisions.md row 209: seven layers of fixed values (course, meal, cuisine, diet,
 - [x] **M49.7 The planner.** Dinners come from mains (or recipes with no course said), never a building block; a breakfast or lunch slot prefers a recipe that suits it; the model's library line carries each recipe's facets.
 - [x] **M49.8 Docs and e2e.**
 
+## M50 The editor in the recipe page's shape
+
+Decisions.md row 211, from `docs/mockups/editor.html`.
+
+- [x] **M50.1 The editor mirrors the page.** `RecipeAbout` (the left column's fields), `PartsColumns` (ingredients and method by part), `desktop/EditorColumns` (three columns, the import's text in the method's column), `mobile/PhoneEditor` (the page's shape and tabs, Preview in the save bar); ingredient lines read back and open in place on a desktop; steps as numbered cards; `KindChoice` and `FacetField` controlled, kept in the draft until Save; `ImageUpload`'s hero variant. Gone: `EditorBeside`, `EditorWithPreview`, `RecipeHead`, `RecipeDetails`, `PartsEditor`.
+
 ## Blocked
 
 _(none)_
@@ -366,3 +372,4 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-11-07  M49.8  done   —        opus   e2e/facets.spec.ts (set from the page, kept on reload, a chip narrows the library); fill.spec follows "Mark recipes"; gate 4290 unit, e2e 75
 2026-11-07  M49    note   —        opus   left open: import's Check does not show the facets yet (the editor carries and saves them); Home's "haven't made in a while" still lists any rotation recipe, a sauce included; "grill" maps to no method (the oven's grill in en-AU); the MCP write merges by layer
 2026-11-07  M49.4  note   —        opus   reversed at Jason's word (row 210): no marking mode at all, row 195's included; the kind and the facets are set on the recipe page only
+2026-11-07  M50.1  done   —        opus   row 211; the editor in the recipe page's shape on both layouts, from docs/mockups/editor.html; e2e helper createRecipe types into the Ingredients and Method regions (the Method tab on a phone); gate 4263 unit, e2e 75

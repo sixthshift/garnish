@@ -28,5 +28,5 @@ test("the JSON view is offered but closed, so the form is what renders", async (
   expect(html).not.toContain('data-testid="json-view"');
   expect(html).not.toContain('aria-label="Recipe JSON"');
   expect(html).not.toContain('data-testid="json-error"');
-  expect(html).toMatch(/<input[^>]*name="name"/); // the fields, not the textarea
+  expect(html).toMatch(/<textarea[^>]*name="name"/); // the fields, not the JSON
 });

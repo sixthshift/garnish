@@ -14,9 +14,16 @@ export type ImageUploadProps = {
   onRemove?: () => void;
   disabled?: boolean;
   className?: string;
+  /**
+   * `stacked` (the default): the picture, the buttons under it. `hero`: the
+   * picture fills its box edge to edge and the buttons sit on it, frosted, as
+   * the recipe editor's photo does where the recipe page's is (decisions.md
+   * row 211). The box's size is the caller's, through `className`.
+   */
+  variant?: "stacked" | "hero";
 };
 
-export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, className }: ImageUploadProps) {
+export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, className, variant = "stacked" }: ImageUploadProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -41,15 +48,21 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, c
     onRemove?.();
   };
 
+  const hero = variant === "hero";
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div className={cn(hero ? "relative overflow-hidden bg-bg-subtle-pressed" : "flex flex-col gap-3", className)} data-image-upload={variant}>
       {hasImage ? (
-        <img src={src} alt="" className="aspect-video w-full rounded-xl object-cover" data-preview={preview !== null ? "true" : undefined} />
+        <img
+          src={src}
+          alt=""
+          className={hero ? "absolute inset-0 size-full object-cover" : "aspect-video w-full rounded-xl object-cover"}
+          data-preview={preview !== null ? "true" : undefined}
+        />
       ) : (
         <div
           data-placeholder="image"
           aria-hidden="true"
-          className="flex aspect-video w-full items-center justify-center rounded-xl bg-bg-subtle text-fg-subtle"
+          className={cn("flex w-full items-center justify-center text-fg-subtle", hero ? "absolute inset-0" : "aspect-video rounded-xl bg-bg-subtle")}
         >
           <svg
             aria-hidden="true"
@@ -68,7 +81,7 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, c
           </svg>
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={cn("flex flex-wrap items-center gap-2", hero && "absolute right-3 bottom-3 z-10")}>
         <input
           ref={inputRef}
           id={inputId}
@@ -78,12 +91,28 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, c
           disabled={disabled}
           onChange={(event) => choose(event.target.files?.[0])}
         />
-        <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled} onClick={() => inputRef.current?.click()}>
+        <Button
+          type="button"
+          variant="outline"
+          intent="neutral"
+          size="sm"
+          disabled={disabled}
+          className={cn(hero && FROSTED)}
+          onClick={() => inputRef.current?.click()}
+        >
           {hasImage ? "Change image" : "Choose image"}
         </Button>
         {/* Neutral (rule 5): nothing is lost until the form it sits in is saved, and Cancel keeps the image. */}
         {hasImage && onRemove !== undefined && (
-          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} onClick={remove}>
+          <Button
+            type="button"
+            variant={hero ? "outline" : "ghost"}
+            intent="neutral"
+            size="sm"
+            disabled={disabled}
+            className={cn(hero && FROSTED)}
+            onClick={remove}
+          >
             Remove image
           </Button>
         )}
@@ -91,6 +120,9 @@ export function ImageUpload({ image, previewUrl, onSelect, onRemove, disabled, c
     </div>
   );
 }
+
+/** A button over the photo, frosted so it reads on light and dark alike. */
+const FROSTED = "border-transparent bg-bg-normal/85 backdrop-blur-sm hover:bg-bg-normal";
 
 /** The URL to show, most local first: a just-picked file, the stored image, then a remote one an import found. Null means placeholder. Pure. */
 export function imageSrc(preview: string | null, image: string | null | undefined, previewUrl?: string | null): string | null {

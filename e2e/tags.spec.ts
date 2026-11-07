@@ -62,13 +62,18 @@ test("the editor finds the household's tags as you type, and creates one only wh
   const shelf = unique("Shelf").replace(" ", "");
   const made = `S${shelf.slice(1).toLowerCase()}`;
 
-  /** A new recipe's Details, with the tag field in reach. */
+  /** A step in the Method tab (decisions.md row 211); the tags sit near the top of the form. */
+  const addStep = async () => {
+    await p.getByRole("tab", { name: /^Method/ }).click();
+    await p.getByRole("region", { name: "Method" }).getByRole("textbox", { name: "New steps" }).fill("Cook it.");
+    await p.getByRole("region", { name: "Method" }).getByRole("button", { name: "Add", exact: true }).click();
+  };
+
+  /** A new recipe with a step, the tag field in reach. */
   const details = async (name: string) => {
     await open("/recipes/new?source=manual");
     await p.getByRole("textbox", { name: "Name" }).fill(name);
-    await p.getByRole("textbox", { name: "New steps" }).fill("Cook it.");
-    await p.getByRole("region", { name: "Parts" }).getByRole("button", { name: "Add", exact: true }).last().click();
-    await p.getByText("Details", { exact: true }).click();
+    await addStep();
   };
 
   const first = unique("Tagged Soup");
@@ -96,9 +101,9 @@ test("Settings › Tags: a rename onto another tag's name merges, and a tag nobo
   const name = unique("Tidy Soup");
   await open("/recipes/new?source=manual");
   await p.getByRole("textbox", { name: "Name" }).fill(name);
-  await p.getByRole("textbox", { name: "New steps" }).fill("Cook it.");
-  await p.getByRole("region", { name: "Parts" }).getByRole("button", { name: "Add", exact: true }).last().click();
-  await p.getByText("Details", { exact: true }).click();
+  await p.getByRole("tab", { name: /^Method/ }).click();
+  await p.getByRole("region", { name: "Method" }).getByRole("textbox", { name: "New steps" }).fill("Cook it.");
+  await p.getByRole("region", { name: "Method" }).getByRole("button", { name: "Add", exact: true }).click();
   await p.getByRole("combobox", { name: "Add a tag" }).fill(`${keep}, ${dupe}, ${junk}`);
   await p.getByRole("combobox", { name: "Add a tag" }).press("Enter");
   await p.getByRole("button", { name: "Create recipe" }).click();

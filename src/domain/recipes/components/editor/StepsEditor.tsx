@@ -1,5 +1,6 @@
 import { Card } from "@sixthshift/design-system/card";
 import { EmptyBoundary } from "@sixthshift/design-system/empty-boundary";
+import { Muted } from "@sixthshift/design-system/muted";
 import { toast } from "@sixthshift/design-system/overlay";
 import { useState } from "react";
 import { BulkAddSheet } from "../../../../components/ui/bulk/BulkAddSheet";
@@ -26,9 +27,25 @@ export type StepsEditorProps = {
   previewSteps?: readonly string[];
   /** POSTs a picked photo and resolves with the stored file name. Injectable so a test never touches the network. */
   uploadImage?: (recipeId: string, stepId: string, file: File) => Promise<string>;
+  /**
+   * With no steps, one quiet line rather than the paste box: a part of a
+   * recipe with several, whose steps may well all be in another (the editor's
+   * columns, decisions.md row 211). The header's Bulk add and Add step remain.
+   */
+  quietWhenEmpty?: boolean;
 };
 
-export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {}, disabled, previewSteps, uploadImage = uploadStepImage }: StepsEditorProps) {
+export function StepsEditor({
+  draft,
+  pi,
+  onChange,
+  heading = "Steps",
+  errors = {},
+  disabled,
+  previewSteps,
+  uploadImage = uploadStepImage,
+  quietWhenEmpty = false,
+}: StepsEditorProps) {
   const [bulkOpen, setBulkOpen] = useState(false);
   // Step ids being previewed rather than edited. Keyed by id, not
   // index, so inserting a step above does not move the preview to another one.
@@ -105,56 +122,63 @@ export function StepsEditor({ draft, pi, onChange, heading = "Steps", errors = {
         disabled={disabled}
         onAdd={(lines) => onChange(addBulkSteps(draft, pi, lines))}
       />
-      <Card size="sm">
-        <EmptyBoundary
-          isEmpty={steps.length === 0}
-          fallback={
-            <BulkInlineAdd
-              itemName="step"
-              disabled={disabled}
-              placeholder="The method, a blank line between steps"
-              splitLines={paragraphs}
-              onAdd={(lines) => onChange(addBulkSteps(draft, pi, lines))}
-            />
-          }
-        >
-          <ReorderList
-            items={steps}
-            keyOf={(step) => step.id ?? "unsaved"}
-            itemName="step"
-            // A step is several lines (its text, its links, a photo): its controls sit at the top, not halfway down (critique #15b).
-            align="start"
-            narrow="row"
-            onReorder={(next) => onChange(withSteps(draft, pi, next))}
-            renderItem={(step, si, reorder) => {
-              const id = step.id ?? "";
-              return (
-                <StepEditRow
-                  draft={draft}
-                  pi={pi}
-                  si={si}
-                  step={step}
-                  reorder={reorder}
-                  part={part}
-                  path={path}
-                  last={si === last}
-                  error={errors[`${path}.${si}.text`]}
-                  preview={previewing.has(id)}
-                  pickerText={picker[id] ?? ""}
-                  disabled={disabled}
-                  onChange={onChange}
-                  onTogglePreview={() => togglePreview(id)}
-                  onPickerText={(text) => setPicker((current) => ({ ...current, [id]: text }))}
-                  onEnter={() => enterOnStep(si)}
-                  onAddImage={(file) => {
-                    if (step.id !== undefined) void addImage(si, step.id, file);
-                  }}
-                />
-              );
-            }}
-          />
-        </EmptyBoundary>
-      </Card>
+      <EmptyBoundary
+        isEmpty={steps.length === 0}
+        fallback={
+          quietWhenEmpty ? (
+            <Muted as="p" className="text-sm" data-empty="steps">
+              No steps of its own
+            </Muted>
+          ) : (
+            <Card size="sm">
+              <BulkInlineAdd
+                itemName="step"
+                disabled={disabled}
+                placeholder="The method, a blank line between steps"
+                splitLines={paragraphs}
+                onAdd={(lines) => onChange(addBulkSteps(draft, pi, lines))}
+              />
+            </Card>
+          )
+        }
+      >
+        {/* Each step is its own card, as the recipe page's are; no card round them. */}
+        <ReorderList
+          items={steps}
+          keyOf={(step) => step.id ?? "unsaved"}
+          itemName="step"
+          // A step is several lines (its text, its links, a photo): its controls sit at the top, not halfway down (critique #15b).
+          align="start"
+          narrow="row"
+          onReorder={(next) => onChange(withSteps(draft, pi, next))}
+          renderItem={(step, si, reorder) => {
+            const id = step.id ?? "";
+            return (
+              <StepEditRow
+                draft={draft}
+                pi={pi}
+                si={si}
+                step={step}
+                reorder={reorder}
+                part={part}
+                path={path}
+                last={si === last}
+                error={errors[`${path}.${si}.text`]}
+                preview={previewing.has(id)}
+                pickerText={picker[id] ?? ""}
+                disabled={disabled}
+                onChange={onChange}
+                onTogglePreview={() => togglePreview(id)}
+                onPickerText={(text) => setPicker((current) => ({ ...current, [id]: text }))}
+                onEnter={() => enterOnStep(si)}
+                onAddImage={(file) => {
+                  if (step.id !== undefined) void addImage(si, step.id, file);
+                }}
+              />
+            );
+          }}
+        />
+      </EmptyBoundary>
     </div>
   );
 }

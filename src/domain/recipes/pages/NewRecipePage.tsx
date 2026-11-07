@@ -33,7 +33,8 @@ export function NewRecipePage() {
   const [leaving, setLeaving] = useState(false);
   const [blank] = useState(emptyDraft);
   // The editor, on Check or typed by hand, sits beside its preview across a desktop's width (decisions.md row 207); a phone's is one column.
-  const editorWidth = useLayout() === "desktop" ? "full" : "focus";
+  // A desktop's editor is the recipe page's three columns, a screen tall and edge to edge (decisions.md row 211): no page around it.
+  const desktop = useLayout() === "desktop";
 
   const choose = (kind: SourceKind | null) => void navigate({ search: kind === null ? {} : { source: kind }, replace: true });
   const discard = () => {
@@ -67,47 +68,62 @@ export function NewRecipePage() {
   }
 
   if (imported !== null) {
+    const steps = <ImportSteps current="Check" model={aiAvailable} />;
+    const form = (
+      <RecipeForm
+        above={desktop ? steps : undefined}
+        key={imported.version}
+        initial={imported.draft}
+        units={units}
+        tags={tags}
+        importedImageUrl={imported.check.imageUrl}
+        isImport
+        importCheck={{
+          pending: imported.pending,
+          note: imported.check.note,
+          duplicate: imported.check.duplicate,
+          suggestedTags: imported.check.suggestedTags,
+          leftOutTags: imported.check.leftOutTags,
+          pastedText: imported.check.pastedText,
+          sourceText: imported.check.sourceText,
+          onBack: () => setLeaving(true),
+        }}
+        continueWith={
+          aiAvailable
+            ? {
+                label: "Continue",
+                onContinue: (draft, file, pending) => setImported({ ...imported, draft, pending, file: file ?? imported.file, stage: "style" }),
+                onBack: () => setLeaving(true),
+              }
+            : undefined
+        }
+      />
+    );
+    if (desktop) {
+      return (
+        <>
+          {form}
+          {leave}
+        </>
+      );
+    }
     return (
-      <Page width={editorWidth}>
+      <Page width="focus">
         <PageHeader title="New recipe" />
-        <ImportSteps current="Check" model={aiAvailable} />
-        <RecipeForm
-          key={imported.version}
-          initial={imported.draft}
-          units={units}
-          tags={tags}
-          importedImageUrl={imported.check.imageUrl}
-          isImport
-          importCheck={{
-            pending: imported.pending,
-            note: imported.check.note,
-            duplicate: imported.check.duplicate,
-            suggestedTags: imported.check.suggestedTags,
-            leftOutTags: imported.check.leftOutTags,
-            pastedText: imported.check.pastedText,
-            sourceText: imported.check.sourceText,
-            onBack: () => setLeaving(true),
-          }}
-          continueWith={
-            aiAvailable
-              ? {
-                  label: "Continue",
-                  onContinue: (draft, file, pending) => setImported({ ...imported, draft, pending, file: file ?? imported.file, stage: "style" }),
-                  onBack: () => setLeaving(true),
-                }
-              : undefined
-          }
-        />
+        {steps}
+        {form}
         {leave}
       </Page>
     );
   }
 
   if (source === "manual") {
+    const form = <RecipeForm initial={blank} units={units} tags={tags} />;
+    if (desktop) return form;
     return (
-      <Page width={editorWidth}>
+      <Page width="focus">
         <PageHeader title="New recipe" />
-        <RecipeForm initial={blank} units={units} tags={tags} />
+        {form}
       </Page>
     );
   }

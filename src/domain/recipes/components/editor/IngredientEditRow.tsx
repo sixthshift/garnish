@@ -4,7 +4,6 @@ import { Button } from "@sixthshift/design-system/button";
 import { Select } from "@sixthshift/design-system/select";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
-import { cn } from "@sixthshift/design-system/utils";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "../../../../components/ui/icons";
 import { Menu } from "../../../../components/ui/Menu";
@@ -15,7 +14,7 @@ import { type DraftIngredient, type FieldErrors, ingredientSummary } from "../..
 import type { Unit } from "../../reference";
 import { PendingLine, useImportCheck } from "./ImportCheck";
 import { IngredientAlternativesSheet } from "./IngredientAlternativesSheet";
-import { EMPTY_INGREDIENT_SUMMARY, INGREDIENT_COLUMNS, IngredientFields } from "./IngredientFields";
+import { EMPTY_INGREDIENT_SUMMARY, IngredientFields } from "./IngredientFields";
 import { checkedRead, useLineSource } from "./mobile/LineSource";
 import { FlagDot, ReadLine } from "./mobile/ReadLine";
 import { useIngredientEditRow } from "./useIngredientEditRow";
@@ -55,6 +54,9 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
     setSheetOpen(true);
     lines.doneEditing();
   }, [lines, ingredient.id]);
+  // A desktop's line, open in place into its fields (decisions.md row 211); a phone's opens its sheet instead.
+  // A line with nothing in it yet (just added) opens at once, to be typed into.
+  const [inlineOpen, setInlineOpen] = useState(() => sheetOpen || ingredientSummary(ingredient) === "");
   const [alternativesOpen, setAlternativesOpen] = useState(false);
   const alternativeCount = ingredient.alternatives?.length ?? 0;
   const { textOnly, setMode, fieldProps } = useIngredientEditRow({ ingredient, path, label, units, errors, disabled, onPatch, onEnter });
@@ -97,7 +99,9 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   const desktop = useLayout() === "desktop";
   const summary = ingredientSummary(ingredient);
   const parse = fieldProps.parse;
-  const read = desktop ? null : checkedRead(check, ingredient);
+  const read = checkedRead(check, ingredient);
+  const hasError = Object.keys(errors).some((key) => key.startsWith(`${path}.`));
+  const readBack = read === null ? <span className="text-fg-subtle">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span> : <ReadLine read={read} />;
   const flagged = check?.flags.some((flag) => flag.id === ingredient.id) === true;
 
   // On a desktop the menu holds what the line leaves out (Fixed, Text only,
@@ -158,16 +162,49 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   );
 
   return (
-    // `data-row-id` is what a desktop's Check lights the source line by (desktop/EditorBeside).
+    // `data-row-id` is what a desktop's Check lights the source line by (desktop/EditorColumns).
     <div className="flex flex-col gap-1" data-row-id={ingredient.id}>
       <div className="flex items-center gap-2 desktop:items-start" data-ingredient={ii} data-mode={textOnly ? "text" : "structured"}>
         {reorder !== undefined && <span className="flex shrink-0 desktop:pt-1">{reorder.handle}</span>}
         <div className="min-w-0 flex-1">
           {/* Phone: one line per row, tapped to open the sheet. On a desktop the fields sit on one line. */}
           {desktop ? (
-            <div data-inline-fields="">
-              <IngredientFields {...fieldProps} layout="line" />
-            </div>
+            // A line Save found wrong stays open, its error beside the field it is about.
+            inlineOpen || sheetOpen || hasError ? (
+              // Open: the line's fields where the line was, with what the page said under them.
+              <div className="flex flex-col gap-2 rounded-lg border border-border-brand bg-bg-normal p-3 shadow-sm" data-inline-fields="">
+                <IngredientFields {...fieldProps} showOriginalText />
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    intent="neutral"
+                    size="sm"
+                    onClick={() => {
+                      setInlineOpen(false);
+                      setSheetOpen(false);
+                    }}
+                  >
+                    Done
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // Closed: the line read back as the recipe page shows it; a click opens it.
+              <button
+                type="button"
+                className="flex w-full items-start gap-2 rounded-md px-1 py-1 text-left text-base hover:bg-bg-subtle-hovered focus-visible:outline-2 focus-visible:outline-border-brand"
+                aria-label={`Edit ${label.toLowerCase()}`}
+                aria-expanded={false}
+                disabled={disabled}
+                onClick={() => setInlineOpen(true)}
+                data-flagged={flagged ? "true" : undefined}
+                data-read-back=""
+              >
+                {flagged && <FlagDot />}
+                <span className="min-w-0 flex-1">{readBack}</span>
+              </button>
+            )
           ) : (
             <button
               type="button"
@@ -180,9 +217,7 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
             >
               {/* How garnish read the line, apart: the amount as a chip, the food in bold, the note quieter (decisions.md row 208). */}
               {flagged && <FlagDot className="mt-0 self-center" />}
-              <span className="min-w-0 flex-1">
-                {read === null ? <span className="text-fg-subtle">{summary === "" ? EMPTY_INGREDIENT_SUMMARY : summary}</span> : <ReadLine read={read} />}
-              </span>
+              <span className="min-w-0 flex-1">{readBack}</span>
               <ChevronRight title="Open" />
             </button>
           )}
@@ -196,7 +231,7 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
           units={units}
           onPatch={onPatch}
         />
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen} size="sm" closable aria-label={label}>
+        <Sheet open={sheetOpen && !desktop} onOpenChange={setSheetOpen} size="sm" closable aria-label={label}>
           <Sheet.Header>
             <h2 className="text-base font-medium">{label}</h2>
           </Sheet.Header>
@@ -211,29 +246,6 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
         </Sheet>
       </div>
       {check !== null && ingredient.id !== undefined && <PendingLine id={ingredient.id} label={label} state={check} disabled={disabled} />}
-    </div>
-  );
-}
-
-/**
- * The column labels over the editor's lines, laid out like a row (room for the
- * handle, the fields' grid, room for the menu), so Amount sits over every
- * amount. Shown only where the four columns are: on a desktop, and where the row is
- * wide enough for them. Each field still names itself ("Ingredient 3 food").
- */
-export function IngredientColumnsHeader() {
-  return (
-    <div className="flex items-end gap-2 text-xs font-medium text-fg-subtle">
-      <span className="w-6 shrink-0" />
-      <div className="@container/fields min-w-0 flex-1">
-        <div className={cn(INGREDIENT_COLUMNS, "mb-2 hidden @min-[36rem]/fields:grid")}>
-          <span className="px-1">Amount</span>
-          <span className="px-1">Unit</span>
-          <span className="px-1">Food</span>
-          <span className="px-1">Note</span>
-        </div>
-      </div>
-      <span className="w-9 shrink-0" />
     </div>
   );
 }
