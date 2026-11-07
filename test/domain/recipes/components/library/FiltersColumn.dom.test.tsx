@@ -6,6 +6,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { FiltersColumn, type FiltersColumnProps } from "../../../../../src/domain/recipes/components/library/desktop/FiltersColumn";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { TagUsage } from "../../../../../src/domain/recipes/reference";
 
 const tag = (name: string, recipes: number): TagUsage => ({ id: `tag-${name}`, name, slug: name.toLowerCase(), recipes });
@@ -20,6 +21,9 @@ function column(overrides: Partial<FiltersColumnProps> = {}) {
     match: "any",
     foods: [],
     favourite: false,
+    facets: noFacets(),
+    facetCounts: [],
+    onFacetsChange: vi.fn(),
     onTagsChange: vi.fn(),
     onMatchChange: vi.fn(),
     onFoodsChange: vi.fn(),
@@ -102,4 +106,38 @@ test("Clear filters appears once something is set, and clears", async () => {
 test("nothing set, nothing to clear", () => {
   column();
   expect(screen.queryByRole("button", { name: /Clear filters/ })).toBeNull();
+});
+
+// What a recipe is (decisions.md row 209): a list a layer under the shelves.
+
+const counts = [
+  { layer: "course" as const, value: "main", count: 9 },
+  { layer: "course" as const, value: "sauce", count: 2 },
+  { layer: "cuisine" as const, value: "thai", count: 3 },
+];
+
+test("each layer some recipe has lists its values with their counts, and a layer none has is left out", () => {
+  column({ facetCounts: counts });
+  const course = within(screen.getByRole("region", { name: "Course" }));
+  expect(course.getByRole("button", { name: "Main 9" })).toHaveAttribute("aria-pressed", "false");
+  expect(course.getByRole("button", { name: "Sauce or dressing 2" })).toBeInTheDocument();
+  expect(course.queryByRole("button", { name: /Side/ })).toBeNull();
+  expect(screen.getByRole("region", { name: "Cuisine" })).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Diet" })).toBeNull();
+});
+
+test("pressing a value asks for it beside the layer's others, and pressing it again lets it go", async () => {
+  const user = userEvent.setup();
+  const props = column({ facetCounts: counts, facets: { ...noFacets(), course: ["sauce"] } });
+  const course = within(screen.getByRole("region", { name: "Course" }));
+  expect(course.getByRole("button", { name: "Sauce or dressing 2" })).toHaveAttribute("aria-pressed", "true");
+  await user.click(course.getByRole("button", { name: "Main 9" }));
+  expect(props.onFacetsChange).toHaveBeenLastCalledWith({ ...noFacets(), course: ["main", "sauce"] });
+  await user.click(course.getByRole("button", { name: "Sauce or dressing 2" }));
+  expect(props.onFacetsChange).toHaveBeenLastCalledWith(noFacets());
+});
+
+test("a value asked for that no recipe has now still shows, so it can be let go", () => {
+  column({ facetCounts: [], facets: { ...noFacets(), season: ["winter"] } });
+  expect(within(screen.getByRole("region", { name: "Season" })).getByRole("button", { name: "Winter 0" })).toHaveAttribute("aria-pressed", "true");
 });

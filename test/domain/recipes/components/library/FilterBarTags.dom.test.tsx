@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { expect, test } from "vitest";
 import { FilterBar } from "../../../../../src/domain/recipes/components/library/FilterBar";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { TagUsage } from "../../../../../src/domain/recipes/reference";
 
 const tag = (name: string, recipes: number): TagUsage => ({ id: name, name, slug: name.toLowerCase().replace(/ /g, "-"), recipes });
@@ -23,6 +24,9 @@ function Harness() {
       match="any"
       foods={[]}
       favourite={false}
+      facets={noFacets()}
+      facetCounts={[]}
+      onFacetsChange={() => undefined}
       onTagsChange={setTags}
       onMatchChange={() => {}}
       onFoodsChange={() => {}}

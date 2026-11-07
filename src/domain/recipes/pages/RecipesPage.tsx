@@ -2,6 +2,7 @@ import { getRouteApi } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { arrayParam, newSeed, pickRandom } from "../../../lib/lists";
 import { useLayout } from "../../../lib/useLayout";
+import { facetFilterCount, facetSearch, facetsFromSearch, noFacetSearch } from "../components/facets/facetSearch";
 import { activeFilterCount } from "../components/library/ActiveFilters";
 import { DesktopLibrary } from "../components/library/desktop/DesktopLibrary";
 import { FiltersColumn } from "../components/library/desktop/FiltersColumn";
@@ -21,22 +22,13 @@ const route = getRouteApi("/recipes/");
  * write the same search params.
  */
 export function RecipesPage() {
-  const { recipes: found, tags, foods, shelves } = route.useLoaderData();
-  const {
-    q = "",
-    tag,
-    tags: tagsParam,
-    match = "any",
-    foods: foodsParam = [],
-    favourite = false,
-    shelf,
-    sort: sortParam,
-    dir: dirParam,
-    panel,
-  } = route.useSearch();
+  const { recipes: found, tags, foods, shelves, facetCounts } = route.useLoaderData();
+  const search = route.useSearch();
+  const facets = facetsFromSearch(search);
+  const { q = "", tag, tags: tagsParam, match = "any", foods: foodsParam = [], favourite = false, shelf, sort: sortParam, dir: dirParam, panel } = search;
   const navigate = route.useNavigate();
   const selected = selectedTags(tag, tagsParam);
-  const filtered = Boolean(q || selected.length > 0 || foodsParam.length > 0 || favourite || shelf);
+  const filtered = Boolean(q || selected.length > 0 || foodsParam.length > 0 || favourite || shelf || facetFilterCount(facets) > 0);
   const desktop = useLayout() === "desktop";
   const { key: sort, dir } = resolveSort(sortParam, dirParam);
   // Each card's tags, most used first, so its few are the household's main shelves.
@@ -56,14 +48,19 @@ export function RecipesPage() {
     match,
     foods: foodsParam,
     favourite,
+    facets,
+    facetCounts,
+    onFacetsChange: (next) => void navigate({ search: (prev) => ({ ...prev, ...facetSearch(next) }) }),
     onTagsChange: (next) => void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: arrayParam(next) }) }),
     onMatchChange: (next) => void navigate({ search: (prev) => ({ ...prev, match: next === "any" ? undefined : next }) }),
     onFoodsChange: (next) => void navigate({ search: (prev) => ({ ...prev, foods: arrayParam(next) }) }),
     onFavouriteChange: (next) => void navigate({ search: (prev) => ({ ...prev, favourite: next ? true : undefined }) }),
   };
   const onClearFilters = () =>
-    void navigate({ search: (prev) => ({ ...prev, tag: undefined, tags: undefined, foods: undefined, favourite: undefined, shelf: undefined }) });
-  const filterCount = activeFilterCount(selected, foodsParam, favourite);
+    void navigate({
+      search: (prev) => ({ ...prev, ...noFacetSearch(), tag: undefined, tags: undefined, foods: undefined, favourite: undefined, shelf: undefined }),
+    });
+  const filterCount = activeFilterCount(selected, foodsParam, favourite, facets);
   const [marking, setMarking] = useState(false);
 
   const onDice = () => {
@@ -111,7 +108,7 @@ export function RecipesPage() {
       filtered={filtered}
       filters={filterBar}
       // Favourites has its own chip on a phone, so the button counts what only the sheet shows.
-      filterCount={activeFilterCount(selected, foodsParam, false)}
+      filterCount={activeFilterCount(selected, foodsParam, false, facets)}
       onClearFilters={onClearFilters}
       shelf={shelf}
       onShelfChange={onShelfChange}

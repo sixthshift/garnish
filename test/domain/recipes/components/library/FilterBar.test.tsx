@@ -6,6 +6,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { FilterBar } from "../../../../../src/domain/recipes/components/library/FilterBar";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 
 const weeknight = { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", name: "Weeknight", slug: "weeknight", recipes: 6 };
 const pasta = { id: "d2d2d2d2-d2d2-4d2d-8d2d-d2d2d2d2d2d2", name: "Pasta", slug: "pasta", recipes: 2 };
@@ -42,6 +43,9 @@ describe("FilterBar", () => {
         match="any"
         foods={[]}
         favourite={false}
+        facets={noFacets()}
+        facetCounts={[]}
+        onFacetsChange={noop}
         onTagsChange={noop}
         onMatchChange={noop}
         onFoodsChange={noop}
@@ -62,6 +66,9 @@ describe("FilterBar", () => {
         match="any"
         foods={[]}
         favourite={false}
+        facets={noFacets()}
+        facetCounts={[]}
+        onFacetsChange={noop}
         onTagsChange={noop}
         onMatchChange={noop}
         onFoodsChange={noop}
@@ -82,6 +89,9 @@ describe("FilterBar", () => {
         match="all"
         foods={[]}
         favourite={false}
+        facets={noFacets()}
+        facetCounts={[]}
+        onFacetsChange={noop}
         onTagsChange={noop}
         onMatchChange={noop}
         onFoodsChange={noop}
@@ -102,6 +112,9 @@ describe("FilterBar", () => {
         match="any"
         foods={[flour.id]}
         favourite={false}
+        facets={noFacets()}
+        facetCounts={[]}
+        onFacetsChange={noop}
         onTagsChange={noop}
         onMatchChange={noop}
         onFoodsChange={noop}
@@ -121,6 +134,9 @@ describe("FilterBar", () => {
         match="any"
         foods={[]}
         favourite={true}
+        facets={noFacets()}
+        facetCounts={[]}
+        onFacetsChange={noop}
         onTagsChange={noop}
         onMatchChange={noop}
         onFoodsChange={noop}
@@ -128,5 +144,31 @@ describe("FilterBar", () => {
       />
     );
     expect(html).toMatch(/data-state="checked"[^>]*(?:\/>|>)/);
+  });
+});
+
+describe("FilterBar's layers (decisions.md row 209)", () => {
+  test("a row of toggles a layer some recipe has, with counts; none when nothing has been said", () => {
+    const props = {
+      allTags: [],
+      allFoods: [],
+      tags: [],
+      match: "any" as const,
+      foods: [],
+      favourite: false,
+      onTagsChange: noop,
+      onMatchChange: noop,
+      onFoodsChange: noop,
+      onFavouriteChange: noop,
+      onFacetsChange: noop,
+    };
+    const html = renderToString(
+      <FilterBar {...props} facets={{ ...noFacets(), diet: ["vegan"] }} facetCounts={[{ layer: "diet", value: "vegetarian", count: 5 }]} />
+    );
+    expect(html).toContain('aria-label="Filter by diet"');
+    expect(html).toContain("Vegetarian");
+    expect(html).toContain("Vegan");
+    expect(html).not.toContain('aria-label="Filter by course"');
+    expect(renderToString(<FilterBar {...props} facets={noFacets()} facetCounts={[]} />)).not.toContain("Filter by diet");
   });
 });

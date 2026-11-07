@@ -3,8 +3,9 @@ import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Switch } from "@sixthshift/design-system/switch";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { type ReactNode, useState } from "react";
-import type { ShelfCounts, SortDir, SortKey } from "../../../recipe";
+import { FACET_LAYERS, facetLabel, LAYER_NAMES, type ShelfCounts, type SortDir, type SortKey } from "../../../recipe";
 import type { TagUsage } from "../../../reference";
+import { countOf, offeredValues, toggleFacet } from "../../facets/facetSearch";
 import type { FilterBarProps } from "../FilterBar";
 import { FoodFilter } from "../FoodFilter";
 import { type Shelf, shelfFromValue, shelfOptions } from "../ShelfToggle";
@@ -70,7 +71,9 @@ function FacetToggle({
  * foods, favourites and the order, each set through the address as the phone's
  * sheet sets them. It scrolls on its own, so the wall beside it keeps its
  * place. The shelf counts are over the whole library; the tag counts are each
- * tag's own (TagUsage).
+ * tag's own (TagUsage). Under the shelves, what a recipe is (decisions.md row
+ * 209), a list a layer of the values some recipe has, with their counts over
+ * the whole library: any of a layer's values, every layer asked.
  */
 export function FiltersColumn(props: FiltersColumnProps) {
   const { allTags, allFoods, tags, match, foods, favourite, onTagsChange, onMatchChange, onFoodsChange, onFavouriteChange } = props;
@@ -111,6 +114,26 @@ export function FiltersColumn(props: FiltersColumnProps) {
           />
         ))}
       </section>
+
+      {FACET_LAYERS.map((layer) => {
+        const values = offeredValues(props.facetCounts, props.facets, layer);
+        if (values.length === 0) return null;
+        const chosen: readonly string[] = props.facets[layer];
+        return (
+          <section key={layer} aria-labelledby={`facet-${layer}`} className="flex flex-col gap-0.5">
+            <FacetLabel id={`facet-${layer}`}>{LAYER_NAMES[layer]}</FacetLabel>
+            {values.map((value) => (
+              <FacetToggle
+                key={value}
+                label={facetLabel(layer, value)}
+                count={countOf(props.facetCounts, layer, value)}
+                pressed={chosen.includes(value)}
+                onPressedChange={(on) => props.onFacetsChange(toggleFacet(props.facets, layer, value as never, on))}
+              />
+            ))}
+          </section>
+        );
+      })}
 
       {allTags.length > 0 && (
         <section aria-labelledby="facet-tags" className="flex flex-col gap-0.5">

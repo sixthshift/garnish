@@ -1,5 +1,5 @@
 import { arrayParam } from "../../../../lib/lists";
-import { FACET_LAYERS, type FacetLayer, type Facets, facetsSchema, noFacets } from "../../recipe";
+import { FACET_LAYERS, FACET_VALUES, type FacetLayer, type Facets, facetsSchema, noFacets } from "../../recipe";
 
 // The library's facet filters in the address (decisions.md row 209): one
 // search param a layer, named as the layer is, each a list of its values.
@@ -49,4 +49,13 @@ export function countOf(counts: readonly FacetCount[], layer: FacetLayer, value:
 /** Whether two sets of facets say the same thing on every layer. */
 export function sameFacets(a: Facets, b: Facets): boolean {
   return FACET_LAYERS.every((layer) => a[layer].length === b[layer].length && a[layer].every((value, i) => b[layer][i] === value));
+}
+
+/**
+ * The values a filter offers for one layer: those some recipe has, and any
+ * asked for that none has now (so it can be turned off), in the list's order.
+ */
+export function offeredValues(counts: readonly FacetCount[], asked: Facets, layer: FacetLayer): string[] {
+  const chosen: readonly string[] = asked[layer];
+  return FACET_VALUES[layer].filter((value) => chosen.includes(value) || countOf(counts, layer, value) > 0);
 }
