@@ -4,7 +4,8 @@ import { FavouriteButton } from "../../../../../components/ui/FavouriteButton";
 import { recipeImageUrl } from "../../../../../lib/images";
 import { formatDuration } from "../../../ingredient";
 import type { RecipeSummary } from "../../../recipe";
-import { KindToggle } from "../../KindToggle";
+import { MarkUnder } from "../../facets/MarkUnder";
+import type { Marking } from "../../facets/marking";
 import { capTags, ImagePlaceholder } from "../RecipeCard";
 
 /**
@@ -26,7 +27,7 @@ export type PhotoWallProps = {
   /** The recipe open in the side panel: its card is outlined. */
   selected: string | undefined;
   /** Each card offers how it is cooked, Rotation or Weekend, under it (the library's "Mark" toggle). */
-  marking: boolean;
+  marking: Marking | null;
   /** Cards whose image is fetched at once rather than lazily: the first row. */
   priority: number;
 };
@@ -47,7 +48,7 @@ export function PhotoWall({ recipes, selected, marking, priority }: PhotoWallPro
           <WallCard recipe={recipe} selected={recipe.slug === selected} priority={index < priority} />
           {marking && (
             <div className="mt-2">
-              <KindToggle id={recipe.id} kind={recipe.kind} label={`How you cook ${recipe.name}`} />
+              <MarkUnder recipe={recipe} marking={marking} />
             </div>
           )}
         </li>

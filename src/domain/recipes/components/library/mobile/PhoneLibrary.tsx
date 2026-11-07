@@ -5,6 +5,8 @@ import { Toggle } from "@sixthshift/design-system/toggle";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import type { RecipeSummary, SortDir, SortKey } from "../../../recipe";
+import { MarkChooser } from "../../facets/MarkUnder";
+import { type Marking, START_MARKING } from "../../facets/marking";
 import { ActiveFilters } from "../ActiveFilters";
 import { LibraryEmpty } from "../CardList";
 import type { FilterBarProps } from "../FilterBar";
@@ -32,9 +34,9 @@ export type PhoneLibraryProps = {
   dir: SortDir;
   onSortChange: (sort: SortKey, dir: SortDir) => void;
   onDice: () => void;
-  /** Each card offers how it is cooked, Rotation or Weekend, under it. */
-  marking: boolean;
-  onMarkingChange: (marking: boolean) => void;
+  /** What each card offers under it while marking: how it is cooked, or one value of one layer. */
+  marking: Marking | null;
+  onMarkingChange: (marking: Marking | null) => void;
 };
 
 /**
@@ -56,8 +58,15 @@ export function PhoneLibrary(props: PhoneLibraryProps) {
           Recipes
         </Heading>
         {/* "Mark" is the start of its name, so a voice says what it reads (decisions.md row 195). */}
-        <Toggle variant="outline" intent="neutral" size="sm" pressed={marking} onPressedChange={onMarkingChange} aria-label="Mark Rotation & Weekend">
-          Mark
+        <Toggle
+          variant="outline"
+          intent="neutral"
+          size="sm"
+          pressed={marking !== null}
+          onPressedChange={(on) => onMarkingChange(on ? START_MARKING : null)}
+          aria-label={marking ? "Done marking" : "Mark recipes"}
+        >
+          {marking ? "Done" : "Mark"}
         </Toggle>
         <Button asChild variant="solid" intent="brand" size="sm">
           <Link to="/recipes/new" aria-label="New recipe">
@@ -65,6 +74,7 @@ export function PhoneLibrary(props: PhoneLibraryProps) {
           </Link>
         </Button>
       </div>
+      {marking && <MarkChooser marking={marking} onChange={onMarkingChange} className="w-full" />}
       <CollectionChips shelf={props.shelf} onShelfChange={props.onShelfChange} favourite={filters.favourite} onFavouriteChange={filters.onFavouriteChange} />
       {/* Favourites has its chip above, so only what the sheet set is repeated here. */}
       <ActiveFilters {...filters} favourite={false} onClearAll={props.onClearFilters} />

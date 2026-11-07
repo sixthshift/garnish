@@ -4,14 +4,15 @@ import { Toggle } from "@sixthshift/design-system/toggle";
 import { Link } from "@tanstack/react-router";
 import type { ViewMode } from "../../../../lib/prefs";
 import type { RecipeSummary } from "../../recipe";
-import { KindToggle } from "../KindToggle";
+import { MarkChooser, MarkUnder } from "../facets/MarkUnder";
+import { type Marking, START_MARKING } from "../facets/marking";
 import { CARD_MIN_WIDTH, RecipeCard } from "./RecipeCard";
 
 /** Cards whose image is fetched eagerly: a phone shows the first and the top of the second. */
 const PRIORITY_CARDS = 2;
 
-/** The cards as a grid or a list, each with its Rotation and Weekend toggle under it while marking. */
-export function CardList({ recipes, mode, marking }: { recipes: readonly RecipeSummary[]; mode: ViewMode; marking: boolean }) {
+/** The cards as a grid or a list, each with what is being marked under it while marking. */
+export function CardList({ recipes, mode, marking }: { recipes: readonly RecipeSummary[]; mode: ViewMode; marking: Marking | null }) {
   return (
     <ul
       className={mode === "list" ? "flex flex-col gap-3" : "grid gap-4"}
@@ -23,7 +24,7 @@ export function CardList({ recipes, mode, marking }: { recipes: readonly RecipeS
           <RecipeCard recipe={recipe} mode={mode} priority={index < PRIORITY_CARDS} />
           {marking && (
             <div className="mt-2">
-              <KindToggle id={recipe.id} kind={recipe.kind} label={`How you cook ${recipe.name}`} />
+              <MarkUnder recipe={recipe} marking={marking} />
             </div>
           )}
         </li>
@@ -32,12 +33,19 @@ export function CardList({ recipes, mode, marking }: { recipes: readonly RecipeS
   );
 }
 
-/** Marking the library one recipe page at a time is the slow way in; this puts the toggle under every card (decisions.md row 195). */
-export function MarkToggle({ marking, onChange }: { marking: boolean; onChange: (marking: boolean) => void }) {
+/**
+ * Marking the library one recipe page at a time is the slow way in; this puts
+ * a toggle under every card (decisions.md row 195): Rotation and Weekend, or
+ * one value of one layer of what a recipe is (row 209), chosen beside it.
+ */
+export function MarkToggle({ marking, onChange }: { marking: Marking | null; onChange: (marking: Marking | null) => void }) {
   return (
-    <Toggle variant="outline" size="sm" pressed={marking} onPressedChange={onChange}>
-      Mark Rotation &amp; Weekend
-    </Toggle>
+    <>
+      {marking && <MarkChooser marking={marking} onChange={onChange} className="w-56" />}
+      <Toggle variant="outline" size="sm" pressed={marking !== null} onPressedChange={(on) => onChange(on ? START_MARKING : null)}>
+        {marking ? "Done marking" : "Mark recipes"}
+      </Toggle>
+    </>
   );
 }
 

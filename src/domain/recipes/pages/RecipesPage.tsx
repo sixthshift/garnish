@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { arrayParam, newSeed, pickRandom } from "../../../lib/lists";
 import { useLayout } from "../../../lib/useLayout";
 import { facetFilterCount, facetSearch, facetsFromSearch, noFacetSearch } from "../components/facets/facetSearch";
+import type { Marking } from "../components/facets/marking";
 import { activeFilterCount } from "../components/library/ActiveFilters";
 import { DesktopLibrary } from "../components/library/desktop/DesktopLibrary";
 import { FiltersColumn } from "../components/library/desktop/FiltersColumn";
@@ -61,7 +62,7 @@ export function RecipesPage() {
       search: (prev) => ({ ...prev, ...noFacetSearch(), tag: undefined, tags: undefined, foods: undefined, favourite: undefined, shelf: undefined }),
     });
   const filterCount = activeFilterCount(selected, foodsParam, favourite, facets);
-  const [marking, setMarking] = useState(false);
+  const [marking, setMarking] = useState<Marking | null>(null);
 
   const onDice = () => {
     const pick = pickRandom(recipes);

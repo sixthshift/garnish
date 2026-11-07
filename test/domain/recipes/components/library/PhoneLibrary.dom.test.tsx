@@ -65,7 +65,7 @@ function props(overrides: Partial<PhoneLibraryProps> = {}): PhoneLibraryProps {
     dir: "desc",
     onSortChange: vi.fn(),
     onDice: vi.fn(),
-    marking: false,
+    marking: null,
     onMarkingChange: vi.fn(),
     ...overrides,
   };
@@ -92,12 +92,13 @@ describe("the grid", () => {
   test("Mark puts how each is cooked under its card", async () => {
     const user = userEvent.setup();
     function Marking() {
-      const [marking, setMarking] = useState(false);
+      const [marking, setMarking] = useState<Parameters<typeof PhoneLibrary>[0]["marking"]>(null);
       return <PhoneLibrary {...props({ marking, onMarkingChange: setMarking })} />;
     }
     await renderInRouter(<Marking />);
     expect(screen.queryByRole("radiogroup", { name: "How you cook Ragu" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Mark Rotation & Weekend" }));
+    await user.click(screen.getByRole("button", { name: "Mark recipes" }));
+    expect(screen.getByRole("combobox", { name: "What to mark" })).toBeInTheDocument();
     expect(screen.getByRole("radiogroup", { name: "How you cook Ragu" })).toBeInTheDocument();
   });
 });

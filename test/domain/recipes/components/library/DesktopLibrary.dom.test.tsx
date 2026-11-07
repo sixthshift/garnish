@@ -70,7 +70,7 @@ function Library() {
       recipes={library}
       open={open}
       filtered={false}
-      marking={false}
+      marking={null}
       onMarkingChange={() => {}}
       onDice={() => {}}
       filters={<input aria-label="Search recipes" />}

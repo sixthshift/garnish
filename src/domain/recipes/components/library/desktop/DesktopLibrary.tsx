@@ -7,6 +7,7 @@ import { type ReactNode, useMemo } from "react";
 import { DiceIcon } from "../../../../../components/ui/icons";
 import { useViewMode } from "../../../../../lib/prefs";
 import type { RecipeSummary } from "../../../recipe";
+import type { Marking } from "../../facets/marking";
 import { CardList, LibraryEmpty, MarkToggle } from "../CardList";
 import { ViewModeToggle } from "../ViewModeToggle";
 import { PhotoWall } from "./PhotoWall";
@@ -21,8 +22,8 @@ export type DesktopLibraryProps = {
   open: string | undefined;
   /** A search or a filter is set: an empty wall offers to clear it. */
   filtered: boolean;
-  marking: boolean;
-  onMarkingChange: (marking: boolean) => void;
+  marking: Marking | null;
+  onMarkingChange: (marking: Marking | null) => void;
   onDice: () => void;
   /** The filters column (FiltersColumn). */
   filters: ReactNode;
