@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garnish cooking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  Cooking from the recipe page (ux-review.md plan 7, 2026-11-07): cook mode
+  goes, Start cooking puts the page itself in a Cooking state, an assistant
+  sits beside it, and Finish opens a review of suggested changes. One file, no
+  build; shares editor.html's frame and palette. The recipe is the real ragu;
+  the conversation and the suggestions are invented to show the flow.
+-->
+<style>
+:root {
+  --bg: #f7f2ed; --paper: #fffcf9; --sunk: #f1e9e2; --line: #e8ddd4; --line2: #d8c9bd;
+  --fg: #2a1f19; --fg2: #57473d; --muted: #8a7468;
+  --brand: #2c666c; --brand-hover: #245358; --brand-soft: #d6eef0; --brand-50: #f2fafb;
+  --hi: #fdeec9; --hi-line: #e3ac35; --ok: #3d7a4a;
+  --r: 12px;
+  --shadow: 0 1px 2px rgba(60,40,30,.06), 0 6px 20px rgba(60,40,30,.07);
+  --display: "Fraunces", Georgia, serif;
+  --ui: "Inter", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #2b2420; font-family: var(--ui); color: var(--fg); font-size: 14px; overflow: hidden; display: flex; flex-direction: column; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; }
+
+/* ── The mockup's own chrome ─────────────────────────────────────────────── */
+#chrome { background: #1d1815; color: #efe6de; padding: 10px 16px 10px; display: flex; flex-direction: column; gap: 8px; flex: none; }
+#chrome .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+#chrome h1 { font: 600 15px var(--display); margin: 0 6px 0 0; }
+.seg { display: flex; background: #2d2622; border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { background: none; border: 0; color: #cbbcb0; padding: 5px 11px; border-radius: 7px; font-size: 12.5px; }
+.seg button:hover { color: #fff; }
+.seg button.on { background: #efe6de; color: #1d1815; font-weight: 600; }
+#chrome .note { font-size: 13px; color: #d8cabe; line-height: 1.5; max-width: 1400px; }
+#chrome .note b { color: #fff; font-weight: 600; }
+#chrome .note .try { color: #e9c67a; }
+#stage { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: flex-start; gap: 28px; padding: 14px 16px; overflow: hidden; }
+.holder { position: relative; flex: none; }
+.holder .cap { position: absolute; top: -2px; left: 0; transform: translateY(-100%); color: #cbbcb0; font-size: 12px; padding-bottom: 4px; }
+.frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; background: var(--bg); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+.frame.phone { border-radius: 34px; border: 8px solid #0f0c0a; }
+
+/* ── Shared pieces ──────────────────────────────────────────────────────── */
+.topbar { height: 56px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 20px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.logo { font: 600 19px var(--display); margin-right: 18px; }
+.nav { padding: 8px 12px; border-radius: 8px; color: var(--fg2); font-size: 14.5px; }
+.nav.on { background: #eadfd7; color: var(--fg); font-weight: 500; }
+.cmdk { margin: 0 auto; width: 460px; background: var(--sunk); border-radius: 10px; padding: 8px 12px; color: var(--muted); }
+.label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.btn { border: 1px solid var(--line2); background: var(--paper); border-radius: 8px; padding: 7px 13px; font-size: 13.5px; font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--sunk); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.ghost { border-color: transparent; background: none; }
+.btn.sm { padding: 4px 9px; font-size: 12.5px; }
+.btn.icon { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--fg2); background: var(--paper); white-space: nowrap; }
+.chip .x { color: var(--muted); font-size: 13px; line-height: 1; }
+.photo { background-size: cover; background-position: center; }
+.seg2 { display: inline-flex; border: 1px solid var(--line2); border-radius: 8px; overflow: hidden; background: var(--paper); }
+.seg2 span { padding: 5px 12px; font-size: 12.5px; }
+.seg2 span + span { border-left: 1px solid var(--line2); }
+.seg2 span.on { background: var(--sunk); font-weight: 600; }
+.row { display: flex; align-items: center; gap: 8px; }
+.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--muted); }
+.pencil { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fg2); background: none; border: 0; padding: 4px 0; }
+.check { width: 18px; height: 18px; border: 1.5px solid var(--line2); border-radius: 5px; flex: none; background: var(--paper); margin-top: 2px; }
+.qty { display: inline-block; background: var(--brand-soft); color: #1f4b50; border: 1px solid #b6dfe2; border-radius: 7px; padding: 0 7px; font-size: .92em; font-weight: 600; margin-right: 6px; }
+.unread { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 11px; font-weight: 600; color: #8a5a00; background: var(--hi); border-radius: 999px; padding: 1px 8px; white-space: nowrap; vertical-align: 1px; }
+.unread::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--hi-line); }
+.timer { display: inline-flex; gap: 4px; align-items: center; background: var(--sunk); border-radius: 6px; padding: 2px 7px; font-size: 11.5px; font-weight: 600; color: var(--fg2); }
+.uses { display: inline-flex; font-size: 11.5px; color: var(--brand); border: 1px dashed #9fcfd3; border-radius: 6px; padding: 1px 7px; background: var(--brand-50); }
+
+/* Editable text that looks like what it will be: a dashed line under it on hover, a box on focus. */
+.ed { border: 1px dashed transparent; border-radius: 8px; padding: 3px 6px; margin: -4px -7px; outline: none; background: transparent; width: calc(100% + 14px); resize: none; display: block; }
+.ed:hover { border-color: var(--line2); }
+.ed:focus { border-style: solid; border-color: var(--brand); background: var(--paper); box-shadow: 0 0 0 3px var(--brand-soft); }
+.ed.title { font: 600 34px/1.1 var(--display); letter-spacing: -.01em; }
+.ed.body { font-size: 15.5px; line-height: 1.55; color: var(--fg2); }
+.field { border: 1px solid var(--line2); background: var(--paper); border-radius: 8px; padding: 6px 9px; outline: none; width: 100%; }
+.field:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.mini { display: flex; flex-direction: column; gap: 3px; }
+.mini label { font-size: 11.5px; color: var(--muted); font-weight: 500; }
+
+/* ── Desktop ────────────────────────────────────────────────────────────── */
+.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 455px 360px minmax(0,1fr); }
+.cols.cooking { grid-template-columns: 380px minmax(0,1fr) 400px; }
+.col { overflow: auto; min-height: 0; }
+.c1 { border-right: 1px solid var(--line); background: var(--paper); }
+.c2 { border-right: 1px solid var(--line); padding: 24px 24px 40px; }
+.c3 { padding: 24px 32px 40px; }
+.hero { height: 256px; }
+.c1 .in { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+.facts .k { color: var(--muted); margin-right: 5px; }
+.facts b { font-weight: 500; }
+.stepper { display: inline-flex; align-items: center; gap: 4px; }
+.stepper .v { min-width: 70px; text-align: center; border: 1px solid var(--line2); border-radius: 999px; padding: 4px 12px; background: var(--paper); font-weight: 500; }
+.ing { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; font-size: 15px; line-height: 1.45; }
+.ing.ticked { color: var(--muted); }
+.ing.ticked .check, .prow.ticked .check { background: var(--brand); border-color: var(--brand); }
+.ing.ticked .check::after, .prow.ticked .check::after { content: "✓"; color: #fff; font-size: 12px; display: grid; place-items: center; height: 100%; line-height: 1; }
+.step { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; font-size: 15.5px; line-height: 1.5; position: relative; }
+.step .n { width: 24px; height: 24px; border-radius: 50%; background: var(--sunk); font-size: 12px; font-weight: 600; display: grid; place-items: center; flex: none; margin-top: 1px; }
+.step .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.step.done { opacity: .5; }
+.step.done .n { background: var(--brand); color: #fff; }
+.step.now { border-color: var(--brand); box-shadow: inset 4px 0 0 var(--brand), var(--shadow); }
+.step.now .n { background: var(--brand); color: #fff; }
+.nowtag { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--brand); margin-bottom: 3px; }
+.part-h { font: 600 15px var(--display); margin: 22px 0 10px; }
+
+/* The cooking header: one line where the top bar and the left page were. */
+.cookhead { height: 60px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 20px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.cookhead .name { font: 600 19px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cookhead .state { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--brand); background: var(--brand-50); border: 1px solid #b6dfe2; border-radius: 999px; padding: 2px 9px; }
+.tchip { display: inline-flex; align-items: center; gap: 8px; background: var(--fg); color: #fff; border-radius: 999px; padding: 6px 8px 6px 12px; font-size: 13px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tchip .t { opacity: .8; font-weight: 500; }
+.tchip button { background: rgba(255,255,255,.16); border: 0; color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 12px; }
+
+/* Changes for tonight */
+.tonight { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 11px; font-weight: 600; color: #6b4a00; background: var(--hi); border-radius: 999px; padding: 1px 8px; white-space: nowrap; vertical-align: 1px; }
+.was { color: var(--muted); text-decoration: line-through; margin-right: 4px; }
+.adj-line { background: #fff8e6; border-radius: 8px; margin: 0 -8px; padding-left: 8px; padding-right: 8px; }
+
+/* The assistant */
+.chat { display: flex; flex-direction: column; min-height: 0; background: var(--paper); }
+.chat .head { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.chat .head b { font: 600 16px var(--display); }
+.chat .log { flex: 1; overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 88%; font-size: 14.5px; line-height: 1.45; padding: 9px 12px; border-radius: 14px; }
+.msg.me { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 4px; }
+.msg.ai { align-self: flex-start; background: var(--sunk); border-bottom-left-radius: 4px; }
+.msg.ctx { align-self: center; background: none; color: var(--muted); font-size: 12px; padding: 0; }
+.adj { display: flex; align-items: center; gap: 8px; margin-top: 8px; background: var(--paper); border: 1px solid var(--line2); border-radius: 10px; padding: 7px 8px 7px 10px; font-size: 13px; }
+.adj .what { flex: 1; }
+.adj .what small { display: block; color: var(--muted); font-size: 11.5px; }
+.adj.applied { border-color: var(--hi-line); background: #fff8e6; }
+.adj.applied .btn { border-color: transparent; background: none; color: var(--ok); font-weight: 600; }
+.chat .ask { padding: 12px 14px 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.suggest { display: flex; gap: 6px; flex-wrap: wrap; }
+.suggest span { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; color: var(--fg2); background: var(--bg); }
+.inputrow { display: flex; gap: 8px; align-items: center; }
+.inputrow .field { border-radius: 999px; padding: 10px 14px; }
+.mic { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line2); background: var(--paper); flex: none; }
+
+/* Text one step larger while cooking */
+.big .step { font-size: 18px; }
+.big .ing, .big .prow { font-size: 17px; }
+.big .msg { font-size: 15.5px; }
+
+/* The review */
+.review { flex: 1; overflow: auto; display: grid; grid-template-columns: 420px minmax(0,1fr); }
+.review .left { background: var(--paper); border-right: 1px solid var(--line); padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+.review .right { padding: 28px 36px 60px; display: flex; flex-direction: column; gap: 14px; max-width: 900px; }
+.stars { font-size: 28px; letter-spacing: 4px; color: var(--hi-line); }
+.stars .off { color: var(--line2); }
+.photo-drop { border: 1.5px dashed var(--line2); border-radius: 12px; height: 120px; display: grid; place-items: center; color: var(--muted); font-size: 13px; background: var(--bg); }
+.textarea { border: 1px solid var(--line2); border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.5; background: var(--paper); min-height: 90px; color: var(--fg); }
+.sugg { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.sugg .top { display: flex; align-items: center; gap: 8px; }
+.sugg .kind { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sugg .where { font-size: 12.5px; color: var(--muted); }
+.diff { display: grid; grid-template-columns: 52px 1fr; gap: 4px 10px; font-size: 14.5px; line-height: 1.45; }
+.diff .l { font-size: 11.5px; color: var(--muted); padding-top: 2px; }
+.diff .before { color: var(--muted); text-decoration: line-through; text-decoration-color: #c9b5a8; }
+.diff .after { color: var(--fg); }
+.diff .after ins { text-decoration: none; background: #e3f3e6; border-radius: 4px; padding: 0 2px; }
+.why { font-size: 12.5px; color: var(--fg2); background: var(--bg); border-radius: 8px; padding: 7px 10px; }
+.why::before { content: "Why: "; font-weight: 600; }
+.choice { display: inline-flex; border: 1px solid var(--line2); border-radius: 9px; overflow: hidden; background: var(--paper); align-self: flex-start; }
+.choice span { padding: 7px 13px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.choice span + span { border-left: 1px solid var(--line2); }
+.choice span.on { background: var(--brand); color: #fff; }
+.savebar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow); margin-top: 8px; }
+
+/* ── Phone ──────────────────────────────────────────────────────────────── */
+.pscroll { flex: 1; overflow: auto; position: relative; }
+.pphoto { height: 300px; position: sticky; top: 0; }
+.glass { position: absolute; top: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,252,249,.88); backdrop-filter: blur(6px); display: grid; place-items: center; font-size: 18px; }
+.pbody { position: relative; z-index: 2; margin-top: -28px; background: var(--bg); border-radius: 26px 26px 0 0; box-shadow: 0 -10px 30px rgba(30,20,14,.14); padding: 22px 16px 170px; display: flex; flex-direction: column; gap: 14px; }
+.pbody.flat { margin-top: 0; border-radius: 0; box-shadow: none; padding-top: 14px; }
+.ptags { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ptitle { font: 600 30px/1.08 var(--display); margin: 0; }
+.pfacts { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+.pfacts div { padding: 10px 6px; text-align: center; }
+.pfacts div + div { border-left: 1px solid var(--line); }
+.pfacts b { display: block; font-size: 16px; font-weight: 600; }
+.pfacts span { font-size: 11.5px; color: var(--muted); }
+.ptabs { position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: 1fr 1fr; background: #ece2da; border-radius: 12px; padding: 4px; margin: 0 -2px; }
+.ptabs button { border: 0; background: none; border-radius: 9px; padding: 9px; font-weight: 500; color: var(--fg2); }
+.ptabs button.on { background: var(--paper); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.plist { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 4px 14px; }
+.prow { display: flex; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.4; }
+.prow:last-child { border-bottom: 0; }
+.prow.ticked { color: var(--muted); }
+.tabbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; height: 74px; background: var(--paper); border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; text-align: center; font-size: 11.5px; color: var(--fg2); }
+.tabbar .plus { width: 54px; height: 54px; margin: -26px auto 0; border-radius: 18px; background: var(--brand); color: #fff; display: grid; place-items: center; font-size: 28px; box-shadow: var(--shadow); }
+.cookbar { position: absolute; left: 14px; right: 14px; bottom: 88px; z-index: 5; display: flex; gap: 8px; }
+.cookbar.low { bottom: 24px; }
+.cookbar .btn { border-radius: 999px; padding: 13px; font-size: 16px; }
+.cookbar .btn.primary { flex: 1; }
+.cookbar .round { width: 48px; height: 48px; border-radius: 50%; padding: 0; }
+.phead { position: sticky; top: 0; z-index: 4; background: var(--paper); border-bottom: 1px solid var(--line); padding: 50px 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.phead .row1 { display: flex; align-items: center; gap: 8px; }
+.phead .name { font: 600 17px/1.2 var(--display); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ptimers { position: absolute; left: 14px; right: 14px; bottom: 86px; z-index: 5; display: flex; justify-content: center; }
+.psheet { position: absolute; left: 0; right: 0; bottom: 0; height: 58%; z-index: 9; background: var(--paper); border-radius: 22px 22px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.22); display: flex; flex-direction: column; }
+.psheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line2); margin: 8px auto 0; flex: none; }
+.pdim { position: absolute; inset: 0; z-index: 8; background: rgba(30,20,14,.18); }
+.callout { position: absolute; z-index: 20; background: #e9c67a; color: #2a1f19; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+body.no-callouts .callout { display: none; }
+</style>
+</head>
+<body>
+<div id="chrome">
+  <div class="row">
+    <h1>Garnish · cooking from the recipe page</h1>
+    <div class="seg" id="size"><button data-v="desktop" class="on">Desktop 1440</button><button data-v="phone">Phone 390</button></div>
+    <div class="seg" id="which"><button data-v="page">1 · Recipe page</button><button data-v="cooking" class="on">2 · Cooking</button><button data-v="assistant">3 · Assistant</button><button data-v="review">4 · Review</button></div>
+  </div>
+  <div class="row">
+    <span style="font-size:12px;color:#a8988c">Try the open questions:</span>
+    <div class="seg" id="text"><button data-v="same" class="on">Text as the page</button><button data-v="big">Text a step larger</button></div>
+    <div class="seg" id="apply"><button data-v="inplace" class="on">A tapped change rewrites the line</button><button data-v="mark">…or only marks it</button></div>
+    <div class="seg" id="defaults"><button data-v="smart" class="on">Review: Keep corrections</button><button data-v="safe">Review: all Just this time</button></div>
+    <div class="seg" id="callouts"><button data-v="on" class="on">Labels on</button><button data-v="off">Labels off</button></div>
+  </div>
+  <div class="note" id="note"></div>
+</div>
+<div id="stage"></div>
+
+<script>
+const IMG = "../../data/images/4c2dbacc-ba99-4044-9843-d48b4b5b9537.jpg";
+const PHOTO = `background-image:url('${IMG}'), linear-gradient(135deg,#c77d4b,#7a3d22 60%,#3d2015)`;
+const NAME = "Slow Cooked Shredded Beef Ragu Pasta";
+const TAGS = ["Beef ragu", "Ragu", "Ragu Sauce"];
+// [text, ticked]
+const ING = [
+  ["1.25 kg chuck beef, cut into 4 pieces", true], ["2 tsp cooking salt", true], ["½ tsp black pepper", true], ["3 tbsp olive oil, separated", true],
+  ["3 cloves garlic, minced", true], ["1 onion, diced", true], ["1 cup carrots, diced", true], ["CELERY", true],
+  ["800 g crushed canned tomatoes", true], ["3 tbsp tomato paste", true], ["2 beef bouillon cubes, crumbled", true], ["1 cup red wine", true],
+  ["1½ cups water", true], ["¾ tsp dried thyme", true], ["3 bay leaves", true], ["500 g dried pappardelle", false],
+  ["Freshly grated parmesan", false], ["Fresh parsley, finely chopped", false],
+];
+// [text, timer, state]  state: done | now | ''
+const STEPS = [
+  ["Season chuck beef.", "", "done"], ["Sear to brown.", "", "done"], ["Remove.", "", "done"], ["Cook the soffrito.", "", "done"],
+  ["Add all crushed canned tomatoes, tomato paste, beef bouillon cubes, red wine, water, dried thyme, bay leaves, and browned chuck beef.", "", "done"],
+  ["SLOWCOOK", "TIMER", "now"], ["Shred chuck beef.", "", ""], ["SIMMER", "30 min", ""],
+  ["Toss with al dente dried pappardelle with ½ cup pasta cooking water.", "", ""], ["Serve with freshly grated parmesan.", "", ""],
+];
+const state = { size: "desktop", which: "cooking", text: "same", apply: "inplace", defaults: "smart", callouts: "on" };
+const applied = () => state.which === "assistant" || state.which === "review";
+function callout(text, style) { return `<div class="callout" style="${style}">${text}</div>`; }
+
+// A line or step the assistant changed for tonight, drawn either rewritten in place or only marked.
+function ingText(t) {
+  if (t !== "CELERY") return t;
+  if (!applied()) return "1 cup celery, diced";
+  return state.apply === "inplace"
+    ? `<span class="was">1 cup celery</span>1 more carrot, diced<span class="tonight">tonight</span>`
+    : `1 cup celery, diced<span class="tonight">tonight: 1 more carrot</span>`;
+}
+function stepText(t, timer) {
+  if (t === "SLOWCOOK") {
+    if (!applied()) return ["Slow cook 2 – 2½ hrs.", "2 hrs"];
+    return state.apply === "inplace"
+      ? [`Slow cook <span class="was">2 – 2½ hrs</span>3 hrs, until it falls apart.<span class="tonight">tonight</span>`, "3 hrs"]
+      : [`Slow cook 2 – 2½ hrs.<span class="tonight">tonight: 3 hrs</span>`, "2 hrs"];
+  }
+  if (t === "SIMMER") {
+    if (!applied()) return ["Simmer in sauce 30 min.", timer];
+    return state.apply === "inplace"
+      ? [`Simmer in sauce, <b>uncovered</b>, 30 min.<span class="tonight">tonight</span>`, timer]
+      : [`Simmer in sauce 30 min.<span class="tonight">tonight: uncovered</span>`, timer];
+  }
+  return [t, timer];
+}
+function ingRows(cls) {
+  return ING.map(([t, ticked]) => {
+    const changed = t === "CELERY" && applied();
+    return `<div class="${cls}${ticked ? " ticked" : ""}${changed ? " adj-line" : ""}"><span class="check"${cls === "prow" ? ' style="margin:0"' : ""}></span><span class="grow">${ingText(t)}</span></div>`;
+  }).join("");
+}
+function stepCards(cooking, phone) {
+  return STEPS.map(([t, timer, st], i) => {
+    const [text, time] = stepText(t, timer);
+    const s = cooking ? st : "";
+    const meta = time ? (s === "now" ? `<span class="tchip" style="padding:3px 6px 3px 10px;font-size:12px">◷ 0:24 left <button>+5</button></span>` : `<span class="timer">◷ ${time}</span>`) : "";
+    return `<div class="step ${s}"${phone ? ' style="margin:0"' : ""}><span class="n">${s === "done" ? "✓" : i + 1}</span><div class="grow">${s === "now" ? `<div class="nowtag">Now</div>` : ""}${text}${meta ? `<div class="meta">${meta}</div>` : ""}</div></div>`;
+  }).join("");
+}
+
+// ── The assistant's conversation, shared by both layouts ───────────────────
+function chatLog() {
+  const adj = (what, small) => `<div class="adj applied"><span class="what">${what}<small>${small}</small></span><button class="btn sm">✓ On the page</button></div>`;
+  const adjNew = (what, small) => `<div class="adj"><span class="what">${what}<small>${small}</small></span><button class="btn sm primary">Use tonight</button></div>`;
+  return `
+    <div class="msg ctx">Cooking for 5 · started 5:42 pm</div>
+    <div class="msg me">no celery, what can i use?</div>
+    <div class="msg ai">Leave it out and dice a second carrot instead, or a small fennel bulb if you have one. The soffrito will be a touch sweeter; nothing else changes.
+      ${adj("Celery → 1 more carrot", "Ingredients · for tonight")}</div>
+    <div class="msg me">beef's been 2.5 hrs and isn't falling apart</div>
+    <div class="msg ai">Chuck shreds once it's very soft; give it another 30 minutes, lid on, and check with two forks. It's done when a piece pulls apart without pressing.
+      ${adj("Slow cook 3 hrs (was 2 – 2½)", "Step 6 · timer +30 min started")}</div>
+    <div class="msg me">sauce looks a bit thin</div>
+    <div class="msg ai">It will thicken in step 8: simmer it with the lid off for the 30 minutes once the beef is shredded back in. I'll bring it up at the review.
+      ${applied() ? adj("Simmer uncovered (step 8)", "Step 8 · for tonight") : adjNew("Simmer uncovered (step 8)", "Step 8 · for tonight")}</div>`;
+}
+function chatAsk() {
+  return `<div class="ask"><div class="suggest"><span>How long left?</span><span>What's next?</span><span>Make it for 3</span><span>Note for next time…</span></div>
+    <div class="inputrow"><input class="field" placeholder="Ask, or say what happened…"><button class="mic" title="Dictate">🎙</button></div></div>`;
+}
+
+// ── Desktop ────────────────────────────────────────────────────────────────
+function desktopPage() {
+  return `
+  <div class="topbar"><span class="logo">⸙ Garnish</span><span class="nav">Home</span><span class="nav">Plan</span><span class="nav">Shopping</span><span class="nav on">Recipes</span><span class="cmdk">Search, plan or add anything…</span><span class="nav">Settings</span></div>
+  <div class="cols">
+    <div class="col c1" style="position:relative">
+      <div class="hero photo" style="${PHOTO}"></div>
+      <div class="in">
+        <div style="font:600 34px/1.1 var(--display)">${NAME}</div>
+        <div class="row"><button class="btn icon">♡</button><button class="btn icon">✎</button><button class="btn primary sm">▶ Start cooking</button><button class="btn sm">Add to shopping list</button><button class="btn icon">⋯</button></div>
+        <div class="facts"><span><span class="k">Prep</span><b>20 min</b></span><span><span class="k">Cook</span><b>3 hr 30 min</b></span><span><span class="k">Total</span><b>3 hr 50 min</b></span></div>
+        <div class="muted" style="font-size:14px">Made 3 times · last 12 Oct</div>
+        <div class="row wrap" style="gap:6px"><span class="chip">Main</span><span class="chip">Italian</span><span class="chip">Beef</span><span class="chip">Slow cooker</span></div>
+        <div style="font-size:15.5px;line-height:1.55;color:var(--fg2)">Ragu is one of those recipes that really showcases the beauty of Italian cooking – everyday ingredients, fast prep, leave it to cook long and slow…</div>
+      </div>
+      ${callout("“Cook” becomes ▶ Start cooking: it stays on this page", "left:110px;top:345px")}
+    </div>
+    <div class="col c2"><div class="row" style="justify-content:space-between"><span class="label">Ingredients</span><span class="stepper"><button class="btn icon sm">−</button><span class="v">Serves 5</span><button class="btn icon sm">+</button></span></div>
+      <div style="margin-top:10px">${ingRows("ing").replace(/ ticked/g, "")}</div></div>
+    <div class="col c3"><div class="label" style="margin-bottom:12px">Abbreviated recipe</div>${stepCards(false)}</div>
+  </div>`;
+}
+function desktopCooking(withChat) {
+  return `
+  <div class="cookhead" style="position:relative">
+    <button class="btn ghost icon" title="Leave cooking (kept for later)">✕</button>
+    <span class="name">${NAME}</span><span class="state">Cooking</span>
+    <span class="stepper" style="margin-left:6px"><button class="btn icon sm">−</button><span class="v">Serves 5</span><button class="btn icon sm">+</button></span>
+    <span class="grow"></span>
+    <span class="tchip">◷ Slow cook <span class="t">0:24</span><button>+5</button><button>Pause</button></span>
+    ${withChat ? "" : `<button class="btn">💬 Ask</button>`}
+    <button class="btn primary">Finish</button>
+    ${callout("The nav, the photo, stars, tags and history fold into one line", "left:60px;top:62px")}
+  </div>
+  <div class="cols cooking${state.text === "big" ? " big" : ""}">
+    <div class="col c2" style="position:relative;background:var(--paper)"><span class="label">Ingredients</span>
+      <div style="margin-top:10px">${ingRows("ing")}</div>
+      <div class="label" style="margin-top:22px">Notes</div><div class="muted" style="font-size:13.5px;margin-top:6px">Freezes well for 3 months.</div>
+      ${applied() ? callout(state.apply === "inplace" ? "↑ The assistant's swap, in place for tonight" : "↑ The swap marked, the line unchanged", "left:250px;top:342px") : ""}
+    </div>
+    <div class="col c3" style="position:relative"><div class="label" style="margin-bottom:12px">Abbreviated recipe</div>${stepCards(true)}
+      ${callout("Done steps fade; the step being cooked has a brand edge", "left:230px;top:10px")}
+    </div>
+    ${withChat ? `<div class="col chat" style="border-left:1px solid var(--line);position:relative">
+      <div class="head"><b>Ask about this recipe</b><span class="grow"></span><span class="muted" style="font-size:12px">knows step 6, ticks, timers</span></div>
+      <div class="log">${chatLog()}</div>${chatAsk()}
+      ${callout("An answer that changes what to do brings a change to tap", "left:20px;top:58px")}
+    </div>` : `<div class="col" style="border-left:1px solid var(--line);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);padding:30px;text-align:center;position:relative">
+      <div style="font-size:30px">💬</div><div style="font:600 16px var(--display);color:var(--fg)">Ask while you cook</div>
+      <div style="font-size:13.5px;line-height:1.5">“Out of celery?” “Can I do this in the oven?” “Too salty, what now?” Or just say what happened; it's kept for the review.</div>
+      <div class="inputrow" style="width:100%;margin-top:6px"><input class="field" placeholder="Ask, or say what happened…"><button class="mic">🎙</button></div>
+      ${callout("Without a model this column is a plain Note box", "left:20px;top:20px")}
+    </div>`}
+  </div>`;
+}
+
+function reviewSuggestions() {
+  const smart = state.defaults === "smart";
+  const ch = (keep, third) => `<div class="row"><div class="choice"><span class="${keep ? "on" : ""}">Keep in recipe</span><span class="${keep ? "" : "on"}">Just this time</span>${third ? `<span>${third}</span>` : ""}</div></div>`;
+  return `
+    <div class="sugg"><div class="top"><span class="kind">Step 6 · time</span><span class="grow"></span><span class="where">Abbreviated recipe</span></div>
+      <div class="diff"><span class="l">Was</span><span class="before">Slow cook 2 – 2½ hrs.</span><span class="l">Now</span><span class="after">Slow cook <ins>3 hrs, until the beef pulls apart with a fork</ins>.</span></div>
+      <div class="why">You added 30 minutes to its timer and asked why the beef wasn't shredding.</div>${ch(smart)}</div>
+    <div class="sugg"><div class="top"><span class="kind">Step 8 · method</span></div>
+      <div class="diff"><span class="l">Was</span><span class="before">Simmer in sauce 30 min.</span><span class="l">Now</span><span class="after">Simmer in sauce <ins>uncovered</ins> 30 min<ins>, until thick</ins>.</span></div>
+      <div class="why">You said the sauce looked thin, and used the change tonight.</div>${ch(smart)}</div>
+    <div class="sugg"><div class="top"><span class="kind">Ingredient · swap</span></div>
+      <div class="diff"><span class="l">Was</span><span class="before">1 cup celery, diced</span><span class="l">Tonight</span><span class="after">1 more carrot, diced</span></div>
+      <div class="why">You had no celery. A swap for a missing ingredient is usually a one-off.</div>${ch(false, "Add as an alternative")}</div>
+    <div class="sugg"><div class="top"><span class="kind">Step 2 · tip</span></div>
+      <div class="diff"><span class="l">Add</span><span class="after"><ins>Sear in two batches; a crowded pot steams instead of browning.</ins></span></div>
+      <div class="why">At 5:58 you said “beef's not browning, pot's full”.</div>${ch(smart)}</div>`;
+}
+function desktopReview() {
+  const keep = state.defaults === "smart" ? 3 : 0;
+  return `
+  <div class="cookhead"><button class="btn ghost icon">‹</button><span class="name">How did it go?</span><span class="muted">${NAME}</span><span class="grow"></span><button class="btn ghost">Not now</button></div>
+  <div class="review">
+    <div class="left" style="position:relative">
+      <span class="label">Made this</span>
+      <div class="row"><div class="photo" style="${PHOTO};width:64px;height:64px;border-radius:12px;flex:none"></div><div><div style="font:600 18px var(--display)">${NAME}</div><div class="muted" style="font-size:13px">Today · for 5 · 3 hr 10 min at the stove</div></div></div>
+      <div class="stars">★★★★<span class="off">★</span></div>
+      <div class="photo-drop">＋ Add a photo</div>
+      <div class="mini"><label>Comment</label><div class="textarea">Just this time: no celery, used another carrot.<br><span class="muted">Kids loved it.</span></div></div>
+      ${callout("One-offs open the comment, as today", "left:150px;top:30px")}
+    </div>
+    <div class="right" style="position:relative">
+      <div class="row"><span style="font:600 22px var(--display)">Suggested changes</span><span class="grow"></span><span class="muted" style="font-size:13px">from tonight's chat, notes and timers</span></div>
+      ${reviewSuggestions()}
+      <div class="savebar"><span class="grow" style="font-size:14px">${keep ? `<b>${keep} changes</b> go into the recipe; 1 is for tonight` : `Nothing goes into the recipe unless you choose Keep`}</span><button class="btn primary">Save</button></div>
+      ${callout("Each change shown before and after, with why", "left:36px;top:2px")}
+    </div>
+  </div>`;
+}
+
+// ── Phone ──────────────────────────────────────────────────────────────────
+function phonePage() {
+  return `
+  <div class="pscroll">
+    <div class="pphoto photo" style="${PHOTO}"><button class="glass" style="left:12px">‹</button><button class="glass" style="right:64px">✎</button><button class="glass" style="right:12px">⋯</button></div>
+    <div class="pbody">
+      <div class="ptags">${TAGS.join(" · ")}</div>
+      <h2 class="ptitle">${NAME}</h2>
+      <div class="pfacts"><div><b>20 min</b><span>Prep</span></div><div><b>3 hr 30</b><span>Cook</span></div><div><b>3 hr 50</b><span>Total</span></div></div>
+      <div class="ptabs"><button>Ingredients</button><button class="on">Method · 10 steps</button></div>
+      ${stepCards(false, true)}
+    </div>
+  </div>
+  <div class="cookbar"><button class="btn primary">▶ Start cooking</button><button class="btn round">🛒</button><button class="btn round">▦</button></div>
+  <div class="tabbar"><span>Home</span><span>Plan</span><span><div class="plus">+</div></span><span>Shopping</span><span style="color:var(--fg);font-weight:600">Recipes</span></div>`;
+}
+function phoneCooking(tab, sheet) {
+  const big = state.text === "big" ? " big" : "";
+  return `
+  <div class="pscroll${big}">
+    <div class="phead">
+      <div class="row1"><button class="btn ghost icon">✕</button><span class="name">${NAME}</span><span class="state" style="font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--brand);background:var(--brand-50);border:1px solid #b6dfe2;border-radius:999px;padding:2px 8px">Cooking</span></div>
+      <div class="row"><span class="stepper"><button class="btn icon sm">−</button><span class="v">Serves 5</span><button class="btn icon sm">+</button></span><span class="grow"></span><span class="muted" style="font-size:12.5px">5 of 10 done</span></div>
+    </div>
+    <div class="pbody flat">
+      <div class="ptabs" style="top:0"><button class="${tab === "ing" ? "on" : ""}">Ingredients · 15/18</button><button class="${tab === "method" ? "on" : ""}">Method</button></div>
+      ${tab === "ing" ? `<div class="plist">${ingRows("prow")}</div>` : stepCards(true, true)}
+    </div>
+  </div>
+  ${sheet ? "" : `<div class="ptimers"><span class="tchip">◷ Slow cook <span class="t">0:24</span><button>+5</button><button>Pause</button></span></div>`}
+  ${sheet ? `<div class="pdim"></div><div class="psheet chat"><div class="grab"></div>
+      <div class="head" style="padding:8px 16px 10px"><b>Ask about this recipe</b><span class="grow"></span><button class="btn ghost icon sm">⌄</button></div>
+      <div class="log" style="padding:12px 14px">${chatLog()}</div>${chatAsk()}</div>`
+    : `<div class="cookbar low"><button class="btn" style="flex:1;background:var(--paper)">💬 Ask</button><button class="btn primary" style="flex:1">Finish</button></div>`}`;
+}
+function phoneReview() {
+  return `
+  <div class="pscroll">
+    <div class="phead"><div class="row1"><button class="btn ghost icon">‹</button><span class="name">How did it go?</span><button class="btn ghost sm">Not now</button></div></div>
+    <div class="pbody flat" style="padding-bottom:110px">
+      <div class="stars" style="text-align:center">★★★★<span class="off">★</span></div>
+      <div class="row"><div class="photo-drop" style="height:70px;flex:1">＋ Photo</div></div>
+      <div class="textarea" style="min-height:64px">Just this time: no celery, used another carrot.</div>
+      <div class="row" style="margin-top:6px"><span style="font:600 19px var(--display)">Suggested changes</span></div>
+      ${reviewSuggestions()}
+    </div>
+  </div>
+  <div class="cookbar low"><button class="btn primary">Save</button></div>`;
+}
+
+// ── The stage ──────────────────────────────────────────────────────────────
+const NOTES = {
+  page: "<b>1 · The recipe page as it is, with Start cooking in place of Cook.</b> Nothing else changes until it is pressed. Cook mode, its deck and its filmstrip are gone.",
+  cooking: "<b>2 · Cooking: the same page with what's in the way folded.</b> The nav and the left page fold into one header line: the name, the servings, the running timer, Ask and Finish. Same cards, same columns; done steps fade and the step being cooked has a brand edge. The screen stays on. <span class='try'>Try “Text a step larger”.</span> On a phone the tab bar steps aside and the bar holds Ask and Finish.",
+  assistant: "<b>3 · The assistant, beside the method.</b> It knows the recipe at these servings, the marked step, the ticks and the timers. An answer that changes what to do brings a change to tap; tapped, it shows on the page for tonight, nothing written to the recipe. <span class='try'>Try “…or only marks it”</span> to compare. On a phone it is a half-height sheet, the step still visible above it.",
+  review: "<b>4 · Finish opens the review.</b> Made this on the left as it is today; on the right, the changes the model suggests from tonight's chat, notes and timers, each before and after with why, and Keep in recipe or Just this time. A swap can also become an alternative on its line. <span class='try'>Try “Review: all Just this time”</span> for a tap-through that writes nothing.",
+};
+function render() {
+  const stage = document.getElementById("stage");
+  document.body.classList.toggle("no-callouts", state.callouts === "off");
+  document.getElementById("which").style.display = state.size === "phone" ? "none" : "";
+  document.getElementById("note").innerHTML = state.size === "phone"
+    ? "<b>Phone: the recipe page, Cooking on the method tab, the assistant's sheet, and the review.</b> Start cooking keeps the page; the tab bar steps aside for Ask and Finish, the timer floats above them, and the sheet leaves the step in view."
+    : NOTES[state.which];
+  const avail = { w: stage.clientWidth - 32, h: stage.clientHeight - 28 };
+  if (state.size === "desktop") {
+    const s = Math.min(1, avail.w / 1440, avail.h / 900);
+    const inner = { page: desktopPage, cooking: () => desktopCooking(false), assistant: () => desktopCooking(true), review: desktopReview }[state.which]();
+    stage.innerHTML = `<div class="holder" style="width:${1440 * s}px;height:${900 * s}px"><div class="frame" style="width:1440px;height:900px;transform:scale(${s})">${inner}</div></div>`;
+  } else {
+    const s = Math.min(1, (avail.w - 60) / (4 * 406), (avail.h - 16) / 860);
+    const ph = (inner, cap) => `<div class="holder" style="width:${406 * s}px;height:${860 * s}px;margin-top:16px"><div class="cap">${cap}</div><div class="frame phone" style="width:406px;height:860px;transform:scale(${s})">${inner}</div></div>`;
+    const keep = state.which;
+    state.which = "cooking"; const c = phoneCooking("method", false);
+    state.which = "assistant"; const a = phoneCooking("method", true); const r = phoneReview();
+    state.which = keep;
+    stage.innerHTML = ph(phonePage(), "1 · Recipe page") + ph(c, "2 · Cooking") + ph(a, "3 · Assistant") + ph(r, "4 · Review");
+    // Open the cooking frames where the cook is: the marked step in view.
+    stage.querySelectorAll(".step.now").forEach((step) => { const sc = step.closest(".pscroll"); sc.scrollTop = step.offsetTop - 260; });
+  }
+}
+function seg(id, key) {
+  document.getElementById(id).addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    state[key] = b.dataset.v;
+    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle("on", x === b));
+    render();
+  });
+}
+["size", "which", "text", "apply", "defaults", "callouts"].forEach((k) => seg(k, k));
+// The review's choices respond to a click.
+document.getElementById("stage").addEventListener("click", (e) => {
+  const c = e.target.closest(".choice span"); if (!c) return;
+  c.parentElement.querySelectorAll("span").forEach((x) => x.classList.toggle("on", x === c));
+});
+window.addEventListener("resize", render);
+render();
+</script>
+</body>
+</html>

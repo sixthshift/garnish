@@ -4,7 +4,7 @@ Plans to refine before building. Stage 16 (decisions.md rows 190–195) reorgani
 
 Each plan below has the problem as seen, a direction, the questions to settle, and what it touches. Nothing here is decided. When a plan is settled it becomes a decisions.md row and a milestone in plan.md, and its section here is reduced to a link.
 
-Order is by value: 1 and 2 share the rotation-pick logic in `plan/fill` and are the state the household meets most; 3 and 4 make Shopping usable in the shop; 5 closes the loop the planner already depends on; 6 is a set of small frictions. 7 came after the walk-through and ranks with 1 and 2: it is how a recipe gets better at all. 8 waits on other work: it polishes importing once Chromium and the model are further into it.
+Order is by value: 1 and 2 share the rotation-pick logic in `plan/fill` and are the state the household meets most; 3 and 4 make Shopping usable in the shop; 5 closes the loop the planner already depends on; 6 is a set of small frictions. 7 came after the walk-through and ranks with 1 and 2: it is how a recipe gets better at all (rewritten 2026-11-07, when cook mode was found unused). 8 waits on other work: it polishes importing once Chromium and the model are further into it.
 
 ---
 
@@ -119,39 +119,53 @@ Each is small enough to settle in a line.
 
 ---
 
-## 7. Cooking is where a recipe is edited
+## 7. Cooking from the recipe page, with an assistant and a review
 
-**The premise.** A recipe is amended while it is being cooked, not before and not after. The amount that was too much, the step that took longer, the swap that worked are known at the stove and forgotten by the time anyone sits at an editor. So cook mode is the recipe's main editor in practice, and the full editor is for setting a recipe up (import, parts, parsing). Cook mode should make an adjustment as easy as ticking an ingredient.
+**The premise.** A recipe is amended while it is being cooked: the amount that was too much, the swap that worked, the step that took longer are known at the stove and forgotten by the time anyone opens an editor. The 2026-11-03 version of this plan put that in cook mode. In use (Jason, 2026-11-07) cook mode is not where cooking happens: the recipe page is left open and cooked from (row 213 keeps its screen on). So cook mode goes, and its job moves to the recipe page in three pieces: a light **Cooking** state of the page itself, an **assistant** to ask while cooking, and a **review** at the end that turns what happened into suggested changes.
 
-**Seen.** Row 193 gave cook mode two kinds of change: an amount (the pencil on the ingredients card, or "Change an amount" under a step) and a step's text ("Change this step"), held until the finish card asks Keep in recipe or Just this time. In use:
-- **An amount is a number only.** The unit and the food cannot change, so "1 pinch green prawns" can become "2 pinch", not "200 g", and "used shallots instead" has nowhere to go.
-- **A step change is a full rewrite.** "How you did it" opens the whole step in a textarea; to say "took 10 minutes longer" or "use the big pan" the cook retypes or edits the step's prose on a phone keyboard with wet hands, the keyboard covering the card.
-- **What happens at the stove has no vocabulary.** There is no add (a squeeze of lemon), skip (left out the chilli), swap, more/less, longer/shorter, hotter/cooler, or "a tip for next time". The house style has a home for tips, the step's supporting line, but cook mode cannot write to it.
-- **Two quiet text links per card** ("Change an amount", "Change this step") are the only way in, and the ingredients card has a pencil per row; three entry points that each do one narrow thing.
-- **Timers know things nobody records.** A step whose timer ran out and was dismissed late, or a step the cook stayed on far longer than its time, is evidence the time is wrong; nothing notices.
-- **Anything too big for the stove is lost.** "This step is confusing" or "split this into two" cannot be done with one hand, and there is nowhere to leave it for later.
+**Seen.**
+- Cook mode (`/recipes/$slug/cook`, the phone's deck and the desktop's filmstrip) is a different screen from the page Jason reads, so it is skipped; its pending changes (row 193) are never made.
+- Row 193's changes are narrow anyway: an amount as a number only, a step as a full rewrite in a textarea, and no words for "used shallots", "left out the chilli", "took 10 minutes longer", "a tip for next time".
+- What the page already has is most of what cooking needs: ticking ingredients, step timers (with push alarms), quick edit's pencils, Made this, and now the screen kept on.
 
 **Direction.**
-- **One Adjust per card**, a large target, opening a sheet of what can happen at the stove, tap first and type last:
-  - on an ingredient: *More / Less* (a stepper in the ingredient's own unit, not a keypad), *Different amount* (amount and unit), *Swapped for…* (a food picker), *Left out*;
-  - on a step: *Took longer / shorter* (a minutes stepper, written into the step's time and timer), *Hotter / cooler* (the oven line), *A tip for next time* (one line, written to the step's supporting line), *Add something* (an ingredient to this step), *Rewrite* (today's textarea, last, not first);
-  - anywhere: *Fix this later*, a flag with an optional word, for what cannot be done at the stove.
-- **Changes show where they were made**, marked on the deck (as row 193 already does for amounts), so the cook sees the recipe as they are cooking it.
-- **Timers as evidence.** When a step's timer is extended or the cook stays well past it, the finish card offers "Step 4 took about 8 minutes longer · Update the time", without being asked during the step.
-- **The finish card stays the one place a change is decided**, Keep in recipe or Just this time, now over the richer set. A kept swap or tip goes through the editor's validation as a kept amount does today. *Fix this later* flags land on the recipe page (and the editor) as a short list, until done.
-- **Words, when there is a model.** One free "What changed?" box on the finish card (or by dictation through the phone's keyboard) that the model turns into the same structured changes, each shown for Keep or Just this time; a kept rewrite of a step goes through the house style's restyle and its conservation check so the method keeps the household's voice. With no model, the words become the Made this comment, as Just this time changes do now.
+
+*Cooking, a state of the recipe page.* Start cooking (the phone's wide button in the bar; a button in the desktop header's actions) does not leave the page. It puts the page in a Cooking state, `?cooking` in the address so a reload or an alarm's link keeps it:
+- The page looks the same: same columns, same cards, same type. What changes is what is in the way. The tab bar and the top bar step aside (as the editor's do, row 143); the photo, rating, facets and the history fold away to a one-line header (the name, servings, Done); notes stay, below the method.
+- The step being cooked is marked, a quiet brand edge on its card, moved on by tapping a step or ticking it done; nothing else about the cards changes. Done steps dim like ticked ingredients.
+- The phone's bar becomes **Ask** (the assistant) and **Finish**; the shopping and plan buttons leave it while cooking.
+- Leaving with the back button or the header's ✕ keeps the session (it is resumable from Home's Tonight and the recipe page, "Cooking · resume"); **Finish** goes to the review.
+
+*The assistant.* A chat about this recipe, as it is being cooked. On a phone a sheet from the bottom over the lower half, so the step stays visible above it; on a desktop a column at the right of the spread, open while cooking.
+- It is given the recipe at the page's servings and choices, its alternatives, the step marked, the ticks, the running timers and the conversation so far. It answers questions ("out of shallots?", "can I do this in the oven instead?", "I only have 400 g of mince") in a sentence or two, metric and en-AU.
+- When an answer changes what to do, it comes with an **adjustment** as a chip under the message: *Use red onion for shallots*, *Mince 400 g (was 500 g); scale the rest?*, *Simmer 30 min (was 20)*. Tapping it applies it to the page **for this cook**: the line or step shows the change, marked, as row 193 marked amounts. Nothing is written to the recipe yet.
+- The cook can also just say what happened ("too salty", "the sauce took ages to thicken"). Those are kept as notes for the review, not answered at length.
+- The vocabulary of an adjustment is fixed and small, so it maps onto the recipe document: an ingredient's amount, unit, food or note; an ingredient added or left out; a step's time, temperature, or text; a tip on a step (the house style's supporting line). The model returns these as structured output, the same shapes the editor saves.
+- Without a model (`aiAvailable` false) there is no chat: the Ask button is **Note**, a one-line box whose notes go to the review, and the pencils stay as quick edit's.
+
+*The review.* Finish opens a page of its own, `/recipes/$slug/review`, the end of the cooking session:
+- At the top, Made this as it is: rating, the comment, a photo, the date.
+- Below, **Suggested changes**, each as before and after on the line or step it touches, with **Keep in recipe** and **Just this time** (the default for an adjustment made for a missing ingredient; Keep for a time or amount that was corrected). The model writes them from the whole session: the adjustments taken, the notes, the chat, and the timers (a step whose timer was extended, or left running well past its time, is evidence its time is wrong).
+- Kept changes are written through the editor's validation in one save; a changed step's text goes through the house style's restyle and its conservation check, so the method keeps the household's voice. What is just for this time, and the notes, become the opening words of the Made this comment.
+- Without a model, the review lists the adjustments taken and the notes, with the same Keep and Just this time.
+- Skipping the review (✕) logs nothing and keeps the session for later, until the next Start cooking of the recipe replaces it.
+
+*The session.* One cooking session per recipe at a time, held on the server (a `cook_session` table: the recipe, servings and choices, when it began, the marked step, the adjustments, the notes, the conversation), so a reload, a second device and Home's resume all see it, and the review can be opened on the desktop after cooking on the phone. Finishing or discarding deletes it; one older than two days is offered as "Finish or discard" rather than resumed.
+
+*What goes.* The cook route, the deck and the filmstrip, `src/domain/recipes/components/cook/`, `recipe/cook.ts`, the `cook` sizes on `StepCard`, `IngredientRow`, `TimerStrip`, `NumberStepper` and `MadeThisButton`, the `fullscreen` shell mode, the top toast placement, and row 193's session-storage changes. Home's and the desktop panel's **Cook** open the recipe page in Cooking at the plan's servings and choices. A sub-recipe line's link opens the child's page at the derived servings.
 
 **To settle.**
-- Is the change vocabulary above the right one? It should come from what the household actually changes; a few real cooks' worth of "what I'd have changed" would settle it better than guessing.
-- One Adjust button per card, or Adjust on each ingredient row and each step separately? A long-press on a row is quicker but undiscoverable.
-- Does a swap change the recipe's food, or add the alternative as the ingredient's note ("or shallots")? Mealie and Tandoor would do the note; a household that always swaps wants the food.
-- Should *More / Less* be a nudge without a number ("a bit more salt"), kept as a tip, or always a number?
-- Timer evidence: what counts as "well past", and is it worth asking at all for a step the cook simply left running?
-- Where *Fix this later* lives: on the recipe page, Home's glance, or only in the editor.
-- With the model: the finish-card box, per-step dictation, or both? Does a kept rewrite always go through restyle, or only when the household asks?
-- Does this change the editor's role, so that the recipe page's Edit becomes the setup tool, and the quick edit on the recipe page (`useQuickEdit`) is replaced by the same Adjust sheet outside cook mode?
+- Is the Cooking state right as described: the same page with its chrome folded away, or should it also enlarge the text a step?
+- The marked step: moved on by tapping, or also offered by the assistant ("Done with this? Next is…") and by a finished timer?
+- Does a tapped adjustment change the page at once (the line reads "red onion"), or only show as a pending mark until the review?
+- The review's defaults: Keep for corrections and Just this time for substitutions, or Just this time for everything so nothing is written by a quick tap-through?
+- Server session or device-local: the server lets the review move to the desktop and Home show "resume", at the cost of a table.
+- A new model use, `cook` (`AI_COOK_MODEL`), since a chat wants a fast model and the review a careful one: one use or two?
+- Should the MCP connector see the session (an assistant on the phone's own app asking "what am I cooking?")? Later, probably.
 
-**Touches.** `src/domain/recipes/components/cook/` (`cookChanges.ts` grows new change kinds, `ChangesReview`, `FinishedCard`, `AmountForm`), `CookCardView` and `StepCard`, the timers (`TimerStrip` and its state), `saveQuickEdit`, the style domain for a kept rewrite, a new flag store for *Fix this later* (a migration), the recipe page and editor to show flags.
+**Order of building.** (1) Cooking state and the review without a model, and cook mode removed; it stands alone and is useful the same day. (2) The assistant's chat and adjustments. (3) The model's suggested changes on the review, with the timer evidence.
+
+**Touches.** `RecipePage` and `PhoneRecipe`/`RecipeSpread` (the Cooking state), `CookBar`, `src/domain/recipes/routes/` (`recipeIndex`'s search, a `review.ts`, `cook.ts` removed), a new `src/domain/recipes/cooking/` module (session, adjustments and their application to a document), `src/server/ai/` (the assistant's and the review's prompts, a `cook` use), a migration for `cook_session`, `src/api/rpc/` (a `cooking.ts`), `MadeThisSheet`, Home's Tonight, `RecipeInset`.
 
 ---
 
