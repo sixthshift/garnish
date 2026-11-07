@@ -241,6 +241,19 @@ Decisions.md row 208: every phone page redesigned from the Phone half of `docs/m
 - [x] **M48.7 Cook and Settings.**
 - [x] **M48.8 Docs.**
 
+## M49 What a recipe is, layer by layer
+
+Decisions.md row 209: seven layers of fixed values (course, meal, cuisine, diet, main ingredient, method, season), each a set, beside the tags and the kind.
+
+- [x] **M49.1 The layers.** `src/domain/recipes/recipe/facets.ts` (the lists, their en-AU labels, `isBuildingBlock`); `031_recipe_facet.sql` and its mirror; the repository reads, writes, filters (any within a layer, all across) and counts them, `ref(id).facets` sets them alone; the document, the summary, the draft, duplicates and backups carry them; `setFacets` and `recipeFacetCounts`; `listRecipes` takes `facets`.
+- [ ] **M49.2 The recipe page.** Both layouts show what has been said as chips under the header and set every layer from one sheet (a phone) or popover (a desktop), written at once as the kind is.
+- [ ] **M49.3 The library.** A desktop's filters column and a phone's filters sheet gain a section per layer with its counts; the choice is in the address.
+- [ ] **M49.4 Marking in bulk.** Row 195's "Mark Rotation & Weekend" grows into marking any layer under every card, since every recipe starts with none said.
+- [ ] **M49.5 The import.** schema.org's `recipeCategory`, `recipeCuisine` and `suitableForDiet`, and a Mealie recipe's categories, map onto the layers where a word matches; the model's answer carries them too; the review shows them to correct.
+- [ ] **M49.6 The MCP connector.** The document reads and writes `facets`, `search_recipes` filters by them, the instructions say what each layer means.
+- [ ] **M49.7 The planner.** Dinners come from mains (or recipes with no course said), never a building block; a breakfast or lunch slot prefers a recipe that suits it; the model's library line carries each recipe's facets.
+- [ ] **M49.8 Docs and e2e.**
+
 ## Blocked
 
 _(none)_
@@ -343,3 +356,4 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-11-07  M48    done   —        opus   row 208; SwipeRow first, then seven areas built in parallel worktrees and merged without a conflict; Home's Swap moved onto the plan's new sheet (the day's entries and the shelf passed, closed after its one choice); gate 4052 unit, lint, tsc, e2e 74 (phone-<area>.spec.ts per page; the phone specs list foods no other spec plans, and swipe a row only once it is scrolled mid-screen)
 2026-11-07  M48.8  note   —        opus   choices to review: today's day button on the phone's plan is brand-filled (design-language rule 5 keeps brand for identity); the saved Aisles/Meals choice is gone (row 182's phone meal view), the chips narrow for a visit; steps get no "Needs a label" (the editor has no label field); Looks right lasts the Check only; the + sheet has no grab handle (the Modal has none); rounded-2xl and up generate nothing in this theme, so nine older uses are square; the desktop library's first e2e journey flakes about 1 in 3 on Back/Forward then Enter, on the base commit too
 2026-11-07  M48    note   —        opus   Jason left the open calls to me: selected is the neutral pressed fill everywhere (the shopping meal chip, the phone plan's today button, rule 5), the trolley bar a raised neutral card, Settings' tiles neutral (tints sank into dark holes); cook mode is one dark frame on both layouts (`cook/darkFrame.ts`, the card keeping the theme's tokens); the line stays at 1024 (an iPad sideways is 1180 or wider, so 640–1023 is a phone's in a column); the phone recipe's photo is at most 38% of a short screen so its tabs show above Start cooking. Also merged: a dark-mode pass (the swipe labels, Tonight's Cook, the progress track, the to-check amber), the 640–1023 pass (Home, Recipes, Cook, the editor and the tab bar held to a column), the library flake (a pending search write dropped once the page moved), and the review's nine
+2026-11-07  M49.1  done   —        opus   row 209; facets.ts, 031_recipe_facet.sql, repository, document, summary, draft, duplicate, backup, setFacets, recipeFacetCounts, listRecipes facets

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { tagSchema } from "../reference";
+import { facetsSchema } from "./facets";
 import { recipeKindSchema } from "./recipe";
 
 /**
@@ -19,6 +20,8 @@ export const recipeSummarySchema = z.object({
   lastMade: z.iso.datetime().nullable(),
   favourite: z.boolean(),
   kind: recipeKindSchema.nullable(),
+  /** What it is, layer by layer (row 209). */
+  facets: facetsSchema,
   tags: z.array(tagSchema),
   /** The first ingredient lines, part order then row order, formatted with domain/recipes/ingredient/format.ts's formatIngredient. */
   ingredientPreview: z.array(z.string()),

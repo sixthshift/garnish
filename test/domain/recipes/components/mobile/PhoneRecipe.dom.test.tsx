@@ -9,6 +9,7 @@ import { describe, expect, test, vi } from "vitest";
 import { CookBar } from "../../../../../src/domain/recipes/components/mobile/CookBar";
 import { PhoneRecipe, type PhoneRecipeProps } from "../../../../../src/domain/recipes/components/mobile/PhoneRecipe";
 import type { Recipe } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 vi.mock("../../../../../src/api/rpc/recipes", () => ({ setFavourite: vi.fn(async () => ({})), setKind: vi.fn(async () => ({})) }));
@@ -33,6 +34,7 @@ const recipe: Recipe = {
   sourceUrl: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   notes: [],
   tags: [{ id: crypto.randomUUID(), name: "Weeknight", slug: "weeknight" }],
   parts: [

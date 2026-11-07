@@ -10,6 +10,7 @@ import { saveQuickEdit } from "../../../../../src/domain/recipes/components/reci
 import { TimelineList } from "../../../../../src/domain/recipes/components/recipe/Timeline";
 import { offersSaveAsNote, withNoteFromCook } from "../../../../../src/domain/recipes/components/recipe/timelineNotes";
 import type { Recipe, TimelineEvent } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { getTicks, type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
 
 // `updateRecipe` is the only server call `saveQuickEdit` makes; kept here so
@@ -46,6 +47,7 @@ const stored: Recipe = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 0,
   yieldUnit: null,

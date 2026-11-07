@@ -9,6 +9,7 @@ import { applyPlanProposal, proposePlanWeek } from "../../../src/api/rpc/planner
 import { createRecipe, deleteRecipe } from "../../../src/api/rpc/recipes";
 import { createTimelineEvent } from "../../../src/api/rpc/timeline";
 import type { RecipeInput } from "../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../src/domain/recipes/recipe";
 import { AiError } from "../../../src/server/ai/client";
 import { libraryRecipe, mergeRecent, proposalInput, proposeWeek, resolveProposal, runProposal, weekSlots } from "../../../src/server/ai/planner";
 import { apiProvider, DEFAULT_API_MODEL } from "../../../src/server/ai/provider/api";
@@ -66,6 +67,7 @@ function fixture(ids: { open: string; taken: string }) {
         lastMade: "2026-08-30T00:00:00.000Z",
         favourite: true,
         kind: null,
+        facets: noFacets(),
         tags: [{ id: "t", name: "Pasta", slug: "pasta" }],
         ingredientPreview: [],
       }),
@@ -81,6 +83,7 @@ function fixture(ids: { open: string; taken: string }) {
         lastMade: null,
         favourite: false,
         kind: null,
+        facets: noFacets(),
         tags: [],
         ingredientPreview: [],
       }),

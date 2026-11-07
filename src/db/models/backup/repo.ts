@@ -12,7 +12,8 @@ import { food, foodConversion, foodPack } from "../food/schema";
 import { mealPlanEntry } from "../plan/schema";
 import { plannerRule } from "../planner/schema";
 import { insertAlternatives, readAlternatives } from "../recipe/alternatives";
-import { alternative, alternativeItem, ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "../recipe/schema";
+import { selectFacets, writeFacets } from "../recipe/facets";
+import { alternative, alternativeItem, ingredient, part, recipe, recipeFacet, recipeNote, recipeTag, step, stepIngredient } from "../recipe/schema";
 import { shoppingItem, shoppingItemSource } from "../shopping/schema";
 import { styleRule } from "../style/schema";
 import { tag } from "../tag/schema";
@@ -76,6 +77,7 @@ export function backupRepository(db: Database) {
       rating: row.rating,
       favourite: row.favourite,
       kind: row.kind,
+      facets: selectFacets(dz, row.id),
       recipeServings: row.servings,
       recipeYieldQuantity: row.yieldQuantity,
       yieldUnitId: row.yieldUnitId,
@@ -130,6 +132,7 @@ export function backupRepository(db: Database) {
       part,
       recipeNote,
       recipeTag,
+      recipeFacet,
       foodConversion,
       foodPack,
       food,
@@ -345,6 +348,7 @@ export function backupRepository(db: Database) {
             })
             .run();
           for (const tagId of r.tagIds) tx.insert(recipeTag).values({ recipeId: r.id, tagId }).run();
+          writeFacets(tx, r.id, r.facets);
           r.notes.forEach((note, position) => {
             tx.insert(recipeNote)
               .values({ ...note, recipeId: r.id, position })

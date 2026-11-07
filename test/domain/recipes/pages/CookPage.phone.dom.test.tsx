@@ -7,6 +7,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import type { Recipe } from "../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import { CookSearch } from "../../../../src/domain/recipes/routes/cook";
 
 vi.mock("../../../../src/api/rpc/recipes", () => ({ getRecipe: vi.fn(), subRecipesOf: vi.fn(async () => []) }));
@@ -41,6 +42,7 @@ const rice: Recipe = {
   sourceUrl: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   notes: [],
   tags: [],
   parts: [

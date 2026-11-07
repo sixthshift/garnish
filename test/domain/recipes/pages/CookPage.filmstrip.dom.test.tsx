@@ -6,6 +6,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 import type { Recipe } from "../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import { CookSearch } from "../../../../src/domain/recipes/routes/cook";
 import { atDesktop } from "../../../helpers/layout";
 
@@ -41,6 +42,7 @@ const rice: Recipe = {
   sourceUrl: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   notes: [],
   tags: [],
   parts: [

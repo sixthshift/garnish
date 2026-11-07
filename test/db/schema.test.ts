@@ -113,6 +113,7 @@ test("the migrations create every table in architecture.md", () => {
     "push_subscription",
     "push_vapid",
     "recipe",
+    "recipe_facet",
     "recipe_note",
     "recipe_tag",
     "seed_batch",

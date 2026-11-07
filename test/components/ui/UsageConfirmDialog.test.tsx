@@ -3,6 +3,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { UsageConfirmDialogContent, usageListLimit, usageNames, usageSummary } from "../../../src/components/ui/UsageConfirmDialog";
 import type { RecipeSummary } from "../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../src/domain/recipes/recipe";
 
 function summary(name: string): RecipeSummary {
   return {
@@ -17,6 +18,7 @@ function summary(name: string): RecipeSummary {
     lastMade: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     tags: [],
     ingredientPreview: [],
   };

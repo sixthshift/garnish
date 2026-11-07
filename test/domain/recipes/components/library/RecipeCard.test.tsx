@@ -7,6 +7,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { capTags, RecipeCard } from "../../../../../src/domain/recipes/components/library/RecipeCard";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Tag } from "../../../../../src/domain/recipes/reference";
 
 const tag = (n: number): Tag => ({ id: `dddddddd-dddd-4ddd-8ddd-dddddddddd0${n}`, name: `Tag ${n}`, slug: `tag-${n}` });
@@ -23,6 +24,7 @@ const base: RecipeSummary = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   tags: [],
   ingredientPreview: [],
 };

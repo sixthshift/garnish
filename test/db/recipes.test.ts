@@ -5,7 +5,7 @@ import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../src/db/connection/open";
 import { migrate } from "../../src/db/migrations/migrate";
 import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
-import { type RecipeInput, recipeInputSchema, recipeSchema, recipeSummarySchema } from "../../src/domain/recipes/recipe";
+import { noFacets, type RecipeInput, recipeInputSchema, recipeSchema, recipeSummarySchema } from "../../src/domain/recipes/recipe";
 import { restyledPart } from "../helpers/restyle";
 
 let db: Database;
@@ -371,6 +371,7 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     lastMade: "2026-09-01T08:00:00.000Z",
     favourite: false,
     kind: null,
+    facets: full.facets,
     tags: full.tags,
     ingredientPreview: ["200 g spaghetti", "salt, to taste", "50 g butter, cold"],
   });
@@ -386,6 +387,7 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     lastMade: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     tags: toast.tags,
     ingredientPreview: [],
   });
@@ -910,4 +912,68 @@ test("a part the editor adds after a restyle has no original of its own", () => 
   repo.ref(created.id).replace(doc);
 
   expect(sourceSteps()).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."], null]);
+});
+
+// Facets (decisions.md row 209): seven layers of fixed values, each a set.
+
+test("facets round-trip through create, update and the list summary, in each list's own order, and default to none said", () => {
+  expect(repo.create(recipeInputSchema.parse(minimal("Plain"))).facets).toEqual(noFacets());
+  const created = repo.create(
+    recipeInputSchema.parse(
+      minimal("Larb", { facets: { course: ["salad", "main"], cuisine: ["thai"], diet: ["gluten-free", "dairy-free"], season: ["summer"] } })
+    )
+  );
+  expect(created.facets).toEqual({ ...noFacets(), course: ["main", "salad"], cuisine: ["thai"], diet: ["gluten-free", "dairy-free"], season: ["summer"] });
+  expect(repo.query().find((r) => r.id === created.id)!.facets).toEqual(created.facets);
+  const replaced = repo.ref(created.id).replace(recipeInputSchema.parse(minimal("Larb", { facets: { mainIngredient: ["pork"] } })))!;
+  expect(replaced.facets).toEqual({ ...noFacets(), mainIngredient: ["pork"] });
+});
+
+test("a value given twice is stored once, and an unknown value is refused by the document", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Dal", { facets: { diet: ["vegan", "vegan"] } })));
+  expect(created.facets.diet).toEqual(["vegan"]);
+  expect(recipeInputSchema.safeParse(minimal("Dal", { facets: { diet: ["paleo" as never] } })).success).toBe(false);
+});
+
+test("a stored value the lists no longer hold is dropped on the way out", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Dal", { facets: { diet: ["vegan"] } })));
+  db.run("INSERT INTO recipe_facet (recipe_id, layer, value) VALUES (?, 'diet', 'paleo')", [created.id]);
+  expect(repo.getById(created.id)!.facets.diet).toEqual(["vegan"]);
+});
+
+test("ref(id).facets replaces every layer alone, leaves updated_at, and reports whether the id exists", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Toast", { facets: { course: ["snack"] } })));
+  expect(repo.ref(created.id).facets({ ...noFacets(), meal: ["breakfast"] })).toBe(true);
+  const stored = repo.getById(created.id)!;
+  expect(stored.facets).toEqual({ ...noFacets(), meal: ["breakfast"] });
+  expect(stored.updatedAt).toBe(created.updatedAt);
+  expect(repo.ref(ids.recipe).facets(noFacets())).toBe(false);
+});
+
+test("the filter asks any of a layer's values and every layer given, and the counts are over the whole collection", () => {
+  repo.create(recipeInputSchema.parse(minimal("Pad see ew", { facets: { course: ["main"], cuisine: ["thai"] } })));
+  repo.create(recipeInputSchema.parse(minimal("Pho", { facets: { course: ["main", "soup"], cuisine: ["vietnamese"] } })));
+  repo.create(recipeInputSchema.parse(minimal("Nuoc cham", { facets: { course: ["sauce"], cuisine: ["vietnamese"] } })));
+  repo.create(recipeInputSchema.parse(minimal("Toast")));
+  const slugs = (facets: object) =>
+    repo
+      .query({ by: "filter", facets })
+      .map((r) => r.slug)
+      .sort();
+  expect(slugs({ cuisine: ["thai", "vietnamese"] })).toEqual(["nuoc-cham", "pad-see-ew", "pho"]);
+  expect(slugs({ cuisine: ["vietnamese"], course: ["main"] })).toEqual(["pho"]);
+  expect(slugs({ course: [] })).toEqual(["nuoc-cham", "pad-see-ew", "pho", "toast"]);
+  expect(repo.facetCounts()).toEqual(
+    expect.arrayContaining([
+      { layer: "course", value: "main", count: 2 },
+      { layer: "cuisine", value: "vietnamese", count: 2 },
+      { layer: "course", value: "sauce", count: 1 },
+    ])
+  );
+});
+
+test("deleting a recipe takes its facets", () => {
+  const created = repo.create(recipeInputSchema.parse(minimal("Dal", { facets: { diet: ["vegan"] } })));
+  repo.remove(created.id);
+  expect(db.query("SELECT count(*) AS n FROM recipe_facet").get()).toEqual({ n: 0 });
 });

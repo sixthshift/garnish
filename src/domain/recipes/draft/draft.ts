@@ -1,5 +1,5 @@
 import { randomUuid } from "../../../lib/id";
-import type { ParsedRecipeInput, Recipe } from "../recipe";
+import { noFacets, type ParsedRecipeInput, type Recipe } from "../recipe";
 import { newPart } from "./parts";
 import type { RecipeDraft } from "./types";
 
@@ -20,6 +20,7 @@ export function emptyDraft(): RecipeDraft {
     sourceUrl: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     notes: [],
     tags: [],
     parts: [newPart()],

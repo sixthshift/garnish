@@ -1,6 +1,7 @@
 // duplicateInput: the write document a "Duplicate" sends, derived from a
 // stored recipe. Pure.
 import { describe, expect, test } from "vitest";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import { copyName, duplicateInput } from "../../../../src/domain/recipes/recipe/duplicate";
 import { type Recipe, recipeInputSchema } from "../../../../src/domain/recipes/recipe/recipe";
 
@@ -23,6 +24,7 @@ const tart: Recipe = {
   sourceUrl: "https://example.test/tart",
   favourite: true,
   kind: null,
+  facets: noFacets(),
   notes: [{ id: id(), title: "Tip", text: "Chill the pastry." }],
   tags: [{ id: id(), name: "Dessert", slug: "dessert" }],
   parts: [

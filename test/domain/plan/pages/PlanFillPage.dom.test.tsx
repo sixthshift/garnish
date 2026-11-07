@@ -8,7 +8,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { RecipeSummary } from "../../../../src/domain/recipes/recipe";
+import { noFacets, type RecipeSummary } from "../../../../src/domain/recipes/recipe";
 import { testRouter } from "../../../helpers/routes";
 
 const MONDAY = "2026-11-02";
@@ -26,6 +26,7 @@ function summary(id: string, name: string, kind: RecipeSummary["kind"]): RecipeS
     lastMade: null,
     favourite: false,
     kind,
+    facets: noFacets(),
     tags: [],
     ingredientPreview: [],
   };

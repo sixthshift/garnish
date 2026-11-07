@@ -15,6 +15,7 @@ import {
 } from "../../../../../src/domain/plan/components/fill/fill";
 import { type PlanDay, planEntrySchema } from "../../../../../src/domain/plan/plan";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 
 const MONDAY = "2026-09-14";
 
@@ -33,6 +34,7 @@ function recipe(name: string, over: Partial<RecipeSummary> = {}): RecipeSummary 
     lastMade: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     tags: [],
     ingredientPreview: [],
     ...over,

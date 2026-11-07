@@ -14,6 +14,7 @@ import { IngredientsToolbar, QuickEditProvider } from "../../../../../src/domain
 import { RecipeActions } from "../../../../../src/domain/recipes/components/recipe/RecipeActions";
 import { StepCard } from "../../../../../src/domain/recipes/components/recipe/StepCard";
 import type { Recipe } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 const PART_ID = "66666666-6666-4666-8666-666666666666";
@@ -29,6 +30,7 @@ const recipe: Recipe = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 0,
   yieldUnit: null,

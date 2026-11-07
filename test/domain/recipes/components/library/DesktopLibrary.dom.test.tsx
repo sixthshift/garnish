@@ -10,6 +10,7 @@ import { DesktopLayout } from "../../../../../src/app/desktop/components/Desktop
 import { PanelSearch } from "../../../../../src/app/model/panel";
 import { DesktopLibrary } from "../../../../../src/domain/recipes/components/library/desktop/DesktopLibrary";
 import type { Recipe, RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { atDesktop } from "../../../../helpers/layout";
 
 const summary = (slug: string, name: string): RecipeSummary => ({
@@ -24,6 +25,7 @@ const summary = (slug: string, name: string): RecipeSummary => ({
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   tags: [],
   ingredientPreview: [],
 });
@@ -50,6 +52,7 @@ getRecipe.mockImplementation(
     sourceUrl: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     notes: [],
     tags: [],
     parts: [{ id: crypto.randomUUID(), name: "", ingredients: [], steps: [] }],

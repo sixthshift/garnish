@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { FoodsGrid } from "../../../../../../src/app/features/settings/components/desktop/FoodsGrid";
 import type { RecipeSummary } from "../../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../../src/domain/recipes/recipe";
 import type { Aisle, FoodRow } from "../../../../../../src/domain/recipes/reference";
 import { renderInRouter } from "../../../../../helpers/dom";
 import { atDesktop } from "../../../../../helpers/layout";
@@ -48,6 +49,7 @@ const shortbread: RecipeSummary = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   tags: [],
   ingredientPreview: [],
 };

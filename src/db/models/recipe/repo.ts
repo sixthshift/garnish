@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { and, asc, eq, exists, inArray, isNull, ne, type SQL, sql } from "drizzle-orm";
 import {
   type Alternative,
+  type Facets,
   type Ingredient,
   type ParsedRecipeInput,
   type Part,
@@ -27,6 +28,7 @@ import { tagRepository } from "../tag/repo";
 import { tag } from "../tag/schema";
 import { unitRepository } from "../unit/repo";
 import { insertAlternatives, readAlternatives, type StoredAlternative } from "./alternatives";
+import { facetClauses, facetCounts, selectFacets, writeFacets } from "./facets";
 import { type RecipeRecord, type RecipeStorage, recipeRecord } from "./record";
 import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
 import { type SummaryRow, selectTags, summarise, summaryColumns } from "./summary";
@@ -53,6 +55,8 @@ export type RecipeFilter = {
   favourite?: boolean;
   /** Only recipes of this kind; unset is unfiltered. */
   kind?: RecipeKind;
+  /** Facets asked for: any of the values within a layer, every layer given (decisions.md row 209). */
+  facets?: Partial<Facets>;
   /** Only recipes never made (no last-made date) when true: the ones to try. */
   neverMade?: boolean;
   /** Sort key. Unset keeps the original newest-first order. */
@@ -323,6 +327,7 @@ export function recipeRepository(db: Database) {
       sourceUrl: row.sourceUrl,
       favourite: row.favourite,
       kind: row.kind,
+      facets: selectFacets(dz, row.id),
       restyledAt: row.restyledAt,
       notes,
       tags: selectTags(dz, row.id),
@@ -389,6 +394,7 @@ export function recipeRepository(db: Database) {
     );
 
     tx.delete(recipeTag).where(eq(recipeTag.recipeId, recipeId)).run();
+    writeFacets(tx, recipeId, doc.facets);
     tx.delete(recipeNote).where(eq(recipeNote.recipeId, recipeId)).run();
     tx.delete(part).where(eq(part.recipeId, recipeId)).run(); // steps, ingredients and their links cascade
 
@@ -511,6 +517,7 @@ export function recipeRepository(db: Database) {
     if (filter.favourite) clauses.push(eq(recipe.favourite, true));
     if (filter.kind) clauses.push(eq(recipe.kind, filter.kind));
     if (filter.neverMade) clauses.push(isNull(recipe.lastMade));
+    clauses.push(...facetClauses(dz, filter.facets));
 
     const where = clauses.length > 0 ? and(...clauses) : undefined;
     const { key: sort, dir } = resolveSort(filter.sort, filter.dir);
@@ -610,6 +617,9 @@ export function recipeRepository(db: Database) {
         .get();
       return row ?? { all: 0, rotation: 0, weekend: 0, try: 0 };
     },
+
+    /** How many recipes carry each facet value, over the whole collection, for the library's filters to show beside each. */
+    facetCounts: () => facetCounts(dz),
 
     /** Insert a recipe and its children in one transaction; the slug comes from the name. */
     create(doc: ParsedRecipeInput): Recipe {

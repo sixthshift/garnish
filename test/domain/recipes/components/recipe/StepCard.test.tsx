@@ -9,6 +9,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { QuickEditProvider } from "../../../../../src/domain/recipes/components/recipe/QuickEditContext";
 import { linkedIngredients, StepCard, stepDurations } from "../../../../../src/domain/recipes/components/recipe/StepCard";
 import type { Ingredient, Recipe, Step } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Food } from "../../../../../src/domain/recipes/reference";
 import { type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
 
@@ -281,6 +282,7 @@ describe("StepCard's quick-edit menu (M29.4)", () => {
     lastMade: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     recipeServings: 4,
     recipeYieldQuantity: 0,
     yieldUnit: null,

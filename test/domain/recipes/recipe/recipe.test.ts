@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import {
   type Recipe,
   type RecipeInput,
@@ -59,6 +60,7 @@ const fullRead: Recipe = {
   lastMade: "2026-09-01T09:00:00.000Z",
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 2,
   recipeYieldQuantity: 2,
   yieldUnit: {

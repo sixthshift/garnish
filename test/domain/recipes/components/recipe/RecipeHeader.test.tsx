@@ -10,6 +10,7 @@ import { RecipeHeader } from "../../../../../src/domain/recipes/components/recip
 import { RecipeMetaFooter } from "../../../../../src/domain/recipes/components/recipe/RecipeMetaFooter";
 import { timeStats } from "../../../../../src/domain/recipes/components/recipe/timeStats";
 import type { Recipe } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { formatDateStamp } from "../../../../../src/lib/dates";
 import { nextRating } from "../../../../../src/lib/ui/rating";
 import { isLinkable, sourceLabel } from "../../../../../src/lib/urls";
@@ -36,6 +37,7 @@ const base: Recipe = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 1,
   yieldUnit: null,

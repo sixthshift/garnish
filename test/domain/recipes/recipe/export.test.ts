@@ -2,6 +2,7 @@
 // serves it, everything else about the document is left alone, and the
 // download is named for the day it was taken.
 import { expect, test } from "vitest";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import { exportedRecipe, imageUrl } from "../../../../src/domain/recipes/recipe/export";
 import type { Recipe } from "../../../../src/domain/recipes/recipe/recipe";
 
@@ -22,6 +23,7 @@ const recipe: Recipe = {
   sourceUrl: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   notes: [],
   tags: [],
   parts: [{ id: "22222222-2222-4222-8222-222222222222", name: "", ingredients: [], steps: [] }],

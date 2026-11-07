@@ -8,6 +8,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { FoodsList, foodListItems, letterOf } from "../../../../../../src/app/features/settings/components/mobile/FoodsList";
 import type { RecipeSummary } from "../../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../../src/domain/recipes/recipe";
 import type { Aisle, FoodRow } from "../../../../../../src/domain/recipes/reference";
 import { renderInRouter } from "../../../../../helpers/dom";
 
@@ -41,6 +42,7 @@ const shortbread: RecipeSummary = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   tags: [],
   ingredientPreview: [],
 };

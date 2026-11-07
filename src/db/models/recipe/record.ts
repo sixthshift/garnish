@@ -1,10 +1,11 @@
 import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
-import { type ParsedRecipeInput, type Recipe, type RecipeKind, type SubRecipe, suggestLinks } from "../../../domain/recipes/recipe";
+import { type Facets, type ParsedRecipeInput, type Recipe, type RecipeKind, type SubRecipe, suggestLinks } from "../../../domain/recipes/recipe";
 import type { Unit } from "../../../domain/recipes/reference";
 import type { Db, Executor } from "../../connection/client";
 import { nowUtc } from "../columns";
 import type { FoodRepository } from "../food/repo";
 import { food } from "../food/schema";
+import { writeFacets } from "./facets";
 import { ingredient, part, recipe, type SourcePart, step, stepIngredient } from "./schema";
 
 /** What the repository lends a record: its handle and the document read and write it already knows how to do. */
@@ -145,6 +146,16 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
 
     /** Set the kind alone (null clears it). Nothing else changes, `updated_at` included, as with the favourite flag. True when the id exists. */
     kind: (kind: RecipeKind | null): boolean => dz.update(recipe).set({ kind }).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
+
+    /**
+     * Set the facets alone, every layer (an empty layer clears it). Nothing
+     * else changes, `updated_at` included, as with the kind. True when the id exists.
+     */
+    facets: (facets: Facets): boolean => {
+      if (!rowById(id)) return false;
+      dz.transaction((tx) => writeFacets(tx, id, facets));
+      return true;
+    },
 
     /** Set the rating alone (null clears it), and touch `updated_at`. True when the id exists. */
     rate: (rating: number | null): boolean =>

@@ -9,6 +9,7 @@ import { DesktopLayout } from "../../../src/app/desktop/components/DesktopLayout
 import { PanelSearch } from "../../../src/app/model/panel";
 import { RecipeLink } from "../../../src/components/recipe/RecipeLink";
 import type { Recipe } from "../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../src/domain/recipes/recipe";
 import { atDesktop } from "../../helpers/layout";
 
 const flourFood = { id: "food-flour", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
@@ -30,6 +31,7 @@ const tart: Recipe = {
   sourceUrl: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   notes: [],
   tags: [],
   parts: [

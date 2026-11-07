@@ -9,6 +9,26 @@ export { ingredientsText, recipeUrl } from "./copy";
 export { duplicateInput } from "./duplicate";
 export { durationsIn } from "./durations";
 export { exportedRecipe } from "./export";
+export type { Course, Cuisine, Diet, FacetLayer, Facets, MainIngredient, MealTime, Method, Season } from "./facets";
+export {
+  BUILDING_BLOCKS,
+  COURSES,
+  CUISINES,
+  DIETS,
+  FACET_LABELS,
+  FACET_LAYERS,
+  FACET_VALUES,
+  facetLabel,
+  facetsEmpty,
+  facetsSchema,
+  isBuildingBlock,
+  LAYER_NAMES,
+  MAIN_INGREDIENTS,
+  MEAL_TIMES,
+  METHODS,
+  noFacets,
+  SEASONS,
+} from "./facets";
 export type { TagMatch } from "./filters";
 export { selectedTags } from "./filters";
 export { daysSinceMade, sinceMade } from "./made";

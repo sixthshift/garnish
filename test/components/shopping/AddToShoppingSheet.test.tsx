@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import { SubRecipesProvider } from "../../../src/components/recipe/SubRecipes";
 import { AddToShoppingSheetContent, addToShoppingTitle } from "../../../src/components/shopping/AddToShoppingSheetContent";
 import type { Ingredient, Part, Recipe, SubRecipe } from "../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../src/domain/recipes/recipe";
 import type { Food, Unit } from "../../../src/domain/recipes/reference";
 import { additionsFor, additionsForWithSubRecipes, ingredientText, shoppingGroups } from "../../../src/domain/shopping/shopping";
 
@@ -69,6 +70,7 @@ function recipeWith(parts: Part[], recipeServings = 4): Recipe {
     sourceUrl: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     notes: [],
     tags: [],
     parts,

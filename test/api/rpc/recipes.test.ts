@@ -9,6 +9,8 @@ import {
   listRecipes,
   recipeByName,
   recipeBySource,
+  recipeFacetCounts,
+  setFacets,
   setFavourite,
   setKind,
   setRating,
@@ -16,7 +18,7 @@ import {
   updateRecipe,
 } from "../../../src/api/rpc/recipes";
 import { findOrCreateUnit } from "../../../src/api/rpc/units";
-import { type RecipeInput, recipeSchema, recipeSummarySchema } from "../../../src/domain/recipes/recipe";
+import { noFacets, type RecipeInput, recipeSchema, recipeSummarySchema } from "../../../src/domain/recipes/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
@@ -204,6 +206,19 @@ test("setKind sets and clears the kind, listRecipes filters by it; an unknown id
   expect((await callServerFn(listRecipes, { neverMade: true })).map((r) => r.id)).toEqual([created.id]);
 
   const data = await notFoundData(callServerFn(setKind, { id: ids.missing, kind: "rotation" }));
+  expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
+});
+
+test("setFacets replaces every layer, listRecipes filters by them; an unknown id maps to notFound", async () => {
+  const created = await callServerFn(createRecipe, doc());
+  const facets = { ...noFacets(), course: ["main" as const], cuisine: ["thai" as const] };
+  await expect(callServerFn(setFacets, { id: created.id, facets })).resolves.toEqual({ id: created.id, facets });
+  expect((await callServerFn(getRecipe, { slug: created.slug })).facets).toEqual(facets);
+  expect((await callServerFn(listRecipes, { facets: { ...noFacets(), course: ["main", "side"] } })).map((r) => r.id)).toEqual([created.id]);
+  expect(await callServerFn(listRecipes, { facets: { ...noFacets(), course: ["sauce"] } })).toEqual([]);
+  await expect(callServerFn(recipeFacetCounts, undefined)).resolves.toEqual(expect.arrayContaining([{ layer: "course", value: "main", count: 1 }]));
+
+  const data = await notFoundData(callServerFn(setFacets, { id: ids.missing, facets: noFacets() }));
   expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
 });
 

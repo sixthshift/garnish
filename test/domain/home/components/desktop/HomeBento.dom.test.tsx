@@ -8,6 +8,7 @@ import { HomeBento } from "../../../../../src/domain/home/components/desktop/Hom
 import type { HomeData } from "../../../../../src/domain/home/home";
 import { groupByDay, planEntrySchema } from "../../../../../src/domain/plan/plan";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { shoppingItemSchema } from "../../../../../src/domain/shopping/shopping";
 import { renderInRouter } from "../../../../helpers/dom";
 import { atDesktop } from "../../../../helpers/layout";
@@ -38,6 +39,7 @@ function summary(name: string, over: Partial<RecipeSummary> = {}): RecipeSummary
     lastMade: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     tags: [],
     ingredientPreview: [],
     ...over,

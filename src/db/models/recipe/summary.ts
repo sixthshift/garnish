@@ -6,6 +6,7 @@ import type { Db } from "../../connection/client";
 import { food } from "../food/schema";
 import { tag } from "../tag/schema";
 import { unit } from "../unit/schema";
+import { selectFacets } from "./facets";
 import { ingredient, part, recipe, recipeTag } from "./schema";
 
 // How a RecipeSummary is made from the recipe table: the columns a query
@@ -106,6 +107,7 @@ export function summarise(dz: Db, row: SummaryRow): RecipeSummary {
     lastMade: row.lastMade,
     favourite: row.favourite,
     kind: row.kind,
+    facets: selectFacets(dz, row.id),
     tags: selectTags(dz, row.id),
     ingredientPreview: selectIngredientPreview(dz, row.id),
   };

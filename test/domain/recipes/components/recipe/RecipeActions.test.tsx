@@ -8,6 +8,7 @@ import { describe, expect, expectTypeOf, test } from "vitest";
 import { Menu } from "../../../../../src/components/ui/Menu";
 import { RecipeActions, type RecipeActionsProps } from "../../../../../src/domain/recipes/components/recipe/RecipeActions";
 import type { Recipe } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 
 const base: Recipe = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -19,6 +20,7 @@ const base: Recipe = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 1,
   yieldUnit: null,

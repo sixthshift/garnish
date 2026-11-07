@@ -9,6 +9,7 @@ import { useState } from "react";
 import { describe, expect, test, vi } from "vitest";
 import { PhoneLibrary, type PhoneLibraryProps } from "../../../../../src/domain/recipes/components/library/mobile/PhoneLibrary";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 vi.mock("../../../../../src/api/rpc/recipes", () => ({ setFavourite: vi.fn(async () => ({})), setKind: vi.fn(async () => ({})) }));
@@ -25,6 +26,7 @@ const summary = (slug: string, name: string, totalTime: number | null, favourite
   lastMade: null,
   favourite,
   kind: null,
+  facets: noFacets(),
   tags: [],
   ingredientPreview: [],
 });

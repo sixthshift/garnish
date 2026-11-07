@@ -10,7 +10,7 @@ import { createRecipe, getRecipe } from "../../../../../src/api/rpc/recipes";
 import { RecipeForm, type RecipeFormProps } from "../../../../../src/domain/recipes/components/editor/RecipeForm";
 import { detailsHint, parseAmount, parseMinutes, saveNotice } from "../../../../../src/domain/recipes/components/editor/recipeFormText";
 import { draftFromRecipe, emptyDraft, hasDetails, isDirty, tagsFromNames, validateDraft } from "../../../../../src/domain/recipes/draft";
-import { type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
+import { noFacets, type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
 import { clearDraft, putDraft } from "../../../../../src/lib/drafts";
 import { renderRoute } from "../../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../../helpers/server";
@@ -54,6 +54,7 @@ const stored: Recipe = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 1,
   yieldUnit: gram,

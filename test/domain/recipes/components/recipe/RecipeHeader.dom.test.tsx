@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { RecipeHeader } from "../../../../../src/domain/recipes/components/recipe/RecipeHeader";
 import type { Recipe } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 const unrated: Recipe = {
@@ -18,6 +19,7 @@ const unrated: Recipe = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 0,
   yieldUnit: null,

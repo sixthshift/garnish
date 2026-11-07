@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MEALS } from "../../../../../domain/plan/planner";
-import { recipeKindSchema } from "../../../../../domain/recipes/recipe";
+import { facetsSchema, noFacets, recipeKindSchema } from "../../../../../domain/recipes/recipe";
 import { imageContentType } from "../../../../../lib/imageFile";
 
 // The backup's `garnish.json`, as architecture.md's Backup and restore draws
@@ -158,6 +158,8 @@ export const backupRecipeSchema = z.object({
   favourite: z.boolean().default(false),
   // Absent from a backup made before it existed: such a recipe has no kind.
   kind: recipeKindSchema.nullable().default(null),
+  // Absent from a backup made before them (row 209): such a recipe has none said.
+  facets: facetsSchema.default(noFacets),
   recipeServings: z.number().nonnegative().default(0),
   recipeYieldQuantity: z.number().nonnegative().default(0),
   yieldUnitId: id.nullable().default(null),

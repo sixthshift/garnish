@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import recipes, { type RecipeQuery } from "../../db/models/recipe/repo";
-import { duplicateInput, type RecipeSummary, recipeInputSchema, recipeKindSchema, scaleRecipe } from "../../domain/recipes/recipe";
+import { duplicateInput, facetsSchema, type RecipeSummary, recipeInputSchema, recipeKindSchema, scaleRecipe } from "../../domain/recipes/recipe";
 import { NotFound, required } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 
@@ -28,6 +28,8 @@ export const ListRecipesInput = z
     favourite: z.boolean().optional(),
     /** Only recipes of this kind. */
     kind: recipeKindSchema.optional(),
+    /** Facets: any of a layer's values, every layer given (decisions.md row 209). */
+    facets: facetsSchema.optional(),
     /** Only recipes never made when true. */
     neverMade: z.boolean().optional(),
     /** Sort key. Unset keeps the original newest-first order. */
@@ -68,6 +70,9 @@ export const SubRecipesInput = z.object({ id: recipeId });
 
 export const SetFavouriteInput = z.object({ id: recipeId, favourite: z.boolean() });
 
+/** Every layer at once; a layer left out or empty is cleared (decisions.md row 209). */
+export const SetFacetsInput = z.object({ id: recipeId, facets: facetsSchema });
+
 /** `kind` null clears it: the recipe goes back to not said. */
 export const SetKindInput = z.object({ id: recipeId, kind: recipeKindSchema.nullable() });
 
@@ -82,6 +87,9 @@ export const listRecipes = createServerFn({ method: "GET" })
 
 /** How many recipes each shelf holds (everything, Rotation, Weekend, To try), for a desktop's filters column. */
 export const recipeShelfCounts = createServerFn({ method: "GET" }).handler(async () => recipes.shelfCounts());
+
+/** How many recipes carry each facet value, over the whole library: a value none has is absent. */
+export const recipeFacetCounts = createServerFn({ method: "GET" }).handler(async () => recipes.facetCounts());
 
 /** What the import's duplicate warning needs of a match: the name to show and the slug to link to. */
 const nameAndSlug = (found?: RecipeSummary): { name: string; slug: string } | null => (found ? { name: found.name, slug: found.slug } : null);
@@ -155,6 +163,15 @@ export const setKind = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     if (!recipes.ref(data.id).kind(data.kind)) throw new NotFound("recipe", data.id);
     return { id: data.id, kind: data.kind };
+  });
+
+/** Set the facets alone, every layer. Returns them as stored. Not-found for an unknown id. */
+export const setFacets = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(SetFacetsInput)
+  .handler(async ({ data }) => {
+    if (!recipes.ref(data.id).facets(data.facets)) throw new NotFound("recipe", data.id);
+    return { id: data.id, facets: data.facets };
   });
 
 /**

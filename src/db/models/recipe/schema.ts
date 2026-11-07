@@ -232,3 +232,23 @@ export const recipeTag = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.recipeId, t.tagId] }), index("recipe_tag_tag_id").on(t.tagId)]
 );
+
+/** The layers as the `recipe_facet.layer` column spells them; the document's `mainIngredient` is `main_ingredient`. */
+export const FACET_LAYER_COLUMN = ["course", "meal", "cuisine", "diet", "main_ingredient", "method", "season"] as const;
+
+/** 031_recipe_facet.sql: what a recipe is, one row a value (decisions.md row 209). */
+export const recipeFacet = sqliteTable(
+  "recipe_facet",
+  {
+    recipeId: text("recipe_id")
+      .notNull()
+      .references(() => recipe.id, { onDelete: "cascade" }),
+    layer: text("layer", { enum: FACET_LAYER_COLUMN }).notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.recipeId, t.layer, t.value] }),
+    index("recipe_facet_layer_value").on(t.layer, t.value),
+    check("recipe_facet_layer", sql`${t.layer} IN ('course', 'meal', 'cuisine', 'diet', 'main_ingredient', 'method', 'season')`),
+  ]
+);

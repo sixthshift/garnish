@@ -24,6 +24,7 @@ import { renameClash, TagsTab } from "../../../../../src/app/features/settings/c
 import { Version } from "../../../../../src/app/features/settings/components/Version";
 import type { PlannerRule } from "../../../../../src/domain/plan/planner";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Aisle, FoodRow, TagUsage, Unit } from "../../../../../src/domain/recipes/reference";
 import type { StyleRule } from "../../../../../src/domain/recipes/style";
 import { buildLabel } from "../../../../../src/lib/version";
@@ -41,6 +42,7 @@ function summary(id: string, name: string): RecipeSummary {
     lastMade: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     tags: [],
     ingredientPreview: [],
   };

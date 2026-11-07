@@ -9,6 +9,7 @@ import { openDatabase } from "../../../../src/db/connection/open";
 import { seedSample } from "../../../../src/db/dev/sample";
 import { migrate } from "../../../../src/db/migrations/migrate";
 import { recipeRepository } from "../../../../src/db/models/recipe/repo";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import { cooklangStepText, toCooklang } from "../../../../src/domain/recipes/recipe/cooklang";
 import type { Ingredient, Recipe } from "../../../../src/domain/recipes/recipe/recipe";
 import type { Food, Unit } from "../../../../src/domain/recipes/reference";
@@ -119,6 +120,7 @@ describe("toCooklang", () => {
     lastMade: null,
     favourite: false,
     kind: null,
+    facets: noFacets(),
     recipeServings: 4,
     recipeYieldQuantity: 0,
     yieldUnit: null,

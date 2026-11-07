@@ -2,7 +2,7 @@
 // textarea, and bad text comes back as a message rather than a draft.
 import { describe, expect, test } from "vitest";
 import { draftFromInput, draftFromJson, draftFromRecipe, draftToJson, emptyDraft, type RecipeDraft } from "../../../../../src/domain/recipes/draft";
-import { type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
+import { noFacets, type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -26,6 +26,7 @@ const stored: Recipe = {
   lastMade: null,
   favourite: true,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 1,
   yieldUnit: gram,

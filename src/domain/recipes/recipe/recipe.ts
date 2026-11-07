@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { foodSchema, tagSchema, unitSchema } from "../reference";
+import { facetsSchema, noFacets } from "./facets";
 
 const id = z.uuid();
 const timestamp = z.iso.datetime();
@@ -124,6 +125,8 @@ const recipeFields = {
   sourceUrl: z.string().nullable().default(null),
   favourite: z.boolean().default(false),
   kind: recipeKindSchema.nullable().default(null),
+  /** What it is, layer by layer (row 209); every layer empty until someone says. */
+  facets: facetsSchema.default(noFacets),
   notes: z.array(recipeNoteSchema).default([]),
   tags: z.array(tagSchema).default([]),
 };

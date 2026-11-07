@@ -10,6 +10,7 @@ import { QuickEditStepBody } from "../../../../../src/domain/recipes/components/
 import { saveQuickEdit } from "../../../../../src/domain/recipes/components/recipe/saveQuickEdit";
 import { type DraftIngredient, withIngredientReplaced, withStepReplaced } from "../../../../../src/domain/recipes/draft";
 import type { Ingredient, Recipe } from "../../../../../src/domain/recipes/recipe";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
 import { getTicks, type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
 
@@ -87,6 +88,7 @@ const stored: Recipe = {
   lastMade: null,
   favourite: false,
   kind: null,
+  facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 0,
   yieldUnit: null,
