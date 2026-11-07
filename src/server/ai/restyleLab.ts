@@ -18,9 +18,9 @@ export type LabFlags = {
 
 export const LAB_USAGE = "Usage: bun run restyle <recipe> [--part <name>] [--model <a,b>] [--rules <file>] [--prompt]";
 
-/** The CLI's arguments. `defaultModel` is what `--model` falls back to. Unknown flags throw so a typo does not run a blank test. Pure. */
-export function parseLabFlags(argv: readonly string[], defaultModel: string): LabFlags {
-  const flags: LabFlags = { recipe: "", part: null, models: [defaultModel], rulesFile: null, showPrompt: false };
+/** The CLI's arguments. `selected` is what `--model` falls back to: the Restyle model selected in Settings › AI, or null when none is. Unknown flags throw so a typo does not run a blank test. Pure. */
+export function parseLabFlags(argv: readonly string[], selected: string | null): LabFlags {
+  const flags: LabFlags = { recipe: "", part: null, models: selected === null ? [] : [selected], rulesFile: null, showPrompt: false };
   const rest = [...argv];
   while (rest.length > 0) {
     const arg = rest.shift()!;
@@ -42,6 +42,7 @@ export function parseLabFlags(argv: readonly string[], defaultModel: string): La
     else throw new Error(`One recipe at a time. ${LAB_USAGE}`);
   }
   if (flags.recipe === "") throw new Error(LAB_USAGE);
+  if (flags.models.length === 0) throw new Error(`No Restyle model is selected in Settings › AI. Select one there, or pass --model. ${LAB_USAGE}`);
   return flags;
 }
 

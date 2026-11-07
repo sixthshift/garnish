@@ -5,13 +5,14 @@ import { recipeRepository } from "../../db/models/recipe/repo";
 import { styleRuleRepository } from "../../db/models/style/repo";
 import type { Recipe } from "../../domain/recipes/recipe";
 import { ensureDataDir } from "../core/boot";
+import { modelFor } from "./client";
 import ai from "./provider";
 import { runRestyle } from "./restyle";
 import { authorRecipe, failureLine, onlyPart, parseLabFlags, reportLines, rulesFromText } from "./restyleLab";
 import { partsWithSteps, promptParts, restylePrompt } from "./restylePrompt";
 
 if (import.meta.main) {
-  const flags = parseLabFlags(process.argv.slice(2), ai.model("restyle"));
+  const flags = parseLabFlags(process.argv.slice(2), modelFor("restyle"));
   const path = databasePath(ensureDataDir());
   // Never create the database here: an empty one would answer "no such table". The app or `bun run seed` builds it.
   if (!(await Bun.file(path).exists())) throw new Error(`No database at ${path}. Start the app or run \`bun run seed\` first.`);

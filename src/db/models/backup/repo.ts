@@ -7,6 +7,7 @@ import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
 import { snapshot } from "../../backup/snapshot";
 import { orm } from "../../connection/client";
+import { aiSetting } from "../ai/schema";
 import { aisle } from "../aisle/schema";
 import { food, foodConversion, foodPack } from "../food/schema";
 import { mealPlanEntry } from "../plan/schema";
@@ -142,6 +143,7 @@ export function backupRepository(db: Database) {
       tag,
       styleRule,
       plannerRule,
+      aiSetting,
     ])
       tx.delete(table).run();
   }
@@ -267,6 +269,7 @@ export function backupRepository(db: Database) {
           })),
         styleRules: dz.select().from(styleRule).orderBy(asc(styleRule.position), asc(styleRule.id)).all().map(rule),
         plannerRules: dz.select().from(plannerRule).orderBy(asc(plannerRule.position), asc(plannerRule.id)).all().map(rule),
+        aiModels: dz.select({ use: aiSetting.use, model: aiSetting.model }).from(aiSetting).orderBy(asc(aiSetting.use)).all(),
       };
     },
 
@@ -401,6 +404,7 @@ export function backupRepository(db: Database) {
         }
         for (const row of body.styleRules) tx.insert(styleRule).values(row).run();
         for (const row of body.plannerRules) tx.insert(plannerRule).values(row).run();
+        for (const row of body.aiModels) tx.insert(aiSetting).values(row).run();
       });
     },
   };

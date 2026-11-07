@@ -194,6 +194,7 @@ export function sampleBackup(): Backup {
     ],
     styleRules: [{ id: IDS.styleRule, position: 0, text: "Metric only.", enabled: true, createdAt: at, updatedAt: at }],
     plannerRules: [{ id: IDS.plannerRule, position: 0, text: "Weeknights under 45 minutes.", enabled: false, createdAt: at, updatedAt: at }],
+    aiModels: [{ use: "cook", model: "gemini-flash-latest" }],
   };
 }
 

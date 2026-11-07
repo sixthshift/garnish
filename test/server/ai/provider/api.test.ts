@@ -12,11 +12,11 @@ import {
   chatRequestBody,
   checkModels,
   DEFAULT_AI_BASE_URL,
-  DEFAULT_API_MODEL,
   httpFailureMessage,
   modelName,
   providerReason,
 } from "../../../../src/server/ai/provider/api";
+import { useChosenModels } from "../../../helpers/ai";
 
 /** A stand-in for a caller's answer shape: the client does not care what it is. */
 const SCHEMA = { type: "object", additionalProperties: false, required: ["a"], properties: { a: { type: "number" } } } as const;
@@ -24,6 +24,7 @@ const SCHEMA = { type: "object", additionalProperties: false, required: ["a"], p
 /** One question of the import's model, as the importer asks it. */
 function ask(fetcher: Fetcher, timeoutMs: number): Promise<string> {
   const ai = apiProvider(fetcher);
+  chosen.import ??= "some-model";
   return ai.ask({ prompt: "PROMPT", schema: SCHEMA, schemaName: "test", model: ai.model("import"), timeoutMs });
 }
 
@@ -43,7 +44,8 @@ function fakeFetch(status: number, body: unknown): Fetcher & { calls: { url: str
 /** The chat completion envelope a provider sends back. */
 const completion = (content: string): unknown => ({ choices: [{ message: { role: "assistant", content } }] });
 
-const KEYS = ["AI_API_KEY", "AI_BASE_URL", "AI_IMPORT_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL"] as const;
+const KEYS = ["AI_API_KEY", "AI_BASE_URL"] as const;
+const chosen = useChosenModels();
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 
 afterEach(() => {
@@ -54,23 +56,29 @@ afterEach(() => {
 });
 
 describe("the configuration", () => {
-  test("a key is the whole of it; the base URL and every model default to Gemini's free tier", () => {
+  test("a key is the whole of the server's setup; the base URL defaults to Gemini's free tier, and no model is guessed", () => {
     delete process.env.AI_BASE_URL;
-    for (const name of ["AI_IMPORT_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL"]) delete process.env[name];
     process.env.AI_API_KEY = "k";
     const ai = apiProvider();
     expect(ai.configured()).toBe(true);
     expect(apiSettings()).toEqual({ apiKey: "k", baseUrl: DEFAULT_AI_BASE_URL });
-    expect([ai.model("import"), ai.model("restyle"), ai.model("planner")]).toEqual([DEFAULT_API_MODEL, DEFAULT_API_MODEL, DEFAULT_API_MODEL]);
+    expect(() => ai.model("import")).toThrow("No Recipe import model is selected. Choose one in Settings › AI.");
+    expect(ai.status().models).toEqual([
+      { use: "import", model: null },
+      { use: "restyle", model: null },
+      { use: "planner", model: null },
+      { use: "cook", model: null },
+    ]);
     expect(DEFAULT_AI_BASE_URL).toBe("https://generativelanguage.googleapis.com/v1beta/openai");
   });
 
-  test("each use's model is its own variable, and none follows another's", () => {
-    process.env.AI_IMPORT_MODEL = "import-model";
-    process.env.AI_PLANNER_MODEL = "planner-model";
-    delete process.env.AI_RESTYLE_MODEL;
+  test("each use's model is its own choice, and none follows another's", () => {
+    chosen.import = "import-model";
+    chosen.planner = "planner-model";
+    delete chosen.restyle;
     const ai = apiProvider();
-    expect([ai.model("import"), ai.model("restyle"), ai.model("planner")]).toEqual(["import-model", DEFAULT_API_MODEL, "planner-model"]);
+    expect([ai.model("import"), ai.model("planner")]).toEqual(["import-model", "planner-model"]);
+    expect(() => ai.model("restyle")).toThrow(/No Restyle model is selected/);
   });
 
   test("an unset or blank key is not configured, and a trailing slash on the base URL is dropped", () => {
@@ -102,7 +110,7 @@ describe("ask", () => {
   test("POSTs to the configured endpoint with the key, and returns the message content", async () => {
     process.env.AI_API_KEY = "secret";
     process.env.AI_BASE_URL = "https://provider.test/v1";
-    process.env.AI_IMPORT_MODEL = "some-model";
+    chosen.import = "some-model";
     const fetcher = fakeFetch(200, completion(answer));
     const content = await ask(fetcher, AI_TIMEOUT_MS);
     expect(content).toBe(answer);
@@ -187,12 +195,12 @@ describe("the model names", () => {
     expect(modelName("gpt-4o-mini")).toBe("gpt-4o-mini");
   });
 
-  test("each use is marked by whether the list names its model", () => {
-    expect(checkModels(["models/a", "b"], { import: "a", restyle: "b", planner: "c", cook: "b" })).toEqual([
+  test("each selected use is marked by whether the list names its model; an unselected one is left out", () => {
+    const selected = { import: "a", restyle: "b", planner: "c" } as Record<string, string>;
+    expect(checkModels(["models/a", "b"], (use) => selected[use] ?? null)).toEqual([
       { use: "import", model: "a", listed: true },
       { use: "restyle", model: "b", listed: true },
       { use: "planner", model: "c", listed: false },
-      { use: "cook", model: "b", listed: true },
     ]);
   });
 });
@@ -207,7 +215,8 @@ describe("check", () => {
   });
 
   test("a GET of the model list with the key, never a completion", async () => {
-    configure({ AI_API_KEY: "k", AI_BASE_URL: "http://llm.lan/v1/", AI_IMPORT_MODEL: "m", AI_RESTYLE_MODEL: "m", AI_PLANNER_MODEL: "p" });
+    configure({ AI_API_KEY: "k", AI_BASE_URL: "http://llm.lan/v1/" });
+    Object.assign(chosen, { import: "m", restyle: "m", planner: "p" });
     const fetcher = fakeFetch(200, { data: [{ id: "m" }, { id: "p" }] });
     const result = await apiProvider(fetcher).check();
     expect(fetcher.calls).toHaveLength(1);
@@ -223,7 +232,6 @@ describe("check", () => {
         { use: "import", model: "m", listed: true },
         { use: "restyle", model: "m", listed: true },
         { use: "planner", model: "p", listed: true },
-        { use: "cook", model: "gemini-flash-lite-latest", listed: false },
       ],
       offered: [{ name: "m" }, { name: "p" }],
     });

@@ -231,6 +231,12 @@ export const backupRuleSchema = z.object({
   updatedAt: timestamp,
 });
 
+/** A model chosen in Settings › AI for one use (decisions.md row 217). */
+export const backupAiModelSchema = z.object({
+  use: z.enum(["import", "restyle", "planner", "cook"]),
+  model: nonEmpty,
+});
+
 // --- The file ---------------------------------------------------------------
 
 /** The envelope alone, read first so a newer version is named rather than failed field by field. */
@@ -260,6 +266,8 @@ export const backupSchema = z.object({
   shopping: z.array(backupShoppingItemSchema).default([]),
   styleRules: z.array(backupRuleSchema).default([]),
   plannerRules: z.array(backupRuleSchema).default([]),
+  // The models chosen in Settings › AI (row 217); absent from older backups, which restore every use to its default.
+  aiModels: z.array(backupAiModelSchema).default([]),
 });
 
 export type Backup = z.infer<typeof backupSchema>;
@@ -272,6 +280,7 @@ export type BackupTimelineEvent = z.infer<typeof backupTimelineEventSchema>;
 export type BackupPlanEntry = z.infer<typeof backupPlanEntrySchema>;
 export type BackupShoppingItem = z.infer<typeof backupShoppingItemSchema>;
 export type BackupRule = z.infer<typeof backupRuleSchema>;
+export type BackupAiModel = z.infer<typeof backupAiModelSchema>;
 
 /** How many of each thing a backup holds: what the restore sheet and the CLIs report. */
 export type BackupCounts = {

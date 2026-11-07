@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import aiSettings from "../../db/models/ai/repo";
-import { CHOOSABLE_USES } from "../../server/ai/client";
+import { AI_USES } from "../../server/ai/client";
 import ai from "../../server/ai/provider";
 import { notFoundMiddleware } from "../../server/core/fn";
 
@@ -28,13 +28,13 @@ export const testAiConnection = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .handler(() => ai.check());
 
-export const ChooseAiModelInput = z.object({ use: z.enum(CHOOSABLE_USES), model: z.string().trim().max(200).nullable() });
+export const ChooseAiModelInput = z.object({ use: z.enum(AI_USES), model: z.string().trim().max(200).nullable() });
 
 /**
- * Choose the model a use asks, from Settings › AI (decisions.md row 215): the
- * cooking assistant's alone. Null, or an empty name, goes back to
- * `AI_COOK_MODEL` and then the provider's default. Returns the status as it
- * now stands, so the tab shows the model now asked.
+ * Choose the model a use asks, from Settings › AI (decisions.md rows 215,
+ * 217), the one place a model is set. Null, or an empty name, is Not
+ * selected: the use has no model until one is chosen. Returns the status as
+ * it now stands, so the tab shows the model now asked.
  */
 export const chooseAiModel = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])

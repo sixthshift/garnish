@@ -4,51 +4,59 @@ import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Select } from "@sixthshift/design-system/select";
 import { useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { chooseAiModel, testAiConnection } from "../../../../../api/rpc/ai";
 import { toastError } from "../../../../../lib/toast";
-import { type AiStatus, type CheckedModel, type ConnectionCheck, type OfferedModel, offeredNames } from "../../../../../server/ai/client";
+import {
+  AI_USE_LABELS,
+  type AiStatus,
+  type AiUse,
+  type ConnectionCheck,
+  type OfferedModel,
+  offeredNames,
+  type StatusModel,
+} from "../../../../../server/ai/client";
 import { SettingRow, SettingsColumn, SettingsPanel } from "../SettingsPanel";
 
-const USE_LABELS: Record<CheckedModel["use"], { label: string; variable: string }> = {
-  import: { label: "Recipe import", variable: "AI_IMPORT_MODEL" },
-  restyle: { label: "Restyle", variable: "AI_RESTYLE_MODEL" },
-  planner: { label: "Planner", variable: "AI_PLANNER_MODEL" },
-  cook: { label: "Cooking assistant", variable: "AI_COOK_MODEL" },
-};
+/** The choice's value for "no model selected": the feature is off until one is. */
+const NOT_SELECTED = "__none__";
 
-/** The choice's value for "ask the environment": AI_COOK_MODEL, then the provider's default. */
-const DEFAULT_CHOICE = "__default__";
+/** An offered model as the dropdown names it: with the full id it stands for, when that differs. Pure. */
+export function offeredLabel(offer: OfferedModel): string {
+  return offer.resolvesTo !== undefined && offer.resolvesTo !== offer.name ? `${offer.name} · ${offer.resolvesTo}` : offer.name;
+}
 
 /**
- * The cooking assistant's model, chosen here from the models the provider
- * offers (decisions.md row 215). Change asks the provider for its list — no
- * tokens — then a choice writes straight through; Default goes back to
- * AI_COOK_MODEL and then the provider's own default.
+ * The dropdown's options for one use: Not selected, the model selected now
+ * when the list does not name it — so the choice still shows what is in use —
+ * and every model the provider offers. There is no default (decisions.md row
+ * 217): garnish cannot know which of a provider's models can answer. Pure.
  */
-export function CookModelChoice({ model, offered: known, disabled }: { model: string; offered: readonly OfferedModel[] | null; disabled: boolean }) {
-  const router = useRouter();
-  const [offered, setOffered] = useState<readonly OfferedModel[] | null>(known);
-  const [busy, setBusy] = useState(false);
-  const list = offered ?? known;
+export function modelOptions(row: StatusModel, offered: readonly OfferedModel[] | null): { value: string; label: string }[] {
+  const list = offered ?? [];
+  const names = offeredNames(list);
+  return [
+    { value: NOT_SELECTED, label: "Not selected" },
+    ...(row.model !== null && !names.includes(row.model) ? [{ value: row.model, label: row.model }] : []),
+    ...list.map((offer) => ({ value: offer.name, label: offeredLabel(offer) })),
+  ];
+}
 
-  const load = async () => {
-    setBusy(true);
-    try {
-      const result = await testAiConnection();
-      if (result.ok) setOffered(result.offered);
-      else toastError("Could not list the models", new Error(result.message));
-    } catch (error) {
-      toastError("Could not list the models", error);
-    } finally {
-      setBusy(false);
-    }
-  };
+/**
+ * One use's model, chosen here from the models the provider offers
+ * (decisions.md rows 215, 217). The list comes from the connection check the
+ * tab runs on opening — no tokens — so until it answers, or when it fails, the
+ * dropdown shows the model selected and cannot be opened. A choice writes
+ * straight through; Not selected clears it, and the feature says so when used.
+ */
+export function ModelChoice({ row, offered, disabled }: { row: StatusModel; offered: readonly OfferedModel[] | null; disabled: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
 
   const choose = async (value: string) => {
     setBusy(true);
     try {
-      await chooseAiModel({ data: { use: "cook", model: value === DEFAULT_CHOICE ? null : value } });
+      await chooseAiModel({ data: { use: row.use, model: value === NOT_SELECTED ? null : value } });
       await router.invalidate();
     } catch (error) {
       toastError("Could not choose that model", error);
@@ -57,61 +65,19 @@ export function CookModelChoice({ model, offered: known, disabled }: { model: st
     }
   };
 
-  if (list === null) {
-    return (
-      <>
-        <code className="truncate text-sm">{model}</code>
-        <Button type="button" variant="outline" intent="neutral" size="sm" loading={busy} disabled={disabled} onClick={() => void load()}>
-          Change
-        </Button>
-      </>
-    );
-  }
-  const names = offeredNames(list);
-  const options = [
-    { value: DEFAULT_CHOICE, label: "Default" },
-    // The model asked now, even when the list does not name it, so the choice shows what is in use.
-    ...(names.includes(model) ? [] : [{ value: model, label: model }]),
-    ...list.map((offer) => ({ value: offer.name, label: offer.name })),
-  ];
   return (
-    <Select aria-label="Cooking assistant model" options={options} value={model} disabled={busy || disabled} onValueChange={(value) => void choose(value)} />
+    <Select
+      aria-label={`${AI_USE_LABELS[row.use]} model`}
+      options={modelOptions(row, offered)}
+      value={row.model ?? NOT_SELECTED}
+      searchable={(offered?.length ?? 0) > 8}
+      disabled={busy || disabled || offered === null}
+      onValueChange={(value) => void choose(value)}
+    />
   );
 }
 
 type Connected = Extract<ConnectionCheck, { ok: true }>;
-
-/**
- * Every model the provider offers, one row each: the name a model variable
- * takes, the full id it stands for when the provider says, and which features
- * ask it now. What answers "what can go in AI_IMPORT_MODEL?" with the exact
- * spellings.
- */
-export function OfferedModels({ offered, models }: { offered: readonly OfferedModel[]; models: readonly CheckedModel[] }) {
-  const usedBy = (model: OfferedModel) =>
-    models.filter((row) => row.model === model.name || (model.resolvesTo !== undefined && row.model === model.resolvesTo));
-  return (
-    <SettingsPanel
-      title="Models it offers"
-      lead="Any of these names can go in AI_IMPORT_MODEL, AI_RESTYLE_MODEL, AI_PLANNER_MODEL or AI_COOK_MODEL, and the cooking assistant's can be chosen above; where a name stands for a full id, either works."
-    >
-      {offered.length === 0 && <SettingRow label="No models listed" description="The provider answered with an empty list." />}
-      {offered.map((model) => (
-        <SettingRow
-          key={model.name}
-          label={<code>{model.name}</code>}
-          description={model.resolvesTo !== undefined && model.resolvesTo !== model.name ? <code>{model.resolvesTo}</code> : undefined}
-        >
-          {usedBy(model).map((row) => (
-            <Badge key={row.use} variant="soft" intent="success">
-              {USE_LABELS[row.use].label}
-            </Badge>
-          ))}
-        </SettingRow>
-      ))}
-    </SettingsPanel>
-  );
-}
 
 /** The success message's title: whether every model is listed. Pure. */
 export function connectedTitle(result: Connected): string {
@@ -126,17 +92,18 @@ export function connectedMessage(result: Connected, credential: "key" | "token")
   const proved = result.credentialProved
     ? `The ${credential} works`
     : `The provider starts and picked up the ${credential}; the ${credential} itself is proved by the first import`;
+  if (result.models.length === 0) return `${proved}. Select a model for each feature below.`;
   return result.models.every((row) => row.listed)
-    ? `${proved}, and every model named above is offered.`
+    ? `${proved}, and every model selected is offered.`
     : `${proved}. A model marked Not listed may be misspelt, or may be an alias the provider accepts without listing it.`;
 }
 
 /**
- * The AI tab: the model configuration as it stands on the server, and a check
- * that it works. One provider serves the import, the restyle and the planner,
- * so this sits here rather than under any one of them. The configuration is
- * environment variables, so the rows show values and name the variable; they
- * are not edited here.
+ * The AI tab, in the order it is set up: the provider, which the server's
+ * environment sets and this only shows; the connection, checked as the tab
+ * opens — the provider's model list, so no tokens — and again on Test; and
+ * each use's model, chosen here from that list — the one place a model is set
+ * (decisions.md row 217).
  */
 export function AiTab({ status }: { status: AiStatus }) {
   const [busy, setBusy] = useState(false);
@@ -153,7 +120,14 @@ export function AiTab({ status }: { status: AiStatus }) {
     }
   };
 
-  const listed = (use: CheckedModel["use"]) => (result?.ok ? result.models.find((row) => row.use === use)?.listed : undefined);
+  // The dropdowns need the provider's list, so the check runs once as the tab opens.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per opening, not on every status change
+  useEffect(() => {
+    if (status.configured) void run();
+  }, []);
+
+  const listed = (use: AiUse) => (result?.ok ? result.models.find((row) => row.use === use)?.listed : undefined);
+  const offered = result?.ok ? result.offered : null;
 
   return (
     <SettingsColumn>
@@ -197,45 +171,6 @@ export function AiTab({ status }: { status: AiStatus }) {
             <code className="truncate text-sm">{status.baseUrl}</code>
           </SettingRow>
         )}
-        {status.models.map((row) => (
-          <SettingRow
-            key={row.use}
-            label={USE_LABELS[row.use].label}
-            description={
-              row.use === "cook" ? (
-                <>
-                  Chosen here, else <code>{USE_LABELS[row.use].variable}</code>
-                </>
-              ) : (
-                <code>{USE_LABELS[row.use].variable}</code>
-              )
-            }
-          >
-            {row.use === "cook" ? (
-              <CookModelChoice model={row.model} offered={result?.ok ? result.offered : null} disabled={!status.configured} />
-            ) : (
-              <code className="truncate text-sm">{row.model}</code>
-            )}
-            {listed(row.use) === true && (
-              <Badge variant="soft" intent="success">
-                Listed
-              </Badge>
-            )}
-            {listed(row.use) === false && (
-              <Badge variant="soft" intent="warning">
-                Not listed
-              </Badge>
-            )}
-          </SettingRow>
-        ))}
-      </SettingsPanel>
-
-      <SettingsPanel title="Connection">
-        <SettingRow label="Test connection" description="Asks the provider which models it offers, not for an answer, so it uses no tokens.">
-          <Button type="button" variant="outline" intent="neutral" size="sm" loading={busy} disabled={!status.configured} onClick={run}>
-            Test
-          </Button>
-        </SettingRow>
       </SettingsPanel>
 
       {status.problem !== null && (
@@ -243,6 +178,15 @@ export function AiTab({ status }: { status: AiStatus }) {
           {status.problem}
         </Message>
       )}
+
+      <SettingsPanel title="Connection">
+        <SettingRow label="Test connection" description="Asks the provider which models it offers, not for an answer, so it uses no tokens.">
+          <Button type="button" variant="outline" intent="neutral" size="sm" loading={busy} disabled={!status.configured} onClick={() => void run()}>
+            {result === null ? "Test" : "Test again"}
+          </Button>
+        </SettingRow>
+      </SettingsPanel>
+
       {result && !result.ok && (
         <Message intent="danger" size="sm" title="Could not connect">
           {result.message}
@@ -253,7 +197,24 @@ export function AiTab({ status }: { status: AiStatus }) {
           {connectedMessage(result, status.provider === "claude-code" ? "token" : "key")}
         </Message>
       )}
-      {result?.ok && <OfferedModels offered={result.offered} models={result.models} />}
+
+      {status.models.length > 0 && (
+        <SettingsPanel
+          title="Models"
+          lead="Each feature's model, chosen from the ones the provider offers. A feature with none selected is off until one is. A change applies to the next question."
+        >
+          {status.models.map((row) => (
+            <SettingRow key={row.use} label={AI_USE_LABELS[row.use]}>
+              <ModelChoice row={row} offered={offered} disabled={!status.configured} />
+              {listed(row.use) === false && (
+                <Badge variant="soft" intent="warning">
+                  Not listed
+                </Badge>
+              )}
+            </SettingRow>
+          ))}
+        </SettingsPanel>
+      )}
     </SettingsColumn>
   );
 }

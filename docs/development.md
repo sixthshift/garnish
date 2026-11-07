@@ -127,7 +127,7 @@ The labs ask whichever provider `AI_PROVIDER` names; `--model` names models of t
 To try the house style on a real recipe without writing anything, from the author's steps even if the recipe was restyled already:
 
 ```bash
-bun run restyle "Slow Cooked Shredded Beef Ragu Pasta"              # the guide's enabled statements, on AI_RESTYLE_MODEL
+bun run restyle "Slow Cooked Shredded Beef Ragu Pasta"              # the guide's enabled statements, on the Restyle model chosen in Settings › AI
 bun run restyle beef-ragu --part "Full recipe" --model gemini-flash-lite-latest,gemini-3.6-flash
 bun run restyle beef-ragu --rules my-statements.txt --prompt         # one statement per line; print the prompt too
 ```
@@ -137,7 +137,7 @@ Each model's rewrite is printed with the facts check's verdict and the step coun
 To try the planner guide on a real week without writing anything:
 
 ```bash
-bun run propose                                                      # the coming week, all seven days, dinner, on AI_PLANNER_MODEL
+bun run propose                                                      # the coming week, all seven days, dinner, on the Planner model chosen in Settings › AI
 bun run propose --week 2026-09-21 --days mon,tue,wed --meals breakfast,dinner --model gemini-flash-lite-latest,gemini-3.6-flash
 bun run propose --rules my-statements.txt --prompt                   # one statement per line; print the prompt and stop
 ```

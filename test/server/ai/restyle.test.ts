@@ -10,7 +10,7 @@ import { listStyleRules } from "../../../src/api/rpc/style";
 import recipes from "../../../src/db/models/recipe/repo";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipes/recipe";
 import { AiError } from "../../../src/server/ai/client";
-import { apiProvider, DEFAULT_API_MODEL } from "../../../src/server/ai/provider/api";
+import { apiProvider } from "../../../src/server/ai/provider/api";
 import { applyRestyle, createRestyledRecipe, restoreSteps, restyleDraft, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
 import {
   FIXED_RESTYLE_LINE,
@@ -24,9 +24,11 @@ import {
   restylePrompt,
   withEmptyParts,
 } from "../../../src/server/ai/restylePrompt";
-import { fakeAi } from "../../helpers/ai";
+import { fakeAi, useChosenModels } from "../../helpers/ai";
 import { restyledPart } from "../../helpers/restyle";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
+
+const chosen = useChosenModels({ restyle: "test-model" });
 
 useTempDataDir();
 
@@ -94,8 +96,6 @@ const GOOD = {
 };
 
 afterEach(() => {
-  delete process.env.AI_RESTYLE_MODEL;
-  delete process.env.AI_IMPORT_MODEL;
   delete process.env.AI_PROVIDER;
   delete process.env.AI_API_KEY;
   delete process.env.AI_BASE_URL;
@@ -319,18 +319,19 @@ describe("the answer's schema", () => {
 });
 
 describe("the model", () => {
-  test("AI_RESTYLE_MODEL sets the model for this pass, and the import's model does not", () => {
-    process.env.AI_IMPORT_MODEL = "import-model";
-    expect(apiProvider().model("restyle")).toBe(DEFAULT_API_MODEL);
-    process.env.AI_RESTYLE_MODEL = "big-model";
+  test("the model chosen for this pass is asked, and the import's is not", () => {
+    chosen.import = "import-model";
+    delete chosen.restyle;
+    expect(() => apiProvider().model("restyle")).toThrow(/No Restyle model is selected/);
+    chosen.restyle = "big-model";
     expect(apiProvider().model("restyle")).toBe("big-model");
   });
 
   test("the request asks for the restyle schema and the restyle model", async () => {
     process.env.AI_API_KEY = "secret";
     process.env.AI_BASE_URL = "https://provider.test/v1";
-    process.env.AI_IMPORT_MODEL = "import-model";
-    process.env.AI_RESTYLE_MODEL = "big-model";
+    chosen.import = "import-model";
+    chosen.restyle = "big-model";
     const fetcher = fakeFetch(200, completion(JSON.stringify(GOOD)));
     await runRestyle(await saved(), [], { ai: apiProvider(fetcher) });
     const body = JSON.parse(String(fetcher.calls[0]!.init?.body)) as Record<string, unknown>;

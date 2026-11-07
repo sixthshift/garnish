@@ -28,9 +28,16 @@ export const DEFAULT_LAB_MEALS: readonly Meal[] = ["dinner"];
 /** The seven day tokens `--days` reads, Monday first, in the order `weekDates` returns a week's dates. */
 export const DAY_TOKENS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
-/** The CLI's arguments. `defaultModel` is what `--model` falls back to. Unknown flags throw so a typo does not run a blank week. Pure. */
-export function parseLabFlags(argv: readonly string[], defaultModel: string): LabFlags {
-  const flags: LabFlags = { week: null, days: null, meals: [...DEFAULT_LAB_MEALS], models: [defaultModel], rulesFile: null, showPrompt: false };
+/** The CLI's arguments. `selected` is what `--model` falls back to: the Planner model selected in Settings › AI, or null when none is. Unknown flags throw so a typo does not run a blank week. Pure. */
+export function parseLabFlags(argv: readonly string[], selected: string | null): LabFlags {
+  const flags: LabFlags = {
+    week: null,
+    days: null,
+    meals: [...DEFAULT_LAB_MEALS],
+    models: selected === null ? [] : [selected],
+    rulesFile: null,
+    showPrompt: false,
+  };
   const rest = [...argv];
   while (rest.length > 0) {
     const arg = rest.shift()!;
@@ -70,6 +77,7 @@ export function parseLabFlags(argv: readonly string[], defaultModel: string): La
       }
     } else throw new Error(`Unknown argument ${arg}. ${LAB_USAGE}`);
   }
+  if (flags.models.length === 0) throw new Error(`No Planner model is selected in Settings › AI. Select one there, or pass --model. ${LAB_USAGE}`);
   return flags;
 }
 

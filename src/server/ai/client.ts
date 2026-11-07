@@ -28,11 +28,18 @@ export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 /** The four things the app asks a model for: the import, the restyle, the planner and the cooking assistant (row 215). Each may name its own model. */
 export type AiUse = "import" | "restyle" | "planner" | "cook";
 
-export const AI_USES: readonly AiUse[] = ["import", "restyle", "planner", "cook"];
+export const AI_USES = ["import", "restyle", "planner", "cook"] as const satisfies readonly AiUse[];
 
-/** The uses whose model can be chosen in Settings rather than the environment alone (decisions.md row 215). */
-export const CHOOSABLE_USES = ["cook"] as const satisfies readonly AiUse[];
-export type ChoosableUse = (typeof CHOOSABLE_USES)[number];
+/** Each use as Settings › AI names it. */
+export const AI_USE_LABELS: Record<AiUse, string> = {
+  import: "Recipe import",
+  restyle: "Restyle",
+  planner: "Planner",
+  cook: "Cooking assistant",
+};
+
+/** A use's model as Settings shows it: the one selected, or null when none is (decisions.md row 217). */
+export type StatusModel = { use: AiUse; model: string | null };
 
 /**
  * One question: the prompt as a single user turn, the answer's JSON Schema and
@@ -89,7 +96,7 @@ export type AiStatus = {
   configured: boolean;
   baseUrl: string;
   isDefaultProvider: boolean;
-  models: { use: AiUse; model: string }[];
+  models: StatusModel[];
 };
 
 /**
@@ -100,7 +107,7 @@ export type AiStatus = {
 export interface AiClient {
   /** Whether a model can be asked at all: the gate for every feature that asks one. */
   configured(): boolean;
-  /** The model a use asks: one chosen in Settings (the cook's alone), its own variable (`AI_IMPORT_MODEL`, …), the provider's default. */
+  /** The model a use asks: the one selected in Settings › AI. Throws an `AiError` of kind unavailable, naming the use, when none is. */
   model(use: AiUse): string;
   /** What Settings shows. */
   status(): AiStatus;
@@ -110,15 +117,7 @@ export interface AiClient {
   ask(request: AiRequest): Promise<string>;
 }
 
-/** The variable that names each use's model. One per use, so no use's model follows another's. */
-export const MODEL_VARIABLES: Record<AiUse, string> = {
-  import: "AI_IMPORT_MODEL",
-  restyle: "AI_RESTYLE_MODEL",
-  planner: "AI_PLANNER_MODEL",
-  cook: "AI_COOK_MODEL",
-};
-
-/** Where a model chosen in Settings is read from; the server points it at `ai_setting` (provider/index.ts). None until then, so tests and the labs see the environment alone. */
+/** Where a model chosen in Settings is read from; the server points it at `ai_setting` (provider/index.ts). None until then, so a test sees no model selected until it selects one (`useChosenModels`). */
 let chosenModel: (use: AiUse) => string | null = () => null;
 
 /** Point `modelFor` at the models chosen in Settings. Returns the reader it replaced, for a test to put back. */
@@ -129,18 +128,27 @@ export function readChosenModels(reader: (use: AiUse) => string | null): (use: A
 }
 
 /**
- * A use's model: the one chosen in Settings, else its own variable, else the
- * provider's default. Shared by every provider, so each means one thing. A
- * reader that throws (no database yet) is no choice.
+ * A use's model: the one selected in Settings › AI, or null when none is
+ * (decisions.md row 217). There is no default: garnish cannot know which of
+ * an unknown provider's models can answer, so it never guesses. A reader that
+ * throws (no database yet) is no selection.
  */
-export function modelFor(use: AiUse, fallback: string): string {
+export function modelFor(use: AiUse): string | null {
   let chosen: string | null = null;
   try {
     chosen = chosenModel(use);
   } catch {
     chosen = null;
   }
-  return (chosen ?? "").trim() || (process.env[MODEL_VARIABLES[use]] ?? "").trim() || fallback;
+  const name = (chosen ?? "").trim();
+  return name === "" ? null : name;
+}
+
+/** A use's model, or an `AiError` saying which to select: what a provider's `model` is. */
+export function requireModel(use: AiUse): string {
+  const model = modelFor(use);
+  if (model === null) throw new AiError("unavailable", `No ${AI_USE_LABELS[use]} model is selected. Choose one in Settings › AI.`);
+  return model;
 }
 
 /** Re-exported for the restyle pass and the tests; the function itself is the domain's. */

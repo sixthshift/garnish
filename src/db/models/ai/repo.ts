@@ -5,20 +5,19 @@ import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
 import { aiSetting } from "./schema";
 
-/** A use whose model can be chosen in Settings (decisions.md row 215). */
+/** A use whose model can be chosen in Settings: every one (decisions.md row 217). */
 export type ChosenUse = (typeof aiSetting.$inferSelect)["use"];
 
-/** The models chosen in Settings › AI (033_ai_setting.sql), one per use. */
+/** The models chosen in Settings › AI (033_ai_setting.sql, 034_ai_setting_uses.sql), one per use. */
 export function aiSettingRepository(db: Database) {
   const dz = orm(db);
   return {
-    /** The model chosen for `use`, or null when it asks the environment. */
-    model(use: string): string | null {
-      if (use !== "cook") return null;
+    /** The model chosen for `use`, or null when none is. */
+    model(use: ChosenUse): string | null {
       return dz.select({ model: aiSetting.model }).from(aiSetting).where(eq(aiSetting.use, use)).get()?.model ?? null;
     },
 
-    /** Choose a model for `use`; null goes back to the environment's. */
+    /** Select a model for `use`; null clears it, leaving the use with none. */
     choose(use: ChosenUse, model: string | null): void {
       const name = model?.trim() ?? "";
       if (name === "") {

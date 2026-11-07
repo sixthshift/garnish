@@ -61,7 +61,6 @@ Garnish is configured with environment variables in the `environment:` section o
 | `AI_PROVIDER` | Turns the AI on: `api` or `claude-code`. Unset, there is no AI and everything else works. See [AI](#ai) |
 | `AI_API_KEY`, `AI_BASE_URL` | Used by `AI_PROVIDER=api` |
 | `CLAUDE_CODE_OAUTH_TOKEN` | Used by `AI_PROVIDER=claude-code` |
-| `AI_IMPORT_MODEL`, `AI_RESTYLE_MODEL`, `AI_PLANNER_MODEL` | Optional. Which model each feature asks, for either provider |
 | `GARNISH_PUBLIC_URL` | Optional. Your tunnel's public address, for Settings › MCP to show and for a tunnel that does not tell Garnish it is https. See [MCP](#mcp) |
 | `CHROMIUM_PATH` | Optional. The headless browser the import falls back to; the image sets it. Pointing it at nothing turns the fallback off |
 | `PUSH_CONTACT` | Optional. A `mailto:` or `https:` address the phone push services see for timer alerts |
@@ -81,13 +80,10 @@ To keep keys out of `docker-compose.yml`, put them in a file named `.env` beside
       AI_API_KEY: your-key
 ```
 
-For another service, set its address and the model each feature asks, since the default models are Gemini's. For example Groq, or an Ollama on your network (Ollama ignores the key, but one must be set):
+For another service, set its address. For example Groq, or an Ollama on your network (Ollama ignores the key, but one must be set):
 
 ```yaml
       AI_BASE_URL: https://api.groq.com/openai/v1
-      AI_IMPORT_MODEL: llama-3.3-70b-versatile
-      AI_RESTYLE_MODEL: llama-3.3-70b-versatile
-      AI_PLANNER_MODEL: llama-3.3-70b-versatile
 ```
 
 Gemini's free tier may train on what it is sent. For an import that is the recipe text you gave it; use a paid tier or a local model for anything you would not publish.
@@ -101,11 +97,11 @@ Gemini's free tier may train on what it is sent. For an import that is the recip
       CLAUDE_CODE_OAUTH_TOKEN: sk-ant-oat01-...
 ```
 
-Every feature asks Claude's Haiku model unless its model variable says `sonnet` or `opus`. It counts against the same usage limits as your own Claude use.
+It counts against the same usage limits as your own Claude use.
 
-**Models.** Each feature has its own variable — `AI_IMPORT_MODEL` for reading recipes, `AI_RESTYLE_MODEL` for the house style, `AI_PLANNER_MODEL` for the meal planner — and each one unset uses the provider's default: Gemini Flash-Lite for `api`, Haiku for `claude-code`.
+**Models.** Settings › AI has a dropdown for each feature — reading recipes, the house style, the meal planner and the cooking assistant — listing the models your provider offers. Each starts on **Not selected**: Garnish doesn't guess, since only you know which of your provider's models you want, so a feature is off until you pick one, and says so when you try it. For a start, `gemini-flash-lite-latest` on Gemini's free tier or `haiku` on Claude are fast and enough for every feature. A change applies to the next question, with no restart. Your choices are kept in the database and travel in backups.
 
-**Checking it.** Settings › AI shows which provider is on, whether its key is set (never the key itself) and each feature's model. **Test** checks the connection without spending anything. With Claude Code it can only confirm the token was found; your first import proves it works.
+**Checking it.** Settings › AI shows which provider is on and whether its key is set (never the key itself), and checks the connection as it opens, without spending anything; **Test again** repeats it. With Claude Code it can only confirm the token was found; your first import proves it works.
 
 ### MCP
 

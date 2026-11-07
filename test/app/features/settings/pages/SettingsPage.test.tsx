@@ -15,7 +15,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { dedupeSummaries, foodsLabel, unitsLabel } from "../../../../../src/app/features/settings/components/settingsLabels";
 import { AislesTab } from "../../../../../src/app/features/settings/components/tabs/AislesTab";
-import { AiTab, connectedMessage, connectedTitle, OfferedModels } from "../../../../../src/app/features/settings/components/tabs/AiTab";
+import { AiTab, connectedMessage, connectedTitle, modelOptions } from "../../../../../src/app/features/settings/components/tabs/AiTab";
 import { BackupTab } from "../../../../../src/app/features/settings/components/tabs/BackupTab";
 import { connectionDescription, McpTab, maskedCode } from "../../../../../src/app/features/settings/components/tabs/McpTab";
 import { PlannerTab } from "../../../../../src/app/features/settings/components/tabs/PlannerTab";
@@ -231,24 +231,55 @@ describe("AiTab render", () => {
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     isDefaultProvider: true,
     models: [
-      { use: "import" as const, model: "gemini-flash-lite-latest" },
-      { use: "restyle" as const, model: "gemini-flash-lite-latest" },
+      { use: "import" as const, model: null },
+      { use: "restyle" as const, model: "gemini-flash-latest" },
       { use: "planner" as const, model: "gemini-pro-latest" },
+      { use: "cook" as const, model: null },
     ],
   };
 
-  test("the cooking assistant's model is a choice here, over AI_COOK_MODEL (row 215)", () => {
-    const html = renderToString(<AiTab status={{ ...status, models: [...status.models, { use: "cook" as const, model: "gemini-flash-latest" }] }} />);
-    expect(html).toContain("Cooking assistant");
-    expect(html).toContain("AI_COOK_MODEL");
-    expect(html).toContain("gemini-flash-latest");
-    expect(html).toContain(">Change<");
+  test("the provider, the connection and the models, in the order they are set up (row 217)", () => {
+    const html = renderToString(<AiTab status={status} />);
+    const at = (text: string) => html.indexOf(text);
+    expect(at(">Provider<")).toBeGreaterThan(-1);
+    expect(at(">Provider<")).toBeLessThan(at("Test connection"));
+    expect(at("Test connection")).toBeLessThan(at(">Models<"));
+    for (const label of ["Recipe import", "Restyle", "Planner", "Cooking assistant"]) expect(html).toContain(label);
   });
 
-  test("shows the configuration as rows, naming each variable, and never the key", () => {
+  test("every use's model is a dropdown, and no model variable is named (row 217)", () => {
     const html = renderToString(<AiTab status={status} />);
-    for (const name of ["AI_API_KEY", "AI_BASE_URL", "AI_IMPORT_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL"]) expect(html).toContain(name);
-    expect(html).toContain("gemini-pro-latest");
+    for (const label of ["Recipe import", "Restyle", "Planner", "Cooking assistant"]) expect(html).toContain(`aria-label="${label} model"`);
+    expect(html).not.toMatch(/AI_(IMPORT|RESTYLE|PLANNER|COOK)_MODEL/);
+  });
+
+  test("a dropdown offers Not selected, then the provider's models, and no default; a selected model it does not list stays", () => {
+    const offered = [{ name: "gemini-flash-latest" }, { name: "sonnet", resolvesTo: "claude-sonnet-5" }];
+    const row = { use: "restyle" as const, model: "gemini-flash-latest" };
+    expect(modelOptions(row, offered)).toEqual([
+      { value: "__none__", label: "Not selected" },
+      { value: "gemini-flash-latest", label: "gemini-flash-latest" },
+      { value: "sonnet", label: "sonnet · claude-sonnet-5" },
+    ]);
+    expect(modelOptions({ ...row, model: "retired-model" }, offered).map((option) => option.value)).toEqual([
+      "__none__",
+      "retired-model",
+      "gemini-flash-latest",
+      "sonnet",
+    ]);
+    // Before the list arrives, the model selected is still an option, so the dropdown shows it.
+    expect(modelOptions(row, null).map((option) => option.value)).toEqual(["__none__", "gemini-flash-latest"]);
+    expect(modelOptions({ ...row, model: null }, null).map((option) => option.value)).toEqual(["__none__"]);
+  });
+
+  test("a feature with no model selected shows Not selected", () => {
+    const html = renderToString(<AiTab status={status} />);
+    expect(html).toContain("Not selected");
+  });
+
+  test("shows the provider as rows, naming each variable, and never the key", () => {
+    const html = renderToString(<AiTab status={status} />);
+    for (const name of ["AI_API_KEY", "AI_BASE_URL", "AI_PROVIDER"]) expect(html).toContain(name);
     expect(html).toMatch(/data-testid="ai-key-status"[^>]*>.*●●●●.*>Set</);
     expect(html).not.toContain("Not set");
     expect(html).toMatch(/may train on what is sent/);
@@ -265,7 +296,7 @@ describe("AiTab render", () => {
   test("a check that proved the key says it works; one that could not says the first import will", () => {
     const models = [{ use: "import" as const, model: "haiku", listed: true }];
     expect(connectedMessage({ ok: true, baseUrl: "x", credentialProved: true, models, offered: [] }, "key")).toBe(
-      "The key works, and every model named above is offered."
+      "The key works, and every model selected is offered."
     );
     const unproved = connectedMessage({ ok: true, baseUrl: "x", credentialProved: false, models, offered: [] }, "token");
     expect(unproved).toMatch(/picked up the token; the token itself is proved by the first import/);
@@ -275,7 +306,7 @@ describe("AiTab render", () => {
     );
   });
 
-  test("with no provider it says Not set and why, shows no credential row, and the test is disabled", () => {
+  test("with no provider it says Not set and why, shows no credential row and no models, and the test is disabled", () => {
     const problem = "No AI provider is set. Set AI_PROVIDER to api (with AI_API_KEY) or claude-code (with CLAUDE_CODE_OAUTH_TOKEN) to use this.";
     const html = renderToString(
       <AiTab status={{ provider: null, problem, credential: "", configured: false, baseUrl: "", isDefaultProvider: false, models: [] }} />
@@ -284,38 +315,8 @@ describe("AiTab render", () => {
     expect(html).toContain("No AI provider is set.");
     expect(html).not.toContain("ai-key-status");
     expect(html).not.toContain("AI_BASE_URL");
+    expect(html).not.toContain(">Models<");
     expect(html).toMatch(/<button[^>]*disabled/);
-  });
-
-  test("the offered models are listed by name, with the full id a name stands for and the features that ask it", () => {
-    const html = renderToString(
-      <OfferedModels
-        offered={[
-          { name: "haiku", resolvesTo: "claude-haiku-4-5-20251001" },
-          { name: "opus", resolvesTo: "claude-opus-5-5" },
-          { name: "claude-fable-5-1", resolvesTo: "claude-fable-5-1" },
-        ]}
-        models={[
-          { use: "import", model: "haiku", listed: true },
-          { use: "restyle", model: "claude-opus-5-5", listed: true },
-          { use: "planner", model: "claude-mystery", listed: false },
-        ]}
-      />
-    );
-    expect(html).toContain("Models it offers");
-    expect(html).toContain("<code>haiku</code>");
-    expect(html).toContain("<code>claude-haiku-4-5-20251001</code>");
-    // A name that is its own full id does not repeat it.
-    expect(html.match(/claude-fable-5-1/g)).toHaveLength(1);
-    // Badged by the features that ask it, whether by name or by full id.
-    expect(html).toMatch(/haiku<\/code>[\s\S]*?Recipe import/);
-    expect(html).toMatch(/opus<\/code>[\s\S]*?Restyle/);
-    expect(html).not.toContain("Planner");
-  });
-
-  test("an empty offer says so in a row rather than an empty card", () => {
-    const html = renderToString(<OfferedModels offered={[]} models={[]} />);
-    expect(html).toContain("No models listed");
   });
 
   test("on Claude Code it names the token's variable and has no endpoint row", () => {

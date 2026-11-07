@@ -127,6 +127,22 @@ describe("the round trip", () => {
     expect(readdirSync(b.dir).filter((name) => name.startsWith("images."))).toEqual([]);
   });
 
+  test("the models chosen in Settings › AI travel with it, and a backup from before them leaves every use on its default (row 217)", async () => {
+    const a = await sampleHousehold();
+    const backup = await takeBackup(backupRepository(a.db), a.dir, FIRST);
+    expect((await unpack(backup.bytes)).json.aiModels).toEqual([{ use: "cook", model: "gemini-flash-latest" }]);
+
+    const b = dataDir();
+    seedSample(b.db);
+    b.db.run("INSERT INTO ai_setting (use, model) VALUES ('planner', 'left-behind')");
+    await restoreBackup(backupRepository(b.db), b.dir, backup.bytes, LATER);
+    expect(b.db.query("SELECT use, model FROM ai_setting").all()).toEqual([{ use: "cook", model: "gemini-flash-latest" }]);
+
+    const { garnish: _, aiModels: __, ...older } = sampleBackup();
+    backupRepository(b.db).replace({ ...older, aiModels: [] });
+    expect(b.db.query("SELECT use FROM ai_setting").all()).toEqual([]);
+  });
+
   test("a household made through the repositories comes back as it was, lastMade included", async () => {
     const a = dataDir();
     const sample = seedSample(a.db).recipes;

@@ -74,12 +74,11 @@ describe("compose file", () => {
     expect(envValue(garnish.environment, "CLAUDE_CODE_OAUTH_TOKEN")).toBe("${CLAUDE_CODE_OAUTH_TOKEN:-}");
     expect(envValue(garnish.environment, "AI_API_KEY")).toBe("${AI_API_KEY:-}");
     expect(envValue(garnish.environment, "AI_BASE_URL")).toBe("${AI_BASE_URL:-}");
-    expect(envValue(garnish.environment, "AI_IMPORT_MODEL")).toBe("${AI_IMPORT_MODEL:-}");
   });
 
-  test("passes the per-pass model overrides through too", () => {
-    expect(envValue(garnish.environment, "AI_RESTYLE_MODEL")).toBe("${AI_RESTYLE_MODEL:-}");
-    expect(envValue(garnish.environment, "AI_PLANNER_MODEL")).toBe("${AI_PLANNER_MODEL:-}");
+  test("names no model: each feature's is chosen in Settings › AI (decisions.md row 217)", () => {
+    for (const name of ["AI_MODEL", "AI_IMPORT_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL", "AI_COOK_MODEL"])
+      expect(envValue(garnish.environment, name)).toBeUndefined();
   });
 
   test("restarts unless stopped", () => {

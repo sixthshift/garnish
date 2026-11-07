@@ -9,12 +9,13 @@ import { timelineRepository } from "../../db/models/timeline/repo";
 import { addDays, todayIso } from "../../domain/plan/plan";
 import { type ProposalInput, proposalPrompt, type RecentMeal } from "../../domain/plan/planner";
 import { ensureDataDir } from "../core/boot";
+import { modelFor } from "./client";
 import { libraryRecipe, mergeRecent, RECENT_DAYS, weekSlots } from "./planner";
 import { daysFlag, LAB_USAGE, parseLabFlags, rulesFromText, runLab, weekMondayFlag } from "./plannerLab";
 import ai from "./provider";
 
 if (import.meta.main) {
-  const flags = parseLabFlags(process.argv.slice(2), ai.model("planner"));
+  const flags = parseLabFlags(process.argv.slice(2), modelFor("planner"));
   const path = databasePath(ensureDataDir());
   // Never create the database here: an empty one would answer "no such table". The app or `bun run seed` builds it.
   if (!(await Bun.file(path).exists())) throw new Error(`No database at ${path}. Start the app or run \`bun run seed\` first. ${LAB_USAGE}`);

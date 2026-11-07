@@ -12,9 +12,11 @@ import type { RecipeInput } from "../../../src/domain/recipes/recipe";
 import { noFacets } from "../../../src/domain/recipes/recipe";
 import { AiError } from "../../../src/server/ai/client";
 import { libraryRecipe, mergeRecent, proposalInput, proposeWeek, resolveProposal, runProposal, weekSlots } from "../../../src/server/ai/planner";
-import { apiProvider, DEFAULT_API_MODEL } from "../../../src/server/ai/provider/api";
-import { fakeAi } from "../../helpers/ai";
+import { apiProvider } from "../../../src/server/ai/provider/api";
+import { fakeAi, useChosenModels } from "../../helpers/ai";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
+
+const chosen = useChosenModels({ planner: "test-model" });
 
 useTempDataDir();
 
@@ -23,8 +25,6 @@ const TUESDAY = "2026-09-22";
 const WEDNESDAY = "2026-09-23";
 
 afterEach(() => {
-  delete process.env.AI_PLANNER_MODEL;
-  delete process.env.AI_IMPORT_MODEL;
   delete process.env.AI_API_KEY;
   delete process.env.AI_BASE_URL;
 });
@@ -95,18 +95,19 @@ function fixture(ids: { open: string; taken: string }) {
 const IDS = { open: "11111111-1111-4111-8111-111111111111", taken: "22222222-2222-4222-8222-222222222222" };
 
 describe("the model", () => {
-  test("AI_PLANNER_MODEL sets the model for this pass, and the import's model does not", () => {
-    process.env.AI_IMPORT_MODEL = "import-model";
-    expect(apiProvider().model("planner")).toBe(DEFAULT_API_MODEL);
-    process.env.AI_PLANNER_MODEL = "big-model";
+  test("the model chosen for this pass is asked, and the import's is not", () => {
+    chosen.import = "import-model";
+    delete chosen.planner;
+    expect(() => apiProvider().model("planner")).toThrow(/No Planner model is selected/);
+    chosen.planner = "big-model";
     expect(apiProvider().model("planner")).toBe("big-model");
   });
 
   test("the request asks for the proposal schema and the planner model", async () => {
     process.env.AI_API_KEY = "secret";
     process.env.AI_BASE_URL = "https://provider.test/v1";
-    process.env.AI_IMPORT_MODEL = "import-model";
-    process.env.AI_PLANNER_MODEL = "big-model";
+    chosen.import = "import-model";
+    chosen.planner = "big-model";
     const fetcher = fakeFetch(200, completion(JSON.stringify({ entries: [] })));
     await runProposal(fixture(IDS), { ai: apiProvider(fetcher) });
     const body = JSON.parse(String(fetcher.calls[0]!.init?.body)) as Record<string, unknown>;

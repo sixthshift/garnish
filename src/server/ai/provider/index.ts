@@ -97,7 +97,7 @@ export function serverClient(): AiClient {
   };
 }
 
-// A model chosen in Settings › AI comes before the environment's (decisions.md row 215).
+// Each use's model is the one chosen in Settings › AI (decisions.md rows 215, 217).
 readChosenModels((use) => aiSettings.model(use));
 
 export default withDiagnostics(serverClient());

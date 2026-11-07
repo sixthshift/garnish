@@ -7,12 +7,13 @@ import { ImportError } from "../../../src/domain/recipes/import";
 import type { Fetcher } from "../../../src/server/ai/client";
 import { apiProvider } from "../../../src/server/ai/provider/api";
 import { createImporter } from "../../../src/server/import/importer";
-import { fakeAi } from "../../helpers/ai";
+import { fakeAi, useChosenModels } from "../../helpers/ai";
 
 /** The importer with one fake `fetch` behind both its ports: the page and the model. */
 const importerOver = (fetcher: Fetcher) => createImporter(fetcher, apiProvider(fetcher));
 
-const KEYS = ["AI_API_KEY", "AI_BASE_URL", "AI_IMPORT_MODEL"] as const;
+const KEYS = ["AI_API_KEY", "AI_BASE_URL"] as const;
+const chosen = useChosenModels({ import: "test-model" });
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 afterEach(() => {
   for (const key of KEYS) {
@@ -67,6 +68,19 @@ describe("createImporter", () => {
     expect(caught).toBeInstanceOf(ImportError);
     expect((caught as ImportError).kind).toBe("failed");
     expect((caught as Error).message).toMatch(/rate-limited/);
+  });
+
+  test("a key but no import model selected is unavailable, says where to choose one, and sends nothing (row 217)", async () => {
+    process.env.AI_API_KEY = "k";
+    delete chosen.import;
+    const fetcher = fakeFetch(["", 500], [completion(answer), 200]);
+    const caught = await importerOver(fetcher)
+      .import({ kind: "text", text: "Anzac biscuits\n1 cup plain flour" })
+      .catch((cause: unknown) => cause);
+    expect(caught).toBeInstanceOf(ImportError);
+    expect((caught as ImportError).kind).toBe("unavailable");
+    expect((caught as Error).message).toBe("No Recipe import model is selected. Choose one in Settings › AI.");
+    expect(fetcher.calls).toEqual([]);
   });
 
   test("no key configured is unavailable rather than a crash, and nothing is sent", async () => {

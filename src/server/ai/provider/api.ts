@@ -1,9 +1,9 @@
 // `AI_PROVIDER=api`: any model API reached with a key, over the
 // OpenAI-compatible request format every such API speaks (decisions.md row 75):
-// one `chat/completions` POST per question, configured by `AI_API_KEY`,
-// `AI_BASE_URL` and a model per use (`AI_IMPORT_MODEL`, `AI_RESTYLE_MODEL`,
-// `AI_PLANNER_MODEL`). Gemini's free tier by default; one base URL and
-// one model name move it to Mistral, Groq, OpenRouter or an Ollama on the LAN.
+// one `chat/completions` POST per question, configured by `AI_API_KEY` and
+// `AI_BASE_URL`, with each use's model chosen in Settings › AI. Gemini's free
+// tier by default; a base URL and a choice of models move it to Mistral, Groq,
+// OpenRouter or an Ollama on the LAN.
 //
 // Its connection check asks for the model list — `GET ${AI_BASE_URL}/models`,
 // which every OpenAI-compatible server answers and none bills as a generation —
@@ -22,23 +22,11 @@ import {
   type ConnectionCheck,
   type Fetcher,
   modelFor,
+  requireModel,
 } from "../client";
 
-/** Gemini's OpenAI-compatible endpoint: the free tier, so one variable is the whole of the setup. */
+/** Gemini's OpenAI-compatible endpoint: the free tier, so a key is the whole of the server's setup. */
 export const DEFAULT_AI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
-
-/**
- * The model asked for when none is named: Google's rolling alias for its
- * current Flash-Lite, not a pinned version. A pinned name rots — the first
- * live call here got a 404 because `gemini-2.5-flash` had been retired for new
- * accounts — and the alias follows each release without a code change. Lite,
- * because the anchored read is an easy task (the lines are given; only the
- * grouping is asked for), and on the same page Lite answered identically in
- * 3 s where the full Flash took 22 s. The full `gemini-flash-latest` alias
- * answered 503 "high demand" on every try from a free-tier key, so it is not
- * the default. Each use's model variable overrides all of this.
- */
-export const DEFAULT_API_MODEL = "gemini-flash-lite-latest";
 
 /** A model list answers in a second; ten is generous and still short enough to wait for on a button. */
 export const CHECK_TIMEOUT_MS = 10_000;
@@ -80,10 +68,13 @@ export function modelName(id: string): string {
   return id.replace(/^models\//, "");
 }
 
-/** The configured models, one row per use, each marked by whether the list names it. Pure. */
-export function checkModels(listed: readonly string[], configured: Record<AiUse, string>): CheckedModel[] {
+/** The selected models, one row per use that has one, each marked by whether the list names it. */
+export function checkModels(listed: readonly string[], selected: (use: AiUse) => string | null = modelFor): CheckedModel[] {
   const names = new Set(listed.map(modelName));
-  return AI_USES.map((use) => ({ use, model: configured[use], listed: names.has(modelName(configured[use])) }));
+  return AI_USES.flatMap((use) => {
+    const model = selected(use);
+    return model === null ? [] : [{ use, model, listed: names.has(modelName(model)) }];
+  });
 }
 
 /**
@@ -118,13 +109,10 @@ const NO_KEY = "No model is configured here. Set AI_API_KEY to use this.";
  * any stub of it.
  */
 export function apiProvider(fetcher: Fetcher = (url, init) => fetch(url, init)): AiClient {
-  const model = (use: AiUse) => modelFor(use, DEFAULT_API_MODEL);
-  const models = (): Record<AiUse, string> => ({ import: model("import"), restyle: model("restyle"), planner: model("planner"), cook: model("cook") });
-
   return {
     configured: () => apiSettings().apiKey !== "",
 
-    model,
+    model: requireModel,
 
     status(): AiStatus {
       const { apiKey, baseUrl } = apiSettings();
@@ -135,7 +123,7 @@ export function apiProvider(fetcher: Fetcher = (url, init) => fetch(url, init)):
         configured: apiKey !== "",
         baseUrl,
         isDefaultProvider: baseUrl === DEFAULT_AI_BASE_URL,
-        models: AI_USES.map((use) => ({ use, model: model(use) })),
+        models: AI_USES.map((use) => ({ use, model: modelFor(use) })),
       };
     },
 
@@ -169,7 +157,7 @@ export function apiProvider(fetcher: Fetcher = (url, init) => fetch(url, init)):
       // Named as a model variable would name them, once each, in order.
       const offered = [...new Set(ids.map(modelName))].sort().map((name) => ({ name }));
       // The list is behind the key, so an answer proves it.
-      return { ok: true, baseUrl, credentialProved: true, models: checkModels(ids, models()), offered };
+      return { ok: true, baseUrl, credentialProved: true, models: checkModels(ids), offered };
     },
 
     // One POST to `${AI_BASE_URL}/chat/completions`, with the deadline enforced by `AbortSignal.timeout` rather than by hope.

@@ -31,16 +31,13 @@ import {
   AiError,
   type AiRequest,
   type AiStatus,
-  type AiUse,
   type ConnectionCheck,
   modelFor,
   type OfferedModel,
   offeredNames,
+  requireModel,
 } from "../client";
 import { checkModels } from "./api";
-
-/** The cheap fast tier, as Claude Code names it: extraction against a schema needs nothing more (decisions.md row 75). */
-export const DEFAULT_CLAUDE_CODE_MODEL = "haiku";
 
 /** What Settings shows where the OpenAI provider shows its base URL. */
 export const CLAUDE_CODE_ENDPOINT = "Claude Code, on the subscription";
@@ -196,13 +193,11 @@ export function claudeCodeFailure(cause: unknown): AiError {
  */
 export function claudeCodeProvider(ports: { ask?: ClaudeCodeAsk; inspect?: ClaudeCodeInspect } = {}): AiClient {
   const { ask = generate, inspect: look = inspect } = ports;
-  const model = (use: AiUse) => modelFor(use, DEFAULT_CLAUDE_CODE_MODEL);
-  const models = (): Record<AiUse, string> => ({ import: model("import"), restyle: model("restyle"), planner: model("planner"), cook: model("cook") });
 
   return {
     configured: () => claudeCodeSettings().token !== "",
 
-    model,
+    model: requireModel,
 
     status(): AiStatus {
       return {
@@ -212,7 +207,7 @@ export function claudeCodeProvider(ports: { ask?: ClaudeCodeAsk; inspect?: Claud
         configured: claudeCodeSettings().token !== "",
         baseUrl: CLAUDE_CODE_ENDPOINT,
         isDefaultProvider: false,
-        models: AI_USES.map((use) => ({ use, model: model(use) })),
+        models: AI_USES.map((use) => ({ use, model: modelFor(use) })),
       };
     },
 
@@ -225,7 +220,7 @@ export function claudeCodeProvider(ports: { ask?: ClaudeCodeAsk; inspect?: Claud
         if (account.tokenSource !== "CLAUDE_CODE_OAUTH_TOKEN") {
           return fail("Claude Code started but did not pick up CLAUDE_CODE_OAUTH_TOKEN.");
         }
-        return { ok: true, baseUrl: CLAUDE_CODE_ENDPOINT, credentialProved: false, models: checkModels(offeredNames(offered), models()), offered };
+        return { ok: true, baseUrl: CLAUDE_CODE_ENDPOINT, credentialProved: false, models: checkModels(offeredNames(offered)), offered };
       } catch (cause) {
         const failure = claudeCodeFailure(cause);
         return fail(failure.kind === "timeout" ? "Claude Code did not answer within ten seconds." : failure.message);

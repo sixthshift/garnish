@@ -14,21 +14,14 @@ import {
   claudeCodeFailure,
   claudeCodeProvider,
   claudeCodeSettings,
-  DEFAULT_CLAUDE_CODE_MODEL,
   lockedSettings,
 } from "../../../../src/server/ai/provider/claudeCode";
+import { useChosenModels } from "../../../helpers/ai";
 
 const SCHEMA = { type: "object", additionalProperties: false, required: ["a"], properties: { a: { type: "number" } } } as const;
 
-const KEYS = [
-  "AI_PROVIDER",
-  "CLAUDE_CODE_OAUTH_TOKEN",
-  "CLAUDE_CODE_EXECUTABLE",
-  "AI_API_KEY",
-  "AI_IMPORT_MODEL",
-  "AI_RESTYLE_MODEL",
-  "AI_PLANNER_MODEL",
-] as const;
+const KEYS = ["AI_PROVIDER", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_EXECUTABLE", "AI_API_KEY"] as const;
+const chosen = useChosenModels();
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 
 afterEach(() => {
@@ -57,19 +50,20 @@ function fakeAsk(output: unknown | (() => never)): ClaudeCodeAsk & { calls: Para
 const request = (model = "haiku"): AiRequest => ({ prompt: "PROMPT", schema: SCHEMA, schemaName: "test", model, timeoutMs: AI_TIMEOUT_MS });
 
 describe("the configuration", () => {
-  test("the token is the whole of it, and the model defaults to haiku", () => {
+  test("the token is the whole of the server's setup, and no model is guessed", () => {
     configure({ CLAUDE_CODE_OAUTH_TOKEN: " sk-ant-oat-x " });
     expect(claudeCodeSettings()).toEqual({ token: "sk-ant-oat-x", executable: undefined });
-    expect(claudeCodeProvider().model("import")).toBe(DEFAULT_CLAUDE_CODE_MODEL);
+    expect(() => claudeCodeProvider().model("import")).toThrow(/No Recipe import model is selected/);
     expect(claudeCodeProvider().configured()).toBe(true);
     configure({ CLAUDE_CODE_OAUTH_TOKEN: "  " });
     expect(claudeCodeProvider().configured()).toBe(false);
   });
 
-  test("each use's model variable means what it means for the other provider, over haiku", () => {
-    configure({ AI_IMPORT_MODEL: "sonnet", AI_PLANNER_MODEL: "opus" });
+  test("each use's chosen model means what it means for the other provider", () => {
+    configure({});
+    Object.assign(chosen, { import: "sonnet", planner: "opus" });
     const ai = claudeCodeProvider();
-    expect([ai.model("import"), ai.model("restyle"), ai.model("planner")]).toEqual(["sonnet", DEFAULT_CLAUDE_CODE_MODEL, "opus"]);
+    expect([ai.model("import"), ai.model("planner")]).toEqual(["sonnet", "opus"]);
   });
 
   test("the status names the token's variable and never the token", () => {
@@ -204,8 +198,9 @@ describe("check", () => {
     expect(started).toBe(false);
   });
 
-  test("marks each use by whether Claude Code offers its model, by name or full id, lists every model, and does not claim the token is proved", async () => {
-    configure({ CLAUDE_CODE_OAUTH_TOKEN: "tok", AI_RESTYLE_MODEL: "claude-opus-5-5", AI_PLANNER_MODEL: "claude-mystery" });
+  test("marks each selected use by whether Claude Code offers its model, by name or full id, lists every model, and does not claim the token is proved", async () => {
+    configure({ CLAUDE_CODE_OAUTH_TOKEN: "tok" });
+    Object.assign(chosen, { restyle: "claude-opus-5-5", planner: "claude-mystery" });
     let seen: unknown;
     const offered = [
       { name: "default", resolvesTo: "claude-sonnet-5" },
@@ -220,11 +215,10 @@ describe("check", () => {
       ok: true,
       baseUrl: CLAUDE_CODE_ENDPOINT,
       credentialProved: false,
+      // Import and cook are not selected, so there is nothing of theirs to check.
       models: [
-        { use: "import", model: "haiku", listed: true },
         { use: "restyle", model: "claude-opus-5-5", listed: true },
         { use: "planner", model: "claude-mystery", listed: false },
-        { use: "cook", model: "haiku", listed: true },
       ],
       offered,
     });

@@ -2,6 +2,7 @@ export type { BackupCheck } from "./check";
 export { checkBackup } from "./check";
 export type {
   Backup,
+  BackupAiModel,
   BackupAisle,
   BackupCounts,
   BackupFood,

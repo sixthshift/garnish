@@ -3,9 +3,8 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { AiError } from "../../../../src/server/ai/client";
 import serverAi, { noProvider, providerChoice } from "../../../../src/server/ai/provider";
-import { DEFAULT_CLAUDE_CODE_MODEL } from "../../../../src/server/ai/provider/claudeCode";
 
-const KEYS = ["AI_PROVIDER", "AI_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "AI_IMPORT_MODEL"] as const;
+const KEYS = ["AI_PROVIDER", "AI_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"] as const;
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
 
 afterEach(() => {
@@ -68,7 +67,7 @@ describe("the server's client", () => {
 
     configure({ AI_PROVIDER: "claude-code", AI_API_KEY: "k" });
     expect(serverAi.status()).toMatchObject({ provider: "claude-code", credential: "CLAUDE_CODE_OAUTH_TOKEN", configured: false });
-    expect(serverAi.model("import")).toBe(DEFAULT_CLAUDE_CODE_MODEL);
+    expect(() => serverAi.model("import")).toThrow(/No Recipe import model is selected/);
   });
 
   test("AI_PROVIDER is read on every call", () => {
