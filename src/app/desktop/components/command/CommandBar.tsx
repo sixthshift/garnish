@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
+import { busyElsewhere } from "../../../../lib/ui/keys";
 import { useHydrated } from "../../../../lib/useHydrated";
 import { CommandPalette } from "./CommandPalette";
 import { Kbd, SearchIcon } from "./Kbd";
-
-/** Whether a key press belongs to a field being typed in. */
-function typing(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
-}
 
 /** A Mac names the key ⌘; everything else Ctrl. Asked only once the page is the browser's. */
 function isMac(): boolean {
@@ -33,7 +28,7 @@ export function CommandBar() {
         return;
       }
       if (event.key !== "/" || event.ctrlKey || event.metaKey || event.altKey || event.defaultPrevented) return;
-      if (typing(event.target) || document.querySelector('[role="dialog"]') !== null) return;
+      if (busyElsewhere(event.target)) return;
       event.preventDefault();
       setOpen(true);
     };

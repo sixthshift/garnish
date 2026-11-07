@@ -1,4 +1,4 @@
-// Page-wide keys (a desktop's side panel's Esc, the library's flipping): when
+// Page-wide keys (a desktop's side panel's Esc, the library's flipping, the command bar's "/"): when
 // a key pressed anywhere on the page is the page's, and when it belongs to
 // whatever has focus. Pure over the DOM.
 

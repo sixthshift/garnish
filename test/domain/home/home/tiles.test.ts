@@ -44,14 +44,14 @@ test("a recipe made exactly a fortnight ago has been a while", () => {
   expect(longestSinceMade([recipe("Thirteen days", "rotation", made("2026-09-03"))], TODAY, 4)).toHaveLength(0);
 });
 
-test("sinceMadeLabel says how long in the largest unit that reads naturally", () => {
+test("sinceMadeLabel says how long in the largest unit that reads naturally, as the plan's shelf does", () => {
   expect(sinceMadeLabel(null, TODAY)).toBe("Not made yet");
-  expect(sinceMadeLabel(made("2026-09-12"), TODAY)).toBe("This week");
-  expect(sinceMadeLabel(made("2026-09-09"), TODAY)).toBe("A week ago");
+  expect(sinceMadeLabel(made("2026-09-16"), TODAY)).toBe("Today");
+  expect(sinceMadeLabel(made("2026-09-12"), TODAY)).toBe("4 days ago");
   expect(sinceMadeLabel(made("2026-08-19"), TODAY)).toBe("4 weeks ago");
   expect(sinceMadeLabel(made("2026-06-16"), TODAY)).toBe("3 months ago");
   expect(sinceMadeLabel(made("2025-09-01"), TODAY)).toBe("A year ago");
   expect(sinceMadeLabel(made("2023-09-01"), TODAY)).toBe("3 years ago");
-  // A cook logged later in the day than "today" began is still this week, never in the future.
-  expect(sinceMadeLabel("2026-09-16T20:00:00.000Z", TODAY)).toBe("This week");
+  // A cook logged later in the day than "today" began is today, never in the future.
+  expect(sinceMadeLabel("2026-09-16T20:00:00.000Z", TODAY)).toBe("Today");
 });

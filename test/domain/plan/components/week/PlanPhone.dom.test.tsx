@@ -179,3 +179,8 @@ test("next week's empty nights are a pill to fill them", async () => {
   const pill = screen.getByRole("link", { name: "Fill next week’s 6 empty nights" });
   expect(pill).toHaveAttribute("href", `/plan/fill?week=${NEXT}`);
 });
+
+test("a week long gone offers no pill, however empty the week after it was", async () => {
+  await plan({ monday: "2026-08-03", days: groupByDay("2026-08-03", []), nextDays: groupByDay("2026-08-10", []) });
+  expect(screen.queryByRole("link", { name: /^Fill next week/ })).toBeNull();
+});

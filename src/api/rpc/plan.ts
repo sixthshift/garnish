@@ -48,6 +48,14 @@ export const movePlanEntry = createServerFn({ method: "POST" })
   .validator(MovePlanEntryInput)
   .handler(async ({ data }) => required(plan.move(data.id, data.date, data.position), "plan entry", data.id));
 
+export const ReplacePlanEntryInput = z.object({ id: Id, entry: planEntryInputSchema });
+
+/** Put a new entry in an old one's place, in one write: Home's Swap. */
+export const replacePlanEntry = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(ReplacePlanEntryInput)
+  .handler(async ({ data }) => required(plan.replace(data.id, withRotatedChoices([data.entry])[0]!), "plan entry", data.id));
+
 /** Delete one entry. Returns the id, as the timeline and shopping deletes do. */
 export const removePlanEntry = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])

@@ -7,7 +7,7 @@ import { Page } from "../../../../../components/Page";
 import { addDays, dayName, nextMonday, type PlanDay, todayIso, weekLabel } from "../../../plan";
 import { AddWeekToShoppingButton } from "../AddWeekToShoppingButton";
 import type { PlanWeekViewProps } from "../PlanWeekView";
-import { useShelfRecipes } from "../shelf";
+import { useRecipeMinutes, useShelfRecipes } from "../shelf";
 import { WeekArrow } from "../WeekArrow";
 import { PhoneDay, phoneDayId } from "./PhoneDay";
 import { PlanAddSheet } from "./PlanAddSheet";
@@ -52,7 +52,7 @@ export function PlanPhone({
 }: PlanWeekViewProps) {
   const [adding, setAdding] = useState<string | null>(null);
   const recipes = useShelfRecipes(shelfRecipes);
-  const minutes = useMemo(() => new Map((recipes ?? []).map((recipe) => [recipe.id, recipe.totalTime])), [recipes]);
+  const minutes = useRecipeMinutes(recipes);
   const allDays = useMemo(() => [...days, ...nextDays], [days, nextDays]);
   const following = nextMonday(monday);
   const emptyNights = nextDays.filter((day) => day.entries.length === 0).length;
@@ -161,7 +161,8 @@ export function PlanPhone({
         </section>
       )}
 
-      {emptyNights > 0 && (
+      {/* Only while that week is still to come: a week long gone is not one to fill (as Plan the week). */}
+      {emptyNights > 0 && addDays(following, 6) >= today && (
         // Over the foot of the page as it scrolls, clear of the tab bar; it comes to rest after the last day.
         <div
           className="pointer-events-none sticky bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+0.75rem)] z-10 flex justify-center"

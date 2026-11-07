@@ -105,6 +105,13 @@ describe("buildOptions", () => {
     ]);
   });
 
+  test("a day with no recipe to put on it is a line for the shopping list after all", () => {
+    expect(buildOptions({ query: "hot cross buns fri", today, recipes: [ragu, rice] }).map((option) => option.label)).toEqual([
+      "Add “hot cross buns fri” to the shopping list",
+    ]);
+    expect(buildOptions({ query: "sun", today, recipes: [] }).map((option) => option.kind)).toEqual(["shop"]);
+  });
+
   test("at most four recipes to plan and six to open", () => {
     const many = Array.from({ length: 9 }, (_, i) => ({ ...rice, id: `id-${i}`, slug: `rice-${i}`, name: `Rice ${i}` }));
     const options = buildOptions({ query: "rice fri", today, recipes: many });

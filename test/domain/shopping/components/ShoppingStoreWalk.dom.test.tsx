@@ -36,7 +36,7 @@ function Harness({ onTick }: { onTick: (id: string, ticked: boolean) => void }) 
     <ShoppingListView
       items={items}
       onAdd={() => {}}
-      onRemove={() => {}}
+      onRemove={(id) => setItems((current) => current.filter((line) => line.id !== id))}
       onClearTicked={() => {}}
       onTick={(id, ticked) => {
         onTick(id, ticked);
@@ -103,6 +103,18 @@ test("clicking a meal keeps it lit past the pointer, and clicking it again lets 
   expect(chicken).toHaveAttribute("aria-pressed", "false");
   await user.unhover(chicken);
   expect(["Butter", "Lemons", "Chicken", "Batteries"].some(dimmed)).toBe(false);
+});
+
+test("a pinned meal whose lines have all gone lights nothing, rather than dimming the whole list", async () => {
+  const user = userEvent.setup();
+  await mount();
+  await user.click(screen.getByRole("button", { name: "Lemon tart, Mon: 2 to buy" }));
+  expect(dimmed("Chicken")).toBe(true);
+
+  await user.click(within(rowOf("Lemons")).getAllByRole("button", { name: "Remove Lemons" })[0]!);
+  await user.click(within(rowOf("Butter")).getAllByRole("button", { name: "Remove Butter" })[0]!);
+  expect(screen.queryByRole("button", { name: /^Lemon tart/ })).toBeNull();
+  expect(["Chicken", "Batteries"].some(dimmed)).toBe(false);
 });
 
 test("a tick slides the line out of its aisle and into the trolley, and an untick there brings it back", async () => {

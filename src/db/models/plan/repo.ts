@@ -227,6 +227,34 @@ export function planRepository(db: Database) {
       return get(id);
     },
 
+    /**
+     * Put a new entry in an old one's place, in one transaction (Home's Swap):
+     * the same day and position, and the old one gone. Either both happen or
+     * neither, so a day never holds the old dish and the new. Null when `id`
+     * is unknown.
+     */
+    replace(id: string, input: ParsedPlanEntryInput): PlanEntry | null {
+      const old = get(id);
+      if (!old) return null;
+      const newId = crypto.randomUUID();
+      dz.transaction((tx) => {
+        tx.delete(mealPlanEntry).where(eq(mealPlanEntry.id, id)).run();
+        tx.insert(mealPlanEntry)
+          .values({
+            id: newId,
+            date: old.date,
+            position: old.position,
+            recipeId: input.recipeId,
+            text: input.text,
+            servings: input.servings,
+            meal: input.meal,
+            choices: input.choices,
+          })
+          .run();
+      });
+      return get(newId);
+    },
+
     /** True when a row was deleted. */
     remove: (id: string): boolean => dz.delete(mealPlanEntry).where(eq(mealPlanEntry.id, id)).returning({ id: mealPlanEntry.id }).all().length > 0,
   };

@@ -26,6 +26,7 @@ type Place = { label: string; sections: (SettingsGroup["sections"][number] & { v
 export function SettingsPage() {
   const { aisles, units, foods, foodUsage, foodPacks, tags, recipes, styleRules, plannerRules, ai, mcp, diagnostics } = route.useLoaderData();
   const { section } = route.useSearch();
+  const navigate = route.useNavigate();
   const recent = recentCount(diagnostics, new Date());
   const layout = useLayout();
 
@@ -81,7 +82,9 @@ export function SettingsPage() {
   if (layout === "desktop") {
     // The library's counts are the phone list's alone: the desktop menu badges what it always has.
     const menu = groups.map((group) => ({ ...group, sections: group.sections.map(({ count: _, ...rest }) => rest) }));
-    return <SettingsMenu groups={menu} footer={<Version />} initial={section} />;
+    return (
+      <SettingsMenu groups={menu} footer={<Version />} value={section} onChange={(next) => navigate({ search: { section: next as SettingsSectionId } })} />
+    );
   }
 
   const open = section === undefined ? undefined : groups.flatMap((group) => group.sections).find((place) => place.value === section);

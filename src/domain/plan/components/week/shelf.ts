@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toastError } from "../../../../lib/toast";
-import type { RecipeSummary } from "../../../recipes/recipe";
+import { type RecipeSummary, sinceMade } from "../../../recipes/recipe";
 
 /**
  * The recipes to add from, sorted into four tabs: what a desktop's shelf
@@ -47,14 +47,8 @@ export function emptyShelfLine(tab: ShelfTab): string {
 
 /** How long since a recipe was last made, as the shelf says it under its name: "made 3 weeks ago", "never made". Pure. */
 export function madeAgo(lastMade: string | null, today: string): string {
-  if (lastMade === null) return "never made";
-  const days = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${lastMade.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
-  if (days <= 0) return "made today";
-  if (days === 1) return "made yesterday";
-  if (days < 14) return `made ${days} days ago`;
-  if (days < 61) return `made ${Math.floor(days / 7)} weeks ago`;
-  if (days < 730) return `made ${Math.floor(days / 30.44)} months ago`;
-  return `made ${Math.floor(days / 365.25)} years ago`;
+  const since = sinceMade(lastMade, today);
+  return since === null ? "never made" : `made ${since}`;
 }
 
 /**
@@ -81,4 +75,9 @@ export function useShelfRecipes(read: (() => Promise<RecipeSummary[]>) | undefin
     };
   }, [read]);
   return read === undefined ? undefined : recipes;
+}
+
+/** Each recipe's total time by id, for an entry's line: both layouts' entries show it. */
+export function useRecipeMinutes(recipes: readonly RecipeSummary[] | null | undefined): Map<string, number | null> {
+  return useMemo(() => new Map((recipes ?? []).map((recipe) => [recipe.id, recipe.totalTime])), [recipes]);
 }

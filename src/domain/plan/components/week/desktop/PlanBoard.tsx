@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { RecipeSummary } from "../../../../recipes/recipe";
 import { addDays, type Meal, nextMonday, type PlanDay, type PlanEntry, rangeLabel, todayIso } from "../../../plan";
 import type { PlanWeekViewProps } from "../PlanWeekView";
-import { useShelfRecipes } from "../shelf";
+import { useRecipeMinutes, useShelfRecipes } from "../shelf";
 import { WeekArrow } from "../WeekArrow";
 import { BoardWeek } from "./BoardWeek";
 import { PlanShelf } from "./PlanShelf";
@@ -76,7 +76,7 @@ export function PlanBoard({
   // The shelf's recipes, read once as the board opens. A plan's writes do not change them.
   const recipes = useShelfRecipes(shelfRecipes);
   // The plan carries a recipe's name and picture, not its time: the shelf's copy has it.
-  const minutes = useMemo(() => new Map((recipes ?? []).map((recipe) => [recipe.id, recipe.totalTime])), [recipes]);
+  const minutes = useRecipeMinutes(recipes);
 
   const choose = (date: string) => {
     setAdding(date);

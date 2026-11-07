@@ -66,6 +66,19 @@ test("a plain line round-trips with no recipe", () => {
   expect(labels()).toEqual([["Leftovers"], [], [], [], [], [], []]);
 });
 
+test("replace puts the new entry in the old one's place on its day, in one write; an unknown id is null", () => {
+  repo.add(parse({ date: MONDAY, text: "Porridge" }));
+  const old = repo.add(parse({ date: MONDAY, text: "Leftovers", meal: "dinner" }));
+  repo.add(parse({ date: MONDAY, text: "Fruit" }));
+
+  const recipe = seedRecipe();
+  const swapped = repo.replace(old.id, parse({ date: MONDAY, recipeId: recipe.id, meal: "dinner" }));
+  expect(swapped).toMatchObject({ date: MONDAY, position: 1, meal: "dinner", recipe: { id: recipe.id } });
+  expect(repo.get(old.id)).toBeNull();
+  expect(labels()[0]).toEqual(["Porridge", "Lemon tart", "Fruit"]);
+  expect(repo.replace("00000000-0000-4000-8000-000000000000", parse({ date: MONDAY, text: "x" }))).toBeNull();
+});
+
 test("an entry carries its meal, or none, and the order is still position (M39.1)", () => {
   const breakfast = repo.add(parse({ date: MONDAY, text: "Porridge", meal: "breakfast" }));
   const untyped = repo.add(parse({ date: MONDAY, text: "Leftovers" }));

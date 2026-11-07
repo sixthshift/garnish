@@ -234,8 +234,10 @@ export class Importer {
         }
       }
       // Markup the rules could make nothing of: the model still gets a fair go
-      // at it, over the readable text rather than the tags.
-      return await this.modelRead(readableText(body), { sourceUrl, anchor: null, pageText: "" });
+      // at it, over the readable text rather than the tags. That text is the
+      // page as read, so Check can show it beside what the model made of it.
+      const readable = readableText(body);
+      return await this.modelRead(readable, { sourceUrl, anchor: null, pageText: readable });
     }
 
     return await this.modelRead(body, { sourceUrl, anchor, pageText: "" });

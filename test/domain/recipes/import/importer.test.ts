@@ -329,6 +329,15 @@ describe('import({ kind: "text" })', () => {
     expect((caught as Error).message).toMatch(/nothing was imported/i);
   });
 
+  test("markup the rules make nothing of goes to the model as its readable text, and that text is kept as the page", async () => {
+    const run = fakeModel(answer);
+    const imported = await reading(run).import({ kind: "text", text: BARE_PAGE });
+    expect(run.calls[0]!.prompt).toContain("Prose.");
+    expect(run.calls[0]!.prompt).not.toContain("<body>");
+    // Check shows it beside the editor, so what the model read is not lost (it was "" before).
+    expect(imported.pageText).toContain("Prose.");
+  });
+
   test("a source URL is carried through so the draft keeps it", async () => {
     const imported = await reading(fakeModel(answer)).import({ kind: "text", text: "text", sourceUrl: "https://example.test/x" });
     expect(imported.url).toBe("https://example.test/x");

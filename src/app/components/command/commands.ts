@@ -125,8 +125,8 @@ const goTo = navItems.map((item) => ({ label: item.label, target: { to: item.to 
  * The options for what was typed, grouped and in the order shown. Empty: what
  * is on tonight, planning next week, importing, and the places. Otherwise:
  * with a trailing day, the top recipes put on that day; the recipes that
- * match; the places the first word starts; and, without a day, the whole
- * line added to the shopping list, last, so a recipe or a place is what
+ * match; the places the first word starts; and, without a day or when no
+ * recipe matches, the whole line added to the shopping list, last, so a recipe or a place is what
  * Enter takes first when there is one.
  */
 export function buildOptions({ query, today, recipes, tonight = [], nextWeek = null }: CommandContext): CommandOption[] {
@@ -154,7 +154,8 @@ export function buildOptions({ query, today, recipes, tonight = [], nextWeek = n
   for (const recipe of hits.slice(0, RECIPE_HITS)) options.push({ kind: "open", group: "Recipes", label: recipe.name, recipe });
   const first = words[0] ?? "";
   for (const place of goTo) if (place.label.toLowerCase().startsWith(first)) options.push({ kind: "go", group: "Go to", ...place });
-  if (date === null) {
+  // A trailing day only makes a plan of it when a recipe matches: "hot cross buns fri" or "sun" (dried tomatoes) with none is a line for the list.
+  if (date === null || hits.length === 0) {
     const text = query.trim();
     options.push({ kind: "shop", group: "Shopping", label: `Add “${text}” to the shopping list`, text });
   }

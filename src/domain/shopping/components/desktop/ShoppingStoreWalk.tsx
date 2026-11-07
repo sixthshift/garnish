@@ -72,7 +72,6 @@ export function ShoppingStoreWalk({
   // The meals key: a hover lights a meal's lines, a click pins it (and a second click lets it go).
   const [hovered, setHovered] = useState<string | null>(null);
   const [pinned, setPinned] = useState<string | null>(null);
-  const active = pinned ?? hovered;
 
   // A tick slides the line out of its aisle first, then sends it; the line stays out of sight until
   // the list comes back with it ticked, and drops in to the trolley from the left.
@@ -81,6 +80,10 @@ export function ShoppingStoreWalk({
   const ticked = items.filter((item) => item.ticked);
   const aisles = groupByAisle(items).filter((group) => !group.ticked);
   const meals = shoppingMeals(items);
+  // A pinned or hovered meal whose lines have all gone (cleared, removed) is no longer in the key, so it
+  // lights nothing rather than dimming every line with nothing left to press to let it go.
+  const live = (key: string | null) => (key !== null && meals.some((meal) => meal.key === key) ? key : null);
+  const active = live(pinned) ?? live(hovered);
 
   const tone = (item: ShoppingItem): "lit" | "dim" | null => (active === null ? null : mealKeysOf(item).includes(active) ? "lit" : "dim");
 

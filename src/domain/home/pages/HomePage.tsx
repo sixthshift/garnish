@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { useState } from "react";
-import { addPlanEntry, movePlanEntry, removePlanEntry } from "../../../api/rpc/plan";
+import { addPlanEntry, replacePlanEntry } from "../../../api/rpc/plan";
 import { useMutate } from "../../../lib/mutate";
 import { toastError } from "../../../lib/toast";
 import { useLayout } from "../../../lib/useLayout";
@@ -51,14 +51,10 @@ export function HomePage() {
       searchRecipes={searchPlanRecipes}
       onAdd={(date, choice, meal) => void write("Couldn't add to the plan", () => addPlanEntry({ data: entryInput(date, choice, meal) }))}
       // The new entry goes where the old one was, so it is still the one Home
-      // calls tonight's, and the old one goes.
+      // calls tonight's, and the old one goes: one write, so a failure leaves
+      // the day as it was rather than holding both.
       onSwap={(entry, choice, meal) =>
-        void write("Couldn't swap tonight", async () => {
-          const index = data.days.find((day) => day.date === entry.date)?.entries.findIndex((e) => e.id === entry.id) ?? -1;
-          const added = await addPlanEntry({ data: entryInput(entry.date, choice, meal) });
-          if (index >= 0) await movePlanEntry({ data: { id: added.id, date: entry.date, position: index } });
-          await removePlanEntry({ data: { id: entry.id } });
-        })
+        void write("Couldn't swap tonight", () => replacePlanEntry({ data: { id: entry.id, entry: entryInput(entry.date, choice, meal) } }))
       }
     />
   );

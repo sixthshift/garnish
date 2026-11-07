@@ -11,6 +11,7 @@ export { durationsIn } from "./durations";
 export { exportedRecipe } from "./export";
 export type { TagMatch } from "./filters";
 export { selectedTags } from "./filters";
+export { daysSinceMade, sinceMade } from "./made";
 export { mergeIngredients } from "./mergeIngredients";
 export type {
   Alternative,
