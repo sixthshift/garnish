@@ -131,8 +131,6 @@ describe("facetsFromWords (M49.5)", () => {
     ["BBQ", "method", "bbq"],
     ["Barbecue", "method", "bbq"],
     ["Barbeque", "method", "bbq"],
-    ["Grill", "method", "bbq"],
-    ["Grilling", "method", "bbq"],
     ["Slow Cooker", "method", "slow-cooker"],
     ["Crockpot", "method", "slow-cooker"],
     ["Crock-Pot", "method", "slow-cooker"],
@@ -203,4 +201,8 @@ describe("wordKey and mergeFacets", () => {
       diet: ["vegan"],
     });
   });
+});
+
+test("grill says nothing of the method: the barbecue to an American page, the oven's grill to an Australian one", () => {
+  expect(facetsFromWords(["Grill", "grilling"]).method).toEqual([]);
 });

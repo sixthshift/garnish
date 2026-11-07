@@ -81,8 +81,8 @@ const SYNONYMS: { readonly [L in FacetLayer]?: { readonly [V in Facets[L][number
   },
   method: {
     stovetop: ["stovetop", "stove top"],
-    // An American page's "grill" is the barbecue; it is never the oven's grill there.
-    bbq: ["bbq", "barbecue", "barbeque", "grill", "grilling"],
+    // Not "grill": an American page means the barbecue by it, an Australian or British one the oven's grill.
+    bbq: ["bbq", "barbecue", "barbeque"],
     "slow-cooker": ["slow cooker", "crockpot", "crock pot"],
     "pressure-cooker": ["pressure cooker", "instant pot"],
     "air-fryer": ["air fryer", "airfryer"],
