@@ -16,6 +16,7 @@ import { toastError } from "../../../lib/toast";
 import { useLayout } from "../../../lib/useLayout";
 import { clearTicksNow, useAnyTicked } from "../../../lib/useTicks";
 import { useWakeLock } from "../../../lib/useWakeLock";
+import { CookingAssistant } from "../components/cooking/CookingAssistant";
 import { CookingProvider, type CookingValue, useNowStep } from "../components/cooking/CookingContext";
 import { CookingHeader, FinishCooking } from "../components/cooking/CookingHeader";
 import { CookingNotes } from "../components/cooking/CookingNotes";
@@ -232,6 +233,11 @@ export function RecipePage() {
   );
 
   const notesPanel = <CookingNotes recipeId={stored.id} session={session} onNoted={() => setNoting(false)} />;
+  // With a model, what is said while cooking goes to the assistant; without one, it is noted for the review.
+  const servingsShown = recipe.recipeServings > 0 ? recipe.recipeServings : null;
+  const assistant = (compact: boolean) => (
+    <CookingAssistant recipeId={stored.id} session={session} servings={servingsShown} nowStepId={nowStepId} compact={compact} />
+  );
 
   // Quick edit hangs off the stored document, not `recipe`: a row's
   // sheet writes back what was stored, whatever scale the page is showing.
@@ -254,10 +260,19 @@ export function RecipePage() {
                     </>
                   }
                   side={
-                    <div className="flex flex-col gap-4 p-5">
-                      <SectionTitle as="h2">While you cook</SectionTitle>
-                      {notesPanel}
-                    </div>
+                    aiAvailable ? (
+                      <>
+                        <div className="border-b border-border-subtle px-4 py-3">
+                          <SectionTitle as="h2">Ask about this recipe</SectionTitle>
+                        </div>
+                        {assistant(false)}
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-4 p-5">
+                        <SectionTitle as="h2">While you cook</SectionTitle>
+                        {notesPanel}
+                      </div>
+                    )
                   }
                 />
                 <TimerStrip recipeId={recipe.id} fixed className="desktop:right-[max(20rem,26%)] desktop:left-auto desktop:w-[28rem]" />
@@ -274,16 +289,26 @@ export function RecipePage() {
                     </>
                   }
                   after={notes}
-                  ask={<NoteButton onOpen={() => setNoting(true)} />}
+                  ask={<NoteButton label={aiAvailable ? "Ask" : "Note"} onOpen={() => setNoting(true)} />}
                 />
                 {/* Timers stand above Note and Finish. */}
                 <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(5.25rem+env(safe-area-inset-bottom))]" />
-                <Sheet open={noting} onOpenChange={setNoting} size="sm" closable aria-label="Note for the review">
-                  <Sheet.Header>
-                    <h2 className="text-base font-medium">Note for the review</h2>
-                  </Sheet.Header>
-                  <Sheet.Body>{notesPanel}</Sheet.Body>
-                </Sheet>
+                {aiAvailable ? (
+                  <Sheet open={noting} onOpenChange={setNoting} size="sm" closable aria-label="Ask about this recipe">
+                    <Sheet.Header>
+                      <h2 className="text-base font-medium">Ask about this recipe</h2>
+                    </Sheet.Header>
+                    {/* Half the screen, so the step being cooked stays in view above it. */}
+                    <div className="flex h-[55svh] min-h-0 flex-col">{assistant(true)}</div>
+                  </Sheet>
+                ) : (
+                  <Sheet open={noting} onOpenChange={setNoting} size="sm" closable aria-label="Note for the review">
+                    <Sheet.Header>
+                      <h2 className="text-base font-medium">Note for the review</h2>
+                    </Sheet.Header>
+                    <Sheet.Body>{notesPanel}</Sheet.Body>
+                  </Sheet>
+                )}
               </>
             )}
           </CookingProvider>

@@ -4,6 +4,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { adjustCooking, startCooking } from "../../../../src/api/rpc/cooking";
 import { createRecipe } from "../../../../src/api/rpc/recipes";
+import cookingRepo from "../../../../src/db/models/cooking/repo";
 import { firstUndoneStep } from "../../../../src/domain/recipes/components/cooking/CookingContext";
 import { startingComment } from "../../../../src/domain/recipes/pages/ReviewPage";
 import type { RecipeInput } from "../../../../src/domain/recipes/recipe";
@@ -18,10 +19,13 @@ vi.mock("../../../../src/api/rpc/timeline", local);
 vi.mock("../../../../src/api/rpc/units", local);
 vi.mock("../../../../src/api/rpc/recipes", local);
 vi.mock("../../../../src/api/rpc/cooking", local);
+vi.mock("../../../../src/api/rpc/ai", local);
 
 useTempDataDir();
 afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
+  delete process.env.AI_PROVIDER;
+  delete process.env.AI_API_KEY;
 });
 
 async function seedRagu() {
@@ -105,4 +109,34 @@ test("the review's comment opens with tonight's one-offs, then what the cook not
     ])
   ).toBe("Just this time: no celery.\nNoted: Too salty.");
   expect(startingComment("", [])).toBe("");
+});
+
+test.each(["mobile", "desktop"] as const)("with a model, a %s asks: the chat and its offers, taken or not", async (layout) => {
+  process.env.AI_PROVIDER = "api";
+  process.env.AI_API_KEY = "k";
+  const recipe = await seedRagu();
+  const session = cookingRepo.get(recipe.id)!;
+  const taken = session.adjustments.find((adjustment) => adjustment.kind === "step")!;
+  const at = new Date().toISOString();
+  cookingRepo.say(recipe.id, [
+    { id: crypto.randomUUID(), role: "cook", text: "beef isn't shredding", offers: [], at },
+    {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      text: "Give it another 30 minutes.",
+      offers: [taken, { id: crypto.randomUUID(), kind: "tip", stepId: taken.stepId, tip: "Check with two forks.", summary: "Check with forks" }],
+      at,
+    },
+  ]);
+  const html = await renderRoute("/recipes/ragu?cooking=true", layout);
+  if (layout === "desktop") {
+    expect(html).toContain("Ask about this recipe");
+    expect(html).toContain("beef isn&#x27;t shredding");
+    expect(html).toContain("Give it another 30 minutes.");
+    expect(html).toMatch(/data-testid="assistant-offer" data-taken="true"/);
+    expect(html).toContain('aria-label="Use tonight: Check with forks"');
+  } else {
+    // A phone keeps the chat in a sheet behind Ask.
+    expect(elementHtml(html, "cooking-bar")).toContain(">Ask<");
+  }
 });

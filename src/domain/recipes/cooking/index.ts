@@ -1,5 +1,17 @@
 export { type AdjustmentMark, adjustedIngredient, adjustedStep, adjustmentKey, adjustmentMarks, fitsRecipe, withAdjustment, withAdjustments } from "./adjust";
 export {
+  ASSISTANT_JSON_SCHEMA,
+  type AssistantAnswer,
+  AssistantError,
+  type AssistantInput,
+  assistantPrompt,
+  type CookingContext,
+  HISTORY_TURNS,
+  offerToAdjustment,
+  parseAssistantAnswer,
+  recipeForPrompt,
+} from "./assistant";
+export {
   DECISIONS,
   type Decision,
   decisionsFor,

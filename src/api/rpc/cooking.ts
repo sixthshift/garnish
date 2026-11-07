@@ -52,7 +52,12 @@ export const startCooking = createServerFn({ method: "POST" })
     return cooking.start(data.recipeId, { servings: data.servings, choices: data.choices });
   });
 
-export const AdjustCookingInput = z.object({ recipeId, adjustment: adjustmentInputSchema });
+export const AdjustCookingInput = z.object({
+  recipeId,
+  adjustment: adjustmentInputSchema,
+  /** The assistant's offer being taken: its id is kept, so the chat shows it taken. */
+  offerId: z.uuid().optional(),
+});
 
 /** Take an adjustment for tonight. Refused when it names a row the recipe does not have. */
 export const adjustCooking = createServerFn({ method: "POST" })
@@ -61,7 +66,7 @@ export const adjustCooking = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const recipe = recipeOr404(data.recipeId);
     if (!fitsRecipe(recipe, data.adjustment)) throw new Error("That change is to a line or step this recipe does not have");
-    return sessionOr404(cooking.adjust(data.recipeId, { ...data.adjustment, id: crypto.randomUUID() }), data.recipeId);
+    return sessionOr404(cooking.adjust(data.recipeId, { ...data.adjustment, id: data.offerId ?? crypto.randomUUID() }), data.recipeId);
   });
 
 export const UnadjustCookingInput = z.object({ recipeId, adjustmentId: z.uuid() });

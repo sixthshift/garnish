@@ -51,8 +51,8 @@ export function PhoneCooking({ recipe, ingredients, method, after, ask }: PhoneC
   );
 }
 
-/** The phone's Note: a sheet holding what is noted and changed, for a cook with no model to ask. */
-export function NoteButton({ onOpen }: { onOpen: () => void }) {
+/** The phone's Ask (the assistant's sheet) or, with no model to ask, Note (a sheet of what is noted and changed). */
+export function NoteButton({ onOpen, label = "Note" }: { onOpen: () => void; label?: string }) {
   return (
     <Button
       type="button"
@@ -62,13 +62,7 @@ export function NoteButton({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       aria-haspopup="dialog"
     >
-      Note
+      {label}
     </Button>
   );
-}
-
-/** Open state for a sheet the bar opens. */
-export function useSheet(): [boolean, () => void, () => void] {
-  const [open, setOpen] = useState(false);
-  return [open, () => setOpen(true), () => setOpen(false)];
 }
