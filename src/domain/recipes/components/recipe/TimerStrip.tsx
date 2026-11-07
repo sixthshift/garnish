@@ -1,7 +1,6 @@
 import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
 import { type Ref, useEffect, useRef } from "react";
-import { isStepTimer } from "../../../../lib/timers";
 import { TIMER_STRIP_VAR } from "../../../../lib/toast";
 import { type RunningTimer, useTimers } from "../../../../lib/useTimers";
 
@@ -10,16 +9,13 @@ export type TimerStripRowsProps = {
   onPause: (id: string) => void;
   onResume: (id: string) => void;
   onDismiss: (id: string) => void;
-  /** `cook` gives Pause and dismiss cook mode's 48px targets and the time left a size to read at arm's length. */
-  size?: "page" | "cook";
   className?: string;
   ref?: Ref<HTMLUListElement>;
 };
 
 /** The rows themselves. Renders nothing when no timer is going. */
-export function TimerStripRows({ timers, onPause, onResume, onDismiss, size = "page", className, ref }: TimerStripRowsProps) {
+export function TimerStripRows({ timers, onPause, onResume, onDismiss, className, ref }: TimerStripRowsProps) {
   if (timers.length === 0) return null;
-  const button = size === "cook" ? "xl" : "sm";
   return (
     <ul ref={ref} className={cn("flex flex-col gap-2", className)} aria-label="Timers" data-testid="timer-strip" data-print="hide">
       {timers.map((timer) => {
@@ -33,33 +29,21 @@ export function TimerStripRows({ timers, onPause, onResume, onDismiss, size = "p
             data-done={timer.done ? "true" : undefined}
             data-paused={paused ? "true" : undefined}
           >
-            <span
-              className={cn("shrink-0 font-semibold tabular-nums", size === "cook" && "text-xl", timer.done ? "text-fg-success" : "text-fg-strong")}
-              data-timer-remaining
-            >
+            <span className={cn("shrink-0 font-semibold tabular-nums", timer.done ? "text-fg-success" : "text-fg-strong")} data-timer-remaining>
               {timer.text}
             </span>
             <span className="min-w-0 flex-1 truncate text-sm text-fg-subtle" data-timer-label>
               {timer.label}
             </span>
             {!timer.done && (
-              <Button
-                variant="outline"
-                intent="neutral"
-                size={button}
-                className={cn(size === "cook" && "px-4")}
-                onClick={() => (paused ? onResume(timer.id) : onPause(timer.id))}
-                data-timer-toggle
-              >
+              <Button variant="outline" intent="neutral" size="sm" onClick={() => (paused ? onResume(timer.id) : onPause(timer.id))} data-timer-toggle>
                 {paused ? "Resume" : "Pause"}
               </Button>
             )}
             <Button
               variant="ghost"
               intent="neutral"
-              size={button}
-              iconOnly={size === "cook"}
-              className={cn(size === "cook" && "text-2xl")}
+              size="sm"
               onClick={() => onDismiss(timer.id)}
               aria-label={`Dismiss the timer for ${timer.label}`}
               data-timer-dismiss
@@ -78,25 +62,15 @@ export type TimerStripProps = {
   /**
    * Pin it just above the phone tab bar (the recipe view page): `--app-bar`
    * is the shell's measure of the bar, and the strip shares its layer, over
-   * content and under sheets and popovers. In cook mode it
-   * sits in the footer's own flow instead, so this stays off there.
+   * content and under sheets and popovers.
    */
   fixed?: boolean;
-  /**
-   * A step whose timers to leave out: cook mode's current card, whose own
-   * timer buttons already count down, so the strip holds only the timers
-   * started on other cards (critique #15b). The recipe page passes none: its
-   * strip is fixed and the step that started a timer may be scrolled away.
-   */
-  hideStep?: string;
-  size?: "page" | "cook";
   className?: string;
 };
 
 /** The recipe's timers, read from the store and ticking once a second while any of them runs. */
-export function TimerStrip({ recipeId, fixed, hideStep, size, className }: TimerStripProps) {
-  const { timers: all, pause, resume, dismiss } = useTimers(recipeId);
-  const timers = hideStep === undefined ? all : all.filter((timer) => !isStepTimer(timer.id, hideStep));
+export function TimerStrip({ recipeId, fixed, className }: TimerStripProps) {
+  const { timers, pause, resume, dismiss } = useTimers(recipeId);
   const strip = useRef<HTMLUListElement | null>(null);
   const showing = timers.length > 0;
 
@@ -126,7 +100,6 @@ export function TimerStrip({ recipeId, fixed, hideStep, size, className }: Timer
       onPause={pause}
       onResume={resume}
       onDismiss={dismiss}
-      size={size}
       className={cn(fixed && "fixed inset-x-0 bottom-[calc(var(--app-bar)+0.5rem)] z-app-bar px-4 desktop:bottom-4", className)}
     />
   );

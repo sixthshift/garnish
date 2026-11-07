@@ -59,7 +59,7 @@ export function BoardWeek({
           {title.startsWith("Week of") ? "" : `${weekLabel(monday)} · `}
           {planned} of 7 nights
         </Caption>
-        {/* The ink and the track cook mode's bar uses: a count of nights is not the page's action, so no brand (design-language rule 5). */}
+        {/* A neutral ink and track: a count of nights is not the page's action, so no brand (design-language rule 5). */}
         <ProgressBar
           completed={planned}
           total={7}

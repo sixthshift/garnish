@@ -53,9 +53,11 @@ function CalendarIcon() {
 export type CookBarProps = {
   /** The recipe as the page shows it: scaled and made with its choices. */
   recipe: Recipe;
-  /** The servings and choices the page was asked for, carried into cook mode. */
+  /** The servings and choices the page was asked for, carried into cooking. */
   servings: number | undefined;
   choices: Choices | undefined;
+  /** A cooking session is waiting: the button resumes it. */
+  resume?: boolean;
 };
 
 /**
@@ -65,7 +67,7 @@ export type CookBarProps = {
  * shopping list and put it on the plan. Planning opens the days as a sheet
  * from the bottom, the actions menu's popover as a phone has it.
  */
-export function CookBar({ recipe, servings, choices }: CookBarProps) {
+export function CookBar({ recipe, servings, choices, resume = false }: CookBarProps) {
   const [planning, setPlanning] = useState(false);
   const planTo = usePlanTo(recipe, () => setPlanning(false));
 
@@ -76,9 +78,9 @@ export function CookBar({ recipe, servings, choices }: CookBarProps) {
       data-print="hide"
     >
       <Button asChild variant="solid" intent="brand" className="h-12 flex-1 gap-2 rounded-xl text-base shadow-md">
-        <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={{ servings, choices }}>
+        <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ servings, choices, cooking: true }} data-testid="start-cooking">
           <PlayIcon />
-          Start cooking
+          {resume ? "Resume cooking" : "Start cooking"}
         </Link>
       </Button>
       <AddToShoppingButton recipe={recipe} icon={<CartIcon />} className={ROUND} />

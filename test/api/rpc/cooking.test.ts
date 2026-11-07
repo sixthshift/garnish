@@ -1,7 +1,7 @@
 // The cooking session's server functions against a temp DATA_DIR (decisions.md row 214).
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { adjustCooking, discardCooking, getCooking, noteCooking, startCooking, unadjustCooking } from "../../../src/api/rpc/cooking";
+import { adjustCooking, discardCooking, finishCooking, getCooking, noteCooking, startCooking, unadjustCooking, unitNamed } from "../../../src/api/rpc/cooking";
 import { createRecipe, deleteRecipe } from "../../../src/api/rpc/recipes";
 import type { RecipeInput } from "../../../src/domain/recipes/recipe";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
@@ -65,4 +65,57 @@ test("writes to a recipe not being cooked are 404s, and a deleted recipe takes i
   await callServerFn(startCooking, { recipeId: recipe.id, servings: null, choices: null });
   await callServerFn(deleteRecipe, { id: recipe.id });
   expect(await callServerFn(getCooking, { recipeId: recipe.id })).toBeNull();
+});
+
+test("finishCooking writes what was kept, leaves what was tonight's, and ends the session", async () => {
+  const recipe = await seed();
+  const beef = recipe.parts[0]!.ingredients[0]!;
+  const step = recipe.parts[0]!.steps[0]!;
+  await callServerFn(startCooking, { recipeId: recipe.id, servings: null, choices: null });
+  const session = await callServerFn(adjustCooking, {
+    recipeId: recipe.id,
+    adjustment: { kind: "step", stepId: step.id, text: "Slow cook 3 hrs.", summary: "3 hrs" },
+  });
+  const withSwap = await callServerFn(adjustCooking, {
+    recipeId: recipe.id,
+    adjustment: { kind: "swap", ingredientId: beef.id, food: "lamb shoulder", quantity: null, unit: null, summary: "Beef → lamb" },
+  });
+  const [longer, swap] = [session.adjustments[0]!, withSwap.adjustments.find((a) => a.kind === "swap")!];
+
+  const stored = await callServerFn(finishCooking, {
+    recipeId: recipe.id,
+    kept: [
+      { adjustment: longer, decision: "keep" },
+      { adjustment: swap, decision: "alternative" },
+    ],
+  });
+  expect(stored.parts[0]!.steps[0]!.text).toBe("Slow cook 3 hrs.");
+  const line = stored.parts[0]!.ingredients[0]!;
+  expect(line.food!.name).toBe("beef");
+  expect(line.alternatives.map((alt) => alt.items[0]!.food.name)).toEqual(["lamb shoulder"]);
+  expect(await callServerFn(getCooking, { recipeId: recipe.id })).toBeNull();
+});
+
+test("finishCooking with nothing kept leaves the recipe as it was", async () => {
+  const recipe = await seed();
+  await callServerFn(startCooking, { recipeId: recipe.id, servings: null, choices: null });
+  const stored = await callServerFn(finishCooking, { recipeId: recipe.id, kept: [] });
+  expect(stored.updatedAt).toBe(recipe.updatedAt);
+});
+
+test("unitNamed finds a unit by its name, plural or abbreviation in any case", () => {
+  const cup = {
+    id: crypto.randomUUID(),
+    name: "cup",
+    pluralName: "cups",
+    abbreviation: "c",
+    useAbbreviation: false,
+    fraction: true,
+    portion: false,
+    standardQuantity: null,
+    standardUnitId: null,
+  };
+  expect(unitNamed("Cups", [cup])).toBe(cup);
+  expect(unitNamed("C", [cup])).toBe(cup);
+  expect(unitNamed("stalk", [cup])).toBeNull();
 });

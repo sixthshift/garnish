@@ -39,7 +39,7 @@ export function shortDay(date: string): string {
   return `${weekday} ${day.split(" ")[0]}`;
 }
 
-/** Cook mode's search for a plan entry: its servings and its choices, when it has them. */
+/** The recipe page's search for cooking a plan entry: its servings and its choices, when it has them. */
 export function cookSearch(entry: PlanEntry): { servings?: number; choices?: PlanEntry["choices"] } {
   return {
     ...(entry.servings === null ? {} : { servings: entry.servings }),

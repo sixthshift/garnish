@@ -1,14 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import cooking from "../../db/models/cooking/repo";
+import foods from "../../db/models/food/repo";
 import recipes from "../../db/models/recipe/repo";
-import { adjustmentInputSchema, fitsRecipe } from "../../domain/recipes/cooking";
+import units from "../../db/models/unit/repo";
+import { adjustmentInputSchema, adjustmentSchema, DECISIONS, fitsRecipe, keptRecipe, type Resolve } from "../../domain/recipes/cooking";
+import { recipeInputSchema } from "../../domain/recipes/recipe";
+import type { Unit } from "../../domain/recipes/reference";
 import { NotFound } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 
 // The cooking session's calls (decisions.md row 214): begin, take or put back
-// an adjustment, note something, and end. The assistant's and the review's
-// calls are in cookingAssistant.ts and cookingReview.ts.
+// an adjustment, note something, finish with the review's choices, or
+// discard. The assistant's call is in cookingAssistant.ts.
 
 const recipeId = z.uuid();
 
@@ -83,3 +87,55 @@ export const discardCooking = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .validator(GetCookingInput)
   .handler(async ({ data }) => ({ discarded: cooking.remove(data.recipeId) }));
+
+/** A unit the household has, by its name, plural or abbreviation in any case; null when there is none. */
+export function unitNamed(name: string, all: readonly Unit[]): Unit | null {
+  const wanted = name.trim().toLowerCase();
+  if (wanted === "") return null;
+  return all.find((unit) => [unit.name, unit.pluralName ?? "", unit.abbreviation].some((spelling) => spelling.trim().toLowerCase() === wanted)) ?? null;
+}
+
+export const FinishCookingInput = z.object({
+  recipeId,
+  /** What the review chose for each suggestion; only Keep and Add as an alternative write anything. */
+  kept: z.array(z.object({ adjustment: adjustmentSchema, decision: z.enum(DECISIONS) })).default([]),
+});
+
+/**
+ * The review's Save, after the cook is logged: write the kept suggestions
+ * into the recipe in one update, through the same validation as the editor,
+ * and end the session. A swap's food is found or made by name; its unit only
+ * found. Returns the recipe as stored, or as it was when nothing was kept.
+ */
+export const finishCooking = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(FinishCookingInput)
+  .handler(async ({ data }) => {
+    const recipe = recipeOr404(data.recipeId);
+    const writing = data.kept.filter((choice) => choice.decision !== "once" && fitsRecipe(recipe, choice.adjustment));
+    let stored = recipe;
+    if (writing.length > 0) {
+      const all = units.list();
+      const resolve: Resolve = {
+        // The write takes the food by its id; its aisle and conversions stay as stored.
+        food: (name) => {
+          const row = foods.findOrCreate(name);
+          return {
+            id: row.id,
+            name: row.name,
+            pluralName: row.pluralName,
+            aliases: row.aliases,
+            aisle: null,
+            recipeId: row.recipeId,
+            skipShopping: row.skipShopping,
+            conversions: [],
+          };
+        },
+        unit: (name) => unitNamed(name, all),
+      };
+      const doc = recipeInputSchema.parse(keptRecipe(recipe, writing, resolve));
+      stored = recipes.ref(recipe.id).replace(doc) ?? recipe;
+    }
+    cooking.remove(data.recipeId);
+    return stored;
+  });

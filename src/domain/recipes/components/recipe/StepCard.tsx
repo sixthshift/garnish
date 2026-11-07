@@ -7,26 +7,12 @@ import { chipTimerId } from "../../../../lib/timers";
 import { useStepTick } from "../../../../lib/useTicks";
 import { useTimers } from "../../../../lib/useTimers";
 import { durationsIn, type Ingredient, type Step } from "../../recipe";
+import { useCooking } from "../cooking/CookingContext";
+import { TonightMark } from "../cooking/TonightMark";
 import { IngredientRow } from "./IngredientRow";
 import { LIT, useStepLink } from "./StepLinks";
 import { TimerChip } from "./TimerChip";
 import { useQuickEditStep } from "./useQuickEdit";
-
-/** How big the card reads: `page` on the recipe page, `cook` on the cook deck. */
-export type StepCardSize = "page" | "cook";
-
-// Cook steps up again from `lg`, where the deck is read from a laptop or tablet
-// across the bench; the deck's column (cook/page.tsx) keeps the measure.
-const SCALE: Record<StepCardSize, { text: string; title: string; summary: string; ingredients: string; image: string }> = {
-  page: { text: "", title: "text-sm", summary: "text-sm", ingredients: "text-sm", image: "max-h-48" },
-  cook: {
-    text: "text-3xl leading-snug desktop:text-4xl",
-    title: "text-xl desktop:text-2xl",
-    summary: "text-lg desktop:text-xl",
-    ingredients: "text-lg desktop:text-xl",
-    image: "max-h-80",
-  },
-};
 
 export type StepCardProps = {
   /** The owning recipe's id: ticks.ts and timers.ts key session state by it. */
@@ -36,20 +22,17 @@ export type StepCardProps = {
   position: number;
   /** The owning part's ingredients — the only rows a link may name. */
   ingredients?: Ingredient[];
-  /** The type scale. Defaults to the page's. */
-  size?: StepCardSize;
   /** The owning part's id. Quick edit needs it to find the stored step; without it the card renders no pencil. */
   partId?: string;
-  /**
-   * The parent recipe's slug, cook mode only: forwarded to each linked
-   * row so a sub-recipe ingredient offers a link into the child's own cook
-   * mode instead of the plain "Make N servings" hint. Absent on the recipe page.
-   */
-  cookFrom?: string;
 };
 
-export function StepCard({ recipeId, step, position, ingredients = [], size = "page", partId, cookFrom }: StepCardProps) {
+export function StepCard({ recipeId, step, position, ingredients = [], partId }: StepCardProps) {
   const [done, toggle] = useStepTick(recipeId, step.id);
+  // While the page is cooked from (decisions.md row 214): the first step not
+  // ticked is the one being cooked, and a step tonight has changed says so.
+  const cooking = useCooking();
+  const now = cooking !== null && cooking.nowStepId === step.id;
+  const mark = cooking?.marks.get(step.id);
   // The corner "…" menu and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditStep(partId, step.id);
   // Lit or dimmed by the ingredient pointed at, on a desktop's recipe (StepLinks.tsx).
@@ -59,20 +42,17 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
   const { start, pause, resume, find } = useTimers(recipeId);
   const rows = useMemo(() => linkedIngredients(step, ingredients), [step, ingredients]);
   const durations = useMemo(() => stepDurations(step.text), [step.text]);
-  // The step's photo, above its text at both sizes. A ticked step
+  // The step's photo, above its text. A ticked step
   // collapses to one line, so its photo goes with the rest of the detail.
   const photo = stepImageUrl(step.image);
-  const scale = SCALE[size];
   const label = step.title.trim();
   const support = step.summary.trim();
   // A ticked step collapses to one line, so its rows go with the rest of the detail.
   const showRows = rows.length > 0 && !done;
-  // On the page the rows sit above the text at every width, so every step's
-  // text starts at the same x and runs the card's width; a gutter beside it
-  // either went empty on the steps that link nothing or squeezed the text to
-  // a few words a line at `md` (critique #13). The deck puts them beside the
-  // text on a desktop, where one card owns the screen and has the width for both.
-  const columns = size === "cook" && showRows;
+  // The rows sit above the text at every width, so every step's text starts
+  // at the same x and runs the card's width; a gutter beside it either went
+  // empty on the steps that link nothing or squeezed the text to a few words a
+  // line at `md` (critique #13).
 
   return (
     <li
@@ -85,6 +65,7 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
         cardVariants({ size: "md" }),
         "group/quick-edit",
         done && "opacity-60",
+        now && "border-border-brand shadow-[inset_4px_0_0_var(--bg-brand)]",
         link.linking && "transition-[background-color,opacity]",
         link.state === "lit" && LIT,
         link.state === "dim" && "opacity-35"
@@ -92,12 +73,12 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
       {...link.props}
       data-lit={link.state ?? undefined}
       data-testid="step-card"
-      data-size={size}
       data-ticked={done ? "true" : undefined}
+      data-now={now ? "true" : undefined}
+      aria-current={now ? "step" : undefined}
     >
       <div className="flex gap-3">
-        {/* The page numbers its steps here; the deck counts them once, in its footer. */}
-        {size === "page" && (
+        {
           <span
             className={cn(
               "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
@@ -108,47 +89,43 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
           >
             {position}
           </span>
-        )}
+        }
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className={cn("flex flex-col gap-3", columns && "desktop:grid desktop:grid-cols-3 desktop:items-start desktop:gap-4")}>
+          <div className="flex flex-col gap-3">
             {showRows && (
-              <ul
-                className={cn("flex flex-col gap-2 desktop:col-span-1", scale.ingredients)}
-                aria-label="Ingredients for this step"
-                data-testid="step-ingredients"
-              >
+              <ul className="flex flex-col gap-2 text-sm" aria-label="Ingredients for this step" data-testid="step-ingredients">
                 {rows.map((ingredient) => (
-                  <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} cookFrom={cookFrom} size={size} />
+                  <IngredientRow key={ingredient.id} recipeId={recipeId} ingredient={ingredient} />
                 ))}
               </ul>
             )}
-            <div className={cn("flex flex-col gap-2", columns && "desktop:col-span-2 desktop:col-start-2")}>
+            <div className="flex flex-col gap-2">
               {photo !== null && !done && (
-                <img
-                  src={photo}
-                  alt={`Step ${position}`}
-                  loading="lazy"
-                  className={cn("w-full rounded-lg object-cover", scale.image)}
-                  data-testid="step-image"
-                />
+                <img src={photo} alt={`Step ${position}`} loading="lazy" className="max-h-48 w-full rounded-lg object-cover" data-testid="step-image" />
               )}
               <button type="button" onClick={toggle} aria-pressed={done} className={cn("text-left", done && "text-fg-subtle")} data-testid="step-toggle">
                 <span className="sr-only">{`Step ${position}. ${done ? "Done. " : ""}`}</span>
+                {now && (
+                  <span className="block text-xs font-semibold tracking-wide text-fg-brand uppercase" data-testid="step-now">
+                    Now
+                  </span>
+                )}
                 {/* The label reads as the step's heading, so it sits inside the
                     toggle rather than above it: tapping the words that name the
                     step is the same gesture as tapping the step. */}
                 {label !== "" && !done && (
-                  <span className={cn("block font-semibold text-fg-strong", scale.title)} data-testid="step-title">
+                  <span className="block text-sm font-semibold text-fg-strong" data-testid="step-title">
                     {label}
                   </span>
                 )}
-                <Markdown source={step.text} className={cn(scale.text, done && "line-clamp-1")} />
+                <Markdown source={step.text} className={cn(done && "line-clamp-1")} />
+                {mark !== undefined && !done && <TonightMark mark={mark} />}
               </button>
               {/* The supporting line is not an instruction — recovery, reassurance,
                   why a time is a range — so it reads quieter and outside the toggle,
                   and a ticked step gives it back with the rest of the detail. */}
               {support !== "" && !done && (
-                <div className={cn("text-fg-subtle", scale.summary)} data-testid="step-summary">
+                <div className="text-sm text-fg-subtle" data-testid="step-summary">
                   <Markdown source={support} />
                 </div>
               )}
@@ -167,7 +144,6 @@ export function StepCard({ recipeId, step, position, ingredients = [], size = "p
                     upperSeconds={duration.upperSeconds}
                     label={duration.text}
                     timer={timer && { text: timer.text, done: timer.done, paused: !timer.done && timer.endsAt === null }}
-                    size={size}
                     // The strip and the notification at zero name the step, not the duration.
                     onStart={(seconds, matched) => start({ id, label: step.text.trim() || matched, seconds })}
                     onPause={() => pause(id)}

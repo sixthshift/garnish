@@ -1,5 +1,5 @@
 // What the address and the screen decide in the shell, drawn once the page is
-// the browser's (decisions.md rows 169, 206): cook mode is fullscreen, a phone
+// the browser's (decisions.md rows 169, 206): a recipe being cooked is fullscreen, a phone
 // gets the tab bar and a desktop the top bar, a task hides the phone's tab
 // bar, and the current place is marked. Before hydration the shell is the
 // same for every address; test/routes/shell.test.tsx holds that side.
@@ -22,6 +22,7 @@ function shellAt(path: string) {
     page("/plan"),
     page("/settings"),
     page("/cook", { fullscreen: true }),
+    page("/recipe", { fullscreen: (search: Record<string, unknown>) => search.cooking === true }),
     page("/edit", { hideNav: true }),
     page("/new", { hideNav: (search: Record<string, unknown>) => search.source !== undefined }),
   ]);
@@ -32,6 +33,12 @@ function shellAt(path: string) {
 test("a fullscreen route draws the outlet without either nav", async () => {
   shellAt("/cook");
   expect(await screen.findByRole("heading", { name: "/cook" })).toBeInTheDocument();
+  expect(screen.queryAllByRole("navigation", { name: "Main" })).toHaveLength(0);
+});
+
+test.each(["/recipe?cooking=true"])("%s is fullscreen too, and the page keeps its bars without it", async (path) => {
+  shellAt(path);
+  expect(await screen.findByRole("heading", { name: "/recipe" })).toBeInTheDocument();
   expect(screen.queryAllByRole("navigation", { name: "Main" })).toHaveLength(0);
 });
 
@@ -93,10 +100,12 @@ describe("on a desktop", () => {
 });
 
 test("the real routes carry the flags the shell reads", async () => {
-  const cook = (await import("../../src/domain/recipes/routes/cook")).recipeCook.options.staticData;
+  const recipe = (await import("../../src/domain/recipes/routes/recipeIndex")).recipeIndex.options.staticData;
   const edit = (await import("../../src/domain/recipes/routes/edit")).recipeEdit.options.staticData;
   const fresh = (await import("../../src/domain/recipes/routes/new")).recipeNew.options.staticData;
-  expect(cook?.fullscreen).toBe(true);
+  const cooking = recipe?.fullscreen as (search: Record<string, unknown>) => boolean;
+  expect(cooking({ cooking: true })).toBe(true);
+  expect(cooking({})).toBe(false);
   expect(edit?.hideNav).toBe(true);
   const hideNew = fresh?.hideNav as (search: Record<string, unknown>) => boolean;
   expect(hideNew({ source: "manual" })).toBe(true);

@@ -1,7 +1,7 @@
-// A phone's Settings and cook mode (decisions.md row 208): Settings one
+// A phone's Settings and cooking from the recipe page (decisions.md rows 208, 214): Settings one
 // grouped list whose places open at `?section=`, Foods filed by letter with
-// rows that swipe left to delete and open in a sheet; cook mode one step a
-// card, moved sideways by a finger, the keys or the big Next step.
+// rows that swipe left to delete and open in a sheet; cooking the recipe
+// page with Note and Finish under the thumb.
 import { createRecipe, expect, test, unique } from "./fixtures";
 
 test("Settings is one grouped list: a place opens as its own screen, and ‹ Settings and Back return to it", async ({ page, open }) => {
@@ -71,48 +71,33 @@ test("Foods: a food opens in a sheet whose aisle saves on a tap, and a row swipe
   await expect(row).toHaveCount(0);
 });
 
-test("cook mode is one step a card, moved sideways by a finger, the keys and Next step", async ({ page, open }) => {
-  const name = unique("Sideways Rice");
+test("cooking on a phone: the method first, Note and Finish under the thumb, and the review", async ({ page, open }) => {
+  const name = unique("Phone Rice");
   await createRecipe(page, open, {
     name,
     servings: 2,
     ingredients: ["200 g rice"],
     steps: ["Rinse the rice.", "Simmer the rice for 12 minutes.", "Rest the rice, covered."],
   });
-  await open(`${new URL(page.url()).pathname}/cook`);
+  await page.getByTestId("cook-bar").getByRole("link", { name: "Start cooking" }).click();
+  await expect(page.getByTestId("cooking-header")).toContainText(name);
+  await expect(page.getByRole("tab", { name: /^Method/ })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+  await expect(page.locator('[data-now="true"]')).toContainText("Rinse the rice.");
 
-  const position = page.locator("[data-position]");
-  const progress = page.getByRole("progressbar", { name: "Cook progress" });
-  await expect(page.locator('[data-cook-layout="cards"]')).toBeVisible();
-  await expect(progress).toHaveAttribute("aria-valuenow", "1");
+  const bar = page.getByTestId("cooking-bar");
+  await expect(bar.getByRole("button", { name: "Note" })).toBeInViewport();
+  await bar.getByRole("button", { name: "Note" }).click();
+  const sheet = page.getByRole("dialog", { name: "Note for the review" });
+  await sheet.getByRole("textbox").fill("Rice caught a little");
+  await sheet.getByRole("button", { name: "Note it" }).click();
+  await expect(sheet).toBeHidden();
 
-  await page.getByRole("button", { name: "Next step" }).click();
-  await expect(position).toHaveText("Step 1 of 3");
-  await page.keyboard.press("ArrowRight");
-  await expect(position).toHaveText("Step 2 of 3");
-  await expect(page.getByTestId("cook-card")).toContainText("Simmer the rice for 12 minutes.");
-  await expect(page.getByRole("button", { name: "Start 12 minute timer" })).toBeVisible();
-
-  // A finger drags the card: left for the next, right for the one before.
-  const cards = page.getByTestId("cook-cards");
-  const swipe = async (dx: number) => {
-    const box = (await cards.boundingBox())!;
-    const at = { pointerId: 9, pointerType: "touch", isPrimary: true, clientY: box.y + box.height / 2 };
-    const x = box.x + box.width / 2;
-    await cards.dispatchEvent("pointerdown", { ...at, clientX: x });
-    await cards.dispatchEvent("pointermove", { ...at, clientX: x + dx / 2 });
-    await cards.dispatchEvent("pointermove", { ...at, clientX: x + dx });
-    await cards.dispatchEvent("pointerup", { ...at, clientX: x + dx });
-  };
-  await swipe(-180);
-  await expect(position).toHaveText("Step 3 of 3");
-  await swipe(180);
-  await expect(position).toHaveText("Step 2 of 3");
-
-  await page.keyboard.press("ArrowRight");
-  await page.getByRole("button", { name: "Finish" }).click();
-  await expect(page.locator('[data-card="finished"]')).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
-  await expect(position).toHaveText("Step 3 of 3");
+  await bar.getByRole("link", { name: "Finish" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "How did it go?" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Comment" })).toHaveValue("Noted: Rice caught a little.");
+  await expect(page.getByTestId("no-suggestions")).toBeVisible();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByTestId("cook-bar").getByRole("link", { name: "Start cooking" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

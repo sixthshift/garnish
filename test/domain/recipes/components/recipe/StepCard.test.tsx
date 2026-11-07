@@ -201,47 +201,14 @@ describe("StepCard", () => {
     expect(none).not.toContain('data-testid="step-timers"');
   });
 
-  test("size cook is the same card in the cook deck's type scale", () => {
-    withStorage(fakeStorage());
-    const props = { recipeId: RECIPE_ID, step: step("Rest for 20 minutes.", [eggs.id]), position: 1, ingredients: part };
-    const page = renderToString(<StepCard {...props} size="page" />);
-    const cook = renderToString(<StepCard {...props} size="cook" />);
-
-    expect(page).toContain('data-size="page"');
-    expect(page).not.toContain("text-3xl");
-    expect(cook).toContain('data-size="cook"');
-    expect(cook).toContain("text-3xl");
-    // The deck, where one card owns the screen, sets its rows beside the text
-    // from md; the page stacks them (critique #13).
-    expect(cook).toContain("desktop:grid-cols-3");
-    expect(page).not.toContain("desktop:grid");
-    // Critique #5: the deck counts steps once, in its footer, so the cook
-    // card has no number bubble; its timer is a full button and its linked
-    // rows are 48px targets edge to edge.
-    expect(page).toMatch(/<span class="[^"]*rounded-full[^"]*" aria-hidden="true">1<\/span>/);
-    expect(cook).not.toMatch(/<span class="[^"]*rounded-full[^"]*" aria-hidden="true">1<\/span>/);
-    expect(cook).toContain("Start 20 minute timer");
-    expect(page).not.toContain("Start 20 minute timer");
-    expect(cook).toMatch(/data-testid="ingredient-row"[^>]*>/);
-    expect(cook).toContain("after:inset-0");
-    expect(page).not.toContain("after:inset-0");
-    // Same content at both sizes: the rows, the text and the timer chip.
-    for (const html of [page, cook]) {
-      expect(html).toContain('data-testid="ingredient-row"');
-      expect(html).toContain("Rest for 20 minutes.");
-      expect(html).toContain('data-testid="timer-chip"');
-    }
-  });
-
-  // M35.1: a step's photo, above its text at both sizes, bigger on the deck.
-  test("a step with a photo shows it above the text at both sizes", () => {
+  // M35.1: a step's photo, above its text.
+  test("a step with a photo shows it above the text", () => {
     withStorage(fakeStorage());
     const photographed = { ...step("Knead until smooth.", [flour.id]), image: "33333333-3333-4333-8333-333333333333.jpg" };
     const props = { recipeId: RECIPE_ID, step: photographed, position: 3, ingredients: part };
-    const page = renderToString(<StepCard {...props} size="page" />);
-    const cook = renderToString(<StepCard {...props} size="cook" />);
+    const page = renderToString(<StepCard {...props} />);
 
-    for (const html of [page, cook]) {
+    for (const html of [page]) {
       expect(html).toContain('data-testid="step-image"');
       expect(html).toContain('src="/api/images/steps/33333333-3333-4333-8333-333333333333.jpg"');
       expect(html).toContain('alt="Step 3"');
@@ -249,7 +216,6 @@ describe("StepCard", () => {
       expect(html.indexOf('data-testid="step-image"')).toBeLessThan(html.indexOf('data-testid="step-toggle"'));
     }
     expect(page).toContain("max-h-48");
-    expect(cook).toContain("max-h-80");
   });
 
   test("a step with no photo renders no image, and a ticked one puts its photo away with the rest of the detail", () => {

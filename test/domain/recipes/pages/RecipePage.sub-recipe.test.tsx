@@ -51,14 +51,14 @@ test("an ingredient made by a recipe links to it and says how many servings to m
   await seedTartOverPastry(250, "gram");
   const html = await renderRoute("/recipes/lemon-tart");
   expect(html).toContain('data-sub-recipe="true"');
-  expect(html).toContain('href="/recipes/sweet-pastry"');
+  expect(html).toContain('href="/recipes/sweet-pastry?servings=2"');
   expect(html).toContain("Make 2 servings");
 });
 
 test("the hint follows the page's scale, because the row is scaled before it is derived", async () => {
   await seedTartOverPastry(250, "gram");
   const html = await renderRoute("/recipes/lemon-tart?servings=16");
-  expect(html).toContain('href="/recipes/sweet-pastry"');
+  expect(html).toContain('href="/recipes/sweet-pastry?servings=4"');
   expect(html).toContain("Make 4 servings");
 });
 

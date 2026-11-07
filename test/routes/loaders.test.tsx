@@ -14,6 +14,7 @@ import { type SettingsData, type settingsRoute as SettingsRoute, SettingsSearch 
 import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/plan/planner";
 import type { FacetCount } from "../../src/domain/recipes/components/facets/facetSearch";
+import type { CookSession } from "../../src/domain/recipes/cooking";
 import { nextServings, type Recipe, type RecipeSummary, type ShelfCounts, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/recipes/reference";
 import type { recipeEdit as EditRoute } from "../../src/domain/recipes/routes/edit";
@@ -818,7 +819,13 @@ describe("loader data types match the domain schemas", () => {
       facetCounts: FacetCount[];
     }>();
     expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeViewData>();
-    expectTypeOf<RecipeViewData>().toEqualTypeOf<{ recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[]; aiAvailable: boolean }>();
+    expectTypeOf<RecipeViewData>().toEqualTypeOf<{
+      recipe: Recipe;
+      timeline: TimelineEvent[];
+      subRecipes: SubRecipe[];
+      aiAvailable: boolean;
+      session: CookSession | null;
+    }>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();
     expectTypeOf<(typeof NewRoute)["types"]["loaderData"]>().toEqualTypeOf<{ units: Unit[]; tags: Tag[]; aiAvailable: boolean }>();
     expectTypeOf<(typeof SettingsRoute)["types"]["loaderData"]>().toEqualTypeOf<SettingsData>();
@@ -859,6 +866,7 @@ describe("loader data types match the domain schemas", () => {
     expectTypeOf<(typeof ViewRoute)["types"]["searchSchema"]>().toEqualTypeOf<{
       servings?: number | undefined;
       choices?: Record<string, string> | undefined;
+      cooking?: boolean | undefined;
     }>();
     expectTypeOf<(typeof EditRoute)["types"]["searchSchema"]>().toEqualTypeOf<{ servings?: number | undefined }>();
   });

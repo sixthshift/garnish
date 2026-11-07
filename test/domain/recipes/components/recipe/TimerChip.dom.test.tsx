@@ -31,11 +31,11 @@ function advance(ms: number) {
 
 const chip = () => screen.getByTestId("timer-chip");
 
-describe.each(["page", "cook"] as const)("a timer chip at %s size", (size) => {
+describe("a timer chip", () => {
   test("tapping a running timer pauses it with its time held, and tapping again resumes from there", () => {
     render(
       <ul>
-        <StepCard recipeId={RECIPE_ID} step={step} position={1} size={size} />
+        <StepCard recipeId={RECIPE_ID} step={step} position={1} />
       </ul>
     );
     fireEvent.click(chip());
@@ -57,7 +57,7 @@ describe.each(["page", "cook"] as const)("a timer chip at %s size", (size) => {
   test("only a done timer starts again on a tap", () => {
     render(
       <ul>
-        <StepCard recipeId={RECIPE_ID} step={step} position={1} size={size} />
+        <StepCard recipeId={RECIPE_ID} step={step} position={1} />
       </ul>
     );
     fireEvent.click(chip());

@@ -69,9 +69,9 @@ export function TonightTile({ entry, totalTime, primary }: { entry: PlanEntry | 
             {onPhoto ? (
               <>
                 <Link
-                  to="/recipes/$slug/cook"
+                  to="/recipes/$slug"
                   params={{ slug: recipe.slug }}
-                  search={cookSearch(entry)}
+                  search={{ ...cookSearch(entry), cooking: true }}
                   className={cn(glass, "border-white bg-white text-[var(--color-teal-700)] hover:bg-white/90")}
                 >
                   Cook
@@ -88,7 +88,7 @@ export function TonightTile({ entry, totalTime, primary }: { entry: PlanEntry | 
             ) : (
               <>
                 <Button asChild variant="solid" intent={primary ? "brand" : "neutral"}>
-                  <Link to="/recipes/$slug/cook" params={{ slug: recipe.slug }} search={cookSearch(entry)}>
+                  <Link to="/recipes/$slug" params={{ slug: recipe.slug }} search={{ ...cookSearch(entry), cooking: true }}>
                     Cook
                   </Link>
                 </Button>

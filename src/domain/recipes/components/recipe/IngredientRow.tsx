@@ -7,7 +7,9 @@ import { Link } from "@tanstack/react-router";
 import { useSubRecipe } from "../../../../components/recipe/SubRecipes";
 import { useIngredientTick } from "../../../../lib/useTicks";
 import { formatIngredient, inflectIngredient } from "../../ingredient";
-import { alternativeText, type Ingredient, subRecipeCookLabel, subRecipeHint, subRecipeScale } from "../../recipe";
+import { alternativeText, type Ingredient, subRecipeHint, subRecipeScale } from "../../recipe";
+import { useCooking } from "../cooking/CookingContext";
+import { TonightMark } from "../cooking/TonightMark";
 import { LIT, useIngredientLink } from "./StepLinks";
 import { useQuickEditIngredient } from "./useQuickEdit";
 
@@ -23,19 +25,13 @@ export type IngredientRowProps = {
    * two parts added together, so it has none and gets no pencil.
    */
   partId?: string;
-  /**
-   * The parent recipe's slug, set only in cook mode. When present, a
-   * sub-recipe row's hint is a link into the child's cook mode at the derived
-   * servings instead of plain text, carrying this as `?from=`.
-   */
-  cookFrom?: string;
-  /** `cook` makes the whole row a 48px target, as cook mode's deck needs (`CookIngredientItem` does the same). */
-  size?: "page" | "cook";
 };
 
-export function IngredientRow({ recipeId, ingredient, scaled = false, partId, cookFrom, size = "page" }: IngredientRowProps) {
-  const cook = size === "cook";
+export function IngredientRow({ recipeId, ingredient, scaled = false, partId }: IngredientRowProps) {
   const [done, toggle] = useIngredientTick(recipeId, ingredient.id);
+  // Changed tonight, while the page is cooked from (decisions.md row 214).
+  const cooking = useCooking();
+  const mark = cooking?.marks.get(ingredient.id);
   // The quick-edit pencil and its sheet, or nothing outside the recipe page.
   const quickEdit = useQuickEditIngredient(partId, ingredient.id);
   // The recipe this row's food is made by, when the page fetched one.
@@ -48,10 +44,10 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
   const tokens = inflectIngredient(ingredient);
   const amount = tokens.raw ? "" : [tokens.quantity, tokens.unit].filter((part) => part !== "").join(" ");
   const note = ingredient.note.trim();
-  const bodyClass = cn("flex flex-1 flex-col gap-0.5 text-left", cook && "justify-center", done && "text-fg-subtle");
+  const bodyClass = cn("flex flex-1 flex-col gap-0.5 text-left", done && "text-fg-subtle");
 
   const line = (
-    <span className={cn(done && "line-through")}>
+    <span className={cn((done || mark?.leftOut) && "line-through")}>
       {amount !== "" && (
         <span className={cn("tabular-nums", scaled && "font-semibold text-fg-brand")} data-testid="ingredient-amount">
           {amount}{" "}
@@ -63,6 +59,8 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
         <Link
           to="/recipes/$slug"
           params={{ slug: child.slug }}
+          // Opens the child at the servings this line needs of it (subRecipeScale).
+          search={scale === null ? undefined : { servings: Number(scale.toFixed(2)) }}
           className="font-semibold underline decoration-dotted underline-offset-2"
           data-testid="sub-recipe-link"
         >
@@ -78,6 +76,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
       )}
     </span>
   );
+  const tonight = mark !== undefined && <TonightMark mark={mark} was={cooking?.was.get(ingredient.id)} />;
   const noteLine = note !== "" && (
     <Muted as="p" className={cn("text-sm", done && "line-through")}>
       {note}
@@ -99,12 +98,7 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
 
   return (
     <li
-      className={cn(
-        "group/quick-edit flex items-start gap-2.5",
-        cook && "relative gap-3",
-        link.linking && "-mx-2 rounded-md px-2 py-0.5 transition-colors",
-        link.lit && LIT
-      )}
+      className={cn("group/quick-edit flex items-start gap-2.5", link.linking && "-mx-2 rounded-md px-2 py-0.5 transition-colors", link.lit && LIT)}
       {...link.props}
       data-lit={link.lit ? "true" : undefined}
       data-testid="ingredient-row"
@@ -112,38 +106,29 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
       data-fixed={ingredient.fixed ? "true" : undefined}
       data-scaled={scaled ? "true" : undefined}
       data-sub-recipe={child !== null ? "true" : undefined}
+      data-tonight={mark === undefined ? undefined : mark.adjustment.kind}
     >
-      <Checkbox
-        checked={done}
-        onCheckedChange={toggle}
-        className={cook ? COOK_TICK : "mt-0.5"}
-        aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`}
-      />
+      <Checkbox checked={done} onCheckedChange={toggle} className="mt-0.5" aria-label={`Tick off ${formatIngredient(ingredient) || "ingredient"}`} />
       {child !== null ? (
         <div className={bodyClass}>
-          {line}
+          <span>
+            {line}
+            {tonight}
+          </span>
           {noteLine}
           {alternativeLines}
-          {scale !== null && cookFrom === undefined && (
+          {scale !== null && (
             <Muted as="p" className="text-xs" data-testid="sub-recipe-hint">
               {subRecipeHint(scale)}
             </Muted>
           )}
-          {scale !== null && cookFrom !== undefined && (
-            <Link
-              to="/recipes/$slug/cook"
-              params={{ slug: child.slug }}
-              search={{ servings: Number(scale.toFixed(2)), from: cookFrom }}
-              className="text-xs font-medium text-fg-brand underline decoration-dotted underline-offset-2"
-              data-testid="sub-recipe-cook-link"
-            >
-              {subRecipeCookLabel(scale, child.name)}
-            </Link>
-          )}
         </div>
       ) : (
-        <button type="button" onClick={toggle} className={cn(bodyClass, cook && COOK_ROW_BUTTON)}>
-          {line}
+        <button type="button" onClick={toggle} className={bodyClass}>
+          <span>
+            {line}
+            {tonight}
+          </span>
           {noteLine}
           {alternativeLines}
         </button>
@@ -152,13 +137,3 @@ export function IngredientRow({ recipeId, ingredient, scaled = false, partId, co
     </li>
   );
 }
-
-/**
- * Cook mode's row, a 48px target edge to edge: the text button's overlay
- * (`COOK_ROW_BUTTON`) stretches over the whole `relative` row, and the tick
- * box sits above it, its own press area grown to 48px square so a wet finger
- * aimed at the box gets the box. The box's top is where the first line of a
- * `min-h-12 py-2` text button is centred.
- */
-export const COOK_TICK = "relative z-10 mt-4 shrink-0 after:absolute after:-inset-4 after:content-['']";
-export const COOK_ROW_BUTTON = "min-h-12 py-2 after:absolute after:inset-0 after:content-['']";

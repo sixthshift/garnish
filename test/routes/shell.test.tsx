@@ -57,7 +57,7 @@ describe("app shell", () => {
   // browser's, and offline one cached copy answers every address, so it must
   // read the same everywhere — both navs, no place marked, the tab bar kept.
   // What the address decides is drawn once hydrated: test/routes/shell.dom.test.tsx.
-  test.each(["/recipes/lemon-tart/cook", "/recipes/lemon-tart/edit", "/recipes/new?source=manual", "/settings"])(
+  test.each(["/recipes/lemon-tart?cooking=true", "/recipes/lemon-tart/edit", "/recipes/new?source=manual", "/settings"])(
     "%s draws the same neutral shell before hydration",
     async (path) => {
       const html = await render(path);

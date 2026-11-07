@@ -42,19 +42,19 @@ test("the view page carries the action menu trigger, closed", async () => {
   expect(html).not.toContain('role="menuitem"');
 });
 
-test("Edit and Cook are both buttons in the open, beside the menu; neither is in it", async () => {
+test("Edit and Start cooking are both in the open, beside the menu; neither is in it", async () => {
   await seedTart();
   const wide = await renderRoute("/recipes/lemon-tart", "desktop");
   expect(wide).toContain('aria-label="Edit"');
   expect(wide).toContain('href="/recipes/lemon-tart/edit');
-  expect(wide).toContain(">Cook<");
-  expect(wide).toContain('href="/recipes/lemon-tart/cook');
+  expect(wide).toContain(">Start cooking<");
+  expect(wide).toContain('href="/recipes/lemon-tart?cooking=true"');
   expect(wide).not.toContain('role="menuitem"'); // menu is closed by default
-  // A phone's Edit is round over the photo, and Cook is Start cooking in the bar at the foot (decisions.md row 208).
+  // A phone's Edit is round over the photo, and Start cooking is in the bar at the foot (decisions.md row 208).
   const html = await renderRoute("/recipes/lemon-tart");
   expect(html).toContain('aria-label="Edit"');
   expect(elementHtml(html, "cook-bar")).toContain("Start cooking");
-  expect(elementHtml(html, "cook-bar")).toContain('href="/recipes/lemon-tart/cook');
+  expect(elementHtml(html, "cook-bar")).toContain('href="/recipes/lemon-tart?cooking=true"');
   expect(html).not.toContain('role="menuitem"');
 });
 

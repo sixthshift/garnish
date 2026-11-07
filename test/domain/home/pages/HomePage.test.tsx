@@ -29,14 +29,14 @@ describe("/ (home)", () => {
   beforeEach(() => pin(WEDNESDAY));
   afterEach(() => vi.useRealTimers());
 
-  test("tonight's recipe leads, with Cook into cook mode at the entry's servings", async () => {
+  test("tonight's recipe leads, with Cook into the recipe page, cooking, at the entry's servings", async () => {
     const tart = await callServerFn(createRecipe, { name: "Lemon tart", parts: [{ name: "" }], performTime: 40 });
     await callServerFn(addPlanEntry, { date: WEDNESDAY, recipeId: tart.id, text: "Lemon tart", servings: 6 });
     const html = await renderRoute("/");
     expect(html).toContain(">Wednesday</h1>");
     expect(html).toContain("16 September");
     expect(html).toContain("Lemon tart");
-    expect(html).toContain('href="/recipes/lemon-tart/cook?servings=6"');
+    expect(html).toContain('href="/recipes/lemon-tart?servings=6&amp;cooking=true"');
     expect(html).toContain('href="/recipes/lemon-tart"');
     expect(html).toContain("40 min");
   });

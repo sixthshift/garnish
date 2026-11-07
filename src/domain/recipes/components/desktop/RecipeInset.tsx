@@ -27,7 +27,7 @@ type Loaded = { state: "loading" } | { state: "failed" } | { state: "ready"; rec
  * panel (decisions.md row 206): its picture, name and time, then its
  * ingredients and method, live, so a tick or a timer is the recipe page's own.
  * The plan's choices and servings are applied as the page would. Open the
- * recipe goes to its page, and Cook to cook mode.
+ * recipe goes to its page, and Start cooking to its page, cooking.
  */
 export function RecipeInset({ slug, choices, servings, focusOnOpen = false }: RecipeInsetProps) {
   const [loaded, setLoaded] = useState<Loaded>({ state: "loading" });
@@ -95,8 +95,8 @@ export function RecipeInset({ slug, choices, servings, focusOnOpen = false }: Re
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="solid" intent="brand" size="sm">
-              <Link to="/recipes/$slug/cook" params={{ slug }} search={search}>
-                Cook
+              <Link to="/recipes/$slug" params={{ slug }} search={{ ...search, cooking: true }}>
+                Start cooking
               </Link>
             </Button>
             <Button asChild variant="outline" intent="neutral" size="sm">

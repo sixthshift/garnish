@@ -45,16 +45,6 @@ export function subRecipeHint(servings: number): string {
   return `Make ${rounded} ${rounded === 1 ? "serving" : "servings"}`;
 }
 
-/**
- * The scale as cook mode's link reads it: "Open <name> at 2 servings", the
- * child's own name standing in for the bare food name the hint uses.
- * Rounded to two places, same as `subRecipeHint`. Pure.
- */
-export function subRecipeCookLabel(servings: number, name: string): string {
-  const rounded = Number(servings.toFixed(2));
-  return `Open ${name} at ${rounded} ${rounded === 1 ? "serving" : "servings"}`;
-}
-
 /** The sub-recipes keyed by recipe id, for a row to look its food's child up in. Pure. */
 export function subRecipeMap(children: readonly SubRecipe[]): Map<string, SubRecipe> {
   return new Map(children.map((child) => [child.id, child]));

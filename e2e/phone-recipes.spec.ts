@@ -81,5 +81,5 @@ test("the recipe page: two tabs held at the top, and Start cooking, the list and
   await expect(page.getByRole("dialog")).toBeHidden();
 
   await bar.getByRole("link", { name: "Start cooking" }).click();
-  await expect(page).toHaveURL(/\/cook/);
+  await expect(page).toHaveURL(/cooking=true/);
 });

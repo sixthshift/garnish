@@ -29,9 +29,9 @@ test("a fixed strip publishes its height while it shows, and dismissing its last
   expect(document.documentElement.style.getPropertyValue(TIMER_STRIP_VAR)).toBe("");
 });
 
-test("cook mode's strip, in the footer's flow, publishes nothing", () => {
+test("a strip in the page's flow, not fixed, publishes nothing", () => {
   startTimer(window.sessionStorage, RECIPE, { id: "step#0#20 minutes", label: "Simmer", seconds: 1200 }, T0);
-  render(<TimerStrip recipeId={RECIPE} size="cook" />);
+  render(<TimerStrip recipeId={RECIPE} />);
   expect(screen.getByTestId("timer-strip")).toBeInTheDocument();
   expect(document.documentElement.style.getPropertyValue(TIMER_STRIP_VAR)).toBe("");
 });

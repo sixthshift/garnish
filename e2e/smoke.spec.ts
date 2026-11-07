@@ -35,7 +35,7 @@ test("a recipe's pages load", async ({ page, open }) => {
   await createRecipe(page, open, { name, servings: 1, ingredients: ["2 slices bread"], steps: ["Toast the bread."] });
   const recipe = new URL(page.url()).pathname;
 
-  for (const path of [recipe, `${recipe}/edit`, `${recipe}/cook`, `${recipe}/style`]) {
+  for (const path of [recipe, `${recipe}/edit`, `${recipe}?cooking=true`, `${recipe}/review`, `${recipe}/style`]) {
     await open(path);
     await expect(page.locator("body")).toContainText(name);
   }

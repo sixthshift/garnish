@@ -50,9 +50,9 @@ test("a line that is not a recipe goes on the shopping list with Enter", async (
   await expect(page.getByText(line).first()).toBeVisible();
 });
 
-test("cook mode has no tab bar, so no +", async ({ page, open }) => {
+test("cooking has no tab bar, so no +", async ({ page, open }) => {
   const name = unique("Phone Cook");
   await createRecipe(page, open, { name, servings: 2, ingredients: ["1 egg"], steps: ["Boil the egg."] });
-  await open(`${new URL(page.url()).pathname}/cook`);
+  await open(`${new URL(page.url()).pathname}?cooking=true`);
   await expect(page.getByRole("button", { name: "Plan, add or find" })).toHaveCount(0);
 });

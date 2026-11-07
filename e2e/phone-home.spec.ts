@@ -42,7 +42,7 @@ test("tonight is planned or swapped from Home, through the plan's own add sheet"
   await expect(sheet).toBeHidden();
 
   await expect(tonight.getByText(name)).toBeVisible();
-  await expect(tonight.getByRole("link", { name: "Cook" })).toHaveAttribute("href", /\/cook/);
+  await expect(tonight.getByRole("link", { name: "Cook" })).toHaveAttribute("href", /cooking=true/);
 
   // Swap puts something else in its place.
   await tonight.getByRole("button", { name: "Swap" }).click();

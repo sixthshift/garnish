@@ -21,8 +21,8 @@ export type AddToShoppingButtonProps = {
 };
 
 /**
- * The button and its sheet: the recipe page's header action and cook mode's
- * finish card use the same one. The toast says how many lines the list gained
+ * The button and its sheet: the recipe page's header action and the phone's
+ * round cart button use the same one. The toast says how many lines the list gained
  * and offers a way to it.
  */
 export function AddToShoppingButton({ recipe, size = "sm", icon, className }: AddToShoppingButtonProps) {

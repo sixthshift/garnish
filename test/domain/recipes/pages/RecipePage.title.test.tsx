@@ -5,7 +5,7 @@ import { expect, test } from "vitest";
 import type { Recipe } from "../../../../src/domain/recipes/recipe";
 import { type RecipeViewData, recipeIndex as Route } from "../../../../src/domain/recipes/routes/recipeIndex";
 
-const data = (name: string) => ({ recipe: { name } as Recipe, timeline: [], subRecipes: [], aiAvailable: false }) satisfies RecipeViewData;
+const data = (name: string) => ({ recipe: { name } as Recipe, timeline: [], subRecipes: [], aiAvailable: false, session: null }) satisfies RecipeViewData;
 
 /** The title the route's `head` asks for, given some loader data. */
 async function titleFor(loaderData: RecipeViewData | undefined): Promise<string | undefined> {

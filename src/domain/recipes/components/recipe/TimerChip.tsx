@@ -1,7 +1,6 @@
 import { Badge } from "@sixthshift/design-system/badge";
-import { Button } from "@sixthshift/design-system/button";
 import { cn } from "@sixthshift/design-system/utils";
-import { ClockIcon, PauseIcon, PlayIcon } from "../../../../components/ui/icons";
+import { ClockIcon } from "../../../../components/ui/icons";
 
 export type TimerChipProps = {
   /** The duration in seconds; a range's lower bound — the chip offers the lower. */
@@ -21,12 +20,6 @@ export type TimerChipProps = {
    * reads the time left ("4:32") or "Done" instead of the matched text.
    */
   timer?: { text: string; done: boolean; paused?: boolean };
-  /**
-   * `page`, the default, is a compact chip inside a list of steps; `cook` is a
-   * full button, 48px tall, that says what it does ("Start 20 minute timer"):
-   * at arm's length starting a timer is the deck's most important tap.
-   */
-  size?: "page" | "cook";
   className?: string;
 };
 
@@ -34,7 +27,7 @@ export type TimerChipProps = {
 export type TimerChipAction = "start" | "pause" | "resume" | "restart";
 
 /**
- * The tap rule, the same at both sizes: idle starts, running pauses, paused
+ * The tap rule: idle starts, running pauses, paused
  * resumes, and only a timer that is done starts again. A tap never throws
  * away time left on a timer that is still going. Pure.
  */
@@ -47,7 +40,7 @@ export function timerChipAction(timer: TimerChipProps["timer"]): TimerChipAction
 const ACTION_NAME: Record<Exclude<TimerChipAction, "start">, string> = { pause: "Pause timer", resume: "Resume timer", restart: "Restart timer" };
 
 /** A step's duration, tappable to start a timer, showing its timer's state once there is one. Pure presentation. */
-export function TimerChip({ seconds, upperSeconds, label, onStart, onPause, onResume, timer, size = "page", className }: TimerChipProps) {
+export function TimerChip({ seconds, upperSeconds, label, onStart, onPause, onResume, timer, className }: TimerChipProps) {
   const action = timerChipAction(timer);
   const onClick = () => {
     if (action === "pause") onPause?.();
@@ -65,28 +58,6 @@ export function TimerChip({ seconds, upperSeconds, label, onStart, onPause, onRe
     "data-paused": action === "resume" ? "true" : undefined,
     "data-done": action === "restart" ? "true" : undefined,
   };
-  if (size === "cook") {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        // Neutral until it runs: brand is Next's alone. A running or finished
-        // timer keeps the chip's own state colours.
-        intent={intent}
-        size="xl"
-        onClick={onClick}
-        // Idle, the visible words are the name.
-        aria-label={named}
-        data-size="cook"
-        {...data}
-        className={cn("gap-2 px-5 text-lg tabular-nums", className)}
-      >
-        {/* The icon is the tap: play to start or resume, pause while running. */}
-        {action === "pause" ? <PauseIcon /> : action === "restart" ? <ClockIcon size={20} /> : <PlayIcon />}
-        {timer === undefined ? `Start ${timerPhrase(label)} timer` : action === "resume" ? `${timer.text} · Paused` : timer.text}
-      </Button>
-    );
-  }
   return (
     <button
       type="button"
@@ -101,13 +72,4 @@ export function TimerChip({ seconds, upperSeconds, label, onStart, onPause, onRe
       </Badge>
     </button>
   );
-}
-
-/**
- * The matched duration as it reads before "timer": its last word loses a
- * plural "s" ("20 minutes" → "20 minute", "1½ hrs" → "1½ hr"), as English
- * does for a measure used as a modifier. Pure.
- */
-export function timerPhrase(label: string): string {
-  return label.trim().replace(/(\p{L}{2,})s$/u, "$1");
 }

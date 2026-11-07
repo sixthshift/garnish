@@ -93,7 +93,7 @@ test("tonight fills the card over its photo: the name, the meal, the time, and C
   expect(hero.querySelector('img[src="/api/images/ragu.jpg"]')).not.toBeNull();
   expect(within(hero).getByText("Beef ragu")).toBeInTheDocument();
   expect(within(hero).getByText("Dinner · 3 hr 50 min · serves 6")).toBeInTheDocument();
-  expect(within(hero).getByRole("link", { name: "Cook" })).toHaveAttribute("href", "/recipes/beef-ragu/cook?servings=6");
+  expect(within(hero).getByRole("link", { name: "Cook" })).toHaveAttribute("href", "/recipes/beef-ragu?servings=6&cooking=true");
   expect(within(hero).getByRole("link", { name: "Recipe" })).toHaveAttribute("href", "/recipes/beef-ragu?servings=6");
   expect(within(hero).getByRole("button", { name: "Swap" })).toBeInTheDocument();
 });

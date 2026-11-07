@@ -10,15 +10,16 @@ import { MobileLayout } from "../../mobile/components/MobileLayout";
 import { APP_BAR_HEIGHT, TabBar } from "../../mobile/components/TabBar";
 
 // The app's frame: a phone's layout or a desktop's (decisions.md row 206),
-// chosen by the screen. Routes opt out of the frame with
-// `staticData: { fullscreen: true }` (cook mode). `hideNav` drops only the
+// chosen by the screen. Routes opt out of the frame with `fullscreen`, true or
+// a function of the search (the recipe page while it is cooked from, row
+// 214), and draw their own header. `hideNav` drops only the
 // phone's tab bar, for a task finished with Save or Cancel (the editor, Style,
 // the new-recipe stages): a desktop's top bar stays.
 // A function decides from the route's search, for a route whose first screen
 // is a place and the rest a task (`/recipes/new`'s chooser keeps the bar).
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
-    fullscreen?: boolean;
+    fullscreen?: boolean | ((search: Record<string, unknown>) => boolean);
     hideNav?: boolean | ((search: Record<string, unknown>) => boolean);
   }
 }
@@ -47,14 +48,20 @@ export function AppShell() {
   // browser's: the shell is the same for every address (row 169).
   const hydrated = useHydrated();
   const layout = useLayout();
-  const fullscreenRoute = useMatches({ select: (matches) => matches.some((match) => match.staticData.fullscreen === true) });
+  const fullscreenRoute = useMatches({
+    select: (matches) =>
+      matches.some(
+        ({ staticData: { fullscreen }, search }) => fullscreen === true || (typeof fullscreen === "function" && fullscreen(search as Record<string, unknown>))
+      ),
+  });
   const hideNavRoute = useMatches({
     select: (matches) =>
       matches.some(({ staticData: { hideNav }, search }) => hideNav === true || (typeof hideNav === "function" && hideNav(search as Record<string, unknown>))),
   });
   if (hydrated && fullscreenRoute) {
     return (
-      <div className="min-h-dvh bg-bg-subtle text-fg-normal">
+      // No bars: nothing at the foot or the top for the page to clear.
+      <div className="min-h-dvh bg-bg-subtle text-fg-normal [--app-bar:0px] [--top-bar:0px]">
         <NavigationProgress />
         <Outlet />
       </div>

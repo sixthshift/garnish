@@ -9,7 +9,7 @@ export type TimerPush = {
   timerId: string;
   /** The step's text, or the duration's. */
   label: string;
-  /** The same-origin path the notification opens: the recipe page or its cook mode. */
+  /** The same-origin path the notification opens: the recipe page, cooking or not. */
   url: string;
 };
 

@@ -8,8 +8,7 @@ import type { ReactNode } from "react";
  *   page   laying content out across the width — the recipe grid, the recipe's
  *          two columns, the reference tables, the week.
  *   focus  one column read top to bottom — the shopping list, the source
- *          chooser. Cook mode is the same idea and sets its own, since it is
- *          a fullscreen route with no page chrome at all.
+ *          chooser.
  *   full   a desktop's page that lays itself out to whatever width it has,
  *          1024 to 2560 (decisions.md row 207): no measure, the page's own
  *          columns decide, and prose inside keeps its own max-w.

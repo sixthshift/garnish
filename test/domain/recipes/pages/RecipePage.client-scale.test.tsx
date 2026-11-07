@@ -7,9 +7,8 @@
 // server call" is a call count that does not move across a servings change.
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRecipe, getRecipe } from "../../../../src/api/rpc/recipes";
-import { formatIngredient, inflectIngredient } from "../../../../src/domain/recipes/ingredient";
+import { inflectIngredient } from "../../../../src/domain/recipes/ingredient";
 import type { Recipe } from "../../../../src/domain/recipes/recipe";
-import { recipeCook as CookRoute } from "../../../../src/domain/recipes/routes/cook";
 import { recipeIndex as ViewRoute } from "../../../../src/domain/recipes/routes/recipeIndex";
 import { renderRoute, renderRouter, testRouter } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
@@ -94,16 +93,12 @@ describe("the page scales the stored document the way the server would", () => {
       expect(html).toContain(`Serves ${Number(servings.toFixed(2))}`);
     });
 
-    test(`cook mode at ?servings=${servings} shows the same amounts as the server's document`, async () => {
+    test(`cooking at ?servings=${servings} shows the same amounts as the server's document`, async () => {
       await seedTart();
       const fromServer = await callServerFn(getRecipe, { slug: "lemon-tart", servings });
-      const html = await renderRoute(`/recipes/lemon-tart/cook?step=0&servings=${servings}`);
-      // Card 0 is the first part's ingredient list, in large type.
-      for (const ingredient of fromServer.parts[0]?.ingredients ?? []) {
-        expect(html).toContain(`>${formatIngredient(ingredient)}<`);
-      }
-      // The header's "Serves N" button, which opens the stepper (critique #5).
-      expect(html).toContain(`>Serves <!-- -->${Number(servings.toFixed(2))}<`);
+      const html = await renderRoute(`/recipes/lemon-tart?servings=${servings}&cooking=true`);
+      expect(amountsInHtml(html)).toEqual(amountsInDoc(fromServer));
+      expect(html).toContain('data-testid="cooking-header"');
     });
   }
 
@@ -133,11 +128,8 @@ describe("stepping servings makes no server call", () => {
   // of either loader's deps, and stepping it leaves the match identical.
   // Asserted structurally because vitest runs the router's server load path,
   // which reloads every match on every `router.load()` whatever the deps.
-  test("neither loader declares a servings dependency", () => {
+  test("the loader declares no servings dependency", () => {
     expect(ViewRoute.options.loaderDeps).toBeUndefined();
-    // The cook loader does declare a dep now (M32.4's `from`, for the way
-    // back), but not `servings`: a step still leaves the deps untouched.
-    expect(CookRoute.options.loaderDeps?.({ search: { servings: 5, step: 2, from: undefined } })).toEqual({ from: undefined });
   });
 
   test("the view page's match is unchanged by a servings step, and the page rescales", async () => {
@@ -166,23 +158,5 @@ describe("stepping servings makes no server call", () => {
     expect(after).toContain("Serves 5");
     expect(after).toContain('data-scaled="true"');
     expect(amountsInHtml(after)).toEqual(amountsInDoc(await callServerFn(getRecipe, { slug: "lemon-tart", servings: 5 })));
-  });
-
-  test("cook mode's match is unchanged by a servings step, and the deck rescales", async () => {
-    await seedTart();
-    const router = testRouter("/recipes/lemon-tart/cook?step=0");
-    await renderRouter(router);
-    const first = router.state.matches.at(-1);
-
-    router.history.replace(router.buildLocation({ to: "/recipes/$slug/cook", params: { slug: "lemon-tart" }, search: { step: 0, servings: 8 } }).href);
-    await router.load();
-    const second = router.state.matches.at(-1);
-
-    expect(second?.id).toBe(first?.id);
-    expect(second?.loaderDeps).toEqual(first?.loaderDeps);
-    expect(second?.id).not.toContain("servings");
-
-    const after = await renderRouter(router);
-    expect(after).toContain(">400 flour<");
   });
 });

@@ -35,7 +35,7 @@ beforeEach(() => {
   failure.error = new TypeError("fetch failed");
 });
 
-const pages = ["/", "/recipes/lemon-tart", "/recipes/lemon-tart/edit", "/recipes/lemon-tart/cook", "/recipes/new", "/settings"];
+const pages = ["/", "/recipes/lemon-tart", "/recipes/lemon-tart/edit", "/recipes/lemon-tart?cooking=true", "/recipes/new", "/settings"];
 
 describe("server unreachable", () => {
   test.each(pages)("%s shows the can't-reach-the-server view with Retry", async (path) => {

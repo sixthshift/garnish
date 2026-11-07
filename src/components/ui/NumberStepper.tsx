@@ -16,7 +16,7 @@ export type NumberStepperProps = {
   label?: string;
   id?: string;
   disabled?: boolean;
-  /** `sm`, the default, for a form; `xl` gives each part a 48px target (cook mode). */
+  /** `sm`, the default, for a form; `xl` gives each part a 48px target. */
   size?: "sm" | "xl";
   className?: string;
 };

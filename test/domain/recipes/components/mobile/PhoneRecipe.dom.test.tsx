@@ -1,7 +1,7 @@
 // A phone's recipe page (decisions.md row 208): Ingredients and Method as two
 // tabs, one shown at a time and both kept for a printout; the photo held at
 // the top with its round buttons; and the bar at the foot whose Start cooking
-// goes to cook mode at the page's servings, beside the shopping list and the
+// goes to the page, cooking, at the page's servings, beside the shopping list and the
 // plan.
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -136,16 +136,16 @@ describe("the segmented switch", () => {
 });
 
 describe("the bar at the foot", () => {
-  test("Start cooking goes to cook mode at the page's servings and choices", async () => {
+  test("Start cooking cooks from the page at its servings and choices", async () => {
     const user = userEvent.setup();
     const { router } = await renderInRouter(<CookBar recipe={recipe} servings={6} choices={undefined} />);
     const bar = screen.getByTestId("cook-bar");
     expect(bar).toHaveClass("sticky");
     const cook = within(bar).getByRole("link", { name: "Start cooking" });
-    expect(cook).toHaveAttribute("href", "/recipes/laksa/cook?servings=6");
+    expect(cook).toHaveAttribute("href", "/recipes/laksa?servings=6&cooking=true");
     expect(within(bar).getByRole("button", { name: "Add to shopping list" })).toBeInTheDocument();
     await user.click(cook);
-    expect(router.state.location.pathname).toBe("/recipes/laksa/cook");
+    expect(router.state.location.search).toMatchObject({ cooking: true, servings: 6 });
   });
 
   test("the calendar puts it on a day from a sheet", async () => {

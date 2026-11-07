@@ -23,7 +23,7 @@ export function QuickEditProvider({ recipe, children }: { recipe: Recipe; childr
   return <Context.Provider value={{ recipe, run, fixing, setFixing }}>{children}</Context.Provider>;
 }
 
-/** The quick-edit context, or null outside a provider (cook mode, the editor). */
+/** The quick-edit context, or null outside a provider (the editor). */
 export function useQuickEditContext(): QuickEditContext | null {
   return useContext(Context);
 }

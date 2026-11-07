@@ -1,6 +1,6 @@
-// A desktop's Settings and cook mode (decisions.md row 207): the places as a
+// A desktop's Settings and cooking from the recipe page (decisions.md rows 207, 214): the places as a
 // menu down the left, Foods an editable grid with a details pane and a bar for
-// ticked rows; cook mode a filmstrip that ← → and Space move along.
+// ticked rows; cooking the recipe page folded into one header line.
 import { createRecipe, expect, test, unique } from "./fixtures";
 
 test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: false });
@@ -68,32 +68,42 @@ test("Foods: a cell edits in place, a row opens its details, and the bar deletes
   await expect(bar).toHaveCount(0);
 });
 
-test("cook mode is a filmstrip that ← → and Space move along, and a neighbouring step goes to itself", async ({ page, open }) => {
-  const name = unique("Filmstrip Rice");
+test("cooking folds the page into one line, ticking a step moves Now on, and Finish logs the cook with what was noted", async ({ page, open }) => {
+  const name = unique("Desk Rice");
   await createRecipe(page, open, {
     name,
     servings: 2,
     ingredients: ["200 g rice"],
     steps: ["Rinse the rice.", "Simmer the rice for 12 minutes.", "Rest the rice, covered."],
   });
-  await open(`${new URL(page.url()).pathname}/cook`);
+  const recipe = new URL(page.url()).pathname;
+  await page.getByRole("link", { name: "Start cooking" }).click();
+  await expect(page).toHaveURL(/cooking=true/);
 
-  const position = page.locator("[data-position]");
-  await expect(page.locator('[data-cook-layout="filmstrip"]')).toBeVisible();
-  await expect(position).toHaveText("Ingredients");
-  await expect(page.getByRole("button", { name: "Next: Step 1 of 3" })).toBeVisible();
+  const header = page.getByTestId("cooking-header");
+  await expect(header).toContainText(name);
+  // The top bar steps aside: the one header line is all there is above the columns.
+  await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+  const now = page.locator('[data-now="true"]');
+  await expect(now).toContainText("Rinse the rice.");
+  await now.getByTestId("step-toggle").click();
+  await expect(now).toContainText("Simmer the rice for 12 minutes.");
 
-  await page.keyboard.press("ArrowRight");
-  await expect(position).toHaveText("Step 1 of 3");
-  await expect(page.getByRole("complementary", { name: "This step" })).toContainText("Simmer the rice for 12 minutes.");
-  await page.keyboard.press("Space");
-  await expect(position).toHaveText("Step 2 of 3");
-  await page.keyboard.press("ArrowLeft");
-  await expect(position).toHaveText("Step 1 of 3");
+  const side = page.getByTestId("cooking-side");
+  await side.getByRole("textbox").fill("Needed a splash more water");
+  await side.getByRole("button", { name: "Note it" }).click();
+  await expect(side).toContainText("Needed a splash more water");
 
-  await page.getByRole("button", { name: "Previous: Ingredients" }).click();
-  await expect(position).toHaveText("Ingredients");
-  await page.getByRole("button", { name: "Next: Step 1 of 3" }).click();
-  await expect(position).toHaveText("Step 1 of 3");
+  // ✕ keeps the session: the page offers to resume it.
+  await page.getByRole("link", { name: "Stop cooking for now" }).click();
+  await expect(page.getByRole("link", { name: "Resume cooking" })).toBeVisible();
+  await page.getByRole("link", { name: "Resume cooking" }).click();
+  await page.getByTestId("finish-cooking").click();
+
+  await expect(page.getByRole("heading", { level: 1, name: "How did it go?" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Comment" })).toHaveValue("Noted: Needed a splash more water.");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page).toHaveURL(new RegExp(`${recipe}$`));
+  await expect(page.getByRole("link", { name: "Start cooking" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

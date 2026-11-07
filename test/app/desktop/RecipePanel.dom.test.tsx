@@ -91,7 +91,7 @@ describe("on a desktop", () => {
     expect(panel).toHaveTextContent("1 hr");
     expect(panel).toHaveTextContent("Serves 4");
     expect(panel).toHaveTextContent("Rub the butter into the flour.");
-    expect(screen.getByRole("link", { name: "Cook" })).toHaveAttribute("href", "/recipes/lemon-tart/cook");
+    expect(screen.getByRole("link", { name: "Start cooking" })).toHaveAttribute("href", "/recipes/lemon-tart?cooking=true");
     expect(screen.getByRole("link", { name: "Open the recipe" })).toHaveAttribute("href", "/recipes/lemon-tart");
   });
 
@@ -129,7 +129,7 @@ describe("on a desktop", () => {
     await app(`/?panel=${encodeURIComponent(JSON.stringify({ slug: "lemon-tart", servings: 8 }))}`);
     await screen.findByRole("heading", { name: "Lemon tart", level: 2 });
     expect(screen.getByRole("complementary", { name: "Recipe" })).toHaveTextContent("400");
-    expect(screen.getByRole("link", { name: "Cook" })).toHaveAttribute("href", "/recipes/lemon-tart/cook?servings=8");
+    expect(screen.getByRole("link", { name: "Start cooking" })).toHaveAttribute("href", "/recipes/lemon-tart?servings=8&cooking=true");
     await user.click(screen.getByRole("link", { name: "Open the recipe" }));
     expect(await screen.findByRole("heading", { name: "Elsewhere" })).toBeInTheDocument();
   });

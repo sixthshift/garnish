@@ -91,7 +91,7 @@ test("the page is the day's tiles: the week, tonight, the list, next week, the r
   // Tonight: the name, its time and servings, Cook at the entry's servings, and the recipe in the side panel.
   const tonight = screen.getByRole("region", { name: "Tonight" });
   expect(within(tonight).getByText("3 hr 50 min · serves 6")).toBeInTheDocument();
-  expect(within(tonight).getByRole("link", { name: "Cook" })).toHaveAttribute("href", "/recipes/beef-ragu/cook?servings=6");
+  expect(within(tonight).getByRole("link", { name: "Cook" })).toHaveAttribute("href", "/recipes/beef-ragu?servings=6&cooking=true");
   expect(within(tonight).getByRole("link", { name: "Open the recipe" })).toHaveAttribute("data-opens", "panel");
 
   const shopping = screen.getByRole("region", { name: "2 to buy" });
