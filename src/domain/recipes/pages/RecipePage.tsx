@@ -12,6 +12,7 @@ import { useIngredientMode } from "../../../lib/prefs";
 import { toastError } from "../../../lib/toast";
 import { useLayout } from "../../../lib/useLayout";
 import { clearTicksNow, useAnyTicked } from "../../../lib/useTicks";
+import { useWakeLock } from "../../../lib/useWakeLock";
 import { RecipeSpread } from "../components/desktop/RecipeSpread";
 import { CookBar } from "../components/mobile/CookBar";
 import { PhoneRecipe } from "../components/mobile/PhoneRecipe";
@@ -58,6 +59,9 @@ export function RecipePage() {
   const anyTicked = useAnyTicked(recipe.id);
   const ingredientsHeading = useRef<HTMLElement>(null);
   const desktop = useLayout() === "desktop";
+  // The page is what is left open at the stove, so the screen stays on while
+  // it is (decisions.md row 213); silent where the browser can't.
+  useWakeLock();
 
   // The header's stars write straight through: 0 clears the rating,
   // and the loader re-reads it, so there is nothing optimistic to unwind.
