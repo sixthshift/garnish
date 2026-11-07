@@ -5,7 +5,8 @@ import type { ShoppingListMeal } from "../../shopping";
 
 const CHIP =
   "inline-flex h-9 shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full border px-3 font-medium text-sm transition-colors focus-visible:outline-2 focus-visible:outline-border-brand focus-visible:outline-offset-2";
-const ON = "border-bg-strong bg-bg-strong text-fg-on-strong";
+// Selected is the neutral pressed fill, as every other toggle in garnish (design-language rule 5): an inverse fill was a cream block in dark.
+const ON = "border-border-strong bg-bg-subtle-pressed text-fg-strong";
 const OFF = "border-border-normal bg-bg-normal text-fg-normal";
 
 /**

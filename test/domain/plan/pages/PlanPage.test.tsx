@@ -112,7 +112,7 @@ describe("the week", () => {
     expect(html).not.toContain("<input");
   });
 
-  test("today is the only day marked: its section says Today, and its day button is the one filled", async () => {
+  test("today is the only day marked: its section says Today, and its day button the one pressed, neutral rather than the brand (design-language rule 5)", async () => {
     const html = await render(emptyWeek());
     expect(html.match(/data-today="true"/g)).toHaveLength(1);
     expect(html).toMatch(new RegExp(`data-date="${TODAY}" data-today="true"`));
@@ -122,8 +122,9 @@ describe("the week", () => {
     expect(html.match(/aria-current="date"/g)).toHaveLength(1);
     const button = /<button[^>]*aria-current="date"[^>]*>/.exec(html)?.[0] ?? "";
     expect(button).toContain('aria-label="Wednesday 16 September"');
-    expect(button).toContain("bg-bg-brand");
-    expect(html.match(/bg-bg-brand text-fg-on-brand/g)).toHaveLength(1);
+    expect(button).toContain("border-border-strong bg-bg-subtle-pressed");
+    expect(html.match(/border-border-strong bg-bg-subtle-pressed text-fg-strong/g)).toHaveLength(1);
+    expect(html).not.toContain("text-fg-on-brand");
   });
 
   test("the arrows step a week either way and the label names the span", async () => {

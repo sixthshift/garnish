@@ -28,7 +28,7 @@ function scrollToDay(date: string, behavior: ScrollBehavior) {
  * and then the next (the loader's `nextDays`), under a header that sticks:
  * the title, the week's arrows and its span, and the week's seven days as
  * buttons that bring a day up, with a dot on a day that has something on it
- * and today filled. The page opens at today, when today is in the week shown.
+ * and today marked by the pressed fill. The page opens at today, when today is in the week shown.
  *
  * Each entry is a card that swipes: right pushes it to the next day, left
  * takes it off; its menu does both too, and moves it anywhere or up and down
@@ -105,7 +105,7 @@ export function PlanPhone({
                     onClick={() => scrollToDay(one.date, scrollBehaviour())}
                     className={cn(
                       "flex w-full flex-col items-center gap-px rounded-xl border pt-1.5 pb-2",
-                      marked ? "border-transparent bg-bg-brand text-fg-on-brand" : "border-border-subtle bg-bg-normal text-fg-normal"
+                      marked ? "border-border-strong bg-bg-subtle-pressed text-fg-strong" : "border-border-subtle bg-bg-normal text-fg-normal"
                     )}
                   >
                     <span aria-hidden="true" className={cn("font-semibold text-[11px]", !marked && "text-fg-subtle")}>
@@ -114,11 +114,11 @@ export function PlanPhone({
                     <span aria-hidden="true" className="font-semibold text-base leading-tight">
                       {Number(one.date.slice(8))}
                     </span>
-                    {/* The dot is the brand on a plain button and the button's own text colour on today's filled one. */}
+                    {/* The dot says planned; today is the pressed fill and a strong edge, not the brand (design-language rule 5). */}
                     <span
                       aria-hidden="true"
                       data-testid={planned ? "plan-day-dot" : undefined}
-                      className={cn("size-1.5 rounded-full", planned ? (marked ? "bg-current" : "bg-bg-brand") : "bg-transparent")}
+                      className={cn("size-1.5 rounded-full", planned ? "bg-bg-brand" : "bg-transparent")}
                     />
                   </button>
                 </li>

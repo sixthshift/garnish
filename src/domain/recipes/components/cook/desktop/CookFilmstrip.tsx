@@ -9,6 +9,7 @@ import { type CookCard, cardAnnouncement, nextPreview, type partPills } from "..
 import { IngredientRow } from "../../recipe/IngredientRow";
 import { linkedIngredients } from "../../recipe/StepCard";
 import { TimerStrip } from "../../recipe/TimerStrip";
+import { DARK_FRAME } from "../darkFrame";
 
 export type CookFilmstripProps = {
   recipeId: string;
@@ -46,8 +47,8 @@ export function CookFilmstrip({ recipeId, slug, name, cards, index, total, pills
   const comingUp = [index + 1, index + 2].filter((at) => at <= cards.length).map((at) => upNext(cards, at));
 
   return (
-    <div className="grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] bg-bg-subtle text-fg-normal" data-toasts="top" data-cook-layout="filmstrip">
-      <header className="flex items-center gap-4 border-b border-border-normal bg-bg-normal px-6 py-3">
+    <div className="grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] bg-[var(--color-earth-950)] text-fg-normal" data-toasts="top" data-cook-layout="filmstrip">
+      <header className={cn("flex items-center gap-4 border-b border-border-normal bg-bg-normal px-6 py-3", DARK_FRAME)}>
         {exit}
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate text-xl font-semibold text-fg-strong" data-cook-title>
@@ -83,7 +84,10 @@ export function CookFilmstrip({ recipeId, slug, name, cards, index, total, pills
       </header>
 
       <div className="grid min-h-0 grid-cols-[16rem_minmax(0,1fr)] desktop:xl:grid-cols-[20rem_minmax(0,1fr)]">
-        <aside className="flex min-h-0 flex-col gap-6 overflow-y-auto border-r border-border-normal bg-bg-normal px-6 py-5" aria-label="This step">
+        <aside
+          className={cn("flex min-h-0 flex-col gap-6 overflow-y-auto border-r border-border-normal bg-bg-normal px-6 py-5", DARK_FRAME)}
+          aria-label="This step"
+        >
           {!finished && (
             <section className="flex flex-col gap-2" aria-labelledby="cook-for-step">
               <SectionTitle as="h2" id="cook-for-step">
@@ -124,7 +128,7 @@ export function CookFilmstrip({ recipeId, slug, name, cards, index, total, pills
         </main>
       </div>
 
-      <footer className="flex items-center gap-4 border-t border-border-normal bg-bg-normal px-6 py-3">
+      <footer className={cn("flex items-center gap-4 border-t border-border-normal bg-bg-normal px-6 py-3", DARK_FRAME)}>
         <div className="flex min-w-0 flex-1 items-center gap-4">
           {/* Timers started on any card, across the foot; the current card's own count down on it. */}
           <TimerStrip

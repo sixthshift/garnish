@@ -2,7 +2,6 @@ import { Button } from "@sixthshift/design-system/button";
 import { Card } from "@sixthshift/design-system/card";
 import { Heading } from "@sixthshift/design-system/heading";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ChevronRight } from "../../../../../components/ui/icons";
@@ -14,23 +13,24 @@ export type SettingsListRow = { value: SettingsSectionId; label: string; count?:
 export type SettingsListGroup = { label: string; rows: SettingsListRow[] };
 
 /**
- * Each place's tile: a glyph on a tint (`docs/mockups/desktop.html`, `mSettings`).
- * The library's four, the cooking guides and Diagnostics take the theme's
- * tints; the rest share the page's one step up. Pure decoration, so hidden.
+ * Each place's tile: a glyph on the page's one step up (`docs/mockups/desktop.html`,
+ * `mSettings`). Neutral, all of them: colour is identity and state (design-language
+ * rule 5), and the theme's subtle tints sank into dark holes on a dark card.
+ * Pure decoration, so hidden.
  */
-const TILE: Record<SettingsSectionId, { glyph: string; tint: string }> = {
-  foods: { glyph: "❦", tint: "bg-bg-success-subtle" },
-  units: { glyph: "⚖", tint: "bg-bg-brand-subtle" },
-  aisles: { glyph: "▤", tint: "bg-bg-brand-subtle" },
-  tags: { glyph: "#", tint: "bg-bg-warning-subtle" },
-  style: { glyph: "✎", tint: "bg-bg-danger-subtle" },
-  planner: { glyph: "▦", tint: "bg-bg-brand-subtle" },
-  backup: { glyph: "⇩", tint: "bg-bg-subtle-pressed" },
-  ai: { glyph: "✦", tint: "bg-bg-subtle-pressed" },
-  mcp: { glyph: "⌘", tint: "bg-bg-subtle-pressed" },
-  appearance: { glyph: "◐", tint: "bg-bg-subtle-pressed" },
-  alerts: { glyph: "♪", tint: "bg-bg-subtle-pressed" },
-  diagnostics: { glyph: "!", tint: "bg-bg-warning-subtle" },
+const TILE: Record<SettingsSectionId, { glyph: string }> = {
+  foods: { glyph: "❦" },
+  units: { glyph: "⚖" },
+  aisles: { glyph: "▤" },
+  tags: { glyph: "#" },
+  style: { glyph: "✎" },
+  planner: { glyph: "▦" },
+  backup: { glyph: "⇩" },
+  ai: { glyph: "✦" },
+  mcp: { glyph: "⌘" },
+  appearance: { glyph: "◐" },
+  alerts: { glyph: "♪" },
+  diagnostics: { glyph: "!" },
 };
 
 /**
@@ -65,10 +65,7 @@ export function SettingsList({ groups, footer }: { groups: SettingsListGroup[]; 
                     className="flex min-h-14 items-center gap-3 px-3.5 py-2.5 text-base hover:bg-bg-normal-hovered"
                     data-section-link={row.value}
                   >
-                    <span
-                      aria-hidden="true"
-                      className={cn("grid size-8 shrink-0 place-items-center rounded-lg text-base text-fg-strong", TILE[row.value].tint)}
-                    >
+                    <span aria-hidden="true" className="grid size-8 shrink-0 place-items-center rounded-lg bg-bg-subtle-pressed text-base text-fg-strong">
                       {TILE[row.value].glyph}
                     </span>
                     <span className="min-w-0 flex-1 text-fg-strong">{row.label}</span>
