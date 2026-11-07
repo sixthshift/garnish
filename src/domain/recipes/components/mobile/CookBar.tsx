@@ -71,7 +71,7 @@ export function CookBar({ recipe, servings, choices }: CookBarProps) {
 
   return (
     <div
-      className="sticky bottom-(--app-bar) z-content-sticky -mt-4 flex items-center gap-2 bg-linear-to-b from-transparent to-bg-subtle to-40% px-4 pt-6 pb-3"
+      className="sticky bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px))] z-content-sticky -mt-4 flex items-center gap-2 bg-linear-to-b from-transparent to-bg-subtle to-40% px-4 pt-6 pb-3"
       data-testid="cook-bar"
       data-print="hide"
     >

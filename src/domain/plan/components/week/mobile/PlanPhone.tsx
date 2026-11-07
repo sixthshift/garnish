@@ -163,7 +163,10 @@ export function PlanPhone({
 
       {emptyNights > 0 && (
         // Over the foot of the page as it scrolls, clear of the tab bar; it comes to rest after the last day.
-        <div className="pointer-events-none sticky bottom-[calc(var(--app-bar)+0.75rem)] z-10 flex justify-center" data-testid="plan-fill-next">
+        <div
+          className="pointer-events-none sticky bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+0.75rem)] z-10 flex justify-center"
+          data-testid="plan-fill-next"
+        >
           <Button asChild variant="solid" intent="brand" className="pointer-events-auto rounded-full px-5 shadow-lg">
             <Link to="/plan/fill" search={{ week: following }}>
               <span aria-hidden="true">✦</span> Fill next week’s {emptyNights === 1 ? "empty night" : `${emptyNights} empty nights`}

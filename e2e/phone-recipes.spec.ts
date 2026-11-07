@@ -50,16 +50,17 @@ test("the library: search at the foot, collections as chips, the order and a cou
 
 test("the recipe page: two tabs held at the top, and Start cooking, the list and the plan under the thumb", async ({ page, open }) => {
   const name = unique("Phone Dal");
-  await createRecipe(page, open, { name, servings: 4, ingredients: ["200 g red lentils", "1 onion"], steps: ["Rinse the lentils.", "Simmer until soft."] });
+  // Foods no other spec plans: it goes on this week, and plan.spec's list would merge its lines.
+  await createRecipe(page, open, { name, servings: 4, ingredients: ["200 g mung beans", "1 shallot"], steps: ["Rinse the beans.", "Simmer until soft."] });
 
   // Ingredients first; the method's tab names how many steps.
   const ingredients = page.getByRole("tab", { name: "Ingredients" });
   const method = page.getByRole("tab", { name: "Method · 2 steps" });
   await expect(ingredients).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("list", { name: "Ingredients" })).toContainText("red lentils");
-  await expect(page.getByText("Rinse the lentils.")).toBeHidden();
+  await expect(page.getByRole("list", { name: "Ingredients" })).toContainText("mung beans");
+  await expect(page.getByText("Rinse the beans.")).toBeHidden();
   await method.click();
-  await expect(page.getByText("Rinse the lentils.")).toBeVisible();
+  await expect(page.getByText("Rinse the beans.")).toBeVisible();
   await expect(page.getByRole("list", { name: "Ingredients" })).toBeHidden();
 
   // Start cooking is in view without scrolling, above the tab bar.

@@ -42,7 +42,11 @@ export type SearchPillProps = {
  */
 export function SearchPill({ query, onQueryChange, onSubmit, total, filterCount, onOpenFilters }: SearchPillProps) {
   return (
-    <div className="sticky bottom-[calc(var(--app-bar)+0.75rem)] z-content-sticky flex items-center gap-2" data-testid="search-pill" data-print="hide">
+    <div
+      className="sticky bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+0.75rem)] z-content-sticky flex items-center gap-2"
+      data-testid="search-pill"
+      data-print="hide"
+    >
       <search className="min-w-0 flex-1">
         <form
           onSubmit={(event) => {

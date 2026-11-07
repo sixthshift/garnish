@@ -216,7 +216,7 @@ export function RecipePage() {
               cookBar={<CookBar recipe={recipe} servings={requested} choices={choices} />}
             />
             {/* Any timers started from a step, fixed above the Start cooking bar. */}
-            <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(var(--app-bar)+4.75rem)]" />
+            <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+4.75rem)]" />
           </>
         )}
       </SubRecipesProvider>

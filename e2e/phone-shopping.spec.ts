@@ -26,6 +26,8 @@ async function listRecipe(browser: Browser, recipe: { name: string; ingredients:
  * their capture are the ones a phone makes.
  */
 async function swipe(page: Page, row: Locator, dx: number) {
+  // Mid-screen, clear of the sticky aisle name above and the trolley bar and tab bar below: the other specs share this list, so the row may start far down it.
+  await row.evaluate((el) => el.scrollIntoView({ block: "center" }));
   const box = (await row.boundingBox())!;
   const y = Math.round(box.y + box.height / 2);
   const x = Math.round(box.x + box.width / 2 - dx / 2);

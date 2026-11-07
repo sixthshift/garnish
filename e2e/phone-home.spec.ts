@@ -69,6 +69,8 @@ test("an empty day to come is planned from its + in the strip", async ({ page, o
   const note = unique("Picnic");
   await sheet.getByRole("combobox").fill(note);
   await sheet.getByRole("button", { name: `Add “${note}” as a note` }).click();
+  // The plan's sheet stays open for the next add (row 208); Done closes it.
+  await sheet.getByRole("button", { name: "Done" }).click();
   await expect(sheet).toBeHidden();
   await expect(week.getByText(note)).toBeVisible();
 });

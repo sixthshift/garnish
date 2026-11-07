@@ -10,7 +10,7 @@ const WEEK = "2027-05-03";
 test("two recipes added from the sheet, which stays open; one swiped to the next day, the other removed from its menu", async ({ page, open }) => {
   const dal = unique("Phone Dal");
   const rice = unique("Phone Rice");
-  await createRecipe(page, open, { name: dal, servings: 4, ingredients: ["200 g red lentils"], steps: ["Simmer."] });
+  await createRecipe(page, open, { name: dal, servings: 4, ingredients: ["200 g yellow split peas"], steps: ["Simmer."] });
   await createRecipe(page, open, { name: rice, servings: 4, ingredients: ["300 g rice"], steps: ["Steam."] });
 
   await open(`/plan?week=${WEEK}`);

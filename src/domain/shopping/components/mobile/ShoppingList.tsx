@@ -124,7 +124,7 @@ export function ShoppingList({
             <button
               type="button"
               aria-haspopup="dialog"
-              className="sticky bottom-[calc(var(--app-bar)+0.75rem)] z-content-sticky flex items-center gap-2 rounded-2xl bg-bg-strong px-5 py-3.5 text-left text-fg-on-strong shadow-lg focus-visible:outline-2 focus-visible:outline-border-brand focus-visible:outline-offset-2"
+              className="sticky bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+0.75rem)] z-content-sticky flex items-center gap-2 rounded-2xl bg-bg-strong px-5 py-3.5 text-left text-fg-on-strong shadow-lg focus-visible:outline-2 focus-visible:outline-border-brand focus-visible:outline-offset-2"
               data-testid="shopping-trolley-bar"
               onClick={() => setTrolleyOpen(true)}
             >
