@@ -250,7 +250,7 @@ Decisions.md row 209: seven layers of fixed values (course, meal, cuisine, diet,
 - [x] **M49.3 The library.** A desktop's filters column and a phone's filters sheet gain a section per layer with its counts; the choice is in the address.
 - [x] **M49.4 Marking in bulk.** Row 195's "Mark Rotation & Weekend" grows into marking any layer under every card, since every recipe starts with none said.
 - [x] **M49.5 The import.** schema.org's `recipeCategory`, `recipeCuisine` and `suitableForDiet`, and a Mealie recipe's categories, map onto the layers where a word matches; the model's answer carries them too; the review shows them to correct.
-- [ ] **M49.6 The MCP connector.** The document reads and writes `facets`, `search_recipes` filters by them, the instructions say what each layer means.
+- [x] **M49.6 The MCP connector.** The document reads and writes `facets`, `search_recipes` filters by them, the instructions say what each layer means.
 - [ ] **M49.7 The planner.** Dinners come from mains (or recipes with no course said), never a building block; a breakfast or lunch slot prefers a recipe that suits it; the model's library line carries each recipe's facets.
 - [ ] **M49.8 Docs and e2e.**
 
@@ -361,3 +361,4 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-11-07  M49.3  done   —        opus   a desktop's filters column lists each layer some recipe has under the shelves, with counts over the library; a phone's sheet a row of toggles a layer above the tags; the active chips row and Clear take them; a value asked for that none has still shows to let go
 2026-11-07  M49.4  done   —        opus   "Mark recipes" (was "Mark Rotation & Weekend") opens a searchable "What to mark" select: Rotation & Weekend, or any one value of any layer; under each card the kind's segments or one toggle named for its recipe, written at once
 2026-11-07  M49.5  done   —        opus   import/scraped/facets.ts (facetsFromWords: whole words, case, accents and punctuation aside, a small synonym table; mergeFacets); ScrapedRecipe carries facets: schema.org category, cuisine, keywords and suitableForDiet, Mealie categories and tags, Tandoor keywords, the model's tags (its JSON Schema unchanged; an accepted anchored read keeps the anchor's, AnchorSchema at the rpc boundary); draftFromScraped carries them; the review shows none yet, the editor saves them
+2026-11-07  M49.6  done   —        opus   the connector's document reads and writes facets, a write merging by layer (one sent replaces it, [] clears it, one left out stays); search_recipes filters per layer and its summaries carry facets; the instructions say what the layers are and when a connector may set them

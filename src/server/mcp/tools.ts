@@ -16,7 +16,7 @@ import { withRotatedChoices } from "../plan/choices";
 import { INSTRUCTIONS } from "./instructions";
 import type { Caller } from "./oauth/server";
 import type { Scope } from "./oauth/tokens";
-import { createRecipeSchema, documentFromMcp, parseDocument, recipeForMcp, updateRecipeSchema, type Vocabulary } from "./recipeDocument";
+import { createRecipeSchema, documentFromMcp, facetLayerInputs, parseDocument, recipeForMcp, updateRecipeSchema, type Vocabulary } from "./recipeDocument";
 import { backupBeforeDelete } from "./safety";
 
 /** A tool's answer: JSON text, which every MCP client shows and every model reads. */
@@ -38,8 +38,14 @@ const summary = (row: RecipeSummary) => ({
   rating: row.rating,
   favourite: row.favourite,
   kind: row.kind,
+  facets: row.facets,
   lastMade: row.lastMade,
 });
+
+/** `search_recipes`' filter per facet layer: the write's arrays, optional, read as "any of these". */
+const facetFilters = Object.fromEntries(
+  Object.entries(facetLayerInputs).map(([layer, schema]) => [layer, schema.optional().describe(`Any of these. ${schema.description}`)])
+) as { [L in keyof typeof facetLayerInputs]: z.ZodOptional<(typeof facetLayerInputs)[L]> };
 
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
@@ -63,22 +69,23 @@ export function buildMcpServer(caller: Pick<Caller, "scopes">): McpServer {
       {
         title: "Search recipes",
         description:
-          "Find recipes by name, tag, favourite or kind. With nothing given, every recipe, newest first. Answers summaries; read one with get_recipe.",
+          "Find recipes by name, tag, favourite, kind or facet. Each facet filter (course, meal, cuisine, diet, mainIngredient, method, season) takes any of its values; filters given together must all hold, so course ['main'] with diet ['vegetarian'] is a vegetarian main. A recipe with nothing said on a layer is not found by that layer's filter. With nothing given, every recipe, newest first. Answers summaries; read one with get_recipe.",
         inputSchema: {
           query: z.string().optional().describe("Part of the recipe's name"),
           tags: z.array(z.string()).optional().describe("Tag names; a recipe needs any of them"),
           favourite: z.boolean().optional().describe("Only favourites"),
           kind: recipeKindSchema.optional().describe("Only the household's weeknight regulars ('rotation') or its weekend cooks ('weekend')"),
+          ...facetFilters,
           sort: z.enum(["name", "updated", "lastMade", "rating", "created"]).optional(),
         },
         annotations: READ,
       },
-      async ({ query, tags: tagNames, favourite, kind, sort }) => {
+      async ({ query, tags: tagNames, favourite, kind, sort, ...facets }) => {
         const known = tags.list();
         const slugs = (tagNames ?? []).flatMap((name) => known.filter((tag) => tag.name.toLowerCase() === name.trim().toLowerCase()).map((tag) => tag.slug));
         if (tagNames && tagNames.length > 0 && slugs.length === 0)
           return ok({ recipes: [], note: "No tag has that name. list_tags gives the household's tags." });
-        const rows = recipes.query({ by: "filter", q: query, tags: slugs.length > 0 ? slugs : undefined, favourite, kind, sort });
+        const rows = recipes.query({ by: "filter", q: query, tags: slugs.length > 0 ? slugs : undefined, favourite, kind, facets, sort });
         return ok({ recipes: rows.map(summary) });
       }
     );
@@ -185,7 +192,7 @@ export function buildMcpServer(caller: Pick<Caller, "scopes">): McpServer {
       {
         title: "Change a recipe",
         description:
-          "Change an existing recipe. Only the fields sent change. Sending parts replaces every part, so read the recipe with get_recipe first and send the whole list back, keeping the ids of ingredients and steps that stay.",
+          "Change an existing recipe. Only the fields sent change, and within facets only the layers sent. Sending parts replaces every part, so read the recipe with get_recipe first and send the whole list back, keeping the ids of ingredients and steps that stay.",
         inputSchema: { id: z.string().describe("The recipe's id or slug"), ...updateRecipeSchema.shape },
         annotations: { ...WRITE, idempotentHint: true },
       },

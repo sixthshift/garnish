@@ -9,12 +9,21 @@ import { z } from "zod";
 import { foodReference, tagsFromNames } from "../../domain/recipes/draft";
 import { formatIngredient, parseIngredient } from "../../domain/recipes/ingredient";
 import {
+  COURSES,
+  CUISINES,
+  DIETS,
+  type Facets,
   type Ingredient,
+  MAIN_INGREDIENTS,
+  MEAL_TIMES,
+  METHODS,
+  noFacets,
   type Recipe,
   type RecipeInput,
   type RecipeKind,
   recipeInputSchema,
   recipeKindSchema,
+  SEASONS,
   suggestLinks,
 } from "../../domain/recipes/recipe";
 import type { FoodRow, Tag, Unit } from "../../domain/recipes/reference";
@@ -52,6 +61,28 @@ export const partInputSchema = z.object({
   steps: z.array(stepInput).default([]),
 });
 
+/**
+ * Each facet layer as a model gives it: an array of that layer's fixed values
+ * (decisions.md row 209), described so the model knows what it chooses
+ * between. `search_recipes` filters by the same arrays.
+ */
+export const facetLayerInputs = {
+  course: z
+    .array(z.enum(COURSES))
+    .describe(
+      "What it is in a meal: main, soup, salad, side, starter, dessert, baking, snack, drink, or a building block made to go into or onto another dish (sauce for sauces and dressings, condiment for chutneys and preserves, spice-mix for rubs and marinades, stock for stocks and bases, dough for doughs and pastry)"
+    ),
+  meal: z.array(z.enum(MEAL_TIMES)).describe("When in the day it suits"),
+  cuisine: z.array(z.enum(CUISINES)).describe("Where it is from, broadly"),
+  diet: z.array(z.enum(DIETS)).describe("Who can eat it, as written"),
+  mainIngredient: z.array(z.enum(MAIN_INGREDIENTS)).describe("What is at its heart: the protein, or what a meatless dish is built on"),
+  method: z.array(z.enum(METHODS)).describe("How it is cooked"),
+  season: z.array(z.enum(SEASONS)).describe("When it is best; none said is any time of year"),
+};
+
+/** Facets as a write sends them: only the layers sent change, and a layer sent as [] is cleared. */
+export const facetsInputSchema = z.object(facetLayerInputs).partial();
+
 const noteInput = z.object({ id: z.uuid().optional(), title: z.string().default(""), text: text.min(1) });
 
 /** A recipe's fields as the model sets them. Every one is optional on an update, where what is left out stays as it is. */
@@ -68,6 +99,9 @@ export const recipeFieldsSchema = {
   kind: recipeKindSchema
     .nullable()
     .describe("How the household cooks it: 'rotation' for a weeknight regular, 'weekend' for one worth a weekend's time, null when not said"),
+  facets: facetsInputSchema.describe(
+    "What the recipe is, layer by layer, each a list of fixed values. Only the layers you send change; send a layer as [] to clear it"
+  ),
   rating: z.number().min(0).max(5).nullable(),
   parts: z.array(partInputSchema).min(1).describe("At least one; the first is usually the unnamed main body"),
   notes: z.array(noteInput).describe("The recipe's notes, in order"),
@@ -93,6 +127,7 @@ export type McpRecipe = {
   tags: string[];
   favourite: boolean;
   kind: RecipeKind | null;
+  facets: Facets;
   rating: number | null;
   lastMade: string | null;
   parts: {
@@ -122,6 +157,7 @@ export function recipeForMcp(doc: Recipe): McpRecipe {
     tags: doc.tags.map((tag) => tag.name),
     favourite: doc.favourite,
     kind: doc.kind,
+    facets: doc.facets,
     rating: doc.rating,
     lastMade: doc.lastMade,
     parts: doc.parts.map((part) => ({
@@ -158,7 +194,9 @@ export type WriteReport = {
  * and has not changed keeps its row whole — its food, its links, its photo —
  * and anything new or changed is parsed afresh. New foods are made only for a
  * short unmatched name (MAX_NEW_FOOD_WORDS); a longer one stays a text line.
- * Steps with no links get them from `suggestLinks`, as an import's do. Pure
+ * Steps with no links get them from `suggestLinks`, as an import's do.
+ * `facets` merges by layer: a layer sent replaces that layer, one left out
+ * keeps `current`'s (none on a create). Pure
  * apart from the random ids it gives new rows.
  */
 export function documentFromMcp(
@@ -249,11 +287,19 @@ export function documentFromMcp(
     sourceUrl: input.sourceUrl !== undefined ? input.sourceUrl : (current?.sourceUrl ?? null),
     favourite: pick("favourite", current?.favourite ?? false),
     kind: input.kind !== undefined ? input.kind : (current?.kind ?? null),
+    facets: facetsFrom(input.facets, current?.facets ?? noFacets()),
     tags: input.tags !== undefined ? tagsFromNames(input.tags, vocabulary.tags) : (current?.tags ?? []),
     notes: input.notes !== undefined ? input.notes.map((note) => ({ id: note.id, title: note.title, text: note.text })) : (current?.notes ?? []),
     parts: input.parts !== undefined ? input.parts.map(partFrom) : (current?.parts ?? []),
   };
   return { doc, report };
+}
+
+/** The facets a write leaves: each layer sent replaces that layer of `current`, each left out keeps it. Pure. */
+export function facetsFrom(given: z.output<typeof facetsInputSchema> | undefined, current: Facets): Facets {
+  const next = { ...current };
+  for (const [layer, values] of Object.entries(given ?? {})) if (values !== undefined) (next as Record<string, unknown>)[layer] = values;
+  return next;
 }
 
 /** `documentFromMcp`'s document checked by the same schema the editor's saves are. Throws a readable error. */

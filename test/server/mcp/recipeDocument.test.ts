@@ -85,6 +85,34 @@ test("kind is read, set, cleared, and kept by an update that does not send it", 
   expect(documentFromMcp(updateRecipeSchema.parse({ kind: null }), vocabulary, stored).doc.kind).toBeNull();
 });
 
+test("facets are read, set on a create, and merged by layer on an update: a layer sent replaces, [] clears, one left out stays", () => {
+  const created = parseDocument(
+    documentFromMcp(createRecipeSchema.parse({ name: "Salsa verde", facets: { course: ["sauce"], cuisine: ["italian"] }, parts: [{}] }), vocabulary, null).doc
+  );
+  expect(created.facets).toEqual({ course: ["sauce"], meal: [], cuisine: ["italian"], diet: [], mainIngredient: [], method: [], season: [] });
+  const stored = recipeSchema.parse({
+    ...created,
+    id: "00000000-0000-4000-8000-0000000000d3",
+    slug: "salsa-verde",
+    createdAt: "2026-11-07T00:00:00.000Z",
+    updatedAt: "2026-11-07T00:00:00.000Z",
+    parts: created.parts.map((part) => ({ ...part, id: crypto.randomUUID() })),
+  });
+  expect(recipeForMcp(stored).facets).toEqual(created.facets);
+  expect(documentFromMcp(updateRecipeSchema.parse({ name: "Green sauce" }), vocabulary, stored).doc.facets).toEqual(created.facets);
+  const changed = documentFromMcp(updateRecipeSchema.parse({ facets: { diet: ["vegan", "vegetarian"], cuisine: [] } }), vocabulary, stored).doc;
+  expect(parseDocument(changed).facets).toEqual({
+    course: ["sauce"],
+    meal: [],
+    cuisine: [],
+    diet: ["vegetarian", "vegan"],
+    mainIngredient: [],
+    method: [],
+    season: [],
+  });
+  expect(() => updateRecipeSchema.parse({ facets: { course: ["chutney"] } })).toThrow();
+});
+
 test("an update keeps what it does not send, and keeps unchanged rows whole", () => {
   const created = parseDocument(
     documentFromMcp(

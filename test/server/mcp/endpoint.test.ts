@@ -116,3 +116,19 @@ test("a bad write is refused with the reason, and nothing is saved", async () =>
   expect(readdirSync(temp.dir)).not.toContain("backups");
   await client.close();
 });
+
+test("facets are written through the connector, filtered by in search_recipes, and carried in its summaries", async () => {
+  const client = await connect(grantToken("read write"));
+  await call(client, "create_recipe", { name: "Salsa verde", facets: { course: ["sauce"], cuisine: ["italian"] }, parts: [{}] });
+  await call(client, "create_recipe", { name: "Green curry", facets: { course: ["main"], cuisine: ["thai"] }, parts: [{}] });
+  await call(client, "create_recipe", { name: "Pad see ew", facets: { course: ["main"], cuisine: ["thai"], diet: ["vegetarian"] }, parts: [{}] });
+  const names = async (args: Record<string, unknown>) => (await call(client, "search_recipes", args)).recipes.map((row: { name: string }) => row.name).sort();
+  expect(await names({ course: ["main"] })).toEqual(["Green curry", "Pad see ew"]);
+  expect(await names({ course: ["main", "sauce"], cuisine: ["italian"] })).toEqual(["Salsa verde"]);
+  expect(await names({ cuisine: ["thai"], diet: ["vegetarian"] })).toEqual(["Pad see ew"]);
+  const [summary] = (await call(client, "search_recipes", { query: "Salsa" })).recipes;
+  expect(summary.facets).toMatchObject({ course: ["sauce"], cuisine: ["italian"], diet: [] });
+  const refused = (await client.callTool({ name: "search_recipes", arguments: { course: ["chutney"] } })) as { isError?: boolean };
+  expect(refused.isError).toBe(true);
+  await client.close();
+});
