@@ -3,8 +3,6 @@ import { FavouriteButton } from "../../../../../components/ui/FavouriteButton";
 import { recipeImageUrl } from "../../../../../lib/images";
 import { formatDuration } from "../../../ingredient";
 import type { RecipeSummary } from "../../../recipe";
-import { MarkUnder } from "../../facets/MarkUnder";
-import type { Marking } from "../../facets/marking";
 import { ImagePlaceholder } from "../RecipeCard";
 
 /** Cards whose photo is fetched at once: the first two rows fill a phone's first screen. */
@@ -19,13 +17,12 @@ const PRIORITY_CARDS = 4;
  * From `sm` (an iPad upright, a phone sideways) the columns fill in about
  * 13rem each, three or four, rather than two cards half a screen tall.
  */
-export function PhotoGrid({ recipes, marking }: { recipes: readonly RecipeSummary[]; marking: Marking | null }) {
+export function PhotoGrid({ recipes }: { recipes: readonly RecipeSummary[] }) {
   return (
     <ul className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))]" aria-label="Recipes" data-testid="photo-grid">
       {recipes.map((recipe, index) => (
         <li key={recipe.id} className="flex flex-col gap-2">
           <PhotoCard recipe={recipe} priority={index < PRIORITY_CARDS} />
-          {marking && <MarkUnder recipe={recipe} marking={marking} />}
         </li>
       ))}
     </ul>

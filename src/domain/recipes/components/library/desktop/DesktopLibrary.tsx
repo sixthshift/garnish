@@ -7,8 +7,7 @@ import { type ReactNode, useMemo } from "react";
 import { DiceIcon } from "../../../../../components/ui/icons";
 import { useViewMode } from "../../../../../lib/prefs";
 import type { RecipeSummary } from "../../../recipe";
-import type { Marking } from "../../facets/marking";
-import { CardList, LibraryEmpty, MarkToggle } from "../CardList";
+import { CardList, LibraryEmpty } from "../CardList";
 import { ViewModeToggle } from "../ViewModeToggle";
 import { PhotoWall } from "./PhotoWall";
 import { useFlipKeys } from "./useFlipKeys";
@@ -22,8 +21,6 @@ export type DesktopLibraryProps = {
   open: string | undefined;
   /** A search or a filter is set: an empty wall offers to clear it. */
   filtered: boolean;
-  marking: Marking | null;
-  onMarkingChange: (marking: Marking | null) => void;
   onDice: () => void;
   /** The filters column (FiltersColumn). */
   filters: ReactNode;
@@ -36,7 +33,7 @@ export type DesktopLibraryProps = {
  * A screen tall, each pane scrolling on its own. The list view stays; the grid
  * becomes the wall.
  */
-export function DesktopLibrary({ recipes, open, filtered, marking, onMarkingChange, onDice, filters }: DesktopLibraryProps) {
+export function DesktopLibrary({ recipes, open, filtered, onDice, filters }: DesktopLibraryProps) {
   const [viewMode] = useViewMode();
   const slugs = useMemo(() => recipes.map((recipe) => recipe.slug), [recipes]);
   useFlipKeys(slugs);
@@ -60,7 +57,6 @@ export function DesktopLibrary({ recipes, open, filtered, marking, onMarkingChan
             )}
           </div>
           <div className="flex-1" />
-          <MarkToggle marking={marking} onChange={onMarkingChange} />
           <ViewModeToggle />
           <Button iconOnly variant="outline" intent="neutral" size="sm" aria-label="Open a random recipe" onClick={onDice} disabled={recipes.length === 0}>
             <DiceIcon />
@@ -70,11 +66,7 @@ export function DesktopLibrary({ recipes, open, filtered, marking, onMarkingChan
           </Button>
         </div>
         <EmptyBoundary isEmpty={recipes.length === 0} fallback={<LibraryEmpty filtered={filtered} />}>
-          {viewMode === "list" ? (
-            <CardList recipes={recipes} mode="list" marking={marking} />
-          ) : (
-            <PhotoWall recipes={recipes} selected={open} marking={marking} priority={PRIORITY_WALL} />
-          )}
+          {viewMode === "list" ? <CardList recipes={recipes} mode="list" /> : <PhotoWall recipes={recipes} selected={open} priority={PRIORITY_WALL} />}
         </EmptyBoundary>
       </div>
     </div>

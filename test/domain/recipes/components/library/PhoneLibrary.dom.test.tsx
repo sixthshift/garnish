@@ -5,7 +5,6 @@
 // "Show N recipes".
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
 import { describe, expect, test, vi } from "vitest";
 import { PhoneLibrary, type PhoneLibraryProps } from "../../../../../src/domain/recipes/components/library/mobile/PhoneLibrary";
 import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
@@ -65,8 +64,6 @@ function props(overrides: Partial<PhoneLibraryProps> = {}): PhoneLibraryProps {
     dir: "desc",
     onSortChange: vi.fn(),
     onDice: vi.fn(),
-    marking: null,
-    onMarkingChange: vi.fn(),
     ...overrides,
   };
 }
@@ -87,19 +84,6 @@ describe("the grid", () => {
     // The heart beside each, pressed on a favourite.
     expect(within(cards[1]!).getByRole("button", { name: "Remove from favourites" })).toHaveAttribute("aria-pressed", "true");
     expect(within(cards[0]!).getByRole("button", { name: "Add to favourites" })).toHaveAttribute("aria-pressed", "false");
-  });
-
-  test("Mark puts how each is cooked under its card", async () => {
-    const user = userEvent.setup();
-    function Marking() {
-      const [marking, setMarking] = useState<Parameters<typeof PhoneLibrary>[0]["marking"]>(null);
-      return <PhoneLibrary {...props({ marking, onMarkingChange: setMarking })} />;
-    }
-    await renderInRouter(<Marking />);
-    expect(screen.queryByRole("radiogroup", { name: "How you cook Ragu" })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Mark recipes" }));
-    expect(screen.getByRole("combobox", { name: "What to mark" })).toBeInTheDocument();
-    expect(screen.getByRole("radiogroup", { name: "How you cook Ragu" })).toBeInTheDocument();
   });
 });
 

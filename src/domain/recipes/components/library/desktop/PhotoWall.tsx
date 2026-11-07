@@ -4,8 +4,6 @@ import { FavouriteButton } from "../../../../../components/ui/FavouriteButton";
 import { recipeImageUrl } from "../../../../../lib/images";
 import { formatDuration } from "../../../ingredient";
 import type { RecipeSummary } from "../../../recipe";
-import { MarkUnder } from "../../facets/MarkUnder";
-import type { Marking } from "../../facets/marking";
 import { capTags, ImagePlaceholder } from "../RecipeCard";
 
 /**
@@ -26,8 +24,6 @@ export type PhotoWallProps = {
   recipes: readonly RecipeSummary[];
   /** The recipe open in the side panel: its card is outlined. */
   selected: string | undefined;
-  /** Each card offers how it is cooked, Rotation or Weekend, under it (the library's "Mark" toggle). */
-  marking: Marking | null;
   /** Cards whose image is fetched at once rather than lazily: the first row. */
   priority: number;
 };
@@ -40,17 +36,12 @@ export type PhotoWallProps = {
  * while it is open there. Reading order is down each column, which is also the
  * order the arrow keys flip through.
  */
-export function PhotoWall({ recipes, selected, marking, priority }: PhotoWallProps) {
+export function PhotoWall({ recipes, selected, priority }: PhotoWallProps) {
   return (
     <ul className="columns-[13.75rem] gap-4" aria-label="Recipes" data-testid="photo-wall">
       {recipes.map((recipe, index) => (
         <li key={recipe.id} className="mb-5 break-inside-avoid">
           <WallCard recipe={recipe} selected={recipe.slug === selected} priority={index < priority} />
-          {marking && (
-            <div className="mt-2">
-              <MarkUnder recipe={recipe} marking={marking} />
-            </div>
-          )}
         </li>
       ))}
     </ul>

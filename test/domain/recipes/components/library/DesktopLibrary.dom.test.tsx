@@ -65,17 +65,7 @@ getRecipe.mockImplementation(
 /** The library's panes as the page draws them, with the open recipe read from the address. */
 function Library() {
   const open = useSearch({ strict: false, select: (search) => (search as { panel?: { slug: string } }).panel?.slug });
-  return (
-    <DesktopLibrary
-      recipes={library}
-      open={open}
-      filtered={false}
-      marking={null}
-      onMarkingChange={() => {}}
-      onDice={() => {}}
-      filters={<input aria-label="Search recipes" />}
-    />
-  );
+  return <DesktopLibrary recipes={library} open={open} filtered={false} onDice={() => {}} filters={<input aria-label="Search recipes" />} />;
 }
 
 /** The desktop layout over the library at `/recipes`, with a recipe's page to go to. */
