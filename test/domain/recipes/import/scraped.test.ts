@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { ingredientLines, tidyPartName } from "../../../../src/domain/recipes/import/scraped/parts";
-import { hasContent, normaliseScraped, ScrapedRecipeSchema } from "../../../../src/domain/recipes/import/scraped/schema";
+import { AnchorSchema, hasContent, normaliseScraped, ScrapedRecipeSchema } from "../../../../src/domain/recipes/import/scraped/schema";
 import {
   durationToMinutes,
   firstImage,
@@ -10,6 +10,7 @@ import {
 } from "../../../../src/domain/recipes/import/scraped/schemaOrg";
 import { decodeEntities, text } from "../../../../src/domain/recipes/import/scraped/text";
 import { parseYield } from "../../../../src/domain/recipes/import/scraped/yield";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 
 describe("decodeEntities and text", () => {
   test("named and numeric entities decode", () => {
@@ -255,6 +256,7 @@ describe("scrapedFromSchema", () => {
       prepMinutes: 20,
       cookMinutes: 15,
       tags: ["Biscuits", "Baking"],
+      facets: { ...noFacets(), course: ["baking"] },
       parts: [{ name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: ["Heat the oven to 180C.", "Mix and bake."] }],
     });
   });
@@ -278,6 +280,30 @@ describe("scrapedFromSchema", () => {
     ]);
   });
 
+  test("category, cuisine and diet map onto the layers, and the tags stay as they were (M49.5)", () => {
+    const read = scrapedFromSchema({
+      "@type": "Recipe",
+      name: "Pad see ew",
+      recipeCategory: "Main Course",
+      recipeCuisine: "Thai",
+      suitableForDiet: "https://schema.org/VegetarianDiet",
+      keywords: "easy, weeknight, wok",
+    });
+    expect(read.tags).toEqual(parseKeywords(["Main Course", "Thai", "easy, weeknight, wok"]));
+    expect(read.facets).toEqual({ ...noFacets(), course: ["main"], cuisine: ["thai"], diet: ["vegetarian"] });
+  });
+
+  test("a diet given as a node, and a keyword that names a layer, map too", () => {
+    const read = scrapedFromSchema({
+      "@type": "Recipe",
+      name: "x",
+      suitableForDiet: [{ "@id": "https://schema.org/VeganDiet" }, "https://schema.org/LowLactoseDiet"],
+      keywords: ["slow cooker", "Asian"],
+    });
+    expect(read.facets).toEqual({ ...noFacets(), diet: ["vegan"], method: ["slow-cooker"] });
+    expect(read.tags).toEqual(["Slow cooker", "Asian"]);
+  });
+
   test("a node with nothing but a name comes back empty rather than missing", () => {
     expect(scrapedFromSchema({ "@type": "Recipe", name: "Toast" })).toEqual({
       name: "Toast",
@@ -288,6 +314,7 @@ describe("scrapedFromSchema", () => {
       prepMinutes: null,
       cookMinutes: null,
       tags: [],
+      facets: noFacets(),
       parts: [{ name: "", ingredients: [], steps: [] }],
     });
   });
@@ -342,9 +369,10 @@ describe("ScrapedRecipeSchema and normaliseScraped (M34.5)", () => {
       prepMinutes: 20,
       cookMinutes: 15,
       tags: ["biscuits"],
+      facets: { ...noFacets(), diet: ["vegetarian"] },
       parts: [{ name: "", ingredients: ["125 g butter"], steps: ["Mix."] }],
     };
-    expect(normaliseScraped(ScrapedRecipeSchema.parse(full))).toEqual(full);
+    expect(normaliseScraped(AnchorSchema.parse(full))).toEqual(full);
   });
 
   test("only the name is required; what is left out comes back empty", () => {

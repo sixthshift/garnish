@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { facetsSchema, noFacets } from "../../recipe";
+import { facetsFromWords, mergeFacets } from "./facets";
 import { tidyParts } from "./parts";
 import type { ScrapedPart, ScrapedRecipe } from "./types";
 
@@ -39,11 +41,20 @@ export const ScrapedRecipeSchema = z.object({
 });
 
 /**
- * A parsed answer as a `ScrapedRecipe`: blank lines dropped, part names tidied
- * out of their headings' punctuation, and at least one part, because
- * the main body is what every reader downstream expects to find. Pure.
+ * An anchor as the review hands it back: the model's shape plus the facets the
+ * rules read. The model is never asked for facets (its JSON Schema has no
+ * place for them), but the page said them, and a read the check accepts
+ * should keep them.
  */
-export function normaliseScraped(parsed: z.output<typeof ScrapedRecipeSchema>): ScrapedRecipe {
+export const AnchorSchema = ScrapedRecipeSchema.extend({ facets: facetsSchema.optional() });
+
+/**
+ * A parsed answer as a `ScrapedRecipe`: blank lines dropped, part names tidied
+ * out of their headings' punctuation, its tags read for the layers, and at
+ * least one part, because the main body is what every reader downstream
+ * expects to find. Pure.
+ */
+export function normaliseScraped(parsed: z.output<typeof AnchorSchema>): ScrapedRecipe {
   const parts: ScrapedPart[] = tidyParts(
     parsed.parts
       .map((part) => ({
@@ -54,10 +65,14 @@ export function normaliseScraped(parsed: z.output<typeof ScrapedRecipeSchema>): 
       .filter((part) => part.name !== "" || part.ingredients.length > 0 || part.steps.length > 0)
   );
   if (!parts.some((part) => part.name === "")) parts.unshift({ name: "", ingredients: [], steps: [] });
+  const tags = parsed.tags.map((tag) => tag.trim()).filter((tag) => tag !== "");
   return {
     ...parsed,
     name: parsed.name.trim(),
-    tags: parsed.tags.map((tag) => tag.trim()).filter((tag) => tag !== ""),
+    tags,
+    // The model's road to the layers is its tags: the words the text gave, or
+    // the anchor's own, copied. Whatever facets came in (an anchor's) stay.
+    facets: mergeFacets(parsed.facets ?? noFacets(), facetsFromWords(tags)),
     parts,
   };
 }

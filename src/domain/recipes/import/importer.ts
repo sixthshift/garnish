@@ -5,7 +5,8 @@ import { extractRecipe } from "./extract";
 import { aiPrompt, anchorJson, MAX_AI_TEXT, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "./model";
 import { looksLikeHtml, readableText } from "./page/text";
 import type { ImportedRecipe } from "./result";
-import { normaliseScraped, type ScrapedRecipeSchema } from "./scraped/schema";
+import { mergeFacets } from "./scraped/facets";
+import { type AnchorSchema, normaliseScraped } from "./scraped/schema";
 import type { ScrapedRecipe } from "./scraped/types";
 import type { ImportFile } from "./sources/file";
 import { type FileRecipe, readExport } from "./sources/fileRecipe";
@@ -49,7 +50,7 @@ export type Ports = {
 export type ModelRequest = { prompt: string; schema: object; schemaName: string; timeoutMs: number };
 
 /** An anchor as a caller may hold it: the rules' result, or the same shape freshly validated at a boundary. Normalised inside. */
-export type AnchorInput = z.output<typeof ScrapedRecipeSchema>;
+export type AnchorInput = z.output<typeof AnchorSchema>;
 
 /** What a caller has. The importer chooses what to do with it. */
 export type Source =
@@ -272,7 +273,8 @@ export class Importer {
     // structure goes and the page's own content stays, as `from: "schema"`, with
     // the answer kept under `rejected` so the review can still offer it.
     const check = checkAgainstAnchor(answer, anchor);
-    if (check.ok) return { from: "ai", url: sourceUrl, recipe: answer, pageText, check };
+    // An accepted answer keeps what the page said of its layers (a `suitableForDiet` has no tag to come back through).
+    if (check.ok) return { from: "ai", url: sourceUrl, recipe: { ...answer, facets: mergeFacets(anchor.facets, answer.facets) }, pageText, check };
     return { from: "schema", url: sourceUrl, recipe: anchor, pageText, check, rejected: answer };
   }
 }

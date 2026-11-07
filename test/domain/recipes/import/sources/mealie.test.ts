@@ -11,6 +11,7 @@ import { ingredientLine, mealieIngredient, partsFromMealie } from "../../../../.
 import { looksLikeMealieRecipe, mealieRecipe, mealieTimeToMinutes, tagNames } from "../../../../../src/domain/recipes/import/sources/mealie/recipe";
 import { matchFood, matchUnit, reviewRowFromMealie, reviewRowsFromMealie } from "../../../../../src/domain/recipes/import/sources/mealie/review";
 import type { MealieRecipe } from "../../../../../src/domain/recipes/import/sources/mealie/types";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Food } from "../../../../../src/domain/recipes/reference";
 import { makeZip, PNG_BYTES } from "../../../../helpers/zip";
 
@@ -44,6 +45,17 @@ describe("a Mealie recipe JSON with sections", () => {
 
   test("tags and categories both become tags, once each", () => {
     expect(recipe().tags).toEqual(["Baking", "Dessert"]);
+  });
+
+  test("categories and tags a layer knows become its facets (M49.5)", () => {
+    expect(recipe().facets).toEqual({ ...noFacets(), course: ["dessert", "baking"] });
+    const read = mealieRecipe({
+      ...fixture(),
+      tags: [{ name: "Vegetarian" }, { name: "Quick" }],
+      recipeCategory: [{ name: "Mains" }, { name: "Italian" }, "Asian"],
+    });
+    expect(read.tags).toEqual(["Vegetarian", "Quick", "Mains", "Italian", "Asian"]);
+    expect(read.facets).toEqual({ ...noFacets(), course: ["main"], cuisine: ["italian"], diet: ["vegetarian"] });
   });
 
   test("a title becomes a part, and the rows before it stay on the main body", () => {

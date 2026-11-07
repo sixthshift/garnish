@@ -132,6 +132,7 @@ export function draftFromScraped(opts: {
     rating,
     notes: notes.filter((note) => note.text.trim() !== "" || note.title.trim() !== "").map((note) => ({ title: note.title, text: note.text })),
     tags: tagsFromNames(scraped.tags, knownTags),
+    facets: scraped.facets,
     parts: linked.length > 0 ? linked : emptyDraft().parts,
   };
 }

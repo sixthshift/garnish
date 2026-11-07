@@ -1,3 +1,4 @@
+import { facetsFromWords } from "../../scraped/facets";
 import { text } from "../../scraped/text";
 import { type Node, nodes, number, pick } from "../json";
 import { tagNames } from "../mealie/recipe";
@@ -25,6 +26,7 @@ export function tandoorRecipe(node: Node, known: ReadonlySet<string> = new Set()
     prepMinutes: number(pick(node, "working_time", "workingTime")),
     cookMinutes: number(pick(node, "waiting_time", "waitingTime")),
     tags: tagNames(pick(node, "keywords")),
+    facets: facetsFromWords(tagNames(pick(node, "keywords"))),
     parts,
     notes: [],
     rating: null,

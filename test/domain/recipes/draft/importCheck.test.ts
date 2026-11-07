@@ -19,6 +19,7 @@ import {
 } from "../../../../src/domain/recipes/draft";
 import type { ScrapedRecipe } from "../../../../src/domain/recipes/import";
 import { reviewRows } from "../../../../src/domain/recipes/ingredient";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import type { FoodRow, Unit } from "../../../../src/domain/recipes/reference";
 
 const gram: Unit = {
@@ -53,6 +54,7 @@ const scraped: ScrapedRecipe = {
   prepMinutes: null,
   cookMinutes: null,
   tags: [],
+  facets: noFacets(),
   parts: [
     { name: "Pastry", ingredients: ["200 g flour", "100 g quince paste"], steps: ["Rub in."] },
     { name: "Filling", ingredients: ["(see notes)"], steps: ["Bake."] },

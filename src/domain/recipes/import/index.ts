@@ -9,7 +9,7 @@ export { looksLikeHtml } from "./page/text";
 export type { ImportedRecipe, ImportSource } from "./result";
 // The review screen's face of the module: reading a result and building its rows.
 export * as review from "./review";
-export { ScrapedRecipeSchema } from "./scraped/schema";
+export { AnchorSchema, ScrapedRecipeSchema } from "./scraped/schema";
 export type { ScrapedRecipe } from "./scraped/types";
 export type { FileRecipe } from "./sources/fileRecipe";
 export type { MealieRecipe } from "./sources/mealie/types";

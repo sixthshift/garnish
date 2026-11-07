@@ -4,6 +4,7 @@
 import { expect, test } from "vitest";
 import { refusedImportReport } from "../../../src/api/rpc/import";
 import type { ImportedRecipe } from "../../../src/domain/recipes/import";
+import { noFacets } from "../../../src/domain/recipes/recipe";
 import type { RestyleCheck } from "../../../src/domain/recipes/style";
 import { type RestyleResult, refusedCheckReport } from "../../../src/server/ai/restyle";
 
@@ -39,7 +40,18 @@ test("a flagged restyle is a warning naming the recipe and model, with only the 
 const imported = (check?: ImportedRecipe["check"]): ImportedRecipe => ({
   from: "ai",
   url: "https://example.com/cookies",
-  recipe: { name: "Cookies", description: "", image: null, servings: 0, yieldText: "", prepMinutes: null, cookMinutes: null, tags: [], parts: [] },
+  recipe: {
+    name: "Cookies",
+    description: "",
+    image: null,
+    servings: 0,
+    yieldText: "",
+    prepMinutes: null,
+    cookMinutes: null,
+    tags: [],
+    facets: noFacets(),
+    parts: [],
+  },
   pageText: "",
   ...(check ? { check } : {}),
 });

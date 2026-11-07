@@ -10,6 +10,7 @@ import { RecipeSource } from "../../../../../src/domain/recipes/components/new/R
 import type { ImportedCheck } from "../../../../../src/domain/recipes/components/new/reviewFlows";
 import { emptyDraft } from "../../../../../src/domain/recipes/draft";
 import type { ImportedRecipe } from "../../../../../src/domain/recipes/import";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 vi.mock("../../../../../src/api/rpc/foods", async (importOriginal) => ({ ...(await importOriginal<object>()), listFoods: vi.fn(async () => []) }));
@@ -29,6 +30,7 @@ const read: ImportedRecipe = {
     prepMinutes: null,
     cookMinutes: null,
     tags: [],
+    facets: noFacets(),
     parts: [{ name: "", ingredients: ["1 cup plain flour"], steps: ["Mix."] }],
   },
 };

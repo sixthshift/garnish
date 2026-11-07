@@ -4,6 +4,7 @@
 import { describe, expect, test } from "vitest";
 import { type ModelReader, modelPass, SORT_NOTE, shouldReadWithModel, sortedRead } from "../../../../../src/domain/recipes/components/new/importSummary";
 import type { ImportCheck, ImportedRecipe, ScrapedRecipe } from "../../../../../src/domain/recipes/import";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 
 const SOURCE = "https://example.test/lemon-tart";
 const PAGE_TEXT = "# Pastry\n200 g flour\n# Filling\n100 g sugar\nRub in.\nBake.";
@@ -18,6 +19,7 @@ const rulesRecipe: ScrapedRecipe = {
   prepMinutes: null,
   cookMinutes: null,
   tags: [],
+  facets: noFacets(),
   parts: [{ name: "", ingredients: ["200 g flour", "100 g sugar"], steps: ["Rub in.", "Bake."] }],
 };
 

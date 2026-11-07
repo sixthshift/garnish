@@ -7,6 +7,7 @@ import { ImportError } from "../../../../src/domain/recipes/import/errors";
 import { aiPrompt, anchorJson, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "../../../../src/domain/recipes/import/model";
 import { ingredientLines } from "../../../../src/domain/recipes/import/scraped/parts";
 import { ScrapedPartSchema, ScrapedRecipeSchema } from "../../../../src/domain/recipes/import/scraped/schema";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 
 /** What a good answer looks like: the recipe as JSON in the message content. */
 const FIXTURE = {
@@ -36,6 +37,7 @@ const ANCHOR: ScrapedRecipe = {
   prepMinutes: 20,
   cookMinutes: 15,
   tags: ["baking"],
+  facets: noFacets(),
   parts: [
     { name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: ["Rub the butter in."] },
     { name: "To finish", ingredients: [], steps: ["Bake."] },
@@ -137,6 +139,7 @@ describe("parseAiAnswer", () => {
       prepMinutes: null,
       cookMinutes: null,
       tags: [],
+      facets: noFacets(),
       parts: [{ name: "", ingredients: ["bread"], steps: [] }],
     });
   });

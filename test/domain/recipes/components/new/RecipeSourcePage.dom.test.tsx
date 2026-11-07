@@ -6,6 +6,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { PAGE, READY } from "../../../../../src/domain/recipes/components/new/bookmarklet";
 import { RecipeSource } from "../../../../../src/domain/recipes/components/new/RecipeSource";
 import type { ImportedRecipe } from "../../../../../src/domain/recipes/import";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 const SOURCE = "https://recipes.example/anzac";
@@ -23,6 +24,7 @@ const found: ImportedRecipe = {
     prepMinutes: null,
     cookMinutes: null,
     tags: [],
+    facets: noFacets(),
     parts: [{ name: "", ingredients: ["200 g flour"], steps: ["Mix."] }],
   },
 };

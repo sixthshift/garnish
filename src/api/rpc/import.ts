@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ImportError, type ImportedRecipe, ScrapedRecipeSchema } from "../../domain/recipes/import";
+import { AnchorSchema, ImportError, type ImportedRecipe } from "../../domain/recipes/import";
 import diagnostics, { type DiagnosticReport } from "../../server/core/diagnostics";
 import { notFoundMiddleware } from "../../server/core/fn";
 import { importer } from "../../server/import/importer";
@@ -75,7 +75,7 @@ export const ImportFromTextInput = z.object({
    * already holds it, so sending it back costs nothing and saves the server a
    * second fetch of a page it has no address for.
    */
-  anchor: ScrapedRecipeSchema.optional(),
+  anchor: AnchorSchema.optional(),
 });
 
 /**

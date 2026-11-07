@@ -7,6 +7,7 @@ import { expect, test, vi } from "vitest";
 import { RecipeSource } from "../../../../../src/domain/recipes/components/new/RecipeSource";
 import type { ImportedCheck } from "../../../../../src/domain/recipes/components/new/reviewFlows";
 import type { ImportedRecipe, ScrapedRecipe } from "../../../../../src/domain/recipes/import";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 const SOURCE = "https://recipes.example/lemon-tart";
@@ -20,6 +21,7 @@ const rulesRecipe: ScrapedRecipe = {
   prepMinutes: null,
   cookMinutes: null,
   tags: [],
+  facets: noFacets(),
   parts: [{ name: "", ingredients: ["200 g flour", "100 g sugar"], steps: ["Rub in.", "Bake."] }],
 };
 const found: ImportedRecipe = { from: "schema", url: SOURCE, recipe: rulesRecipe, pageText: "# Pastry\n200 g flour\n# Filling\n100 g sugar" };

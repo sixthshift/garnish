@@ -1,5 +1,6 @@
 // A page in, a result out: the schema.org rung first (JSON-LD, then microdata), then the OpenGraph stub, else null.
 
+import { noFacets } from "../recipe";
 import { type JsonLdNode, recipeNodeFromHtml } from "./page/jsonLd";
 import { recipeNodeFromMicrodata } from "./page/microdata";
 import { openGraphStub } from "./page/openGraph";
@@ -21,6 +22,7 @@ export function scrapedFromStub(stub: { name: string; description: string; image
     prepMinutes: null,
     cookMinutes: null,
     tags: [],
+    facets: noFacets(),
     parts: [{ name: "", ingredients: [], steps: [] }],
   };
 }

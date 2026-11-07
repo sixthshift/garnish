@@ -7,6 +7,7 @@ import { describe, expect, test } from "vitest";
 import { ImportError, Importer, type PageResponse, type Ports, type ScrapedRecipe } from "../../../../src/domain/recipes/import";
 import { MAX_PAGE_BYTES, type ModelRequest, parsePageUrl, READ_TIMEOUT_MS } from "../../../../src/domain/recipes/import/importer";
 import { MAX_AI_TEXT, SCRAPED_JSON_SCHEMA } from "../../../../src/domain/recipes/import/model";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 
 const URL_UNDER_TEST = "https://example.test/anzac-biscuits";
 
@@ -72,6 +73,7 @@ const ANCHOR: ScrapedRecipe = {
   prepMinutes: 20,
   cookMinutes: 15,
   tags: ["baking"],
+  facets: { ...noFacets(), course: ["baking"] },
   parts: [
     { name: "", ingredients: ["1 cup plain flour", "125 g butter"], steps: ["Rub the butter in."] },
     { name: "To finish", ingredients: [], steps: ["Bake."] },
@@ -392,6 +394,30 @@ describe('import({ kind: "text" })', () => {
     expect(imported.check?.ok).toBe(true);
     expect(imported.rejected).toBeUndefined();
     expect(imported.recipe.parts.map((part) => part.name)).toEqual(["", "To finish"]);
+  });
+
+  // M49.5: the model is never asked for facets, so an accepted answer keeps
+  // the anchor's (a diet the page stated has no tag to come back through) and
+  // adds what its own tags say.
+  test("an accepted answer keeps the anchor's facets and reads its own tags", async () => {
+    const sorted = {
+      ...FIXTURE,
+      tags: ["baking", "Dessert"],
+      parts: [
+        { name: "", ingredients: ["1 cup plain flour"], steps: [] },
+        { name: "To finish", ingredients: ["125 g butter"], steps: ["Rub the butter in.", "Bake."] },
+      ],
+    };
+    const anchor = { ...ANCHOR, facets: { ...ANCHOR.facets, diet: ["vegetarian" as const] } };
+    const imported = await reading(fakeModel(JSON.stringify(sorted))).import({ kind: "text", text: "# To finish\nBake.", anchor });
+    expect(imported.check?.ok).toBe(true);
+    expect(imported.recipe.facets).toEqual({ ...noFacets(), course: ["dessert", "baking"], diet: ["vegetarian"] });
+  });
+
+  test("an unanchored answer's tags are read for the layers", async () => {
+    const imported = await reading(fakeModel(JSON.stringify({ ...FIXTURE, tags: ["Breakfast", "Gluten free", "quick"] }))).import({ kind: "text", text: "x" });
+    expect(imported.recipe.tags).toEqual(["Breakfast", "Gluten free", "quick"]);
+    expect(imported.recipe.facets).toEqual({ ...noFacets(), meal: ["breakfast"], diet: ["gluten-free"] });
   });
 
   // M37.1: the anchor's parts came off the page's step sections and carry no

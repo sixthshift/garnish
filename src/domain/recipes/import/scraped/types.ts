@@ -1,3 +1,5 @@
+import type { Facets } from "../../recipe";
+
 /** One part of a scraped recipe: a name (empty for the main body), its raw ingredient lines and its steps. */
 export type ScrapedPart = { name: string; ingredients: string[]; steps: string[] };
 
@@ -14,6 +16,8 @@ export type ScrapedRecipe = {
   prepMinutes: number | null;
   cookMinutes: number | null;
   tags: string[];
+  /** What the source's own words say about the recipe's layers (`facetsFromWords`); empty when they say nothing a layer knows. */
+  facets: Facets;
   /** At least one part; the unnamed one is the main body. Each owns its ingredient lines, for `parseIngredient`, and its steps. */
   parts: ScrapedPart[];
 };

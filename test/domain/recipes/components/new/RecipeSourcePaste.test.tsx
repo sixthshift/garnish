@@ -10,6 +10,7 @@ import { SourceChooser } from "../../../../../src/domain/recipes/components/new/
 import { draftFromScraped } from "../../../../../src/domain/recipes/draft";
 import { review, type ScrapedRecipe } from "../../../../../src/domain/recipes/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/recipes/ingredient";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
 
 const gram: Unit = {
@@ -85,6 +86,7 @@ describe("an AI answer through the review", () => {
     prepMinutes: null,
     cookMinutes: null,
     tags: [],
+    facets: noFacets(),
     parts: [
       { name: "", ingredients: ["125 g flour"], steps: ["Mix."] },
       { name: "Syrup", ingredients: [], steps: ["Melt."] },
@@ -108,5 +110,11 @@ describe("an AI answer through the review", () => {
     expect(draft.parts[0]!.ingredients).toHaveLength(1);
     expect(draft.parts[0]!.ingredients[0]!.food?.id).toBe(flour.id);
     expect(draft.parts[1]!.steps.map((step) => step.text)).toEqual(["Melt."]);
+  });
+
+  test("the draft carries the import's facets, so a saved import keeps them (M49.5)", () => {
+    const facets = { ...noFacets(), course: ["main" as const], cuisine: ["thai" as const] };
+    const draft = draftFromScraped({ scraped: { ...recipe, facets }, sourceUrl: "", commits: [], createdFoods: new Map(), createdUnits: new Map() });
+    expect(draft.facets).toEqual(facets);
   });
 });

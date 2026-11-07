@@ -9,6 +9,7 @@ import { RecipeForm } from "../../../../../../src/domain/recipes/components/edit
 import { emptyDraft, importDraft, type RecipeDraft } from "../../../../../../src/domain/recipes/draft";
 import type { ScrapedRecipe } from "../../../../../../src/domain/recipes/import";
 import { reviewRows } from "../../../../../../src/domain/recipes/ingredient";
+import { noFacets } from "../../../../../../src/domain/recipes/recipe";
 import type { FoodRow, Unit } from "../../../../../../src/domain/recipes/reference";
 import { renderInRouter } from "../../../../../helpers/dom";
 
@@ -48,6 +49,7 @@ const scraped: ScrapedRecipe = {
   prepMinutes: null,
   cookMinutes: null,
   tags: [],
+  facets: noFacets(),
   // "150 g" names no food at all, so the read keeps it as written without asking.
   parts: [{ name: "", ingredients: ["200 g flour", "100 g quince paste", "150 g"], steps: ["Rub the flour in.", "Bake until golden."] }],
 };

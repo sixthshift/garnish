@@ -1,5 +1,6 @@
 import { tagNamesFrom } from "../../reference";
 import type { JsonLdNode } from "../page/jsonLd";
+import { facetsFromWords } from "./facets";
 import { tidyParts } from "./parts";
 import { field, list, text } from "./text";
 import type { ScrapedPart, ScrapedRecipe } from "./types";
@@ -41,6 +42,15 @@ export function durationToMinutes(value: unknown): number | null {
 /** `keywords` as a list: flatten a list, split comma-separated strings, clean and dedupe by the tag rule. Pure. */
 export function parseKeywords(value: unknown): string[] {
   return tagNamesFrom(list(value).map((entry) => (typeof entry === "object" && entry !== null ? text((entry as JsonLdNode).name) : text(entry))));
+}
+
+/** A free-text field as its words: a string, a list, or a node by its name or `@id` (`suitableForDiet` is often `{"@id": "https://schema.org/VeganDiet"}`). Pure. */
+function wordsOf(value: unknown): string[] {
+  return list(value).map((entry) => {
+    if (typeof entry !== "object" || entry === null) return text(entry);
+    const node = entry as JsonLdNode;
+    return text(node.name) || text(node["@id"]);
+  });
 }
 
 // --- Instructions ----------------------------------------------------------
@@ -143,6 +153,9 @@ export function scrapedFromSchema(node: JsonLdNode): ScrapedRecipe {
     // household keeps; keywords are mostly search phrases, which the review
     // sorts out (decisions.md row 171). parseKeywords keeps each once.
     tags: parseKeywords([...list(node.recipeCategory), ...list(node.recipeCuisine), ...list(node.keywords)]),
+    // The same words again, and the diet the page states, as the layers they
+    // name (decisions.md row 209). The tags above stay as they were.
+    facets: facetsFromWords([node.recipeCategory, node.recipeCuisine, node.keywords, node.suitableForDiet].flatMap(wordsOf)),
     parts,
   };
 }

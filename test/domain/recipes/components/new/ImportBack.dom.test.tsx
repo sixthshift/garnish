@@ -13,7 +13,7 @@ import { ImportStyle } from "../../../../../src/domain/recipes/components/new/Im
 import { RecipeSource } from "../../../../../src/domain/recipes/components/new/RecipeSource";
 import { draftFromInput } from "../../../../../src/domain/recipes/draft";
 import type { ImportedRecipe } from "../../../../../src/domain/recipes/import";
-import { recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
+import { noFacets, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
 
 const model = vi.hoisted(() => ({ restyleDraft: vi.fn(() => new Promise(() => {})), createRestyledRecipe: vi.fn() }));
 vi.mock("../../../../../src/server/ai/restyle", () => model);
@@ -85,6 +85,7 @@ const found: ImportedRecipe = {
     prepMinutes: null,
     cookMinutes: null,
     tags: [],
+    facets: noFacets(),
     parts: [{ name: "", ingredients: ["200 g flour"], steps: ["Mix."] }],
   },
 };

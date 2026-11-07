@@ -12,6 +12,7 @@ import { UrlSource } from "../../../../../src/domain/recipes/components/new/UrlS
 import { draftFromScraped, isTextOnly } from "../../../../../src/domain/recipes/draft";
 import { review, type ScrapedRecipe } from "../../../../../src/domain/recipes/import";
 import { reviewRows, rowCommit } from "../../../../../src/domain/recipes/ingredient";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
 
 const gram: Unit = {
@@ -49,6 +50,7 @@ const scraped: ScrapedRecipe = {
   prepMinutes: 20,
   cookMinutes: 15,
   tags: ["baking"],
+  facets: noFacets(),
   parts: [
     { name: "", ingredients: ["200 g flour", "100 g almond meal"], steps: ["Heat the oven."] },
     { name: "Icing", ingredients: [], steps: ["Whisk.", "Pour."] },

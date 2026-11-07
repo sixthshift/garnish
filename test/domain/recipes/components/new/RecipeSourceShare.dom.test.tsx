@@ -6,6 +6,7 @@ import { STUB_NOTE } from "../../../../../src/domain/recipes/components/new/impo
 import { RecipeSource } from "../../../../../src/domain/recipes/components/new/RecipeSource";
 import type { ImportedCheck } from "../../../../../src/domain/recipes/components/new/reviewFlows";
 import type { ImportedRecipe } from "../../../../../src/domain/recipes/import";
+import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
 import { renderInRouter } from "../../../../helpers/dom";
 
@@ -36,6 +37,7 @@ const found: ImportedRecipe = {
     prepMinutes: null,
     cookMinutes: null,
     tags: [],
+    facets: noFacets(),
     parts: [{ name: "", ingredients: ["200 g flour"], steps: ["Mix."] }],
   },
 };

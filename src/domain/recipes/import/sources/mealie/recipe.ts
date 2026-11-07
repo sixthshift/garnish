@@ -1,4 +1,5 @@
 import { tagNamesFrom } from "../../../reference";
+import { facetsFromWords } from "../../scraped/facets";
 import { durationToMinutes } from "../../scraped/schemaOrg";
 import { text } from "../../scraped/text";
 import { parseYield } from "../../scraped/yield";
@@ -59,6 +60,9 @@ export function mealieRecipe(node: Node): MealieRecipe {
     prepMinutes: mealieTimeToMinutes(pick(node, "prepTime", "prep_time")),
     cookMinutes: cook,
     tags: tagNames(pick(node, "tags"), pick(node, "recipeCategory", "recipe_category", "categories")),
+    // Mealie's categories are free text, and so are its tags: either is where a
+    // household writes "Mains" or "Vegetarian", so both are read for the layers.
+    facets: facetsFromWords(tagNames(pick(node, "recipeCategory", "recipe_category", "categories"), pick(node, "tags"))),
     parts,
     notes: nodes(pick(node, "notes")).map((note) => ({ title: text(pick(note, "title")).trim(), text: text(pick(note, "text")).trim() })),
     rating: number(pick(node, "rating")),
