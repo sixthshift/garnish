@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garnish editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  The recipe editor reshaped to mirror the recipe page: one file, no build.
+  Opened from the repo it shows the recipe's own photo from data/images
+  (gitignored); elsewhere a warm gradient stands in. The recipe is the real
+  "Slow Cooked Shredded Beef Ragu Pasta" as it is in the database, odd
+  imported lines and all. Desktop flips between the page and the editor in one
+  1440 × 900 frame; Phone shows the two side by side in 390 × 844 frames.
+-->
+<style>
+:root {
+  --bg: #f7f2ed; --paper: #fffcf9; --sunk: #f1e9e2; --line: #e8ddd4; --line2: #d8c9bd;
+  --fg: #2a1f19; --fg2: #57473d; --muted: #8a7468;
+  --brand: #2c666c; --brand-hover: #245358; --brand-soft: #d6eef0; --brand-50: #f2fafb;
+  --hi: #fdeec9; --hi-line: #e3ac35; --ok: #3d7a4a;
+  --r: 12px;
+  --shadow: 0 1px 2px rgba(60,40,30,.06), 0 6px 20px rgba(60,40,30,.07);
+  --display: "Fraunces", Georgia, serif;
+  --ui: "Inter", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: #2b2420; font-family: var(--ui); color: var(--fg); font-size: 14px; overflow: hidden; display: flex; flex-direction: column; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; }
+
+/* ── The mockup's own chrome ─────────────────────────────────────────────── */
+#chrome { background: #1d1815; color: #efe6de; padding: 10px 16px 10px; display: flex; flex-direction: column; gap: 8px; flex: none; }
+#chrome .row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+#chrome h1 { font: 600 15px var(--display); margin: 0 6px 0 0; }
+.seg { display: flex; background: #2d2622; border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { background: none; border: 0; color: #cbbcb0; padding: 5px 11px; border-radius: 7px; font-size: 12.5px; }
+.seg button:hover { color: #fff; }
+.seg button.on { background: #efe6de; color: #1d1815; font-weight: 600; }
+#chrome .note { font-size: 13px; color: #d8cabe; line-height: 1.5; max-width: 1400px; }
+#chrome .note b { color: #fff; font-weight: 600; }
+#chrome .note .try { color: #e9c67a; }
+#stage { flex: 1; min-height: 0; display: flex; justify-content: center; align-items: flex-start; gap: 28px; padding: 14px 16px; overflow: hidden; }
+.holder { position: relative; flex: none; }
+.holder .cap { position: absolute; top: -2px; left: 0; transform: translateY(-100%); color: #cbbcb0; font-size: 12px; padding-bottom: 4px; }
+.frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; background: var(--bg); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.45); }
+.frame.phone { border-radius: 34px; border: 8px solid #0f0c0a; }
+
+/* ── Shared pieces ──────────────────────────────────────────────────────── */
+.topbar { height: 56px; flex: none; display: flex; align-items: center; gap: 6px; padding: 0 20px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.logo { font: 600 19px var(--display); margin-right: 18px; }
+.nav { padding: 8px 12px; border-radius: 8px; color: var(--fg2); font-size: 14.5px; }
+.nav.on { background: #eadfd7; color: var(--fg); font-weight: 500; }
+.cmdk { margin: 0 auto; width: 460px; background: var(--sunk); border-radius: 10px; padding: 8px 12px; color: var(--muted); }
+.label { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.btn { border: 1px solid var(--line2); background: var(--paper); border-radius: 8px; padding: 7px 13px; font-size: 13.5px; font-weight: 500; white-space: nowrap; }
+.btn:hover { background: var(--sunk); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.ghost { border-color: transparent; background: none; }
+.btn.sm { padding: 4px 9px; font-size: 12.5px; }
+.btn.icon { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--fg2); background: var(--paper); white-space: nowrap; }
+.chip .x { color: var(--muted); font-size: 13px; line-height: 1; }
+.photo { background-size: cover; background-position: center; }
+.seg2 { display: inline-flex; border: 1px solid var(--line2); border-radius: 8px; overflow: hidden; background: var(--paper); }
+.seg2 span { padding: 5px 12px; font-size: 12.5px; }
+.seg2 span + span { border-left: 1px solid var(--line2); }
+.seg2 span.on { background: var(--sunk); font-weight: 600; }
+.row { display: flex; align-items: center; gap: 8px; }
+.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.muted { color: var(--muted); }
+.pencil { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fg2); background: none; border: 0; padding: 4px 0; }
+.check { width: 18px; height: 18px; border: 1.5px solid var(--line2); border-radius: 5px; flex: none; background: var(--paper); margin-top: 2px; }
+.qty { display: inline-block; background: var(--brand-soft); color: #1f4b50; border: 1px solid #b6dfe2; border-radius: 7px; padding: 0 7px; font-size: .92em; font-weight: 600; margin-right: 6px; }
+.unread { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; font-size: 11px; font-weight: 600; color: #8a5a00; background: var(--hi); border-radius: 999px; padding: 1px 8px; white-space: nowrap; vertical-align: 1px; }
+.unread::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--hi-line); }
+.timer { display: inline-flex; gap: 4px; align-items: center; background: var(--sunk); border-radius: 6px; padding: 2px 7px; font-size: 11.5px; font-weight: 600; color: var(--fg2); }
+.uses { display: inline-flex; font-size: 11.5px; color: var(--brand); border: 1px dashed #9fcfd3; border-radius: 6px; padding: 1px 7px; background: var(--brand-50); }
+
+/* Editable text that looks like what it will be: a dashed line under it on hover, a box on focus. */
+.ed { border: 1px dashed transparent; border-radius: 8px; padding: 3px 6px; margin: -4px -7px; outline: none; background: transparent; width: calc(100% + 14px); resize: none; display: block; }
+.ed:hover { border-color: var(--line2); }
+.ed:focus { border-style: solid; border-color: var(--brand); background: var(--paper); box-shadow: 0 0 0 3px var(--brand-soft); }
+.ed.title { font: 600 34px/1.1 var(--display); letter-spacing: -.01em; }
+.ed.body { font-size: 15.5px; line-height: 1.55; color: var(--fg2); }
+.field { border: 1px solid var(--line2); background: var(--paper); border-radius: 8px; padding: 6px 9px; outline: none; width: 100%; }
+.field:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.mini { display: flex; flex-direction: column; gap: 3px; }
+.mini label { font-size: 11.5px; color: var(--muted); font-weight: 500; }
+
+/* ── Desktop: the page and the editor share one skeleton ─────────────────── */
+.cols { flex: 1; min-height: 0; display: grid; grid-template-columns: 455px 360px minmax(0,1fr); }
+.col { overflow: auto; min-height: 0; }
+.c1 { border-right: 1px solid var(--line); background: var(--paper); }
+.c2 { border-right: 1px solid var(--line); padding: 24px 24px 40px; }
+.c3 { padding: 24px 32px 40px; }
+.hero { height: 256px; position: relative; }
+.hero .over { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
+.hero .over .btn { background: rgba(255,252,249,.88); backdrop-filter: blur(6px); border-color: transparent; }
+.c1 .in { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+.facts .k { color: var(--muted); margin-right: 5px; }
+.facts b { font-weight: 500; }
+.fact-ed { display: inline-flex; align-items: center; gap: 6px; }
+.fact-ed input { width: 54px; text-align: center; padding: 4px 6px; }
+.stepper { display: inline-flex; align-items: center; gap: 4px; }
+.stepper .v { min-width: 70px; text-align: center; border: 1px solid var(--line2); border-radius: 999px; padding: 4px 12px; background: var(--paper); font-weight: 500; }
+.ing { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; font-size: 15px; line-height: 1.45; }
+.ing .note { display: block; font-size: 13px; color: var(--muted); }
+.ing b { font-weight: 600; }
+.erow { position: relative; border-radius: 10px; padding: 7px 8px 7px 26px; margin: 0 -8px 0 -26px; font-size: 15px; line-height: 1.45; cursor: pointer; }
+.erow:hover { background: var(--sunk); }
+.erow .grip { position: absolute; left: 8px; top: 9px; color: var(--line2); letter-spacing: -2px; opacity: 0; font-size: 12px; }
+.erow:hover .grip { opacity: 1; }
+.erow .note { color: var(--muted); }
+.erow.open { background: var(--paper); border: 1px solid var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); cursor: default; padding-bottom: 12px; margin-top: 4px; margin-bottom: 4px; }
+.erow .form { display: none; margin-top: 10px; gap: 8px; flex-direction: column; }
+.erow.open .form { display: flex; }
+.erow .grid4 { display: grid; grid-template-columns: 64px 1fr; gap: 8px; }
+.erow .orig { font-size: 12px; color: var(--muted); }
+.part-h { display: flex; align-items: center; gap: 8px; margin: 22px 0 6px; }
+.part-h .ed { font: 600 17px var(--display); width: auto; flex: 1; }
+.empty-part { font-size: 13px; color: var(--muted); padding: 4px 0; }
+.add-row { display: flex; gap: 6px; margin-top: 10px; }
+.step { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; font-size: 15.5px; line-height: 1.5; }
+.step .n { width: 24px; height: 24px; border-radius: 50%; background: var(--sunk); font-size: 12px; font-weight: 600; display: grid; place-items: center; flex: none; margin-top: 1px; }
+.step .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.step.edit { position: relative; }
+.step.edit:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.step.edit .more { position: absolute; right: 8px; top: 8px; opacity: 0; }
+.step.edit:hover .more { opacity: 1; }
+.step.edit .ed { font-size: 15.5px; line-height: 1.5; }
+.editbar { height: 54px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 20px; background: #fff7e8; border-bottom: 1px solid #f0dcb4; }
+.editbar .what { font-weight: 600; }
+.dirty { font-size: 12px; color: #8a5a00; background: var(--hi); border-radius: 999px; padding: 2px 9px; }
+.c-section { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* ── Phone ──────────────────────────────────────────────────────────────── */
+.pscroll { flex: 1; overflow: auto; position: relative; }
+.pphoto { height: 300px; position: sticky; top: 0; }
+.pphoto.short { height: 230px; }
+.glass { position: absolute; top: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,252,249,.88); backdrop-filter: blur(6px); display: grid; place-items: center; font-size: 18px; }
+.pbody { position: relative; z-index: 2; margin-top: -28px; background: var(--bg); border-radius: 26px 26px 0 0; box-shadow: 0 -10px 30px rgba(30,20,14,.14); padding: 22px 16px 120px; display: flex; flex-direction: column; gap: 14px; }
+.ptags { font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ptitle { font: 600 30px/1.08 var(--display); margin: 0; }
+.pfacts { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+.pfacts div { padding: 10px 6px; text-align: center; }
+.pfacts div + div { border-left: 1px solid var(--line); }
+.pfacts b { display: block; font-size: 16px; font-weight: 600; }
+.pfacts span { font-size: 11.5px; color: var(--muted); }
+.pfacts input { width: 100%; border: 0; background: none; text-align: center; font-size: 16px; font-weight: 600; outline: none; padding: 0; }
+.pfacts.edit div { border-bottom: 2px solid transparent; }
+.pfacts.edit div:focus-within { border-bottom-color: var(--brand); }
+.ptabs { position: sticky; top: 0; z-index: 3; display: grid; grid-template-columns: 1fr 1fr; background: #ece2da; border-radius: 12px; padding: 4px; margin: 0 -2px; }
+.ptabs button { border: 0; background: none; border-radius: 9px; padding: 9px; font-weight: 500; color: var(--fg2); }
+.ptabs button.on { background: var(--paper); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.plist { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 4px 14px; }
+.prow { display: flex; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.4; }
+.prow:last-child { border-bottom: 0; }
+.prow .chev { color: var(--muted); font-size: 18px; }
+.pbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--paper); border-top: 1px solid var(--line); padding: 10px 14px 22px; display: flex; gap: 10px; align-items: center; }
+.tabbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; height: 74px; background: var(--paper); border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; text-align: center; font-size: 11.5px; color: var(--fg2); }
+.tabbar .plus { width: 54px; height: 54px; margin: -26px auto 0; border-radius: 18px; background: var(--brand); color: #fff; display: grid; place-items: center; font-size: 28px; box-shadow: var(--shadow); }
+.cookbar { position: absolute; left: 14px; right: 14px; bottom: 88px; z-index: 5; display: flex; gap: 8px; }
+.cookbar .btn.primary { flex: 1; border-radius: 999px; padding: 13px; font-size: 16px; }
+.cookbar .round { width: 48px; height: 48px; border-radius: 50%; padding: 0; }
+.sheet-scrim { position: absolute; inset: 0; z-index: 8; background: rgba(30,20,14,.38); display: none; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--paper); border-radius: 22px 22px 0 0; padding: 10px 16px 26px; display: none; flex-direction: column; gap: 12px; box-shadow: 0 -10px 40px rgba(0,0,0,.2); }
+.sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line2); margin: 0 auto 4px; }
+.open-sheet .sheet, .open-sheet .sheet-scrim { display: flex; }
+.open-sheet .sheet-scrim { display: block; }
+.callout { position: absolute; z-index: 20; background: #e9c67a; color: #2a1f19; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+body.no-callouts .callout { display: none; }
+</style>
+</head>
+<body>
+<div id="chrome">
+  <div class="row">
+    <h1>Garnish · the editor mirrors the page</h1>
+    <div class="seg" id="size"><button data-v="desktop" class="on">Desktop 1440</button><button data-v="phone">Phone 390</button></div>
+    <div class="seg" id="which"><button data-v="page">Recipe page</button><button data-v="edit" class="on">Editor</button></div>
+    <div class="seg" id="callouts"><button data-v="on" class="on">Labels on</button><button data-v="off">Labels off</button></div>
+  </div>
+  <div class="note" id="note"></div>
+</div>
+<div id="stage"></div>
+
+<script>
+const IMG = "../../data/images/4c2dbacc-ba99-4044-9843-d48b4b5b9537.jpg";
+const PHOTO = `background-image:url('${IMG}'), linear-gradient(135deg,#c77d4b,#7a3d22 60%,#3d2015)`;
+const R = {
+  name: "Slow Cooked Shredded Beef Ragu Pasta",
+  description: "Recipe video above. Ragu is one of those recipes that really showcases the beauty of Italian cooking - everyday ingredients, fast prep, leave it to cook long and slow and you end up with a luscious dish that tastes like a million bucks.",
+  tags: ["Beef ragu", "Ragu", "Ragu Sauce", "Slow Cooked Shredded Beef Ragu"],
+  source: "https://www.recipetineats.com/slow-cooked-shredded-beef-ragu-pasta/",
+  facets: ["Main", "Italian", "Beef", "Slow cooker", "Winter"],
+  // [amount pill, food, note, original] — or [null, null, null, original] for a line read as text.
+  ing: [
+    [null, null, null, "1.25kg / 2.5 lb chuck beef (or other slow cooking beef cut, cut into equal 4 pieces (Note 1))"],
+    [null, null, null, "2 tsp cooking salt / kosher salt ((1 1/2 tsp table salt, 3 tsp flakes))"],
+    ["½ tsp", "black pepper", "", "1/2 tsp black pepper"],
+    ["3 tbsp", "olive oil", "separated", "3 tbsp olive oil (, separated)"],
+    ["3 cloves", "garlic", "minced", "3 cloves garlic (, minced)"],
+    [null, null, null, "1 onion (, diced)"],
+    ["1 cup", "carrots", "diced (Note 2)", "1 cup carrots (, diced (Note 2))"],
+    ["1 cup", "celery", "diced (Note 2)", "1 cup celery (, diced (Note 2))"],
+    [null, null, null, "800g / 28oz crushed canned tomatoes"],
+    [null, null, null, "3 tbsp tomato paste"],
+    [null, null, null, "2 beef bouillon cubes (, crumbled (Note 3))"],
+    [null, null, null, "1 cup red wine (, full bodied (like merlot, cabernet sauvignon), or sub with beef broth/stock)"],
+    [null, null, null, "1 1/2 cups water ((Note 3))"],
+    [null, null, null, "3/4 tsp dried thyme ( or 2 sprigs fresh thyme)"],
+    ["3", "bay leaves", "dried or fresh", "3 bay leaves (, dried or fresh)"],
+    [null, null, null, "1 lb /500g dried pappardelle (, or other pasta of choice (Note 4))"],
+    [null, null, null, "Freshly grated parmesan cheese or parmigiano reggiano"],
+    [null, null, null, "Fresh parsley (, finely chopped (optional))"],
+  ],
+  parts: [
+    { name: "Abbreviated recipe", steps: [["Season chuck beef.", ["beef", "salt", "pepper"]], ["Sear to brown.", ["olive oil"]], ["Remove."], ["Cook the soffrito.", ["garlic", "onion", "carrots", "celery"]], ["Add all crushed canned tomatoes, tomato paste, beef bouillon cubes, red wine, water, dried thyme, bay leaves, and browned chuck beef."], ["Slow cook 2 - 2 1/2 hrs.", [], "2 hrs"], ["Shred chuck beef."], ["Simmer in sauce 30 min.", [], "30 min"], ["Toss with al dente dried pappardelle with 1/2 cup pasta cooking water.", ["pappardelle"]], ["Serve with freshly grated parmesan cheese or parmigiano reggiano."]] },
+    { name: "Full recipe", steps: [["Pat chuck beef dry.", ["beef"]], ["Sprinkle with 2 tsp cooking salt / kosher salt and ½ tsp black pepper.", ["salt", "pepper"]], ["Heat 1 tbsp olive oil over high heat in a heavy based pot.", ["olive oil"]], ["Add chuck beef."], ["Sear each piece aggressively on all sides until very browned 3 - 5 minutes in total.", [], "5 min"]] },
+    { name: "To Serve", steps: [["Al dente pasta - Bring a very large pot of water with 1 tbsp of salt to the boil. Add pasta and cook for 1 minute less than the recommended cooking time.", ["pappardelle"]], ["Toss - When the pasta is ready, scoop out a mugful of pasta cooking water before draining."]] },
+  ],
+};
+// The recipe has 39 steps across its parts; the mockup draws the first few of each.
+const steps = 39;
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+// ── Pieces both layouts draw ───────────────────────────────────────────────
+function ingRead(i) {
+  const [qty, food, note, orig] = i;
+  if (!food) return `${esc(orig)}`;
+  return `<span class="qty">${qty}</span><b>${food}</b>${note ? `<span class="note">, ${note}</span>` : ""}`;
+}
+function facetChips(editable) {
+  return `<div class="row wrap" style="gap:6px">${R.facets.map((f) => `<span class="chip">${f}</span>`).join("")}<button class="btn ghost icon sm" title="Change course, cuisine and more">✎</button></div>`;
+}
+function kindSeg() { return `<div class="seg2" style="align-self:flex-start"><span>Rotation</span><span class="on">Weekend</span></div>`; }
+function callout(text, style) { return `<div class="callout" style="${style}">${text}</div>`; }
+
+// ── Desktop: the recipe page as it is today ────────────────────────────────
+function desktopPage() {
+  return `
+  <div class="topbar"><span class="logo">⸙ Garnish</span><span class="nav">Home</span><span class="nav">Plan</span><span class="nav">Shopping</span><span class="nav on">Recipes</span><span class="cmdk">Search, plan or add anything…</span><span class="nav">Settings</span></div>
+  <div class="cols">
+    <div class="col c1">
+      <div class="hero photo" style="${PHOTO}"></div>
+      <div class="in">
+        <div style="font:600 34px/1.1 var(--display)">${R.name}</div>
+        <div class="row"><button class="btn icon">♡</button><button class="btn icon">✎</button><button class="btn primary sm">Cook</button><button class="btn sm">Add to shopping list</button><button class="btn icon">⋯</button></div>
+        <div class="facts"><span><span class="k">Prep</span><b>20 min</b></span><span><span class="k">Cook</span><b>3 hr 30 min</b></span><span><span class="k">Total</span><b>3 hr 50 min</b></span></div>
+        <div class="muted" style="font-size:14px">Never made &nbsp; <span style="color:var(--fg)">Rate</span></div>
+        ${kindSeg()}
+        ${facetChips()}
+        <div style="font-size:15.5px;line-height:1.55;color:var(--fg2)">${R.description}</div>
+        <div class="row wrap" style="gap:5px">${R.tags.map((t) => `<span class="chip">${t}</span>`).join("")}</div>
+      </div>
+    </div>
+    <div class="col c2">
+      <div class="row" style="justify-content:space-between"><span class="label">Ingredients</span><span class="stepper"><button class="btn icon sm">−</button><span class="v">Serves 5</span><button class="btn icon sm">+</button></span></div>
+      <div style="margin-top:10px">${R.ing.map((i) => `<div class="ing"><span class="check"></span><span>${ingRead(i).replace(/<span class="qty">([^<]*)<\/span>/, "$1 ")}</span></div>`).join("")}</div>
+    </div>
+    <div class="col c3">
+      ${R.parts.map((p) => `<div class="label" style="margin:${p === R.parts[0] ? 0 : 22}px 0 12px">${p.name}</div>${p.steps.map((s, i) => `<div class="step"><span class="n">${i + 1}</span><div class="grow">${s[0]}${s[2] ? `<div class="meta"><span class="timer">◷ ${s[2]}</span></div>` : ""}</div></div>`).join("")}`).join("")}
+    </div>
+  </div>`;
+}
+
+// ── Desktop: the editor in the page's three columns ────────────────────────
+function desktopEdit() {
+  return `
+  <div class="topbar"><span class="logo">⸙ Garnish</span><span class="nav">Home</span><span class="nav">Plan</span><span class="nav">Shopping</span><span class="nav on">Recipes</span><span class="cmdk">Search, plan or add anything…</span><span class="nav">Settings</span></div>
+  <div class="editbar" style="position:relative">
+    <span class="what">Editing</span><span class="muted">${R.name}</span><span class="dirty">2 changes</span>
+    <span class="grow"></span>
+    <button class="btn icon" title="Restyle the steps, edit as JSON, delete">⋯</button>
+    <button class="btn ghost">Cancel</button><button class="btn primary">Save changes</button>
+    ${callout("Save and Cancel held at the top, where Edit was", "right:280px;top:15px")}
+  </div>
+  <div class="cols">
+    <div class="col c1" style="position:relative">
+      <div class="hero photo" style="${PHOTO}"><div class="over"><button class="btn sm">Change photo</button><button class="btn sm">Remove</button></div></div>
+      <div class="in">
+        <textarea class="ed title" rows="2">${R.name}</textarea>
+        <div class="facts" style="align-items:center">
+          <span class="fact-ed"><span class="k">Prep</span><input class="field" value="20"> min</span>
+          <span class="fact-ed"><span class="k">Cook</span><input class="field" value="210"> min</span>
+          <span class="muted" style="font-size:13px">Total 3 hr 50 min</span>
+        </div>
+        <div class="row"><span class="k muted" style="font-size:14px;width:44px">Serves</span><span class="stepper"><button class="btn icon sm">−</button><span class="v">5</span><button class="btn icon sm">+</button></span><button class="btn ghost sm">+ Makes (a yield)</button></div>
+        ${kindSeg()}
+        ${facetChips(true)}
+        <textarea class="ed body" rows="5">${R.description}</textarea>
+        <div class="row wrap" style="gap:5px">${R.tags.map((t) => `<span class="chip">${t}<span class="x">×</span></span>`).join("")}<input class="field" placeholder="Add a tag" style="width:120px;padding:3px 9px;border-radius:999px;font-size:12px"></div>
+        <div class="c-section"><span class="label">Source</span><input class="field" value="${R.source}"></div>
+        <div class="c-section"><div class="row"><span class="label grow">Notes</span><button class="btn ghost sm">+ Add note</button></div><span class="muted" style="font-size:13px">No notes yet</span></div>
+      </div>
+      ${callout("Same place as the page: photo, name, times, kind, facets, words, tags", "left:12px;top:12px")}
+      ${callout("Times, tags, source: were in a collapsed “Details” at the end", "left:12px;top:42px")}
+    </div>
+    <div class="col c2" style="position:relative">
+      <div class="row" style="justify-content:space-between;margin-top:14px"><span class="label">Ingredients · ${R.ing.length}</span><span class="row"><button class="btn ghost sm">Paste lines</button><button class="btn sm">+ Add</button></span></div>
+      <div style="margin-top:8px" id="d-ings">
+        ${R.ing.map((i, n) => `
+          <div class="erow${n === 6 ? " open" : ""}" data-n="${n}"><span class="grip">⋮⋮</span>
+            <div>${ingRead(i)}${!i[1] ? `<span class="unread">not read</span>` : ""}</div>
+            <div class="form">
+              <div class="grid4"><div class="mini"><label>Amount</label><input class="field" value="${i[0] ? i[0].split(" ")[0] : ""}"></div><div class="mini"><label>Unit</label><input class="field" value="${i[0] && i[0].includes(" ") ? i[0].split(" ")[1] : ""}"></div></div>
+              <div class="mini"><label>Food</label><input class="field" value="${i[1] ?? ""}" placeholder="Which food is this?"></div>
+              <div class="mini"><label>Note</label><input class="field" value="${i[2] ?? ""}"></div>
+              <div class="orig">From the page: “${esc(i[3])}”</div>
+              <div class="row"><button class="btn sm">Alternatives</button><button class="btn sm">Doesn’t scale</button><span class="grow"></span><button class="btn ghost sm" style="color:#b3412e">Remove</button></div>
+            </div>
+          </div>`).join("")}
+      </div>
+      ${R.parts.map((p) => `<div class="part-h"><input class="ed" value="${p.name}" style="font:600 15px var(--display)"></div><div class="empty-part">No ingredients of its own · <a style="color:var(--brand)">add</a></div>`).join("")}
+      ${callout("Each line read back as the page shows it; a click opens it", "left:24px;top:2px")}
+    </div>
+    <div class="col c3" style="position:relative">
+      <div class="row" style="justify-content:space-between;margin:14px 0 10px"><span class="label">Method · ${steps} steps</span><span class="row"><button class="btn ghost sm">Suggest links</button><button class="btn ghost sm">Paste steps</button></span></div>
+      ${R.parts.map((p) => `
+        <div class="part-h" style="margin-top:${p === R.parts[0] ? 4 : 26}px"><input class="ed" value="${p.name}"><button class="btn ghost icon sm" title="Move up, move down, remove the part">⋯</button></div>
+        ${p.steps.map((s, i) => `<div class="step edit"><span class="n">${i + 1}</span><div class="grow"><textarea class="ed" rows="${Math.ceil(s[0].length / 70)}">${s[0]}</textarea><div class="meta">${(s[1] || []).map((u) => `<span class="uses">${u}</span>`).join("")}${s[2] ? `<span class="timer">◷ ${s[2]}</span>` : ""}<span class="uses" style="border-style:dotted;color:var(--muted);background:none">+ link</span></div></div><button class="btn ghost icon sm more">⋯</button></div>`).join("")}
+        <button class="btn ghost sm" style="margin:-4px 0 0 34px">+ Add step</button>`).join("")}
+      <div style="margin-top:22px"><button class="btn">+ Add part</button></div>
+      ${callout("Steps as the page's cards, typed into where they sit", "left:32px;top:2px")}
+    </div>
+  </div>`;
+}
+
+// ── Phone: the recipe page as it is today ──────────────────────────────────
+function phonePage() {
+  return `
+  <div class="pscroll">
+    <div class="pphoto photo" style="${PHOTO}"><button class="glass" style="left:12px">‹</button><button class="glass" style="right:116px">♡</button><button class="glass" style="right:64px">✎</button><button class="glass" style="right:12px">⋯</button></div>
+    <div class="pbody">
+      <div class="ptags">${R.tags.join(" · ")}</div>
+      <h2 class="ptitle">${R.name}</h2>
+      <div style="font-size:15px;line-height:1.5;color:var(--fg2)">${R.description.slice(0, 150)}…</div>
+      <div class="pfacts"><div><b>20 min</b><span>Prep</span></div><div><b>3 hr 30</b><span>Cook</span></div><div><b>3 hr 50</b><span>Total</span></div></div>
+      <div class="row" style="justify-content:space-between">${kindSeg()}<span style="font-size:13px">Rate</span></div>
+      ${facetChips()}
+      <div class="ptabs"><button class="on">Ingredients</button><button>Method · ${steps} steps</button></div>
+      <div class="row"><span class="stepper"><button class="btn icon sm">−</button><span class="v">Serves 5</span><button class="btn icon sm">+</button></span></div>
+      <div class="plist">${R.ing.slice(0, 8).map((i) => `<div class="prow"><span class="check" style="margin:0"></span><span class="grow">${ingRead(i).replace(/<span class="qty">([^<]*)<\/span>/, "$1 ")}</span></div>`).join("")}</div>
+    </div>
+  </div>
+  <div class="cookbar"><button class="btn primary">▶ Start cooking</button><button class="btn round">🛒</button><button class="btn round">▦</button></div>
+  <div class="tabbar"><span>Home</span><span>Plan</span><span><div class="plus">+</div></span><span>Shopping</span><span style="color:var(--fg);font-weight:600">Recipes</span></div>`;
+}
+
+// ── Phone: the editor in the page's shape ──────────────────────────────────
+function phoneEdit(tab) {
+  const ings = `<div class="plist">${R.ing.map((i, n) => `<div class="prow" data-sheet="${n}" style="cursor:pointer"><span style="color:var(--line2);letter-spacing:-2px;font-size:12px">⋮⋮</span><span class="grow">${ingRead(i)}${!i[1] ? `<span class="unread">not read</span>` : ""}</span><span class="chev">›</span></div>`).join("")}</div>
+    <div class="row"><button class="btn grow">Paste lines</button><button class="btn grow">+ Add ingredient</button></div>`;
+  const method = R.parts.map((p) => `<div class="part-h" style="margin:6px 0 0"><input class="ed" value="${p.name}" style="font:600 17px var(--display)"><button class="btn ghost icon sm">⋯</button></div>
+      ${p.steps.map((s, i) => `<div class="step edit" style="margin:0"><span class="n">${i + 1}</span><div class="grow"><textarea class="ed" rows="${Math.ceil(s[0].length / 32)}" style="font-size:15px">${s[0]}</textarea><div class="meta">${(s[1] || []).map((u) => `<span class="uses">${u}</span>`).join("")}${s[2] ? `<span class="timer">◷ ${s[2]}</span>` : ""}</div></div></div>`).join("")}
+      <button class="btn ghost sm" style="align-self:flex-start">+ Add step</button>`).join("") + `<button class="btn">+ Add part</button>`;
+  return `
+  <div class="pscroll" id="pe-scroll">
+    <div class="pphoto short photo" style="${PHOTO}"><button class="glass" style="right:12px;top:auto;bottom:40px;width:auto;border-radius:999px;padding:0 14px;font-size:13px;font-weight:500">Change photo</button></div>
+    <div class="pbody" style="padding-bottom:110px">
+      <div class="row wrap" style="gap:5px">${R.tags.map((t) => `<span class="chip">${t}<span class="x">×</span></span>`).join("")}<span class="chip" style="border-style:dashed">+ tag</span></div>
+      <textarea class="ed" rows="3" style="font:600 30px/1.08 var(--display)">${R.name}</textarea>
+      <textarea class="ed body" rows="4" style="font-size:15px">${R.description}</textarea>
+      <div class="pfacts edit"><div><input value="20"><span>Prep min</span></div><div><input value="210"><span>Cook min</span></div><div><input value="5"><span>Serves</span></div></div>
+      ${kindSeg()}
+      ${facetChips(true)}
+      <div class="ptabs"><button class="${tab === "ing" ? "on" : ""}" data-tab="ing">Ingredients · ${R.ing.length}</button><button class="${tab === "method" ? "on" : ""}" data-tab="method">Method · ${steps}</button></div>
+      ${tab === "ing" ? ings : method}
+      <div class="c-section"><span class="label">Notes</span><button class="btn ghost sm" style="align-self:flex-start">+ Add note</button></div>
+      <div class="c-section"><span class="label">Source</span><input class="field" value="${R.source}"></div>
+    </div>
+  </div>
+  <div class="pbar"><button class="btn ghost">Cancel</button><span class="grow muted" style="font-size:12.5px">2 changes</span><button class="btn">Preview</button><button class="btn primary">Save</button></div>
+  <div class="sheet-scrim" data-close></div>
+  <div class="sheet" id="psheet"></div>`;
+}
+function sheetFor(n) {
+  const i = R.ing[n];
+  return `<div class="grab"></div>
+    <div style="font-size:15.5px">${ingRead(i)}</div>
+    <div class="grid4" style="display:grid;grid-template-columns:90px 1fr;gap:10px"><div class="mini"><label>Amount</label><input class="field" value="${i[0] ? i[0].split(" ")[0] : ""}"></div><div class="mini"><label>Unit</label><input class="field" value="${i[0] && i[0].includes(" ") ? i[0].split(" ")[1] : ""}"></div></div>
+    <div class="mini"><label>Food</label><input class="field" value="${i[1] ?? ""}" placeholder="Which food is this?"></div>
+    <div class="mini"><label>Note</label><input class="field" value="${i[2] ?? ""}"></div>
+    <div class="muted" style="font-size:12.5px">From the page: “${esc(i[3])}”</div>
+    <div class="row"><button class="btn sm">Alternatives</button><button class="btn sm">Doesn’t scale</button><span class="grow"></span><button class="btn ghost sm" style="color:#b3412e">Remove</button></div>
+    <button class="btn primary" data-close style="padding:12px">Done</button>`;
+}
+
+// ── The stage ──────────────────────────────────────────────────────────────
+const state = { size: "desktop", which: "edit", tab: "ing" };
+const NOTES = {
+  desktop: {
+    page: "<b>The recipe page today.</b> Three columns: the photo, the name, the times, the kind, what it is, the words and the tags; the ingredients; the method by part. <span class='try'>Flip to Editor: everything stays where it is.</span>",
+    edit: "<b>The editor, in the page's own three columns.</b> Each thing is changed where it is read: the name is typed over the title, the times under it, the steps into their cards. Ingredient lines read back as the page shows them, the unread ones marked, and a click opens one into its fields (<span class='try'>click any line</span>). Times, tags and source leave the collapsed “Details” at the foot; Rotation/Weekend and “what it is” join the editor. The half-width preview goes: the editor is the preview.",
+  },
+  phone: {
+    page: "",
+    edit: "<b>Left the page, right the editor, the same shape.</b> The photo, then the tags, the name, the words, the facts strip as three boxes to type in, the kind and what it is; then Ingredients and Method as the same two tabs, so 39 steps are one tab rather than a 9,400px scroll. <span class='try'>Tap a line</span> for its fields in a sheet from the bottom; <span class='try'>switch tabs</span>. Cancel, Preview and Save under the thumb.",
+  },
+};
+
+function render() {
+  const stage = document.getElementById("stage");
+  document.body.classList.toggle("no-callouts", state.callouts === "off");
+  document.getElementById("which").style.display = state.size === "phone" ? "none" : "";
+  document.getElementById("note").innerHTML = state.size === "phone" ? NOTES.phone.edit : NOTES.desktop[state.which];
+  const avail = { w: stage.clientWidth - 32, h: stage.clientHeight - 28 };
+  if (state.size === "desktop") {
+    const s = Math.min(1, avail.w / 1440, avail.h / 900);
+    stage.innerHTML = `<div class="holder" style="width:${1440 * s}px;height:${900 * s}px"><div class="frame" style="width:1440px;height:900px;transform:scale(${s})">${state.which === "edit" ? desktopEdit() : desktopPage()}</div></div>`;
+  } else {
+    const s = Math.min(1, (avail.w - 28) / (2 * 406), (avail.h - 16) / 860);
+    const ph = (inner, cap) => `<div class="holder" style="width:${406 * s}px;height:${860 * s}px;margin-top:16px"><div class="cap">${cap}</div><div class="frame phone" style="width:406px;height:860px;transform:scale(${s})">${inner}</div></div>`;
+    stage.innerHTML = ph(phonePage(), "Recipe page") + ph(phoneEdit(state.tab), "Editor");
+  }
+}
+function seg(id, key) {
+  document.getElementById(id).addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    state[key] = b.dataset.v;
+    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle("on", x === b));
+    render();
+  });
+}
+seg("size", "size"); seg("which", "which"); seg("callouts", "callouts");
+document.getElementById("stage").addEventListener("click", (e) => {
+  const row = e.target.closest(".erow");
+  if (row && !e.target.closest(".form")) { document.querySelectorAll(".erow.open").forEach((r) => r !== row && r.classList.remove("open")); row.classList.toggle("open"); return; }
+  const tab = e.target.closest("[data-tab]");
+  if (tab) { state.tab = tab.dataset.tab; render(); return; }
+  const pr = e.target.closest("[data-sheet]");
+  if (pr) { const f = pr.closest(".frame"); f.querySelector("#psheet").innerHTML = sheetFor(+pr.dataset.sheet); f.classList.add("open-sheet"); return; }
+  if (e.target.closest("[data-close]")) e.target.closest(".frame").classList.remove("open-sheet");
+});
+window.addEventListener("resize", render);
+render();
+</script>
+</body>
+</html>
