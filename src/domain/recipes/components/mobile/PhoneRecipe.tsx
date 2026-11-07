@@ -10,6 +10,7 @@ import { formatDateStamp } from "../../../../lib/dates";
 import { recipeImageUrl } from "../../../../lib/images";
 import { yieldLine } from "../../ingredient";
 import type { Recipe } from "../../recipe";
+import { FacetDetails } from "../facets/FacetDetails";
 import { KindToggle } from "../KindToggle";
 import { timeStats } from "../recipe/timeStats";
 import { RecipeFacts } from "./RecipeFacts";
@@ -155,6 +156,7 @@ export function PhoneRecipe({ recipe, madeCount, onRate, actions, servings, ingr
             </Button>
           )}
         </div>
+        <FacetDetails id={recipe.id} name={recipe.name} facets={recipe.facets} />
 
         <div className="flex flex-col gap-4" data-testid="recipe-columns">
           <RecipeTabs

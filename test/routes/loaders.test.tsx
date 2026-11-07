@@ -13,6 +13,7 @@ import { listUnits } from "../../src/api/rpc/units";
 import { type SettingsData, type settingsRoute as SettingsRoute, SettingsSearch } from "../../src/app/features/settings/routes/settings";
 import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/plan/planner";
+import type { FacetCount } from "../../src/domain/recipes/components/facets/facetSearch";
 import { nextServings, type Recipe, type RecipeSummary, type ShelfCounts, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/recipes/reference";
 import type { recipeEdit as EditRoute } from "../../src/domain/recipes/routes/edit";
@@ -805,7 +806,13 @@ describe("loader data types match the domain schemas", () => {
     // ...and each route hands its component the same shape (`types` is the
     // route's phantom type bag; `useLoaderData()` returns `types.loaderData`).
     expectTypeOf<(typeof IndexRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeListData>();
-    expectTypeOf<RecipeListData>().toEqualTypeOf<{ recipes: RecipeSummary[]; tags: TagUsage[]; foods: FoodSummary[]; shelves: ShelfCounts }>();
+    expectTypeOf<RecipeListData>().toEqualTypeOf<{
+      recipes: RecipeSummary[];
+      tags: TagUsage[];
+      foods: FoodSummary[];
+      shelves: ShelfCounts;
+      facetCounts: FacetCount[];
+    }>();
     expectTypeOf<(typeof ViewRoute)["types"]["loaderData"]>().toEqualTypeOf<RecipeViewData>();
     expectTypeOf<RecipeViewData>().toEqualTypeOf<{ recipe: Recipe; timeline: TimelineEvent[]; subRecipes: SubRecipe[]; aiAvailable: boolean }>();
     expectTypeOf<(typeof EditRoute)["types"]["loaderData"]>().toEqualTypeOf<{ recipe: Recipe; units: Unit[]; tags: Tag[] }>();
@@ -834,6 +841,13 @@ describe("loader data types match the domain schemas", () => {
       foods?: string[] | undefined;
       favourite?: boolean | undefined;
       shelf?: "rotation" | "weekend" | "try" | undefined;
+      course?: string[] | undefined;
+      meal?: string[] | undefined;
+      cuisine?: string[] | undefined;
+      diet?: string[] | undefined;
+      mainIngredient?: string[] | undefined;
+      method?: string[] | undefined;
+      season?: string[] | undefined;
       sort?: "name" | "created" | "updated" | "lastMade" | "rating" | "random" | undefined;
       dir?: "asc" | "desc" | undefined;
       seed?: string | undefined;

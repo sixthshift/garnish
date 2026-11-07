@@ -11,6 +11,7 @@ import { formatDateStamp } from "../../../../lib/dates";
 import { recipeImageUrl } from "../../../../lib/images";
 import { yieldLine } from "../../ingredient";
 import type { Recipe } from "../../recipe";
+import { FacetDetails } from "../facets/FacetDetails";
 import { KindToggle } from "../KindToggle";
 import { StatIcon } from "./StatIcon";
 import { timeStats } from "./timeStats";
@@ -121,6 +122,7 @@ export function RecipeHeader({ recipe, actions, onRate, madeCount, showImage = t
           </div>
 
           <KindToggle id={recipe.id} kind={recipe.kind} />
+          <FacetDetails id={recipe.id} name={recipe.name} facets={recipe.facets} />
           {recipe.description.trim() !== "" && <p className="text-fg-normal">{recipe.description}</p>}
           <EmptyBoundary
             isEmpty={recipe.tags.length === 0}
