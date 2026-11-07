@@ -43,7 +43,7 @@ describe("app shell", () => {
     expect(html).toContain(text);
     // Both layouts' navs are in the shell; until hydration the variants decide which shows (decisions.md row 206).
     expect(html.match(/aria-label="Main"/g)).toHaveLength(2);
-    // A desktop's top bar names the four places and Settings; a phone's tab bar the four, each under its icon, and the +.
+    // A desktop's top bar names the four places and Settings; a phone's tab bar the four, each under its icon, and the sprig.
     for (const label of ["Home", "Plan", "Shopping", "Recipes", "Settings"]) expect(html).toContain(`>${label}</a>`);
     const tabBar = html.match(/<nav aria-label="Main" class="fixed[\s\S]*?<\/nav>/)?.[0] ?? "";
     expect(tabBar.match(/<a /g)).toHaveLength(4);

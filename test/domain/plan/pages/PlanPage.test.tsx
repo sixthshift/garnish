@@ -106,7 +106,7 @@ describe("the week", () => {
     expect(html).toContain('aria-label="Add to Monday 14 September"');
     expect(html).toContain('aria-label="Add to Sunday 20 September"');
     expect(html.match(/aria-label="Add to /g)).toHaveLength(7);
-    // The search and the meal chips live in the sheet the + opens.
+    // The search and the meal chips live in the sheet the sprig opens.
     expect(html).not.toContain('data-testid="plan-add"');
     expect(html).not.toContain('data-testid="plan-meal-picker"');
     expect(html).not.toContain("<input");

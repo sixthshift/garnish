@@ -1,9 +1,9 @@
-// A phone's tab bar and its + (decisions.md row 208): Home, Plan, the +,
-// Shopping and Recipes, and the + a sheet that plans a recipe on a day,
+// A phone's tab bar and its sprig (decisions.md rows 208, 218): Home, Plan, the sprig,
+// Shopping and Recipes, and the sprig a sheet that plans a recipe on a day,
 // adds a line to the shopping list, opens a recipe or goes to a page.
 import { createRecipe, expect, test, unique } from "./fixtures";
 
-test("the tab bar holds the four places and the +, and Settings is reached from the sheet", async ({ page, open }) => {
+test("the tab bar holds the four places and the sprig, and Settings is reached from the sheet", async ({ page, open }) => {
   await open("/");
   const bar = page.getByRole("navigation", { name: "Main" });
   await expect(bar.getByRole("link")).toHaveText(["Home", "Plan", "Shopping", "Recipes"]);
@@ -19,7 +19,7 @@ test("the tab bar holds the four places and the +, and Settings is reached from 
   await expect(page.getByRole("heading", { name: "Settings", exact: true }).first()).toBeVisible();
 });
 
-test("“<recipe> tonight” from the + puts the recipe on today's plan", async ({ page, open }) => {
+test("“<recipe> tonight” from the sprig puts the recipe on today's plan", async ({ page, open }) => {
   const name = unique("Phone Ragu");
   await createRecipe(page, open, { name, servings: 4, ingredients: ["500 g beef chuck"], steps: ["Braise the beef."] });
 

@@ -9,7 +9,7 @@ import { useHydrated } from "../../../lib/useHydrated";
 // place to navigate to, so it lives as a button in that page's header.
 // `end` items sit at the far end of a desktop's top bar (Settings is chrome, not
 // a sibling of Recipes); a phone's tab bar leaves them out and reaches Settings
-// by Home's gear or the + sheet (decisions.md row 208).
+// by Home's gear or the sprig's sheet (decisions.md rows 208, 218).
 export const navItems = [
   { to: "/", label: "Home", exact: true, end: false },
   { to: "/plan", label: "Plan", exact: false, end: false },

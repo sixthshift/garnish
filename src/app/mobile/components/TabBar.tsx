@@ -1,18 +1,19 @@
 import { cn } from "@sixthshift/design-system/utils";
 import { Fragment, type ReactNode, useState } from "react";
+import { LogoMark } from "../../components/Logo";
 import { type NavItem, navItems, PlaceLink } from "../../components/layout/Nav";
 import { CommandSheet } from "./command/CommandSheet";
 
 // The tab bar's real height, so `--app-bar` means what it says: its top rule,
 // its `pt-1.5`, one item (a 1.75rem icon, a 0.125rem gap and a 1rem label) and
-// the bottom padding that grows into the home indicator. The + rises above the
-// bar and adds nothing to it. Change it with the bar's items or padding.
+// the bottom padding that grows into the home indicator. The sprig rises above
+// the bar and adds nothing to it. Change it with the bar's items or padding.
 export const APP_BAR_HEIGHT = "[--app-bar:calc(3.25rem_+_1px_+_max(0.375rem,env(safe-area-inset-bottom)))]";
 
 /** A phone's places: the four, without the `end` ones (Settings is a gear on Home, decisions.md row 208). */
 const places = navItems.filter((item) => !item.end);
 
-/** Where the + sits: in the middle, under the thumb. */
+/** Where the sprig sits: in the middle, under the thumb. */
 const middle = Math.floor(places.length / 2);
 
 const icon = (path: ReactNode) => (
@@ -50,17 +51,19 @@ const icons: Record<NavItem["to"], ReactNode> = {
 };
 
 /**
- * A phone's places, under the thumb (decisions.md row 208): Home, Plan, the +
- * that opens the command sheet, Shopping and Recipes. `z-app-bar` lifts the
+ * A phone's places, under the thumb (decisions.md row 208): Home, Plan, the
+ * sprig that opens the command sheet (row 218), Shopping and Recipes. `z-app-bar` lifts the
  * bar over page content (a card's heart is positioned too, and would
  * otherwise paint on top of it) and keeps it under sheets, popovers and
  * modals, which take the design system's higher layers.
  *
  * The current place takes the toggles' selected fill behind its icon, as a
- * desktop's top bar marks its place, not brand: the + is the bar's one
- * primary action and has brand to itself (design-language rule 5). The mark
- * reads the router `Link`'s `data-status`, which the shell before hydration
- * never has, so it marks nothing (row 169). The + does nothing until then.
+ * desktop's top bar marks its place, not brand: the sprig is the bar's one
+ * primary action and has brand to itself (design-language rule 5). It is
+ * garnish's mark rather than a +, since the sheet plans, adds, opens and
+ * goes, and adding is only one of those. The place's mark reads the router
+ * `Link`'s `data-status`, which the shell before hydration never has, so it
+ * marks nothing (row 169). The sprig does nothing until then.
  */
 export function TabBar({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
@@ -82,11 +85,9 @@ export function TabBar({ className }: { className?: string }) {
                 aria-label="Plan, add or find"
                 aria-haspopup="dialog"
                 onClick={() => setOpen(true)}
-                className="-mt-5 grid size-14 place-items-center justify-self-center rounded-[1.2rem] bg-bg-brand text-fg-on-brand shadow-lg outline-offset-2 active:scale-95"
+                className="-mt-5 grid size-14 place-items-center justify-self-center rounded-full bg-bg-brand text-fg-on-brand shadow-lg outline-offset-2 active:scale-95"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" className="size-6.5">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
+                <LogoMark size={32} decorative />
               </button>
             )}
             <PlaceLink

@@ -85,8 +85,11 @@ export type LogoMarkProps = {
   style?: CSSProperties;
 };
 
-/** The bare sprig, no ground. Takes its colour from `currentColor`. */
-export function LogoMark({ size, className, style }: LogoMarkProps) {
+/**
+ * The bare sprig, no ground. Takes its colour from `currentColor`.
+ * `decorative` hides it from assistive tech, for a control that names itself.
+ */
+export function LogoMark({ size, className, style, decorative = false }: LogoMarkProps & { decorative?: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -95,8 +98,9 @@ export function LogoMark({ size, className, style }: LogoMarkProps) {
       height={size}
       className={className}
       style={style}
-      role="img"
-      aria-label="Garnish"
+      role={decorative ? undefined : "img"}
+      aria-label={decorative ? undefined : "Garnish"}
+      aria-hidden={decorative || undefined}
     >
       <Sprig scale={SCALE_FULL} />
     </svg>

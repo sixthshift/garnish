@@ -1,5 +1,5 @@
-// A phone's tab bar and its + (decisions.md row 208): Home, Plan, the +,
-// Shopping and Recipes; the + opens the command sheet, which plans a recipe
+// A phone's tab bar and its sprig (decisions.md rows 208, 218): Home, Plan, the sprig,
+// Shopping and Recipes; the sprig opens the command sheet, which plans a recipe
 // on a day, adds a line to the shopping list or opens a recipe, then closes
 // with a toast, through the same rpc as a desktop's command bar.
 import { toastStore } from "@sixthshift/design-system/overlay";
@@ -54,7 +54,7 @@ async function openSheet(user: ReturnType<typeof userEvent.setup>) {
   return screen.findByRole("dialog", { name: "Plan, add or find" });
 }
 
-test("the tab bar is Home, Plan, the +, Shopping and Recipes, with Home marked", async () => {
+test("the tab bar is Home, Plan, the sprig, Shopping and Recipes, with Home marked", async () => {
   await app();
   const bar = screen.getByRole("navigation", { name: "Main" });
   const slots = [...bar.querySelectorAll("a, button")].map((slot) => slot.getAttribute("aria-label") ?? slot.textContent);
@@ -63,7 +63,7 @@ test("the tab bar is Home, Plan, the +, Shopping and Recipes, with Home marked",
   expect(within(bar).getByRole("link", { current: "page" })).toHaveTextContent("Home");
 });
 
-test("the + opens the sheet with its box focused and examples from the plan", async () => {
+test("the sprig opens the sheet with its box focused and examples from the plan", async () => {
   const user = userEvent.setup();
   await app();
   expect(screen.queryByRole("dialog")).toBeNull();
