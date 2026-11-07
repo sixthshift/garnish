@@ -43,7 +43,7 @@ export type SearchPillProps = {
 export function SearchPill({ query, onQueryChange, onSubmit, total, filterCount, onOpenFilters }: SearchPillProps) {
   return (
     <div
-      className="sticky bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+0.75rem)] z-content-sticky flex items-center gap-2"
+      className="sticky bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+0.75rem)] z-content-sticky flex w-full items-center gap-2 sm:mx-auto sm:max-w-xl"
       data-testid="search-pill"
       data-print="hide"
     >

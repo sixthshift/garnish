@@ -69,7 +69,8 @@ export function TonightHero({
       aria-labelledby="tonight"
       className={cn(
         "relative flex shrink-0 flex-col justify-end overflow-hidden rounded-xl",
-        onPhoto ? "aspect-[4/5] text-white shadow-lg" : "border border-border-subtle bg-bg-normal"
+        // 4:5 fills a phone; wider than that it would run past the screen, so from `sm` it turns landscape.
+        onPhoto ? "aspect-[4/5] text-white shadow-lg sm:aspect-[3/2] sm:max-h-[60dvh]" : "border border-border-subtle bg-bg-normal"
       )}
     >
       {onPhoto && (

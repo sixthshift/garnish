@@ -15,10 +15,12 @@ const PRIORITY_CARDS = 4;
  * its top-left corner and the heart in its top-right. The grid is the phone's
  * only view: the list view mode is a desktop's now, since the photo is what a
  * hand picks a dinner by and two columns already show six or more at once.
+ * From `sm` (an iPad upright, a phone sideways) the columns fill in about
+ * 13rem each, three or four, rather than two cards half a screen tall.
  */
 export function PhotoGrid({ recipes, marking }: { recipes: readonly RecipeSummary[]; marking: boolean }) {
   return (
-    <ul className="grid grid-cols-2 gap-3" aria-label="Recipes" data-testid="photo-grid">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(13rem,1fr))]" aria-label="Recipes" data-testid="photo-grid">
       {recipes.map((recipe, index) => (
         <li key={recipe.id} className="flex flex-col gap-2">
           <PhotoCard recipe={recipe} priority={index < PRIORITY_CARDS} />

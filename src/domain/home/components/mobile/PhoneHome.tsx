@@ -62,7 +62,7 @@ export function PhoneHome({ today, monday, days, nextDays, items, recipes, busy,
   };
 
   return (
-    <Page className="gap-5">
+    <Page width="focus" className="gap-5">
       <header className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col">
           <Muted as="p" className="text-sm">

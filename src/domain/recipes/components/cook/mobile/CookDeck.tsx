@@ -120,7 +120,9 @@ export function CookDeck({ name, recipeId, cards, index, total, pills, current, 
   return (
     // The frame's colour shows round the card, which keeps the theme's own tokens: paper in light, its card in dark.
     <div className="flex h-dvh flex-col overflow-hidden bg-[var(--color-earth-950)] text-fg-normal" data-toasts="top" data-cook-layout="cards">
-      <header className={cn("flex flex-col gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3", DARK_FRAME)}>
+      {/* From `sm` (an iPad upright, a phone sideways) the header, the card and the foot keep a phone's
+          column, centred in the dark frame, so a step's line stays readable and Next under the hand. */}
+      <header className={cn("flex w-full flex-col gap-2 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:mx-auto sm:max-w-2xl", DARK_FRAME)}>
         <div className="flex items-center gap-3">
           {exit}
           <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -170,7 +172,7 @@ export function CookDeck({ name, recipeId, cards, index, total, pills, current, 
         <div
           ref={box}
           className={cn(
-            "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
+            "flex min-h-0 w-full flex-1 flex-col overflow-y-auto overscroll-contain sm:mx-auto sm:max-w-2xl",
             onCard && "rounded-[1.5rem] bg-bg-normal px-5 py-6 shadow-lg",
             offset === 0 && "transition-transform duration-200 motion-reduce:transition-none"
           )}
@@ -181,7 +183,7 @@ export function CookDeck({ name, recipeId, cards, index, total, pills, current, 
         </div>
       </main>
 
-      <footer className={cn("flex flex-col gap-2.5 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]", DARK_FRAME)}>
+      <footer className={cn("flex w-full flex-col gap-2.5 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:mx-auto sm:max-w-2xl", DARK_FRAME)}>
         {/* Timers started on any card: they outlive the card that started them. The current card's own count down on it. */}
         <TimerStrip recipeId={recipeId} size="cook" hideStep={card?.kind === "step" ? card.step.id : undefined} />
         <div className="flex gap-2">

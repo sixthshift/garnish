@@ -32,8 +32,8 @@ export function NewRecipePage() {
   const [imported, setImported] = useState<Imported | null>(null);
   const [leaving, setLeaving] = useState(false);
   const [blank] = useState(emptyDraft);
-  // The editor, on Check or typed by hand, sits beside its preview across a desktop's width (decisions.md row 207).
-  const editorWidth = useLayout() === "desktop" ? "full" : "page";
+  // The editor, on Check or typed by hand, sits beside its preview across a desktop's width (decisions.md row 207); a phone's is one column.
+  const editorWidth = useLayout() === "desktop" ? "full" : "focus";
 
   const choose = (kind: SourceKind | null) => void navigate({ search: kind === null ? {} : { source: kind }, replace: true });
   const discard = () => {

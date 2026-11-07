@@ -9,8 +9,8 @@ const route = getRouteApi("/recipes/$slug/edit");
 export function EditRecipePage() {
   const { recipe, units, tags } = route.useLoaderData();
   const { servings } = route.useSearch();
-  // A desktop lays the editor out beside its preview, across the width (decisions.md row 207).
-  const width = useLayout() === "desktop" ? "full" : "page";
+  // A desktop lays the editor out beside its preview, across the width (decisions.md row 207); a phone's is one column, read top to bottom.
+  const width = useLayout() === "desktop" ? "full" : "focus";
   return (
     <Page width={width}>
       <PageHeader title="Edit recipe" />

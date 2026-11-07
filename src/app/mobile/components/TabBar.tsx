@@ -66,10 +66,11 @@ export function TabBar({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
+      {/* Wider than a phone the bar still spans the screen, but its five places keep together in the middle. */}
       <nav
         aria-label="Main"
         className={cn(
-          "fixed inset-x-0 bottom-0 z-app-bar grid grid-cols-5 items-start border-t border-border-normal bg-bg-normal px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]",
+          "fixed inset-x-0 bottom-0 z-app-bar grid grid-cols-5 items-start justify-center border-t border-border-normal sm:grid-cols-[repeat(5,minmax(0,7.5rem))] bg-bg-normal px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]",
           className
         )}
       >
