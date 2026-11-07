@@ -39,7 +39,7 @@ test("Rotation and the course set in the editor are saved with the recipe, and n
   await user.click(about.getByRole("radio", { name: "Rotation" }));
   await user.click(about.getByRole("button", { name: "Add course, cuisine and more" }));
   const sheet = within(screen.getByTestId("facet-sheet"));
-  await user.click(sheet.getByRole("button", { name: "Main", exact: true }));
+  await user.click(sheet.getByRole("button", { name: /^Main$/ }));
   await user.click(sheet.getByRole("button", { name: "Thai" }));
   await user.click(screen.getByRole("button", { name: "Done" }));
   // The chips show in the editor, not as links that would leave it.
