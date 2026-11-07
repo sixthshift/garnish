@@ -8,8 +8,9 @@
 // `import ai from "…/ai/provider"; ai.ask(…)`. Tests and the labs bring their
 // own (`apiProvider(fakeFetch)`, or a fake that answers from a fixture).
 
+import aiSettings from "../../../db/models/ai/repo";
 import diagnostics, { type Diagnostics } from "../../core/diagnostics";
-import { AI_PROVIDERS, type AiClient, AiError, type AiProviderName } from "../client";
+import { AI_PROVIDERS, type AiClient, AiError, type AiProviderName, readChosenModels } from "../client";
 import { apiProvider } from "./api";
 import { claudeCodeProvider } from "./claudeCode";
 
@@ -95,5 +96,8 @@ export function serverClient(): AiClient {
     ask: (request) => current().ask(request),
   };
 }
+
+// A model chosen in Settings › AI comes before the environment's (decisions.md row 215).
+readChosenModels((use) => aiSettings.model(use));
 
 export default withDiagnostics(serverClient());

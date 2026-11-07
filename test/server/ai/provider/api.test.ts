@@ -188,10 +188,11 @@ describe("the model names", () => {
   });
 
   test("each use is marked by whether the list names its model", () => {
-    expect(checkModels(["models/a", "b"], { import: "a", restyle: "b", planner: "c" })).toEqual([
+    expect(checkModels(["models/a", "b"], { import: "a", restyle: "b", planner: "c", cook: "b" })).toEqual([
       { use: "import", model: "a", listed: true },
       { use: "restyle", model: "b", listed: true },
       { use: "planner", model: "c", listed: false },
+      { use: "cook", model: "b", listed: true },
     ]);
   });
 });
@@ -222,6 +223,7 @@ describe("check", () => {
         { use: "import", model: "m", listed: true },
         { use: "restyle", model: "m", listed: true },
         { use: "planner", model: "p", listed: true },
+        { use: "cook", model: "gemini-flash-lite-latest", listed: false },
       ],
       offered: [{ name: "m" }, { name: "p" }],
     });

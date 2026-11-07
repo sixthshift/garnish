@@ -119,7 +119,7 @@ const NO_KEY = "No model is configured here. Set AI_API_KEY to use this.";
  */
 export function apiProvider(fetcher: Fetcher = (url, init) => fetch(url, init)): AiClient {
   const model = (use: AiUse) => modelFor(use, DEFAULT_API_MODEL);
-  const models = (): Record<AiUse, string> => ({ import: model("import"), restyle: model("restyle"), planner: model("planner") });
+  const models = (): Record<AiUse, string> => ({ import: model("import"), restyle: model("restyle"), planner: model("planner"), cook: model("cook") });
 
   return {
     configured: () => apiSettings().apiKey !== "",

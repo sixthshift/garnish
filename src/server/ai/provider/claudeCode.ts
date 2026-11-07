@@ -197,7 +197,7 @@ export function claudeCodeFailure(cause: unknown): AiError {
 export function claudeCodeProvider(ports: { ask?: ClaudeCodeAsk; inspect?: ClaudeCodeInspect } = {}): AiClient {
   const { ask = generate, inspect: look = inspect } = ports;
   const model = (use: AiUse) => modelFor(use, DEFAULT_CLAUDE_CODE_MODEL);
-  const models = (): Record<AiUse, string> => ({ import: model("import"), restyle: model("restyle"), planner: model("planner") });
+  const models = (): Record<AiUse, string> => ({ import: model("import"), restyle: model("restyle"), planner: model("planner"), cook: model("cook") });
 
   return {
     configured: () => claudeCodeSettings().token !== "",

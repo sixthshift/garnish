@@ -224,6 +224,7 @@ describe("check", () => {
         { use: "import", model: "haiku", listed: true },
         { use: "restyle", model: "claude-opus-5-5", listed: true },
         { use: "planner", model: "claude-mystery", listed: false },
+        { use: "cook", model: "haiku", listed: true },
       ],
       offered,
     });

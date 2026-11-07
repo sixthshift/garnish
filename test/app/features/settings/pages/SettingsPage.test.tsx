@@ -237,6 +237,14 @@ describe("AiTab render", () => {
     ],
   };
 
+  test("the cooking assistant's model is a choice here, over AI_COOK_MODEL (row 215)", () => {
+    const html = renderToString(<AiTab status={{ ...status, models: [...status.models, { use: "cook" as const, model: "gemini-flash-latest" }] }} />);
+    expect(html).toContain("Cooking assistant");
+    expect(html).toContain("AI_COOK_MODEL");
+    expect(html).toContain("gemini-flash-latest");
+    expect(html).toContain(">Change<");
+  });
+
   test("shows the configuration as rows, naming each variable, and never the key", () => {
     const html = renderToString(<AiTab status={status} />);
     for (const name of ["AI_API_KEY", "AI_BASE_URL", "AI_IMPORT_MODEL", "AI_RESTYLE_MODEL", "AI_PLANNER_MODEL"]) expect(html).toContain(name);

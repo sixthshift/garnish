@@ -25,10 +25,14 @@ export class AiError extends Error {
 /** The same shape the URL import injects, so a test can drive the HTTP path with a fake `fetch`. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
-/** The three things the app asks a model for. Each may name its own model. */
-export type AiUse = "import" | "restyle" | "planner";
+/** The four things the app asks a model for: the import, the restyle, the planner and the cooking assistant (row 215). Each may name its own model. */
+export type AiUse = "import" | "restyle" | "planner" | "cook";
 
-export const AI_USES: readonly AiUse[] = ["import", "restyle", "planner"];
+export const AI_USES: readonly AiUse[] = ["import", "restyle", "planner", "cook"];
+
+/** The uses whose model can be chosen in Settings rather than the environment alone (decisions.md row 215). */
+export const CHOOSABLE_USES = ["cook"] as const satisfies readonly AiUse[];
+export type ChoosableUse = (typeof CHOOSABLE_USES)[number];
 
 /**
  * One question: the prompt as a single user turn, the answer's JSON Schema and
@@ -96,7 +100,7 @@ export type AiStatus = {
 export interface AiClient {
   /** Whether a model can be asked at all: the gate for every feature that asks one. */
   configured(): boolean;
-  /** The model a use asks: its own variable (`AI_IMPORT_MODEL`, `AI_RESTYLE_MODEL`, `AI_PLANNER_MODEL`) over the provider's default. */
+  /** The model a use asks: one chosen in Settings (the cook's alone), its own variable (`AI_IMPORT_MODEL`, …), the provider's default. */
   model(use: AiUse): string;
   /** What Settings shows. */
   status(): AiStatus;
@@ -107,11 +111,36 @@ export interface AiClient {
 }
 
 /** The variable that names each use's model. One per use, so no use's model follows another's. */
-export const MODEL_VARIABLES: Record<AiUse, string> = { import: "AI_IMPORT_MODEL", restyle: "AI_RESTYLE_MODEL", planner: "AI_PLANNER_MODEL" };
+export const MODEL_VARIABLES: Record<AiUse, string> = {
+  import: "AI_IMPORT_MODEL",
+  restyle: "AI_RESTYLE_MODEL",
+  planner: "AI_PLANNER_MODEL",
+  cook: "AI_COOK_MODEL",
+};
 
-/** A use's model: its own variable, or the provider's default. Shared by every provider, so each variable means one thing. */
+/** Where a model chosen in Settings is read from; the server points it at `ai_setting` (provider/index.ts). None until then, so tests and the labs see the environment alone. */
+let chosenModel: (use: AiUse) => string | null = () => null;
+
+/** Point `modelFor` at the models chosen in Settings. Returns the reader it replaced, for a test to put back. */
+export function readChosenModels(reader: (use: AiUse) => string | null): (use: AiUse) => string | null {
+  const was = chosenModel;
+  chosenModel = reader;
+  return was;
+}
+
+/**
+ * A use's model: the one chosen in Settings, else its own variable, else the
+ * provider's default. Shared by every provider, so each means one thing. A
+ * reader that throws (no database yet) is no choice.
+ */
 export function modelFor(use: AiUse, fallback: string): string {
-  return (process.env[MODEL_VARIABLES[use]] ?? "").trim() || fallback;
+  let chosen: string | null = null;
+  try {
+    chosen = chosenModel(use);
+  } catch {
+    chosen = null;
+  }
+  return (chosen ?? "").trim() || (process.env[MODEL_VARIABLES[use]] ?? "").trim() || fallback;
 }
 
 /** Re-exported for the restyle pass and the tests; the function itself is the domain's. */

@@ -94,6 +94,7 @@ function seedRecipe() {
 
 test("the migrations create every table in architecture.md", () => {
   expect(tables()).toEqual([
+    "ai_setting",
     "aisle",
     "alternative",
     "alternative_item",

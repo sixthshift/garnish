@@ -2,16 +2,82 @@ import { Badge } from "@sixthshift/design-system/badge";
 import { Button } from "@sixthshift/design-system/button";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
+import { Select } from "@sixthshift/design-system/select";
+import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { testAiConnection } from "../../../../../api/rpc/ai";
-import type { AiStatus, CheckedModel, ConnectionCheck, OfferedModel } from "../../../../../server/ai/client";
+import { chooseAiModel, testAiConnection } from "../../../../../api/rpc/ai";
+import { toastError } from "../../../../../lib/toast";
+import { type AiStatus, type CheckedModel, type ConnectionCheck, type OfferedModel, offeredNames } from "../../../../../server/ai/client";
 import { SettingRow, SettingsColumn, SettingsPanel } from "../SettingsPanel";
 
 const USE_LABELS: Record<CheckedModel["use"], { label: string; variable: string }> = {
   import: { label: "Recipe import", variable: "AI_IMPORT_MODEL" },
   restyle: { label: "Restyle", variable: "AI_RESTYLE_MODEL" },
   planner: { label: "Planner", variable: "AI_PLANNER_MODEL" },
+  cook: { label: "Cooking assistant", variable: "AI_COOK_MODEL" },
 };
+
+/** The choice's value for "ask the environment": AI_COOK_MODEL, then the provider's default. */
+const DEFAULT_CHOICE = "__default__";
+
+/**
+ * The cooking assistant's model, chosen here from the models the provider
+ * offers (decisions.md row 215). Change asks the provider for its list — no
+ * tokens — then a choice writes straight through; Default goes back to
+ * AI_COOK_MODEL and then the provider's own default.
+ */
+export function CookModelChoice({ model, offered: known, disabled }: { model: string; offered: readonly OfferedModel[] | null; disabled: boolean }) {
+  const router = useRouter();
+  const [offered, setOffered] = useState<readonly OfferedModel[] | null>(known);
+  const [busy, setBusy] = useState(false);
+  const list = offered ?? known;
+
+  const load = async () => {
+    setBusy(true);
+    try {
+      const result = await testAiConnection();
+      if (result.ok) setOffered(result.offered);
+      else toastError("Could not list the models", new Error(result.message));
+    } catch (error) {
+      toastError("Could not list the models", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const choose = async (value: string) => {
+    setBusy(true);
+    try {
+      await chooseAiModel({ data: { use: "cook", model: value === DEFAULT_CHOICE ? null : value } });
+      await router.invalidate();
+    } catch (error) {
+      toastError("Could not choose that model", error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (list === null) {
+    return (
+      <>
+        <code className="truncate text-sm">{model}</code>
+        <Button type="button" variant="outline" intent="neutral" size="sm" loading={busy} disabled={disabled} onClick={() => void load()}>
+          Change
+        </Button>
+      </>
+    );
+  }
+  const names = offeredNames(list);
+  const options = [
+    { value: DEFAULT_CHOICE, label: "Default" },
+    // The model asked now, even when the list does not name it, so the choice shows what is in use.
+    ...(names.includes(model) ? [] : [{ value: model, label: model }]),
+    ...list.map((offer) => ({ value: offer.name, label: offer.name })),
+  ];
+  return (
+    <Select aria-label="Cooking assistant model" options={options} value={model} disabled={busy || disabled} onValueChange={(value) => void choose(value)} />
+  );
+}
 
 type Connected = Extract<ConnectionCheck, { ok: true }>;
 
@@ -27,7 +93,7 @@ export function OfferedModels({ offered, models }: { offered: readonly OfferedMo
   return (
     <SettingsPanel
       title="Models it offers"
-      lead="Any of these names can go in AI_IMPORT_MODEL, AI_RESTYLE_MODEL or AI_PLANNER_MODEL; where a name stands for a full id, either works."
+      lead="Any of these names can go in AI_IMPORT_MODEL, AI_RESTYLE_MODEL, AI_PLANNER_MODEL or AI_COOK_MODEL, and the cooking assistant's can be chosen above; where a name stands for a full id, either works."
     >
       {offered.length === 0 && <SettingRow label="No models listed" description="The provider answered with an empty list." />}
       {offered.map((model) => (
@@ -132,8 +198,24 @@ export function AiTab({ status }: { status: AiStatus }) {
           </SettingRow>
         )}
         {status.models.map((row) => (
-          <SettingRow key={row.use} label={USE_LABELS[row.use].label} description={<code>{USE_LABELS[row.use].variable}</code>}>
-            <code className="truncate text-sm">{row.model}</code>
+          <SettingRow
+            key={row.use}
+            label={USE_LABELS[row.use].label}
+            description={
+              row.use === "cook" ? (
+                <>
+                  Chosen here, else <code>{USE_LABELS[row.use].variable}</code>
+                </>
+              ) : (
+                <code>{USE_LABELS[row.use].variable}</code>
+              )
+            }
+          >
+            {row.use === "cook" ? (
+              <CookModelChoice model={row.model} offered={result?.ok ? result.offered : null} disabled={!status.configured} />
+            ) : (
+              <code className="truncate text-sm">{row.model}</code>
+            )}
             {listed(row.use) === true && (
               <Badge variant="soft" intent="success">
                 Listed
