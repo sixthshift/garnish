@@ -16,7 +16,16 @@ export type CookingValue = {
   marks: ReadonlyMap<string, AdjustmentMark>;
   /** What a changed ingredient read before tonight, at the page's servings. */
   was: ReadonlyMap<string, string>;
+  /** Keep what a timer showed for the review: one run again after it finished says the step needed longer. */
+  noteTimer?: (text: string) => void;
 };
+
+/** What a timer run again says, for the review. Pure. */
+export function timerAgainNote(position: number, duration: string, stepText: string): string {
+  const words = stepText.trim().replace(/\s+/g, " ");
+  const quoted = words.length > 60 ? `${words.slice(0, 57)}…` : words;
+  return `Ran the ${duration} timer on step ${position} again once it finished (“${quoted}”): it needed longer.`;
+}
 
 const CookingContext = createContext<CookingValue | null>(null);
 

@@ -5,7 +5,7 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { startCooking } from "../../../api/rpc/cooking";
+import { noteCooking, startCooking } from "../../../api/rpc/cooking";
 import { setRating } from "../../../api/rpc/recipes";
 import { SubRecipesProvider } from "../../../components/recipe/SubRecipes";
 import { AddToShoppingButton } from "../../../components/shopping/AddToShoppingButton";
@@ -94,8 +94,10 @@ export function RecipePage() {
     const rows = new Map(before.parts.flatMap((part) => part.ingredients.map((row) => [row.id, row] as const)));
     const marks = adjustmentMarks(adjustments);
     const was = new Map([...marks.keys()].flatMap((id) => (rows.has(id) ? [[id, formatIngredient(rows.get(id)!)] as const] : [])));
-    return { nowStepId, marks, was };
-  }, [cooking, stored, choices, requested, adjustments, nowStepId]);
+    const noteTimer = (text: string) =>
+      void mutate(() => noteCooking({ data: { recipeId: stored.id, text, origin: "timer" } })).catch((error) => toastError("Could not note the timer", error));
+    return { nowStepId, marks, was, noteTimer };
+  }, [cooking, stored, choices, requested, adjustments, nowStepId, mutate]);
   const [noting, setNoting] = useState(false);
   const resumable = session !== null && !isStale(session);
 

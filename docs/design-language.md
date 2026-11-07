@@ -28,7 +28,7 @@ Decision 97. Before it the page and every card were the same tone, so nothing li
 - **Target:** the four `/recipes/new` options, which take `cardVariants({ interactive: true })` and are the one thing on that page you are meant to press.
 - **Not a card:** a sequence of rows inside a container; a control; a form field; an empty state.
 
-A step is the deliberate exception — one card each, because cook mode shows one at a time and shares the component (decision 66, surface refined by 97).
+A step is the deliberate exception — one card each, so the step being cooked can be marked as one (decision 66, surface refined by 97; row 214).
 
 ## 3. One density per page
 
@@ -50,7 +50,7 @@ Mixing two on one surface is the "rhythm jolt" `density.md` exists to prevent. A
 - `<Page width="focus">` — `max-w-3xl`, for one column read top to bottom.
 - `<PageHeader title actions>` — title left, actions right, wrapping on a phone.
 
-Cook mode is fullscreen and sets its own. Decision 98.
+The recipe page while cooked from is fullscreen and draws its own header line. Decision 98, row 214.
 
 ## 5. Colour is identity and state, nothing else
 

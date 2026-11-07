@@ -9,8 +9,9 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { cn } from "@sixthshift/design-system/utils";
 import { getRouteApi, Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { discardCooking, finishCooking } from "../../../api/rpc/cooking";
+import { suggestCooking } from "../../../api/rpc/cookingAssistant";
 import { setRating } from "../../../api/rpc/recipes";
 import { createTimelineEvent } from "../../../api/rpc/timeline";
 import { ImageUpload } from "../../../components/ui/ImageUpload";
@@ -22,7 +23,7 @@ import { toastError } from "../../../lib/toast";
 import { todayIso } from "../../plan/plan";
 import { SuggestionCard } from "../components/cooking/SuggestionCard";
 import { saveCookAndClearTicks } from "../components/recipe/saveCook";
-import { type Decision, onceNote, viewSuggestion } from "../cooking";
+import { type Decision, onceNote, type Suggestion, viewSuggestion } from "../cooking";
 
 const route = getRouteApi("/recipes/$slug/review");
 
@@ -39,12 +40,44 @@ export function startingComment(once: string, notes: readonly { text: string; or
  * writes what was kept and ends the session; Not now goes back to cooking.
  */
 export function ReviewPage() {
-  const { recipe, session, suggestions } = route.useLoaderData();
+  const { recipe, session, suggestions: taken, aiAvailable } = route.useLoaderData();
+  // Tonight's changes until the model's suggestions arrive, then those (which include every change taken).
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(taken);
+  const [reading, setReading] = useState(session !== null && aiAvailable);
+  const [readProblem, setReadProblem] = useState<string | null>(null);
   const navigate = useNavigate();
   const router = useRouter();
   const servingsAt = session?.servings ?? (recipe.recipeServings > 0 ? recipe.recipeServings : null);
 
-  const [decisions, setDecisions] = useState<Record<string, Decision>>(() => Object.fromEntries(suggestions.map((s) => [s.adjustment.id, s.decision])));
+  const [decisions, setDecisions] = useState<Record<string, Decision>>(() => Object.fromEntries(taken.map((s) => [s.adjustment.id, s.decision])));
+  // Choices made before the suggestions arrived are kept; the rest start where the model says.
+  const [touched, setTouched] = useState<ReadonlySet<string>>(new Set());
+
+  const sessionId = session?.id ?? null;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: asked once per session; `touched` is read as it stands when the answer lands.
+  useEffect(() => {
+    if (sessionId === null || !aiAvailable) return;
+    let current = true;
+    suggestCooking({ data: { recipeId: recipe.id } })
+      .then((result) => {
+        if (!current) return;
+        setSuggestions(result.suggestions);
+        setReadProblem(result.problem);
+        setDecisions((was) => {
+          const next: Record<string, Decision> = {};
+          for (const suggestion of result.suggestions) {
+            const id = suggestion.adjustment.id;
+            next[id] = touched.has(id) && was[id] !== undefined ? was[id] : suggestion.decision;
+          }
+          return next;
+        });
+      })
+      .catch((cause) => current && setReadProblem(cause instanceof Error ? cause.message : String(cause)))
+      .finally(() => current && setReading(false));
+    return () => {
+      current = false;
+    };
+  }, [sessionId, aiAvailable, recipe.id]);
   const chosen = suggestions.map((suggestion) => ({ adjustment: suggestion.adjustment, decision: decisions[suggestion.adjustment.id] ?? suggestion.decision }));
   const autoComment = startingComment(onceNote(chosen), session?.notes ?? []);
   const [comment, setComment] = useState<string | null>(null);
@@ -130,9 +163,21 @@ export function ReviewPage() {
         <Heading as="h2" id="suggested-heading" className="text-xl">
           Suggested changes
         </Heading>
-        {suggestions.length > 0 && <Muted className="text-sm">from tonight's changes</Muted>}
+        {!reading && suggestions.length > 0 && (
+          <Muted className="text-sm">{aiAvailable && readProblem === null ? "from tonight's cooking" : "from tonight's changes"}</Muted>
+        )}
       </div>
-      {suggestions.length === 0 ? (
+      {reading && (
+        <Muted as="p" className="text-sm" data-testid="reading-tonight" aria-live="polite">
+          Reading tonight's cooking for what to change…
+        </Muted>
+      )}
+      {readProblem !== null && (
+        <Message intent="warning" size="sm">
+          The assistant could not suggest changes, so these are tonight's changes as they were. {readProblem}
+        </Message>
+      )}
+      {suggestions.length === 0 && !reading ? (
         <Muted as="p" className="text-sm" data-testid="no-suggestions">
           Nothing was changed tonight, so the recipe stays as it is.
         </Muted>
@@ -146,7 +191,10 @@ export function ReviewPage() {
               suggestion={suggestion}
               view={view}
               decision={decisions[suggestion.adjustment.id] ?? suggestion.decision}
-              onDecide={(decision) => setDecisions((was) => ({ ...was, [suggestion.adjustment.id]: decision }))}
+              onDecide={(decision) => {
+                setTouched((was) => new Set(was).add(suggestion.adjustment.id));
+                setDecisions((was) => ({ ...was, [suggestion.adjustment.id]: decision }));
+              }}
             />
           );
         })
@@ -207,7 +255,7 @@ export function ReviewPage() {
         data-testid="review-save-bar"
       >
         <span className="min-w-0 flex-1 text-sm text-fg-normal">{summary}</span>
-        <Button variant="solid" intent="brand" disabled={busy} onClick={() => void save()} className="mobile:h-12 mobile:flex-1 mobile:max-w-48">
+        <Button variant="solid" intent="brand" disabled={busy || reading} onClick={() => void save()} className="mobile:h-12 mobile:flex-1 mobile:max-w-48">
           {busy ? "Saving…" : "Save"}
         </Button>
       </div>

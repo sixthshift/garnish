@@ -43,3 +43,23 @@ test("an unreadable answer is malformed; an unreachable model fails", async () =
   await expect(runAssistant({ recipe, context, history: [], message: "?" }, 1, { ai: fake("{") })).rejects.toMatchObject({ kind: "malformed" });
   await expect(runAssistant({ recipe, context, history: [], message: "?" }, 1, { ai: fake(new Error("down")) })).rejects.toBeInstanceOf(AiError);
 });
+
+test("the review's suggestions are asked of the cook model, and a failure is an AiError", async () => {
+  const { runSuggestions } = await import("../../../src/server/ai/cooking");
+  const session = {
+    id: "00000000-0000-4000-8000-000000000300",
+    recipeId: "r",
+    servings: null,
+    choices: null,
+    adjustments: [],
+    notes: [],
+    messages: [],
+    startedAt: "2026-11-07T08:00:00.000Z",
+    updatedAt: "2026-11-07T08:00:00.000Z",
+  };
+  const ai = fake(JSON.stringify({ suggestions: [{ kind: "tip", stepId: STEP, tip: "Lid on.", summary: "Lid on", why: "It dried out.", decision: "keep" }] }));
+  const suggestions = await runSuggestions(recipe, session, { ai });
+  expect(ai.asked[0]).toMatchObject({ model: "model-for-cook", schemaName: "cooking_suggestions" });
+  expect(suggestions).toMatchObject([{ adjustment: { kind: "tip", tip: "Lid on." }, why: "It dried out.", decision: "keep" }]);
+  await expect(runSuggestions(recipe, session, { ai: fake("x") })).rejects.toMatchObject({ kind: "malformed" });
+});

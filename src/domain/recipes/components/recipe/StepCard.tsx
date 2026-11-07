@@ -7,7 +7,7 @@ import { chipTimerId } from "../../../../lib/timers";
 import { useStepTick } from "../../../../lib/useTicks";
 import { useTimers } from "../../../../lib/useTimers";
 import { durationsIn, type Ingredient, type Step } from "../../recipe";
-import { useCooking } from "../cooking/CookingContext";
+import { timerAgainNote, useCooking } from "../cooking/CookingContext";
 import { TonightMark } from "../cooking/TonightMark";
 import { IngredientRow } from "./IngredientRow";
 import { LIT, useStepLink } from "./StepLinks";
@@ -145,7 +145,11 @@ export function StepCard({ recipeId, step, position, ingredients = [], partId }:
                     label={duration.text}
                     timer={timer && { text: timer.text, done: timer.done, paused: !timer.done && timer.endsAt === null }}
                     // The strip and the notification at zero name the step, not the duration.
-                    onStart={(seconds, matched) => start({ id, label: step.text.trim() || matched, seconds })}
+                    onStart={(seconds, matched) => {
+                      // Run again once done, while cooking: evidence the step's time is short, kept for the review (row 214).
+                      if (timer?.done) cooking?.noteTimer?.(timerAgainNote(position, duration.text, step.text));
+                      start({ id, label: step.text.trim() || matched, seconds });
+                    }}
                     onPause={() => pause(id)}
                     onResume={() => resume(id)}
                   />

@@ -2,9 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import cooking from "../../db/models/cooking/repo";
 import recipes from "../../db/models/recipe/repo";
-import { adjustmentSchema, type CookMessage, withAdjustments } from "../../domain/recipes/cooking";
+import { adjustmentSchema, type CookMessage, type Suggestion, sessionSuggestions, withAdjustments } from "../../domain/recipes/cooking";
 import { scaledForServings, withChoices } from "../../domain/recipes/recipe";
-import { runAssistant } from "../../server/ai/cooking";
+import { runAssistant, runSuggestions } from "../../server/ai/cooking";
+import ai from "../../server/ai/provider";
 import { NotFound } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 
@@ -62,4 +63,31 @@ export const askCooking = createServerFn({ method: "POST" })
     cooking.say(data.recipeId, turns);
     if (answer.note !== "") cooking.note(data.recipeId, { id: crypto.randomUUID(), text: answer.note, origin: "cook", at });
     return cooking.get(data.recipeId)!;
+  });
+
+export const SuggestCookingInput = z.object({ recipeId: z.uuid() });
+
+/**
+ * The review's suggested changes from the model (decisions.md row 214), from
+ * the whole evening. `fromModel` says whether the model wrote them: with no
+ * model, or when it fails, they are the adjustments taken, at their defaults,
+ * and `problem` says why when it failed.
+ */
+export const suggestCooking = createServerFn({ method: "POST" })
+  .middleware([notFoundMiddleware])
+  .validator(SuggestCookingInput)
+  .handler(async ({ data }): Promise<{ suggestions: Suggestion[]; fromModel: boolean; problem: string | null }> => {
+    const stored = recipes.getById(data.recipeId);
+    if (!stored) throw new NotFound("recipe", data.recipeId);
+    const session = cooking.get(data.recipeId);
+    if (session === null) throw new NotFound("cooking session", data.recipeId);
+    const fallback = sessionSuggestions(session);
+    // An evening with nothing in it has nothing to read.
+    const empty = session.adjustments.length === 0 && session.notes.length === 0 && session.messages.length === 0;
+    if (!ai.configured() || empty) return { suggestions: fallback, fromModel: false, problem: null };
+    try {
+      return { suggestions: await runSuggestions(stored, session), fromModel: true, problem: null };
+    } catch (cause) {
+      return { suggestions: fallback, fromModel: false, problem: cause instanceof Error ? cause.message : String(cause) };
+    }
   });

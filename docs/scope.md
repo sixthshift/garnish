@@ -6,7 +6,7 @@
 - Recipe editor: parts, ingredients, steps, tags, servings, times, image.
 - Import from a URL: schema.org `ld+json` where the page has it, an OpenGraph stub where it does not, reviewed before it is saved. No per-site scrapers, no AI (decisions rows 57, 58).
 - Scaling with fixed-quantity support.
-- Cook view: per-part, wake lock, scale control.
+- Cooking from the recipe page: the page folded to one header line, Now on the step being cooked, an assistant, a review of tonight's changes, wake lock (decisions.md row 214).
 - PWA: installable, offline read of cached recipes.
 - Foods, units, aisles: managed lists, autocomplete in the editor. Units seeded, metric default.
 - Rating, notes, last made.
