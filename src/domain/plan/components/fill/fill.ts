@@ -1,12 +1,15 @@
 import type { ProposedWeek } from "../../../../server/ai/planner";
 import type { RecipeSummary } from "../../../recipes/recipe";
-import { addDays, type Meal, type PlanDay, weekDates } from "../../plan";
+import { addDays, type Meal, type PlanDay, slotPool, weekDates } from "../../plan";
 
 // Filling a week: the weeknights from the recipes the household marked
 // Rotation, the ones not had for longest first, and the weekend chosen from
 // those marked Weekend and the ones never made (decisions.md row 192). With a
 // model configured its proposal makes the first pass instead, and the same
-// choices follow (row 194). Pure; the page holds the choices and writes them.
+// choices follow (row 194). Every pool here is of dinners, so each is first
+// narrowed to what can be a dinner on its own (`slotPool`, row 209): a main,
+// a soup, a salad or a recipe whose course is not said, never a sauce. Pure;
+// the page holds the choices and writes them.
 
 /** Why a weeknight got the recipe it did, as the row says it. */
 export type NightReason = { kind: "carried" } | { kind: "never" } | { kind: "weeks"; weeks: number };
@@ -48,7 +51,7 @@ export function missedRecipes(days: readonly PlanDay[], recipes: ReadonlyMap<str
  * week) are left out.
  */
 export function rotationPool(recipes: readonly RecipeSummary[], exclude: ReadonlySet<string>): RecipeSummary[] {
-  return recipes
+  return slotPool(recipes, "dinner")
     .filter((recipe) => recipe.kind === "rotation" && !exclude.has(recipe.id))
     .sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? "") || a.name.localeCompare(b.name));
 }
@@ -62,7 +65,7 @@ export function rotationPool(recipes: readonly RecipeSummary[], exclude: Readonl
 export function swapPool(recipes: readonly RecipeSummary[], exclude: ReadonlySet<string>): RecipeSummary[] {
   const rotation = rotationPool(recipes, exclude);
   if (rotation.length > 0) return rotation;
-  return recipes
+  return slotPool(recipes, "dinner")
     .filter((recipe) => recipe.kind !== "weekend" && !exclude.has(recipe.id))
     .sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? "") || a.name.localeCompare(b.name));
 }
@@ -96,7 +99,8 @@ export function swapNight(nights: readonly (string | null)[], index: number, poo
  * since made first, then the ones never made that are not in the rotation,
  * newest first. `recipes` arrives newest first.
  */
-export function weekendShelf(recipes: readonly RecipeSummary[]): RecipeSummary[] {
+export function weekendShelf(all: readonly RecipeSummary[]): RecipeSummary[] {
+  const recipes = slotPool(all, "dinner");
   const weekend = recipes.filter((recipe) => recipe.kind === "weekend").sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? ""));
   const toTry = recipes.filter((recipe) => recipe.lastMade === null && recipe.kind === null);
   return [...weekend, ...toTry];

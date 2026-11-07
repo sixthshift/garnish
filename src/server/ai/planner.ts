@@ -79,6 +79,7 @@ export function libraryRecipe(summary: RecipeSummary): LibraryRecipe {
     rating: summary.rating,
     favourite: summary.favourite,
     kind: summary.kind,
+    facets: summary.facets,
     lastMade: summary.lastMade === null ? null : summary.lastMade.slice(0, 10),
   };
 }

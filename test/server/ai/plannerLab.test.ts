@@ -1,6 +1,7 @@
 // The planner lab's pure half: flags, the week they resolve to, and the report. The CLI itself is one wiring block and is not run here.
 import { describe, expect, test } from "vitest";
 import type { LibraryRecipe, ProposalCheck, ProposalInput } from "../../../src/domain/plan/planner";
+import { noFacets } from "../../../src/domain/recipes/recipe";
 import { AiError } from "../../../src/server/ai/client";
 import {
   DAY_TOKENS,
@@ -88,8 +89,8 @@ test("rulesFromText is one statement per line, blanks dropped", () => {
 });
 
 const library: LibraryRecipe[] = [
-  { id: "r1", name: "Beef ragu", tags: [], totalMinutes: 60, rating: 4, favourite: true, kind: null, lastMade: null },
-  { id: "r2", name: "Laksa", tags: [], totalMinutes: 30, rating: null, favourite: false, kind: null, lastMade: "2026-09-01" },
+  { id: "r1", name: "Beef ragu", tags: [], totalMinutes: 60, rating: 4, favourite: true, kind: null, facets: noFacets(), lastMade: null },
+  { id: "r2", name: "Laksa", tags: [], totalMinutes: 30, rating: null, favourite: false, kind: null, facets: noFacets(), lastMade: "2026-09-01" },
 ];
 
 describe("proposalRows and proposalTable", () => {

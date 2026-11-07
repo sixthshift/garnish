@@ -14,7 +14,7 @@ import {
   weekendShelf,
 } from "../../../../../src/domain/plan/components/fill/fill";
 import { type PlanDay, planEntrySchema } from "../../../../../src/domain/plan/plan";
-import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import type { Facets, RecipeSummary } from "../../../../../src/domain/recipes/recipe";
 import { noFacets } from "../../../../../src/domain/recipes/recipe";
 
 const MONDAY = "2026-09-14";
@@ -171,4 +171,39 @@ test("Swap draws from the rotation, or from every recipe not marked Weekend whil
   expect(swapPool([soup, lamb, dal], new Set()).map((r) => r.name)).toEqual(["Dal"]);
   expect(swapPool([soup, lamb], new Set()).map((r) => r.name)).toEqual(["Soup"]);
   expect(swapPool([soup, lamb], new Set([soup.id]))).toEqual([]);
+});
+
+const course = (...values: Facets["course"]): Facets => ({ ...noFacets(), course: values });
+
+test("a sauce in the rotation is never planned for a dinner: not by the fill, not by Swap, not on the weekend shelf", () => {
+  const salsa = recipe("Salsa verde", { kind: "rotation", facets: course("sauce") });
+  const stock = recipe("Chicken stock", { kind: "weekend", facets: course("stock") });
+  const side = recipe("Greens", { kind: null, facets: course("side") });
+  const dal = recipe("Dal", { kind: "rotation", lastMade: "2026-08-01T00:00:00.000Z", facets: course("main") });
+  const laksa = recipe("Laksa", { kind: "rotation", lastMade: "2026-09-01T00:00:00.000Z", facets: course("soup") });
+  const lamb = recipe("Lamb", { kind: "weekend", facets: course("main") });
+  const all = [salsa, stock, side, dal, laksa, lamb];
+
+  const pool = rotationPool(all, new Set());
+  expect(pool.map((r) => r.name)).toEqual(["Dal", "Laksa"]);
+  expect(fillNights(5, [], pool)).toEqual([dal.id, laksa.id, null, null, null]);
+  expect(swapNight([dal.id, laksa.id], 0, swapPool(all, new Set()))).toEqual([dal.id, laksa.id]);
+  expect(weekendShelf(all).map((r) => r.name)).toEqual(["Lamb"]);
+  // With the rotation's mains excluded, Swap's fallback still leaves the sauce and the side out.
+  expect(swapPool(all, new Set([dal.id, laksa.id])).map((r) => r.name)).toEqual([]);
+});
+
+test("a library with no course said plans exactly as it did before facets", () => {
+  const recipes = [
+    recipe("Laksa", { kind: "rotation", lastMade: "2026-09-01T00:00:00.000Z" }),
+    recipe("Dal", { kind: "rotation", lastMade: "2026-07-01T00:00:00.000Z" }),
+    recipe("Kofta", { kind: "rotation" }),
+    recipe("Lamb", { kind: "weekend", lastMade: "2026-05-01T00:00:00.000Z" }),
+    recipe("Eggplant"),
+    recipe("Porridge", { facets: { ...noFacets(), meal: ["breakfast"] } }),
+  ];
+  const byMade = (a: RecipeSummary, b: RecipeSummary) => (a.lastMade ?? "").localeCompare(b.lastMade ?? "") || a.name.localeCompare(b.name);
+  expect(rotationPool(recipes, new Set())).toEqual(recipes.filter((r) => r.kind === "rotation").sort(byMade));
+  expect(swapPool(recipes.slice(3), new Set()).map((r) => r.name)).toEqual(["Eggplant", "Porridge"]);
+  expect(weekendShelf(recipes).map((r) => r.name)).toEqual(["Lamb", "Eggplant", "Porridge"]);
 });

@@ -27,7 +27,7 @@ import { readOtherMeals, readServings, toggleMeal, writeOtherMeals, writeServing
 import { ReadyStep } from "../components/fill/ReadyStep";
 import { WeekendStep } from "../components/fill/WeekendStep";
 import { WeeknightsStep } from "../components/fill/WeeknightsStep";
-import { type Meal, weekLabel } from "../plan";
+import { type Meal, slotPool, weekLabel } from "../plan";
 
 const route = getRouteApi("/plan/fill");
 
@@ -52,7 +52,8 @@ export function PlanFillPage() {
 
   const byId = useMemo(() => new Map(recipes.map((recipe) => [recipe.id, recipe])), [recipes]);
   const open = useMemo(() => openDays(monday, days, today), [monday, days, today]);
-  const carried = useMemo(() => missedRecipes(previousDays, byId, today), [previousDays, byId, today]);
+  // What did not happen comes back as a weeknight dinner, so only what can be one (a missed sauce stays missed).
+  const carried = useMemo(() => slotPool(missedRecipes(previousDays, byId, today), "dinner"), [previousDays, byId, today]);
   const planned = useMemo(
     () => new Set([...previousDays, ...days].flatMap((day) => day.entries.flatMap((entry) => (entry.recipe ? [entry.recipe.id] : [])))),
     [previousDays, days]

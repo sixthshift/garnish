@@ -12,10 +12,11 @@ import {
   parseProposalAnswer,
   proposalPrompt,
 } from "../../../../src/domain/plan/planner";
-import { libraryLine, ProposalAnswerEntrySchema, ProposalAnswerSchema } from "../../../../src/domain/plan/planner/proposal";
+import { FACET_LINE, facetsLine, libraryLine, ProposalAnswerEntrySchema, ProposalAnswerSchema } from "../../../../src/domain/plan/planner/proposal";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 
 function recipe(id: string, name: string, over: Partial<LibraryRecipe> = {}): LibraryRecipe {
-  return { id, name, tags: [], totalMinutes: null, rating: null, favourite: false, kind: null, lastMade: null, ...over };
+  return { id, name, tags: [], totalMinutes: null, rating: null, favourite: false, kind: null, facets: noFacets(), lastMade: null, ...over };
 }
 
 const INPUT: ProposalInput = {
@@ -111,6 +112,24 @@ describe("the prompt", () => {
     expect(libraryLine(recipe("r6", "Lamb", { kind: "weekend", favourite: true }))).toBe("r6 | Lamb |  | fav | weekend | never made");
   });
 
+  test("the library line carries the facets said, layer by layer, leaving the empty ones out", () => {
+    const facets = { ...noFacets(), course: ["main" as const], cuisine: ["thai" as const, "vietnamese" as const], diet: ["vegetarian" as const] };
+    expect(facetsLine(noFacets())).toBe("");
+    expect(facetsLine({ ...noFacets(), mainIngredient: ["tofu"], season: ["winter"] })).toBe("main ingredient: tofu; season: winter");
+    expect(libraryLine(recipe("r7", "Pad see ew", { kind: "rotation", facets }))).toBe(
+      "r7 | Pad see ew |  | rotation | course: main; cuisine: thai, vietnamese; diet: vegetarian | never made"
+    );
+    expect(libraryLine(recipe("r8", "Salsa verde", { facets: { ...noFacets(), course: ["sauce"] } }))).toBe("r8 | Salsa verde |  | course: sauce | never made");
+  });
+
+  test("the prompt says what the facets mean for a slot, beside the kind", () => {
+    const prompt = proposalPrompt(INPUT);
+    expect(prompt).toContain(FACET_LINE);
+    expect(FACET_LINE).toMatch(/main, soup or salad/);
+    expect(FACET_LINE).toMatch(/never planned on its own/);
+    expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | kind | facets | last made):");
+  });
+
   test("the JSON Schema names exactly the fields the zod schema does, and requires all of them", () => {
     const answerKeys = Object.keys(ProposalAnswerSchema.shape).sort();
     expect(Object.keys(PROPOSAL_JSON_SCHEMA.properties).sort()).toEqual(answerKeys);
@@ -164,5 +183,5 @@ describe("parseProposalAnswer", () => {
 test("the prompt says what a recipe's kind means, and the library header names the column", () => {
   const prompt = proposalPrompt(INPUT);
   expect(prompt).toContain("A recipe marked `rotation` is one of the household's weeknight regulars");
-  expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | kind | last made):");
+  expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | kind | facets | last made):");
 });

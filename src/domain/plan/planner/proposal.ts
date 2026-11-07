@@ -5,6 +5,7 @@
 
 import { z } from "zod";
 import { stripFence } from "../../../lib/ai";
+import { FACET_LAYERS, type FacetLayer, type Facets } from "../../recipes/recipe";
 import type { Meal } from "./meals";
 
 /** Why a proposal did not happen. One kind so far; `AiError`'s other kinds are the server's to map on (M39.4). */
@@ -30,6 +31,8 @@ export type LibraryRecipe = {
   favourite: boolean;
   /** How the household cooks it, as it marked it: a weeknight regular, a weekend cook, or not said (decisions.md row 191). */
   kind: "rotation" | "weekend" | null;
+  /** What the household said it is, layer by layer (decisions.md row 209); an empty layer is not said. */
+  facets: Facets;
   /** The last time it was planned or cooked, `YYYY-MM-DD`, or null for never. */
   lastMade: string | null;
 };
@@ -123,6 +126,31 @@ export const KIND_LINE =
   "A recipe marked `rotation` is one of the household's weeknight regulars; one marked `weekend` is worth a weekend's time. Fill Monday to Friday dinners from the rotation and Saturday and Sunday dinners from the weekend recipes, unless a statement below asks otherwise. An unmarked recipe may go anywhere it suits.";
 
 /**
+ * What a recipe's facets mean for a slot, a fact of the library as the kind
+ * is (decisions.md row 209): the same rule the rules fill keeps (`suitsSlot`).
+ */
+export const FACET_LINE =
+  "A recipe's facets say what the household said it is. A dinner is a recipe whose course is main, soup or salad, or one with no course given; a building block (course sauce, condiment, spice-mix, stock or dough) is never planned on its own, nor is a side, starter, dessert, drink, snack or baking. When a recipe's meal is given, put it only in a breakfast or lunch slot it names, and prefer those recipes for breakfast and lunch.";
+
+/** How a facet layer is named in the library line. */
+const LAYER_WORDS: { readonly [L in FacetLayer]: string } = {
+  course: "course",
+  meal: "meal",
+  cuisine: "cuisine",
+  diet: "diet",
+  mainIngredient: "main ingredient",
+  method: "method",
+  season: "season",
+};
+
+/** A recipe's facets as the library line carries them: `course: main; cuisine: thai, vietnamese`, empty layers left out, "" when none is said. Pure. */
+export function facetsLine(facets: Facets): string {
+  return FACET_LAYERS.filter((layer) => facets[layer].length > 0)
+    .map((layer) => `${LAYER_WORDS[layer]}: ${facets[layer].join(", ")}`)
+    .join("; ");
+}
+
+/**
  * The recipes the prompt shows, and whether the list was cut. Under the cap
  * the library goes as given, in the caller's order; past it the favourites
  * come first, then the highest rated, then the rest, because those are the
@@ -137,13 +165,15 @@ export function libraryForPrompt(library: readonly LibraryRecipe[]): { recipes: 
   return { recipes: ranked.slice(0, MAX_LIBRARY_LINES), cut: true };
 }
 
-/** One recipe as the model reads it: `id | name | tags | 35 min | ★4 | fav | last 2026-08-30`. Absent facts are left out rather than sent as null, except that a recipe never made says so. Pure. */
+/** One recipe as the model reads it: `id | name | tags | 35 min | ★4 | fav | rotation | course: main; diet: vegetarian | last 2026-08-30`. Absent facts are left out rather than sent as null, except that a recipe never made says so. Pure. */
 export function libraryLine(recipe: LibraryRecipe): string {
   const fields = [recipe.id, recipe.name, recipe.tags.join(", ")];
   if (recipe.totalMinutes !== null) fields.push(`${recipe.totalMinutes} min`);
   if (recipe.rating !== null) fields.push(`★${recipe.rating}`);
   if (recipe.favourite) fields.push("fav");
   if (recipe.kind !== null) fields.push(recipe.kind);
+  const facets = facetsLine(recipe.facets);
+  if (facets !== "") fields.push(facets);
   fields.push(recipe.lastMade === null ? "never made" : `last ${recipe.lastMade}`);
   return fields.join(" | ");
 }
@@ -180,6 +210,7 @@ export function proposalPrompt(input: ProposalInput): string {
     `Today is ${input.today}.`,
     FIXED_PLACE_LINE,
     KIND_LINE,
+    FACET_LINE,
     `The week begins Monday ${input.week.monday}. The days being planned are ${input.week.dates.join(", ")}.`,
     `The meals being planned are ${input.meals.length === 0 ? "none" : input.meals.join(", ")}.`,
     "",
@@ -196,7 +227,7 @@ export function proposalPrompt(input: ProposalInput): string {
   if (input.recent.length === 0) lines.push("(nothing recorded)");
   else for (const meal of input.recent) lines.push(`${meal.date}  ${meal.name}`);
 
-  lines.push("", "LIBRARY (id | name | tags | time | rating | fav | kind | last made):");
+  lines.push("", "LIBRARY (id | name | tags | time | rating | fav | kind | facets | last made):");
   if (cut) {
     lines.push(`(the library holds ${input.library.length} recipes and was cut to ${MAX_LIBRARY_LINES}: favourites and the highest rated first)`);
   }
