@@ -23,8 +23,17 @@ import {
 } from "../components/fill/fill";
 import { OtherMeals } from "../components/fill/OtherMeals";
 import { PlannerBar, type PlannerStatus } from "../components/fill/PlannerBar";
-import { readOtherMeals, readServings, toggleMeal, writeOtherMeals, writeServings } from "../components/fill/plannerPrefs";
+import {
+  readOtherMeals,
+  readServings,
+  readVegetarianNights,
+  toggleMeal,
+  writeOtherMeals,
+  writeServings,
+  writeVegetarianNights,
+} from "../components/fill/plannerPrefs";
 import { ReadyStep } from "../components/fill/ReadyStep";
+import { VarietyBar } from "../components/fill/VarietyBar";
 import { WeekendStep } from "../components/fill/WeekendStep";
 import { WeeknightsStep } from "../components/fill/WeeknightsStep";
 import { type Meal, slotPool, weekLabel } from "../plan";
@@ -64,7 +73,8 @@ export function PlanFillPage() {
   const shelf = useMemo(() => weekendShelf(recipes), [recipes]);
 
   const [step, setStep] = useState(0);
-  const [nights, setNights] = useState(() => fillNights(open.weeknights.length, carried, pool));
+  const [vegetarianNights, setVegetarianNights] = useState(() => readVegetarianNights(browserStorage()));
+  const [nights, setNights] = useState(() => fillNights(open.weeknights.length, carried, pool, vegetarianNights));
   const [weekend, setWeekend] = useState<(string | null)[]>(() => open.weekend.map(() => null));
   const [others, setOthers] = useState<OtherMeal[]>([]);
   const [reasons, setReasons] = useState<Record<string, string>>({});
@@ -77,11 +87,11 @@ export function PlanFillPage() {
 
   // The latest ask wins: an answer that arrives after a newer ask is dropped.
   const asked = useRef(0);
-  const ask = async (meals: readonly Meal[]) => {
+  const ask = async (meals: readonly Meal[], vegetarian = vegetarianNights) => {
     const run = ++asked.current;
     setPlanner({ state: "asking" });
     try {
-      const week = await proposePlanWeek({ data: { monday, dates: openDates, meals: ["dinner", ...meals] } });
+      const week = await proposePlanWeek({ data: { monday, dates: openDates, meals: ["dinner", ...meals], vegetarianNights: vegetarian } });
       if (run !== asked.current) return;
       const first = fromProposal(week, open, [...carried, ...pool]);
       setNights(first.nights);
@@ -154,7 +164,19 @@ export function PlanFillPage() {
               onAsk={() => void ask(otherMeals)}
             />
           )}
+          <VarietyBar
+            vegetarianNights={vegetarianNights}
+            disabled={planner.state === "asking"}
+            onChange={(next) => {
+              setVegetarianNights(next);
+              writeVegetarianNights(browserStorage(), next);
+              // The planner is asked again with it; the rotation's week is filled again by it.
+              if (planner.state === "off" || planner.state === "failed") setNights(fillNights(open.weeknights.length, carried, pool, next));
+              else void ask(otherMeals, next);
+            }}
+          />
           <WeeknightsStep
+            vegetarianNights={vegetarianNights}
             dates={open.weeknights}
             nights={nights}
             byId={byId}

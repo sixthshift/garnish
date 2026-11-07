@@ -12,7 +12,14 @@ import {
   parseProposalAnswer,
   proposalPrompt,
 } from "../../../../src/domain/plan/planner";
-import { FACET_LINE, facetsLine, libraryLine, ProposalAnswerEntrySchema, ProposalAnswerSchema } from "../../../../src/domain/plan/planner/proposal";
+import {
+  FACET_LINE,
+  facetsLine,
+  libraryLine,
+  ProposalAnswerEntrySchema,
+  ProposalAnswerSchema,
+  varietyLine,
+} from "../../../../src/domain/plan/planner/proposal";
 import { noFacets } from "../../../../src/domain/recipes/recipe";
 
 function recipe(id: string, name: string, over: Partial<LibraryRecipe> = {}): LibraryRecipe {
@@ -184,4 +191,21 @@ test("the prompt says what a recipe's kind means, and the library header names t
   const prompt = proposalPrompt(INPUT);
   expect(prompt).toContain("A recipe marked `rotation` is one of the household's weeknight regulars");
   expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | kind | facets | last made):");
+});
+
+describe("a varied week (decisions.md row 212)", () => {
+  test("the prompt always asks for no main ingredient two nights running and no cuisine more than twice", () => {
+    const prompt = proposalPrompt(INPUT);
+    expect(prompt).toContain(varietyLine(0));
+    expect(prompt).toMatch(/never the same main ingredient on two nights in a row/);
+    expect(prompt).toMatch(/no cuisine more than twice/);
+    expect(prompt).not.toMatch(/vegetarian \(diet/);
+  });
+
+  test("the household's vegetarian nights are asked for by number, spread through the week", () => {
+    expect(proposalPrompt({ ...INPUT, vegetarianNights: 2 })).toContain(
+      "Make at least 2 dinners vegetarian (diet vegetarian or vegan), spread through the week"
+    );
+    expect(varietyLine(1)).toContain("Make at least one dinner vegetarian");
+  });
 });

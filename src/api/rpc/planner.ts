@@ -58,6 +58,8 @@ export const ProposePlanWeekInput = z
     monday: isoDate,
     dates: z.array(isoDate).min(1, "tick at least one day"),
     meals: z.array(mealName).min(1, "tick at least one meal"),
+    /** How many dinners the household wants vegetarian (decisions.md row 212). */
+    vegetarianNights: z.number().int().min(0).max(7).default(0),
   })
   .refine(({ monday, dates }) => dates.every((date) => weekDates(monday).includes(date)), {
     message: "every date must be a day of that week",
@@ -78,7 +80,7 @@ export const proposePlanWeek = createServerFn({ method: "POST" })
     const dates = weekDates(data.monday).filter((date) => data.dates.includes(date));
     // Meal order is the day's, not the tick's, so the slots read breakfast, lunch, dinner.
     const meals = MEALS.filter((meal) => data.meals.includes(meal));
-    return proposeWeek({ monday: data.monday, dates, meals });
+    return proposeWeek({ monday: data.monday, dates, meals, vegetarianNights: data.vegetarianNights });
   });
 
 /**

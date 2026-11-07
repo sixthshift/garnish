@@ -54,6 +54,8 @@ export type ProposalInput = {
   rules: string[];
   library: LibraryRecipe[];
   recent: RecentMeal[];
+  /** How many dinners the household wants vegetarian (decisions.md row 212); none when left out. */
+  vegetarianNights?: number;
 };
 
 /**
@@ -131,6 +133,19 @@ export const KIND_LINE =
  */
 export const FACET_LINE =
   "A recipe's facets say what the household said it is. A dinner is a recipe whose course is main, soup or salad, or one with no course given; a building block (course sauce, condiment, spice-mix, stock or dough) is never planned on its own, nor is a side, starter, dessert, drink, snack or baking. When a recipe's meal is given, put it only in a breakfast or lunch slot it names, and prefer those recipes for breakfast and lunch.";
+
+/**
+ * A varied week, from the facets (decisions.md row 212): the rules the
+ * rotation's own fill keeps (`varyNights`), said to the model so its week
+ * keeps them too, with the household's vegetarian nights when it asked for any.
+ */
+export function varietyLine(vegetarianNights = 0): string {
+  const base =
+    "Vary the dinners by their facets: never the same main ingredient on two nights in a row, and no cuisine more than twice in the week. A recipe with no main ingredient or cuisine given is free of both.";
+  if (vegetarianNights <= 0) return base;
+  const nights = vegetarianNights === 1 ? "one dinner" : `${vegetarianNights} dinners`;
+  return `${base} Make at least ${nights} vegetarian (diet vegetarian or vegan), spread through the week rather than together.`;
+}
 
 /** How a facet layer is named in the library line. */
 const LAYER_WORDS: { readonly [L in FacetLayer]: string } = {
@@ -211,6 +226,7 @@ export function proposalPrompt(input: ProposalInput): string {
     FIXED_PLACE_LINE,
     KIND_LINE,
     FACET_LINE,
+    varietyLine(input.vegetarianNights),
     `The week begins Monday ${input.week.monday}. The days being planned are ${input.week.dates.join(", ")}.`,
     `The meals being planned are ${input.meals.length === 0 ? "none" : input.meals.join(", ")}.`,
     "",

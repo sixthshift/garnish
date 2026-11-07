@@ -24,6 +24,7 @@ export function WeeknightsStep({
   source = "rotation",
   rotationEmpty = false,
   choosing = false,
+  vegetarianNights = 0,
   onChange,
 }: {
   dates: readonly string[];
@@ -40,11 +41,13 @@ export function WeeknightsStep({
   rotationEmpty?: boolean;
   /** The planner is still choosing: the days are drawn, waiting, with nothing to press. */
   choosing?: boolean;
+  /** How many nights the household wants vegetarian: Swap keeps a vegetarian night vegetarian while the week needs it. */
+  vegetarianNights?: number;
   onChange: (nights: (string | null)[]) => void;
 }) {
   const carriedIds = new Set(carried.map((recipe) => recipe.id));
   // What a night off goes back to: the night's own offer when it was turned off.
-  const offerFor = (index: number) => swapNight(nights, index, pool)[index] ?? null;
+  const offerFor = (index: number) => swapNight(nights, index, pool, byId, vegetarianNights)[index] ?? null;
 
   if (dates.length === 0) {
     return (
@@ -106,7 +109,7 @@ export function WeeknightsStep({
                     size="sm"
                     aria-label={`Swap ${weekday}`}
                     disabled={choosing || pool.length === 0}
-                    onClick={() => onChange(swapNight(nights, index, pool))}
+                    onClick={() => onChange(swapNight(nights, index, pool, byId, vegetarianNights))}
                   >
                     Swap
                   </Button>

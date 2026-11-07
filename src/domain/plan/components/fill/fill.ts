@@ -1,6 +1,6 @@
 import type { ProposedWeek } from "../../../../server/ai/planner";
 import type { RecipeSummary } from "../../../recipes/recipe";
-import { addDays, type Meal, type PlanDay, slotPool, weekDates } from "../../plan";
+import { addDays, type Meal, type PlanDay, slotPool, swapVaried, varyNights, weekDates } from "../../plan";
 
 // Filling a week: the weeknights from the recipes the household marked
 // Rotation, the ones not had for longest first, and the weekend chosen from
@@ -72,26 +72,30 @@ export function swapPool(recipes: readonly RecipeSummary[], exclude: ReadonlySet
 
 /**
  * The weeknights' first offer: what did not happen last week first, then the
- * rotation in order. A night with nothing left to offer is null, a night off.
+ * rotation in order, varied (decisions.md row 212): no main ingredient two
+ * nights running, no cuisine more than twice, and `vegetarianNights` of them
+ * vegetarian, spread through the week. A night with nothing left to offer is
+ * null, a night off.
  */
-export function fillNights(count: number, carried: readonly RecipeSummary[], pool: readonly RecipeSummary[]): (string | null)[] {
-  const ids = [...new Set([...carried, ...pool].map((recipe) => recipe.id))];
-  return Array.from({ length: count }, (_, index) => ids[index] ?? null);
+export function fillNights(count: number, carried: readonly RecipeSummary[], pool: readonly RecipeSummary[], vegetarianNights = 0): (string | null)[] {
+  return varyNights(count, [...carried, ...pool], vegetarianNights);
 }
 
 /**
  * Night `index` swapped for the next recipe in `pool` after its own that no
- * other night holds, wrapping round. Unchanged when the pool has nothing else
- * to give.
+ * other night holds, wrapping round, preferring one that keeps the week varied
+ * by the same rules. `byId` finds the other nights' recipes, which a carried
+ * or a planner's pick need not be in the pool. Unchanged when the pool has
+ * nothing else to give.
  */
-export function swapNight(nights: readonly (string | null)[], index: number, pool: readonly RecipeSummary[]): (string | null)[] {
-  const current = nights[index] ?? null;
-  const start = pool.findIndex((recipe) => recipe.id === current);
-  for (let step = 1; step <= pool.length; step++) {
-    const candidate = pool[(start + step + pool.length) % pool.length];
-    if (candidate && !nights.includes(candidate.id)) return nights.map((id, i) => (i === index ? candidate.id : id));
-  }
-  return [...nights];
+export function swapNight(
+  nights: readonly (string | null)[],
+  index: number,
+  pool: readonly RecipeSummary[],
+  byId: ReadonlyMap<string, RecipeSummary> = new Map(pool.map((recipe) => [recipe.id, recipe])),
+  vegetarianNights = 0
+): (string | null)[] {
+  return swapVaried(nights, index, pool, byId, vegetarianNights);
 }
 
 /**

@@ -3,11 +3,14 @@ import {
   DEFAULT_SERVINGS,
   PLANNER_MEALS_KEY,
   PLANNER_SERVINGS_KEY,
+  PLANNER_VEGETARIAN_KEY,
   readOtherMeals,
   readServings,
+  readVegetarianNights,
   toggleMeal,
   writeOtherMeals,
   writeServings,
+  writeVegetarianNights,
 } from "../../../../../src/domain/plan/components/fill/plannerPrefs";
 
 function memory() {
@@ -39,4 +42,18 @@ test("the head count is remembered, and falls back to four", () => {
 test("toggling a meal answers in the order a day eats", () => {
   expect(toggleMeal(["lunch"], "breakfast")).toEqual(["breakfast", "lunch"]);
   expect(toggleMeal(["breakfast", "lunch"], "lunch")).toEqual(["breakfast"]);
+});
+
+test("the vegetarian nights are remembered, none by default, kept to 0 to 5, and anything malformed is none", () => {
+  const { map, storage } = memory();
+  expect(readVegetarianNights(storage)).toBe(0);
+  writeVegetarianNights(storage, 2);
+  expect(map.get(PLANNER_VEGETARIAN_KEY)).toBe("2");
+  expect(readVegetarianNights(storage)).toBe(2);
+  map.set(PLANNER_VEGETARIAN_KEY, "9");
+  expect(readVegetarianNights(storage)).toBe(5);
+  map.set(PLANNER_VEGETARIAN_KEY, "-1");
+  expect(readVegetarianNights(storage)).toBe(0);
+  map.set(PLANNER_VEGETARIAN_KEY, "{");
+  expect(readVegetarianNights(storage)).toBe(0);
 });

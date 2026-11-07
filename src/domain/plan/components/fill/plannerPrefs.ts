@@ -1,5 +1,5 @@
 import type { StorageLike } from "../../../../lib/useLocalStorage";
-import { MEALS, type Meal } from "../../plan";
+import { MAX_VEGETARIAN_NIGHTS, MEALS, type Meal } from "../../plan";
 
 // What Plan the week remembers on the device between runs: which meals beside
 // dinner the planner fills, and how many are eating. The keys are the ones the
@@ -60,6 +60,28 @@ export function readServings(storage: StorageLike | undefined): number {
 export function writeServings(storage: StorageLike | undefined, servings: number): void {
   try {
     storage?.setItem(PLANNER_SERVINGS_KEY, JSON.stringify(servings));
+  } catch {
+    // ignored: see above
+  }
+}
+
+/** Where "vegetarian nights" is remembered: how many of the week's dinners the household wants meatless (decisions.md row 212). */
+export const PLANNER_VEGETARIAN_KEY = "garnish.planner.vegetarianNights";
+
+/** The remembered vegetarian nights, 0 to `MAX_VEGETARIAN_NIGHTS`; none when missing or malformed. */
+export function readVegetarianNights(storage: StorageLike | undefined): number {
+  try {
+    const parsed: unknown = JSON.parse(storage?.getItem(PLANNER_VEGETARIAN_KEY) ?? "0");
+    return typeof parsed === "number" && Number.isInteger(parsed) && parsed >= 0 ? Math.min(parsed, MAX_VEGETARIAN_NIGHTS) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Remember the vegetarian nights. A throwing storage just means it does not stick. */
+export function writeVegetarianNights(storage: StorageLike | undefined, nights: number): void {
+  try {
+    storage?.setItem(PLANNER_VEGETARIAN_KEY, JSON.stringify(nights));
   } catch {
     // ignored: see above
   }

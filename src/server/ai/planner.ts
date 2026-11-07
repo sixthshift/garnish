@@ -124,7 +124,17 @@ export function mergeRecent(planned: readonly RecentMeal[], cooked: readonly Rec
  * come from four `week` reads rather than a range query, because the week is
  * the plan's unit and four of them is the whole of "recently".
  */
-export function proposalInput({ monday, dates, meals }: { monday: string; dates: string[]; meals: Meal[] }): ProposalInput {
+export function proposalInput({
+  monday,
+  dates,
+  meals,
+  vegetarianNights = 0,
+}: {
+  monday: string;
+  dates: string[];
+  meals: Meal[];
+  vegetarianNights?: number;
+}): ProposalInput {
   const rules = enabledRules(planner.rules.list()).map((rule) => rule.text);
   const library = recipes.query().map(libraryRecipe);
   const slots = weekSlots(plan.week(monday), dates, meals);
@@ -147,6 +157,7 @@ export function proposalInput({ monday, dates, meals }: { monday: string; dates:
     rules,
     library,
     recent: mergeRecent(planned, timeline.recent(since)),
+    vegetarianNights,
   };
 }
 
@@ -187,7 +198,10 @@ export function resolveProposal(check: ProposalCheck, slots: readonly ProposalSl
 }
 
 /** Gather, ask, check, and resolve: the whole proposal behind one call, for the server function and its tests. Nothing is written. */
-export async function proposeWeek(week: { monday: string; dates: string[]; meals: Meal[] }, options: { ai?: AiClient } = {}): Promise<ProposedWeek> {
+export async function proposeWeek(
+  week: { monday: string; dates: string[]; meals: Meal[]; vegetarianNights?: number },
+  options: { ai?: AiClient } = {}
+): Promise<ProposedWeek> {
   const input = proposalInput(week);
   const check = await runProposal(input, options);
   // The library is only re-read when there is something to name.

@@ -98,7 +98,12 @@ test("the planner's picks and reasons fill the week, and Add writes them at the 
   await screen.findByText("Chosen by the planner from your guide. Change anything below.");
   expect(fns.proposePlanWeek).toHaveBeenCalledTimes(1);
   expect(fns.proposePlanWeek).toHaveBeenCalledWith({
-    data: { monday: MONDAY, dates: ["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"], meals: ["dinner"] },
+    data: {
+      monday: MONDAY,
+      dates: ["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08"],
+      meals: ["dinner"],
+      vegetarianNights: 0,
+    },
   });
   expect(screen.getByText("not had since September")).toBeInTheDocument();
   // Tuesday, which the planner left open, comes from the rotation.
@@ -146,4 +151,15 @@ test("while the planner chooses the days wait in place; with nothing marked Rota
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Swap Mon" }));
   expect(screen.getAllByText("Pie").length).toBeGreaterThan(0);
+});
+
+test("Vegetarian nights is remembered and asks the planner again with it (decisions.md row 212)", async () => {
+  fns.proposePlanWeek.mockResolvedValue({ entries: [entry("2026-11-02", kofta, "a regular")], dropped: [], unfilled: [], taken: [] });
+  await open();
+  await screen.findByText("Chosen by the planner from your guide. Change anything below.");
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Increase Vegetarian nights" }));
+  await waitFor(() => expect(fns.proposePlanWeek).toHaveBeenCalledTimes(2));
+  expect(fns.proposePlanWeek.mock.calls[1]![0]).toMatchObject({ data: { vegetarianNights: 1 } });
+  expect(window.localStorage.getItem("garnish.planner.vegetarianNights")).toBe("1");
 });
