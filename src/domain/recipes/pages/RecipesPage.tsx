@@ -1,7 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { arrayParam, newSeed, pickRandom } from "../../../lib/lists";
-import { SEARCH_DEBOUNCE_MS, searchParam } from "../../../lib/search";
 import { useLayout } from "../../../lib/useLayout";
 import { activeFilterCount } from "../components/library/ActiveFilters";
 import { DesktopLibrary } from "../components/library/desktop/DesktopLibrary";
@@ -9,6 +8,7 @@ import { FiltersColumn } from "../components/library/desktop/FiltersColumn";
 import type { FilterBarProps } from "../components/library/FilterBar";
 import { PhoneLibrary } from "../components/library/mobile/PhoneLibrary";
 import { tagsByUse } from "../components/library/tagUse";
+import { useSearchText } from "../components/library/useSearchText";
 import { resolveSort, type SortDir, type SortKey, selectedTags } from "../recipe";
 
 const route = getRouteApi("/recipes/");
@@ -71,15 +71,8 @@ export function RecipesPage() {
     if (pick) void navigate({ to: "/recipes/$slug", params: { slug: pick.slug } });
   };
 
-  // Local text so typing is instant; the URL follows after a pause or on Enter.
-  const [query, setQuery] = useState(q);
-  useEffect(() => setQuery(q), [q]);
-  useEffect(() => {
-    if (searchParam(query) === searchParam(q)) return;
-    const timer = setTimeout(() => void navigate({ search: (prev) => ({ ...prev, q: searchParam(query) }), replace: true }), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [query, q, navigate]);
-  const submitQuery = () => void navigate({ search: (prev) => ({ ...prev, q: searchParam(query) }) });
+  // Local text so typing is instant; the address follows after a pause or on Enter.
+  const { query, setQuery, submit: submitQuery } = useSearchText(q);
 
   if (desktop) {
     return (
