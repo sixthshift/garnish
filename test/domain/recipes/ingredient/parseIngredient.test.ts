@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { generateDevRecipes } from "../../../../src/db/dev/generate";
+import { DEV_LIBRARY } from "../../../../src/db/dev/library";
 import { SAMPLE_RECIPES } from "../../../../src/db/dev/sampleRecipes";
 import { type DisplayIngredient, formatIngredient } from "../../../../src/domain/recipes/ingredient/format";
 import type { FoodCandidate } from "../../../../src/domain/recipes/ingredient/parseFood";
@@ -235,7 +235,7 @@ type CorpusIngredient = {
 
 /** Every ingredient row with a food, from both seed corpora, as plain data. */
 function corpusIngredients(): CorpusIngredient[] {
-  const documents = [...SAMPLE_RECIPES, ...generateDevRecipes().map((made) => made.input)];
+  const documents = [...SAMPLE_RECIPES, ...DEV_LIBRARY.map((made) => made.input)];
   const rows: CorpusIngredient[] = [];
   for (const recipe of documents) {
     for (const part of recipe.parts) {

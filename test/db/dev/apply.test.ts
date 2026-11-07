@@ -1,110 +1,79 @@
-// Applying the dev dataset: a replace, not a merge, and it never takes a
-// hand-written recipe with it.
+// Applying the dev library to a fresh database: recipes, photos, cook log,
+// sub-recipe links and the week's plan, all dated from the day it runs.
 import type { Database } from "bun:sqlite";
-import { mkdtempSync, readdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, expect, test } from "vitest";
 import { openDatabase } from "../../../src/db/connection/open";
 import { applyDevData } from "../../../src/db/dev/apply";
-import { parseDevSeedFlags } from "../../../src/db/dev/cli";
-import { devIds, generateDevRecipes } from "../../../src/db/dev/generate";
+import { parseDevSeedArgs } from "../../../src/db/dev/cli";
+import { DEV_LIBRARY, DEV_PLAN } from "../../../src/db/dev/library";
 import { migrate } from "../../../src/db/migrations/migrate";
+import { foodRepository } from "../../../src/db/models/food/repo";
+import { planRepository } from "../../../src/db/models/plan/repo";
 import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { seed } from "../../../src/db/seed/seed";
-import { recipeInputSchema } from "../../../src/domain/recipes/recipe";
+
+const TODAY = "2026-11-08";
 
 let db: Database;
 let images: string;
 
-beforeEach(async () => {
+beforeEach(() => {
   db = openDatabase(":memory:");
   migrate(db);
   seed(db);
   images = mkdtempSync(join(tmpdir(), "garnish-dev-images-"));
 });
 
-/** A small slice, so the tests stay quick; the shape is the same as the full run. */
-const small = () => generateDevRecipes(undefined, 6);
+test("creates the library, its photos and the week's plan", async () => {
+  const result = await applyDevData(db, { dir: images, today: TODAY });
+  const photos = DEV_LIBRARY.filter((r) => r.image !== null).length;
+  const stepPhotos = DEV_LIBRARY.reduce((n, r) => n + (r.stepImages?.length ?? 0), 0);
 
-test("creates the dataset, its timeline events and its images", async () => {
-  const dataset = small();
-  const result = await applyDevData(db, dataset, images);
+  expect(result).toEqual({ created: DEV_LIBRARY.length, images: photos + stepPhotos, planned: DEV_PLAN.length });
+  expect(recipeRepository(db).query()).toHaveLength(DEV_LIBRARY.length);
+  expect(readdirSync(images).filter((f) => f.includes("."))).toHaveLength(photos);
+  expect(readdirSync(join(images, "steps"))).toHaveLength(stepPhotos);
+});
 
-  expect(result).toEqual({ removed: 0, created: 6, images: dataset.filter((r) => r.imageHue !== null).length });
-  expect(recipeRepository(db).query()).toHaveLength(6);
+test("ages, cooks and plan days count from today", async () => {
+  await applyDevData(db, { dir: images, today: TODAY });
+  const ragu = DEV_LIBRARY.find((r) => r.input.name === "Slow-Cooked Beef Ragu")!;
+  const row = db.query<{ created_at: string }, [string]>("SELECT created_at FROM recipe WHERE id = ?").get(ragu.input.id!)!;
+  expect(row.created_at).toBe(`2026-10-04T12:00:00.000Z`); // 35 days before
 
-  const withEvents = dataset.filter((r) => r.timeline.length > 0);
-  expect(withEvents.length).toBeGreaterThan(0);
-  for (const item of withEvents) {
-    expect(timelineRepository(db).list(item.input.id!)).toHaveLength(item.timeline.length);
+  const log = timelineRepository(db).list(ragu.input.id!);
+  expect(log).toHaveLength(ragu.cooks.length);
+  expect(log.map((e) => e.occurredOn)).toContain("2026-11-05"); // 3 days before
+
+  const week = planRepository(db).week("2026-11-02");
+  const tonight = week.find((d) => d.date === TODAY)!;
+  expect(tonight.entries.length).toBeGreaterThan(0);
+});
+
+test("a sub-recipe's food links to it, and the rows using that food follow", async () => {
+  await applyDevData(db, { dir: images, today: TODAY });
+  const repo = recipeRepository(db);
+  for (const child of DEV_LIBRARY.filter((r) => r.makesFood !== undefined)) {
+    expect(foodRepository(db).findOrCreate(child.makesFood!).recipeId).toBe(child.input.id);
   }
-
-  expect(readdirSync(images)).toHaveLength(result.images);
+  const ragu = repo.get("slow-cooked-beef-ragu")!;
+  const stock = ragu.parts.flatMap((p) => p.ingredients).find((l) => l.food?.name === "chicken stock")!;
+  expect(stock.food!.recipeId).toBe(repo.get("chicken-stock")!.id);
 });
 
-test("re-running replaces rather than duplicates, and lands in the same state", async () => {
-  const dataset = small();
-  await applyDevData(db, dataset, images);
-  const first = recipeRepository(db)
-    .query()
-    .map((r) => `${r.slug}|${r.rating}|${r.favourite}|${r.lastMade}`);
-
-  const second = await applyDevData(db, dataset, images);
-  expect(second.removed).toBe(6);
-  expect(second.created).toBe(6);
-  expect(recipeRepository(db).query()).toHaveLength(6);
-
-  expect(
-    recipeRepository(db)
-      .query()
-      .map((r) => `${r.slug}|${r.rating}|${r.favourite}|${r.lastMade}`)
-  ).toEqual(first);
+test("step photos are written and named on their steps", async () => {
+  await applyDevData(db, { dir: images, today: TODAY });
+  const ragu = recipeRepository(db).get("slow-cooked-beef-ragu")!;
+  const photographed = ragu.parts.flatMap((p) => p.steps).filter((s) => s.image !== null);
+  expect(photographed.length).toBeGreaterThan(0);
+  for (const s of photographed) expect(existsSync(join(images, "steps", s.image!))).toBe(true);
 });
 
-test("a hand-written recipe survives a re-run, even sharing a name", async () => {
-  const dataset = small();
-  await applyDevData(db, dataset, images);
-
-  // Same name as a generated one: the slug collides, the id does not.
-  const mine = recipeRepository(db).create(recipeInputSchema.parse({ name: dataset[0]!.input.name, parts: [{ name: "", ingredients: [], steps: [] }] }));
-
-  await applyDevData(db, dataset, images);
-  expect(recipeRepository(db).get(mine.slug)).not.toBeNull();
-  expect(recipeRepository(db).query()).toHaveLength(7);
-});
-
-test("timestamps are the generated ones, not the moment of the insert", async () => {
-  const dataset = small();
-  await applyDevData(db, dataset, images);
-  const rows = db.query<{ id: string; created_at: string; updated_at: string }, []>("SELECT id, created_at, updated_at FROM recipe").all();
-  const byId = new Map(rows.map((r) => [r.id, r]));
-  for (const item of dataset) {
-    const row = byId.get(item.input.id!)!;
-    expect(row.created_at).toBe(item.createdAt);
-    expect(row.updated_at).toBe(item.updatedAt);
-  }
-});
-
-test("the ids it owns are exactly the ones it removes", async () => {
-  const dataset = small();
-  await applyDevData(db, dataset, images);
-  const stored = new Set(
-    db
-      .query<{ id: string }, []>("SELECT id FROM recipe")
-      .all()
-      .map((r) => r.id)
-  );
-  expect(devIds(dataset).every((id) => stored.has(id))).toBe(true);
-});
-
-test("flags parse, and a bad one throws rather than rebuilding with defaults", () => {
-  expect(parseDevSeedFlags([])).toEqual({ count: 15, seed: "garnish-dev-data-v1" });
-  expect(parseDevSeedFlags(["--count", "12"])).toMatchObject({ count: 12 });
-  expect(parseDevSeedFlags(["--seed", "other"])).toMatchObject({ seed: "other" });
-  expect(() => parseDevSeedFlags(["--count"])).toThrow(/positive whole number/);
-  expect(() => parseDevSeedFlags(["--count", "0"])).toThrow(/positive whole number/);
-  expect(() => parseDevSeedFlags(["--seed"])).toThrow(/needs a value/);
-  expect(() => parseDevSeedFlags(["--sample"])).toThrow(/Unknown argument/);
+test("the command takes no arguments, and a stray one throws", () => {
+  expect(() => parseDevSeedArgs([])).not.toThrow();
+  expect(() => parseDevSeedArgs(["--count", "12"])).toThrow(/Unknown argument/);
 });

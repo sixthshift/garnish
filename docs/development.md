@@ -31,7 +31,7 @@ To throw the database away and start from a known state:
 bun run dev:seed
 ```
 
-It wipes `DATA_DIR`'s database and images, migrates, seeds the default units the server always seeds, then adds fifteen generated recipes — the same fifteen every time. Run it when you want disposable data to look at; it never runs on its own. Backups are not touched.
+It wipes `DATA_DIR`'s database and images, migrates, seeds the default units and foods the server always seeds, then adds the dev library (`src/db/dev/library.ts`): twenty hand-written recipes a household might really keep, one file each in `src/db/dev/recipes/`, written in the house style. Weeknight regulars cooked often, weekend projects, a soup, a salad, baking, a dessert, and two building blocks the others link to as sub-recipes (Chicken Stock, Shortcrust Pastry); a few never made and unrated. Every recipe has a real photo, and some steps do, freely licensed and credited in `src/db/dev/images/CREDITS.md`. Between them they use every feature a recipe has: labelled steps with supporting lines, named parts, linked ingredients, alternatives (a swap, one against a basis, the plan's picks), fixed and verbatim lines, facets, notes, step photos and a cook log. Ages, cooks and a week of plan entries count from the day it runs, so Home opens on tonight's dinner. Run it when you want disposable data to look at; it never runs on its own. Backups are not touched.
 
 In VS Code, the `dev` task (Terminal → Run Build Task, or `Cmd/Ctrl+Shift+B`) runs the same command in a dedicated panel.
 
