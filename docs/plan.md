@@ -252,7 +252,7 @@ Decisions.md row 209: seven layers of fixed values (course, meal, cuisine, diet,
 - [x] **M49.5 The import.** schema.org's `recipeCategory`, `recipeCuisine` and `suitableForDiet`, and a Mealie recipe's categories, map onto the layers where a word matches; the model's answer carries them too; the review shows them to correct.
 - [x] **M49.6 The MCP connector.** The document reads and writes `facets`, `search_recipes` filters by them, the instructions say what each layer means.
 - [x] **M49.7 The planner.** Dinners come from mains (or recipes with no course said), never a building block; a breakfast or lunch slot prefers a recipe that suits it; the model's library line carries each recipe's facets.
-- [ ] **M49.8 Docs and e2e.**
+- [x] **M49.8 Docs and e2e.**
 
 ## Blocked
 
@@ -363,3 +363,5 @@ _(one line per iteration: date, task id, outcome, model)_
 2026-11-07  M49.5  done   —        opus   import/scraped/facets.ts (facetsFromWords: whole words, case, accents and punctuation aside, a small synonym table; mergeFacets); ScrapedRecipe carries facets: schema.org category, cuisine, keywords and suitableForDiet, Mealie categories and tags, Tandoor keywords, the model's tags (its JSON Schema unchanged; an accepted anchored read keeps the anchor's, AnchorSchema at the rpc boundary); draftFromScraped carries them; the review shows none yet, the editor saves them
 2026-11-07  M49.6  done   —        opus   the connector's document reads and writes facets, a write merging by layer (one sent replaces it, [] clears it, one left out stays); search_recipes filters per layer and its summaries carry facets; the instructions say what the layers are and when a connector may set them
 2026-11-07  M49.7  done   —        opus   suitsSlot and slotPool in domain/plan/plan/slots.ts: a dinner is a main, soup, salad or no course said, a breakfast or lunch prefers a recipe said to suit it, falling back to all but building blocks; the rotation, Swap's pool, the weekend shelf and what is carried from last week narrow to dinners first; the model's library line carries facetsLine and FACET_LINE sits beside KIND_LINE. The rules fill never plans breakfast or lunch, so that preference reaches only the model
+2026-11-07  M49.8  done   —        opus   e2e/facets.spec.ts (set from the page, kept on reload, a chip narrows the library); fill.spec follows "Mark recipes"; gate 4290 unit, e2e 75
+2026-11-07  M49    note   —        opus   left open: import's Check does not show the facets yet (the editor carries and saves them); Home's "haven't made in a while" still lists any rotation recipe, a sauce included; "grill" maps to no method (the oven's grill in en-AU); the MCP write merges by layer
