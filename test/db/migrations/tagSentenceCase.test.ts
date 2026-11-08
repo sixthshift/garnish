@@ -3,12 +3,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
-import { openDatabase } from "../../../src/db/connection/open";
-import { MIGRATIONS_DIR, migrate } from "../../../src/db/migrations/migrate";
+import { MIGRATIONS_DIR } from "../../../src/db/migrations/migrate";
+import { migratedDb } from "../../helpers/db";
 
 test("existing tag names gain a capital first letter and keep their slugs", () => {
-  const db = openDatabase(":memory:");
-  migrate(db);
+  const db = migratedDb();
   const insert = db.prepare("INSERT INTO tag (id, name, slug) VALUES (?, ?, ?)");
   insert.run("a", "chinese", "chinese");
   insert.run("b", "easy pasta dinner", "easy-pasta-dinner");

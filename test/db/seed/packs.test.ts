@@ -3,19 +3,17 @@
 // household has already sized or renamed is left alone.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../../src/db/connection/open";
-import { migrate } from "../../../src/db/migrations/migrate";
 import { foodRepository } from "../../../src/db/models/food/repo";
 import { unitRepository } from "../../../src/db/models/unit/repo";
 import { correctedStarterFoods } from "../../../src/db/seed/foodPlurals";
 import { STARTER_PACKS, seedStarterPacks } from "../../../src/db/seed/packs";
 import { seed } from "../../../src/db/seed/seed";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
+import { migratedDb } from "../../helpers/db";
 
 let db: Database;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
 });
 
 test("every food is a starter food, once, and every unit a default unit", () => {

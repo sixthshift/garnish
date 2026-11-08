@@ -12,15 +12,13 @@ import type { Database } from "bun:sqlite";
 import { is } from "drizzle-orm";
 import { getTableConfig, SQLiteTable } from "drizzle-orm/sqlite-core";
 import { beforeAll, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
+import { migratedDb } from "../helpers/db";
 
 type ColumnInfo = { name: string; type: string; notnull: 0 | 1; pk: number };
 
 let db: Database;
 beforeAll(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
 });
 
 // Every table every domain declares. A glob rather than a list of imports, so a

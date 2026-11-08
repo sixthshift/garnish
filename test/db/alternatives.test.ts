@@ -14,11 +14,11 @@ import { recipeRepository } from "../../src/db/models/recipe/repo";
 import { unitRepository } from "../../src/db/models/unit/repo";
 import { planEntryInputSchema } from "../../src/domain/plan/plan";
 import { recipeInputSchema } from "../../src/domain/recipes/recipe";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 beforeEach(() => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
 });
 
 const count = (table: string) => (db.query(`SELECT count(*) AS n FROM ${table}`).get() as { n: number }).n;

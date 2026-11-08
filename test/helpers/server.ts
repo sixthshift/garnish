@@ -12,11 +12,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runWithStartContext, type StartStorageContext } from "@tanstack/start-storage-context";
 import { afterEach, beforeEach } from "vitest";
-import { databasePath, openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
+import { databasePath } from "../../src/db/connection/open";
 import { seedBatchRepository } from "../../src/db/models/seed/repo";
 import { STARTER_BATCH } from "../../src/db/seed/starter";
 import { closeDb } from "../../src/server/core/db";
+import { migratedDb } from "./db";
 
 /**
  * Point DATA_DIR at a fresh temp directory for every test in the file and
@@ -40,8 +40,7 @@ function migratedTemplate(): string {
     const folder = mkdtempSync(join(tmpdir(), "garnish-template-"));
     process.once("exit", () => rmSync(folder, { recursive: true, force: true }));
     const path = join(folder, "template.db");
-    const db = openDatabase(":memory:");
-    migrate(db);
+    const db = migratedDb();
     seedBatchRepository(db).record(STARTER_BATCH);
     db.prepare("VACUUM INTO ?").run(path);
     db.close();

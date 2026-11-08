@@ -5,16 +5,15 @@ import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../../src/db/connection/open";
 import { applyDevData } from "../../../src/db/dev/apply";
 import { parseDevSeedArgs } from "../../../src/db/dev/cli";
 import { DEV_LIBRARY, DEV_PLAN } from "../../../src/db/dev/library";
-import { migrate } from "../../../src/db/migrations/migrate";
 import { foodRepository } from "../../../src/db/models/food/repo";
 import { planRepository } from "../../../src/db/models/plan/repo";
 import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { seed } from "../../../src/db/seed/seed";
+import { migratedDb } from "../../helpers/db";
 
 const TODAY = "2026-11-08";
 
@@ -22,8 +21,7 @@ let db: Database;
 let images: string;
 
 beforeEach(() => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   seed(db);
   images = mkdtempSync(join(tmpdir(), "garnish-dev-images-"));
 });

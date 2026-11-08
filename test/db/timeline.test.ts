@@ -2,11 +2,10 @@
 // and recipe.last_made derived from the events on create and remove.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
 import { lastMadeFrom, type TimelineRepository, timelineRepository } from "../../src/db/models/timeline/repo";
 import { type RecipeInput, recipeInputSchema, timelineEventSchema } from "../../src/domain/recipes/recipe";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 let repo: TimelineRepository;
@@ -16,8 +15,7 @@ let recipeId: string;
 const minimal = (name: string): RecipeInput => ({ name, parts: [{ name: "", ingredients: [], steps: [] }] });
 
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = timelineRepository(db);
   recipeRepo = recipeRepository(db);
   recipeId = recipeRepo.create(recipeInputSchema.parse(minimal("Butter pasta"))).id;

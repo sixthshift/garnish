@@ -1,11 +1,10 @@
 // The whole OAuth flow, through the server's handlers, over an in-memory database and a clock the test moves.
 import { createHash } from "node:crypto";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../../../src/db/connection/open";
-import { migrate } from "../../../../src/db/migrations/migrate";
 import { type McpRepository, mcpRepository } from "../../../../src/db/models/mcp/repo";
 import { mcpSettings } from "../../../../src/server/mcp/config";
 import { type OauthServer, oauthServer, PAIRING_ATTEMPTS_PER_MINUTE } from "../../../../src/server/mcp/oauth/server";
+import { migratedDb } from "../../../helpers/db";
 
 const ORIGIN = "https://garnish.example";
 const CALLBACK = "https://claude.ai/api/mcp/auth_callback";
@@ -20,8 +19,7 @@ let env: Record<string, string | undefined>;
 let documents: string[];
 
 beforeEach(() => {
-  const db = openDatabase(":memory:");
-  migrate(db);
+  const db = migratedDb();
   repo = mcpRepository(db);
   now = new Date("2026-10-26T10:00:00.000Z");
   env = {};

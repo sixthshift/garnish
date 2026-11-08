@@ -8,16 +8,15 @@ import { recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
 import { getImageRoute as GetRoute, uploadImageRoute as PostRoute } from "../../../../../src/domain/recipes/routes/api/images";
 import { handleGetImage, handleUploadImage } from "../../../../../src/server/api/images";
 import { getDb } from "../../../../../src/server/core/db";
+import { handlersOf } from "../../../../helpers/routes";
 import { useTempDataDir } from "../../../../helpers/server";
+import { PNG_BYTES } from "../../../../helpers/zip";
 
 const tmp = useTempDataDir();
 
-type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
-const handlersOf = (route: { options: { server?: unknown } }) => (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
-
 const missing = "99999999-9999-4999-8999-999999999999";
 // A real 1x1 PNG, so the bytes are what a browser would send.
-const png = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64"));
+const png = PNG_BYTES;
 const jpg = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0xff, 0xd9]);
 
 async function createRecipe(name = "Flatbread"): Promise<string> {

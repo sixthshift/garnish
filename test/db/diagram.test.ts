@@ -2,15 +2,13 @@
 // table, key or trigger added by a migration shows up without anyone telling it.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
 import { DEFAULT_OUT, parseDiagramArgs } from "../../src/db/diagram/cli";
 import { erDiagram, readSchema, schemaHtml } from "../../src/db/diagram/diagram";
-import { migrate } from "../../src/db/migrations/migrate";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 beforeEach(() => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
 });
 
 test("reads every table with its keys, checks and triggers", () => {

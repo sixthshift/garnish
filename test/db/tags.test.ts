@@ -1,14 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { type TagRepository, tagRepository } from "../../src/db/models/tag/repo";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 let repo: TagRepository;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = tagRepository(db);
 });
 

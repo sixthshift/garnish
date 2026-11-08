@@ -1,15 +1,13 @@
 // The OAuth server's memory (023_mcp.sql): clients, the grants made to them, and token hashes.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { type McpRepository, mcpRepository, newPairingCode } from "../../src/db/models/mcp/repo";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 let repo: McpRepository;
 beforeEach(() => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = mcpRepository(db);
 });
 

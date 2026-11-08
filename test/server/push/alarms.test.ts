@@ -3,11 +3,10 @@
 // stale, forgets a device the push service says is gone, and re-arms.
 import type { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { openDatabase } from "../../../src/db/connection/open";
-import { migrate } from "../../../src/db/migrations/migrate";
 import { type DueAlarm, type PushRepository, pushRepository } from "../../../src/db/models/push/repo";
 import { type AlarmClock, createAlarmClock, delayUntil, isStale, STALE_MS } from "../../../src/server/push/alarms";
 import type { PushOutcome } from "../../../src/server/push/send";
+import { migratedDb } from "../../helpers/db";
 
 const T0 = Date.parse("2026-09-19T10:00:00.000Z");
 const at = (ms: number) => new Date(T0 + ms).toISOString();
@@ -22,8 +21,7 @@ let send: ReturnType<typeof vi.fn<(alarm: DueAlarm, keys: typeof KEYS) => Promis
 let clock: AlarmClock;
 
 beforeEach(() => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = pushRepository(db);
   now = T0;
   timers = [];

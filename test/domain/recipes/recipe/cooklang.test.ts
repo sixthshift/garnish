@@ -5,14 +5,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { openDatabase } from "../../../../src/db/connection/open";
 import { seedSample } from "../../../../src/db/dev/sample";
-import { migrate } from "../../../../src/db/migrations/migrate";
 import { recipeRepository } from "../../../../src/db/models/recipe/repo";
 import { noFacets } from "../../../../src/domain/recipes/recipe";
 import { cooklangStepText, toCooklang } from "../../../../src/domain/recipes/recipe/cooklang";
 import type { Ingredient, Recipe } from "../../../../src/domain/recipes/recipe/recipe";
 import type { Food, Unit } from "../../../../src/domain/recipes/reference";
+import { migratedDb } from "../../../helpers/db";
 
 const FIXTURES = join(import.meta.dirname, "..", "..", "..", "fixtures", "cooklang");
 
@@ -176,8 +175,7 @@ describe("toCooklang", () => {
 
 describe("golden files: the three sample recipes", () => {
   test.each([["anzac-biscuits"], ["roast-pumpkin-soup-with-garlic-croutons"], ["lemon-tart"]])("%s matches its fixture", async (slug) => {
-    const db = openDatabase(":memory:");
-    migrate(db);
+    const db = migratedDb();
     seedSample(db);
     const doc = recipeRepository(db).get(slug)!;
     const expected = readFileSync(join(FIXTURES, `${slug}.cook`), "utf8");

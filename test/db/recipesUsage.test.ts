@@ -2,16 +2,14 @@
 // delete. Against :memory: with the real migration.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
 import { type RecipeInput, recipeInputSchema, recipeSummarySchema } from "../../src/domain/recipes/recipe";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 let repo: RecipeRepository;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = recipeRepository(db);
 });
 

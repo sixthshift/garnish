@@ -2,17 +2,15 @@
 // full document, update replacing children, delete cascading, list filters.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { type RecipeRepository, recipeRepository } from "../../src/db/models/recipe/repo";
 import { noFacets, type RecipeInput, recipeInputSchema, recipeSchema, recipeSummarySchema } from "../../src/domain/recipes/recipe";
+import { migratedDb } from "../helpers/db";
 import { restyledPart } from "../helpers/restyle";
 
 let db: Database;
 let repo: RecipeRepository;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = recipeRepository(db);
 });
 

@@ -16,6 +16,7 @@ import { type ShoppingRepository, shoppingRepository } from "../../src/db/models
 import { unitRepository } from "../../src/db/models/unit/repo";
 import { type RecipeInput, recipeInputSchema } from "../../src/domain/recipes/recipe";
 import { type ShoppingItemInput, shoppingItemInputSchema, shoppingItemSchema } from "../../src/domain/shopping/shopping";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 let repo: ShoppingRepository;
@@ -23,8 +24,7 @@ let repo: ShoppingRepository;
 const parse = (input: ShoppingItemInput) => shoppingItemInputSchema.parse(input);
 
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = shoppingRepository(db);
 });
 

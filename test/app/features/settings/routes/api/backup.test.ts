@@ -9,14 +9,11 @@ import recipes from "../../../../../../src/db/models/recipe/repo";
 import { readZip, writeZip } from "../../../../../../src/lib/zip";
 import { handleBackupZip, handleRestore } from "../../../../../../src/server/api/backup";
 import { IDS, sampleBackup } from "../../../../../helpers/backup";
-import { testRouter } from "../../../../../helpers/routes";
+import { handlersOf, testRouter } from "../../../../../helpers/routes";
 import { useTempDataDir } from "../../../../../helpers/server";
 import { PNG_BYTES } from "../../../../../helpers/zip";
 
 useTempDataDir();
-
-type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
-const handlersOf = (route: { options: { server?: unknown } }) => (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
 
 const IMAGES = [`images/${IDS.recipe}.png`, `images/steps/${IDS.step}.png`, `images/timeline/${IDS.event}.png`];
 

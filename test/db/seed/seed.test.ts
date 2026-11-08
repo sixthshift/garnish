@@ -1,7 +1,5 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../../src/db/connection/open";
-import { migrate } from "../../../src/db/migrations/migrate";
 import { plannerRepository } from "../../../src/db/models/planner/repo";
 import { styleRuleRepository } from "../../../src/db/models/style/repo";
 import { unitRepository } from "../../../src/db/models/unit/repo";
@@ -9,11 +7,11 @@ import { DEFAULT_PLANNER_RULES } from "../../../src/db/seed/planner";
 import { seed } from "../../../src/db/seed/seed";
 import { DEFAULT_STYLE_RULES } from "../../../src/db/seed/style";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
+import { migratedDb } from "../../helpers/db";
 
 let db: Database;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
 });
 
 const count = () => db.query<{ n: number }, []>("SELECT count(*) AS n FROM unit").get()!.n;

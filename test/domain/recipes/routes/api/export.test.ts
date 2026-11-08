@@ -14,13 +14,10 @@ import { type Recipe, recipeInputSchema } from "../../../../../src/domain/recipe
 import { recipeCookRoute as RecipeCookRoute, recipeJsonRoute as RecipeJsonRoute } from "../../../../../src/domain/recipes/routes/api/export";
 import { handleRecipeCook, handleRecipeJson } from "../../../../../src/server/api/export";
 import { getDb } from "../../../../../src/server/core/db";
-import { testRouter } from "../../../../helpers/routes";
+import { handlersOf, testRouter } from "../../../../helpers/routes";
 import { useTempDataDir } from "../../../../helpers/server";
 
 useTempDataDir();
-
-type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
-const handlersOf = (route: { options: { server?: unknown } }) => (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
 
 const PASTRY_INGREDIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
 const FLOUR_INGREDIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";

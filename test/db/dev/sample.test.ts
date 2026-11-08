@@ -3,25 +3,23 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
 import { listRecipes } from "../../../src/api/rpc/recipes";
-import { openDatabase } from "../../../src/db/connection/open";
 import { foodRef, unitRef } from "../../../src/db/dev/references";
 import { parseSampleArgs, seedSample } from "../../../src/db/dev/sample";
 import { SAMPLE_RECIPES } from "../../../src/db/dev/sampleRecipes";
-import { migrate } from "../../../src/db/migrations/migrate";
 import { recipeRepository } from "../../../src/db/models/recipe/repo";
 import { timelineRepository } from "../../../src/db/models/timeline/repo";
 import { seed } from "../../../src/db/seed/seed";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { recipeInputSchema, recipeSchema } from "../../../src/domain/recipes/recipe";
 import { getDb } from "../../../src/server/core/db";
+import { migratedDb } from "../../helpers/db";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
 
 let db: Database;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   seed(db);
 });
 
@@ -177,8 +175,7 @@ test("skips only the recipes whose slug exists and does not touch the user's cop
 });
 
 test("works without the units seed, creating the units it names", async () => {
-  const bare = openDatabase(":memory:");
-  migrate(bare);
+  const bare = migratedDb();
   seedSample(bare);
   expect(bare.query<{ n: number }, []>("SELECT count(*) AS n FROM recipe").get()!.n).toBe(3);
   expect(recipeRepository(bare).get("anzac-biscuits")!.parts[0]!.ingredients[3]!.unit).toMatchObject({

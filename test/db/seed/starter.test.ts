@@ -1,7 +1,5 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, test } from "vitest";
-import { openDatabase } from "../../../src/db/connection/open";
-import { migrate } from "../../../src/db/migrations/migrate";
 import { aisleRepository } from "../../../src/db/models/aisle/repo";
 import { foodRepository } from "../../../src/db/models/food/repo";
 import { correctedStarterFoods, FOOD_PLURALS } from "../../../src/db/seed/foodPlurals";
@@ -10,11 +8,11 @@ import { seed } from "../../../src/db/seed/seed";
 import { seedFoodPlurals, seedStarterFoods } from "../../../src/db/seed/starter";
 import { DEFAULT_UNITS } from "../../../src/db/seed/units";
 import { parseIngredient } from "../../../src/domain/recipes/ingredient";
+import { migratedDb } from "../../helpers/db";
 
 let db: Database;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
 });
 
 const wordsOf = (food: StarterFood) => [food.name, food.plural, ...(food.aliases ?? [])].filter((word): word is string => word !== undefined);

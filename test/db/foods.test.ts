@@ -1,18 +1,16 @@
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { aisleRepository } from "../../src/db/models/aisle/repo";
 import { type FoodRepository, foodRepository } from "../../src/db/models/food/repo";
 import { unitRepository } from "../../src/db/models/unit/repo";
+import { migratedDb } from "../helpers/db";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 let db: Database;
 let repo: FoodRepository;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = foodRepository(db);
 });
 

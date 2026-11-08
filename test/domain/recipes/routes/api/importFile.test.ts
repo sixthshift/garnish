@@ -8,15 +8,13 @@ import type { FileRecipe, MealieRecipe } from "../../../../../src/domain/recipes
 import { IMPORT_FIELD } from "../../../../../src/domain/recipes/import";
 import { importFileRoute as Route } from "../../../../../src/domain/recipes/routes/api/importFile";
 import { handleImportFile } from "../../../../../src/server/api/importFile";
+import { handlersOf } from "../../../../helpers/routes";
 import { makeZip, PNG_BYTES } from "../../../../helpers/zip";
 
 const FIXTURE = join(import.meta.dirname, "../../../../fixtures/mealie/lemon-tart.json");
 const fixtureText = (): string => readFileSync(FIXTURE, "utf8");
 const TANDOOR = join(import.meta.dirname, "../../../../fixtures/tandoor/lemon-tart.json");
 const tandoorText = (): string => readFileSync(TANDOOR, "utf8");
-
-type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
-const handlersOf = (route: { options: { server?: unknown } }) => (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
 
 function upload(body: BodyInit | null, name = "lemon-tart.json", type = "application/json"): Request {
   const form = new FormData();

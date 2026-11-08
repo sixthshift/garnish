@@ -4,15 +4,13 @@
 // sheet in M39.7.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { type PlannerRepository, plannerRepository } from "../../src/db/models/planner/repo";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 let repo: PlannerRepository;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   repo = plannerRepository(db);
 });
 

@@ -6,6 +6,7 @@ import { openDatabase } from "../../../src/db/connection/open";
 import { listMigrations, MIGRATIONS_DIR, migrate } from "../../../src/db/migrations/migrate";
 import { aiSettingRepository } from "../../../src/db/models/ai/repo";
 import { modelFor, readChosenModels, requireModel } from "../../../src/server/ai/client";
+import { migratedDb } from "../../helpers/db";
 
 let restore: ReturnType<typeof readChosenModels> | null = null;
 afterEach(() => {
@@ -15,8 +16,7 @@ afterEach(() => {
 });
 
 function chosen() {
-  const db = openDatabase(":memory:");
-  migrate(db);
+  const db = migratedDb();
   const settings = aiSettingRepository(db);
   restore = readChosenModels((use) => settings.model(use));
   return settings;

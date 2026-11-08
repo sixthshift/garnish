@@ -3,16 +3,14 @@
 // their unit.
 import type { Database } from "bun:sqlite";
 import { beforeEach, expect, test } from "vitest";
-import { openDatabase } from "../../src/db/connection/open";
-import { migrate } from "../../src/db/migrations/migrate";
 import { type FoodRepository, foodRepository } from "../../src/db/models/food/repo";
 import { unitRepository } from "../../src/db/models/unit/repo";
+import { migratedDb } from "../helpers/db";
 
 let db: Database;
 let foods: FoodRepository;
 beforeEach(async () => {
-  db = openDatabase(":memory:");
-  migrate(db);
+  db = migratedDb();
   foods = foodRepository(db);
 });
 

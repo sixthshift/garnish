@@ -60,3 +60,10 @@ export function elementHtml(html: string, testid: string): string {
   }
   return html.slice(open);
 }
+
+/** A server route's handler, as a test calls it. */
+export type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>;
+
+/** A server route's handlers by method, to call directly: what the route wires a path to. */
+export const handlersOf = (route: { options: { server?: unknown } }) =>
+  (route.options.server as { handlers?: Record<string, Handler> } | undefined)?.handlers ?? {};
