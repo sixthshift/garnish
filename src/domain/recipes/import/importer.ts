@@ -2,6 +2,7 @@ import type { z } from "zod";
 import { checkAgainstAnchor } from "./check";
 import { ImportError } from "./errors";
 import { extractRecipe } from "./extract";
+import { houseLines } from "./houseLines";
 import { aiPrompt, anchorJson, MAX_AI_TEXT, parseAiAnswer, SCRAPED_JSON_SCHEMA } from "./model";
 import { looksLikeHtml, readableText } from "./page/text";
 import type { ImportedRecipe } from "./result";
@@ -97,11 +98,13 @@ export class Importer {
   async import(source: Source): Promise<ImportedRecipe | FileRecipe[]> {
     switch (source.kind) {
       case "url":
-        return this.fromUrl(source.url);
+        return inHouseTerms(await this.fromUrl(source.url));
       case "text":
-        return this.read(source.text, { sourceUrl: source.sourceUrl ?? "", anchor: source.anchor == null ? null : normaliseScraped(source.anchor) });
+        return inHouseTerms(
+          await this.read(source.text, { sourceUrl: source.sourceUrl ?? "", anchor: source.anchor == null ? null : normaliseScraped(source.anchor) })
+        );
       case "page":
-        return this.fromPage(source.html, source.url);
+        return inHouseTerms(this.fromPage(source.html, source.url));
       case "file":
         return readExport(source.file);
     }
@@ -277,4 +280,15 @@ export class Importer {
     if (check.ok) return { from: "ai", url: sourceUrl, recipe: { ...answer, facets: mergeFacets(anchor.facets, answer.facets) }, pageText, check };
     return { from: "schema", url: sourceUrl, recipe: anchor, pageText, check, rejected: answer };
   }
+}
+
+/**
+ * The result with its lines in the household's terms (decisions.md row 227):
+ * imperial amounts without a metric twin converted and "1 egg + 1 yolk" split,
+ * in the recipe and in a rejected answer alike, so Check shows what will be
+ * saved. After the anchored read's check, which compares the model's answer to
+ * the page and not to this.
+ */
+function inHouseTerms(result: ImportedRecipe): ImportedRecipe {
+  return { ...result, recipe: houseLines(result.recipe), ...(result.rejected ? { rejected: houseLines(result.rejected) } : {}) };
 }

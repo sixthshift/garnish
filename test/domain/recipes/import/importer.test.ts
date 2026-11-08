@@ -117,6 +117,16 @@ describe('import({ kind: "url" })', () => {
     expect(page.calls.map((url) => url.href)).toEqual([URL_UNDER_TEST]);
   });
 
+  test("a page's imperial amounts and joined lines arrive in the household's terms (decisions.md row 227)", async () => {
+    const page = SCHEMA_PAGE.replace('"1 cup plain flour","125 g butter"', '"3 pounds beef chuck","1 large egg + 1 egg yolk"').replace(
+      '"Mix."',
+      '"Bake at 325°F."'
+    );
+    const found = await fetching(fakePage(page)).import({ kind: "url", url: URL_UNDER_TEST });
+    expect(found.recipe.parts.flatMap((part) => part.ingredients)).toEqual(["1.4 kg beef chuck", "1 large egg", "1 egg yolk"]);
+    expect(found.recipe.parts.flatMap((part) => part.steps)).toEqual(["Bake at 163°C."]);
+  });
+
   test("falls back to the stub", async () => {
     expect((await fetching(fakePage(STUB_PAGE)).import({ kind: "url", url: URL_UNDER_TEST })).from).toBe("stub");
   });
