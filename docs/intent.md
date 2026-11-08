@@ -6,7 +6,7 @@ Architecture: [architecture.md](architecture.md). Decision log: [decisions.md](d
 
 ## What it is
 
-A personal recipe manager for one household. LAN only. Not a product.
+A personal recipe manager for one household. On the LAN, with one door out: the MCP connector, behind OAuth. Not a product.
 
 The goal is the best of the existing tools, assembled: take each incumbent's strongest decision, leave its weakest.
 
@@ -37,7 +37,7 @@ Shared holes, which switching doesn't fix:
 
 ## Why buildable now
 
-The hard parts were never the CRUD app. They were the scraper and the parser. An LLM does both from page text against a strict schema. That is deferred past v1, but the schema is designed for it.
+The hard parts were never the CRUD app. They were the scraper and the parser. An LLM does both from page text against a strict schema, and the import does exactly that, checked against the page's own words; without a model the rules alone still import.
 
 ## Decisions
 
@@ -45,7 +45,7 @@ See [decisions.md](decisions.md). The load-bearing ones:
 
 - SQLite is the only store. Cooklang is a reference, not a format we write.
 - No auth, no users. The MCP connector is the exception that proves it: behind OAuth, it lets in a client with a pairing code from Settings, never a person (decisions.md row 181).
-- No AI in v1. When it comes, it runs as a hosted model over an OpenAI-compatible endpoint, configured by environment.
+- AI is optional. The provider is chosen by environment, each use's model in Settings › AI (decisions.md row 217), and every answer is validated into the documents the editor saves.
 - Docker, one container, one volume.
 
 ## Won't do
@@ -63,5 +63,4 @@ See [decisions.md](decisions.md). The load-bearing ones:
 
 ## Open
 
-- Recipe-to-recipe references and how parents react to child edits.
 - External authoring, closed unless export becomes bidirectional.

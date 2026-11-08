@@ -4,9 +4,9 @@ A recipe manager for one household, running on your own network. It is made for 
 
 - **Recipes in parts.** A pie is a filling and a pastry, each with its own ingredients and steps. A part can be a recipe of its own, and scales with the one that uses it.
 - **Import from anywhere.** Paste a link, or share a page from your phone's browser, and Garnish reads the recipe off it for you to check before it is saved. Mealie and Tandoor backups come across whole.
-- **Cook mode.** One step at a time, full screen, with timers that can wake your phone when they finish.
+- **Cook from the recipe.** The page folds to the step you are on, keeps the screen awake, and its timers can wake your phone when they finish; at the end it asks which of tonight's changes to keep.
 - **Plan and shop.** A week of meals, and a shopping list grouped by aisle that merges what the week needs.
-- **Optional AI.** Read a recipe out of pasted text, rewrite a method in your household's own style, or suggest a week of meals. Off unless you turn it on.
+- **Optional AI.** Read a recipe out of pasted text, rewrite a method in your household's own style, suggest a week of meals, or answer questions while you cook, by voice if you like. Off unless you turn it on.
 
 There are no accounts: everyone on your network shares one library. Do not expose it to the internet.
 

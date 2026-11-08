@@ -4,7 +4,7 @@ Plans to refine before building. Stage 16 (decisions.md rows 190–195) reorgani
 
 Each plan below has the problem as seen, a direction, the questions to settle, and what it touches. Nothing here is decided. When a plan is settled it becomes a decisions.md row and a milestone in plan.md, and its section here is reduced to a link.
 
-Order is by value: 1 and 2 share the rotation-pick logic in `plan/fill` and are the state the household meets most; 3 and 4 make Shopping usable in the shop; 5 closes the loop the planner already depends on; 6 is a set of small frictions. 7 came after the walk-through and ranks with 1 and 2: it is how a recipe gets better at all (rewritten 2026-11-07, when cook mode was found unused). 8 waits on other work: it polishes importing once Chromium and the model are further into it.
+Order is by value: 1 and 2 share the weeknight-pick logic in `plan/fill` and are the state the household meets most; 3 and 4 make Shopping usable in the shop; 5 closes the loop the planner already depends on; 6 is a set of small frictions. 7 came after the walk-through and ranks with 1 and 2: it is how a recipe gets better at all (rewritten 2026-11-07, when cook mode was found unused). 8 waits on other work: it polishes importing once Chromium and the model are further into it.
 
 ---
 
@@ -13,8 +13,8 @@ Order is by value: 1 and 2 share the rotation-pick logic in `plan/fill` and are 
 **Seen.** A Tuesday with an empty week. Home says "Nothing planned for tonight" and offers "Open the plan", which opens a page of seven dashes. Below it, This week is seven rows of "—", half the phone's height saying nothing. To try offers never-made recipes, which are rarely what a weeknight wants. The question at 5pm is "what's for dinner?", and Home has no answer.
 
 **Direction.**
-- Tonight, unplanned, offers three picks from the rotation that have not been cooked lately, using `rotationPool` from `plan/fill` (it already excludes what is planned). Each pick has **Cook tonight**, which writes it as today's dinner and opens cook mode, and the card has **Show others** to draw three more.
-- With no rotation marked, the picks come from the recipes made most often (the weeknight-able pool `swapPool` uses), with a line saying marking the rotation makes them better.
+- Tonight, unplanned, offers three Weeknight recipes that have not been cooked lately, using `rotationPool` from `plan/fill` (it already excludes what is planned). Each pick has **Cook tonight**, which writes it as today's dinner and opens cook mode, and the card has **Show others** to draw three more.
+- With nothing marked Weeknight, the picks come from the recipes made most often (the weeknight-able pool `swapPool` uses), with a line saying marking the Week facet makes them better.
 - An empty This week collapses to one line ("Nothing planned this week") with the plan-the-rest action from plan 2. A part-planned week keeps its rows.
 - With tonight planned, nothing changes.
 
@@ -100,7 +100,7 @@ Parser rules stay out of this: the threshold for a new rule is unchanged.
 - Should a missed meal move itself to the next open night, or only offer to?
 - Does a plain text entry ("Leftovers", "Out") need a made state at all?
 
-**Touches.** `src/domain/plan/` (a pure `madeState(entry, recipe)`), `src/domain/home/components/WeekGlance.tsx`, `src/domain/plan/components/week/PlanEntryRow.tsx`, `src/domain/recipes/components/cook/FinishedCard.tsx`.
+**Touches.** `src/domain/plan/` (a pure `madeState(entry, recipe)`), `src/domain/home/components/WeekGlance.tsx`, `src/domain/plan/components/week/PlanEntryRow.tsx`, the review at Finish (`src/domain/recipes/components/cooking/`).
 
 ---
 
@@ -108,10 +108,9 @@ Parser rules stay out of this: the threshold for a new rule is unchanged.
 
 Each is small enough to settle in a line.
 
-- **Recipes: too much chrome before the first card.** Search, then the shelves, then Mark Rotation & Weekend, then count, Filters, Sort and the view toggles: three rows of controls. Marking is an occasional chore. Move it into the Sort menu (or a ⋯ beside it) and keep the shelves and search.
+- **Recipes: too much chrome before the first card.** Search, then the shelves, then count, Filters, Sort and the view toggles: two rows of controls before a card.
 - **Recipe page: Add to plan is behind ⋯** (`PlanPopover` in `RecipeActions`), while Add to shopping list has a full button. Under the four modes, putting a recipe on a day matters more than buying for it outside a plan. Swap their prominence, or give both buttons.
-- **Recipe page: the Rotation | Weekend toggle has no label** and reads as two unexplained buttons in the header. A small label ("Kind"), or wording that explains itself ("In the rotation", "A weekend one").
-- **Settings takes a fifth slot in the phone nav**, squeezing the four modes for a page opened rarely. Move it to a corner of Home's header or the Recipes header; keep it in the side nav from `md`.
+- **Settings takes a fifth slot in the phone nav**, squeezing the four modes for a page opened rarely. Move it to a corner of Home's header or the Recipes header; keep it in the desktop's top bar.
 - **Home's shopping card is a count.** Either it says what the list is for (plan 3), shows the first aisle or two, or it goes and the nav carries a badge.
 - **Recipe page: Made this sits below the method**, after Notes. With plan 5 most cooks are logged from the review at Finish, so it may belong in ⋯.
 
@@ -121,13 +120,13 @@ Each is small enough to settle in a line.
 
 ## 7. Cooking from the recipe page, with an assistant and a review
 
-Settled 2026-11-07: decisions.md rows 214 and 215, plan.md M52, from `docs/mockups/cooking.html`. Cook mode is gone; the recipe page is cooked from, with an assistant beside it and a review at Finish. Open still: an "add an ingredient" adjustment, "fix this later" flags, and whether the MCP connector should see the session.
+Settled 2026-11-07: decisions.md rows 214 and 215, from `docs/mockups/cooking.html`. Cook mode is gone; the recipe page is cooked from, with an assistant beside it and a review at Finish. Open still: an "add an ingredient" adjustment, "fix this later" flags, and whether the MCP connector should see the session.
 
 ---
 
 ## 8. Importing, polished
 
-Settled with Jason on 2026-11-06 after the 2026-11-05 walk: decisions.md row 203, plan.md M44.
+Settled with Jason on 2026-11-06 after the 2026-11-05 walk: decisions.md row 203.
 
 ---
 
