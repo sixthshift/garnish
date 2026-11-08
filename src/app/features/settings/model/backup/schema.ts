@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MEALS } from "../../../../../domain/plan/planner";
-import { facetsSchema, noFacets, type WeekPart } from "../../../../../domain/recipes/recipe";
+import { facetsSchema, noFacets } from "../../../../../domain/recipes/recipe";
 import { imageContentType } from "../../../../../lib/imageFile";
 
 // The backup's `garnish.json`, as architecture.md's Backup and restore draws
@@ -155,44 +155,29 @@ export const backupPartSchema = z.object({
   steps: z.array(backupStepSchema).default([]),
 });
 
-/**
- * A backup made before row 219 carries `kind`, 'rotation' or 'weekend', beside
- * the facets: it restores as the week facet, 'rotation' as 'weeknight', unless
- * the facets already say the week.
- */
-function foldKind<T extends { kind?: "rotation" | "weekend" | null; facets: z.infer<typeof facetsSchema> }>({ kind, ...rest }: T): Omit<T, "kind"> {
-  if (!kind || rest.facets.week.length > 0) return rest;
-  const week: WeekPart = kind === "rotation" ? "weeknight" : "weekend";
-  return { ...rest, facets: { ...rest.facets, week: [week] } };
-}
-
-export const backupRecipeSchema = z
-  .object({
-    id,
-    slug: nonEmpty,
-    name: nonEmpty,
-    description: text,
-    image: image("recipe"),
-    rating: z.number().min(0).max(5).nullable().default(null),
-    favourite: z.boolean().default(false),
-    // Only in a backup made before row 219; folded into the week facet below.
-    kind: z.enum(["rotation", "weekend"]).nullable().optional(),
-    // Absent from a backup made before them (row 209): such a recipe has none said.
-    facets: facetsSchema.default(noFacets),
-    recipeServings: z.number().nonnegative().default(0),
-    recipeYieldQuantity: z.number().nonnegative().default(0),
-    yieldUnitId: id.nullable().default(null),
-    recipeYield: text,
-    prepTime: minutes,
-    performTime: minutes,
-    sourceUrl: z.string().nullable().default(null),
-    tagIds: z.array(id).default([]),
-    notes: z.array(z.object({ id, title: text, text })).default([]),
-    parts: z.array(backupPartSchema).min(1, "a recipe needs at least one part"),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  })
-  .transform(foldKind);
+export const backupRecipeSchema = z.object({
+  id,
+  slug: nonEmpty,
+  name: nonEmpty,
+  description: text,
+  image: image("recipe"),
+  rating: z.number().min(0).max(5).nullable().default(null),
+  favourite: z.boolean().default(false),
+  // Absent from a backup made before them (row 209): such a recipe has none said.
+  facets: facetsSchema.default(noFacets),
+  recipeServings: z.number().nonnegative().default(0),
+  recipeYieldQuantity: z.number().nonnegative().default(0),
+  yieldUnitId: id.nullable().default(null),
+  recipeYield: text,
+  prepTime: minutes,
+  performTime: minutes,
+  sourceUrl: z.string().nullable().default(null),
+  tagIds: z.array(id).default([]),
+  notes: z.array(z.object({ id, title: text, text })).default([]),
+  parts: z.array(backupPartSchema).min(1, "a recipe needs at least one part"),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+});
 
 // --- Around the recipe ------------------------------------------------------
 
