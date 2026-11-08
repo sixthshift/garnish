@@ -137,6 +137,7 @@ function MinutesField({
 /** Prep and cook where the page's strip has them, the total worked out beside them. */
 export function TimesFields({ draft, errors, saving, onPatch }: RecipeAboutProps) {
   const total = totalMinutes(draft.prepTime, draft.performTime);
+  const timeError = errors.prepTime ?? errors.performTime;
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="times">
       <MinutesField
@@ -156,6 +157,12 @@ export function TimesFields({ draft, errors, saving, onPatch }: RecipeAboutProps
         onChange={(performTime) => onPatch({ performTime })}
       />
       {total !== null && <span className="text-sm text-fg-subtle">Total {formatDuration(total)}</span>}
+      {/* The fields only turn red; the reason is said once under the pair. */}
+      {timeError !== undefined && (
+        <p className="w-full text-sm text-fg-danger" role="alert">
+          {timeError}
+        </p>
+      )}
     </div>
   );
 }
