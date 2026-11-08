@@ -9,6 +9,7 @@ import type { RestyleCheck } from "../../../src/domain/recipes/style";
 import { type RestyleResult, refusedCheckReport } from "../../../src/server/ai/restyle";
 
 const passing: RestyleCheck = {
+  rebuilt: false,
   ok: true,
   missingFacts: [],
   missingFoods: [],

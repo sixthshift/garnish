@@ -1,4 +1,4 @@
-// The restyle read (M37.4): the prompt, the answer parser, the part pairing,
+// The restyle read (M37.4): the prompt, the answer parser, placing the lines,
 // and the whole pass against an injected runner. No provider is ever called —
 // a test that spends a request is not a test — so every case drives
 // `runRestyle` with a fake runner, or the fetch runner with a fake `fetch`.
@@ -9,20 +9,21 @@ import { createRecipe, getRecipe, listRecipes } from "../../../src/api/rpc/recip
 import { listStyleRules } from "../../../src/api/rpc/style";
 import recipes from "../../../src/db/models/recipe/repo";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipes/recipe";
+import type { RestyledPart } from "../../../src/domain/recipes/style";
 import { AiError } from "../../../src/server/ai/client";
 import { apiProvider } from "../../../src/server/ai/provider/api";
 import { applyRestyle, createRestyledRecipe, restoreSteps, restyleDraft, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
 import {
+  AnsweredLineSchema,
+  AnsweredPartSchema,
   FIXED_RESTYLE_LINE,
   foodMarker,
-  matchParts,
   parseRestyleAnswer,
   partsWithSteps,
+  placeLines,
   promptParts,
   RESTYLE_JSON_SCHEMA,
-  RestyledPartSchema,
   restylePrompt,
-  withEmptyParts,
 } from "../../../src/server/ai/restylePrompt";
 import { fakeAi, useChosenModels } from "../../helpers/ai";
 import { restyledPart } from "../../helpers/restyle";
@@ -87,13 +88,27 @@ function fakeFetch(status: number, body: unknown) {
   return Object.assign(fetcher, { calls });
 }
 
-/** The answer the model would give if it did everything right: same parts, same names, every fact kept. */
+/** Parts as the model writes them: each line by its number from 1 with its note. */
+function answer(parts: readonly RestyledPart[]) {
+  return {
+    parts: parts.map((part) => ({
+      name: part.name,
+      ingredients: part.rows.map((row, i) => ({ line: row + 1, note: part.notes[i] ?? "" })),
+      steps: part.steps,
+    })),
+  };
+}
+
+/** The rewrite a model would give if it did everything right: same parts, same names, every fact kept. */
 const GOOD = {
   parts: [
-    { ...restyledPart("", ["Heat the oven to 180°C and melt the butter.", "Bake for 15 minutes, until golden."]), notes: ["", "a pinch of salt"] },
-    { ...restyledPart("Golden syrup mixture", ["Warm the golden syrup for 2 minutes."]), notes: [""] },
+    { ...restyledPart("", ["Heat the oven to 180°C and melt the butter.", "Bake for 15 minutes, until golden."], [0, 1]), notes: ["", "a pinch of salt"] },
+    restyledPart("Golden syrup mixture", ["Warm the golden syrup for 2 minutes."], [2]),
   ],
 };
+
+/** GOOD as the model's JSON. */
+const GOOD_JSON = JSON.stringify(answer(GOOD.parts));
 
 afterEach(() => {
   delete process.env.AI_PROVIDER;
@@ -132,18 +147,21 @@ describe("the prompt", () => {
     const prompt = restylePrompt({ rules: [], parts });
     expect(prompt).toContain("(the recipe's main body)");
     expect(prompt).toContain('PART "Topping"');
-    expect(prompt).toContain("1. 125 g butter");
-    expect(prompt).toContain("1. 2 tbsp golden syrup");
+    // Lines are numbered through the whole recipe, so a line can be moved by its number.
+    expect(prompt).toContain("#1 125 g butter");
+    expect(prompt).toContain("#2 2 tbsp golden syrup");
     expect(prompt).toContain("1. Melt the butter.");
     expect(prompt).toContain("2. Bake for 15 minutes.");
     expect(prompt.indexOf("125 g butter")).toBeLessThan(prompt.indexOf("2 tbsp golden syrup"));
   });
 
-  test("asks for the same parts in the same order, steps only, as JSON", () => {
+  test("asks for the parts as the house style lays them out — the recipe's own unless a statement says otherwise — each line once, as JSON", () => {
     const prompt = restylePrompt({ rules: [], parts });
-    expect(prompt).toMatch(/same parts, in the same order/);
+    expect(prompt).toMatch(/as the house style lays them out/);
+    expect(prompt).toMatch(/Where no statement asks for a different layout, answer with the same parts, in the same order/);
+    expect(prompt).toMatch(/Put every line in exactly one part, by its number/);
     expect(prompt).toMatch(/Each step is three fields/);
-    expect(prompt).toMatch(/one string per ingredient line/);
+    expect(prompt).toMatch(/Never change a quantity, a unit or a food/);
     expect(prompt).toMatch(/Answer with the JSON only/);
   });
 
@@ -196,46 +214,111 @@ describe("the prompt", () => {
   });
 });
 
-describe("empty parts", () => {
-  const withSteps = (name: string, ...texts: string[]) => ({
+describe("placing the lines", () => {
+  const part = (name: string, lines: string[], ...texts: string[]) => ({
     id: name,
     name,
-    ingredients: [],
+    ingredients: lines.map((note, i) => ({
+      id: `${name}:${i}`,
+      quantity: null,
+      quantityMax: null,
+      unit: null,
+      food: null,
+      note,
+      originalText: `line ${name} ${i}`,
+      fixed: false,
+      alternatives: [],
+    })),
     steps: texts.map((text) => ({ id: text, text, title: "", summary: "", ingredientIds: [], image: null })),
   });
-  const body = withSteps("");
-  const sauce = withSteps("Sauce", "Simmer 10 minutes.");
-  const topping = withSteps("Topping", "Melt the butter.");
+  // Rows by place: the body holds 0 and 1, Sauce 2, Topping none.
+  const body = part("", ["", "sifted"]);
+  const sauce = part("Sauce", ["cold"], "Simmer 10 minutes.");
+  const topping = part("Topping", [], "Melt the butter.");
+  const answered = (name: string, lines: [number, string][], ...texts: string[]) => ({
+    name,
+    ingredients: lines.map(([line, note]) => ({ line, note })),
+    steps: texts.map((text) => ({ title: "", text, summary: "" })),
+  });
 
   test("partsWithSteps names the parts with something to rewrite", () => {
-    expect(partsWithSteps([body, sauce, topping]).map((part) => part.name)).toEqual(["Sauce", "Topping"]);
+    expect(partsWithSteps([body, sauce, topping]).map((p) => p.name)).toEqual(["Sauce", "Topping"]);
   });
 
-  test("a full answer is taken as it is, stepless parts included", () => {
-    const answered = [
-      { name: "", notes: [], steps: [] },
-      restyledPart("Sauce", ["Simmer for 10 minutes."]),
-      restyledPart("Topping", ["Melt the butter gently."]),
-    ];
-    expect(withEmptyParts([body, sauce, topping], answered)).toEqual(answered);
+  test("an answer placing every line is taken as it is, its numbers turned into rows", () => {
+    const placed = placeLines(
+      [body, sauce, topping],
+      [
+        answered("", [
+          [1, ""],
+          [2, "sifted"],
+        ]),
+        answered("Sauce", [[3, "cold"]], "Simmer."),
+        answered("Topping", [], "Melt."),
+      ]
+    );
+    expect(placed.map((p) => [p.name, p.rows, p.notes])).toEqual([
+      ["", [0, 1], ["", "sifted"]],
+      ["Sauce", [2], ["cold"]],
+      ["Topping", [], []],
+    ]);
   });
 
-  test("an answer naming only the parts with steps has the stepless ones spliced back, in the recipe's positions", () => {
-    const answered = [restyledPart("Sauce", ["Simmer for 10 minutes."]), restyledPart("Topping", ["Melt the butter gently."])];
-    expect(withEmptyParts([body, sauce, topping], answered)).toEqual([{ name: "", notes: [], steps: [] }, answered[0], answered[1]]);
-    expect(withEmptyParts([sauce, body], [answered[0]!])).toEqual([answered[0], { name: "", notes: [], steps: [] }]);
+  test("an answer may move lines between parts and lay the recipe out afresh", () => {
+    const placed = placeLines(
+      [body, sauce, topping],
+      [
+        answered(
+          "",
+          [
+            [3, "cold"],
+            [1, ""],
+          ],
+          "Simmer.",
+          "Melt."
+        ),
+        answered("To serve", [[2, "sifted"]], "Serve."),
+      ]
+    );
+    expect(placed.map((p) => [p.name, p.rows])).toEqual([
+      ["", [2, 0]],
+      ["To serve", [1]],
+    ]);
   });
 
-  test("an answer with any other count is malformed, and says how many parts the recipe has", () => {
-    let caught: unknown;
-    try {
-      withEmptyParts([body, sauce, topping], [restyledPart("Sauce", [])]);
-    } catch (error) {
-      caught = error;
-    }
-    expect(caught).toBeInstanceOf(AiError);
-    expect((caught as AiError).kind).toBe("malformed");
-    expect((caught as AiError).message).toMatch(/1 part where the recipe has 3/);
+  test("a line the answer leaves out goes back to its own part, and a part left out comes back where it was, with its notes", () => {
+    const placed = placeLines([body, sauce, topping], [answered("Sauce", [[3, "cold"]], "Simmer."), answered("Topping", [], "Melt.")]);
+    expect(placed).toEqual([
+      { name: "", rows: [0, 1], notes: ["", "sifted"], steps: [] },
+      { name: "Sauce", rows: [2], notes: ["cold"], steps: [{ title: "", text: "Simmer.", summary: "" }] },
+      { name: "Topping", rows: [], notes: [], steps: [{ title: "", text: "Melt.", summary: "" }] },
+    ]);
+    const partly = placeLines(
+      [body, sauce, topping],
+      [answered("", [[2, "sifted"]]), answered("Sauce", [[3, "cold"]], "Simmer."), answered("Topping", [], "Melt.")]
+    );
+    expect(partly[0]).toMatchObject({ rows: [1, 0], notes: ["sifted", ""] });
+  });
+
+  test("a line named twice, or one the recipe does not have, is malformed", () => {
+    const malformed = (parts: ReturnType<typeof answered>[]) => {
+      try {
+        placeLines([body, sauce, topping], parts);
+      } catch (error) {
+        return error as AiError;
+      }
+      throw new Error("expected a malformed answer");
+    };
+    expect(
+      malformed([
+        answered("", [
+          [1, ""],
+          [1, ""],
+        ]),
+      ]).message
+    ).toMatch(/ingredient 1 in twice/);
+    expect(malformed([answered("", [[4, ""]])]).message).toMatch(/ingredient 4, which the recipe does not have/);
+    expect(malformed([answered("", [[0, ""]])]).kind).toBe("malformed");
   });
 
   test("a recipe with no steps at all is its own answer, and the model is not called", async () => {
@@ -244,70 +327,78 @@ describe("empty parts", () => {
     const ai = fakeAi("never read");
     const { parts, check } = await runRestyle(recipe, ["Plain words."], { ai });
     expect(ai.calls).toEqual([]);
-    // An untouched part answers with its own notes, so the check sees it lining up.
+    // An untouched part answers with its own rows and notes, so the check sees it lining up.
     expect(parts).toEqual([
-      { name: "", notes: ["", "a pinch of salt"], steps: [] },
-      { name: "Golden syrup mixture", notes: [""], steps: [] },
+      { name: "", rows: [0, 1], notes: ["", "a pinch of salt"], steps: [] },
+      { name: "Golden syrup mixture", rows: [2], notes: [""], steps: [] },
     ]);
     expect(check.ok).toBe(true);
   });
 
-  test("runRestyle pairs a two-part answer with a three-part recipe whose main body has no steps", async () => {
+  test("runRestyle takes a two-part answer for a three-part recipe whose main body has no steps, and keeps its layout", async () => {
     const input = doc();
     const recipe = await callServerFn(createRecipe, {
       ...input,
       parts: [{ ...input.parts[0]!, steps: [] }, input.parts[1]!, { name: "Topping", ingredients: [], steps: [{ text: "Melt the butter." }] }],
     });
-    const ai = fakeAi(JSON.stringify({ parts: [GOOD.parts[1], restyledPart("Topping", ["Melt the butter slowly."])] }));
+    const ai = fakeAi(JSON.stringify(answer([GOOD.parts[1]!, restyledPart("Topping", ["Melt the butter slowly."], [])])));
     const { parts, check } = await runRestyle(recipe, ["Plain words."], { ai });
     // The stepless main body is still sent, so the model reads the ingredients it holds.
     expect(ai.calls[0]!.prompt).toContain('PART "" (the recipe\'s main body)');
     expect(ai.calls[0]!.prompt).toContain("a pinch of salt");
     expect(parts.map((part) => part.name)).toEqual(["", "Golden syrup mixture", "Topping"]);
-    expect(parts[0]).toEqual({ name: "", notes: ["", "a pinch of salt"], steps: [] });
+    expect(parts[0]).toEqual({ name: "", rows: [0, 1], notes: ["", "a pinch of salt"], steps: [] });
     expect(check.ok).toBe(true);
+    expect(check.rebuilt).toBe(false);
     expect(check.parts).toHaveLength(3);
 
-    // Applying that answer leaves the empty part as it was: no kept steps, so `authorSteps` does not list it.
-    const written = await callServerFn(applyRestyle, {
-      id: recipe.id,
-      parts: parts.map((part) => ({ name: part.name, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) })),
-    });
+    const written = await callServerFn(applyRestyle, { id: recipe.id, parts: plain(parts) });
     expect(written.restyledAt).not.toBeNull();
-    const kept = recipes.ref(recipe.id).authorSteps();
-    expect([...kept.keys()]).toEqual([recipe.parts[1]!.id, recipe.parts[2]!.id]);
+    expect(written.parts.map((part) => part.id)).toEqual(recipe.parts.map((part) => part.id));
+    expect(
+      recipes
+        .ref(recipe.id)
+        .authorParts()!
+        .map((part) => part.steps.map((step) => step.text))
+    ).toEqual([[], ["Warm the golden syrup for 2 minutes."], ["Melt the butter."]]);
   });
+
   test("notes answered on a stepless main body are written, and its original notes kept", async () => {
     const input = doc();
     const recipe = await callServerFn(createRecipe, { ...input, parts: [{ ...input.parts[0]!, steps: [] }, input.parts[1]!] });
-    const body = { name: "", notes: ["sifted", "a pinch of salt"], steps: [] };
-    const ai = fakeAi(JSON.stringify({ parts: [body, GOOD.parts[1]] }));
+    const body = { name: "", rows: [0, 1], notes: ["sifted", "a pinch of salt"], steps: [] };
+    const ai = fakeAi(JSON.stringify(answer([body, GOOD.parts[1]!])));
     const { parts } = await runRestyle(recipe, ["Plain words."], { ai });
     expect(parts[0]).toEqual(body);
 
-    const written = await callServerFn(applyRestyle, {
-      id: recipe.id,
-      parts: parts.map((part) => ({ name: part.name, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) })),
-    });
+    const written = await callServerFn(applyRestyle, { id: recipe.id, parts: plain(parts) });
     expect(written.parts[0]!.ingredients.map((row) => row.note)).toEqual(["sifted", "a pinch of salt"]);
     const restored = await callServerFn(restoreSteps, { id: recipe.id });
     expect(restored.parts[0]!.ingredients.map((row) => row.note)).toEqual(recipe.parts[0]!.ingredients.map((row) => row.note));
   });
 });
 
+/** Parts as `applyRestyle` takes them: plain copies, so a test cannot mutate what it was given. */
+function plain(parts: readonly RestyledPart[]) {
+  return parts.map((part) => ({ name: part.name, rows: [...part.rows], notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) }));
+}
+
 describe("the answer's schema", () => {
   test("the JSON Schema names exactly the fields the zod schema does, and requires all of them", () => {
-    const zodKeys = Object.keys(RestyledPartSchema.shape).sort();
+    const zodKeys = Object.keys(AnsweredPartSchema.shape).sort();
     const item = RESTYLE_JSON_SCHEMA.properties.parts.items;
     expect(Object.keys(item.properties).sort()).toEqual(zodKeys);
     expect([...item.required].sort()).toEqual(zodKeys);
     expect(item.additionalProperties).toBe(false);
+    const line = item.properties.ingredients.items;
+    expect(Object.keys(line.properties).sort()).toEqual(Object.keys(AnsweredLineSchema.shape).sort());
+    expect([...line.required].sort()).toEqual(Object.keys(AnsweredLineSchema.shape).sort());
     expect(RESTYLE_JSON_SCHEMA.additionalProperties).toBe(false);
     expect([...RESTYLE_JSON_SCHEMA.required]).toEqual(["parts"]);
   });
 
   test("a fenced answer is read, and prose is malformed", () => {
-    expect(parseRestyleAnswer(`\`\`\`json\n${JSON.stringify(GOOD)}\n\`\`\``)).toHaveLength(2);
+    expect(parseRestyleAnswer(`\`\`\`json\n${GOOD_JSON}\n\`\`\``)).toHaveLength(2);
     const caught = (() => {
       try {
         parseRestyleAnswer("Sure! Here is your recipe.");
@@ -334,7 +425,7 @@ describe("the model", () => {
     process.env.AI_BASE_URL = "https://provider.test/v1";
     chosen.import = "import-model";
     chosen.restyle = "big-model";
-    const fetcher = fakeFetch(200, completion(JSON.stringify(GOOD)));
+    const fetcher = fakeFetch(200, completion(GOOD_JSON));
     await runRestyle(await saved(), [], { ai: apiProvider(fetcher) });
     const body = JSON.parse(String(fetcher.calls[0]!.init?.body)) as Record<string, unknown>;
     expect(body.model).toBe("big-model");
@@ -348,7 +439,7 @@ describe("the model", () => {
 describe("runRestyle", () => {
   test("an answer that keeps every fact passes the check, and nothing is written", async () => {
     const recipe = await saved();
-    const ai = fakeAi(JSON.stringify(GOOD));
+    const ai = fakeAi(GOOD_JSON);
     const { parts, check } = await runRestyle(recipe, ["One action per step."], { ai });
 
     expect(check.ok).toBe(true);
@@ -368,46 +459,45 @@ describe("runRestyle", () => {
     const recipe = await saved();
     const dropped = {
       parts: [
-        restyledPart("", ["Heat the oven and melt the butter.", "Bake until golden."], 2),
-        restyledPart("Golden syrup mixture", ["Warm the golden syrup for 2 minutes."], 1),
+        restyledPart("", ["Heat the oven and melt the butter.", "Bake until golden."], [0, 1]),
+        restyledPart("Golden syrup mixture", ["Warm the golden syrup for 2 minutes."], [2]),
       ],
     };
-    const { parts, check } = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(dropped)) });
+    const { parts, check } = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(answer(dropped.parts))) });
     expect(parts).toHaveLength(2);
     expect(check.ok).toBe(false);
     expect(check.missingFacts).toEqual(["180c", "15min"]);
     expect(check.parts[1]!.ok).toBe(true);
   });
 
-  test("a missing part is malformed: the pairing is verified, never assumed", async () => {
+  test("a part the answer leaves out comes back with its lines, and the check reports the steps it lost", async () => {
     const recipe = await saved();
-    const short = { parts: [restyledPart("", ["Heat the oven to 180°C and bake for 15 minutes."], 2)] };
-    const caught = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(short)) }).catch((cause: unknown) => cause);
-    expect(caught).toBeInstanceOf(AiError);
-    expect((caught as AiError).kind).toBe("malformed");
-    expect((caught as AiError).message).toMatch(/1 part where the recipe has 2/);
+    const short = answer([restyledPart("", ["Heat the oven to 180°C and bake for 15 minutes."], [0, 1])]);
+    const { parts, check } = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(short)) });
+    expect(parts.map((part) => [part.name, part.rows])).toEqual([
+      ["", [0, 1]],
+      ["Golden syrup mixture", [2]],
+    ]);
+    expect(check.ok).toBe(false);
+    expect(check.missingFacts).toContain("2min");
   });
 
-  test("a renamed part is malformed, but a recased one is not", async () => {
+  test("a renamed part lays the recipe out afresh and is checked whole; a recased one keeps the layout", async () => {
     const recipe = await saved();
-    const renamed = {
-      parts: [
-        restyledPart("", ["Heat the oven to 180°C, melt the butter, bake 15 minutes."], 2),
-        restyledPart("Syrup", ["Warm the golden syrup for 2 minutes."], 1),
-      ],
-    };
-    const caught = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(renamed)) }).catch((cause: unknown) => cause);
-    expect((caught as AiError).kind).toBe("malformed");
+    const renamed = answer([GOOD.parts[0]!, { ...GOOD.parts[1]!, name: "Syrup" }]);
+    const result = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(renamed)) });
+    expect(result.check.rebuilt).toBe(true);
+    expect(result.check.ok).toBe(true);
+    expect(result.check.parts).toHaveLength(1);
 
-    const recased = { parts: [GOOD.parts[0]!, { ...GOOD.parts[1]!, name: "  GOLDEN SYRUP MIXTURE " }] };
+    const recased = answer([GOOD.parts[0]!, { ...GOOD.parts[1]!, name: "  GOLDEN SYRUP MIXTURE " }]);
     const { check } = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(recased)) });
+    expect(check.rebuilt).toBe(false);
     expect(check.ok).toBe(true);
   });
 
-  test("matchParts passes a matching answer and the runner's own failures come through untouched", async () => {
+  test("the runner's own failures come through untouched", async () => {
     const recipe = await saved();
-    expect(() => matchParts(recipe.parts, GOOD.parts)).not.toThrow();
-
     const boom = fakeAi(async () => {
       throw new AiError("timeout", "The model took too long to answer.");
     });
@@ -420,10 +510,7 @@ describe("applyRestyle and restoreSteps", () => {
   test("writes the accepted steps, keeps the author's, links them again and stamps the recipe", async () => {
     const recipe = await saved();
 
-    const after = await callServerFn(applyRestyle, {
-      id: recipe.id,
-      parts: GOOD.parts.map((part) => ({ ...part, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) })),
-    });
+    const after = await callServerFn(applyRestyle, { id: recipe.id, parts: plain(GOOD.parts) });
 
     expect(after.parts.map((part) => part.steps.map((step) => step.text))).toEqual(GOOD.parts.map((part) => part.steps.map((step) => step.text)));
     expect(after.restyledAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
@@ -440,14 +527,11 @@ describe("applyRestyle and restoreSteps", () => {
     expect(restored.restyledAt).toBeNull();
   });
 
-  test("an answer with the wrong number of parts is refused", async () => {
+  test("parts that do not hold every row exactly once are refused", async () => {
     const recipe = await saved();
-    const caught = await callServerFn(applyRestyle, {
-      id: recipe.id,
-      parts: [{ ...GOOD.parts[0]!, notes: [...GOOD.parts[0]!.notes], steps: GOOD.parts[0]!.steps.map((step) => ({ ...step })) }],
-    }).catch((cause: unknown) => cause);
+    const caught = await callServerFn(applyRestyle, { id: recipe.id, parts: plain(GOOD.parts.slice(0, 1)) }).catch((cause: unknown) => cause);
     expect(caught).toBeInstanceOf(Error);
-    expect(String(caught)).toContain("1 part where the recipe has 2");
+    expect(String(caught)).toContain("exactly once");
     expect((await callServerFn(getRecipe, { slug: recipe.slug }))!.restyledAt).toBeNull();
   });
 
@@ -464,7 +548,7 @@ describe("restyleSteps", () => {
     const rules = await callServerFn(listStyleRules);
     process.env.AI_PROVIDER = "api";
     process.env.AI_API_KEY = "secret";
-    const fetcher = fakeFetch(200, completion(JSON.stringify(GOOD)));
+    const fetcher = fakeFetch(200, completion(GOOD_JSON));
     vi.stubGlobal("fetch", fetcher);
 
     const result = await callServerFn(restyleSteps, { id: recipe.id, ruleIds: [rules[1]!.id, rules[0]!.id] });
@@ -496,13 +580,13 @@ describe("the food marker", () => {
 });
 
 describe("before the recipe is saved", () => {
-  /** The accepted answer as `applyRestyle` takes it: plain copies, so a test cannot mutate GOOD. */
-  const accepted = () => GOOD.parts.map((part) => ({ ...part, notes: [...part.notes], steps: part.steps.map((step) => ({ ...step })) }));
+  /** The accepted answer as `applyRestyle` takes it. */
+  const accepted = () => plain(GOOD.parts);
 
   test("restyleDraft rewrites a document that has no id, and writes nothing", async () => {
     process.env.AI_PROVIDER = "api";
     process.env.AI_API_KEY = "secret";
-    vi.stubGlobal("fetch", fakeFetch(200, completion(JSON.stringify(GOOD))));
+    vi.stubGlobal("fetch", fakeFetch(200, completion(GOOD_JSON)));
 
     const result = await callServerFn(restyleDraft, { doc: doc(), ruleIds: [] });
     expect(result.check.ok).toBe(true);
@@ -522,7 +606,7 @@ describe("before the recipe is saved", () => {
 
   test("a refused restyle leaves no recipe behind", async () => {
     const caught = await callServerFn(createRestyledRecipe, { doc: doc(), parts: accepted().slice(0, 1) }).catch((cause: unknown) => cause);
-    expect(String(caught)).toContain("1 part where the recipe has 2");
+    expect(String(caught)).toContain("exactly once");
     expect(await callServerFn(listRecipes, {})).toEqual([]);
   });
 });

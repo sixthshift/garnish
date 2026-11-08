@@ -1,14 +1,15 @@
 import type { SeededStatement } from "./statements";
 
 /**
- * The starting guide, in reading order, all fourteen on. It began as the guide
+ * The starting guide, in reading order, all fifteen on. It began as the guide
  * Jason chose in a blind pair comparison over real recipe methods (decisions.md
  * row 124), and was then reworked against his own hand restyle of the sixteen
- * recipes in the library (row 225): a stage ends at a wait, a prep step comes
+ * recipes in the library (rows 225 and 226): the recipe is laid out in parts
+ * by what is made, with "To serve" last, a stage ends at a wait, a prep step comes
  * first, the time comes last after a comma, another method goes whole into the
  * supporting line, the oven setting is the author's alone, and the kitchen words
- * are Australian. Six shape the method (stage size, voice, ingredients, cue then
- * time, labels as an outline, the prep step), one cuts the author but keeps what
+ * are Australian. Seven shape the method (stage size, voice, ingredients, cue then
+ * time, labels as an outline, the parts, the prep step), one cuts the author but keeps what
  * they said, one moves everything off the main path into the supporting line,
  * four are about how the page reads (metric and oven settings, numbers,
  * emphasis, kitchen words), one drops pointers to notes the method does not
@@ -129,6 +130,10 @@ export const DEFAULT_STYLE_RULES: readonly SeededStatement[] = [
       'Preparation belongs to the ingredient, not the step: "finely dice the onion" in a step becomes "finely diced" on the onion\'s line, and the step then names the food alone. So does optionality: an ingredient a step hedges with "(if using)" is marked "optional" on its own line instead. Write a note as the words that follow the food — "diced", "at room temperature", "optional" — with no leading comma, no brackets and no pointer to a numbered note.',
       'Preparation belongs to the ingredient, not the step: "finely dice the onion" in a step becomes "finely diced" on the onion\'s line, and the step then names the food alone. Write a note as the words that follow the food — "diced", "at room temperature", "separated" — with no leading comma, no brackets and no pointer to a numbered note.',
     ],
+  },
+  {
+    text: 'Lay the recipe out in parts by what is made: a part for each thing made on its own and joined in later ("Marinade", "Sauce", "Spice bag"), named with a short noun in sentence case and holding its ingredient lines and its steps; a recipe made in one go is one unnamed part. A heading that only sorts the list ("choose ONE", "Extras – only for jar paste", "For the rest of the dish") is not a part: its lines join the part that uses them. What is only for serving — rice, garnishes, a sauce for the table — goes in a last part, "To serve", with the step that serves it. List each part\'s lines in the order its steps use them, and put the prep step in the first part.',
+    enabled: true,
   },
   {
     text: 'Begin with a step labelled "Prepare the ingredients" that does every cut, peel, grate, soak and mix the cooking needs before it starts, garnishes for serving included, as a list of dot points, one action each ("- Mince the garlic."), in the order that saves time. When something has to start first — a soak, rice to cook, meat to marinate while the rest is cut — open the step with one sentence that says so ("Start the rice first so it\'s ready with the curry."). The cooking steps after it name the food alone ("Add the onion"), since it is already cut; leave the step out when there is nothing to prepare.',

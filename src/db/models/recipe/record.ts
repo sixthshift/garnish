@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { type Facets, type ParsedRecipeInput, type Recipe, type SubRecipe, suggestLinks } from "../../../domain/recipes/recipe";
+import { placesEveryRow } from "../../../domain/recipes/style";
 import type { Db, Executor } from "../../connection/client";
 import { nowUtc } from "../columns";
 import type { FoodRepository } from "../food/repo";
@@ -32,86 +33,133 @@ export function recipeRecord({ dz, foods, rowById, getById, references, slugFor,
   const ownParts = () => dz.select({ id: part.id }).from(part).where(eq(part.recipeId, id));
 
   // ===========================================================================
-  // Steps alone: what a restyle touches. Not a document write — it swaps a
-  // part's steps and nothing else, so it does not go through `replace`, which
-  // would want a whole recipe and rewrite ingredients, notes and tags on the way.
+  // The layout: what a restyle touches. Not a document write — it lays the
+  // recipe's existing rows out in parts and swaps the steps, and nothing else,
+  // so it does not go through `replace`, which would want a whole recipe and
+  // rewrite quantities, alternatives, notes and tags on the way.
   // ===========================================================================
 
-  /** The recipe's parts in position order, with whatever original content they kept. */
+  /** The recipe's parts in position order. */
   function partRows() {
-    return dz.select({ id: part.id, name: part.name, sourcePart: part.sourcePart }).from(part).where(eq(part.recipeId, id)).orderBy(asc(part.position)).all();
+    return dz.select({ id: part.id, name: part.name }).from(part).where(eq(part.recipeId, id)).orderBy(asc(part.position)).all();
   }
 
-  /** One part as it stands: what `source_part` is made of, and what a restore puts back. */
-  function partContent(partId: string): SourcePart {
-    const steps = dz
-      .select({ title: step.title, text: step.text, summary: step.summary })
-      .from(step)
-      .where(eq(step.partId, partId))
-      .orderBy(asc(step.position))
-      .all();
-    const notes = dz
-      .select({ note: ingredient.note })
+  /** The recipe's ingredient rows, part by part in position order: what a restyle's row numbers count through. */
+  function rowsInOrder() {
+    return dz
+      .select({ id: ingredient.id, partId: ingredient.partId, note: ingredient.note, foodId: ingredient.foodId })
       .from(ingredient)
-      .where(eq(ingredient.partId, partId))
-      .orderBy(asc(ingredient.position))
-      .all()
-      .map((row) => row.note);
-    return { steps, notes };
+      .innerJoin(part, eq(part.id, ingredient.partId))
+      .where(eq(part.recipeId, id))
+      .orderBy(asc(part.position), asc(ingredient.position))
+      .all();
+  }
+
+  /** The recipe as it stands, in the shape `source_parts` keeps: what a first restyle saves, so a restore can put it back. */
+  function currentLayout(): SourcePart[] {
+    const rows = rowsInOrder();
+    return partRows().map((row) => {
+      const own = rows.filter((r) => r.partId === row.id);
+      const steps = dz
+        .select({ title: step.title, text: step.text, summary: step.summary })
+        .from(step)
+        .where(eq(step.partId, row.id))
+        .orderBy(asc(step.position))
+        .all();
+      return { name: row.name, rows: own.map((r) => r.id), notes: own.map((r) => r.note), steps };
+    });
   }
 
   /**
-   * Swap a part's steps for `texts`, in order, with fresh ids.
+   * Lay the recipe out as `layout`: its parts in that order under those names,
+   * each holding those rows with those notes, and those steps with fresh ids.
+   * Every row of the recipe must be in `layout` exactly once — a part left
+   * with a row in it would take the row with it when it goes — which the
+   * callers make sure of.
    *
-   * The links go with them: a step row is deleted, so its `step_ingredient`
-   * rows cascade away, and a new row has nothing pointing at it. The step card
-   * would lose its ingredient rows if nothing put them back, so `suggestLinks`
-   * runs over the part's ingredients and the new texts — the same matcher the
-   * editor and the importer use, which is the best available answer for a
-   * sentence nobody has linked by hand.
+   * A part keeps its id where one of the old parts has its name, then where
+   * one is still unused, so a restyle that only rewrote steps leaves every
+   * part as it was; a part left over is deleted. Rows keep their ids, so their
+   * quantities, alternatives and shopping history stay theirs.
    *
-   * A step photo belongs to the step row it was attached to, and a rewrite may
-   * merge two steps or split one, so there is no honest way to carry a photo
-   * across: photos on replaced steps are lost. That is accepted — the restyle
-   * is shown as a diff and approved before it runs.
+   * The links are made again: a step row is deleted, so its `step_ingredient`
+   * rows cascade away, and `suggestLinks` runs over each part's rows and its
+   * new steps — the same matcher the editor and the importer use, which is the
+   * best available answer for a sentence nobody has linked by hand. A step
+   * photo belongs to the step row it was attached to, and a rewrite may merge
+   * two steps or split one, so there is no honest way to carry a photo across:
+   * photos on replaced steps are lost. That is accepted — the restyle is shown
+   * on the Style page and saved by a press.
    */
-  function replacePart(tx: Executor, partId: string, content: SourcePart): void {
-    tx.delete(step).where(eq(step.partId, partId)).run(); // links cascade from the step
-
-    const rows = dz
-      .select({ id: ingredient.id, foodId: ingredient.foodId })
-      .from(ingredient)
-      .where(eq(ingredient.partId, partId))
-      .orderBy(asc(ingredient.position))
-      .all();
-
-    // The notes are positional: one per row, in the part's order. A shorter
-    // answer leaves the rest alone rather than blanking them, which is what a
-    // model that stopped early should cost.
-    rows.forEach((row, index) => {
-      const note = content.notes[index];
-      if (note === undefined) return;
-      tx.update(ingredient).set({ note }).where(eq(ingredient.id, row.id)).run();
+  function layOut(tx: Executor, layout: readonly SourcePart[]): void {
+    const old = partRows();
+    const fold = (name: string) => name.trim().toLowerCase();
+    const free = new Set(old.map((row) => row.id));
+    const byName = layout.map((entry) => {
+      const match = old.find((row) => free.has(row.id) && fold(row.name) === fold(entry.name));
+      if (match) free.delete(match.id);
+      return match?.id;
+    });
+    const partIds = byName.map((matched) => {
+      if (matched !== undefined) return matched;
+      const reused = old.find((row) => free.has(row.id));
+      if (reused === undefined) return crypto.randomUUID();
+      free.delete(reused.id);
+      return reused.id;
     });
 
-    const ingredients = rows.map((row) => ({ id: row.id, food: row.foodId === null ? null : (foods.get(row.foodId) ?? null) }));
+    // Positions are unique within a recipe and within a part, so everything
+    // steps aside to a negative place first and then takes its own.
+    for (const [i, row] of old.entries())
+      tx.update(part)
+        .set({ position: -(i + 1) })
+        .where(eq(part.id, row.id))
+        .run();
+    for (const [i, row] of rowsInOrder().entries())
+      tx.update(ingredient)
+        .set({ position: -(i + 1) })
+        .where(eq(ingredient.id, row.id))
+        .run();
 
-    // The linker reads the label and the supporting line with the text: a row
-    // named only in a step's label is still a row that step uses.
-    const linked = suggestLinks({
-      ingredients,
-      steps: content.steps.map((s) => ({
-        id: crypto.randomUUID(),
-        text: [s.title, s.text, s.summary].filter((part) => part.trim() !== "").join(" "),
-        ingredientIds: [] as string[],
-      })),
+    layout.forEach((entry, position) => {
+      const partId = partIds[position]!;
+      if (old.some((row) => row.id === partId)) tx.update(part).set({ position, name: entry.name }).where(eq(part.id, partId)).run();
+      else tx.insert(part).values({ id: partId, recipeId: id, position, name: entry.name }).run();
+      entry.rows.forEach((rowId, i) => {
+        tx.update(ingredient)
+          .set({ partId, position: i, note: entry.notes[i] ?? "" })
+          .where(eq(ingredient.id, rowId))
+          .run();
+      });
     });
+    for (const partId of free) tx.delete(part).where(eq(part.id, partId)).run(); // its steps cascade; its rows have all moved
 
-    linked.forEach((s, position) => {
-      const written = content.steps[position]!;
-      tx.insert(step).values({ id: s.id, partId, position, title: written.title, text: written.text, summary: written.summary, image: null }).run();
-      s.ingredientIds.forEach((ingredientId, i) => {
-        tx.insert(stepIngredient).values({ stepId: s.id, ingredientId, position: i }).run();
+    const rows = new Map(rowsInOrder().map((row) => [row.id, row]));
+    layout.forEach((entry, position) => {
+      const partId = partIds[position]!;
+      tx.delete(step).where(eq(step.partId, partId)).run(); // links cascade from the step
+      const ingredients = entry.rows.map((rowId) => {
+        const foodId = rows.get(rowId)?.foodId ?? null;
+        return { id: rowId, food: foodId === null ? null : (foods.get(foodId) ?? null) };
+      });
+      // The linker reads the label and the supporting line with the text: a row
+      // named only in a step's label is still a row that step uses.
+      const linked = suggestLinks({
+        ingredients,
+        steps: entry.steps.map((s) => ({
+          id: crypto.randomUUID(),
+          text: [s.title, s.text, s.summary].filter((text) => text.trim() !== "").join(" "),
+          ingredientIds: [] as string[],
+        })),
+      });
+      linked.forEach((s, stepPosition) => {
+        const written = entry.steps[stepPosition]!;
+        tx.insert(step)
+          .values({ id: s.id, partId, position: stepPosition, title: written.title, text: written.text, summary: written.summary, image: null })
+          .run();
+        s.ingredientIds.forEach((ingredientId, i) => {
+          tx.insert(stepIngredient).values({ stepId: s.id, ingredientId, position: i }).run();
+        });
       });
     });
   }
@@ -164,70 +212,86 @@ export function recipeRecord({ dz, foods, rowById, getById, references, slugFor,
       dz.update(recipe).set({ image, updatedAt: nowUtc }).where(eq(recipe.id, id)).returning({ id: recipe.id }).all().length > 0,
 
     /**
-     * Replace every part's steps with the accepted restyle, keeping the
-     * author's words. `parts` pairs with the recipe's parts by position, which
-     * is how the restyle read verified them (`matchParts`), so a count that
-     * does not match is a broken answer and throws rather than guessing which
-     * part was meant. Null when the id is unknown.
+     * Lay the recipe out as the accepted restyle: `parts` in their order, each
+     * holding the rows it names — by their place in the recipe's rows read
+     * part by part from 0 — with a note each, and its steps. Every row must be
+     * named exactly once; anything else is a broken answer and throws rather
+     * than guessing where a row was meant to go. Null when the id is unknown.
      *
-     * A part that has never been restyled has its current step texts copied
-     * into `source_steps` first; one that already has them keeps what is
-     * there, so "the original" stays the author's rather than becoming the
-     * last rewrite. Then the steps themselves are replaced.
+     * The first restyle keeps the recipe as it stands in `source_parts`; a
+     * later one leaves what is there, so "the original" stays the author's
+     * rather than becoming the last rewrite.
      */
-    restyle(parts: readonly { name: string; notes: readonly string[]; steps: readonly { title: string; text: string; summary: string }[] }[]): Recipe | null {
+    restyle(
+      parts: readonly { name: string; rows: readonly number[]; notes: readonly string[]; steps: readonly { title: string; text: string; summary: string }[] }[]
+    ): Recipe | null {
       const current = rowById(id);
       if (!current) return null;
-      const rows = partRows();
-      if (rows.length !== parts.length) {
-        throw new Error(`Restyle answered with ${parts.length} part${parts.length === 1 ? "" : "s"} where the recipe has ${rows.length}`);
+      const rows = rowsInOrder();
+      if (!placesEveryRow(rows.length, parts)) {
+        throw new Error(`The restyle does not place each of the recipe's ${rows.length} ingredient rows exactly once, so nothing was changed`);
       }
       dz.transaction((tx) => {
-        rows.forEach((row, index) => {
-          const answered = parts[index]!;
-          const content: SourcePart = { steps: answered.steps.map((s) => ({ ...s })), notes: [...answered.notes] };
-          const before = partContent(row.id);
-          // A stepless part whose notes came back unchanged has nothing to keep: leave it, or it would be stamped as restyled.
-          const sameNotes = before.notes.every((note, i) => (content.notes[i] ?? note).trim() === note.trim());
-          if (content.steps.length === 0 && row.sourcePart === null && before.steps.length === 0 && sameNotes) return;
-          if (row.sourcePart === null) {
-            tx.update(part).set({ sourcePart: before }).where(eq(part.id, row.id)).run();
-          }
-          replacePart(tx, row.id, content);
-        });
+        if (current.sourceParts === null) tx.update(recipe).set({ sourceParts: currentLayout() }).where(eq(recipe.id, id)).run();
+        layOut(
+          tx,
+          parts.map((p) => ({ name: p.name, rows: p.rows.map((row) => rows[row]!.id), notes: [...p.notes], steps: p.steps.map((s) => ({ ...s })) }))
+        );
         tx.update(recipe).set({ restyledAt: nowUtc, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
       });
       return getById(id);
     },
 
     /**
-     * The author's steps of every part that has been restyled: part id to the
-     * texts kept in `source_steps`. A part never restyled is absent, since its
-     * steps are still the author's. What the restyle lab rebuilds a recipe
-     * from, so a rewrite is always tried against the original words.
+     * The recipe's parts as the author left them, or null when it was never
+     * restyled and they are the parts it has. What the restyle lab rebuilds a
+     * recipe from, so a rewrite is always tried against the original.
      */
-    authorSteps(): Map<string, string[]> {
-      return new Map(partRows().flatMap((row) => (row.sourcePart === null ? [] : [[row.id, row.sourcePart.steps.map((s) => s.text)] as const])));
+    authorParts(): SourcePart[] | null {
+      return rowById(id)?.sourceParts ?? null;
     },
 
     /**
-     * Put the author's words back: every part that kept `source_steps` has
-     * them re-inserted as its steps, the column goes back to NULL, and the
-     * recipe's stamp is cleared, so the page stops saying "Restyled" and a
-     * later restyle starts from the original again. A part that was never
-     * restyled is left exactly as it is. Null when the id is unknown; harmless
-     * when nothing was restyled.
+     * Put the author's recipe back: the parts as `source_parts` kept them,
+     * their rows, notes and steps; the column goes back to NULL and the stamp
+     * is cleared, so the page stops saying "Restyled" and a later restyle
+     * starts from the original again. A row the recipe no longer has is
+     * skipped; a part added since, under a new name and holding only new rows,
+     * stays as it is at the end; and any other row added since goes to the
+     * author's part of its part's name, or to the last. Null when the id is
+     * unknown; harmless when nothing was restyled.
      */
     restore(): Recipe | null {
       const current = rowById(id);
       if (!current) return null;
+      const kept = current.sourceParts;
       dz.transaction((tx) => {
-        for (const row of partRows()) {
-          if (row.sourcePart === null) continue;
-          replacePart(tx, row.id, row.sourcePart);
-          tx.update(part).set({ sourcePart: null }).where(eq(part.id, row.id)).run();
+        if (kept !== null && kept.length > 0) {
+          const rows = rowsInOrder();
+          const present = new Set(rows.map((row) => row.id));
+          const layout = kept.map((entry) => {
+            const at = entry.rows.flatMap((rowId, i) => (present.has(rowId) ? [i] : []));
+            return { ...entry, rows: at.map((i) => entry.rows[i]!), notes: at.map((i) => entry.notes[i] ?? "") };
+          });
+          const placed = new Set(layout.flatMap((entry) => entry.rows));
+          // A part added since the restyle — a name the author's recipe never had,
+          // holding only rows it never had — is the household's, and stays as it is.
+          const keptNames = new Set(layout.map((entry) => entry.name.trim().toLowerCase()));
+          for (const added of currentLayout()) {
+            if (keptNames.has(added.name.trim().toLowerCase()) || added.rows.some((rowId) => placed.has(rowId))) continue;
+            layout.push(added);
+            for (const rowId of added.rows) placed.add(rowId);
+          }
+          const names = new Map(partRows().map((row) => [row.id, row.name.trim().toLowerCase()]));
+          for (const row of rows) {
+            if (placed.has(row.id)) continue;
+            const home = layout.find((entry) => entry.name.trim().toLowerCase() === names.get(row.partId)) ?? layout[layout.length - 1]!;
+            home.rows.push(row.id);
+            home.notes.push(row.note);
+          }
+          layOut(tx, layout);
         }
-        tx.update(recipe).set({ restyledAt: null, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
+        tx.update(recipe).set({ sourceParts: null, restyledAt: null, updatedAt: nowUtc }).where(eq(recipe.id, id)).run();
       });
       return getById(id);
     },

@@ -23,6 +23,7 @@ const parts = [
 const rewrite: RestyledPart[] = [
   {
     name: "",
+    rows: [0],
     notes: ["smashed and sliced"],
     steps: [
       restyledStep("Heat 2 tbsp of the oil in the wok over high heat.", { title: "Heat the wok" }),
@@ -106,6 +107,7 @@ test("a part whose rewrite merged its steps is taken whole, with the other side 
   const merged: RestyledPart[] = [
     {
       name: "",
+      rows: [0],
       notes: ["smashed and sliced"],
       steps: [restyledStep("Heat 2 tablespoons oil in a wok over high heat, then add the garlic and cook for a minute or two until fragrant.")],
     },
@@ -151,7 +153,7 @@ test("a part with nothing in it, the main body once every line sat under a headi
     { ...parts[0]!, name: "Stir-fry" },
   ];
   const answer: RestyledPart[] = [
-    { name: "", notes: [], steps: [] },
+    { name: "", rows: [], notes: [], steps: [] },
     { ...rewrite[0]!, name: "Stir-fry" },
   ];
   render(
@@ -165,4 +167,73 @@ test("a part with nothing in it, the main body once every line sat under a headi
   );
   await waitFor(() => expect(screen.getAllByTestId("style-part")).toHaveLength(1));
   expect(screen.queryByText("No steps")).not.toBeInTheDocument();
+});
+
+test("a rewrite laid out in new parts is shown whole as the recipe will read, kept or put back at once, and saved with its layout", async () => {
+  const laidOut: RestyledPart[] = [
+    {
+      name: "Stir-fry",
+      rows: [0],
+      notes: ["smashed and sliced"],
+      steps: [
+        restyledStep("Heat 2 tbsp of the oil in the wok over high heat.", { title: "Heat the wok" }),
+        restyledStep("Add the garlic and cook for a minute or two until fragrant."),
+      ],
+    },
+  ];
+  const onSave = vi.fn(async (_parts: RestyledPart[] | null) => {});
+  const user = userEvent.setup();
+  render(
+    <StyleSpace
+      parts={parts}
+      run={async () => ({ parts: laidOut, check: checkRestyle(styleOriginal(parts), laidOut) })}
+      onSave={onSave}
+      saveLabel="Save recipe"
+      loadRules={async () => rules}
+    />
+  );
+  const space = await screen.findByTestId("style-rebuilt");
+  expect(space).toHaveAttribute("data-choice", "rewrite");
+  expect(screen.getByTestId("style-status")).toHaveTextContent("1 of 1 rewrite kept");
+  expect(screen.queryAllByTestId("style-part")).toHaveLength(0);
+  expect(within(space).getByRole("heading", { name: "Stir-fry" })).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "Show original" }));
+  expect(screen.getByTestId("style-rebuilt-other")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
+
+  await user.click(screen.getByRole("button", { name: "Edit step 1" }));
+  const field = screen.getByLabelText("Step 1 text");
+  await user.clear(field);
+  await user.type(field, "Heat the wok until smoking.");
+  await user.click(screen.getByRole("button", { name: "Done" }));
+
+  await user.click(screen.getByTestId("style-save"));
+  await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+  const saved = onSave.mock.calls[0]![0]!;
+  expect(saved.map((part) => [part.name, part.rows])).toEqual([["Stir-fry", [0]]]);
+  expect(saved[0]!.steps[0]!.text).toBe("Heat the wok until smoking.");
+});
+
+test("putting a laid-out rewrite back saves nothing", async () => {
+  const laidOut: RestyledPart[] = [{ ...rewrite[0]!, name: "Stir-fry" }];
+  const onSave = vi.fn(async (_parts: RestyledPart[] | null) => {});
+  const user = userEvent.setup();
+  render(
+    <StyleSpace
+      parts={parts}
+      run={async () => ({ parts: laidOut, check: checkRestyle(styleOriginal(parts), laidOut) })}
+      onSave={onSave}
+      saveLabel="Save recipe"
+      loadRules={async () => rules}
+    />
+  );
+  // The rewrite loses "until fragrant", so it starts on the original, with the finding said once above it.
+  const space = await screen.findByTestId("style-rebuilt");
+  expect(space).toHaveAttribute("data-choice", "original");
+  expect(screen.getByTestId("style-part-finding")).toHaveTextContent("“until fragrant” is in the original but not in the rewrite.");
+  await user.click(screen.getByRole("button", { name: "Keep the rewrite" }));
+  expect(space).toHaveAttribute("data-choice", "rewrite");
+  await user.click(screen.getByRole("button", { name: "Use the original" }));
+  await user.click(screen.getByTestId("style-save"));
+  await waitFor(() => expect(onSave).toHaveBeenCalledWith(null));
 });

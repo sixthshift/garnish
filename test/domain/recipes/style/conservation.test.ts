@@ -227,7 +227,7 @@ describe("optionality belongs to the ingredient row", () => {
   };
 
   test("an (if using) the rewrite marked optional on the row is not a lost condition", () => {
-    const moved = { name: "", notes: ["optional"], steps: [{ title: "", text: "Add the fish sauce and simmer for 5 minutes.", summary: "" }] };
+    const moved = { name: "", rows: [0], notes: ["optional"], steps: [{ title: "", text: "Add the fish sauce and simmer for 5 minutes.", summary: "" }] };
     expect(checkPart(original, moved).missingConditions).toEqual([]);
   });
 
@@ -237,7 +237,7 @@ describe("optionality belongs to the ingredient row", () => {
 
   test("any other condition has nowhere else to live, optional notes or not", () => {
     const cue: OriginalPart = { name: "", ingredients: [{ originalText: "1 onion", note: "" }], steps: [{ text: "Fry until the onion is golden." }] };
-    const gone = { name: "", notes: ["optional"], steps: [{ title: "", text: "Fry the onion for 5 minutes.", summary: "" }] };
+    const gone = { name: "", rows: [0], notes: ["optional"], steps: [{ title: "", text: "Fry the onion for 5 minutes.", summary: "" }] };
     expect(checkPart(cue, gone).missingConditions).toEqual(["until the onion is golden"]);
   });
 });

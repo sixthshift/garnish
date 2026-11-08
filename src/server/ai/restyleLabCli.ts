@@ -26,7 +26,7 @@ if (import.meta.main) {
             .filter((rule) => rule.enabled)
             .map((rule) => rule.text)
         : rulesFromText(await Bun.file(flags.rulesFile).text());
-    const recipe = onlyPart(authorRecipe(found, recipes.ref(found.id).authorSteps()), flags.part);
+    const recipe = onlyPart(authorRecipe(found, recipes.ref(found.id).authorParts()), flags.part);
 
     console.log(`# ${found.name}  (${rules.length} statements, ${recipe.parts.length} parts, ${partsWithSteps(recipe.parts).length} with steps)`);
     if (flags.showPrompt) console.log("", restylePrompt({ rules, parts: promptParts(recipe.parts) }), "");

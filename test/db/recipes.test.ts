@@ -732,46 +732,45 @@ test("a step link goes with either side: deleting the recipe clears the table, a
   expect(count("step_ingredient")).toBe(0);
 });
 
-// --- Restyle (M37.5) ---------------------------------------------------------
-// `ref(id).restyle` and `ref(id).restore` are the only writes that touch steps
-// without touching the rest of the document, so they are tested against the
-// table rather than only through the document: `source_steps` is written once
-// and never again, and it is the column a restore reads.
+// --- Restyle (M37.5, decisions.md row 226) ----------------------------------
+// `ref(id).restyle` and `ref(id).restore` are the only writes that lay a
+// recipe's rows out and swap its steps without touching the rest of the
+// document, so they are tested against the table rather than only through the
+// document: `recipe.source_parts` is written once and never again, and it is
+// the column a restore reads.
 
-/** The kept original steps of each part, in position order, as stored. */
-/** The step texts each part kept from before its first restyle, or null where it kept nothing. */
-function sourceSteps(): (string[] | null)[] {
-  return db
-    .query<{ source_part: string | null }, []>("SELECT source_part FROM part ORDER BY position")
-    .all()
-    .map((row) => (row.source_part === null ? null : (JSON.parse(row.source_part) as { steps: { text: string }[] }).steps.map((s) => s.text)));
+type Kept = { name: string; rows: string[]; notes: string[]; steps: { text: string }[] };
+
+/** The recipe's parts as kept from before its first restyle, or null when it kept nothing. */
+function kept(): Kept[] | null {
+  const row = db.query<{ source_parts: string | null }, []>("SELECT source_parts FROM recipe").get();
+  return row?.source_parts ? (JSON.parse(row.source_parts) as Kept[]) : null;
 }
 
-/** The ingredient notes each part kept from before its first restyle. */
-function sourceNotes(): (string[] | null)[] {
-  return db
-    .query<{ source_part: string | null }, []>("SELECT source_part FROM part ORDER BY position")
-    .all()
-    .map((row) => (row.source_part === null ? null : (JSON.parse(row.source_part) as { notes: string[] }).notes));
+/** The step texts each kept part had, in order. */
+function sourceSteps(): string[][] | null {
+  return kept()?.map((part) => part.steps.map((s) => s.text)) ?? null;
 }
 
-/** The restyled answer for `fullDoc`'s three parts: the same parts, rewritten steps. */
+/** `fullDoc`'s rows by their place in the recipe: Pasta holds 0 and 1, Sauce 2, the main body none. */
 const restyled = [
-  restyledPart("Pasta", ["Bring a pot to the boil.", "Cook the spaghetti until it still has bite."], 2),
-  restyledPart("Sauce", ["Melt the cold butter over a low heat."], 1),
-  restyledPart("", ["Toss the two together and serve."], 0),
+  restyledPart("Pasta", ["Bring a pot to the boil.", "Cook the spaghetti until it still has bite."], [0, 1]),
+  restyledPart("Sauce", ["Melt the cold butter over a low heat."], [2]),
+  restyledPart("", ["Toss the two together and serve."], []),
 ];
 
-test("a restyle keeps the author's steps, replaces the steps and links the new ones", () => {
+test("a restyle keeps the author's recipe, replaces the steps and links the new ones", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
 
   const after = repo.ref(created.id).restyle(restyled)!;
 
   expect(after.parts.map((p) => p.steps.map((s) => s.text))).toEqual(restyled.map((p) => p.steps.map((s) => s.text)));
-  // Fresh rows: a rewritten step is not the step it replaced.
+  // Fresh rows: a rewritten step is not the step it replaced. The parts keep their ids.
   expect(after.parts.flatMap((p) => p.steps.map((s) => s.id))).not.toContain(ids.step1);
-  // The author's words, in position order, kept exactly once each.
+  expect(after.parts.map((p) => p.id)).toEqual(created.parts.map((p) => p.id));
+  // The author's recipe, in position order, kept once.
   expect(sourceSteps()).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."]]);
+  expect(kept()!.map((part) => part.rows)).toEqual([[ids.ing1, ids.ing2], [ids.ing3], []]);
   // The step card keeps its rows: the links are suggested over the new text.
   expect(after.parts[0]!.steps.map((s) => s.ingredientIds)).toEqual([[], [ids.ing1]]);
   expect(after.parts[1]!.steps[0]!.ingredientIds).toEqual([ids.ing3]);
@@ -782,6 +781,30 @@ test("a restyle keeps the author's steps, replaces the steps and links the new o
   expect(repo.get(created.slug)).toEqual(after);
 });
 
+test("a restyle may lay the recipe out afresh: rows move between parts and keep their ids, and a part left over goes", () => {
+  const created = repo.create(recipeInputSchema.parse(fullDoc));
+
+  const after = repo
+    .ref(created.id)
+    .restyle([
+      restyledPart("", ["Melt the butter.", "Boil the spaghetti and toss it through."], [2, 0]),
+      { ...restyledPart("To serve", ["Season and serve."], [1]), notes: ["flaky"] },
+    ])!;
+
+  expect(after.parts.map((p) => p.name)).toEqual(["", "To serve"]);
+  expect(after.parts.map((p) => p.ingredients.map((row) => row.id))).toEqual([[ids.ing3, ids.ing1], [ids.ing2]]);
+  // Nothing about a row but its part, its place and its note moved.
+  expect(after.parts[1]!.ingredients[0]).toEqual({ ...created.parts[0]!.ingredients[1]!, note: "flaky" });
+  expect(after.parts[0]!.steps[1]!.ingredientIds).toEqual([ids.ing1]);
+  expect(count("part")).toBe(2);
+
+  const restored = repo.ref(created.id).restore()!;
+  expect(restored.parts.map((p) => p.name)).toEqual(["Pasta", "Sauce", ""]);
+  expect(restored.parts.map((p) => p.ingredients)).toEqual(created.parts.map((p) => p.ingredients));
+  expect(restored.parts.map((p) => p.steps.map((s) => s.text))).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."]]);
+  expect(kept()).toBeNull();
+});
+
 test("a second restyle leaves the kept original alone: it is the author's, not the last rewrite", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
   repo.ref(created.id).restyle(restyled);
@@ -789,9 +812,9 @@ test("a second restyle leaves the kept original alone: it is the author's, not t
   const again = repo
     .ref(created.id)
     .restyle([
-      restyledPart("Pasta", ["Boil salted water, then cook the spaghetti."], 2),
-      restyledPart("Sauce", ["Melt the butter."], 1),
-      restyledPart("", ["Serve."], 0),
+      restyledPart("Pasta", ["Boil salted water, then cook the spaghetti."], [0, 1]),
+      restyledPart("Sauce", ["Melt the butter."], [2]),
+      restyledPart("", ["Serve."], []),
     ])!;
 
   expect(again.parts[0]!.steps.map((s) => s.text)).toEqual(["Boil salted water, then cook the spaghetti."]);
@@ -806,7 +829,7 @@ test("restoring puts the author's words back, re-links them and clears the stamp
 
   expect(restored.parts.map((p) => p.steps.map((s) => s.text))).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."]]);
   expect(restored.restyledAt).toBeNull();
-  expect(sourceSteps()).toEqual([null, null, null]);
+  expect(kept()).toBeNull();
   // Links again, over the restored text this time.
   expect(restored.parts[1]!.steps[0]!.ingredientIds).toEqual([ids.ing3]);
   // Nothing but the steps moved: ingredients, notes and tags are as created.
@@ -821,18 +844,27 @@ test("restoring a recipe nobody restyled changes nothing", () => {
   const restored = repo.ref(created.id).restore()!;
 
   expect({ ...restored, updatedAt: created.updatedAt }).toEqual(created);
-  expect(sourceSteps()).toEqual([null, null, null]);
+  expect(kept()).toBeNull();
 });
 
-test("a restyle answering with the wrong number of parts throws and writes nothing", () => {
+test("a restyle that does not place every row exactly once throws and writes nothing", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
 
-  expect(() => repo.ref(created.id).restyle(restyled.slice(0, 2))).toThrow(/2 parts where the recipe has 3/);
+  expect(() =>
+    repo.ref(created.id).restyle(
+      restyled
+        .slice(0, 2)
+        .concat([restyledPart("", [], [])])
+        .slice(1)
+    )
+  ).toThrow(/each of the recipe's 3/);
+  expect(() => repo.ref(created.id).restyle([restyledPart("Pasta", [], [0, 1, 1]), restyledPart("Sauce", [], [2])])).toThrow(/exactly once/);
+  expect(() => repo.ref(created.id).restyle([restyledPart("Pasta", [], [0, 1, 2, 3])])).toThrow(/exactly once/);
   expect(repo.getById(created.id)).toEqual(created);
-  expect(sourceSteps()).toEqual([null, null, null]);
+  expect(kept()).toBeNull();
 });
 
-test("an ordinary edit keeps the author's steps and the stamp", () => {
+test("an ordinary edit keeps the author's recipe and the stamp", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
   const after = repo.ref(created.id).restyle(restyled)!;
 
@@ -858,19 +890,20 @@ test("a restyle writes a step's label and supporting line, and an ingredient's n
   const after = repo.ref(created.id).restyle([
     {
       name: "Pasta",
+      rows: [0, 1],
       notes: ["", "to taste"],
       steps: [{ title: "Boil", text: "Bring a pot to the boil and cook the spaghetti.", summary: "Salt it like the sea." }],
     },
-    { name: "Sauce", notes: ["cold, cubed"], steps: [{ title: "", text: "Melt the butter.", summary: "" }] },
-    restyledPart("", ["Toss and serve."], 0),
+    { name: "Sauce", rows: [2], notes: ["cold, cubed"], steps: [{ title: "", text: "Melt the butter.", summary: "" }] },
+    restyledPart("", ["Toss and serve."], []),
   ])!;
 
   expect(after.parts[0]!.steps[0]).toMatchObject({ title: "Boil", summary: "Salt it like the sea." });
   expect(after.parts[1]!.ingredients[0]!.note).toBe("cold, cubed");
   // Nothing but the note moved on the row: the quantity, the unit and the food are the author's.
   expect(after.parts[1]!.ingredients[0]).toMatchObject({ quantity: 50, fixed: true, food: expect.objectContaining({ name: "butter" }) });
-  // The author's notes are kept beside the author's steps, so a restore reaches both.
-  expect(sourceNotes()).toEqual([["", "to taste"], ["cold"], []]);
+  // The author's notes are kept with the author's recipe, so a restore reaches both.
+  expect(kept()!.map((part) => part.notes)).toEqual([["", "to taste"], ["cold"], []]);
 
   const restored = repo.ref(created.id).restore()!;
   expect(restored.parts[1]!.ingredients[0]!.note).toBe("cold");
@@ -883,37 +916,36 @@ test("a step's label and supporting line are read by the linker, so a row named 
   const after = repo
     .ref(created.id)
     .restyle([
-      { name: "Pasta", notes: ["", ""], steps: [{ title: "Cook the spaghetti", text: "Bring a pot to the boil.", summary: "" }] },
-      restyledPart("Sauce", ["Melt it gently."], 1),
-      restyledPart("", ["Toss and serve."], 0),
+      { name: "Pasta", rows: [0, 1], notes: ["", ""], steps: [{ title: "Cook the spaghetti", text: "Bring a pot to the boil.", summary: "" }] },
+      restyledPart("Sauce", ["Melt it gently."], [2]),
+      restyledPart("", ["Toss and serve."], []),
     ])!;
 
   expect(after.parts[0]!.steps[0]!.ingredientIds).toEqual([ids.ing1]);
 });
 
-test("a restyle answering fewer notes than the part has rows leaves the rest alone", () => {
-  const created = repo.create(recipeInputSchema.parse(fullDoc));
-
-  const after = repo
-    .ref(created.id)
-    .restyle([
-      { name: "Pasta", notes: ["rinsed"], steps: [{ title: "", text: "Boil it.", summary: "" }] },
-      restyledPart("Sauce", ["Melt it."], 1),
-      restyledPart("", ["Serve."], 0),
-    ])!;
-
-  expect(after.parts[0]!.ingredients.map((row) => row.note)).toEqual(["rinsed", "to taste"]);
-});
-
-test("a part the editor adds after a restyle has no original of its own", () => {
+test("a part the editor adds after a restyle is kept by a restore, after the author's parts", () => {
   const created = repo.create(recipeInputSchema.parse(fullDoc));
   const after = repo.ref(created.id).restyle(restyled)!;
 
-  const doc = recipeInputSchema.parse(after);
-  doc.parts.push({ name: "To serve", ingredients: [], steps: [{ text: "Grate over parmesan.", title: "", summary: "", ingredientIds: [], image: null }] });
+  const doc = recipeInputSchema.parse({
+    ...after,
+    parts: [
+      ...after.parts,
+      {
+        name: "To serve",
+        ingredients: [{ quantity: null, unit: null, food: null, note: "", originalText: "parmesan", fixed: false }],
+        steps: [{ text: "Grate over parmesan." }],
+      },
+    ],
+  });
   repo.ref(created.id).replace(doc);
+  expect(sourceSteps()).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."]]);
 
-  expect(sourceSteps()).toEqual([["Boil the pasta."], ["Melt the butter."], ["Toss together and serve."], null]);
+  const restored = repo.ref(created.id).restore()!;
+  expect(restored.parts.map((p) => p.name)).toEqual(["Pasta", "Sauce", "", "To serve"]);
+  expect(restored.parts[3]!.ingredients.map((row) => row.originalText)).toEqual(["parmesan"]);
+  expect(restored.parts[3]!.steps.map((step) => step.text)).toEqual(["Grate over parmesan."]);
 });
 
 // Facets (decisions.md row 209): seven layers of fixed values, each a set.

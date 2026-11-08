@@ -10,6 +10,7 @@ import { messageFrom } from "../../../../lib/errors";
 import { scrollClearance } from "../../../../lib/ui/scrollClearance";
 import type { RestyledPart, StyleRule } from "../../style";
 import { StylePart } from "./StylePart";
+import { StyleRebuilt } from "./StyleRebuilt";
 import type { StyleAnswer } from "./styleSession";
 import { type StyleSourcePart, useStyleSpace } from "./useStyleSpace";
 
@@ -68,8 +69,10 @@ export function startsOf(counts: readonly number[]): number[] {
 
 /**
  * The Style space: each step shows the rewrite or the author's words, the
- * other a press away under Show original, chosen step by step (row 203). Shared by the import, where
- * it comes before Save, and a saved recipe's Style page.
+ * other a press away under Show original, chosen step by step (row 203), or,
+ * when the rewrite laid the recipe out in new parts, the whole recipe chosen
+ * at once (row 226). Shared by the import, where it comes before Save, and a
+ * saved recipe's Style page.
  */
 export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel, loadRules }: StyleSpaceProps) {
   const style = useStyleSpace({ parts, run, loadRules });
@@ -164,26 +167,38 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
         </Card>
       )}
 
-      {original.map((_, p) => (
-        <StylePart
-          // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional: the restyle pairs them by index and never reorders them.
-          key={p}
-          p={p}
+      {style.rebuilt && answer && choices ? (
+        <StyleRebuilt
           original={original}
-          firstStep={firstSteps[p]!}
-          firstRewriteStep={firstRewriteSteps[p]!}
           answer={answer}
           choices={choices}
-          assembled={assembled?.[p] ?? null}
-          running={running}
-          failed={style.error !== null}
           editing={style.editing}
-          onStep={(s, choice) => style.setStep(p, s, choice)}
-          onPart={(choice) => style.setPart(p, choice)}
+          onChoose={style.setRecipe}
           onEdit={style.setEditing}
           onDraft={style.editStep}
         />
-      ))}
+      ) : (
+        original.map((_, p) => (
+          <StylePart
+            // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional: the restyle pairs them by index and never reorders them.
+            key={p}
+            p={p}
+            original={original}
+            firstStep={firstSteps[p]!}
+            firstRewriteStep={firstRewriteSteps[p]!}
+            answer={answer}
+            choices={choices}
+            assembled={assembled?.[p] ?? null}
+            running={running}
+            failed={style.error !== null}
+            editing={style.editing}
+            onStep={(s, choice) => style.setStep(p, s, choice)}
+            onPart={(choice) => style.setPart(p, choice)}
+            onEdit={style.setEditing}
+            onDraft={style.editStep}
+          />
+        ))
+      )}
 
       <div
         ref={scrollClearance}
@@ -202,7 +217,7 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
         )}
         <div className="flex flex-wrap items-center gap-2">
           <Muted as="span" className="grow text-sm">
-            Quantities are never changed. The author’s words are kept, so Restore can bring them back.
+            Quantities are never changed. The author’s recipe is kept, so Restore can bring it back.
           </Muted>
           {secondary}
           <Button type="button" variant="solid" intent="brand" disabled={running || saving} onClick={() => void save()} data-testid="style-save">

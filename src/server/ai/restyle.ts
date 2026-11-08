@@ -4,7 +4,7 @@ import recipes from "../../db/models/recipe/repo";
 import styleRules from "../../db/models/style/repo";
 import { formatIngredient } from "../../domain/recipes/ingredient";
 import { type Recipe, recipeInputSchema } from "../../domain/recipes/recipe";
-import { checkRestyle, type OriginalPart, type RestyleCheck, type RestyledPart } from "../../domain/recipes/style";
+import { checkRestyle, type OriginalPart, type RestyleCheck, type RestyledPart, rowsInPlace } from "../../domain/recipes/style";
 import diagnostics, { type DiagnosticReport } from "../core/diagnostics";
 import { required } from "../core/errors";
 import { notFoundMiddleware } from "../core/fn";
@@ -13,16 +13,7 @@ import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
 // so Start drops both from the client build: the provider brings Node-only SDKs (claude-agent-sdk) that throw in a
 // browser, and diagnostics brings bun:sqlite.
 import serverAi from "./provider";
-import {
-  matchParts,
-  parseRestyleAnswer,
-  partsWithSteps,
-  promptParts,
-  RESTYLE_JSON_SCHEMA,
-  restylePrompt,
-  type StylablePart,
-  withEmptyParts,
-} from "./restylePrompt";
+import { parseRestyleAnswer, partsWithSteps, placeLines, promptParts, RESTYLE_JSON_SCHEMA, restylePrompt, type StylablePart } from "./restylePrompt";
 
 /**
  * The recipe's parts as the check reads them: each ingredient row carrying the
@@ -56,7 +47,8 @@ export async function runRestyle(
   const { ai, model = ai.model("restyle") } = options;
   if (partsWithSteps(recipe.parts).length === 0) {
     // A recipe with no steps at all has nothing to rewrite: the answer is the recipe, and the model is not called.
-    const parts = recipe.parts.map((part) => ({ name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] }));
+    const inPlace = rowsInPlace(recipe.parts);
+    const parts = recipe.parts.map((part, p) => ({ name: part.name, rows: inPlace[p]!, notes: part.ingredients.map((row) => row.note), steps: [] }));
     return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
   }
   const prompt = restylePrompt({ rules, parts: promptParts(recipe.parts) });
@@ -69,8 +61,7 @@ export async function runRestyle(
     throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
   }
 
-  const parts = withEmptyParts(recipe.parts, parseRestyleAnswer(content));
-  matchParts(recipe.parts, parts);
+  const parts = placeLines(recipe.parts, parseRestyleAnswer(content));
   return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
 }
 
@@ -149,16 +140,21 @@ export const ApplyRestyleInput = z.object({
   /** The recipe's id, as `restyleSteps` takes it. */
   id: z.string().min(1),
   /**
-   * The parts as the household accepted them, in the recipe's own order: the
-   * answer of `restyleSteps`, possibly with steps edited in the diff.
-   * Names ride along so a caller reads as the answer does; the pairing is by
-   * position, and a count that does not match the recipe's parts is refused.
+   * The parts as the household accepted them, in the order they are to have:
+   * the answer of `restyleSteps`, possibly with steps retyped on the Style
+   * page, or the author's own layout. They replace the recipe's parts.
    */
   parts: z
     .array(
       z.object({
         name: z.string().default(""),
-        /** One note per ingredient row of that part, in the part's order. A count that does not match the part's rows is refused. */
+        /**
+         * The rows this part holds, each by its place in the recipe's rows read
+         * part by part from 0. Together the parts must hold every row once, or
+         * the save is refused.
+         */
+        rows: z.array(z.number().int().min(0)).default([]),
+        /** One note per entry of `rows`. */
         notes: z.array(z.string()).default([]),
         steps: z.array(z.object({ title: z.string().default(""), text: z.string().default(""), summary: z.string().default("") })).default([]),
       })
@@ -167,10 +163,11 @@ export const ApplyRestyleInput = z.object({
 });
 
 /**
- * Write an accepted restyle. The first restyle of a part copies its
- * steps into `source_steps` before replacing them, so the author's words are
- * kept whatever happens afterwards; the new steps are linked to the part's
- * ingredients again, and the recipe is stamped as restyled.
+ * Write an accepted restyle. The first restyle keeps the recipe's parts as the
+ * author left them in `source_parts` before replacing them, so the author's
+ * layout and words are kept whatever happens afterwards; the new steps are
+ * linked to their parts' ingredients again, and the recipe is stamped as
+ * restyled.
  */
 export const applyRestyle = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
@@ -182,7 +179,7 @@ export const applyRestyle = createServerFn({ method: "POST" })
 export const CreateRestyledRecipeInput = z.object({
   /** The recipe as the author wrote it: what is created, and so what Restore brings back. */
   doc: recipeInputSchema,
-  /** The parts as the household accepted them, paired with `doc.parts` by position, as `applyRestyle` takes them. */
+  /** The parts as the household accepted them, their rows numbered through `doc.parts`, as `applyRestyle` takes them. */
   parts: ApplyRestyleInput.shape.parts,
 });
 
@@ -207,9 +204,9 @@ export const createRestyledRecipe = createServerFn({ method: "POST" })
 export const RestoreStepsInput = z.object({ id: z.string().min(1) });
 
 /**
- * Undo a restyle: every part that kept its original steps gets them
- * back, the kept copy is dropped, and the stamp is cleared. A recipe that was
- * never restyled comes back unchanged.
+ * Undo a restyle: the recipe gets the author's parts back, their rows, notes
+ * and steps, the kept copy is dropped, and the stamp is cleared. A recipe that
+ * was never restyled comes back unchanged.
  */
 export const restoreSteps = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])

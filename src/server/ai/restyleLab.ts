@@ -1,5 +1,6 @@
-// The restyle lab's pure half: the flags, the recipe rebuilt from the author's steps, and the report.
+// The restyle lab's pure half: the flags, the recipe rebuilt from the author's parts, and the report.
 
+import type { SourcePart } from "../../db/models/recipe/schema";
 import type { Recipe } from "../../domain/recipes/recipe";
 import type { RestyleResult } from "./restyle";
 
@@ -47,26 +48,27 @@ export function parseLabFlags(argv: readonly string[], selected: string | null):
 }
 
 /**
- * The recipe as the author wrote it: every part with kept `source_steps` gets
- * them back as its steps, so a recipe that was already restyled is tried from
- * the original rather than from the last rewrite. A step keeps the id and
- * links of the current step at its index; one beyond the current count gets
- * an id of its own, so ids stay unique. Pure.
+ * The recipe as the author wrote it: with the parts a restyle kept
+ * (`source_parts`), it is rebuilt from them — each part's name, its rows by
+ * id with the author's notes, and its steps — so a recipe that was already
+ * restyled is tried from the original rather than from the last rewrite. A
+ * kept row the recipe no longer has is skipped. Without them the recipe is
+ * already the author's. Pure.
  */
-export function authorRecipe(recipe: Recipe, authorSteps: ReadonlyMap<string, readonly string[]>): Recipe {
+export function authorRecipe(recipe: Recipe, kept: readonly SourcePart[] | null): Recipe {
+  if (kept === null) return recipe;
+  const rows = new Map(recipe.parts.flatMap((part) => part.ingredients.map((row) => [row.id, row] as const)));
   return {
     ...recipe,
-    parts: recipe.parts.map((part) => {
-      const texts = authorSteps.get(part.id);
-      if (texts === undefined) return part;
-      return {
-        ...part,
-        steps: texts.map((text, index) => ({
-          ...(part.steps[index] ?? { id: `${part.id}:author:${index}`, title: "", summary: "", ingredientIds: [], image: null }),
-          text,
-        })),
-      };
-    }),
+    parts: kept.map((entry, p) => ({
+      id: recipe.parts[p]?.id ?? `author:${p}`,
+      name: entry.name,
+      ingredients: entry.rows.flatMap((rowId, i) => {
+        const row = rows.get(rowId);
+        return row === undefined ? [] : [{ ...row, note: entry.notes[i] ?? row.note }];
+      }),
+      steps: entry.steps.map((step, s) => ({ id: `author:${p}:${s}`, ...step, ingredientIds: [], image: null })),
+    })),
   };
 }
 
@@ -84,7 +86,7 @@ function heading(name: string): string {
   return name.trim() === "" ? "(main body)" : name;
 }
 
-/** One model's answer as lines: the timing and the check's verdict, then each part's steps with the step count before and after. Pure. */
+/** One model's answer as lines: the timing and the check's verdict, the counts before and after, then each part's steps and the notes it wrote. Pure. */
 export function reportLines(model: string, seconds: number, before: Recipe, result: RestyleResult): string[] {
   const { check, parts } = result;
   const lines = [`## ${model}  ${seconds.toFixed(1)}s  ${check.ok ? "check ok" : "check FAILED"}`];
@@ -92,19 +94,24 @@ export function reportLines(model: string, seconds: number, before: Recipe, resu
   if (check.missingFoods.length > 0) lines.push(`   no longer mentions: ${check.missingFoods.join(", ")}`);
   if (check.missingConditions.length > 0) lines.push(`   lost conditions: ${check.missingConditions.map((phrase) => `"${phrase}"`).join(", ")}`);
   if (check.addedConditions.length > 0) lines.push(`   invented conditions: ${check.addedConditions.map((phrase) => `"${phrase}"`).join(", ")}`);
-  if (check.rowMismatch) lines.push("   notes do not line up with the ingredient rows");
+  if (check.rowMismatch) lines.push("   the answer does not place every ingredient line exactly once");
   if (check.addedNumbers.length > 0) lines.push(`   added numbers: ${check.addedNumbers.join(", ")}`);
   if (check.droppedWords.length > 0) lines.push(`   dropped words: ${check.droppedWords.join(" ")}`);
-  parts.forEach((part, index) => {
-    const original = before.parts[index];
-    if (original === undefined || original.steps.length === 0) return;
-    lines.push("", `--- ${heading(part.name)}  ${original.steps.length} -> ${part.steps.length} steps`);
+  const stepsBefore = before.parts.reduce((sum, part) => sum + part.steps.length, 0);
+  const stepsAfter = parts.reduce((sum, part) => sum + part.steps.length, 0);
+  lines.push(`   ${before.parts.length} -> ${parts.length} parts, ${stepsBefore} -> ${stepsAfter} steps${check.rebuilt ? ", laid out afresh" : ""}`);
+  for (const part of parts) {
+    if (part.rows.length === 0 && part.steps.length === 0) continue;
+    lines.push(
+      "",
+      `--- ${heading(part.name)}  ${part.rows.length} ${part.rows.length === 1 ? "line" : "lines"}, ${part.steps.length} ${part.steps.length === 1 ? "step" : "steps"}`
+    );
     for (const [n, step] of part.steps.entries()) lines.push(`${n + 1}. ${labelled(step)}`);
-    // The notes only print where the rewrite wrote one, so an unprepared list costs no lines.
+    // The notes only print where the rewrite wrote one, by the line's number in the prompt, so an unprepared list costs no lines.
     part.notes.forEach((note, n) => {
-      if (note.trim() !== "") lines.push(`   note ${n + 1}: ${note}`);
+      if (note.trim() !== "") lines.push(`   #${part.rows[n]! + 1}: ${note}`);
     });
-  });
+  }
   return lines;
 }
 

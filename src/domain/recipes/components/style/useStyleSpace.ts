@@ -12,6 +12,7 @@ import {
   choiceCounts,
   choosePart,
   initialChoices,
+  isRebuilt,
   type StyleAnswer,
   type StyleChoices,
   stepKey,
@@ -97,10 +98,14 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
 
   const setPart = (p: number, choice: Choice) => setChoices((current) => (current && answer ? choosePart(current, original, answer, p, choice) : current));
 
+  const setRecipe = (choice: Choice) => setChoices((current) => (current ? { ...current, recipe: choice } : current));
+
   const editStep = (key: string, text: string) => setChoices((current) => (current ? { ...current, edits: { ...current.edits, [key]: text } } : current));
 
   return {
     original,
+    /** Whether the rewrite laid the recipe out afresh, so it is chosen whole. */
+    rebuilt: answer !== null && isRebuilt(original, answer),
     rules,
     selected,
     answer,
@@ -119,6 +124,7 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     toggleRule,
     setStep,
     setPart,
+    setRecipe,
     editStep,
     runAgain: () => void start([...selected]),
   };

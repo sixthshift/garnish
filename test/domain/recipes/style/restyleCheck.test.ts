@@ -126,8 +126,16 @@ describe("checkRestyle", () => {
     expect(result.parts.map((part) => part.ok)).toEqual([true, false]);
   });
 
-  test("a part count mismatch throws: that is the restyle read's malformed case", () => {
-    expect(() => checkRestyle([ORIGINAL], [])).toThrow(/1 original parts against 0/);
+  test("an answer that lays the recipe out afresh is checked whole, and one that loses a row fails", () => {
+    const other: OriginalPart = { name: "Sauce", ingredients: [], steps: [{ text: "Simmer for 10 minutes." }] };
+    // The sauce's step moved into the main body: nothing is lost, though no part pairs with its own.
+    const merged = checkRestyle([ORIGINAL, other], [{ ...MERGED, steps: [...MERGED.steps, ...restyledPart("", ["Simmer for 10 minutes."]).steps] }]);
+    expect(merged.rebuilt).toBe(true);
+    expect(merged.parts).toHaveLength(1);
+    expect(merged.ok).toBe(true);
+    const empty = checkRestyle([ORIGINAL], []);
+    expect(empty.ok).toBe(false);
+    expect(empty.rowMismatch).toBe(true);
   });
 });
 

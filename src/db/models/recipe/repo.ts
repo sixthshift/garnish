@@ -354,20 +354,6 @@ export function recipeRepository(db: Database) {
   }
 
   function writeChildren(tx: Executor, recipeId: string, doc: ParsedRecipeInput): void {
-    // A part's kept original content is not in the document, and a save
-    // rewrites every part row, so it is carried across by part id: the
-    // editor sends back the ids of the parts it loaded, and a part that keeps
-    // its id keeps the author's words with it. A part the save invented has no
-    // id to match and starts with none, which is right — it has no original.
-    const keptSourceParts = new Map(
-      tx
-        .select({ id: part.id, sourcePart: part.sourcePart })
-        .from(part)
-        .where(eq(part.recipeId, recipeId))
-        .all()
-        .flatMap((row) => (row.sourcePart === null ? [] : [[row.id, row.sourcePart] as const]))
-    );
-
     tx.delete(recipeTag).where(eq(recipeTag.recipeId, recipeId)).run();
     writeFacets(tx, recipeId, doc.facets);
     tx.delete(recipeNote).where(eq(recipeNote.recipeId, recipeId)).run();
@@ -388,9 +374,7 @@ export function recipeRepository(db: Database) {
 
     doc.parts.forEach((p, position) => {
       const partId = p.id ?? crypto.randomUUID();
-      tx.insert(part)
-        .values({ id: partId, recipeId, position, name: p.name, sourcePart: keptSourceParts.get(partId) ?? null })
-        .run();
+      tx.insert(part).values({ id: partId, recipeId, position, name: p.name }).run();
       // Ingredients first: their ids are what the part's steps may link to.
       // A line the document gave no id gets a fresh one, which nothing can name.
       const linkable = new Set<string>();

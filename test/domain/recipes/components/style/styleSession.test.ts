@@ -8,6 +8,7 @@ import {
   choosePart,
   initialChoices,
   isAligned,
+  isRebuilt,
   partFindings,
   type StyleAnswer,
   type StyleChoices,
@@ -47,6 +48,7 @@ function droppingCondition(): RestyledPart[] {
   return [
     {
       name: "",
+      rows: [0],
       notes: ["smashed and sliced"],
       steps: [
         restyledStep("Heat 2 tbsp of the oil in a wok over high heat.", { title: "Sear" }),
@@ -103,7 +105,7 @@ describe("where each step starts", () => {
 
   test("a rewrite that merged steps is chosen whole, and a whole-part finding starts it on the original", () => {
     const merged: RestyledPart[] = [
-      { name: "", notes: ["smashed and sliced"], steps: [restyledStep("Heat 2 tbsp oil over high heat, add the garlic and peanuts, and serve.")] },
+      { name: "", rows: [0], notes: ["smashed and sliced"], steps: [restyledStep("Heat 2 tbsp oil over high heat, add the garlic and peanuts, and serve.")] },
     ];
     const answer = answerFor(merged);
     expect(isAligned(original()[0]!, merged[0]!)).toBe(false);
@@ -148,12 +150,12 @@ describe("what is saved", () => {
     const from = styleOriginal([{ name: "", ingredients: [], steps: [{ text: "Stir the sauce until thick." }, { text: "Serve." }] }]);
     // The rewrite moves the condition from step one into step two's supporting line: the whole part keeps it.
     const moved: RestyledPart[] = [
-      { name: "", notes: [], steps: [restyledStep("Stir the sauce."), restyledStep("Serve.", { summary: "Stir until thick first." })] },
+      { name: "", rows: [], notes: [], steps: [restyledStep("Stir the sauce."), restyledStep("Serve.", { summary: "Stir until thick first." })] },
     ];
     const answer = answerFor(moved, from);
     expect(answer.check.ok).toBe(true);
     // Taking the first rewrite but the second original loses it.
-    const mixed: StyleChoices = { steps: { [stepKey(0, 0)]: "rewrite", [stepKey(0, 1)]: "original" }, parts: { 0: "rewrite" }, edits: {} };
+    const mixed: StyleChoices = { recipe: "rewrite", steps: { [stepKey(0, 0)]: "rewrite", [stepKey(0, 1)]: "original" }, parts: { 0: "rewrite" }, edits: {} };
     expect(checkChoices(from, assemble(from, answer, mixed)).missingConditions).toEqual(["until thick"]);
   });
 });
@@ -170,5 +172,47 @@ describe("the counts", () => {
     const from = styleOriginal([{ name: "To serve", ingredients: [], steps: [] }]);
     const answer = answerFor([restyledPart("To serve", [])], from);
     expect(choiceCounts(from, answer, initialChoices(from, answer))).toEqual({ total: 0, kept: 0, flagged: 0 });
+  });
+});
+
+describe("a rewrite that lays the recipe out afresh", () => {
+  /** `original()` with the garlic moved into a new "To serve" part, with the last step. */
+  function rebuilt(): RestyledPart[] {
+    const [first] = droppingCondition();
+    return [
+      { name: "", rows: [], notes: [], steps: [first!.steps[0]!, restyledStep("Add the garlic and cook for a minute or two until fragrant.")] },
+      { name: "To serve", rows: [0], notes: ["sliced"], steps: [restyledStep("Add the peanuts and serve.")] },
+    ];
+  }
+
+  test("is chosen whole: one choice, on the rewrite when the check passed, and on the original when it did not", () => {
+    const answer = answerFor(rebuilt());
+    expect(isRebuilt(original(), answer)).toBe(true);
+    expect(initialChoices(original(), answer).recipe).toBe("rewrite");
+    expect(choiceCounts(original(), answer, initialChoices(original(), answer))).toEqual({ total: 1, kept: 1, flagged: 0 });
+
+    const losing = rebuilt();
+    losing[0]!.steps = [losing[0]!.steps[0]!, restyledStep("Add the garlic and cook for 1 or 2 minutes.")];
+    const flagged = answerFor(losing);
+    expect(initialChoices(original(), flagged).recipe).toBe("original");
+    expect(choiceCounts(original(), flagged, initialChoices(original(), flagged))).toEqual({ total: 1, kept: 0, flagged: 1 });
+  });
+
+  test("saves the rewrite's layout with any retyped step, or the author's recipe as written", () => {
+    const answer = answerFor(rebuilt());
+    const choices: StyleChoices = { ...initialChoices(original(), answer), edits: { [stepKey(1, 0)]: "Toss in the peanuts and serve." } };
+    const saved = assemble(original(), answer, choices);
+    expect(saved.map((part) => [part.name, part.rows, part.notes])).toEqual([
+      ["", [], []],
+      ["To serve", [0], ["sliced"]],
+    ]);
+    expect(saved[1]!.steps[0]!.text).toBe("Toss in the peanuts and serve.");
+    expect(changesAnything(original(), saved)).toBe(true);
+
+    const back = assemble(original(), answer, { ...choices, recipe: "original" });
+    expect(back).toEqual([
+      { name: "", rows: [0], notes: ["smashed and sliced"], steps: original()[0]!.steps.map((step) => ({ title: "", summary: "", ...step })) },
+    ]);
+    expect(changesAnything(original(), back)).toBe(false);
   });
 });

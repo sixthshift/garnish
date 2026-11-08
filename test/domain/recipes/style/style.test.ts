@@ -75,22 +75,25 @@ describe("enabledRules", () => {
 });
 
 describe("the seeded guide", () => {
-  test("is twelve statements, one per theme, all on, all distinct", () => {
-    expect(DEFAULT_STYLE_RULES).toHaveLength(12);
-    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual(Array(12).fill(true));
+  test("is fifteen statements, one per theme, all on, all distinct", () => {
+    expect(DEFAULT_STYLE_RULES).toHaveLength(15);
+    expect(DEFAULT_STYLE_RULES.map((r) => r.enabled)).toEqual(Array(15).fill(true));
     expect(DEFAULT_STYLE_RULES.map((r) => r.text.split(/[:,]/)[0])).toEqual([
       "One stage per step",
       "Imperative",
       "Drop the author and the reader but keep what they said",
       "Ingredients by their food name",
-      "When the author gives a time and a cue",
+      "A step's time comes last",
       "Give every step a label",
       "What is not an instruction on the main path — why a time is a range",
       "Prefer metric",
       "Write numbers one way throughout",
       "Normalise emphasis",
       'Drop a bare pointer to a numbered note ("(Note 7)")',
-      "Preparation belongs to the ingredient",
+      "An ingredient's line carries its preparation and its optionality",
+      "Lay the recipe out in parts by what is made",
+      'Begin with a step labelled "Prepare the ingredients" that does every cut',
+      "Use Australian kitchen words",
     ]);
     const texts = DEFAULT_STYLE_RULES.map((r) => r.text.toLowerCase());
     expect(new Set(texts).size).toBe(texts.length);

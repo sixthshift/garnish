@@ -476,37 +476,27 @@ test("deleting a planned recipe empties the entry's recipe, not the day", () => 
   expect(db.query<{ recipe_id: string | null }, []>("SELECT recipe_id FROM meal_plan_entry").get()!.recipe_id).toBeNull();
 });
 
-// --- 011_restyle -------------------------------------------------------------
+// --- 011_restyle, 037_source_parts ------------------------------------------
 
-test("a part keeps the whole of itself as JSON, and a recipe carries the restyle stamp", () => {
+test("a recipe keeps the whole of itself as JSON beside the restyle stamp, and no part keeps a copy", () => {
   seedRecipe();
+  const keptParts = () => db.query<{ source_parts: string | null }, [string]>("SELECT source_parts FROM recipe WHERE id = ?").get(ids.recipe)!.source_parts;
 
-  // NULL until a restyle: the steps a recipe came with are the ones it has.
-  expect(db.query<{ source_part: string | null }, [string]>("SELECT source_part FROM part WHERE id = ?").get(ids.pasta)!.source_part).toBeNull();
+  // NULL until a restyle: the parts a recipe came with are the ones it has.
+  expect(keptParts()).toBeNull();
   expect(db.query<{ restyled_at: string | null }, [string]>("SELECT restyled_at FROM recipe WHERE id = ?").get(ids.recipe)!.restyled_at).toBeNull();
+  expect(
+    db
+      .query<{ name: string }, []>("SELECT name FROM pragma_table_info('part')")
+      .all()
+      .map((column) => column.name)
+  ).not.toContain("source_part");
 
-  const original = JSON.stringify({
-    steps: [
-      { title: "", text: "Boil the pasta.", summary: "" },
-      { title: "", text: "Toss together and serve.", summary: "" },
-    ],
-    notes: ["", "to taste"],
-  });
-  db.run("UPDATE part SET source_part = ? WHERE id = ?", [original, ids.pasta]);
-  db.run("UPDATE recipe SET restyled_at = ? WHERE id = ?", ["2026-09-14T02:30:00.000Z", ids.recipe]);
-
-  expect(db.query<{ source_part: string }, [string]>("SELECT source_part FROM part WHERE id = ?").get(ids.pasta)!.source_part).toBe(original);
-  expect(db.query<{ restyled_at: string }, [string]>("SELECT restyled_at FROM recipe WHERE id = ?").get(ids.recipe)!.restyled_at).toBe(
-    "2026-09-14T02:30:00.000Z"
-  );
+  const original = JSON.stringify([{ name: "", rows: ["i1"], notes: ["to taste"], steps: [{ title: "", text: "Boil the pasta.", summary: "" }] }]);
+  db.run("UPDATE recipe SET source_parts = ?, restyled_at = ? WHERE id = ?", [original, "2026-09-14T02:30:00.000Z", ids.recipe]);
+  expect(keptParts()).toBe(original);
 
   // Both go back to NULL: a restore is not a different state from never restyled.
-  db.run("UPDATE part SET source_part = NULL WHERE id = ?", [ids.pasta]);
-  db.run("UPDATE recipe SET restyled_at = NULL WHERE id = ?", [ids.recipe]);
-  expect(count("part", "source_part IS NOT NULL")).toBe(0);
-  expect(count("recipe", "restyled_at IS NOT NULL")).toBe(0);
-
-  // The kept steps go with the part, which goes with the recipe.
-  db.run("DELETE FROM recipe WHERE id = ?", [ids.recipe]);
-  expect(count("part")).toBe(0);
+  db.run("UPDATE recipe SET source_parts = NULL, restyled_at = NULL WHERE id = ?", [ids.recipe]);
+  expect(count("recipe", "source_parts IS NOT NULL OR restyled_at IS NOT NULL")).toBe(0);
 });

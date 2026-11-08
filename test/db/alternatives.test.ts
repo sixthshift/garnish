@@ -165,3 +165,28 @@ test("migration 030 brings a line's options across ticked and its substitutes un
   expect(minted).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
   old.close();
 });
+
+test("migration 037 keeps a restyled recipe whole: each part's kept words where it has them, its own where it has none", () => {
+  const old = openDatabase(":memory:");
+  const files = readdirSync(MIGRATIONS_DIR).filter((file) => /^\d{3}_.*\.sql$/.test(file));
+  const upTo = (last: number) =>
+    Object.fromEntries(files.filter((f) => Number(f.slice(0, 3)) <= last).map((f) => [f, readFileSync(join(MIGRATIONS_DIR, f), "utf8")]));
+  migrate(old, { sources: upTo(36) });
+  const kept = JSON.stringify({ steps: [{ title: "", text: "Boil the pasta.", summary: "" }], notes: ["", "to taste"] });
+  old.exec(`
+    INSERT INTO recipe (id, slug, name) VALUES ('r1', 'pasta', 'Pasta'), ('r2', 'toast', 'Toast');
+    INSERT INTO part (id, recipe_id, position, name, source_part) VALUES ('p1', 'r1', 0, 'Pasta', '${kept}'), ('p2', 'r1', 1, 'Sauce', NULL), ('p3', 'r2', 0, '', NULL);
+    INSERT INTO ingredient (id, part_id, position, note) VALUES ('i2', 'p1', 1, 'salted'), ('i1', 'p1', 0, ''), ('i3', 'p2', 0, 'cold');
+    INSERT INTO step (id, part_id, position, title, text, summary) VALUES ('s1', 'p1', 0, 'Boil', 'Boil it well.', ''), ('s2', 'p2', 0, '', 'Melt the butter.', '');
+  `);
+  migrate(old);
+
+  const sourceParts = (id: string) =>
+    old.query<{ source_parts: string | null }, [string]>("SELECT source_parts FROM recipe WHERE id = ?").get(id)!.source_parts;
+  expect(JSON.parse(sourceParts("r1")!)).toEqual([
+    { name: "Pasta", rows: ["i1", "i2"], notes: ["", "to taste"], steps: [{ title: "", text: "Boil the pasta.", summary: "" }] },
+    { name: "Sauce", rows: ["i3"], notes: ["cold"], steps: [{ title: "", text: "Melt the butter.", summary: "" }] },
+  ]);
+  // A recipe never restyled keeps nothing.
+  expect(sourceParts("r2")).toBeNull();
+});

@@ -1,4 +1,4 @@
-// The restyle lab's pure half: flags, the recipe rebuilt from the author's steps, and the report. The CLI itself is one wiring block and is not run here.
+// The restyle lab's pure half: flags, the recipe rebuilt from the author's parts, and the report. The CLI itself is one wiring block and is not run here.
 import { describe, expect, test } from "vitest";
 import type { Recipe } from "../../../src/domain/recipes/recipe";
 import { failureLine, rulesFromText } from "../../../src/server/ai/lab";
@@ -7,12 +7,13 @@ import { authorRecipe, LAB_USAGE, onlyPart, parseLabFlags, reportLines } from ".
 import { restyledPart } from "../../helpers/restyle";
 
 const step = (id: string, text: string) => ({ id, text, ingredientIds: [], image: null });
+const row = (id: string, note = "") => ({ id, quantity: null, unit: null, food: null, note, originalText: id, fixed: false, alternatives: [] });
 const recipe = {
   name: "Ragu",
   parts: [
     { id: "p0", name: "", ingredients: [], steps: [] },
-    { id: "p1", name: "Full recipe", ingredients: [], steps: [step("s1", "Pat beef dry."), step("s2", "Sear beef.")] },
-    { id: "p2", name: "To Serve", ingredients: [], steps: [step("s3", "Boil pasta.")] },
+    { id: "p1", name: "Full recipe", ingredients: [row("i1", "patted dry")], steps: [step("s1", "Pat beef dry."), step("s2", "Sear beef.")] },
+    { id: "p2", name: "To Serve", ingredients: [row("i2")], steps: [step("s3", "Boil pasta.")] },
   ],
 } as unknown as Recipe;
 
@@ -41,19 +42,19 @@ describe("parseLabFlags", () => {
 });
 
 describe("authorRecipe", () => {
-  test("puts the author's steps back where a part kept them, keeping step ids where there is one, and leaves the rest", () => {
-    const rebuilt = authorRecipe(recipe, new Map([["p1", ["Season beef - pat dry.", "Sear - brown all over.", "Remove."]]]));
-    expect(rebuilt.parts[1]!.steps.map((s) => s.text)).toEqual(["Season beef - pat dry.", "Sear - brown all over.", "Remove."]);
-    expect(rebuilt.parts[1]!.steps.map((s) => s.id)).toEqual(["s1", "s2", "p1:author:2"]);
-    expect(rebuilt.parts[2]).toBe(recipe.parts[2]);
-    expect(rebuilt.parts[0]).toBe(recipe.parts[0]);
+  test("a recipe never restyled is already the author's", () => {
+    expect(authorRecipe(recipe, null)).toBe(recipe);
   });
 
-  test("a part whose current steps are gone still gets its author's steps", () => {
-    const bare = { ...recipe, parts: [{ ...recipe.parts[1]!, steps: [] }] } as Recipe;
-    expect(authorRecipe(bare, new Map([["p1", ["Sear."]]])).parts[0]!.steps).toEqual([
-      { id: "p1:author:0", title: "", text: "Sear.", summary: "", ingredientIds: [], image: null },
+  test("a restyled one is rebuilt from the kept parts: their names, their rows with the author's notes, and their steps", () => {
+    const rebuilt = authorRecipe(recipe, [
+      { name: "Beef", rows: ["i2", "gone"], notes: ["", "?"], steps: [{ title: "", text: "Season beef - pat dry.", summary: "" }] },
+      { name: "Pasta", rows: ["i1"], notes: ["whole"], steps: [] },
     ]);
+    expect(rebuilt.parts.map((p) => p.name)).toEqual(["Beef", "Pasta"]);
+    // A kept row the recipe no longer has is skipped.
+    expect(rebuilt.parts.map((p) => p.ingredients.map((r) => [r.id, r.note]))).toEqual([[["i2", ""]], [["i1", "whole"]]]);
+    expect(rebuilt.parts[0]!.steps).toEqual([{ id: "author:0:0", title: "", text: "Season beef - pat dry.", summary: "", ingredientIds: [], image: null }]);
   });
 });
 
@@ -71,8 +72,9 @@ test("rulesFromText is one statement per line, blanks and comments dropped", () 
 
 describe("the report", () => {
   const result: RestyleResult = {
-    parts: [restyledPart("", []), restyledPart("Full recipe", ["Pat beef dry and sear."]), restyledPart("To Serve", ["Boil the pasta."])],
+    parts: [restyledPart("", []), restyledPart("Full recipe", ["Pat beef dry and sear."], [0]), restyledPart("To Serve", ["Boil the pasta."], [1])],
     check: {
+      rebuilt: false,
       ok: false,
       missingFacts: ["2"],
       missingFoods: [],
@@ -85,29 +87,30 @@ describe("the report", () => {
     },
   };
 
-  test("heads with the model, the time and the verdict, names what changed, then each non-empty part with its step counts", () => {
+  test("heads with the model, the time and the verdict, names what changed and the counts, then each non-empty part", () => {
     expect(reportLines("lite", 2.345, recipe, result)).toEqual([
       "## lite  2.3s  check FAILED",
       "   dropped: 2",
       '   lost conditions: "if it looks dry"',
       "   added numbers: 1tbsp",
       "   dropped words: pooled juices",
+      "   3 -> 3 parts, 3 -> 2 steps",
       "",
-      "--- Full recipe  2 -> 1 steps",
+      "--- Full recipe  1 line, 1 step",
       "1. Pat beef dry and sear.",
       "",
-      "--- To Serve  1 -> 1 steps",
+      "--- To Serve  1 line, 1 step",
       "1. Boil the pasta.",
     ]);
   });
 
-  test("a passing check is one line before the parts", () => {
+  test("a passing check is one line before the counts", () => {
     const ok = {
       ...result,
       check: { ...result.check, ok: true, missingFacts: [], missingConditions: [], addedNumbers: [], droppedWords: [], rowMismatch: false },
     };
     expect(reportLines("lite", 1, recipe, ok)[0]).toBe("## lite  1.0s  check ok");
-    expect(reportLines("lite", 1, recipe, ok)[1]).toBe("");
+    expect(reportLines("lite", 1, recipe, ok)[1]).toBe("   3 -> 3 parts, 3 -> 2 steps");
   });
 
   test("a failure is one line with the message", () => {

@@ -5,8 +5,11 @@ import { food } from "../food/schema";
 import { tag } from "../tag/schema";
 import { unit } from "../unit/schema";
 
-/** What `part.source_part` holds: the part before its first restyle. */
-export type SourcePart = { steps: { title: string; text: string; summary: string }[]; notes: string[] };
+/** One step's three fields, as the author wrote them or a restyle answered them. */
+export type SourceStep = { title: string; text: string; summary: string };
+
+/** One part as `recipe.source_parts` keeps it: its name, its rows by id with a note each, and its steps. */
+export type SourcePart = { name: string; rows: string[]; notes: string[]; steps: SourceStep[] };
 
 export const recipe = sqliteTable(
   "recipe",
@@ -32,6 +35,15 @@ export const recipe = sqliteTable(
     // 011_restyle.sql: when the steps were last rewritten in the house style,
     // NULL while they are still the author's words.
     restyledAt: text("restyled_at"),
+    /**
+     * 037_source_parts.sql: the recipe's parts as the author left them —
+     * names, each part's rows by id with their notes, and the steps with their
+     * labels and supporting lines — as JSON; NULL until the first restyle.
+     * Written once and cleared by a restore, so it is always the author's
+     * layout and words or nothing. `{ mode: "json" }` parses and serialises
+     * it, as `food.aliases` does.
+     */
+    sourceParts: text("source_parts", { mode: "json" }).$type<SourcePart[]>(),
   },
   (t) => [
     index("recipe_yield_unit_id").on(t.yieldUnitId),
@@ -70,14 +82,6 @@ export const part = sqliteTable(
     position: integer("position").notNull(),
     /** '' is the unnamed part: the flat recipe, or the main body beside named parts. */
     name: text("name").notNull().default(""),
-    /**
-     * 017_source_part.sql: the part as the author left it — its steps with
-     * their labels and supporting lines, and one note per ingredient row in
-     * position order — as JSON; NULL until the first restyle. Written once and
-     * cleared by a restore, so it is always the author's words or nothing.
-     * `{ mode: "json" }` parses and serialises it, as `food.aliases` does.
-     */
-    sourcePart: text("source_part", { mode: "json" }).$type<SourcePart>(),
   },
   (t) => [unique().on(t.recipeId, t.position)]
 );

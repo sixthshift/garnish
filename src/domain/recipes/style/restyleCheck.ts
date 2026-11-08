@@ -20,17 +20,57 @@ export type OriginalPart = {
 export type RestyledStep = { title: string; text: string; summary: string };
 
 /**
- * A part as the restyle answers it. `notes` is one note per ingredient row, in
- * the part's own order — the rows themselves are the author's and the pass
- * never sees their quantities, so a note is the only thing it can say about
- * one, and saying it by position is what makes a changed row impossible rather
- * than merely forbidden.
+ * A part as the restyle answers it. `rows` are the ingredient rows it holds, in
+ * its order, each named by its place in the recipe's rows read part by part
+ * from 0; `notes` is one note per entry of `rows`. The rows themselves are the
+ * author's and the pass never sees their quantities to rewrite, so it can move
+ * a row to another part, or reorder it, and say how it is prepared, but not
+ * change it (decisions.md row 226): naming a row by number is what makes a
+ * changed row impossible rather than merely forbidden.
  */
 export type RestyledPart = {
   name: string;
+  rows: readonly number[];
   notes: readonly string[];
   steps: readonly RestyledStep[];
 };
+
+/** Each part's rows as they stand, by their place in the recipe: what an answer that moved nothing says. Pure. */
+export function rowsInPlace(parts: readonly { ingredients: readonly unknown[] }[]): number[][] {
+  let next = 0;
+  return parts.map((part) => part.ingredients.map(() => next++));
+}
+
+/**
+ * Whether an answer keeps the recipe's parts as they are: as many, with the
+ * same names, each holding its own rows in its own order. Such an answer is
+ * checked, and chosen, part by part and step by step; any other rebuilt the
+ * recipe and is checked, and chosen, whole. Pure.
+ */
+export function keepsLayout(original: readonly OriginalPart[], restyled: readonly Pick<RestyledPart, "name" | "rows">[]): boolean {
+  if (original.length !== restyled.length) return false;
+  const fold = (name: string) => name.trim().toLowerCase();
+  const inPlace = rowsInPlace(original);
+  return original.every(
+    (part, p) =>
+      fold(part.name) === fold(restyled[p]!.name) &&
+      inPlace[p]!.length === restyled[p]!.rows.length &&
+      inPlace[p]!.every((row, i) => restyled[p]!.rows[i] === row)
+  );
+}
+
+/** Whether the answer places every one of `count` rows exactly once, with a note for each. Pure. */
+export function placesEveryRow(count: number, restyled: readonly Pick<RestyledPart, "rows" | "notes">[]): boolean {
+  const seen = new Set<number>();
+  for (const part of restyled) {
+    if (part.notes.length !== part.rows.length) return false;
+    for (const row of part.rows) {
+      if (!Number.isInteger(row) || row < 0 || row >= count || seen.has(row)) return false;
+      seen.add(row);
+    }
+  }
+  return seen.size === count;
+}
 
 /**
  * Everything a part says, in one bag: the label, the instruction and the
@@ -111,8 +151,14 @@ export type PartRestyleCheck = {
   rowMismatch: boolean;
 };
 
-/** The whole recipe's verdict: the conjunction, the three lists concatenated, and the parts. */
+/**
+ * The whole recipe's verdict: the conjunction, the lists concatenated, and the
+ * parts. `rebuilt` is true when the answer laid the recipe out afresh, and
+ * then `parts` holds one verdict over the whole recipe rather than one a part,
+ * since a sentence may now sit in a part that did not exist before.
+ */
 export type RestyleCheck = {
+  rebuilt: boolean;
   ok: boolean;
   missingFacts: string[];
   missingFoods: string[];
@@ -181,20 +227,39 @@ export function checkPart(original: OriginalPart, restyled: RestyledPart, known:
   };
 }
 
+/** The recipe as one part: every row and every step, in order. What a rebuilt answer is checked against. Pure. */
+function wholeOriginal(original: readonly OriginalPart[]): OriginalPart {
+  return { name: "", ingredients: original.flatMap((part) => part.ingredients), steps: original.flatMap((part) => part.steps) };
+}
+
+/** The answer as one part, its notes put back in the recipe's row order, a row it never placed noted "". Pure. */
+function wholeRestyled(count: number, restyled: readonly RestyledPart[]): RestyledPart {
+  const notes = Array.from({ length: count }, () => "");
+  for (const part of restyled) {
+    for (const [i, row] of part.rows.entries()) if (row >= 0 && row < count) notes[row] = part.notes[i] ?? "";
+  }
+  return { name: "", rows: notes.map((_, i) => i), notes, steps: restyled.flatMap((part) => part.steps) };
+}
+
 /**
- * The whole restyle's verdict, part by part. Parts pair by index, which the answer parser
- * guarantees by rejecting any answer with a different count or different names
- * as `malformed`; a mismatch reaching here is a bug rather than a failed check,
- * so it throws instead of returning `ok: false`. Pure.
+ * The whole restyle's verdict. An answer that keeps the recipe's layout is
+ * checked part by part, so a finding lands on the part, and the step, it is
+ * about; one that rebuilt the parts is checked as one recipe, since what a
+ * part said may now be said in another. Either way an answer that loses a row,
+ * names one twice or names one the recipe does not have fails, as a row
+ * mismatch. Pure.
  */
 export function checkRestyle(original: readonly OriginalPart[], restyled: readonly RestyledPart[]): RestyleCheck {
-  if (original.length !== restyled.length) {
-    throw new Error(`restyle check: ${original.length} original parts against ${restyled.length} restyled`);
-  }
   // A cue the rewrite moved from one part into another is the author's, not invented.
   const known = recipeWords(original);
-  const parts = original.map((part, index) => checkPart(part, restyled[index]!, known));
+  const count = original.reduce((sum, part) => sum + part.ingredients.length, 0);
+  const rebuilt = !keepsLayout(original, restyled);
+  const parts = rebuilt
+    ? [checkPart(wholeOriginal(original), wholeRestyled(count, restyled), known)]
+    : original.map((part, index) => checkPart(part, restyled[index]!, known));
+  if (!placesEveryRow(count, restyled)) parts[0] = { ...parts[0]!, ok: false, rowMismatch: true };
   return {
+    rebuilt,
     ok: parts.every((part) => part.ok),
     missingFacts: parts.flatMap((part) => part.missingFacts),
     missingFoods: parts.flatMap((part) => part.missingFoods),

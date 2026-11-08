@@ -1,16 +1,18 @@
 import { z } from "zod";
 import { formatIngredient } from "../../domain/recipes/ingredient";
 import type { ParsedRecipeInput } from "../../domain/recipes/recipe";
-import type { RestyledPart } from "../../domain/recipes/style";
+import { type RestyledPart, rowsInPlace } from "../../domain/recipes/style";
 import { readJsonAnswer } from "../../lib/ai";
 import { AiError } from "./client";
 
 /**
  * The answer's shape as a JSON Schema for the request's `response_format`,
  * written out for the same reason `SCRAPED_JSON_SCHEMA` is: structured output
- * wants every property named, every one required, and no extras. Steps only —
- * the ingredients are sent so the model knows what the pan holds, never so it
- * can rewrite them. `test/server/ai/restyle.test.ts` holds it to the zod schema.
+ * wants every property named, every one required, and no extras. An
+ * ingredient is answered by its number and a note, never by its words: the
+ * model may move a line to another part and say how it is prepared, but has
+ * nothing to rewrite its amount, unit or food with (decisions.md row 226).
+ * `test/server/ai/restyle.test.ts` holds it to the zod schema.
  */
 export const RESTYLE_JSON_SCHEMA = {
   type: "object",
@@ -22,10 +24,18 @@ export const RESTYLE_JSON_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "notes", "steps"],
+        required: ["name", "ingredients", "steps"],
         properties: {
           name: { type: "string" },
-          notes: { type: "array", items: { type: "string" } },
+          ingredients: {
+            type: "array",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["line", "note"],
+              properties: { line: { type: "integer" }, note: { type: "string" } },
+            },
+          },
           steps: {
             type: "array",
             items: {
@@ -52,20 +62,25 @@ export const RestyledStepSchema = z.object({
   summary: z.string().default(""),
 });
 
+/** One ingredient line as the model answers it: its number in the prompt, from 1 through the whole recipe, and its note. */
+export const AnsweredLineSchema = z.object({ line: z.number().int(), note: z.string().default("") });
+
 /** One part as the model answers it. */
-export const RestyledPartSchema = z.object({
+export const AnsweredPartSchema = z.object({
   name: z.string().default(""),
-  notes: z.array(z.string()).default([]),
+  ingredients: z.array(AnsweredLineSchema).default([]),
   steps: z.array(RestyledStepSchema).default([]),
 });
 
 /** The whole answer. Nothing else is read off it, so nothing else is declared. */
-export const RestyleAnswerSchema = z.object({ parts: z.array(RestyledPartSchema).default([]) });
+export const RestyleAnswerSchema = z.object({ parts: z.array(AnsweredPartSchema).default([]) });
 
-/** A part as the prompt shows it: the name, the ingredient lines as the app renders them, and the steps as three fields each. */
+export type AnsweredPart = z.infer<typeof AnsweredPartSchema>;
+
 /** A part the restyle can read: a saved one, or one of an unsaved draft's, whose rows have no ids yet. */
 export type StylablePart = ParsedRecipeInput["parts"][number];
 
+/** A part as the prompt shows it: the name, the ingredient lines as the app renders them, and the steps as three fields each. */
 export type PromptPart = { name: string; ingredients: string[]; steps: { title: string; text: string; summary: string }[] };
 
 /**
@@ -105,35 +120,58 @@ export function promptParts(parts: readonly StylablePart[]): PromptPart[] {
   }));
 }
 
-/**
- * The parts with a step: the ones the restyle has something to rewrite in.
- * Every part is sent — a recipe whose ingredients all sit in a stepless main
- * body would otherwise reach the model with no ingredients at all, and the
- * food names and notes the guide asks for could not be written — but a model
- * may still answer only these, which `withEmptyParts` accepts. Pure.
- */
+/** The parts with a step: a recipe with none has nothing to rewrite, and the model is not called. Pure. */
 export function partsWithSteps<P extends { steps: readonly unknown[] }>(parts: readonly P[]): P[] {
   return parts.filter((part) => part.steps.length > 0);
 }
 
 /**
- * The answer's parts in the recipe's positions. A full answer is taken as it
- * is. An answer naming only the parts with steps — what a model given nothing
- * to rewrite in a part tends to send — has every stepless part spliced in as
- * itself, with its notes as they are. Any other count is `malformed`. Pure.
+ * The answer as the recipe's rows: each line number turned back into the
+ * row's place (from 0), and every row the answer left out put back where it
+ * was — in the answered part of the same name, or, when the answer has none,
+ * in a part of that name with no steps, where the recipe has it. A model asked to rebuild
+ * the parts still tends to leave out a part with nothing to rewrite, and the
+ * row is the author's either way, so leaving it out costs nothing it must
+ * not. A line named twice, or one the recipe does not have, is a broken
+ * answer: `malformed`, and nothing is changed. Pure.
  */
-export function withEmptyParts(original: readonly StylablePart[], answered: readonly RestyledPart[]): RestyledPart[] {
-  if (answered.length === original.length) return [...answered];
-  const asked = partsWithSteps(original).length;
-  if (answered.length !== asked) {
-    throw new AiError(
-      "malformed",
-      `The model answered with ${answered.length} part${answered.length === 1 ? "" : "s"} where the recipe has ${original.length}, so nothing was changed.`
-    );
-  }
-  let next = 0;
-  // A stepless part left out of the answer keeps its rows' notes as they are.
-  return original.map((part) => (part.steps.length === 0 ? { name: part.name, notes: part.ingredients.map((row) => row.note), steps: [] } : answered[next++]!));
+export function placeLines(original: readonly StylablePart[], answered: readonly AnsweredPart[]): RestyledPart[] {
+  const inPlace = rowsInPlace(original);
+  const count = inPlace.flat().length;
+  const seen = new Set<number>();
+  const parts = answered.map((part) => {
+    const rows: number[] = [];
+    const notes: string[] = [];
+    for (const { line, note } of part.ingredients) {
+      const row = line - 1;
+      if (row < 0 || row >= count)
+        throw new AiError("malformed", `The model named ingredient ${line}, which the recipe does not have, so nothing was changed.`);
+      if (seen.has(row)) throw new AiError("malformed", `The model put ingredient ${line} in twice, so nothing was changed.`);
+      seen.add(row);
+      rows.push(row);
+      notes.push(note);
+    }
+    return { name: part.name, rows, notes, steps: part.steps };
+  });
+  const fold = (name: string) => name.trim().toLowerCase();
+  original.forEach((part, p) => {
+    const missing = inPlace[p]!.filter((row) => !seen.has(row));
+    if (missing.length === 0) return;
+    let home = parts.find((answeredPart) => fold(answeredPart.name) === fold(part.name));
+    if (home === undefined) {
+      // Back where it was: before the first answered part that the recipe has after it.
+      const later = new Set(original.slice(p + 1).map((after) => fold(after.name)));
+      const at = parts.findIndex((answeredPart) => later.has(fold(answeredPart.name)));
+      home = { name: part.name, rows: [], notes: [], steps: [] };
+      parts.splice(at === -1 ? parts.length : at, 0, home);
+    }
+    for (const row of missing) {
+      home.rows.push(row);
+      home.notes.push(part.ingredients[inPlace[p]!.indexOf(row)]!.note);
+    }
+  });
+  if (parts.length === 0) throw new AiError("malformed", "The model answered with no parts, so nothing was changed.");
+  return parts;
 }
 
 /**
@@ -164,13 +202,18 @@ function partHeading(name: string): string {
  * assert that statement (7) reached the prompt — then the recipe part by part.
  *
  * The rules after the statements are about the shape of the answer rather than
- * its voice: the same parts, in the same order, under the same names, with the
- * steps rewritten and nothing else touched. They are separate from the
- * statements on purpose, because the statements are the household's and change
- * in Settings, while these are the contract the parser and the check depend on.
- * They also anchor the rewrite to the author's step boundaries: a frame that
- * lets steps be merged or split is read as an invitation to atomise, so
- * splitting and merging are left to the statements alone.
+ * its voice: the parts as the house style lays them out — the recipe's own,
+ * unchanged, when no statement says otherwise — each ingredient line placed
+ * once by its number with its note, and the steps rewritten. They are separate
+ * from the statements on purpose, because the statements are the household's
+ * and change in Settings, while these are the contract the parser and the check
+ * depend on. They also anchor the rewrite to the author's step boundaries: a
+ * frame that lets steps be merged or split is read as an invitation to
+ * atomise, so splitting and merging are left to the statements alone.
+ *
+ * Ingredient lines are numbered through the whole recipe (#1, #2, …) rather
+ * than per part, because a line may move to another part and the number is
+ * how the answer says which line it moved.
  * Pure.
  */
 export function restylePrompt({ rules, parts }: { rules: readonly string[]; parts: readonly PromptPart[] }): string {
@@ -186,10 +229,10 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
   lines.push(
     "",
     "Rules for the answer:",
-    "- Answer with the same parts, in the same order, with their names copied exactly as given below. Do not add, drop, merge, rename or reorder a part.",
-    "- A part whose STEPS are (none) holds ingredients the other parts' steps use: answer it with no steps, and with its notes.",
+    "- Answer with the recipe's parts as the house style lays them out. Where no statement asks for a different layout, answer with the same parts, in the same order, with their names copied exactly as given below.",
+    "- Each ingredient line has a number (#1, #2, …) through the whole recipe. Put every line in exactly one part, by its number, in the order that part lists them. A part may hold lines and no steps, or steps and no lines.",
     '- Each step is three fields. `text` is the instruction. `title` is a short label, or "" for no label. `summary` is what the step says that is not an instruction on the main path — why a time is a range, what to expect, what to do if it goes wrong — in as many sentences as it takes, or "" for none.',
-    '- `notes` is one string per ingredient line of that part, in the order the lines are given below, saying how that ingredient is prepared ("finely diced", "at room temperature") or "" for nothing. Answer with exactly as many as there are lines. Never change a quantity, a unit or a food: you are not given them to rewrite, only the note.',
+    '- Each entry of a part\'s `ingredients` is `line`, the line\'s number, and `note`, saying how that ingredient is prepared ("finely diced", "at room temperature") or "" for nothing. Never change a quantity, a unit or a food: you are not given them to rewrite, only the note.',
     "- Split or merge steps only where a house style statement asks for it; otherwise keep the author's step boundaries. Everything the original said must still be said, in one of these fields.",
     '- Keep every number, temperature and time with its value and its unit. Do not convert between metric and imperial, do not round, and do not drop one; writing it differently ("2 - 2 1/2 hrs" as "2–2½ hours") is allowed.',
     "- Keep every ingredient the original steps named, called by the food name marked `(food: …)` after its ingredient line, never by the whole line.",
@@ -200,10 +243,11 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     "RECIPE:"
   );
 
+  let line = 0;
   for (const part of parts) {
     lines.push("", partHeading(part.name), "INGREDIENTS:");
     if (part.ingredients.length === 0) lines.push("(none)");
-    else for (const [index, line] of part.ingredients.entries()) lines.push(`${index + 1}. ${line}`);
+    else for (const ingredient of part.ingredients) lines.push(`#${++line} ${ingredient}`);
     lines.push("STEPS:");
     if (part.steps.length === 0) lines.push("(none)");
     else for (const [index, step] of part.steps.entries()) lines.push(`${index + 1}. ${promptStep(step)}`);
@@ -228,32 +272,8 @@ function promptStep(step: PromptPart["steps"][number]): string {
  * it, with a fence stripped for a model that fences anyway. Throws
  * `AiError("malformed", …)` for anything that is not an answer. Pure.
  */
-export function parseRestyleAnswer(content: string): RestyledPart[] {
+export function parseRestyleAnswer(content: string): AnsweredPart[] {
   const read = readJsonAnswer(content, RestyleAnswerSchema, "restyle format", "nothing was changed");
   if (!read.ok) throw new AiError("malformed", read.message);
   return read.value.parts;
-}
-
-/**
- * The answer's parts against the recipe's. `checkRestyle` pairs by index and
- * throws rather than failing on a mismatch, because a mismatch is not a bad
- * rewrite but a broken answer — so it is caught here first and reported as
- * `malformed`, in words the sheet can show. Names are compared trimmed and
- * case-insensitively: a model that title-cases a heading has still answered
- * about the right part. Pure.
- */
-export function matchParts(original: readonly StylablePart[], restyled: readonly RestyledPart[]): void {
-  if (original.length !== restyled.length) {
-    throw new AiError(
-      "malformed",
-      `The model answered with ${restyled.length} part${restyled.length === 1 ? "" : "s"} where the recipe has ${original.length}, so nothing was changed.`
-    );
-  }
-  const fold = (name: string) => name.trim().toLowerCase();
-  for (const [index, part] of original.entries()) {
-    const answered = restyled[index]!;
-    if (fold(part.name) !== fold(answered.name)) {
-      throw new AiError("malformed", `The model renamed a part ("${part.name}" came back as "${answered.name}"), so nothing was changed.`);
-    }
-  }
 }
