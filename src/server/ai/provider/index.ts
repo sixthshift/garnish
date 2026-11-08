@@ -47,7 +47,7 @@ export function noProvider(problem: string): AiClient {
  * a line on stdout for each answer, and a recorded error for each failure,
  * naming the provider, the model, what was asked for and how long it took. The
  * error is thrown on unchanged. The one place every model call passes, so the
- * import, the restyle and the planner are covered alike.
+ * import, the restyle, the planner and the cooking assistant are covered alike.
  */
 export function withDiagnostics(
   client: AiClient,

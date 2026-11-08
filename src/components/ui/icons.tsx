@@ -211,7 +211,7 @@ export function ClockIcon({ size = 12 }: { size?: number } = {}) {
   );
 }
 
-/** A filled play triangle: cook mode's "Start timer" button. */
+/** A filled play triangle: a step's "Start timer" button. */
 export function PlayIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="shrink-0">

@@ -1,7 +1,7 @@
 // The AI client: the one language the app speaks to a model in. An `AiClient`
 // knows whether it is configured, which model each use asks, what Settings
 // shows of it, how to test it, and how to ask it a question. The features —
-// the import, the restyle, the planner — hold an `AiClient` and never learn
+// the import, the restyle, the planner, the cooking assistant — hold an `AiClient` and never learn
 // what is behind it. A provider is one implementation of it, one file per way
 // of reaching a model under provider/ — api.ts and claudeCode.ts — and the
 // folder's index reads `AI_PROVIDER` to say which one this server uses.
@@ -52,9 +52,9 @@ export type AiRequest = { prompt: string; schema: object; schemaName: string; mo
 export type CheckedModel = { use: AiUse; model: string; listed: boolean };
 
 /**
- * A model the provider offers, by the name a model variable can use, and the
- * full id that name stands for when the provider says (Claude Code's `sonnet`
- * is `claude-sonnet-5`); a variable may use either.
+ * A model the provider offers, by the name Settings › AI lists, and the full
+ * id that name stands for when the provider says (Claude Code's `sonnet` is
+ * `claude-sonnet-5`).
  */
 export type OfferedModel = { name: string; resolvesTo?: string };
 

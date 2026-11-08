@@ -11,17 +11,6 @@ export function toastError(title: string, error: unknown): ToastHandle {
 }
 
 /**
- * The stack's top placement, taken while a page marked `data-toasts="top"` is
- * on screen: one whose foot is its own controls. Cook mode's footer holds the
- * timer strip and Next and grows with each timer, so "Timer done" landed on
- * the strip (critique #15b). The stack portals to the body, outside the page,
- * so it asks the document rather than an ancestor. Spelled out whole:
- * Tailwind finds classes by scanning the source as text.
- */
-const TOAST_TOP =
-  "[:root:has([data-toasts=top])_&]:bottom-auto [:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))] desktop:[:root:has([data-toasts=top])_&]:top-[calc(var(--top-bar,0px)+1.5rem)]";
-
-/**
  * The height of the recipe page's fixed timer strip, set on the document while
  * it shows (`TimerStrip`), unset otherwise. The stack adds it to its own
  * bottom offset so a toast lands above the strip's rows, not on them.
@@ -32,6 +21,6 @@ export const TIMER_STRIP_VAR = "--timer-strip";
  * Where the stack sits, merged over the design system's bottom-centre default:
  * on a phone, a column above the bottom nav, oldest first; on a desktop, the
  * bottom-right corner. Either way raised by the timer strip's height while it
- * shows. On a `data-toasts="top"` page, the top instead.
+ * shows.
  */
-export const TOAST_POSITION = `inset-x-0 bottom-[calc(6rem+var(--timer-strip,0px))] translate-x-0 flex-col gap-2 px-4 desktop:inset-x-auto desktop:right-6 desktop:bottom-[calc(1.5rem+var(--timer-strip,0px))] desktop:items-end desktop:px-0 ${TOAST_TOP}`;
+export const TOAST_POSITION = `inset-x-0 bottom-[calc(6rem+var(--timer-strip,0px))] translate-x-0 flex-col gap-2 px-4 desktop:inset-x-auto desktop:right-6 desktop:bottom-[calc(1.5rem+var(--timer-strip,0px))] desktop:items-end desktop:px-0`;

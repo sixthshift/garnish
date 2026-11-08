@@ -46,16 +46,3 @@ test("the stack stands on the recipe page's timer strip, by the height the strip
   expect(TIMER_STRIP_VAR).toBe("--timer-strip");
 });
 
-test("a page marked data-toasts=top moves the stack to the top at every width (critique #15b)", () => {
-  const classes = cn(TOAST_STACK_CLASS, TOAST_POSITION).split(" ");
-  // Kept beside the bottom placement, not merged away by it.
-  expect(classes).toEqual(
-    expect.arrayContaining([
-      "bottom-[calc(6rem+var(--timer-strip,0px))]",
-      "desktop:bottom-[calc(1.5rem+var(--timer-strip,0px))]",
-      "[:root:has([data-toasts=top])_&]:bottom-auto",
-      "[:root:has([data-toasts=top])_&]:top-[max(1rem,env(safe-area-inset-top))]",
-      "desktop:[:root:has([data-toasts=top])_&]:top-[calc(var(--top-bar,0px)+1.5rem)]",
-    ])
-  );
-});

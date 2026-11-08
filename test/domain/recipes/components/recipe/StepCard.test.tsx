@@ -1,4 +1,4 @@
-// StepCard (M29.1): the one card the recipe page and cook mode both render.
+// StepCard (M29.1): one step of the recipe page, cooked from or read.
 // What is checked here is what the card promises — the linked ingredients as
 // real `IngredientRow`s on the shared session ticks, the step's text through
 // the safe subset, a footer of timer chips deduplicated by length, the tick
