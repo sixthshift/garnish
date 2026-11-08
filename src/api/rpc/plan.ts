@@ -4,9 +4,8 @@ import plan from "../../db/models/plan/repo";
 import recipes from "../../db/models/recipe/repo";
 import shopping from "../../db/models/shopping/repo";
 import { isoDate, planEntryInputSchema, planEntryPatchSchema, planWeekAdditions } from "../../domain/plan/plan";
-import { type Recipe, scaleRecipe, withChoices } from "../../domain/recipes/recipe";
+import { type Recipe, scaledForServings, withChoices } from "../../domain/recipes/recipe";
 import { Id, IdInput } from "../../domain/recipes/reference";
-import { mergeIntoList, shoppingItemInputSchema } from "../../domain/shopping/shopping";
 import { required } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 import { withRotatedChoices } from "../../server/plan/choices";
@@ -92,15 +91,9 @@ export const addPlanWeekToShopping = createServerFn({ method: "POST" })
         if (doc === null) continue;
         // Made with what the plan chose for it (decisions.md row 198), then scaled.
         const chosen = withChoices(doc, entry.choices);
-        scaled.set(entry.id, entry.servings === null || chosen.recipeServings <= 0 ? chosen : scaleRecipe(chosen, entry.servings));
+        scaled.set(entry.id, scaledForServings(chosen, entry.servings ?? undefined));
       }
     }
 
-    const mergePlan = mergeIntoList(shopping.list(), planWeekAdditions(days, scaled));
-    // `mergeIntoList` hands back the write shape pre-defaults (as a caller's
-    // own POST body would arrive); parsed here since this handler writes
-    // straight through the repository rather than through `addShoppingItems`.
-    if (mergePlan.additions.length > 0) shopping.addMany(mergePlan.additions.map((item) => shoppingItemInputSchema.parse(item)));
-    for (const merge of mergePlan.merges) shopping.mergeInto(merge.id, merge.quantity, merge.sources);
-    return { added: mergePlan.merges.length + mergePlan.additions.length };
+    return { added: shopping.addMerged(planWeekAdditions(days, scaled)) };
   });

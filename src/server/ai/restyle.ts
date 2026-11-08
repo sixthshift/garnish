@@ -24,8 +24,6 @@ import {
   withEmptyParts,
 } from "./restylePrompt";
 
-export { AiError } from "./client";
-
 /**
  * The recipe's parts as the check reads them: each ingredient row carrying the
  * line the page renders, so a quantity the rewrite moved out of a step's text

@@ -15,25 +15,6 @@ export function groupByDay(monday: string, entries: readonly PlanEntry[]): PlanD
   return [...byDate].map(([date, dayEntries]) => ({ date, entries: dayEntries }));
 }
 
-/**
- * Which entry moved, given a day's ids before and after a reorder, and where
- * it landed. Null when the two orders are the same. Pure.
- *
- * `ReorderList` hands back a whole rearranged array; the repository moves one
- * row to one position. This is the translation between them: the first and
- * last indices that differ bracket the move, and which end holds the moved id
- * says which way it went.
- */
-export function reorderMove(before: readonly string[], after: readonly string[]): { id: string; position: number } | null {
-  if (before.length !== after.length) return null;
-  let first = 0;
-  while (first < before.length && before[first] === after[first]) first += 1;
-  if (first === before.length) return null;
-  let last = before.length - 1;
-  while (last > first && before[last] === after[last]) last -= 1;
-  return before[first] === after[last] ? { id: after[last] as string, position: last } : { id: after[first] as string, position: first };
-}
-
 // --- Adding the week to the shopping list ---------------------------
 // "Add this week to the shopping list" in the plan's header: every recipe
 // entry's own ingredients, at the entry's servings (the recipe's own when

@@ -147,9 +147,6 @@ export type McpRecipe = {
   notes: { id: string; title: string; text: string }[];
 };
 
-/** One ingredient as a line, the way the recipe page shows it. Pure. */
-export const ingredientLine = (ingredient: Ingredient): string => formatIngredient(ingredient);
-
 /** garnish's document as the model reads it. Pure. */
 export function recipeForMcp(doc: Recipe): McpRecipe {
   return {
@@ -170,7 +167,7 @@ export function recipeForMcp(doc: Recipe): McpRecipe {
     parts: doc.parts.map((part) => ({
       id: part.id,
       name: part.name,
-      ingredients: part.ingredients.map((ingredient) => ({ id: ingredient.id, text: ingredientLine(ingredient), food: ingredient.food?.name ?? null })),
+      ingredients: part.ingredients.map((ingredient) => ({ id: ingredient.id, text: formatIngredient(ingredient), food: ingredient.food?.name ?? null })),
       steps: part.steps.map((step) => ({
         id: step.id,
         title: step.title,
@@ -221,7 +218,7 @@ export function documentFromMcp(
     const line = typeof entry === "string" ? entry : entry.text;
     const named = typeof entry === "string" || entry.food === undefined ? null : namedFood(entry.food);
     const keep = typeof entry === "string" || !entry.id ? undefined : currentIngredients.get(entry.id);
-    if (keep && ingredientLine(keep) === line && (named === null || keep.food?.id === named.id)) return keep;
+    if (keep && formatIngredient(keep) === line && (named === null || keep.food?.id === named.id)) return keep;
 
     const parsed = named === null ? parseIngredient(line, vocabulary) : readAs(line, named);
     const id = keep?.id ?? crypto.randomUUID();

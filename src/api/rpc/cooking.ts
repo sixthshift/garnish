@@ -5,8 +5,8 @@ import foods from "../../db/models/food/repo";
 import recipes from "../../db/models/recipe/repo";
 import units from "../../db/models/unit/repo";
 import { adjustmentInputSchema, adjustmentSchema, DECISIONS, fitsRecipe, keptRecipe, type Resolve } from "../../domain/recipes/cooking";
+import { matchUnit } from "../../domain/recipes/draft";
 import { recipeInputSchema } from "../../domain/recipes/recipe";
-import type { Unit } from "../../domain/recipes/reference";
 import { NotFound } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 
@@ -93,13 +93,6 @@ export const discardCooking = createServerFn({ method: "POST" })
   .validator(GetCookingInput)
   .handler(async ({ data }) => ({ discarded: cooking.remove(data.recipeId) }));
 
-/** A unit the household has, by its name, plural or abbreviation in any case; null when there is none. */
-export function unitNamed(name: string, all: readonly Unit[]): Unit | null {
-  const wanted = name.trim().toLowerCase();
-  if (wanted === "") return null;
-  return all.find((unit) => [unit.name, unit.pluralName ?? "", unit.abbreviation].some((spelling) => spelling.trim().toLowerCase() === wanted)) ?? null;
-}
-
 export const FinishCookingInput = z.object({
   recipeId,
   /** What the review chose for each suggestion; only Keep and Add as an alternative write anything. */
@@ -136,7 +129,7 @@ export const finishCooking = createServerFn({ method: "POST" })
             conversions: [],
           };
         },
-        unit: (name) => unitNamed(name, all),
+        unit: (name) => matchUnit(all, name) ?? null,
       };
       const doc = recipeInputSchema.parse(keptRecipe(recipe, writing, resolve));
       stored = recipes.ref(recipe.id).replace(doc) ?? recipe;

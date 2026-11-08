@@ -13,7 +13,7 @@ import {
   planEntryPatchSchema,
   planEntrySchema,
 } from "../../../../src/domain/plan/plan/schema";
-import { groupByDay, planWeekAdditions, reorderMove } from "../../../../src/domain/plan/plan/week";
+import { groupByDay, planWeekAdditions } from "../../../../src/domain/plan/plan/week";
 import { type Recipe, recipeSchema } from "../../../../src/domain/recipes/recipe";
 
 const ids = {
@@ -250,33 +250,6 @@ test.each([
   [1, "serves 1"],
 ])("servingsLabel(%s) is '%s'", (servings, expected) => {
   expect(servingsLabel(servings)).toBe(expected);
-});
-
-describe("reorderMove", () => {
-  test("an unchanged order is not a move", () => {
-    expect(reorderMove(["a", "b", "c"], ["a", "b", "c"])).toBeNull();
-    expect(reorderMove([], [])).toBeNull();
-  });
-
-  test("a row dragged down reports itself and where it landed", () => {
-    expect(reorderMove(["a", "b", "c"], ["b", "c", "a"])).toEqual({ id: "a", position: 2 });
-    expect(reorderMove(["a", "b", "c"], ["b", "a", "c"])).toEqual({ id: "a", position: 1 });
-  });
-
-  test("a row dragged up reports itself and where it landed", () => {
-    expect(reorderMove(["a", "b", "c"], ["c", "a", "b"])).toEqual({ id: "c", position: 0 });
-    expect(reorderMove(["a", "b", "c", "d"], ["c", "a", "b", "d"])).toEqual({ id: "c", position: 0 });
-  });
-
-  test("a swap of two neighbours is read as the first one moving down", () => {
-    // Either reading produces the same order, so the ambiguity is harmless;
-    // this pins which one the page sends.
-    expect(reorderMove(["a", "b", "c", "d"], ["a", "c", "b", "d"])).toEqual({ id: "b", position: 2 });
-  });
-
-  test("arrays of different lengths are not a reorder", () => {
-    expect(reorderMove(["a", "b"], ["a"])).toBeNull();
-  });
 });
 
 // --- planWeekAdditions (M33.3) ------------------------------------------------

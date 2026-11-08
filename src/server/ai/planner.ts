@@ -31,8 +31,6 @@ import type { RecipeSummary } from "../../domain/recipes/recipe";
 import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
 import serverAi from "./provider";
 
-export { AiError } from "./client";
-
 /** How far back "what we just ate" reaches: four weeks of plan and of logged cooks before the week being planned. */
 export const RECENT_DAYS = 28;
 

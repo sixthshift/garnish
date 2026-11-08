@@ -1,7 +1,7 @@
 // The cooking session's server functions against a temp DATA_DIR (decisions.md row 214).
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
-import { adjustCooking, discardCooking, finishCooking, getCooking, noteCooking, startCooking, unadjustCooking, unitNamed } from "../../../src/api/rpc/cooking";
+import { adjustCooking, discardCooking, finishCooking, getCooking, noteCooking, startCooking, unadjustCooking } from "../../../src/api/rpc/cooking";
 import { createRecipe, deleteRecipe } from "../../../src/api/rpc/recipes";
 import type { RecipeInput } from "../../../src/domain/recipes/recipe";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
@@ -101,21 +101,4 @@ test("finishCooking with nothing kept leaves the recipe as it was", async () => 
   await callServerFn(startCooking, { recipeId: recipe.id, servings: null, choices: null });
   const stored = await callServerFn(finishCooking, { recipeId: recipe.id, kept: [] });
   expect(stored.updatedAt).toBe(recipe.updatedAt);
-});
-
-test("unitNamed finds a unit by its name, plural or abbreviation in any case", () => {
-  const cup = {
-    id: crypto.randomUUID(),
-    name: "cup",
-    pluralName: "cups",
-    abbreviation: "c",
-    useAbbreviation: false,
-    fraction: true,
-    portion: false,
-    standardQuantity: null,
-    standardUnitId: null,
-  };
-  expect(unitNamed("Cups", [cup])).toBe(cup);
-  expect(unitNamed("C", [cup])).toBe(cup);
-  expect(unitNamed("stalk", [cup])).toBeNull();
 });

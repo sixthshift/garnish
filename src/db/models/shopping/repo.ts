@@ -1,6 +1,13 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, max, sql } from "drizzle-orm";
-import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemSourceInput } from "../../../domain/shopping/shopping";
+import {
+  mergeIntoList,
+  type ParsedShoppingItemInput,
+  type ShoppingAddition,
+  type ShoppingItem,
+  type ShoppingItemSourceInput,
+  shoppingItemInputSchema,
+} from "../../../domain/shopping/shopping";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
 import { orm } from "../../connection/client";
@@ -110,7 +117,7 @@ export function shoppingRepository(db: Database) {
     return row?.n === null || row?.n === undefined ? 0 : row.n + 1;
   }
 
-  return {
+  const repo = {
     list,
     get,
     /**
@@ -158,8 +165,7 @@ export function shoppingRepository(db: Database) {
     /**
      * Absorb additions into an existing line (`mergeIntoList`'s `merges`): set its new
      * total and append the sources that made it up, in one transaction. Null
-     * when `id` is unknown. `update` cannot do this — a patch has no `sources`,
-     * because every other write to a line leaves its provenance alone.
+     * when `id` is unknown. Every other write to a line leaves its provenance alone.
      */
     mergeInto(id: string, quantity: number | null, sources: readonly ShoppingItemSourceInput[]): ShoppingItem | null {
       if (!get(id)) return null;
@@ -184,6 +190,19 @@ export function shoppingRepository(db: Database) {
       return get(id);
     },
 
+    /**
+     * Add `additions` to the list as one "Add to shopping list" does: merged
+     * into the lines already there (`mergeIntoList`), the rest appended.
+     * Returns how many lines it touched, not how many rows came in.
+     */
+    addMerged(additions: readonly ShoppingAddition[]): number {
+      const plan = mergeIntoList(list(), additions);
+      // The plan is the write shape before defaults, as a POST body would arrive.
+      if (plan.additions.length > 0) repo.addMany(plan.additions.map((item) => shoppingItemInputSchema.parse(item)));
+      for (const line of plan.merges) repo.mergeInto(line.id, line.quantity, line.sources);
+      return plan.additions.length + plan.merges.length;
+    },
+
     /** Tick or untick a line — the supermarket's only write. Null when `id` is unknown. */
     tick(id: string, ticked: boolean): ShoppingItem | null {
       const changed = dz.update(shoppingItem).set({ ticked, updatedAt: nowUtc }).where(eq(shoppingItem.id, id)).returning({ id: shoppingItem.id }).all();
@@ -196,6 +215,7 @@ export function shoppingRepository(db: Database) {
     /** Delete every ticked line. Returns how many went. */
     clearTicked: (): number => dz.delete(shoppingItem).where(eq(shoppingItem.ticked, true)).returning({ id: shoppingItem.id }).all().length,
   };
+  return repo;
 }
 
 export type ShoppingRepository = ReturnType<typeof shoppingRepository>;

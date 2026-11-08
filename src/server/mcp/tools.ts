@@ -10,8 +10,8 @@ import styleRules from "../../db/models/style/repo";
 import tags from "../../db/models/tag/repo";
 import units from "../../db/models/unit/repo";
 import { isoDate, MEALS, planEntryInputSchema, weekMonday } from "../../domain/plan/plan";
-import { type RecipeSummary, scaleRecipe } from "../../domain/recipes/recipe";
-import { mergeIntoList, recipeAdditions, shoppingItemInputSchema, shoppingItemLabel } from "../../domain/shopping/shopping";
+import { type RecipeSummary, scaledForServings } from "../../domain/recipes/recipe";
+import { recipeAdditions, shoppingItemInputSchema, shoppingItemLabel } from "../../domain/shopping/shopping";
 import { VERSION } from "../../lib/version";
 import { withRotatedChoices } from "../plan/choices";
 import { INSTRUCTIONS } from "./instructions";
@@ -245,15 +245,9 @@ export function buildMcpServer(caller: Pick<Caller, "scopes">): McpServer {
         if (recipe !== undefined) {
           const doc = findRecipe(recipe);
           if (!doc) return fail(`No recipe has the id or slug "${recipe}".`);
-          const scaled = servings === undefined || doc.recipeServings <= 0 ? doc : scaleRecipe(doc, servings);
           const shopFor = servings ?? (doc.recipeServings > 0 ? doc.recipeServings : null);
-          const merge = mergeIntoList(
-            shopping.list(),
-            recipeAdditions(scaled, (partName) => ({ recipeId: doc.id, recipeName: doc.name, partName, servings: shopFor }))
-          );
-          if (merge.additions.length > 0) shopping.addMany(merge.additions.map((item) => shoppingItemInputSchema.parse(item)));
-          for (const line of merge.merges) shopping.mergeInto(line.id, line.quantity, line.sources);
-          added += merge.additions.length + merge.merges.length;
+          const scaled = scaledForServings(doc, servings);
+          added += shopping.addMerged(recipeAdditions(scaled, (partName) => ({ recipeId: doc.id, recipeName: doc.name, partName, servings: shopFor })));
         }
         if (lines && lines.length > 0) {
           shopping.addMany(lines.map((text) => shoppingItemInputSchema.parse({ text })));
