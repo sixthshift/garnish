@@ -8,10 +8,26 @@ import { askCooking } from "../../../../api/rpc/cookingAssistant";
 import { useMutate } from "../../../../lib/mutate";
 import { getTicks } from "../../../../lib/ticks";
 import { useTimers } from "../../../../lib/useTimers";
+import { useVoice } from "../../../../lib/useVoice";
 import type { Adjustment, CookSession } from "../../cooking";
 
 /** Quick questions under the box: tap first, type last. */
 const PROMPTS = ["What's next?", "How long left?", "What can I swap?", "Note for next time…"];
+
+/**
+ * What a thing said asks of voice itself rather than of the assistant: to
+ * stop listening, or to hear the last answer again. Null for anything else,
+ * which goes to the assistant as typed text would. Pure.
+ */
+export function voiceCommand(said: string): "stop" | "again" | null {
+  const words = said
+    .toLowerCase()
+    .replace(/[^a-z' ]/g, "")
+    .trim();
+  if (/^(ok(ay)? )?(stop|stop listening|that'?s all|thanks that'?s all|thank you that'?s all|we're done|i'm done)$/.test(words)) return "stop";
+  if (/^(say that again|repeat that|read that again|say again|what did you say|pardon|sorry what)$/.test(words)) return "again";
+  return null;
+}
 
 /** An offer without its id: what `adjustCooking` takes. */
 function offerInput(offer: Adjustment) {
@@ -53,16 +69,16 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages.length, pending]);
 
-  const ask = async (question: string) => {
+  const ask = async (question: string): Promise<CookSession | null> => {
     const words = question.trim();
-    if (words === "" || session === null || busy) return;
+    if (words === "" || session === null || busy) return null;
     setBusy(true);
     setError(null);
     setPending(words);
     setText("");
     try {
       const ticks = typeof window === "undefined" ? { ingredients: [], steps: [] } : getTicks(window.sessionStorage, recipeId);
-      await mutate(() =>
+      return await mutate(() =>
         askCooking({
           data: {
             recipeId,
@@ -80,11 +96,36 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
     } catch (cause) {
       setText(words);
       setError(cause instanceof Error ? cause.message : String(cause));
+      return null;
     } finally {
       setPending(null);
       setBusy(false);
     }
   };
+
+  /** The assistant's last answer, read aloud as it would be shown. */
+  const spoken = (turn: CookSession["messages"][number] | undefined) =>
+    turn === undefined || turn.role === "cook" ? "" : `${turn.text}${turn.offers.length > 0 ? " There's a change you can use tonight on the screen." : ""}`;
+
+  // Hands-free (decisions.md row 223): each thing said is asked as typed text is, and the answer is read aloud before listening again.
+  const voice = useVoice((said) => void answerAloud(said));
+  const answerAloud = async (said: string) => {
+    const command = voiceCommand(said);
+    if (command === "stop") {
+      await voice.say("Okay.");
+      voice.stop();
+      return;
+    }
+    if (command === "again") {
+      await voice.say(spoken(messages.findLast((turn) => turn.role !== "cook")) || "There's nothing to repeat yet.");
+      voice.resume();
+      return;
+    }
+    const after = await ask(said);
+    await voice.say(after === null ? "Sorry, that didn't go through. Try again." : spoken(after.messages.at(-1)));
+    voice.resume();
+  };
+  const voiceOn = voice.state !== "off";
 
   const take = async (offer: Adjustment) => {
     try {
@@ -170,6 +211,22 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
             {error}
           </Message>
         )}
+        {voice.message !== null && !voiceOn && (
+          <Message intent="warning" size="sm">
+            {voice.message}
+          </Message>
+        )}
+        {voiceOn && (
+          <div className="flex items-center gap-3 rounded-xl bg-bg-subtle px-3 py-2" data-testid="voice-status">
+            <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", voice.state === "listening" ? "animate-pulse bg-fg-brand" : "bg-fg-subtle")} />
+            <p role="status" className="min-w-0 flex-1 truncate text-sm text-fg-normal">
+              {voice.state === "listening" ? voice.heard || "Listening…" : voice.state === "speaking" ? "Speaking…" : "Thinking…"}
+            </p>
+            <Button variant="solid" intent="neutral" size="sm" className={cn(compact && "h-10")} onClick={voice.stop} aria-label="Stop voice">
+              Stop
+            </Button>
+          </div>
+        )}
         <div className="flex flex-wrap gap-1.5">
           {PROMPTS.map((prompt) => (
             <button
@@ -200,6 +257,19 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
             )}
             onChange={(event) => setText(event.target.value)}
           />
+          {voice.supported && !voiceOn && (
+            <Button
+              type="button"
+              variant="outline"
+              intent="neutral"
+              className={cn("rounded-full", compact && "h-12")}
+              disabled={session === null}
+              onClick={voice.start}
+              aria-label="Start voice: talk hands-free until you stop"
+            >
+              Voice
+            </Button>
+          )}
           <Button
             type="submit"
             variant="solid"
