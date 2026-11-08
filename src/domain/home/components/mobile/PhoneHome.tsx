@@ -4,9 +4,9 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Page } from "../../../../components/Page";
 import { PlanAddSheet } from "../../../plan/components/week/mobile/PlanAddSheet";
-import { isWeekend, type Meal, nextMonday, type PlanEntry } from "../../../plan/plan";
+import type { Meal, PlanEntry } from "../../../plan/plan";
 import type { RecipeSummary } from "../../../recipes/recipe";
-import { entryCount, type HomeData, longestSinceMade, todayTitle, tonightEntry, toTry } from "../../home";
+import { entryCount, type HomeData, homeToday, longestSinceMade, toTry } from "../../home";
 import { HaventMade } from "./HaventMade";
 import { NextWeekLine, PlanNextWeekCard } from "./NextWeekCard";
 import { ShoppingCard } from "./ShoppingCard";
@@ -45,11 +45,7 @@ type Adding = { date: string; swapping: PlanEntry | null };
  */
 export function PhoneHome({ today, monday, days, nextDays, items, recipes, busy, searchRecipes, onAdd, onSwap }: HomeData & PhoneHomeActions) {
   const [adding, setAdding] = useState<Adding | null>(null);
-  const title = todayTitle(today);
-  const tonight = tonightEntry(days.find((day) => day.date === today));
-  const recipe = tonight?.recipe ? recipes.find((r) => r.id === tonight.recipe?.id) : undefined;
-  const planNow = isWeekend(today) && entryCount(nextDays) === 0;
-  const next = nextMonday(monday);
+  const { title, tonight, recipe, planNow, next } = homeToday({ today, monday, days, nextDays, recipes });
 
   const choose = (date: string, choice: PlanChoice, meal: Meal | null) => {
     const swapping = adding?.swapping ?? null;

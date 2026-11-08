@@ -1,5 +1,7 @@
-import { dayName, dayParts, type PlanDay, type PlanEntry } from "../../plan/plan";
+import { dayName, dayParts, isWeekend, mealLabel, nextMonday, type PlanDay, type PlanEntry, servingsLabel } from "../../plan/plan";
+import { formatDuration } from "../../recipes/ingredient";
 import type { RecipeSummary } from "../../recipes/recipe";
+import type { HomeData } from "./data";
 
 /**
  * The entry Home calls tonight's: the day's dinner when one is marked, else
@@ -45,4 +47,25 @@ export function cookSearch(entry: PlanEntry): { servings?: number; choices?: Pla
     ...(entry.servings === null ? {} : { servings: entry.servings }),
     ...(Object.keys(entry.choices).length > 0 ? { choices: entry.choices } : {}),
   };
+}
+
+/**
+ * What both of Home's layouts read off the day: its title, tonight's entry and
+ * the library's card for its recipe, whether next week wants planning now (a
+ * weekend with nothing on it yet), and next week's Monday. Pure.
+ */
+export function homeToday({ today, monday, days, nextDays, recipes }: Pick<HomeData, "today" | "monday" | "days" | "nextDays" | "recipes">) {
+  const tonight = tonightEntry(days.find((day) => day.date === today));
+  return {
+    title: todayTitle(today),
+    tonight,
+    recipe: tonight?.recipe ? recipes.find((r) => r.id === tonight.recipe?.id) : undefined,
+    planNow: isWeekend(today) && entryCount(nextDays) === 0,
+    next: nextMonday(monday),
+  };
+}
+
+/** Tonight's small print: the meal, the total time and the servings, whichever there are. Pure. */
+export function tonightMeta(entry: PlanEntry, totalTime: number | null): string {
+  return [mealLabel(entry.meal), totalTime !== null ? formatDuration(totalTime) : null, servingsLabel(entry.servings) || null].filter(Boolean).join(" · ");
 }

@@ -1,8 +1,8 @@
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Page } from "../../../../components/Page";
-import { isWeekend, nextMonday, nightsPlanned } from "../../../plan/plan";
-import { entryCount, type HomeData, longestSinceMade, todayTitle, tonightEntry, toTry } from "../../home";
+import { nightsPlanned } from "../../../plan/plan";
+import { type HomeData, homeToday, longestSinceMade, toTry } from "../../home";
 import { HaventMadeTile, RecentlyAddedTile, ToTryTile } from "./RecipeTiles";
 import { ShoppingTile } from "./ShoppingTile";
 import { TonightTile } from "./TonightTile";
@@ -22,11 +22,7 @@ const RECENT_LIMIT = 3;
  * The week runs across the top; Tonight is the largest tile.
  */
 export function HomeBento({ today, monday, days, nextDays, toBuy, items, recipes }: HomeData) {
-  const title = todayTitle(today);
-  const tonight = tonightEntry(days.find((day) => day.date === today));
-  const recipe = tonight?.recipe ? recipes.find((r) => r.id === tonight.recipe?.id) : undefined;
-  const planNow = isWeekend(today) && entryCount(nextDays) === 0;
-  const next = nextMonday(monday);
+  const { title, tonight, recipe, planNow, next } = homeToday({ today, monday, days, nextDays, recipes });
   const planned = nightsPlanned(days);
   const summary = [title.date, `${planned} of 7 nights planned`, toBuy === null ? null : toBuy === 1 ? "1 thing to buy" : `${toBuy} things to buy`].filter(
     Boolean

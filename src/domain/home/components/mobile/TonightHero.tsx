@@ -5,9 +5,8 @@ import { Link } from "@tanstack/react-router";
 import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { PlayIcon } from "../../../../components/ui/icons";
 import { recipeImageUrl } from "../../../../lib/images";
-import { entryLabel, mealLabel, type PlanEntry, servingsLabel } from "../../../plan/plan";
-import { formatDuration } from "../../../recipes/ingredient";
-import { cookSearch } from "../../home";
+import { entryLabel, type PlanEntry } from "../../../plan/plan";
+import { cookSearch, tonightMeta } from "../../home";
 import { Photo } from "../Photo";
 
 /** A button over the photo: big enough for a thumb, and readable on any picture. */
@@ -62,9 +61,7 @@ export function TonightHero({
 
   const image = recipeImageUrl(entry.recipe?.image);
   const onPhoto = image !== null;
-  const meta = [mealLabel(entry.meal), totalTime !== null ? formatDuration(totalTime) : null, servingsLabel(entry.servings) || null]
-    .filter(Boolean)
-    .join(" · ");
+  const meta = tonightMeta(entry, totalTime);
   const recipe = entry.recipe;
 
   return (

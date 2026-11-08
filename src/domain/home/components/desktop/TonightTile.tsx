@@ -5,9 +5,8 @@ import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { RecipeLink } from "../../../../components/recipe/RecipeLink";
 import { recipeImageUrl } from "../../../../lib/images";
-import { entryLabel, mealLabel, type PlanEntry, servingsLabel } from "../../../plan/plan";
-import { formatDuration } from "../../../recipes/ingredient";
-import { cookSearch } from "../../home";
+import { entryLabel, type PlanEntry } from "../../../plan/plan";
+import { cookSearch, tonightMeta } from "../../home";
 import { Photo } from "../Photo";
 
 const SPAN = "col-span-2 row-span-4";
@@ -37,9 +36,7 @@ export function TonightTile({ entry, totalTime, primary }: { entry: PlanEntry | 
 
   const image = recipeImageUrl(entry.recipe?.image);
   const onPhoto = image !== null;
-  const meta = [mealLabel(entry.meal), totalTime !== null ? formatDuration(totalTime) : null, servingsLabel(entry.servings) || null]
-    .filter(Boolean)
-    .join(" · ");
+  const meta = tonightMeta(entry, totalTime);
   const recipe = entry.recipe;
   const glass = "inline-flex min-h-10 items-center rounded-lg border px-4 text-sm font-medium backdrop-blur-sm transition-colors";
 
