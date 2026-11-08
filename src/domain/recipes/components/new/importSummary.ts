@@ -65,12 +65,5 @@ export function shouldReadWithModel(imported: ImportedRecipe, aiAvailable: boole
   return imported.pageText.trim() !== "";
 }
 
-/** The review's duplicate warning: the same recipe by address or by name. Pure. */
-export function duplicateMessage(name: string, by: DuplicateBy): string {
-  return by === "name"
-    ? `“${name}” is already here under that name. Creating this makes a second copy.`
-    : `“${name}” was imported from the same address. Creating this makes a second copy.`;
-}
-
 /** How the review found the duplicate it is warning about. */
 export type DuplicateBy = "url" | "name";

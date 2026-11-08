@@ -60,7 +60,6 @@ export const RestyledPartSchema = z.object({
 
 /** The whole answer. Nothing else is read off it, so nothing else is declared. */
 export const RestyleAnswerSchema = z.object({ parts: z.array(RestyledPartSchema).default([]) });
-export type RestyleAnswer = z.infer<typeof RestyleAnswerSchema>;
 
 /** A part as the prompt shows it: the name, the ingredient lines as the app renders them, and the steps as three fields each. */
 /** A part the restyle can read: a saved one, or one of an unsaved draft's, whose rows have no ids yet. */

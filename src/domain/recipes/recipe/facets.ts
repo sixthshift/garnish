@@ -90,23 +90,9 @@ export const METHODS = ["oven", "stovetop", "bbq", "slow-cooker", "pressure-cook
 /** When it is best. None said is any time of year. */
 export const SEASONS = ["summer", "autumn", "winter", "spring"] as const;
 
-export const courseSchema = z.enum(COURSES);
-export const mealTimeSchema = z.enum(MEAL_TIMES);
-export const weekPartSchema = z.enum(WEEK_PARTS);
-export const cuisineSchema = z.enum(CUISINES);
-export const dietSchema = z.enum(DIETS);
-export const mainIngredientSchema = z.enum(MAIN_INGREDIENTS);
-export const methodSchema = z.enum(METHODS);
-export const seasonSchema = z.enum(SEASONS);
-
-export type Course = z.infer<typeof courseSchema>;
-export type MealTime = z.infer<typeof mealTimeSchema>;
-export type WeekPart = z.infer<typeof weekPartSchema>;
-export type Cuisine = z.infer<typeof cuisineSchema>;
-export type Diet = z.infer<typeof dietSchema>;
-export type MainIngredient = z.infer<typeof mainIngredientSchema>;
-export type Method = z.infer<typeof methodSchema>;
-export type Season = z.infer<typeof seasonSchema>;
+export type Course = (typeof COURSES)[number];
+export type MealTime = (typeof MEAL_TIMES)[number];
+export type WeekPart = (typeof WEEK_PARTS)[number];
 
 /** A set of one layer's values: each at most once, in the list's own order whatever order they came in. */
 function layerSet<const T extends readonly [string, ...string[]]>(values: T) {

@@ -7,7 +7,7 @@ import type { RecipeSummary, SortDir, SortKey } from "../../../recipe";
 import { ActiveFilters } from "../ActiveFilters";
 import { LibraryEmpty } from "../CardList";
 import type { FilterBarProps } from "../FilterBar";
-import type { Shelf } from "../ShelfToggle";
+import type { Shelf } from "../shelf";
 import { CollectionChips } from "./CollectionChips";
 import { FiltersSheet } from "./FiltersSheet";
 import { PhotoGrid } from "./PhotoGrid";

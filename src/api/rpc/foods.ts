@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import foods from "../../db/models/food/repo";
 import recipes from "../../db/models/recipe/repo";
-import { FoodConversions, FoodCreate, FoodMerge, FoodPacks, FoodUpdate, IdInput, ListQuery, NameInput, RecipeFoodInput } from "../../domain/recipes/reference";
+import { FoodCreate, FoodMerge, FoodPacks, FoodUpdate, IdInput, ListQuery, RecipeFoodInput } from "../../domain/recipes/reference";
 import { required } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 
@@ -30,15 +30,6 @@ export const updateFood = createServerFn({ method: "POST" })
   .validator(FoodUpdate)
   .handler(async ({ data: { id, ...patch } }) => required(foods.update(id, patch), "food", id));
 
-/**
- * This food's conversions, replaced wholesale. `updateFood`
- * carries them too; this is the call the conversions editor makes on its own.
- */
-export const setFoodConversions = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(FoodConversions)
-  .handler(async ({ data: { id, conversions } }) => required(foods.setConversions(id, conversions), "food", id));
-
 /** Every size every food is sold in: what the shopping list rounds a line up to (decisions.md row 184). */
 export const listFoodPacks = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
@@ -59,12 +50,6 @@ export const deleteFood = createServerFn({ method: "POST" })
     foods.remove(data.id);
     return food;
   });
-
-/** The existing food with this name (case-insensitive), else a new one. */
-export const findOrCreateFood = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(NameInput)
-  .handler(async ({ data }) => foods.findOrCreate(data.name));
 
 /**
  * The food this recipe is: the existing food of

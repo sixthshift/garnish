@@ -211,41 +211,11 @@ export function ClockIcon({ size = 12 }: { size?: number } = {}) {
   );
 }
 
-export function WakeLockIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="shrink-0"
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
 /** A filled play triangle: cook mode's "Start timer" button. */
 export function PlayIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="shrink-0">
       <path d="M7 4.5v15a1 1 0 0 0 1.53.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5Z" />
-    </svg>
-  );
-}
-
-/** Two filled bars: a running timer, which a tap pauses. */
-export function PauseIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="shrink-0">
-      <rect x="6" y="4.5" width="4" height="15" rx="1" />
-      <rect x="14" y="4.5" width="4" height="15" rx="1" />
     </svg>
   );
 }

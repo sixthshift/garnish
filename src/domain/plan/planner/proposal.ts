@@ -110,7 +110,6 @@ export type ProposalAnswerEntry = z.infer<typeof ProposalAnswerEntrySchema>;
 
 /** The whole answer. Nothing else is read off it, so nothing else is declared. */
 export const ProposalAnswerSchema = z.object({ entries: z.array(ProposalAnswerEntrySchema).default([]) });
-export type ProposalAnswer = z.infer<typeof ProposalAnswerSchema>;
 
 /** A line the check kept: its slot's date and meal, so what comes out of the check is a slot rather than a guess. */
 export type ProposalEntry = { date: string; meal: Meal; recipeId: string; reason: string };

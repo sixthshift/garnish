@@ -51,7 +51,6 @@ export const adjustmentInputSchema = z.discriminatedUnion("kind", [
 
 export type Adjustment = z.infer<typeof adjustmentSchema>;
 export type AdjustmentInput = z.input<typeof adjustmentInputSchema>;
-export type AdjustmentKind = Adjustment["kind"];
 
 /** Something said while cooking that is not a question: kept for the review. `timer` is one the page wrote, a timer run long. */
 export const cookNoteSchema = z.object({ id, text: words, origin: z.enum(["cook", "timer"]).default("cook"), at: timestamp });

@@ -13,7 +13,6 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import type { Food as FoodRow } from "../../../../../src/db/models/food/repo";
 import { FileSource } from "../../../../../src/domain/recipes/components/new/FileSource";
-import { duplicateMessage } from "../../../../../src/domain/recipes/components/new/importSummary";
 import { SourceChooser } from "../../../../../src/domain/recipes/components/new/SourceChooser";
 import { draftFromScraped } from "../../../../../src/domain/recipes/draft";
 import { Importer, type MealieRecipe, review, type TandoorRecipe } from "../../../../../src/domain/recipes/import";
@@ -83,13 +82,6 @@ describe("FileSource", () => {
     expect(html).toContain("No file chosen");
     expect(html).toContain('data-testid="import-error"');
     expect(html).toContain("That file is not JSON or a zip");
-  });
-});
-
-describe("duplicateMessage", () => {
-  test("duplicateMessage says which way it matched", () => {
-    expect(duplicateMessage("Lemon tart", "name")).toContain("already here under that name");
-    expect(duplicateMessage("Lemon tart", "url")).toContain("imported from the same address");
   });
 });
 

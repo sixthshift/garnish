@@ -4,7 +4,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { foodForRecipe } from "../../../../src/api/rpc/foods";
 import { createRecipe } from "../../../../src/api/rpc/recipes";
-import { findOrCreateUnit } from "../../../../src/api/rpc/units";
+import unitRepo from "../../../../src/db/models/unit/repo";
 import { renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 
@@ -24,8 +24,8 @@ afterEach(() => {
 
 /** A pastry recipe yielding 500 g at 4 servings, made into a food, used 250 g at a time by a tart. */
 async function seedTartOverPastry(quantity: number, unitName: string) {
-  const gram = await callServerFn(findOrCreateUnit, { name: "gram" });
-  const unit = unitName === "gram" ? gram : await callServerFn(findOrCreateUnit, { name: unitName });
+  const gram = unitRepo.findOrCreate("gram");
+  const unit = unitName === "gram" ? gram : unitRepo.findOrCreate(unitName);
   const pastry = await callServerFn(createRecipe, {
     name: "Sweet pastry",
     recipeServings: 4,

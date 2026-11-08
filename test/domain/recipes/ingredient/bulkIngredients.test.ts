@@ -3,16 +3,7 @@
 // point of the whole step is the last one — declining a proposal must create
 // nothing — so most of this file is about the "none" choice.
 import { describe, expect, test } from "vitest";
-import {
-  pendingCreations,
-  reviewCount,
-  reviewRow,
-  reviewRows,
-  rowCommit,
-  rowStatus,
-  setRowFood,
-  setRowUnit,
-} from "../../../../src/domain/recipes/ingredient/bulkIngredients";
+import { pendingCreations, reviewRow, reviewRows, rowCommit, rowStatus } from "../../../../src/domain/recipes/ingredient/bulkIngredients";
 import { parseIngredient } from "../../../../src/domain/recipes/ingredient/parseIngredient";
 
 const gram = { name: "gram", pluralName: "grams", abbreviation: "g" };
@@ -72,26 +63,7 @@ describe("reviewRows", () => {
     const rows = reviewRows(["200 g flour", "100 g almond meal"], vocabulary);
     expect(rows.map((row) => row.key)).toEqual(["0", "1"]);
     expect(rows.map(rowStatus)).toEqual(["matched", "review"]);
-    expect(reviewCount(rows)).toBe(1);
-  });
-});
-
-describe("setRowFood / setRowUnit", () => {
-  test("replace one row's choice and leave the rest alone", () => {
-    const rows = reviewRows(["100 g almond meal", "2 sprigs rosemary"], vocabulary);
-    const withFood = setRowFood(rows, "0", { kind: "create", name: "almond meal" });
-    expect(withFood[0]!.food).toEqual({ kind: "create", name: "almond meal" });
-    expect(withFood[1]).toEqual(rows[1]);
-    const withUnit = setRowUnit(withFood, "1", { kind: "existing", row: cup });
-    expect(withUnit[1]!.unit).toEqual({ kind: "existing", row: cup });
-    expect(withUnit[0]).toEqual(withFood[0]);
-    // The originals are untouched.
-    expect(rows[0]!.food).toEqual({ kind: "none" });
-  });
-
-  test("an unknown key changes nothing", () => {
-    const rows = reviewRows(["200 g flour"], vocabulary);
-    expect(setRowFood(rows, "9", { kind: "none" })).toEqual(rows);
+    expect(rows.filter((row) => rowStatus(row) === "review")).toHaveLength(1);
   });
 });
 
@@ -148,6 +120,11 @@ describe("rowCommit", () => {
     expect(rowCommit({ ...row, unit: { kind: "create", name: "sprig" } }).note).toBe("");
   });
 });
+
+const setRowFood = <R extends { key: string; food: unknown }>(rows: R[], key: string, food: R["food"]): R[] =>
+  rows.map((row) => (row.key === key ? { ...row, food } : row));
+const setRowUnit = <R extends { key: string; unit: unknown }>(rows: R[], key: string, unit: R["unit"]): R[] =>
+  rows.map((row) => (row.key === key ? { ...row, unit } : row));
 
 describe("pendingCreations", () => {
   test("nothing is created from a paste nobody touched", () => {

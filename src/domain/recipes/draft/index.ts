@@ -8,7 +8,6 @@ export {
   livePending,
   type PendingLines,
   pendingLabel,
-  placeholderFood,
   placeholders,
   textLines,
   withIngredientPatched,
@@ -39,8 +38,8 @@ export {
   unlinkStepIngredient,
 } from "./links";
 export { addNote, moveNote, newNote, removeNote, updateNote } from "./notes";
-export { addPart, hasContent, ingredientLine, isBare, movePart, newPart, removePart, renamePart } from "./parts";
-export { PREVIEW_ID, previewRecipe } from "./preview";
+export { addPart, hasContent, ingredientLine, isBare, movePart, removePart, renamePart } from "./parts";
+export { previewRecipe } from "./preview";
 export type { IngredientReview } from "./review";
 export {
   addReviewedIngredients,
@@ -53,17 +52,7 @@ export {
   unparsedIndices,
 } from "./review";
 export { draftFromScraped } from "./scraped";
-export {
-  DESCRIPTION_ROW,
-  type IndexedSource,
-  indexSource,
-  linkSource,
-  NAME_ROW,
-  type SourceContext,
-  type SourceLine,
-  sourceContext,
-  wordsOf,
-} from "./sourceLines";
+export { indexSource, linkSource, NAME_ROW, type SourceContext, type SourceLine, sourceContext, wordsOf } from "./sourceLines";
 export {
   addBulkSteps,
   addStep,
@@ -84,7 +73,6 @@ export {
   withStepReplaced,
   withSteps,
 } from "./steps";
-export type { TagSuggestion, TagSuggestions } from "./tagSuggestions";
 export { tagSuggestions, tickedTags } from "./tagSuggestions";
 export type { DraftIngredient, DraftNote, DraftPart, RecipeDraft } from "./types";
 export type { FieldErrors } from "./validate";

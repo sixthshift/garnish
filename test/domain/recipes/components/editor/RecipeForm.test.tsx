@@ -8,7 +8,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 import { createRecipe, getRecipe } from "../../../../../src/api/rpc/recipes";
 import { RecipeForm, type RecipeFormProps } from "../../../../../src/domain/recipes/components/editor/RecipeForm";
-import { detailsHint, parseAmount, parseMinutes, saveNotice } from "../../../../../src/domain/recipes/components/editor/recipeFormText";
+import { parseAmount, parseMinutes, saveNotice } from "../../../../../src/domain/recipes/components/editor/recipeFormText";
 import { draftFromRecipe, emptyDraft, hasDetails, isDirty, tagsFromNames, validateDraft } from "../../../../../src/domain/recipes/draft";
 import { noFacets, type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
 import { clearDraft, putDraft } from "../../../../../src/lib/drafts";
@@ -322,19 +322,6 @@ describe("hasDetails", () => {
 
   test("a zero yield and a blank source are not values", () => {
     expect(hasDetails({ ...emptyDraft(), recipeYieldQuantity: 0, recipeYield: "  ", sourceUrl: "  " })).toBe(false);
-  });
-});
-
-describe("detailsHint", () => {
-  test("names what is in there", () => {
-    expect(detailsHint({ ...emptyDraft(), recipeYield: "tart", prepTime: 20, tags: [weeknight], sourceUrl: "https://example.test/x" })).toBe(
-      "yield, times, 1 tag, source"
-    );
-    expect(detailsHint({ ...emptyDraft(), tags: [weeknight, { ...weeknight, id: "x", name: "Baking", slug: "baking" }] })).toBe("2 tags");
-  });
-
-  test("says what could go in there when it is empty", () => {
-    expect(detailsHint(emptyDraft())).toBe("Yield, times, tags, source");
   });
 });
 

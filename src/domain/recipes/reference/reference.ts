@@ -46,10 +46,6 @@ export type FoodPackInput = z.infer<typeof FoodPackInput>;
 export const FoodPacks = z.object({ id: Id, packs: z.array(FoodPackInput) });
 export type FoodPacks = z.infer<typeof FoodPacks>;
 
-/** This food's conversions, replaced wholesale. */
-export const FoodConversions = z.object({ id: Id, conversions: z.array(FoodConversionInput) });
-export type FoodConversions = z.infer<typeof FoodConversions>;
-
 /** The recipe a food is made by; the food is found or created from the recipe's name. */
 export const RecipeFoodInput = z.object({ recipeId: Id });
 export type RecipeFoodInput = z.infer<typeof RecipeFoodInput>;

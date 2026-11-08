@@ -1,5 +1,4 @@
-export type { AlternativeRow } from "./alternatives";
-export { alternativeAt, alternativeText } from "./alternatives";
+export { alternativeText } from "./alternatives";
 export type { Choices } from "./choices";
 export { choiceNames, choiceRows, chooseOption, rotateChoices, rowChoices, withChoices } from "./choices";
 export { toCooklang } from "./cooklang";
@@ -7,7 +6,7 @@ export { ingredientsText, recipeUrl } from "./copy";
 export { duplicateInput } from "./duplicate";
 export { durationsIn } from "./durations";
 export { exportedRecipe } from "./export";
-export type { Course, Cuisine, Diet, FacetLayer, Facets, MainIngredient, MealTime, Method, Season, WeekPart } from "./facets";
+export type { Course, FacetLayer, Facets, MealTime, WeekPart } from "./facets";
 export {
   BUILDING_BLOCKS,
   COURSES,
@@ -33,19 +32,7 @@ export type { TagMatch } from "./filters";
 export { selectedTags } from "./filters";
 export { daysSinceMade, sinceMade } from "./made";
 export { mergeIngredients } from "./mergeIngredients";
-export type {
-  Alternative,
-  AlternativeItem,
-  Ingredient,
-  ParsedRecipeInput,
-  Part,
-  Recipe,
-  RecipeInput,
-  RecipeNote,
-  Step,
-  TimelineEvent,
-  TimelineEventInput,
-} from "./recipe";
+export type { Alternative, Ingredient, ParsedRecipeInput, Part, Recipe, RecipeInput, RecipeNote, Step, TimelineEvent, TimelineEventInput } from "./recipe";
 export {
   alternativeSchema,
   ingredientInputSchema,

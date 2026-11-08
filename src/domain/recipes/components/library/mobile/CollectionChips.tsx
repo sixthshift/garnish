@@ -1,7 +1,7 @@
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { HeartIcon } from "../../../../../components/ui/icons";
-import { type Shelf, shelfFromValue, shelfOptions } from "../ShelfToggle";
+import { type Shelf, shelfFromValue, shelfOptions } from "../shelf";
 
 const CHIP = "[&_button]:rounded-full [&_button]:px-3.5 [&_button]:whitespace-nowrap";
 

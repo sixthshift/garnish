@@ -16,7 +16,7 @@ import {
   subRecipesOf,
   updateRecipe,
 } from "../../../src/api/rpc/recipes";
-import { findOrCreateUnit } from "../../../src/api/rpc/units";
+import unitRepo from "../../../src/db/models/unit/repo";
 import { noFacets, type RecipeInput, recipeSchema, recipeSummarySchema } from "../../../src/domain/recipes/recipe";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
@@ -286,7 +286,7 @@ describe("recipeByName (M34.3)", () => {
 });
 
 test("subRecipesOf returns the slug and yield of each recipe this one's foods are made by, by name", async () => {
-  const gram = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const gram = unitRepo.findOrCreate("gram");
   const pastry = await callServerFn(createRecipe, {
     name: "Sweet pastry",
     recipeServings: 4,

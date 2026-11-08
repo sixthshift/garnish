@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import recipes from "../../db/models/recipe/repo";
 import units from "../../db/models/unit/repo";
-import { IdInput, ListQuery, NameInput, UnitCreate, UnitMerge, UnitUpdate } from "../../domain/recipes/reference";
+import { IdInput, ListQuery, UnitMerge, UnitUpdate } from "../../domain/recipes/reference";
 import { required } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 
@@ -9,11 +9,6 @@ export const listUnits = createServerFn({ method: "GET" })
   .middleware([notFoundMiddleware])
   .validator(ListQuery)
   .handler(async ({ data }) => units.list(data.q));
-
-export const createUnit = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(UnitCreate)
-  .handler(async ({ data }) => units.create(data));
 
 export const updateUnit = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
@@ -29,12 +24,6 @@ export const deleteUnit = createServerFn({ method: "POST" })
     units.remove(data.id);
     return unit;
   });
-
-/** The existing unit with this name (case-insensitive), else a new one. */
-export const findOrCreateUnit = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(NameInput)
-  .handler(async ({ data }) => units.findOrCreate(data.name));
 
 /** The recipes with an ingredient or a yield unit of this unit, for the delete/merge confirm dialogs. */
 export const usingUnit = createServerFn({ method: "GET" })

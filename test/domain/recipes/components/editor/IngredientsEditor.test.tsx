@@ -5,9 +5,10 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { findOrCreateFood, listFoods } from "../../../../../src/api/rpc/foods";
+import { listFoods } from "../../../../../src/api/rpc/foods";
 import { createRecipe, getRecipe } from "../../../../../src/api/rpc/recipes";
 import { BulkInlinePanel } from "../../../../../src/components/ui/bulk/BulkInlinePanel";
+import foodRepo from "../../../../../src/db/models/food/repo";
 import { EMPTY_INGREDIENT_SUMMARY, IngredientFields, type IngredientFieldsProps } from "../../../../../src/domain/recipes/components/editor/IngredientFields";
 import { INGREDIENT_DRAG_GROUP, IngredientsEditor } from "../../../../../src/domain/recipes/components/editor/IngredientsEditor";
 import { confirmReviewedIngredients, ingredientReview } from "../../../../../src/domain/recipes/components/editor/ingredientReview";
@@ -975,7 +976,7 @@ describe("Check: parsing a saved row (M17.6)", () => {
     const pending = pendingCreations([approved]);
     expect(pending).toEqual({ foods: ["almond meal"], units: [] });
 
-    const created = await callServerFn(findOrCreateFood, { name: pending.foods[0]! });
+    const created = foodRepo.findOrCreate(pending.foods[0]!);
     const patch = parsedRowPatch(approved, new Map([[pending.foods[0]!.toLowerCase(), created]]), new Map());
     const after = updateIngredient(draft, 0, 0, patch!).parts[0]!.ingredients[0]!;
     expect(after.originalText).toBe("100 g almond meal");

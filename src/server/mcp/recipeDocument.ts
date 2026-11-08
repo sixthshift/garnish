@@ -119,7 +119,6 @@ export const recipeFieldsSchema = {
 
 export const createRecipeSchema = z.object(recipeFieldsSchema).partial().required({ name: true, parts: true });
 export const updateRecipeSchema = z.object(recipeFieldsSchema).partial();
-export type McpRecipeInput = z.input<typeof updateRecipeSchema>;
 
 // --- What the model reads ------------------------------------------------
 

@@ -111,27 +111,6 @@ test("a line keeps several sources in the order they were added", () => {
   expect(item!.sources.map((s) => s.recipeName)).toEqual(["Lemon tart", "Flatbread"]);
 });
 
-test("update merges a patch and moves updated_at without touching created_at", async () => {
-  const [item] = repo.addMany([parse({ text: "Milk" })]);
-  await new Promise((r) => setTimeout(r, 5));
-
-  const updated = repo.update(item!.id, { quantity: 2, text: "Milk, full cream" });
-  expect(updated!.quantity).toBe(2);
-  expect(updated!.text).toBe("Milk, full cream");
-  expect(updated!.createdAt).toBe(item!.createdAt);
-  expect(updated!.updatedAt >= item!.updatedAt).toBe(true);
-  expect(repo.update("11111111-1111-4111-8111-111111111111", { text: "x" })).toBeNull();
-});
-
-test("update leaves the fields the patch does not name alone", () => {
-  const { food } = seedFlour();
-  const [item] = repo.addMany([parse({ quantity: 250, foodId: food.id })]);
-  const updated = repo.update(item!.id, { ticked: true });
-  expect(updated!.quantity).toBe(250);
-  expect(updated!.food?.id).toBe(food.id);
-  expect(updated!.ticked).toBe(true);
-});
-
 test("tick and untick a line, and miss on an unknown id", () => {
   const [item] = repo.addMany([parse({ text: "Milk" })]);
   expect(repo.tick(item!.id, true)!.ticked).toBe(true);
@@ -156,15 +135,6 @@ test("clearTicked deletes only the ticked lines and reports how many went", () =
   expect(repo.clearTicked()).toBe(2);
   expect(repo.list().map((i) => i.id)).toEqual([bread!.id]);
   expect(repo.clearTicked()).toBe(0);
-});
-
-test("reorder writes the sent order and ignores an id that is not on the list", () => {
-  const [milk, bread, eggs] = repo.addMany([parse({ text: "Milk" }), parse({ text: "Bread" }), parse({ text: "Eggs" })]);
-
-  const after = repo.reorder([eggs!.id, "11111111-1111-4111-8111-111111111111", milk!.id, bread!.id]);
-  expect(after.map((i) => i.text)).toEqual(["Eggs", "Milk", "Bread"]);
-  expect(after.map((i) => i.position)).toEqual([0, 2, 3]);
-  expect(repo.list().map((i) => i.text)).toEqual(["Eggs", "Milk", "Bread"]);
 });
 
 test("a source survives its recipe being deleted, keeping the copied names", () => {

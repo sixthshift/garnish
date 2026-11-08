@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import shopping from "../../db/models/shopping/repo";
 import { Id, IdInput } from "../../domain/recipes/reference";
-import { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSourceInputSchema } from "../../domain/shopping/shopping";
+import { shoppingItemInputSchema, shoppingItemSourceInputSchema } from "../../domain/shopping/shopping";
 import { required } from "../../server/core/errors";
 import { notFoundMiddleware } from "../../server/core/fn";
 
@@ -19,11 +19,7 @@ export const MergeShoppingItemsInput = z.object({
   ),
 });
 
-export const UpdateShoppingItemInput = shoppingItemPatchSchema.extend({ id: Id });
-
 export const TickShoppingItemInput = z.object({ id: Id, ticked: z.boolean() });
-
-export const ReorderShoppingItemsInput = z.object({ ids: z.array(Id) });
 
 /** The whole list in position order; the page groups it by aisle. */
 export const listShoppingItems = createServerFn({ method: "GET" })
@@ -49,12 +45,6 @@ export const mergeShoppingItems = createServerFn({ method: "POST" })
     return data.merges.map((merge) => required(shopping.mergeInto(merge.id, merge.quantity, merge.sources), "shopping item", merge.id));
   });
 
-/** Merge a patch into one line. Not-found when the id is unknown. */
-export const updateShoppingItem = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(UpdateShoppingItemInput)
-  .handler(async ({ data: { id, ...patch } }) => required(shopping.update(id, patch), "shopping item", id));
-
 /** Tick or untick a line: the write the supermarket queues. */
 export const tickShoppingItem = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
@@ -75,9 +65,3 @@ export const removeShoppingItem = createServerFn({ method: "POST" })
 export const clearTickedShoppingItems = createServerFn({ method: "POST" })
   .middleware([notFoundMiddleware])
   .handler(async () => ({ removed: shopping.clearTicked() }));
-
-/** Write a new order from the full list of ids. Returns the list afterwards. */
-export const reorderShoppingItems = createServerFn({ method: "POST" })
-  .middleware([notFoundMiddleware])
-  .validator(ReorderShoppingItemsInput)
-  .handler(async ({ data }) => shopping.reorder(data.ids));

@@ -70,16 +70,6 @@ export function reviewRows<U extends UnitCandidate, F extends FoodCandidate>(
   return lines.map((line, index) => reviewRow(parseIngredient(line, vocabulary), String(index)));
 }
 
-/** The row with its food choice replaced. Pure. */
-export function setRowFood<U, F>(rows: readonly ReviewRow<U, F>[], key: string, food: Choice<F>): ReviewRow<U, F>[] {
-  return rows.map((row) => (row.key === key ? { ...row, food } : row));
-}
-
-/** The row with its unit choice replaced. Pure. */
-export function setRowUnit<U, F>(rows: readonly ReviewRow<U, F>[], key: string, unit: Choice<U>): ReviewRow<U, F>[] {
-  return rows.map((row) => (row.key === key ? { ...row, unit } : row));
-}
-
 /** A choice as a commit reference: a declined slot, and a create with nothing to name, are both null. Pure. */
 function commitRef<T>(choice: Choice<T>): CommitRef<T> {
   if (choice.kind === "existing") return { kind: "existing", row: choice.row };
@@ -124,11 +114,6 @@ export function keptWord(word: string, note: string): string {
 export function rowStatus<U, F>(row: ReviewRow<U, F>): RowStatus {
   if (row.food.kind !== "none") return row.unit.kind === "none" && row.unitText !== "" ? "review" : "matched";
   return row.foodText === "" ? "text" : "review";
-}
-
-/** The rows still waiting on a decision: the count the sheet shows before Add. Pure. */
-export function reviewCount<U, F>(rows: readonly ReviewRow<U, F>[]): number {
-  return rows.filter((row) => rowStatus(row) === "review").length;
 }
 
 /** Distinct names, first spelling kept, compared case-insensitively. Pure. */

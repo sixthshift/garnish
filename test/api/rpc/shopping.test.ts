@@ -12,11 +12,9 @@ import {
   listShoppingItems,
   mergeShoppingItems,
   removeShoppingItem,
-  reorderShoppingItems,
   tickShoppingItem,
-  updateShoppingItem,
 } from "../../../src/api/rpc/shopping";
-import { findOrCreateUnit } from "../../../src/api/rpc/units";
+import unitRepo from "../../../src/db/models/unit/repo";
 import type { RecipeInput } from "../../../src/domain/recipes/recipe";
 import { shoppingItemSchema } from "../../../src/domain/shopping/shopping";
 import type { NotFoundData } from "../../../src/server/core/fn";
@@ -51,7 +49,7 @@ test("the list starts empty and addShoppingItems appends to it", async () => {
 test("addShoppingItems stores a food line with its unit, aisle and source", async () => {
   const aisle = await callServerFn(createAisle, { name: "Baking" });
   const food = await callServerFn(createFood, { name: "Plain flour", aisleId: aisle.id });
-  const unit = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const unit = unitRepo.findOrCreate("gram");
   const recipe = await callServerFn(createRecipe, {
     name: "Lemon tart",
     parts: [{ name: "", ingredients: [], steps: [] }],
@@ -94,17 +92,6 @@ test("addShoppingItems rejects a line with neither a food nor text", async () =>
   expect(await callServerFn(listShoppingItems)).toEqual([]);
 });
 
-test("updateShoppingItem merges a patch and misses on an unknown id", async () => {
-  const [milk] = await callServerFn(addShoppingItems, { items: [text("Milk")] });
-  const updated = await callServerFn(updateShoppingItem, { id: milk!.id, quantity: 2, text: "Milk, full cream" });
-  expect(updated).toMatchObject({ id: milk!.id, quantity: 2, text: "Milk, full cream", ticked: false });
-
-  expect(await notFoundData(callServerFn(updateShoppingItem, { id: MISSING, text: "x" }))).toMatchObject({
-    entity: "shopping item",
-    id: MISSING,
-  });
-});
-
 test("tickShoppingItem ticks and unticks, and misses on an unknown id", async () => {
   const [milk] = await callServerFn(addShoppingItems, { items: [text("Milk")] });
   expect((await callServerFn(tickShoppingItem, { id: milk!.id, ticked: true })).ticked).toBe(true);
@@ -133,18 +120,9 @@ test("clearTickedShoppingItems removes only the ticked lines", async () => {
   expect(await callServerFn(clearTickedShoppingItems)).toEqual({ removed: 0 });
 });
 
-test("reorderShoppingItems writes the sent order and returns the list", async () => {
-  const [milk, bread, eggs] = await callServerFn(addShoppingItems, {
-    items: [text("Milk"), text("Bread"), text("Eggs")],
-  });
-  const after = await callServerFn(reorderShoppingItems, { ids: [eggs!.id, bread!.id, milk!.id] });
-  expect(after.map((i) => i.text)).toEqual(["Eggs", "Bread", "Milk"]);
-  expect((await callServerFn(listShoppingItems)).map((i) => i.text)).toEqual(["Eggs", "Bread", "Milk"]);
-});
-
 test("mergeShoppingItems tops a line up and appends the sources behind it", async () => {
   const food = await callServerFn(createFood, { name: "Plain flour" });
-  const unit = await callServerFn(findOrCreateUnit, { name: "gram" });
+  const unit = unitRepo.findOrCreate("gram");
   const [flour] = await callServerFn(addShoppingItems, {
     items: [
       {

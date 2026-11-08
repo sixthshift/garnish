@@ -291,16 +291,7 @@ export const backupSchema = z.object({
 });
 
 export type Backup = z.infer<typeof backupSchema>;
-export type BackupAisle = z.infer<typeof backupAisleSchema>;
-export type BackupUnit = z.infer<typeof backupUnitSchema>;
-export type BackupTag = z.infer<typeof backupTagSchema>;
-export type BackupFood = z.infer<typeof backupFoodSchema>;
 export type BackupRecipe = z.infer<typeof backupRecipeSchema>;
-export type BackupTimelineEvent = z.infer<typeof backupTimelineEventSchema>;
-export type BackupPlanEntry = z.infer<typeof backupPlanEntrySchema>;
-export type BackupShoppingItem = z.infer<typeof backupShoppingItemSchema>;
-export type BackupRule = z.infer<typeof backupRuleSchema>;
-export type BackupAiModel = z.infer<typeof backupAiModelSchema>;
 
 /** How many of each thing a backup holds: what the restore sheet and the CLIs report. */
 export type BackupCounts = {

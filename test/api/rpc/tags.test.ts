@@ -1,20 +1,24 @@
 import { isNotFound } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { createRecipe } from "../../../src/api/rpc/recipes";
-import { createTag, deleteTag, findOrCreateTag, listTags, listTagUsage, mergeTag, updateTag, usingTag } from "../../../src/api/rpc/tags";
+import { deleteTag, listTags, listTagUsage, mergeTag, updateTag, usingTag } from "../../../src/api/rpc/tags";
+import tagRepo from "../../../src/db/models/tag/repo";
 import { recipeInputSchema } from "../../../src/domain/recipes/recipe";
+import { TagCreate } from "../../../src/domain/recipes/reference";
 import type { NotFoundData } from "../../../src/server/core/fn";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 useTempDataDir();
 
+const newTag = (input: unknown) => tagRepo.create(TagCreate.parse(input));
+
 const MISSING = "00000000-0000-4000-8000-000000000000";
 
 test("create derives the slug; list is by name and filters on q", async () => {
-  const dinner = await callServerFn(createTag, { name: " Weeknight Dinner " });
+  const dinner = newTag({ name: " Weeknight Dinner " });
   expect(dinner).toMatchObject({ name: "Weeknight Dinner", slug: "weeknight-dinner" });
-  await callServerFn(createTag, { name: "Dinner" });
-  await callServerFn(createTag, { name: "Dessert" });
+  newTag({ name: "Dinner" });
+  newTag({ name: "Dessert" });
 
   expect((await callServerFn(listTags, {})).map((t) => t.name)).toEqual(["Dessert", "Dinner", "Weeknight Dinner"]);
   expect((await callServerFn(listTags, { q: "DINNER" })).map((t) => t.name)).toEqual(["Dinner", "Weeknight Dinner"]);
@@ -22,7 +26,7 @@ test("create derives the slug; list is by name and filters on q", async () => {
 });
 
 test("update renames and the slug follows", async () => {
-  const tag = await callServerFn(createTag, { name: "Quick" });
+  const tag = newTag({ name: "Quick" });
   expect(await callServerFn(updateTag, { id: tag.id, name: "Quick & Easy" })).toEqual({ id: tag.id, name: "Quick & Easy", slug: "quick-easy" });
   expect(await callServerFn(updateTag, { id: tag.id })).toEqual({ id: tag.id, name: "Quick & Easy", slug: "quick-easy" });
 });
@@ -36,36 +40,36 @@ test("update and delete of an unknown id are not-found errors", async () => {
 });
 
 test("delete returns the removed row and the list no longer has it", async () => {
-  const tag = await callServerFn(createTag, { name: "Soup" });
+  const tag = newTag({ name: "Soup" });
   expect(await callServerFn(deleteTag, { id: tag.id })).toEqual(tag);
   expect(await callServerFn(listTags, {})).toEqual([]);
 });
 
 test("findOrCreate returns the case-insensitive match, else a new row", async () => {
-  const vegan = await callServerFn(createTag, { name: "Vegan" });
-  expect(await callServerFn(findOrCreateTag, { name: " VEGAN " })).toEqual(vegan);
-  expect(await callServerFn(findOrCreateTag, { name: "Baking" })).toMatchObject({ name: "Baking", slug: "baking" });
+  const vegan = newTag({ name: "Vegan" });
+  expect(tagRepo.findOrCreate(" VEGAN ")).toEqual(vegan);
+  expect(tagRepo.findOrCreate("Baking")).toMatchObject({ name: "Baking", slug: "baking" });
   expect(await callServerFn(listTags, {})).toHaveLength(2);
 });
 
 test("validation rejects a blank name and a missing id", async () => {
-  await expect(callServerFn(createTag, { name: "" })).rejects.toThrow(/too_small|at least 1/);
+  expect(() => newTag({ name: "" })).toThrow(/too_small|at least 1/);
   await expect(callServerFn(updateTag, { name: "x" } as never)).rejects.toThrow(/expected string/);
   await expect(callServerFn(deleteTag, { id: 3 } as never)).rejects.toThrow(/expected string/);
 });
 
 test("usingTag lists the recipes carrying that tag", async () => {
-  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
+  const weeknight = newTag({ name: "Weeknight" });
   await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Toast", parts: [{ name: "", ingredients: [], steps: [] }], tags: [weeknight] }));
   expect((await callServerFn(usingTag, { id: weeknight.id })).map((r) => r.name)).toEqual(["Toast"]);
 
-  const baking = await callServerFn(createTag, { name: "Baking" });
+  const baking = newTag({ name: "Baking" });
   expect(await callServerFn(usingTag, { id: baking.id })).toEqual([]);
 });
 
 test("mergeTag repoints recipes to the target tag, deletes the source, and drops it from the list", async () => {
-  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
-  const quick = await callServerFn(createTag, { name: "Quick" });
+  const weeknight = newTag({ name: "Weeknight" });
+  const quick = newTag({ name: "Quick" });
   await callServerFn(createRecipe, recipeInputSchema.parse({ name: "Shortbread", parts: [{ name: "", ingredients: [], steps: [] }], tags: [quick] }));
 
   const merged = await callServerFn(mergeTag, { sourceId: quick.id, targetId: weeknight.id });
@@ -75,7 +79,7 @@ test("mergeTag repoints recipes to the target tag, deletes the source, and drops
 });
 
 test("mergeTag is not-found when either id is unknown", async () => {
-  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
+  const weeknight = newTag({ name: "Weeknight" });
   const missingSource = await callServerFn(mergeTag, { sourceId: MISSING, targetId: weeknight.id }).catch((e: unknown) => e);
   expect(isNotFound(missingSource)).toBe(true);
   expect((missingSource as { data: NotFoundData }).data).toMatchObject({ entity: "tag", id: MISSING });
@@ -87,8 +91,8 @@ test("mergeTag is not-found when either id is unknown", async () => {
 
 // decisions.md row 173: the filter bar ranks tags by how many recipes carry them.
 test("listTagUsage counts each tag's recipes, an unused tag at nought", async () => {
-  const weeknight = await callServerFn(createTag, { name: "Weeknight" });
-  await callServerFn(createTag, { name: "Unused" });
+  const weeknight = newTag({ name: "Weeknight" });
+  newTag({ name: "Unused" });
   for (const name of ["Toast", "Soup"]) {
     await callServerFn(createRecipe, recipeInputSchema.parse({ name, parts: [{ name: "", ingredients: [], steps: [] }], tags: [weeknight] }));
   }

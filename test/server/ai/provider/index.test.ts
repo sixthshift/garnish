@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { AiError } from "../../../../src/server/ai/client";
 import serverAi, { noProvider, providerChoice } from "../../../../src/server/ai/provider";
+import { useTempDataDir } from "../../../helpers/server";
 
 const KEYS = ["AI_PROVIDER", "AI_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"] as const;
 const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
@@ -55,6 +56,9 @@ describe("noProvider", () => {
 });
 
 describe("the server's client", () => {
+  // Model choices live in the database: a fresh one has none, whatever the developer's own has.
+  useTempDataDir();
+
   test("a key without AI_PROVIDER is not configured: the key does not choose", () => {
     configure({ AI_API_KEY: "k" });
     expect(serverAi.configured()).toBe(false);

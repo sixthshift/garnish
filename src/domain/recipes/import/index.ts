@@ -6,10 +6,10 @@ export { Importer, type PageResponse, type Ports } from "./importer";
 // Whether pasted text is a page's markup, which the rules read, or prose, which only a model can.
 export { looksLikeHtml } from "./page/text";
 // What it produces.
-export type { ImportedRecipe, ImportSource } from "./result";
+export type { ImportedRecipe } from "./result";
 // The review screen's face of the module: reading a result and building its rows.
 export * as review from "./review";
-export { AnchorSchema, ScrapedRecipeSchema } from "./scraped/schema";
+export { AnchorSchema } from "./scraped/schema";
 export type { ScrapedRecipe } from "./scraped/types";
 export type { FileRecipe } from "./sources/fileRecipe";
 export type { MealieRecipe } from "./sources/mealie/types";

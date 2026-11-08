@@ -19,12 +19,6 @@ export const NEW = "00000000-0000-4000-8000-000000000000";
 
 const foods = new Map(correctedStarterFoods().map((food) => [food.name, food]));
 
-/** Every unit the seed makes, by name: what a generated row draws its unit from. */
-export const SEEDED_UNIT_NAMES: readonly string[] = DEFAULT_UNITS.map((unit) => unit.name);
-
-/** Every food the seed makes, by name: what a generated row draws its food from. */
-export const SEEDED_FOOD_NAMES: readonly string[] = [...foods.keys()];
-
 /** A reference to the seeded unit of this name. Throws for a name the seed does not have. */
 export function unitRef(name: string): Unit {
   const known = DEFAULT_UNITS.find((unit) => unit.name === name);

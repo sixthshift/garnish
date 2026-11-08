@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { formatIngredient } from "../ingredient";
-import { type Ingredient, type Recipe, scaledForServings } from "../recipe";
+import type { Ingredient, Recipe } from "../recipe";
 import type { Food, Unit } from "../reference";
 import { adjustedIngredient, adjustedStep } from "./adjust";
 import { type Adjustment, adjustmentSchema, type CookSession } from "./session";
@@ -137,9 +137,4 @@ export function keptRecipe(recipe: Recipe, kept: readonly Pick<Suggestion, "adju
       }),
     })),
   };
-}
-
-/** The recipe at the session's servings, for the review's before and after; the stored one when the session has none. */
-export function sessionRecipe(recipe: Recipe, session: Pick<CookSession, "servings">): Recipe {
-  return scaledForServings(recipe, session.servings ?? undefined);
 }

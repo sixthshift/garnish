@@ -1,6 +1,6 @@
 import type { FormFieldFeedback } from "@sixthshift/design-system/form-field";
 import type { ToastOptions } from "@sixthshift/design-system/overlay";
-import type { FieldErrors, RecipeDraft } from "../../draft";
+import type { FieldErrors } from "../../draft";
 
 export function feedback(errors: FieldErrors, path: string): FormFieldFeedback | undefined {
   const message = errors[path];
@@ -25,14 +25,4 @@ export function parseMinutes(text: string): number | null {
   if (text.trim() === "") return null;
   const value = Number(text);
   return Number.isFinite(value) ? value : null;
-}
-
-/** The quiet line beside "Details": what is in there, or what is not. Pure. */
-export function detailsHint(draft: RecipeDraft): string {
-  const parts: string[] = [];
-  if (draft.recipeYieldQuantity > 0 || draft.recipeYield.trim() !== "") parts.push("yield");
-  if (draft.prepTime !== null || draft.performTime !== null) parts.push("times");
-  if (draft.tags.length > 0) parts.push(`${draft.tags.length} tag${draft.tags.length === 1 ? "" : "s"}`);
-  if ((draft.sourceUrl ?? "").trim() !== "") parts.push("source");
-  return parts.length === 0 ? "Yield, times, tags, source" : parts.join(", ");
 }

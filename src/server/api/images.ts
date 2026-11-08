@@ -4,7 +4,7 @@ import recipes from "../../db/models/recipe/repo";
 import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 import { dataDir } from "../core/boot";
 
-export { IMAGE_FIELD, IMAGE_TYPES, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
+export { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
 
 const RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

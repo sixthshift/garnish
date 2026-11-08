@@ -8,8 +8,8 @@ import type { TagUsage } from "../../../reference";
 import { countOf, offeredValues, toggleFacet } from "../../facets/facetSearch";
 import type { FilterBarProps } from "../FilterBar";
 import { FoodFilter } from "../FoodFilter";
-import { type Shelf, shelfFromValue, shelfOptions } from "../ShelfToggle";
 import { SortMenu } from "../SortMenu";
+import { type Shelf, shelfFromValue, shelfOptions } from "../shelf";
 import { tagShelves } from "../tagUse";
 
 export type FiltersColumnProps = FilterBarProps & {

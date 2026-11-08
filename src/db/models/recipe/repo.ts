@@ -32,9 +32,6 @@ import { type RecipeRecord, type RecipeStorage, recipeRecord } from "./record";
 import { ingredient, part, recipe, recipeNote, recipeTag, step, stepIngredient } from "./schema";
 import { type SummaryRow, selectTags, summarise, summaryColumns } from "./summary";
 
-/** How many ingredient lines a summary carries. */
-export const INGREDIENT_PREVIEW_LIMIT = 6;
-
 // =============================================================================
 // Which recipes: the query grammar. One discriminated union for every way of
 // asking the collection, each answered as card summaries.
