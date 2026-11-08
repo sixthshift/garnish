@@ -97,15 +97,22 @@ export function rowCommit<U, F>(row: ReviewRow<U, F>): RowCommit<U, F> {
   if (food === null) {
     return { textOnly: true, originalText: row.originalText, quantity: null, fixed: false, note: "", unit: null, food: null };
   }
+  const unit = commitRef(row.unit);
   return {
     textOnly: false,
     originalText: row.originalText,
     quantity: row.quantity,
     fixed: row.fixed,
-    note: row.note,
-    unit: commitRef(row.unit),
+    // A word read as a unit the library lacks ("large", "packet") stays on the line when no unit is made of it (decisions.md row 221).
+    note: unit === null ? keptWord(row.unitText, row.note) : row.note,
+    unit,
     food,
   };
+}
+
+/** `note` led by `word`, unless the word is blank. Pure. */
+export function keptWord(word: string, note: string): string {
+  return [word.trim(), note].filter((part) => part !== "").join(", ");
 }
 
 /** How a row reads: `matched` once its food resolves, `review` while a proposal is still undecided, `text` when it will commit as a raw line. Pure. */

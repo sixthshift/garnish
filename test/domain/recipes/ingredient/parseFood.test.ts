@@ -135,7 +135,34 @@ describe("parseFood", () => {
     });
   });
 
-  test("trailing text a shorter matched name doesn't cover stays in foodText", () => {
-    expect(parseFood("chicken thigh", [CHICKEN])).toEqual({ food: CHICKEN, foodText: "thigh", note: "" });
+  test("trailing text a shorter matched name doesn't cover stays in foodText and leads the note", () => {
+    expect(parseFood("chicken thigh", [CHICKEN])).toEqual({ food: CHICKEN, foodText: "thigh", note: "thigh" });
+  });
+
+  describe("keeps every word the line gave the food (row 221)", () => {
+    const BASIL = food("thai basil", null);
+    const LIME = food("lime", "limes", ["lime wedges"]);
+    const TOMATO = food("tomato", "tomatoes", ["ripe tomatoes"]);
+    const SODA = food("bicarbonate of soda", null, ["baking soda"]);
+    const PEPPER = food("black pepper", null, ["freshly ground black pepper"]);
+
+    test("words after the match lead the note, before the comma tail", () => {
+      expect(parseFood("Thai basil leaves, torn", [BASIL]).note).toBe("leaves, torn");
+    });
+
+    test("an alias that is the name plus words keeps those words, in the line's spelling", () => {
+      expect(parseFood("Lime wedges", [LIME]).note).toBe("wedges");
+      expect(parseFood("ripe tomatoes, halved", [TOMATO]).note).toBe("ripe, halved");
+      expect(parseFood("freshly ground black pepper", [PEPPER]).note).toBe("freshly ground");
+    });
+
+    test("an alias that is a synonym adds nothing", () => {
+      expect(parseFood("baking soda", [SODA]).note).toBe("");
+      expect(parseFood("scallions", FOODS).note).toBe("");
+    });
+
+    test("bracketed asides follow the kept words", () => {
+      expect(parseFood("lime wedges (to serve)", [LIME]).note).toBe("wedges, to serve");
+    });
   });
 });

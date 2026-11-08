@@ -1,5 +1,5 @@
 export type { Choice, CommitRef, ReviewRow, RowCommit } from "./bulkIngredients";
-export { pendingCreations, reviewRow, reviewRows, rowCommit, rowStatus } from "./bulkIngredients";
+export { keptWord, pendingCreations, reviewRow, reviewRows, rowCommit, rowStatus } from "./bulkIngredients";
 export { bulkLines, paragraphs, splitOnBlankLines, stripLeadingNumbers, trimLines } from "./bulkText";
 export type { IngredientTokens } from "./format";
 export { formatAmount, formatDuration, formatIngredient, formatQuantity, formatUnit, formatYield, inflectIngredient, totalMinutes, yieldLine } from "./format";

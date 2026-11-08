@@ -135,6 +135,16 @@ describe("rowCommit", () => {
     const commit = rowCommit(review("2 sprigs rosemary"));
     expect(commit).toMatchObject({ textOnly: false, quantity: 2, unit: null, food: { kind: "existing", row: rosemary } });
   });
+
+  test("a declined unit's word stays on the line, leading the note (row 221)", () => {
+    expect(rowCommit(review("2 sprigs rosemary, leaves picked")).note).toBe("sprigs, leaves picked");
+    expect(rowCommit(review("2 large rosemary")).note).toBe("large");
+  });
+
+  test("an approved unit takes the word, so the note doesn't repeat it", () => {
+    const row = review("2 sprigs rosemary");
+    expect(rowCommit({ ...row, unit: { kind: "create", name: "sprig" } }).note).toBe("");
+  });
 });
 
 describe("pendingCreations", () => {

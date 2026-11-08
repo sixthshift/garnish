@@ -5,6 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { beforeEach, expect, test } from "vitest";
 import mcp from "../../../src/db/models/mcp/repo";
+import styleRules from "../../../src/db/models/style/repo";
 import { handleMcp } from "../../../src/server/api/mcp";
 import { hashSecret } from "../../../src/server/mcp/oauth/tokens";
 import { resetSafetyBackups } from "../../../src/server/mcp/safety";
@@ -57,6 +58,17 @@ test("a read-only connection sees only the read tools", async () => {
   expect(names).not.toContain("create_recipe");
   expect(names).not.toContain("delete_recipe");
   expect(client.getInstructions()).toContain("A recipe is an ordered list of parts");
+  await client.close();
+});
+
+test("a read connection can read the house style: the statements that are on, in order (row 222)", async () => {
+  for (const rule of styleRules.list()) styleRules.remove(rule.id);
+  styleRules.create({ text: "Give every step a heading." });
+  styleRules.create({ text: "A statement that is off.", enabled: false });
+  styleRules.create({ text: "Cue first, time after." });
+  const client = await connect(grantToken("read"));
+  expect(await call(client, "get_house_style")).toEqual({ statements: ["Give every step a heading.", "Cue first, time after."] });
+  expect(client.getInstructions()).toContain("get_house_style");
   await client.close();
 });
 

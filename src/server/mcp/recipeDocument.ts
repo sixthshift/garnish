@@ -7,7 +7,7 @@
 // household's units and foods. Ids appear only so an edit can say which row it means.
 import { z } from "zod";
 import { foodReference, tagsFromNames } from "../../domain/recipes/draft";
-import { formatIngredient, parseIngredient } from "../../domain/recipes/ingredient";
+import { formatIngredient, keptWord, parseIngredient } from "../../domain/recipes/ingredient";
 import {
   COURSES,
   CUISINES,
@@ -40,14 +40,23 @@ const minutes = z.number().int().nonnegative().nullable();
 
 const ingredientInput = z.union([
   text.min(1),
-  z.object({ id: z.uuid().optional().describe("Keep an existing ingredient: its id from get_recipe"), text: text.min(1) }),
+  z.object({
+    id: z.uuid().optional().describe("Keep an existing ingredient: its id from get_recipe"),
+    text: text.min(1),
+    food: text
+      .min(1)
+      .optional()
+      .describe(
+        'The household food this line is, by a name list_foods gives, when the line alone would be read as another food or as a new one: "white peppercorns" for "½ tbsp white peppercorns". Leave it out to let garnish read the line.'
+      ),
+  }),
 ]);
 
 const stepInput = z.union([
   text.min(1),
   z.object({
     id: z.uuid().optional().describe("Keep an existing step (and its photo): its id from get_recipe"),
-    title: z.string().optional().describe("Two to four words naming what the step achieves; usually empty"),
+    title: z.string().optional().describe('A short heading naming what the step achieves: "Soften the onions"'),
     text: text.min(1),
     summary: z.string().optional().describe("Why, what to expect, or what to do if it goes wrong; not an instruction"),
   }),
@@ -211,17 +220,19 @@ export function documentFromMcp(
 
   function ingredientFrom(entry: z.output<typeof partInputSchema>["ingredients"][number]): Ingredient {
     const line = typeof entry === "string" ? entry : entry.text;
+    const named = typeof entry === "string" || entry.food === undefined ? null : namedFood(entry.food);
     const keep = typeof entry === "string" || !entry.id ? undefined : currentIngredients.get(entry.id);
-    if (keep && ingredientLine(keep) === line) return keep;
+    if (keep && ingredientLine(keep) === line && (named === null || keep.food?.id === named.id)) return keep;
 
-    const parsed = parseIngredient(line, vocabulary);
+    const parsed = named === null ? parseIngredient(line, vocabulary) : readAs(line, named);
     const id = keep?.id ?? crypto.randomUUID();
     // A rewritten line keeps its alternatives: they belong to the line, not to its words.
     const base = {
       id,
       quantity: parsed.quantity,
       unit: parsed.unit,
-      note: parsed.note,
+      // A word read as a unit the household lacks ("large", "packet") stays on the line (decisions.md row 221).
+      note: parsed.unit === null ? keptWord(parsed.unitText, parsed.note) : parsed.note,
       originalText: line,
       fixed: parsed.fixed,
       alternatives: keep?.alternatives ?? [],
@@ -242,6 +253,30 @@ export function documentFromMcp(
       report.createdFoods.push(name);
     }
     return { ...base, food };
+  }
+
+  /** The household food a line names outright, by its name, plural or another name. Throws when the household has none by that name. */
+  function namedFood(name: string): FoodRow {
+    const wanted = name.trim().toLowerCase();
+    const is = (known: string | null) => (known ?? "").trim().toLowerCase() === wanted;
+    // A food's own name before another food's alias: "white peppercorns" may also be listed under black.
+    const found = vocabulary.foods.find((food) => is(food.name) || is(food.pluralName)) ?? vocabulary.foods.find((food) => food.aliases.some(is));
+    if (!found) throw new Error(`"${name}" is not one of the household's foods. list_foods gives them; leave food out to let garnish read the line.`);
+    return found;
+  }
+
+  /**
+   * A line read with its food given (decisions.md row 222): the amount and
+   * unit as garnish reads them, the named food, and every word the reading
+   * gave to another food kept in the note, so nothing of the line is lost.
+   */
+  function readAs(line: string, food: FoodRow): ReturnType<typeof parseIngredient<Unit, FoodRow>> {
+    const read = parseIngredient(line, vocabulary);
+    if (read.food?.id === food.id) return read;
+    const own = parseIngredient(line, { units: vocabulary.units, foods: [food] });
+    if (own.food?.id === food.id) return own;
+    // The line never names the food: the words garnish would have read as one stay in the note.
+    return { ...own, food, foodText: "", note: [own.foodText, own.note].filter((part) => part.trim() !== "").join(", ") };
   }
 
   function partFrom(part: z.output<typeof partInputSchema>) {

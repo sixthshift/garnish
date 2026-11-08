@@ -134,7 +134,7 @@ test("a client finds its way in from a bare 401, signs in with the pairing code,
   const client = new Client({ name: "test", version: "1.0.0" });
   await client.connect(transportFor(memory));
   expect(client.getInstructions()).toContain("A recipe is an ordered list of parts");
-  expect((await client.listTools()).tools).toHaveLength(15);
+  expect((await client.listTools()).tools).toHaveLength(16);
   const created = (await client.callTool({
     name: "create_recipe",
     arguments: { name: "Signed-in pancakes", parts: [{ ingredients: ["250 g plain flour"], steps: ["Mix."] }] },

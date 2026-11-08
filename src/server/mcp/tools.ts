@@ -6,6 +6,7 @@ import foods from "../../db/models/food/repo";
 import plan from "../../db/models/plan/repo";
 import recipes from "../../db/models/recipe/repo";
 import shopping from "../../db/models/shopping/repo";
+import styleRules from "../../db/models/style/repo";
 import tags from "../../db/models/tag/repo";
 import units from "../../db/models/unit/repo";
 import { isoDate, MEALS, planEntryInputSchema, weekMonday } from "../../domain/plan/plan";
@@ -119,6 +120,24 @@ export function buildMcpServer(caller: Pick<Caller, "scopes">): McpServer {
           .filter((food) => needle === "" || [food.name, food.pluralName ?? "", ...food.aliases].some((name) => name.toLowerCase().includes(needle)));
         return ok({ foods: rows.map((food) => ({ name: food.name, plural: food.pluralName, otherNames: food.aliases })) });
       }
+    );
+
+    server.registerTool(
+      "get_house_style",
+      {
+        title: "Read the house style",
+        description:
+          "How the household wants a recipe written: its approved style statements, in order. Read it before writing or rewriting a recipe, and follow it. It is set in garnish's Settings, not here.",
+        inputSchema: {},
+        annotations: READ,
+      },
+      async () =>
+        ok({
+          statements: styleRules
+            .list()
+            .filter((rule) => rule.enabled)
+            .map((rule) => rule.text),
+        })
     );
 
     server.registerTool(

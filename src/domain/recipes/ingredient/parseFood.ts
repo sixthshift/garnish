@@ -41,9 +41,50 @@ export function parseFood<F extends FoodCandidate>(rest: string, foods: readonly
 
   const food = best?.food ?? null;
   const foodText = best === null ? head : head.slice(best.length).trim();
-  const note = [...asides, tail].filter((part) => part !== "").join(", ");
+  // A matched food keeps every word the line gave it (decisions.md row 221):
+  // the qualifiers an alias carries ("ripe tomatoes", "lime wedges") and the
+  // words after the match ("Thai basil leaves", "chilli sauce or sriracha")
+  // lead the note, since the line is shown by the food's own name.
+  const kept = best === null ? [] : [qualifiers(head.slice(0, best.length), best.food), foodText];
+  const note = [...kept, ...asides, tail].filter((part) => part !== "").join(", ");
 
   return { food, foodText, note };
+}
+
+/** The words of a food's name and plural, lower-cased. */
+function nameWords(food: FoodCandidate): Set<string> {
+  return new Set(
+    [food.name, food.pluralName ?? ""]
+      .join(" ")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word !== "")
+  );
+}
+
+/**
+ * The words a matched span adds to the food's own name, in the line's own
+ * spelling: "ripe" from "ripe tomatoes", "wedges" from "lime wedges". Only
+ * when the span holds the whole name (or plural) and more, so an alias that
+ * is a synonym ("scallions", "baking soda", "Shaoxing wine") adds nothing:
+ * it means the food, not a kind of it. Pure.
+ */
+function qualifiers(span: string, food: FoodCandidate): string {
+  const words = span
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word !== "");
+  const lower = new Set(words.map((word) => word.toLowerCase()));
+  const holdsName = [food.name, food.pluralName ?? ""].some((name) => {
+    const parts = name
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word !== "");
+    return parts.length > 0 && parts.every((word) => lower.has(word));
+  });
+  if (!holdsName) return "";
+  const own = nameWords(food);
+  return words.filter((word) => !own.has(word.toLowerCase())).join(" ");
 }
 
 /**

@@ -46,6 +46,34 @@ test("a line is parsed against the household's foods, by plural or other name to
   expect(report).toEqual({ createdFoods: [], textOnly: [] });
 });
 
+test("no word of a line is lost: a size the household has no unit for and the words after the food stay in the note (row 221)", () => {
+  const input = createRecipeSchema.parse({ name: "Onions", parts: [{ ingredients: ["2 large spring onions, sliced", "1 tbsp spring onion paste"] }] });
+  const [first, second] = documentFromMcp(input, vocabulary, null).doc.parts[0]!.ingredients!;
+  expect(first).toMatchObject({ quantity: 2, unit: null, food: { id: ONION.id }, note: "large, sliced" });
+  expect(second).toMatchObject({ quantity: 1, unit: { id: TBSP.id }, food: { id: ONION.id }, note: "paste" });
+});
+
+test("a line can name its food outright; a name the household doesn't have is refused (row 222)", () => {
+  const BLACK = food("00000000-0000-4000-8000-0000000000b2", "black peppercorns", null, ["white peppercorns"]);
+  const WHITE = food("00000000-0000-4000-8000-0000000000b3", "white peppercorns", null);
+  const peppers = { ...vocabulary, foods: [BLACK, WHITE] };
+  const read = (ingredients: unknown[]) =>
+    documentFromMcp(createRecipeSchema.parse({ name: "Stock", parts: [{ ingredients }] }), peppers, null).doc.parts[0]!.ingredients!;
+
+  expect(read(["½ tbsp white peppercorns"])[0]).toMatchObject({ food: { id: BLACK.id } });
+  expect(read([{ text: "½ tbsp white peppercorns", food: "white peppercorns" }])[0]).toMatchObject({
+    quantity: 0.5,
+    unit: { id: TBSP.id },
+    food: { id: WHITE.id },
+    note: "",
+  });
+  expect(read([{ text: "1 tsp whole pepper, cracked", food: "White Peppercorns" }])[0]).toMatchObject({
+    food: { id: WHITE.id },
+    note: "whole pepper, cracked",
+  });
+  expect(() => read([{ text: "1 tsp pink peppercorns", food: "pink peppercorns" }])).toThrow(/not one of the household's foods/);
+});
+
 test("an unknown short food is created once however many lines name it; a long one stays text", () => {
   const input = createRecipeSchema.parse({
     name: "Kimchi",
