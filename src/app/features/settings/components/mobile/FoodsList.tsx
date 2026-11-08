@@ -8,15 +8,14 @@ import { Toggle } from "@sixthshift/design-system/toggle";
 import { cn } from "@sixthshift/design-system/utils";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { type PointerEvent, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { updateFood } from "../../../../../api/rpc/foods";
 import { PlusIcon } from "../../../../../components/ui/icons";
 import { Menu } from "../../../../../components/ui/Menu";
 import { SwipeRow } from "../../../../../components/ui/SwipeRow";
 import type { RecipeSummary } from "../../../../../domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, Unit } from "../../../../../domain/recipes/reference";
 import { useMutate } from "../../../../../lib/mutate";
-import { toastError } from "../../../../../lib/toast";
 import { NEW_FOOD, useFoodActions } from "../food/useFoodActions";
+import { usePendingFoods } from "../food/usePendingFoods";
 import { FoodSheet, type FoodSheetPatch } from "./FoodSheet";
 
 /** The scrubber's letters, and `#` for a name that starts with anything else. */
@@ -79,18 +78,14 @@ export type FoodsListProps = {
  * placed by the virtual list and cannot stick by itself.
  */
 export function FoodsList({ foods, usage, packs = [], aisles, units, recipes }: FoodsListProps) {
-  const mutate = useMutate();
+  const _mutate = useMutate();
   const [query, setQuery] = useState("");
   const [onHandOnly, setOnHandOnly] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const actions = useFoodActions({ foods, packs, aisles, units, recipes });
   // A tap's change shows at once, before the reload brings it back saved.
-  const [pending, setPending] = useState<Record<string, FoodSheetPatch>>({});
-
-  const shown = useMemo(
-    () => foods.map((food) => (pending[food.id] ? { ...food, ...pending[food.id] } : food)).filter((food) => !onHandOnly || food.skipShopping),
-    [foods, pending, onHandOnly]
-  );
+  const { shown: withPending, save: saveFood } = usePendingFoods(foods);
+  const shown = useMemo(() => withPending.filter((food) => !onHandOnly || food.skipShopping), [withPending, onHandOnly]);
   const items = useMemo(() => foodListItems(shown.filter((food) => foodMatches(food, query))), [shown, query]);
   const firstOf = useMemo(() => {
     const at = new Map<string, number>();
@@ -143,23 +138,10 @@ export function FoodsList({ foods, usage, packs = [], aisles, units, recipes }: 
     if (index !== undefined) virtualizer.scrollToIndex(index, { align: "start" });
   };
 
-  const save = async (food: FoodRow, patch: FoodSheetPatch) => {
-    setPending((all) => ({ ...all, [food.id]: { ...all[food.id], ...patch } }));
-    try {
-      await mutate(() => updateFood({ data: { id: food.id, ...patch } }));
+  const save = (food: FoodRow, patch: FoodSheetPatch) =>
+    saveFood(food, patch, () => {
       if (patch.aisleId !== undefined) toast({ intent: "success", title: `${food.name}: ${aisleName(patch.aisleId) ?? "no aisle"}` });
-    } catch (error) {
-      toastError(`Could not save ${food.name}`, error);
-    } finally {
-      // Only what this tap set, and only if no later tap has changed it since: two quick taps each keep their own.
-      setPending((all) => {
-        const { [food.id]: mine, ...rest } = all;
-        const left: FoodSheetPatch = { ...mine };
-        for (const key of Object.keys(patch) as (keyof FoodSheetPatch)[]) if (left[key] === patch[key]) delete left[key];
-        return Object.keys(left).length === 0 ? rest : { ...rest, [food.id]: left };
-      });
-    }
-  };
+    });
 
   return (
     <div className="flex flex-col" data-testid="foods-list">

@@ -18,11 +18,11 @@ import { useMutate } from "../../../../../lib/mutate";
 import { toastError } from "../../../../../lib/toast";
 import { type DataTableColumn, filterItems, headerChecked, nextSort, type SortState, sortItems, toggleAll, toggleKey } from "../../../../../lib/ui/dataTable";
 import { NEW_FOOD, useFoodActions } from "../food/useFoodActions";
+import { usePendingFoods } from "../food/usePendingFoods";
 import { aisleOptions, FoodDetails, NO_AISLE } from "./FoodDetails";
 import { conversionsText, FIELD_LABEL, type GridField, packsText, parseAliasList } from "./foodGrid";
 
 /** The fields a cell or the pane saves on their own. */
-type FoodFieldPatch = Partial<Pick<FoodRow, "name" | "aliases" | "aisleId" | "skipShopping">>;
 
 /** How long a row's click waits to see whether it is the first of a double-click. */
 const DOUBLE_CLICK_MS = 250;
@@ -61,7 +61,7 @@ export function FoodsGrid({
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Editing>(null);
   // What a save has written but the loader has not brought back yet, so a cell shows its new value at once.
-  const [pending, setPending] = useState<Record<string, FoodFieldPatch>>({});
+  const { shown, save } = usePendingFoods(foods);
   // The cell to give focus back to once its field closes, so the keyboard stays where it was.
   const [refocus, setRefocus] = useState<string | null>(null);
   const openTimer = useRef<number | undefined>(undefined);
@@ -79,7 +79,6 @@ export function FoodsGrid({
     },
   });
 
-  const shown = useMemo(() => foods.map((food) => (pending[food.id] ? { ...food, ...pending[food.id] } : food)), [foods, pending]);
   const columns = useMemo(() => gridColumns(aisles, usage), [aisles, usage]);
   const visible = useMemo(
     () => sortItems(filterItems(onHandOnly ? shown.filter((food) => food.skipShopping) : shown, columns, query), columns, sort),
@@ -88,20 +87,6 @@ export function FoodsGrid({
   const visibleKeys = visible.map((food) => food.id);
   const selectedFoods = shown.filter((food) => selected.includes(food.id));
   const open = openId === null ? null : (shown.find((food) => food.id === openId) ?? null);
-
-  const save = async (food: FoodRow, patch: FoodFieldPatch) => {
-    setPending((all) => ({ ...all, [food.id]: { ...all[food.id], ...patch } }));
-    try {
-      await mutate(() => updateFood({ data: { id: food.id, ...patch } }));
-    } catch (error) {
-      toastError(`Could not save ${food.name}`, error);
-    } finally {
-      setPending((all) => {
-        const { [food.id]: _, ...rest } = all;
-        return rest;
-      });
-    }
-  };
 
   const setAisleOf = async (items: FoodRow[], aisleId: string | null) => {
     try {
