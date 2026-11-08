@@ -5,18 +5,7 @@
 import { describe, expect, test } from "vitest";
 import { clearDraft, draftKey, draftNoticeText, formatSavedAt, getDraft, putDraft } from "../../../../src/domain/recipes/draft/stored";
 import type { RemovableStorage } from "../../../../src/lib/storage";
-
-/** A plain in-memory Storage-like, for round-trip tests. */
-function memoryStorage(): RemovableStorage & { size: () => number; raw: (key: string) => string | null } {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    setItem: (key, value) => void map.set(key, value),
-    removeItem: (key) => void map.delete(key),
-    size: () => map.size,
-    raw: (key) => map.get(key) ?? null,
-  };
-}
+import { memoryStorage } from "../../../helpers/storage";
 
 /** A storage whose every method throws, for the "storage is unavailable" cases. */
 function throwingStorage(): RemovableStorage {
@@ -124,7 +113,7 @@ describe("clearDraft", () => {
     putDraft(storage, undefined, draft({ name: "New one" }), false);
     clearDraft(storage, recipeId);
     expect(getDraft(storage, recipeId)).toBeNull();
-    expect(storage.raw(draftKey(recipeId))).toBeNull();
+    expect(storage.map.get(draftKey(recipeId)) ?? null).toBeNull();
     expect(getDraft(storage, undefined)?.draft.name).toBe("New one");
   });
 

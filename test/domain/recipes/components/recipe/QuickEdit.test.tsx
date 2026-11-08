@@ -12,8 +12,8 @@ import { type DraftIngredient, withIngredientReplaced, withStepReplaced } from "
 import type { Ingredient, Recipe } from "../../../../../src/domain/recipes/recipe";
 import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
-import type { StorageLike } from "../../../../../src/lib/storage";
 import { getTicks, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
+import { memoryStorage as fakeStorage } from "../../../../helpers/storage";
 
 // `updateRecipe` is the only server call a save makes; the test keeps what it
 // was sent so it can be compared with the stored document.
@@ -179,11 +179,6 @@ describe("withStepReplaced", () => {
 });
 
 /** An in-memory sessionStorage, so the ticks a test seeds are readable back. */
-function fakeStorage(): StorageLike {
-  const map = new Map<string, string>();
-  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
-}
-
 describe("saveQuickEdit", () => {
   beforeEach(() => {
     sent.length = 0;

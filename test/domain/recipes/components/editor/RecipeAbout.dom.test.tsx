@@ -9,6 +9,7 @@ import { emptyDraft } from "../../../../../src/domain/recipes/draft";
 import { noFacets, type RecipeInput } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 import { atDesktop } from "../../../../helpers/layout";
+import { memoryStorage as memory } from "../../../../helpers/storage";
 
 const rpc = vi.hoisted(() => ({
   createRecipe: vi.fn(async (_: { data: unknown }) => ({ id: "99999999-9999-4999-8999-999999999999", slug: "larb" })),
@@ -22,15 +23,6 @@ atDesktop();
 beforeEach(() => {
   for (const fn of Object.values(rpc)) fn.mockClear();
 });
-
-function memory() {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key: string) => map.get(key) ?? null,
-    setItem: (key: string, value: string) => void map.set(key, value),
-    removeItem: (key: string) => void map.delete(key),
-  };
-}
 
 test("the week and the course set in the editor are saved with the recipe, and nothing is written before Save", async () => {
   const user = userEvent.setup();

@@ -11,8 +11,8 @@ import { TimelineList } from "../../../../../src/domain/recipes/components/recip
 import { offersSaveAsNote, withNoteFromCook } from "../../../../../src/domain/recipes/components/recipe/timelineNotes";
 import type { Recipe, TimelineEvent } from "../../../../../src/domain/recipes/recipe";
 import { noFacets } from "../../../../../src/domain/recipes/recipe";
-import type { StorageLike } from "../../../../../src/lib/storage";
 import { getTicks, setIngredientTicked } from "../../../../../src/lib/ticks";
+import { memoryStorage as fakeStorage } from "../../../../helpers/storage";
 
 // `updateRecipe` is the only server call `saveQuickEdit` makes; kept here so
 // the "save as note" test can compare what was sent with the stored document.
@@ -78,11 +78,6 @@ async function render(events: TimelineEvent[]): Promise<string> {
 }
 
 /** An in-memory sessionStorage, so `clearTicksNow` reads and writes what a test seeds. */
-function fakeStorage(): StorageLike {
-  const map = new Map<string, string>();
-  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
-}
-
 afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
 });

@@ -45,4 +45,3 @@ test("the stack stands on the recipe page's timer strip, by the height the strip
   ]);
   expect(TIMER_STRIP_VAR).toBe("--timer-strip");
 });
-

@@ -13,6 +13,7 @@ import { clearDraft, draftFromRecipe, emptyDraft, hasDetails, isDirty, putDraft,
 import { noFacets, type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
 import { renderRoute } from "../../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../../helpers/server";
+import { memoryStorage } from "../../../../helpers/storage";
 
 // The two render tests below go through the real routes, whose loaders call
 // server functions; under vitest those need running in-process (see
@@ -362,15 +363,7 @@ describe("the head of the form", () => {
 // Discard are asserted as the buttons the notice renders, and the clearing
 // they and a save do is asserted against the store.
 describe("the resume notice", () => {
-  const draftStorage = () => {
-    const map = new Map<string, string>();
-    return {
-      getItem: (key: string) => map.get(key) ?? null,
-      setItem: (key: string, value: string) => void map.set(key, value),
-      removeItem: (key: string) => void map.delete(key),
-      size: () => map.size,
-    };
-  };
+  const draftStorage = memoryStorage;
 
   const renderForm = async (props: Partial<RecipeFormProps>): Promise<string> => {
     const rootRoute = createRootRoute({ component: () => <RecipeForm initial={emptyDraft()} units={[]} tags={[]} {...props} /> });

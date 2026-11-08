@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { StorageLike } from "../../../../../src/lib/storage";
 import { startTimer, type Timer, timerDisplay } from "../../../../../src/lib/timers";
 import { type RunningTimer, tickTimersNow } from "../../../../../src/lib/useTimers";
+import { memoryStorage as fakeStorage } from "../../../../helpers/storage";
 
 /** Drop every toast at once: the store's own `clear` only begins their exit. */
 function clearToasts() {
@@ -23,11 +24,6 @@ const STEP = "33333333-3333-4333-8333-333333333333";
 const T0 = 1_800_000_000_000;
 
 /** An in-memory sessionStorage, so the strip reads what a test seeds. */
-function fakeStorage(): StorageLike {
-  const map = new Map<string, string>();
-  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
-}
-
 function withStorage(storage: StorageLike) {
   (globalThis as { window?: unknown }).window = { sessionStorage: storage };
 }

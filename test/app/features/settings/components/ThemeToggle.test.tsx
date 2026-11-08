@@ -4,7 +4,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { ThemeToggle, themeOptions } from "../../../../../src/app/features/settings/components/ThemeToggle";
 import { prefs, readPref, writePref } from "../../../../../src/lib/prefs";
-import type { StorageLike } from "../../../../../src/lib/storage";
+import { memoryStorage } from "../../../../helpers/storage";
 
 describe("the theme guard the toggle uses (prefs.theme.isValid)", () => {
   test.each([
@@ -37,8 +37,8 @@ describe("ThemeToggle", () => {
 
 describe("persistence", () => {
   test("a chosen theme round-trips through the key the boot script reads", () => {
-    const map = new Map<string, string>();
-    const storage: StorageLike = { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
+    const storage = memoryStorage();
+    const { map } = storage;
     writePref(storage, prefs.theme, "dark");
     // The inline script in root.tsx and the design system both read "theme"
     // as JSON; a reload picks the choice up from there.

@@ -16,17 +16,9 @@ import {
   toggleIngredientTicked,
   toggleStepTicked,
 } from "../../src/lib/ticks";
+import { memoryStorage } from "../helpers/storage";
 
 /** A plain in-memory Storage-like, for round-trip tests. */
-function memoryStorage(): StorageLike & { size: () => number } {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    setItem: (key, value) => void map.set(key, value),
-    size: () => map.size,
-  };
-}
-
 /** A storage whose every method throws, for the "storage is unavailable" cases. */
 function throwingStorage(): StorageLike {
   return {

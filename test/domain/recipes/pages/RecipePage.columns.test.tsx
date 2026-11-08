@@ -7,11 +7,11 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRecipe } from "../../../../src/api/rpc/recipes";
 import { createTimelineEvent } from "../../../../src/api/rpc/timeline";
-import type { StorageLike } from "../../../../src/lib/storage";
 import { getTicks, setIngredientTicked } from "../../../../src/lib/ticks";
 import { clearTicksNow } from "../../../../src/lib/useTicks";
 import { elementHtml, renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
+import { memoryStorage as fakeStorage } from "../../../helpers/storage";
 
 const local = vi.hoisted(() => async (importOriginal: () => Promise<Record<string, unknown>>) => {
   const { runLocally } = await import("../../../helpers/server");
@@ -34,11 +34,6 @@ function storeMode(mode: "structured" | "summary") {
 }
 
 /** An in-memory sessionStorage, so ticks.ts reads and writes what a test seeds. */
-function fakeStorage(): StorageLike {
-  const map = new Map<string, string>();
-  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
-}
-
 const food = (name: string) => ({ id: crypto.randomUUID(), name, pluralName: null });
 
 function seedTart() {

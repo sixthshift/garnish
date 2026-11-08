@@ -13,6 +13,7 @@ import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Food } from "../../../../../src/domain/recipes/reference";
 import type { StorageLike } from "../../../../../src/lib/storage";
 import { setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
+import { memoryStorage as fakeStorage } from "../../../../helpers/storage";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const STEP_ID = "33333333-3333-4333-8333-333333333333";
@@ -46,11 +47,6 @@ const ingredient = (quantity: number | null, f: Food): Ingredient => ({
 const step = (text: string, ingredientIds: string[] = [], id = STEP_ID): Step => ({ id, text, title: "", summary: "", ingredientIds, image: null });
 
 /** An in-memory sessionStorage, so the tick hooks read what a test seeds. */
-function fakeStorage(): StorageLike {
-  const map = new Map<string, string>();
-  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
-}
-
 function withStorage(storage: StorageLike) {
   (globalThis as { window?: unknown }).window = { sessionStorage: storage };
 }

@@ -12,6 +12,7 @@ import { reviewRows } from "../../../../../../src/domain/recipes/ingredient";
 import { noFacets } from "../../../../../../src/domain/recipes/recipe";
 import type { FoodRow, Unit } from "../../../../../../src/domain/recipes/reference";
 import { renderInRouter } from "../../../../../helpers/dom";
+import { memoryStorage as memory } from "../../../../../helpers/storage";
 
 const gram: Unit = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -64,15 +65,6 @@ const PAGE = [
   "Bake until golden.",
   "Serve cold.",
 ].join("\n");
-
-function memory() {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key: string) => map.get(key) ?? null,
-    setItem: (key: string, value: string) => void map.set(key, value),
-    removeItem: (key: string) => void map.delete(key),
-  };
-}
 
 async function renderCheck(sourceText?: string) {
   const rows = reviewRows(

@@ -6,8 +6,8 @@ import { afterEach, describe, expect, test } from "vitest";
 import { SubRecipesProvider } from "../../../../../src/components/recipe/SubRecipes";
 import { IngredientRow } from "../../../../../src/domain/recipes/components/recipe/IngredientRow";
 import type { Ingredient, SubRecipe } from "../../../../../src/domain/recipes/recipe";
-import type { StorageLike } from "../../../../../src/lib/storage";
 import { setIngredientTicked } from "../../../../../src/lib/ticks";
+import { memoryStorage as fakeStorage } from "../../../../helpers/storage";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -48,15 +48,6 @@ const ingredient = (overrides: Partial<Ingredient> = {}): Ingredient => ({
 });
 
 /** A window whose sessionStorage is real (an in-memory StorageLike), so useIngredientTick reads what a test seeds. */
-function fakeStorage(): StorageLike & { size: () => number } {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key) => map.get(key) ?? null,
-    setItem: (key, value) => void map.set(key, value),
-    size: () => map.size,
-  };
-}
-
 afterEach(() => {
   delete (globalThis as { window?: unknown }).window;
 });

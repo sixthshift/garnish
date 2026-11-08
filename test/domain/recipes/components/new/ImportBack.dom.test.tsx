@@ -14,6 +14,7 @@ import { RecipeSource } from "../../../../../src/domain/recipes/components/new/R
 import { draftFromInput } from "../../../../../src/domain/recipes/draft";
 import type { ImportedRecipe } from "../../../../../src/domain/recipes/import";
 import { noFacets, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
+import { memoryStorage as memory } from "../../../../helpers/storage";
 
 const model = vi.hoisted(() => ({ restyleDraft: vi.fn(() => new Promise(() => {})), createRestyledRecipe: vi.fn() }));
 vi.mock("../../../../../src/server/ai/restyle", () => model);
@@ -91,15 +92,6 @@ const found: ImportedRecipe = {
 };
 
 /** A draft store of its own per test, so no stored draft greets the form. */
-function memory() {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key: string) => map.get(key) ?? null,
-    setItem: (key: string, value: string) => void map.set(key, value),
-    removeItem: (key: string) => void map.delete(key),
-  };
-}
-
 const sourceProps = { units: [], onChoose: () => {}, onDraft: () => {}, loadFoods: async () => [], load: async () => found };
 
 test("Back from the Style stage asks before it drops the import", async () => {

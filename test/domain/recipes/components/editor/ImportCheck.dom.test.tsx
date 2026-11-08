@@ -12,6 +12,7 @@ import type { RecipeInput } from "../../../../../src/domain/recipes/recipe";
 import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { FoodRow, Unit } from "../../../../../src/domain/recipes/reference";
 import { renderInRouter } from "../../../../helpers/dom";
+import { memoryStorage as memory } from "../../../../helpers/storage";
 
 const rpc = vi.hoisted(() => ({
   createRecipe: vi.fn(async (_: { data: unknown }) => ({ id: "99999999-9999-4999-8999-999999999999", slug: "lemon-tart" })),
@@ -77,15 +78,6 @@ function opened() {
     { units: [gram], foods: [flour] }
   );
   return importDraft({ scraped, sourceUrl: SOURCE, rows });
-}
-
-function memory() {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key: string) => map.get(key) ?? null,
-    setItem: (key: string, value: string) => void map.set(key, value),
-    removeItem: (key: string) => void map.delete(key),
-  };
 }
 
 async function renderCheck(options: { onContinue?: (...args: unknown[]) => void } = {}) {

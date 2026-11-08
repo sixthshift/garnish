@@ -5,12 +5,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test } from "vitest";
 import { IngredientModeToggle } from "../../../../../src/domain/recipes/components/recipe/IngredientModeToggle";
 import { prefs, writePref } from "../../../../../src/lib/prefs";
-import type { StorageLike } from "../../../../../src/lib/storage";
-
-function fakeStorage(): StorageLike {
-  const map = new Map<string, string>();
-  return { getItem: (key) => map.get(key) ?? null, setItem: (key, value) => void map.set(key, value) };
-}
+import { memoryStorage as fakeStorage } from "../../../../helpers/storage";
 
 afterEach(() => {
   delete (globalThis as { window?: unknown }).window;

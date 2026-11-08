@@ -9,17 +9,9 @@ import { RecipeForm } from "../../../../../../src/domain/recipes/components/edit
 import { emptyDraft, type RecipeDraft } from "../../../../../../src/domain/recipes/draft";
 import { renderInRouter } from "../../../../../helpers/dom";
 import { atDesktop } from "../../../../../helpers/layout";
+import { memoryStorage as memory } from "../../../../../helpers/storage";
 
 atDesktop();
-
-function memory() {
-  const map = new Map<string, string>();
-  return {
-    getItem: (key: string) => map.get(key) ?? null,
-    setItem: (key: string, value: string) => void map.set(key, value),
-    removeItem: (key: string) => void map.delete(key),
-  };
-}
 
 function draft(): RecipeDraft {
   return {
