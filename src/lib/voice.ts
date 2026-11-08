@@ -77,6 +77,17 @@ const FATAL: Record<string, string> = {
 const MAX_FAILURES = 4;
 
 /**
+ * Why listening kept failing, in words a cook can act on, with the browser's
+ * own reason named so it can be looked up. Pure.
+ */
+export function failureMessage(error: string): string {
+  if (error === "network")
+    return "Voice couldn't reach the browser's speech service (the browser said: network). Chrome turns speech into text on Google's servers; Brave, Arc, Chromium and some other Chrome-based browsers can't, and a blocked connection to Google stops it too. Try Chrome or Safari.";
+  if (error === "language-not-supported") return "This browser can't listen in Australian English (the browser said: language-not-supported).";
+  return `Voice couldn't keep listening (the browser said: ${error || "nothing"}). Tap Voice to try again.`;
+}
+
+/**
  * Text as it should sound: no markdown marks, a range read "3 to 5", degrees
  * said rather than spelled. Pure.
  */
@@ -139,7 +150,7 @@ export function createVoiceLoop(env: VoiceEnv, events: VoiceEvents, options: Voi
     mine.interimResults = true;
     let said = "";
     let fatal: string | null = null;
-    let failed = false;
+    let failed: string | null = null;
     mine.onresult = (event) => {
       const results = Array.from(event.results);
       said = results
@@ -150,7 +161,7 @@ export function createVoiceLoop(env: VoiceEnv, events: VoiceEvents, options: Voi
     };
     mine.onerror = (event) => {
       fatal = FATAL[event.error] ?? null;
-      failed = event.error !== "no-speech" && event.error !== "aborted";
+      failed = event.error === "no-speech" || event.error === "aborted" ? null : event.error;
     };
     mine.onend = () => {
       if (recognition !== mine) return;
@@ -166,8 +177,8 @@ export function createVoiceLoop(env: VoiceEnv, events: VoiceEvents, options: Voi
         events.onUtterance(words);
         return;
       }
-      failures = failed ? failures + 1 : 0;
-      if (failures >= MAX_FAILURES) return giveUp("Voice couldn't keep listening. Check the connection and tap Voice to try again.");
+      failures = failed !== null ? failures + 1 : 0;
+      if (failed !== null && failures >= MAX_FAILURES) return giveUp(failureMessage(failed));
       // Nothing said before the browser stopped listening: listen again.
       retry = env.setTimeout(() => {
         retry = null;

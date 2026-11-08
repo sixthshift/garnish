@@ -187,7 +187,18 @@ describe("the voice loop", () => {
       w.advance(250);
     }
     expect(w.states.at(-1)).toBe("off");
-    expect(w.messages[0]).toMatch(/couldn't keep listening/);
+    expect(w.messages[0]).toMatch(/speech service.*network.*Chrome/);
+  });
+
+  test("the browser's own reason is named when listening keeps failing", async () => {
+    const w = world();
+    w.loop.start();
+    await w.finishSpeaking();
+    for (let i = 0; i < 4; i += 1) {
+      w.end("bad-grammar");
+      w.advance(250);
+    }
+    expect(w.messages[0]).toBe("Voice couldn't keep listening (the browser said: bad-grammar). Tap Voice to try again.");
   });
 
   test("stop stops listening and speaking, and a late end does not start it again", async () => {
