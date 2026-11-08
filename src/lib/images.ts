@@ -17,18 +17,23 @@ export function recipeImageUploadUrl(recipeId: string): string {
 /** The slice of `fetch` the upload uses; injectable for tests. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
+/** POST `file` in the image field to `url`: the stored file name the server answers, or its `error` text thrown on a non-2xx. */
+async function postImage(url: string, file: File, fetcher: Fetcher, what: "image" | "photo"): Promise<string> {
+  const body = new FormData();
+  body.append(IMAGE_FIELD, file);
+  const response = await fetcher(url, { method: "POST", body });
+  const payload = (await response.json().catch(() => ({}))) as { image?: string; error?: string };
+  if (!response.ok) throw new Error(payload.error ?? `${what} upload failed (${response.status})`);
+  if (typeof payload.image !== "string") throw new Error(`${what} upload returned no file name`);
+  return payload.image;
+}
+
 /**
  * POST `file` as the recipe's image. Resolves with the stored file name the
  * server answers with; rejects with the server's `error` text on a non-2xx.
  */
-export async function uploadRecipeImage(recipeId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
-  const body = new FormData();
-  body.append(IMAGE_FIELD, file);
-  const response = await fetcher(recipeImageUploadUrl(recipeId), { method: "POST", body });
-  const payload = (await response.json().catch(() => ({}))) as { image?: string; error?: string };
-  if (!response.ok) throw new Error(payload.error ?? `image upload failed (${response.status})`);
-  if (typeof payload.image !== "string") throw new Error("image upload returned no file name");
-  return payload.image;
+export function uploadRecipeImage(recipeId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
+  return postImage(recipeImageUploadUrl(recipeId), file, fetcher, "image");
 }
 
 /** The URL that serves a timeline photo, or null when the event has none. Pure. */
@@ -46,14 +51,8 @@ export function timelineImageUploadUrl(eventId: string): string {
  * POST `file` as a logged cook's photo. Resolves with the stored file name;
  * rejects with the server's `error` text on a non-2xx.
  */
-export async function uploadTimelineImage(eventId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
-  const body = new FormData();
-  body.append(IMAGE_FIELD, file);
-  const response = await fetcher(timelineImageUploadUrl(eventId), { method: "POST", body });
-  const payload = (await response.json().catch(() => ({}))) as { image?: string; error?: string };
-  if (!response.ok) throw new Error(payload.error ?? `photo upload failed (${response.status})`);
-  if (typeof payload.image !== "string") throw new Error("photo upload returned no file name");
-  return payload.image;
+export function uploadTimelineImage(eventId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
+  return postImage(timelineImageUploadUrl(eventId), file, fetcher, "photo");
 }
 
 /** The URL that serves a step's photo, or null when the step has none. Pure. */
@@ -72,14 +71,8 @@ export function stepImageUploadUrl(recipeId: string, stepId: string): string {
  * with the server's `error` text on a non-2xx — a step the recipe has never
  * saved is a 404 there, so the editor asks for a save first.
  */
-export async function uploadStepImage(recipeId: string, stepId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
-  const body = new FormData();
-  body.append(IMAGE_FIELD, file);
-  const response = await fetcher(stepImageUploadUrl(recipeId, stepId), { method: "POST", body });
-  const payload = (await response.json().catch(() => ({}))) as { image?: string; error?: string };
-  if (!response.ok) throw new Error(payload.error ?? `photo upload failed (${response.status})`);
-  if (typeof payload.image !== "string") throw new Error("photo upload returned no file name");
-  return payload.image;
+export function uploadStepImage(recipeId: string, stepId: string, file: File, fetcher: Fetcher = fetch): Promise<string> {
+  return postImage(stepImageUploadUrl(recipeId, stepId), file, fetcher, "photo");
 }
 
 /** What `fetchImage` (src/server/import/imageFetch.ts) answers with, as the client needs it. */

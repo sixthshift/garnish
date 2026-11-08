@@ -1,7 +1,8 @@
 // Timeline photo routes against a temp DATA_DIR: upload then fetch returns the
-// same bytes from images/timeline/, replacement drops the old extension,
-// unknown event and bad input, and a recipe image is not reachable through the
-// timeline route (nor the other way round).
+// same bytes from images/timeline/, replacement drops the old extension, an
+// unknown event is refused, and a recipe image is not reachable through the
+// timeline route (nor the other way round). The upload's own checks (a bad
+// file, a bad name) are one handler's for every kind: images.test.ts.
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
@@ -68,11 +69,6 @@ test("uploading a different format replaces the file and the stored name", async
   expect(timelineRepository(getDb()).get(event.id)?.image).toBe(`${event.id}.jpg`);
 });
 
-test("the format comes from the bytes, not the declared type or file name", async () => {
-  const event = await createEvent();
-  expect(await (await upload(event.id, jpg, "image", "image/png", "photo.png")).json()).toEqual({ image: `${event.id}.jpg` });
-});
-
 test("a timeline photo is not served as a recipe image", async () => {
   const event = await createEvent();
   await upload(event.id, png);
@@ -83,38 +79,6 @@ test("unknown event is 404 and nothing is written", async () => {
   expect((await upload(missing, png)).status).toBe(404);
   expect((await upload("not-a-uuid", png)).status).toBe(404);
   expect(existsSync(join(tmp.dir, "images", "timeline"))).toBe(false);
-});
-
-test.each([
-  ["no file field", (id: string) => upload(id, null)],
-  ["wrong field name", (id: string) => upload(id, png, "photo")],
-  ["empty file", (id: string) => upload(id, new Uint8Array())],
-  ["not an image", (id: string) => upload(id, new TextEncoder().encode("<svg/>"), "image", "image/svg+xml", "x.svg")],
-  [
-    "json body",
-    (id: string) =>
-      handleUploadTimelineImage(
-        new Request(`http://localhost/api/timeline/${id}/image`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
-        id
-      ),
-  ],
-])("bad upload is 400: %s", async (_label, send) => {
-  const event = await createEvent();
-  const res = await send(event.id);
-  expect(res.status).toBe(400);
-  expect(typeof (await res.json()).error).toBe("string");
-  expect(timelineRepository(getDb()).get(event.id)?.image).toBeNull();
-});
-
-test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
-  "GET rejects a name that is not <uuid>.<ext>: %j",
-  async (file) => {
-    expect((await handleGetImage("timeline", file)).status).toBe(400);
-  }
-);
-
-test("GET of a well-formed but absent photo is 404", async () => {
-  expect((await handleGetImage("timeline", `${missing}.png`)).status).toBe(404);
 });
 
 test("routes wire POST and GET to the handlers with their path params", async () => {

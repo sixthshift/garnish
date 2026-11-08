@@ -15,150 +15,77 @@ import {
   uploadTimelineImage,
 } from "../../src/lib/images";
 
-describe("recipeImageUrl", () => {
-  test("maps a stored file name onto the image route", () => {
-    expect(recipeImageUrl("0f3b-1.jpg")).toBe("/api/images/0f3b-1.jpg");
-  });
+// The three kinds of image share one shape: a URL that serves the stored file, an upload route, and a POST to it.
+const kinds = [
+  {
+    kind: "recipe",
+    url: recipeImageUrl,
+    served: "/api/images/",
+    uploadUrl: recipeImageUploadUrl("abc-1"),
+    routeUrl: "/api/recipes/abc-1/image",
+    upload: (file: File, fetcher: Fetcher) => uploadRecipeImage("abc", file, fetcher),
+    posted: "/api/recipes/abc/image",
+    what: "image",
+  },
+  {
+    kind: "timeline",
+    url: timelineImageUrl,
+    served: "/api/images/timeline/",
+    uploadUrl: timelineImageUploadUrl("abc-1"),
+    routeUrl: "/api/timeline/abc-1/image",
+    upload: (file: File, fetcher: Fetcher) => uploadTimelineImage("abc", file, fetcher),
+    posted: "/api/timeline/abc/image",
+    what: "photo",
+  },
+  {
+    kind: "step",
+    url: stepImageUrl,
+    served: "/api/images/steps/",
+    uploadUrl: stepImageUploadUrl("r-1", "abc-1"),
+    routeUrl: "/api/recipes/r-1/steps/abc-1/image",
+    upload: (file: File, fetcher: Fetcher) => uploadStepImage("r", "abc", file, fetcher),
+    posted: "/api/recipes/r/steps/abc/image",
+    what: "photo",
+  },
+] as const;
 
-  test("null, undefined and empty give no URL", () => {
-    expect(recipeImageUrl(null)).toBeNull();
-    expect(recipeImageUrl(undefined)).toBeNull();
-    expect(recipeImageUrl("")).toBeNull();
-  });
-
-  test("escapes anything that is not URL-safe", () => {
-    expect(recipeImageUrl("a b/../c.png")).toBe("/api/images/a%20b%2F..%2Fc.png");
-  });
-});
-
-describe("recipeImageUploadUrl", () => {
-  test("targets the recipe's image route", () => {
-    expect(recipeImageUploadUrl("abc-1")).toBe("/api/recipes/abc-1/image");
-  });
-});
-
-describe("uploadRecipeImage", () => {
+describe.each(kinds)("a $kind image", ({ url, served, uploadUrl, routeUrl, upload, posted, what }) => {
   const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "tart.png", { type: "image/png" });
 
+  test("maps a stored file name onto its image route, escaping anything not URL-safe", () => {
+    expect(url("0f3b-1.jpg")).toBe(`${served}0f3b-1.jpg`);
+    expect(url("a b/../c.png")).toBe(`${served}a%20b%2F..%2Fc.png`);
+  });
+
+  test("null, undefined and empty give no URL", () => {
+    expect(url(null)).toBeNull();
+    expect(url(undefined)).toBeNull();
+    expect(url("")).toBeNull();
+  });
+
+  test("its upload targets its own route", () => {
+    expect(uploadUrl).toBe(routeUrl);
+  });
+
   test("posts the file in the image field and returns the stored name", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
-    const fetcher: Fetcher = async (url, init) => {
-      calls.push({ url, init });
+    const fetcher: Fetcher = async (at, init) => {
+      calls.push({ url: at, init });
       return Response.json({ image: "abc.png" });
     };
-    await expect(uploadRecipeImage("abc", file, fetcher)).resolves.toBe("abc.png");
+    await expect(upload(file, fetcher)).resolves.toBe("abc.png");
     expect(calls).toHaveLength(1);
-    expect(calls[0]!.url).toBe("/api/recipes/abc/image");
-    expect(calls[0]!.init?.method).toBe("POST");
-    const body = calls[0]!.init?.body;
-    expect(body).toBeInstanceOf(FormData);
-    expect((body as FormData).get(IMAGE_FIELD)).toBeInstanceOf(Blob);
-  });
-
-  test("rejects with the server's error text on a failed response", async () => {
-    const fetcher: Fetcher = async () => Response.json({ error: "not a png, jpeg, webp or gif image" }, { status: 400 });
-    await expect(uploadRecipeImage("abc", file, fetcher)).rejects.toThrow("not a png, jpeg, webp or gif image");
-  });
-
-  test("falls back to the status when the error body is not JSON", async () => {
-    const fetcher: Fetcher = async () => new Response("nope", { status: 500 });
-    await expect(uploadRecipeImage("abc", file, fetcher)).rejects.toThrow("image upload failed (500)");
-  });
-});
-
-describe("timelineImageUrl", () => {
-  test("maps a stored file name onto the timeline image route", () => {
-    expect(timelineImageUrl("0f3b-1.jpg")).toBe("/api/images/timeline/0f3b-1.jpg");
-  });
-
-  test("null, undefined and empty give no URL", () => {
-    expect(timelineImageUrl(null)).toBeNull();
-    expect(timelineImageUrl(undefined)).toBeNull();
-    expect(timelineImageUrl("")).toBeNull();
-  });
-
-  test("escapes anything that is not URL-safe", () => {
-    expect(timelineImageUrl("a b/../c.png")).toBe("/api/images/timeline/a%20b%2F..%2Fc.png");
-  });
-});
-
-describe("timelineImageUploadUrl", () => {
-  test("targets the event's photo route", () => {
-    expect(timelineImageUploadUrl("abc-1")).toBe("/api/timeline/abc-1/image");
-  });
-});
-
-describe("uploadTimelineImage", () => {
-  const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "cook.png", { type: "image/png" });
-
-  test("posts the file in the image field and returns the stored name", async () => {
-    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
-    const fetcher: Fetcher = async (url, init) => {
-      calls.push({ url, init });
-      return Response.json({ image: "abc.png" });
-    };
-    await expect(uploadTimelineImage("abc", file, fetcher)).resolves.toBe("abc.png");
-    expect(calls[0]!.url).toBe("/api/timeline/abc/image");
+    expect(calls[0]!.url).toBe(posted);
     expect(calls[0]!.init?.method).toBe("POST");
     expect((calls[0]!.init?.body as FormData).get(IMAGE_FIELD)).toBeInstanceOf(File);
   });
 
-  test("rejects with the server's error text", async () => {
-    const fetcher: Fetcher = async () => Response.json({ error: "not a png, jpeg, webp or gif image" }, { status: 400 });
-    await expect(uploadTimelineImage("abc", file, fetcher)).rejects.toThrow("not a png, jpeg, webp or gif image");
-  });
-
-  test("rejects when the response carries no file name", async () => {
-    const fetcher: Fetcher = async () => Response.json({});
-    await expect(uploadTimelineImage("abc", file, fetcher)).rejects.toThrow("no file name");
-  });
-});
-
-describe("stepImageUrl", () => {
-  test("maps a stored file name onto the step image route", () => {
-    expect(stepImageUrl("0f3b-1.jpg")).toBe("/api/images/steps/0f3b-1.jpg");
-  });
-
-  test("null, undefined and empty give no URL", () => {
-    expect(stepImageUrl(null)).toBeNull();
-    expect(stepImageUrl(undefined)).toBeNull();
-    expect(stepImageUrl("")).toBeNull();
-  });
-
-  test("escapes anything that is not URL-safe", () => {
-    expect(stepImageUrl("a b/../c.png")).toBe("/api/images/steps/a%20b%2F..%2Fc.png");
-  });
-});
-
-describe("stepImageUploadUrl", () => {
-  test("targets the step's photo route", () => {
-    expect(stepImageUploadUrl("r-1", "abc-1")).toBe("/api/recipes/r-1/steps/abc-1/image");
-  });
-});
-
-describe("uploadStepImage", () => {
-  const file = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "step.png", { type: "image/png" });
-
-  test("posts the file in the image field and returns the stored name", async () => {
-    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
-    const fetcher: Fetcher = async (url, init) => {
-      calls.push({ url, init });
-      return Response.json({ image: "abc.png" });
-    };
-    await expect(uploadStepImage("r", "abc", file, fetcher)).resolves.toBe("abc.png");
-    expect(calls[0]!.url).toBe("/api/recipes/r/steps/abc/image");
-    expect(calls[0]!.init?.method).toBe("POST");
-    expect((calls[0]!.init?.body as FormData).get(IMAGE_FIELD)).toBeInstanceOf(File);
-  });
-
-  test("rejects with the server's error text — a step the recipe never saved is a 404 there", async () => {
-    const fetcher: Fetcher = async () => Response.json({ error: "step abc not found" }, { status: 404 });
-    await expect(uploadStepImage("r", "abc", file, fetcher)).rejects.toThrow("step abc not found");
-  });
-
-  test("rejects when the response carries no file name", async () => {
-    const fetcher: Fetcher = async () => Response.json({});
-    await expect(uploadStepImage("r", "abc", file, fetcher)).rejects.toThrow("no file name");
+  test("rejects with the server's error text, the status when the body is not JSON, and a missing file name", async () => {
+    await expect(upload(file, async () => Response.json({ error: "not a png, jpeg, webp or gif image" }, { status: 400 }))).rejects.toThrow(
+      "not a png, jpeg, webp or gif image"
+    );
+    await expect(upload(file, async () => new Response("nope", { status: 500 }))).rejects.toThrow(`${what} upload failed (500)`);
+    await expect(upload(file, async () => Response.json({}))).rejects.toThrow("no file name");
   });
 });
 

@@ -1,8 +1,9 @@
 // Step photo routes (M35.1) against a temp DATA_DIR: upload then fetch returns
 // the same bytes from images/steps/, replacement drops the old extension, a
-// step that was never saved and bad input are refused, the photo survives a
-// re-save of the recipe because the document carries it, and a step photo is
-// not reachable through the recipe or timeline image routes.
+// step that was never saved is refused, the photo survives a re-save of the
+// recipe because the document carries it, and a step photo is not reachable
+// through the recipe or timeline image routes. The upload's own checks (a bad
+// file, a bad name) are one handler's for every kind: images.test.ts.
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
@@ -85,11 +86,6 @@ test("uploading a different format replaces the file and the stored name", async
   expect(recipeRepository(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBe(`${stepId}.jpg`);
 });
 
-test("the format comes from the bytes, not the declared type or file name", async () => {
-  const recipe = await createRecipe();
-  expect(await (await upload(recipe, stepIdOf(recipe), jpg, "image", "image/png", "photo.png")).json()).toEqual({ image: `${stepIdOf(recipe)}.jpg` });
-});
-
 test("a step photo is not served as a recipe image or a timeline photo", async () => {
   const recipe = await createRecipe();
   const stepId = stepIdOf(recipe);
@@ -106,39 +102,6 @@ test("a step that was never saved, or is another recipe's, is 404 and nothing is
   expect((await upload(missing, stepIdOf(recipe), png)).status).toBe(404);
   expect((await upload(other, stepIdOf(recipe), png)).status).toBe(404);
   expect(existsSync(join(tmp.dir, "images", "steps"))).toBe(false);
-});
-
-test.each([
-  ["no file field", (r: Recipe, id: string) => upload(r, id, null)],
-  ["wrong field name", (r: Recipe, id: string) => upload(r, id, png, "photo")],
-  ["empty file", (r: Recipe, id: string) => upload(r, id, new Uint8Array())],
-  ["not an image", (r: Recipe, id: string) => upload(r, id, new TextEncoder().encode("<svg/>"), "image", "image/svg+xml", "x.svg")],
-  [
-    "json body",
-    (r: Recipe, id: string) =>
-      handleUploadStepImage(
-        new Request(`http://localhost/api/recipes/${r.id}/steps/${id}/image`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}" }),
-        r.id,
-        id
-      ),
-  ],
-])("bad upload is 400: %s", async (_label, send) => {
-  const recipe = await createRecipe();
-  const res = await send(recipe, stepIdOf(recipe));
-  expect(res.status).toBe(400);
-  expect(typeof (await res.json()).error).toBe("string");
-  expect(recipeRepository(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBeNull();
-});
-
-test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
-  "GET rejects a name that is not <uuid>.<ext>: %j",
-  async (file) => {
-    expect((await handleGetImage("step", file)).status).toBe(400);
-  }
-);
-
-test("GET of a well-formed but absent photo is 404", async () => {
-  expect((await handleGetImage("step", `${missing}.png`)).status).toBe(404);
 });
 
 test("routes wire POST and GET to the handlers with their path params", async () => {
