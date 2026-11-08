@@ -123,7 +123,7 @@ test("a statement is matched by its whole text case-insensitively, so an edit is
 test("a row still carrying a sentence this project reworded is given the new one in place, keeping its switch and position", () => {
   const repo = styleRuleRepository(db);
   const voice = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("Imperative"))!;
-  const timing = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("When the author gives a time"))!;
+  const timing = DEFAULT_STYLE_RULES.find((r) => r.text.startsWith("A step's time comes last"))!;
   // The old sentences as a database seeded before the rewording holds them: one switched on and moved, one switched off.
   const oldVoice = repo.create({ text: voice.was![0]!.toUpperCase(), enabled: true });
   const oldTiming = repo.create({ text: timing.was![0]!, enabled: false });
