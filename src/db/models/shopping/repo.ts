@@ -1,6 +1,5 @@
 import type { Database } from "bun:sqlite";
 import { asc, eq, inArray, max, sql } from "drizzle-orm";
-import type { Food, Unit } from "../../../domain/recipes/reference";
 import type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemSourceInput } from "../../../domain/shopping/shopping";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
@@ -9,6 +8,7 @@ import { aisleRepository } from "../aisle/repo";
 import { nowUtc } from "../columns";
 import { foodRepository } from "../food/repo";
 import { recipe } from "../recipe/schema";
+import { referenceReader } from "../references";
 import { unitRepository } from "../unit/repo";
 import { shoppingItem, shoppingItemSource } from "./schema";
 
@@ -22,30 +22,10 @@ export function shoppingRepository(db: Database) {
 
   // --- Document assembly ---------------------------------------------------
 
-  function readUnit(id: string | null, cache: Map<string, Unit | null>): Unit | null {
-    if (!id) return null;
-    if (!cache.has(id)) cache.set(id, units.get(id));
-    return cache.get(id) ?? null;
-  }
-
-  function readFood(id: string | null, cache: Map<string, Food | null>): Food | null {
-    if (!id) return null;
-    if (!cache.has(id)) {
-      const row = foods.get(id);
-      if (!row) cache.set(id, null);
-      else {
-        const { aisleId, ...rest } = row;
-        cache.set(id, { ...rest, aisle: aisleId ? aisles.get(aisleId) : null });
-      }
-    }
-    return cache.get(id) ?? null;
-  }
-
   /** Turn stored rows into documents: nested food and unit, sources under their line. */
   function assemble(rows: (typeof shoppingItem.$inferSelect)[]): ShoppingItem[] {
     if (rows.length === 0) return [];
-    const unitCache = new Map<string, Unit | null>();
-    const foodCache = new Map<string, Food | null>();
+    const refs = referenceReader({ units, foods, aisles });
 
     // Sources in the order they were written; rowid is that order, and the
     // table has no position column because nothing reorders them.
@@ -86,7 +66,7 @@ export function shoppingRepository(db: Database) {
         partName: s.partName,
         servings: s.servings,
         quantity: s.quantity,
-        unit: readUnit(s.unitId, unitCache),
+        unit: refs.unit(s.unitId),
         planDate: s.planDate,
       });
       sourcesByItem.set(s.itemId, list);
@@ -96,8 +76,8 @@ export function shoppingRepository(db: Database) {
       id: row.id,
       position: row.position,
       quantity: row.quantity,
-      unit: readUnit(row.unitId, unitCache),
-      food: readFood(row.foodId, foodCache),
+      unit: refs.unit(row.unitId),
+      food: refs.food(row.foodId),
       text: row.text,
       ticked: row.ticked,
       createdAt: row.createdAt,

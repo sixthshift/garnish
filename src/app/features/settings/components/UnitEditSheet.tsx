@@ -1,9 +1,9 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useState } from "react";
+import { SaveFooter } from "../../../../components/ui/EditSheet";
 import type { Unit } from "../../../../db/models/unit/repo";
 
 /** What a save hands back: the repository's flat patch shape. */
@@ -69,14 +69,7 @@ export function UnitEditSheetContent({ unit, onSave, onCancel, busy = false }: U
           <Checkbox label="Portion, food stays singular" checked={portion} disabled={busy} onCheckedChange={setPortion} />
         </form>
       </Sheet.Body>
-      <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={submit}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </Sheet.Footer>
+      <SaveFooter busy={busy} onCancel={onCancel} onSave={submit} />
     </>
   );
 }

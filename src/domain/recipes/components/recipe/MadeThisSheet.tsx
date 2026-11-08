@@ -1,9 +1,9 @@
-import { Button } from "@sixthshift/design-system/button";
 import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
+import { SaveFooter } from "../../../../components/ui/EditSheet";
 import { ImageUpload } from "../../../../components/ui/ImageUpload";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
 import { isValidDate } from "../../../../lib/dates";
@@ -70,14 +70,7 @@ export function MadeThisSheetContent({
           </FormField>
         </form>
       </Sheet.Body>
-      <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={submit}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </Sheet.Footer>
+      <SaveFooter busy={busy} onCancel={onCancel} onSave={submit} />
     </>
   );
 }

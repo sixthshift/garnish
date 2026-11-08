@@ -1,4 +1,3 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { FormField } from "@sixthshift/design-system/form-field";
 import { Input } from "@sixthshift/design-system/input";
@@ -7,6 +6,7 @@ import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useState } from "react";
+import { SaveFooter } from "../../../../../components/ui/EditSheet";
 import type { Food } from "../../../../../db/models/food/repo";
 import type { Unit } from "../../../../../db/models/unit/repo";
 import type { Aisle, FoodConversionInput, FoodPack, FoodPackInput } from "../../../../../domain/recipes/reference";
@@ -185,14 +185,7 @@ export function FoodEditSheetContent({
           <ConversionRows conversions={conversions} units={units} busy={busy} onChange={setConversions} />
         </form>
       </Sheet.Body>
-      <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={submit}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </Sheet.Footer>
+      <SaveFooter busy={busy} onCancel={onCancel} onSave={submit} />
     </>
   );
 }

@@ -23,6 +23,7 @@ import { getDb } from "../../../server/core/db";
 import { type Executor, orm } from "../../connection/client";
 import { aisleRepository } from "../aisle/repo";
 import { foodRepository } from "../food/repo";
+import { type ReferenceReader, referenceReader } from "../references";
 import { tagRepository } from "../tag/repo";
 import { tag } from "../tag/schema";
 import { unitRepository } from "../unit/repo";
@@ -162,36 +163,17 @@ export function recipeRepository(db: Database) {
     return (tags.get(ref.id) ?? tags.findOrCreate(ref.name)).id;
   }
 
-  function readUnit(id: string | null, cache: Map<string, Unit | null>): Unit | null {
-    if (!id) return null;
-    if (!cache.has(id)) cache.set(id, units.get(id));
-    return cache.get(id) ?? null;
-  }
-
-  function readFood(id: string | null, cache: Map<string, Food | null>): Food | null {
-    if (!id) return null;
-    if (!cache.has(id)) {
-      const row = foods.get(id);
-      if (!row) cache.set(id, null);
-      else {
-        const { aisleId, ...rest } = row;
-        cache.set(id, { ...rest, aisle: aisleId ? aisles.get(aisleId) : null });
-      }
-    }
-    return cache.get(id) ?? null;
-  }
-
   /** A stored alternative as the document spells it, its ids read through the caches; none when no item's food is left. */
-  function alternativeDocument(stored: StoredAlternative, unitCache: Map<string, Unit | null>, foodCache: Map<string, Food | null>): Alternative[] {
+  function alternativeDocument(stored: StoredAlternative, refs: ReferenceReader): Alternative[] {
     const items = stored.items.flatMap((item) => {
-      const itemFood = readFood(item.foodId, foodCache);
-      return itemFood ? [{ quantity: item.quantity, unit: readUnit(item.unitId, unitCache), food: itemFood }] : [];
+      const itemFood = refs.food(item.foodId);
+      return itemFood ? [{ quantity: item.quantity, unit: refs.unit(item.unitId), food: itemFood }] : [];
     });
     if (items.length === 0) return [];
     return [
       {
         basisQuantity: stored.basisQuantity,
-        basisUnit: readUnit(stored.basisUnitId, unitCache),
+        basisUnit: refs.unit(stored.basisUnitId),
         note: stored.note,
         planPicks: stored.planPicks && items.length === 1,
         items,
@@ -208,8 +190,7 @@ export function recipeRepository(db: Database) {
   }
 
   function assemble(row: typeof recipe.$inferSelect): Recipe {
-    const unitCache = new Map<string, Unit | null>();
-    const foodCache = new Map<string, Food | null>();
+    const refs = referenceReader({ units, foods, aisles });
 
     const ingredientRows = dz
       .select({
@@ -243,12 +224,12 @@ export function recipeRepository(db: Database) {
         id: i.id,
         quantity: i.quantity,
         quantityMax: i.quantityMax,
-        unit: readUnit(i.unitId, unitCache),
-        food: readFood(i.foodId, foodCache),
+        unit: refs.unit(i.unitId),
+        food: refs.food(i.foodId),
         note: i.note,
         originalText: i.originalText,
         fixed: i.fixed,
-        alternatives: (alternatives.get(i.id) ?? []).flatMap((stored) => alternativeDocument(stored, unitCache, foodCache)),
+        alternatives: (alternatives.get(i.id) ?? []).flatMap((stored) => alternativeDocument(stored, refs)),
       });
       ingredientsByPart.set(i.partId, list);
     }
@@ -316,7 +297,7 @@ export function recipeRepository(db: Database) {
       lastMade: row.lastMade,
       recipeServings: row.servings,
       recipeYieldQuantity: row.yieldQuantity,
-      yieldUnit: readUnit(row.yieldUnitId, unitCache),
+      yieldUnit: refs.unit(row.yieldUnitId),
       recipeYield: row.yieldText,
       prepTime: row.prepMinutes,
       performTime: row.cookMinutes,
@@ -571,7 +552,16 @@ export function recipeRepository(db: Database) {
     }
   }
 
-  const storage: RecipeStorage = { dz, foods, rowById, getById, readUnit, slugFor, recipeValues, writeChildren };
+  const storage: RecipeStorage = {
+    dz,
+    foods,
+    rowById,
+    getById,
+    references: () => referenceReader({ units, foods, aisles }),
+    slugFor,
+    recipeValues,
+    writeChildren,
+  };
 
   return {
     // --- The document -------------------------------------------------------

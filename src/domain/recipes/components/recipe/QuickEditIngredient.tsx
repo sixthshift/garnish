@@ -1,8 +1,8 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { useEffect, useState } from "react";
 import { listFoods } from "../../../../api/rpc/foods";
+import { SaveFooter } from "../../../../components/ui/EditSheet";
 import { type DraftIngredient, foodReference, isTextOnly, matchUnit, textOnlyPatch, unitReference } from "../../draft";
 import type { FoodRow, Unit } from "../../reference";
 import { FOOD_SEARCH_DEBOUNCE_MS, IngredientFields } from "../editor/IngredientFields";
@@ -153,14 +153,7 @@ export function QuickEditIngredientBody({ ingredient, units, busy = false, error
           </p>
         )}
       </Sheet.Body>
-      <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={() => onSave(row)}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </Sheet.Footer>
+      <SaveFooter busy={busy} onCancel={onCancel} onSave={() => onSave(row)} />
     </>
   );
 }

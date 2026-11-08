@@ -1,10 +1,10 @@
 import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { type Facets, type ParsedRecipeInput, type Recipe, type SubRecipe, suggestLinks } from "../../../domain/recipes/recipe";
-import type { Unit } from "../../../domain/recipes/reference";
 import type { Db, Executor } from "../../connection/client";
 import { nowUtc } from "../columns";
 import type { FoodRepository } from "../food/repo";
 import { food } from "../food/schema";
+import type { ReferenceReader } from "../references";
 import { writeFacets } from "./facets";
 import { ingredient, part, recipe, type SourcePart, step, stepIngredient } from "./schema";
 
@@ -14,7 +14,8 @@ export type RecipeStorage = {
   foods: FoodRepository;
   rowById: (id: string) => typeof recipe.$inferSelect | undefined;
   getById: (id: string) => Recipe | null;
-  readUnit: (id: string | null, cache: Map<string, Unit | null>) => Unit | null;
+  /** A fresh reader of unit and food ids, one per document read. */
+  references: () => ReferenceReader;
   slugFor: (name: string, ownId: string) => string;
   recipeValues: (doc: ParsedRecipeInput) => Partial<typeof recipe.$inferInsert>;
   writeChildren: (tx: Executor, recipeId: string, doc: ParsedRecipeInput) => void;
@@ -26,7 +27,7 @@ export type RecipeStorage = {
  * Callers that never hold the document (a heart tap on a card, a rating on the
  * page, an upload route) reach these through `recipes.ref(id)`.
  */
-export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, recipeValues, writeChildren }: RecipeStorage, id: string) {
+export function recipeRecord({ dz, foods, rowById, getById, references, slugFor, recipeValues, writeChildren }: RecipeStorage, id: string) {
   /** The part ids of this recipe: what scopes a step-keyed operation to it. */
   const ownParts = () => dz.select({ id: part.id }).from(part).where(eq(part.recipeId, id));
 
@@ -266,7 +267,7 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
      * the whole recipe, by name; a recipe with no sub-recipes gets an empty list.
      */
     subRecipes(): SubRecipe[] {
-      const unitCache = new Map<string, Unit | null>();
+      const refs = references();
       const made = dz
         .select({ id: food.recipeId })
         .from(ingredient)
@@ -286,7 +287,7 @@ export function recipeRecord({ dz, foods, rowById, getById, readUnit, slugFor, r
         .where(inArray(recipe.id, made))
         .orderBy(sql`${recipe.name} COLLATE NOCASE`)
         .all()
-        .map(({ yieldUnitId, ...rest }) => ({ ...rest, yieldUnit: readUnit(yieldUnitId, unitCache) }));
+        .map(({ yieldUnitId, ...rest }) => ({ ...rest, yieldUnit: refs.unit(yieldUnitId) }));
     },
   };
 }

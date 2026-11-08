@@ -89,15 +89,34 @@ export function EditSheetContent({ title, fields, item = null, onSave, onCancel,
           })}
         </form>
       </Sheet.Body>
-      <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={submit}>
-          {busy ? "Saving…" : saveLabel}
-        </Button>
-      </Sheet.Footer>
+      <SaveFooter busy={busy} onCancel={onCancel} onSave={submit} saveLabel={saveLabel} />
     </>
+  );
+}
+
+/** A sheet's Cancel and Save. Both are disabled while `busy`, when Save reads "Saving…"; `canSave` false disables Save alone. */
+export function SaveFooter({
+  busy = false,
+  canSave = true,
+  onCancel,
+  onSave,
+  saveLabel = "Save",
+}: {
+  busy?: boolean;
+  canSave?: boolean;
+  onCancel: () => void;
+  onSave: () => void;
+  saveLabel?: string;
+}) {
+  return (
+    <Sheet.Footer>
+      <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button type="button" variant="solid" intent="brand" disabled={busy || !canSave} onClick={onSave}>
+        {busy ? "Saving…" : saveLabel}
+      </Button>
+    </Sheet.Footer>
   );
 }
 

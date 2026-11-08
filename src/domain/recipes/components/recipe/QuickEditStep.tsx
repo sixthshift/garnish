@@ -1,10 +1,10 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Input } from "@sixthshift/design-system/input";
 import { Label } from "@sixthshift/design-system/label";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { useState } from "react";
+import { SaveFooter } from "../../../../components/ui/EditSheet";
 import { Markdown } from "../../../../components/ui/Markdown";
 
 /** A step's three prose fields: what this sheet edits and what it saves. */
@@ -88,14 +88,7 @@ export function QuickEditStepBody({ step, busy = false, error = null, preview = 
           )}
         </div>
       </Sheet.Body>
-      <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={busy} onClick={() => onSave({ title, text: value, summary })}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </Sheet.Footer>
+      <SaveFooter busy={busy} onCancel={onCancel} onSave={() => onSave({ title, text: value, summary })} />
     </>
   );
 }

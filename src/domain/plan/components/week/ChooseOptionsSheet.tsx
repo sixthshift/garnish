@@ -1,7 +1,6 @@
 // What a plan entry makes its recipe with (decisions.md row 198): for each
 // row with options, which food this time. Opened from the entry's menu.
 
-import { Button } from "@sixthshift/design-system/button";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { RadioButtonGroup } from "@sixthshift/design-system/radio-button-group";
@@ -9,6 +8,7 @@ import { Sheet } from "@sixthshift/design-system/sheet";
 import { useEffect, useState } from "react";
 import { updatePlanEntry } from "../../../../api/rpc/plan";
 import { getRecipe } from "../../../../api/rpc/recipes";
+import { SaveFooter } from "../../../../components/ui/EditSheet";
 import { useMutate } from "../../../../lib/mutate";
 import { formatIngredient } from "../../../recipes/ingredient";
 import { choiceRows, type Recipe, rowChoices } from "../../../recipes/recipe";
@@ -91,14 +91,7 @@ export function ChooseOptionsSheet({ entry, open, onOpenChange }: { entry: PlanE
           {error !== null && <Message intent="danger">{error}</Message>}
         </div>
       </Sheet.Body>
-      <Sheet.Footer>
-        <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={() => onOpenChange(false)}>
-          Cancel
-        </Button>
-        <Button type="button" variant="solid" intent="brand" disabled={busy || rows.length === 0} onClick={() => void save()}>
-          {busy ? "Saving…" : "Save"}
-        </Button>
-      </Sheet.Footer>
+      <SaveFooter busy={busy} canSave={rows.length > 0} onCancel={() => onOpenChange(false)} onSave={() => void save()} />
     </Sheet>
   );
 }
