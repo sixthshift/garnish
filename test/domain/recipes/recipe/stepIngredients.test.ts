@@ -106,11 +106,21 @@ describe("suggestLinks", () => {
     expect(result!.ingredientIds).toEqual([]);
   });
 
-  test("a food that exists only in another part is not linked", () => {
-    // Butter is a row of some other part; this part's own ingredient list
-    // (`part`, above) has no such row, so naming it here finds nothing.
+  test("a food named nowhere in the recipe is not linked", () => {
     const [result] = suggestLinks({ ingredients: part, steps: [step("Melt the butter.")] });
     expect(result!.ingredientIds).toEqual([]);
+  });
+
+  test("a food in another part is linked, after the step's own (decisions.md row 228)", () => {
+    const butter = ingredient(food("butter"));
+    const [result] = suggestLinks({ ingredients: part, steps: [step("Melt the butter, then add the flour.")] }, [butter]);
+    expect(result!.ingredientIds).toEqual([flour.id, butter.id]);
+  });
+
+  test("a food in both the step's part and another goes to the step's own row", () => {
+    const otherFlour = ingredient(food("flour"));
+    const [result] = suggestLinks({ ingredients: part, steps: [step("Sift the flour.")] }, [otherFlour]);
+    expect(result!.ingredientIds).toEqual([flour.id]);
   });
 });
 

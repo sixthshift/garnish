@@ -76,6 +76,8 @@ export function RecipeInset({ slug, choices, servings, focusOnOpen = false }: Re
   const chosen = withChoices(loaded.recipe, choices ?? {});
   const recipe = scaledForServings(chosen, servings);
   const scaled = recipe !== chosen;
+  // Every row of the recipe: a step may link another part's (decisions.md row 228).
+  const rows = recipe.parts.flatMap((part) => part.ingredients);
   const image = recipeImageUrl(recipe.image);
   const time = formatDuration(totalMinutes(recipe.prepTime, recipe.performTime));
   const serves = recipe.recipeServings > 0 ? `Serves ${recipe.recipeServings}` : "";
@@ -125,7 +127,7 @@ export function RecipeInset({ slug, choices, servings, focusOnOpen = false }: Re
               <section className="flex flex-col gap-4" aria-label="Method" data-testid="inset-method">
                 <SectionTitle as="h3">Method</SectionTitle>
                 {recipe.parts.map((part) => (
-                  <PartSteps key={part.id} part={part} recipeId={recipe.id} />
+                  <PartSteps key={part.id} part={part} recipeId={recipe.id} ingredients={rows} />
                 ))}
               </section>
             </div>

@@ -1,5 +1,5 @@
 // The cook history at the foot of the page: a closed `Disclosure` titled
-// "History", one compact row per logged cook (M30.3, decisions.md row 64).
+// "History", one compact row per logged cook (M30.3).
 // Rendered inside a throwaway router because the rows write through
 // `useMutate`.
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from "@tanstack/react-router";

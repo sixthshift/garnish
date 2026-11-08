@@ -1,6 +1,6 @@
-import { suggestLinks } from "../recipe";
+import { rowsElsewhere, suggestLinks } from "../recipe";
 import { stepsOf, withSteps } from "./steps";
-import type { DraftIngredient, DraftPart, DraftStep, RecipeDraft } from "./types";
+import type { DraftIngredient, DraftStep, RecipeDraft } from "./types";
 
 /** A step's ingredient links. `DraftStep` comes from the write shape, where the field is optional, so undefined reads as none. Pure. */
 export function stepLinks(step: DraftStep): string[] {
@@ -12,17 +12,29 @@ export function unionLinks(steps: readonly DraftStep[]): string[] {
   return [...new Set(steps.flatMap(stepLinks))];
 }
 
-/** The part's ingredient rows `step` links, in link order; a link naming no row of the part is skipped. Pure. */
-export function linkedIngredients(part: DraftPart, step: DraftStep): DraftIngredient[] {
+/**
+ * The recipe's ingredient rows `step` links, in link order, from any part
+ * (decisions.md row 228); a link naming no row of the recipe is skipped. Pure.
+ */
+export function linkedIngredients(draft: Pick<RecipeDraft, "parts">, step: DraftStep): DraftIngredient[] {
+  const rows = draft.parts.flatMap((part) => part.ingredients);
   return stepLinks(step)
-    .map((linked) => part.ingredients.find((row) => row.id === linked))
+    .map((linked) => rows.find((row) => row.id === linked))
     .filter((row): row is DraftIngredient => row !== undefined);
 }
 
-/** The part's ingredient rows `step` does not link, in list order — what the picker offers. Rows without an id yet cannot be linked and are left out. Pure. */
-export function linkableIngredients(part: DraftPart, step: DraftStep): DraftIngredient[] {
+/**
+ * The rows step `step` of part `pi` does not link — what the picker offers:
+ * its own part's first, then the rest of the recipe's in order, each with the
+ * name of the part it is in when that is not the step's own. Rows without an
+ * id yet cannot be linked and are left out. Pure.
+ */
+export function linkableIngredients(draft: Pick<RecipeDraft, "parts">, pi: number, step: DraftStep): { row: DraftIngredient; part: string | null }[] {
   const linked = new Set(stepLinks(step));
-  return part.ingredients.filter((row) => row.id !== undefined && !linked.has(row.id));
+  const open = (row: DraftIngredient) => row.id !== undefined && !linked.has(row.id);
+  const own = (draft.parts[pi]?.ingredients ?? []).filter(open).map((row) => ({ row, part: null }));
+  const rest = draft.parts.flatMap((part, i) => (i === pi ? [] : part.ingredients.filter(open).map((row) => ({ row, part: (part.name ?? "").trim() }))));
+  return [...own, ...rest];
 }
 
 /** The draft with `ingredientId` appended to step `si` of part `pi`'s links. An id already linked, or an out-of-range index, returns a copy unchanged. Pure. */
@@ -48,10 +60,9 @@ export function unlinkStepIngredient(draft: RecipeDraft, pi: number, si: number,
 }
 
 /**
- * `part` with `ingredientId` gone from every step's links. What a deleted row,
- * or a row moved to another part, leaves behind: a link never crosses a part,
- * so the part it left must forget it. A part that never linked it comes back
- * as-is. Pure.
+ * `part` with `ingredientId` gone from every step's links: what a deleted row
+ * leaves behind in each part. A part that never linked it comes back as-is.
+ * Pure.
  */
 export function unlinkIngredient<P extends { steps: DraftStep[] }>(part: P, ingredientId: string): P {
   if (!part.steps.some((step) => stepLinks(step).includes(ingredientId))) return part;
@@ -65,7 +76,8 @@ export function unlinkIngredient<P extends { steps: DraftStep[] }>(part: P, ingr
 
 /**
  * The draft with the step-ingredient matcher run over part `pi`: every step with no
- * links gets the part's ingredients named in its text, and a step that already
+ * links gets the ingredients named in its text, its own part's first and then
+ * the rest of the recipe's (decisions.md row 228), and a step that already
  * links something is left alone. `filled` counts the steps that gained links,
  * which is what the button reports. Pure.
  */
@@ -75,9 +87,11 @@ export function suggestPartLinks(draft: RecipeDraft, pi: number): { draft: Recip
   // The matcher wants a saved shape: an id per row and a text and a link array
   // per step. A draft row without an id has never been saved and cannot be
   // named by a link, so it is not a candidate.
-  const ingredients = part.ingredients.flatMap((row) => (row.id === undefined ? [] : [{ id: row.id, food: row.food ?? null }]));
+  const named = draft.parts.map((each) => ({
+    ingredients: each.ingredients.flatMap((row) => (row.id === undefined ? [] : [{ id: row.id, food: row.food ?? null }])),
+  }));
   const steps = part.steps.map((step) => ({ id: step.id ?? "", text: step.text ?? "", ingredientIds: stepLinks(step) }));
-  const next = suggestLinks({ ingredients, steps });
+  const next = suggestLinks({ ingredients: named[pi]!.ingredients, steps }, rowsElsewhere(named, pi));
   const filled = next.filter((step, i) => step.ingredientIds.length > stepLinks(part.steps[i]!).length).length;
   const merged = part.steps.map((step, i) =>
     next[i]!.ingredientIds.length > stepLinks(step).length ? { ...step, ingredientIds: next[i]!.ingredientIds } : step

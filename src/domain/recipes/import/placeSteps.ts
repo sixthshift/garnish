@@ -3,9 +3,9 @@ import { ingredientsInStep } from "../recipe";
 import type { ScrapedPart, ScrapedRecipe } from "./scraped/types";
 
 // A recipe card that grouped its ingredients but not its steps (decisions.md
-// row 204): every step sits in the main body, and a step links only its own
-// part's ingredients (row 64), so the steps go to the parts whose ingredients
-// they name. The names are the library's, so the lines are read against it
+// row 204): every step sits in the main body, so the steps go to the parts
+// whose ingredients they name (row 205) and read beside what they use; a step
+// may still link a row of any part (row 228). The names are the library's, so the lines are read against it
 // first: "Brown the chicken" names the chicken a line called "chicken thighs".
 
 /** A part's name as a step would say it: "To marinate the chicken:" is "marinate the chicken". Pure. */

@@ -21,6 +21,7 @@ import {
   type Recipe,
   type RecipeInput,
   recipeInputSchema,
+  rowsElsewhere,
   SEASONS,
   suggestLinks,
   WEEK_PARTS,
@@ -276,9 +277,29 @@ export function documentFromMcp(
     return { ...own, food, foodText: "", note: [own.foodText, own.note].filter((part) => part.trim() !== "").join(", ") };
   }
 
-  function partFrom(part: z.output<typeof partInputSchema>) {
-    const ingredients = part.ingredients.map(ingredientFrom);
-    const kept = new Set(ingredients.map((row) => row.id));
+  /**
+   * The parts sent, every line read before any step: a step may link a row of
+   * any part (decisions.md row 228), so a kept link is kept while its row is
+   * anywhere in the recipe, and the matcher looks at the step's own part
+   * first and then the rest.
+   */
+  function partsFrom(sent: readonly z.output<typeof partInputSchema>[]) {
+    const lines = sent.map((part) => part.ingredients.map(ingredientFrom));
+    const kept = new Set(lines.flat().map((row) => row.id));
+    return sent.map((part, index) =>
+      partFrom(
+        part,
+        lines[index]!,
+        kept,
+        rowsElsewhere(
+          lines.map((ingredients) => ({ ingredients })),
+          index
+        )
+      )
+    );
+  }
+
+  function partFrom(part: z.output<typeof partInputSchema>, ingredients: Ingredient[], kept: ReadonlySet<string>, elsewhere: Ingredient[]) {
     const steps = part.steps.map((entry) => {
       const fields = typeof entry === "string" ? { text: entry } : entry;
       const before = "id" in fields && fields.id ? currentSteps.get(fields.id) : undefined;
@@ -296,7 +317,7 @@ export function documentFromMcp(
       id: part.id && current?.parts.some((p) => p.id === part.id) ? part.id : undefined,
       name: part.name.trim(),
       ingredients,
-      steps: suggestLinks({ ingredients, steps }),
+      steps: suggestLinks({ ingredients, steps }, elsewhere),
     };
   }
 
@@ -320,7 +341,7 @@ export function documentFromMcp(
     facets: facetsFrom(input.facets, current?.facets ?? noFacets()),
     tags: input.tags !== undefined ? tagsFromNames(input.tags, vocabulary.tags) : (current?.tags ?? []),
     notes: input.notes !== undefined ? input.notes.map((note) => ({ id: note.id, title: note.title, text: note.text })) : (current?.notes ?? []),
-    parts: input.parts !== undefined ? input.parts.map(partFrom) : (current?.parts ?? []),
+    parts: input.parts !== undefined ? partsFrom(input.parts) : (current?.parts ?? []),
   };
   return { doc, report };
 }

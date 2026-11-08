@@ -1,7 +1,7 @@
 import { randomUuid } from "../../../lib/id";
 import type { ScrapedRecipe } from "../import";
 import type { RowCommit } from "../ingredient";
-import { suggestLinks } from "../recipe";
+import { type IngredientLike, rowsElsewhere, suggestLinks } from "../recipe";
 import type { FoodRow, Tag, Unit } from "../reference";
 import { emptyDraft } from "./draft";
 import { reviewedIngredient } from "./review";
@@ -12,26 +12,30 @@ import { tagsFromNames } from "./vocabulary";
 
 /**
  * `part` with `suggestLinks` run over its steps, so an imported
- * recipe arrives with its links filled for review. `suggestLinks` needs an
+ * recipe arrives with its links filled for review: its own rows first, then
+ * `elsewhere`, the other parts' (decisions.md row 228). `suggestLinks` needs an
  * id on every row to name it in a link; the scraper's rows already carry
  * one (`newStep`, `reviewedIngredient`), but a fresh id is given here too,
  * defensively, rather than trusting that.
  */
-export function withSuggestedLinks(part: DraftPart): DraftPart {
+export function withSuggestedLinks(part: DraftPart, elsewhere: readonly IngredientLike[] = []): DraftPart {
   const ingredients = part.ingredients.map((ingredient) => ({
     ...ingredient,
     id: ingredient.id ?? randomUuid(),
     food: ingredient.food ?? null,
   }));
-  const steps = suggestLinks({
-    ingredients,
-    steps: part.steps.map((step) => ({
-      ...step,
-      id: step.id ?? randomUuid(),
-      text: step.text ?? "",
-      ingredientIds: step.ingredientIds ?? [],
-    })),
-  });
+  const steps = suggestLinks(
+    {
+      ingredients,
+      steps: part.steps.map((step) => ({
+        ...step,
+        id: step.id ?? randomUuid(),
+        text: step.text ?? "",
+        ingredientIds: step.ingredientIds ?? [],
+      })),
+    },
+    elsewhere
+  );
   return { ...part, ingredients, steps };
 }
 
@@ -115,7 +119,12 @@ export function draftFromScraped(opts: {
       stepsPerPart[rowParts[index] ?? 0]?.push(rowSteps[index] ?? -1);
     });
   }
-  const linked = parts.map((part, index) => (rowSteps === undefined ? withSuggestedLinks(part) : withStepRows(part, stepsPerPart[index] ?? [])));
+  // Every row has its id before any step is linked, so a step may name another part's row.
+  for (const part of parts) for (const row of part.ingredients) row.id ??= randomUuid();
+  const named = parts.map((part) => ({ ingredients: part.ingredients.map((row) => ({ id: row.id!, food: row.food ?? null })) }));
+  const linked = parts.map((part, index) =>
+    rowSteps === undefined ? withSuggestedLinks(part, rowsElsewhere(named, index)) : withStepRows(part, stepsPerPart[index] ?? [])
+  );
 
   return {
     ...emptyDraft(),

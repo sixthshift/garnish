@@ -123,9 +123,12 @@ export function cooklangStepText(step: Pick<Step, "text" | "ingredientIds">, ing
   return [result, ...appended].join(" ").trim();
 }
 
-/** A named part as `== Name ==` followed by its steps; the unnamed part is just its steps. Empty when the part has no steps. */
-function cooklangPart(part: Part): string {
-  const ingredients = new Map(part.ingredients.map((ingredient) => [ingredient.id, ingredient]));
+/**
+ * A named part as `== Name ==` followed by its steps; the unnamed part is just
+ * its steps. Empty when the part has no steps. `ingredients` is the whole
+ * recipe's rows, since a step may link another part's (decisions.md row 228).
+ */
+function cooklangPart(part: Part, ingredients: ReadonlyMap<string, Ingredient>): string {
   const stepLines = part.steps.map((step) => cooklangStepText(step, ingredients)).filter((line) => line !== "");
   if (stepLines.length === 0) return "";
   const body = stepLines.join("\n\n");
@@ -148,8 +151,9 @@ function cooklangMetadata(recipe: Pick<Recipe, "recipeServings" | "sourceUrl" | 
  */
 export function toCooklang(recipe: Recipe): string {
   const metadata = cooklangMetadata(recipe).join("\n");
+  const ingredients = new Map(recipe.parts.flatMap((part) => part.ingredients.map((ingredient) => [ingredient.id, ingredient] as const)));
   const body = recipe.parts
-    .map(cooklangPart)
+    .map((part) => cooklangPart(part, ingredients))
     .filter((section) => section !== "")
     .join("\n\n");
   return `${[metadata, body].filter((section) => section !== "").join("\n\n")}\n`;

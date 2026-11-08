@@ -612,17 +612,31 @@ describe("linkedIngredients and linkableIngredients", () => {
   test("linked rows come back in link order, and a link naming no row is skipped", () => {
     const draft = pastry();
     const [flour, butter] = rowIds(draft);
-    const part = draft.parts[0]!;
     const step = { id: "s", text: "", ingredientIds: [butter!, flour!, "gone"] };
-    expect(linkedIngredients(part, step).map((row) => row.food?.name)).toEqual(["butter", "flour"]);
+    expect(linkedIngredients(draft, step).map((row) => row.food?.name)).toEqual(["butter", "flour"]);
   });
 
   test("a row already linked is not offered again", () => {
     const draft = pastry();
     const [flour] = rowIds(draft);
-    const part = draft.parts[0]!;
-    expect(linkableIngredients(part, { id: "s", text: "" }).map((row) => row.food?.name)).toEqual(["flour", "butter", "water"]);
-    expect(linkableIngredients(part, { id: "s", text: "", ingredientIds: [flour!] }).map((row) => row.food?.name)).toEqual(["butter", "water"]);
+    const names = (offered: ReturnType<typeof linkableIngredients>) => offered.map(({ row }) => row.food?.name);
+    expect(names(linkableIngredients(draft, 0, { id: "s", text: "" }))).toEqual(["flour", "butter", "water"]);
+    expect(names(linkableIngredients(draft, 0, { id: "s", text: "", ingredientIds: [flour!] }))).toEqual(["butter", "water"]);
+  });
+
+  test("another part's rows are linked and offered too, after the step's own, named by their part (decisions.md row 228)", () => {
+    let draft = addPart(pastry(), "Glaze");
+    draft = addIngredient(draft, 1);
+    draft = updateIngredient(draft, 1, 0, { quantity: 1, food: foodReference({ name: "egg" }) });
+    const egg = draft.parts[1]!.ingredients[0]!.id!;
+    const [flour] = rowIds(draft);
+    expect(linkedIngredients(draft, { id: "s", text: "", ingredientIds: [egg, flour!] }).map((row) => row.food?.name)).toEqual(["egg", "flour"]);
+    expect(linkableIngredients(draft, 0, { id: "s", text: "" }).map(({ row, part }) => [row.food?.name, part])).toEqual([
+      ["flour", null],
+      ["butter", null],
+      ["water", null],
+      ["egg", "Glaze"],
+    ]);
   });
 });
 
@@ -682,6 +696,16 @@ describe("suggestPartLinks and suggestNotice", () => {
     const fresh = suggestPartLinks(draft, 0);
     expect(links(fresh.draft)).toEqual([[flour, butter], [water], []]);
     expect(fresh.filled).toBe(2);
+  });
+
+  test("a step may be linked to another part's row it names (decisions.md row 228)", () => {
+    let draft = addPart(pastry(), "Glaze");
+    draft = addIngredient(draft, 1);
+    draft = updateIngredient(draft, 1, 0, { quantity: 1, food: foodReference({ name: "egg" }) });
+    draft = addStep(draft, 1, "Brush the pastry with the egg and the water.");
+    const egg = draft.parts[1]!.ingredients[0]!.id!;
+    const [, , water] = rowIds(draft);
+    expect(links(suggestPartLinks(draft, 1).draft, 1)).toEqual([[egg, water]]);
   });
 
   test("an out-of-range part fills nothing", () => {

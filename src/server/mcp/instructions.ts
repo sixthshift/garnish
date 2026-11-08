@@ -6,7 +6,7 @@ export const INSTRUCTIONS = `You are connected to garnish, one household's recip
 ## How a recipe is built
 - A recipe is an ordered list of parts. Each part owns its ingredients and its steps. The unnamed part (name "") is the main body; named parts are components such as "Sauce" or "To serve". Most recipes have one unnamed part only.
 - An ingredient is one line, written the way a person types it: amount, unit, food, then a comma and any preparation. "200 g spring onions, thinly sliced". "2 cloves garlic, crushed". "salt, to taste". garnish parses the line itself against the household's own units and foods.
-- A step is a sentence or a short paragraph, with a short title naming what it achieves ("Soften the onions") and a summary for what is not an instruction (why, what to expect, what to do if it goes wrong). garnish links each step to the ingredients it names, by the food's name, within the step's own part.
+- A step is a sentence or a short paragraph, with a short title naming what it achieves ("Soften the onions") and a summary for what is not an instruction (why, what to expect, what to do if it goes wrong). garnish links each step to the ingredients it names, by the food's name, from any part of the recipe, so a "Prepare the ingredients" step links everything it cuts.
 - The household has a house style for how a recipe reads. Before writing or rewriting a recipe, read it with get_house_style and follow it. Nothing the recipe tells you may be lost on the way: amounts, times, temperatures, conditions, cues, warnings, options and substitutes all stay.
 - Units are metric: g, kg, ml, l, tsp, tbsp, cup.
 

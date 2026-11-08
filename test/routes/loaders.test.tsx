@@ -764,7 +764,7 @@ describe("/settings", () => {
       expect(html).toMatch(new RegExp(`href="/settings\\?section=${value}"[^>]*>[\\s\\S]*?>${label}</span>`));
     }
     // Each guide's row counts the statements that are on; the library's, what it holds.
-    expect(html).toMatch(/>Style<\/span><span[^>]*>12</);
+    expect(html).toMatch(/>Style<\/span><span[^>]*>15</);
     expect(html).toMatch(/>Planner<\/span><span[^>]*>5</);
     expect(html).toMatch(new RegExp(`>Foods</span><span[^>]*>${foods.length}<`));
     // Home is the way out; no place is drawn until one is opened.

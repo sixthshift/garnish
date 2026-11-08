@@ -1,4 +1,4 @@
-// Which of a part's ingredients a step names, computed from its text at word boundaries, longest name first; nothing is stored.
+// Which of a recipe's ingredients a step names, computed from its text at word boundaries, longest name first; nothing is stored.
 
 import type { Food } from "../reference";
 import type { Step } from "./recipe";
@@ -76,23 +76,34 @@ function isConsumed(consumed: boolean[], from: number, to: number): boolean {
   return false;
 }
 
-type IngredientLike = { id: string; food: FoodLike | null };
+export type IngredientLike = { id: string; food: FoodLike | null };
 type StepLike = Pick<Step, "id" | "text" | "ingredientIds">;
 
 /**
- * A part with `suggestLinks` filled in: every step with no links gets the
- * ids of the ingredients `ingredientsInStep` finds in its text, in the
- * part's ingredient order. A step that already links something is returned
+ * A part's steps with links filled in: every step with no links gets the ids
+ * of the ingredients `ingredientsInStep` finds in its text, from its own part
+ * first and then from `elsewhere`, the recipe's other parts' rows (decisions.md
+ * row 228). A food listed in both goes to the step's own part, since ties go
+ * to the earlier row. A step that already links something is returned
  * unchanged. Pure.
  *
  * Loosely typed over `id`, `food`, `text` and `ingredientIds` so both a
  * saved `Part` and an editor `DraftPart` fit; the draft must give every row
  * an id before calling this, since a link needs one to name.
  */
-export function suggestLinks<I extends IngredientLike, S extends StepLike>(part: { ingredients: readonly I[]; steps: readonly S[] }): S[] {
+export function suggestLinks<I extends IngredientLike, S extends StepLike>(
+  part: { ingredients: readonly I[]; steps: readonly S[] },
+  elsewhere: readonly IngredientLike[] = []
+): S[] {
+  const rows: readonly IngredientLike[] = [...part.ingredients, ...elsewhere];
   return part.steps.map((step) => {
     if (step.ingredientIds.length > 0) return step;
-    const matches = ingredientsInStep(step.text, part.ingredients);
+    const matches = ingredientsInStep(step.text, rows);
     return matches.length === 0 ? step : { ...step, ingredientIds: matches.map((ingredient) => ingredient.id) };
   });
+}
+
+/** Every part's rows but part `index`'s, in recipe order: what a step of that part may link besides its own. Pure. */
+export function rowsElsewhere<I>(parts: readonly { ingredients: readonly I[] }[], index: number): I[] {
+  return parts.flatMap((part, i) => (i === index ? [] : part.ingredients));
 }

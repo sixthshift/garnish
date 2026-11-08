@@ -96,6 +96,18 @@ test("steps get links to the ingredients they mention", () => {
   expect(part.steps![1]!.ingredientIds).toEqual([]);
 });
 
+test("a step links an ingredient another part lists (decisions.md row 228)", () => {
+  const input = createRecipeSchema.parse({
+    name: "Onions",
+    parts: [
+      { name: "", ingredients: [], steps: ["Prepare the ingredients: slice the spring onions."] },
+      { name: "To serve", ingredients: ["2 spring onions"], steps: [] },
+    ],
+  });
+  const { doc } = documentFromMcp(input, vocabulary, null);
+  expect(doc.parts[0]!.steps![0]!.ingredientIds).toEqual([doc.parts[1]!.ingredients![0]!.id]);
+});
+
 test("the week is read, set, and kept by an update that does not send it (row 219)", () => {
   const created = parseDocument(
     documentFromMcp(createRecipeSchema.parse({ name: "Laksa", facets: { week: ["weeknight"] }, parts: [{}] }), vocabulary, null).doc

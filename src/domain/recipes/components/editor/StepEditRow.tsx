@@ -37,7 +37,6 @@ export type StepEditRowProps = {
   step: DraftStep;
   /** The list's drag handle and moves, which this row places: the handle first, the moves in its menu on a narrow list only (a wide one has its up and down buttons). */
   reorder?: ReorderRow;
-  part: DraftPart;
   /** Field name prefix for the part's steps (`stepsPath(pi)`). */
   path: string;
   /** True for the part's last step, which has nothing to merge with. */
@@ -63,7 +62,6 @@ export function StepEditRow({
   si,
   step,
   reorder,
-  part,
   path,
   last,
   error,
@@ -79,8 +77,8 @@ export function StepEditRow({
   // The hidden file input, so "Add image" in the row menu opens the picker
   // the way the recipe image's button does.
   const fileInput = useRef<HTMLInputElement | null>(null);
-  const linked = linkedIngredients(part, step);
-  const linkable = linkableIngredients(part, step);
+  const linked = linkedIngredients(draft, step);
+  const linkable = linkableIngredients(draft, pi, step);
   // A phone's Check: the step's sheet beside the page it came from.
   const lines = useLineSource();
   const phone = useLayout() === "mobile";
@@ -170,7 +168,11 @@ export function StepEditRow({
             disabled={disabled}
             onValueChange={onPickerText}
             {...picker({
-              options: linkable.map((row) => ({ value: row.id!, label: ingredientLine(row) })),
+              // Another part's row says which part, so two "soy sauce" lines can be told apart.
+              options: linkable.map(({ row, part: from }) => ({
+                value: row.id!,
+                label: from === null || from === "" ? ingredientLine(row) : `${ingredientLine(row)} (${from})`,
+              })),
               text: pickerText,
               label: `Step ${si + 1} ingredient suggestions`,
               onSelect: (option) => {

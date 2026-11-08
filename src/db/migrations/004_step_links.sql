@@ -1,4 +1,5 @@
--- Steps link ingredients (decisions.md row 64).
+-- Steps link ingredients (decisions.md row 228, which since widened "same part"
+-- below to "same recipe"; the table is unchanged).
 --
 -- Ownership is still the tree: an ingredient row lives in exactly one part, and
 -- that is what says how much to buy and what the prep list shows. A link is not

@@ -116,7 +116,7 @@ export function DraftPreview({ draft, image }: DraftPreviewProps) {
             <section className="flex flex-col gap-4" aria-label="Method">
               <SectionTitle as="h3">Method</SectionTitle>
               {recipe.parts.map((part) => (
-                <PreviewSteps key={part.id} part={part} />
+                <PreviewSteps key={part.id} part={part} ingredients={recipe.parts.flatMap((each) => each.ingredients)} />
               ))}
             </section>
           </div>
@@ -190,14 +190,15 @@ function PreviewIngredient({ ingredient }: { ingredient: Ingredient }) {
   );
 }
 
-function PreviewSteps({ part }: { part: Part }) {
+/** One part's steps; `ingredients` is the whole recipe's rows, since a step may link another part's (decisions.md row 228). */
+function PreviewSteps({ part, ingredients }: { part: Part; ingredients: Ingredient[] }) {
   if (part.steps.length === 0) return null;
   return (
     <div className="flex flex-col gap-3">
       <PartName part={part} />
       <ol className="flex flex-col gap-4">
         {part.steps.map((step, index) => (
-          <PreviewStep key={step.id} step={step} position={index + 1} ingredients={part.ingredients} />
+          <PreviewStep key={step.id} step={step} position={index + 1} ingredients={ingredients} />
         ))}
       </ol>
     </div>

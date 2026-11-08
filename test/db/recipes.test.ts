@@ -705,16 +705,21 @@ test("a step reads back with the ingredients it links, in link order, and a row 
   expect({ ...again, updatedAt: created.updatedAt }).toEqual(created);
 });
 
-test("a link naming an ingredient outside the step's part is dropped, and so is a repeat", () => {
+test("a step may link a row of another part (decisions.md row 228); a link naming no row of the recipe is dropped, and so is a repeat", () => {
   const doc = linkedDoc();
   // ing3 lives in Sauce; ing1 lives in Pasta. Each step reaches into the other part.
-  doc.parts[0]!.steps = [{ id: ids.step1, text: "Boil the pasta.", ingredientIds: [ids.ing3, ids.ing1, ids.ing1] }];
+  const nowhere = "99999999-9999-4999-8999-999999999999";
+  doc.parts[0]!.steps = [{ id: ids.step1, text: "Boil the pasta.", ingredientIds: [ids.ing3, ids.ing1, ids.ing1, nowhere] }];
   doc.parts[1]!.steps = [{ id: ids.step2, text: "Melt the butter.", ingredientIds: [ids.ing1] }];
 
   const created = repo.create(recipeInputSchema.parse(doc));
-  expect(created.parts[0]!.steps[0]!.ingredientIds).toEqual([ids.ing1]);
-  expect(created.parts[1]!.steps[0]!.ingredientIds).toEqual([]);
-  expect(count("step_ingredient")).toBe(1);
+  expect(created.parts[0]!.steps[0]!.ingredientIds).toEqual([ids.ing3, ids.ing1]);
+  expect(created.parts[1]!.steps[0]!.ingredientIds).toEqual([ids.ing1]);
+  expect(count("step_ingredient")).toBe(3);
+
+  // Round-trip: the cross-part links read back and save again unchanged.
+  const again = repo.ref(created.id).replace(recipeInputSchema.parse(created))!;
+  expect({ ...again, updatedAt: created.updatedAt }).toEqual(created);
 });
 
 test("a step link goes with either side: deleting the recipe clears the table, and so does dropping a row", () => {
@@ -779,6 +784,12 @@ test("a restyle keeps the author's recipe, replaces the steps and links the new 
   expect(after.restyledAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   expect(recipeSchema.parse(after)).toEqual(after);
   expect(repo.get(created.slug)).toEqual(after);
+});
+
+test("a restyled step links the rows it names in other parts too (decisions.md row 228)", () => {
+  const created = repo.create(recipeInputSchema.parse(fullDoc));
+  const after = repo.ref(created.id).restyle([restyled[0]!, restyled[1]!, restyledPart("", ["Toss the spaghetti through the butter and serve."], [])])!;
+  expect(after.parts[2]!.steps[0]!.ingredientIds).toEqual([ids.ing1, ids.ing3]);
 });
 
 test("a restyle may lay the recipe out afresh: rows move between parts and keep their ids, and a part left over goes", () => {

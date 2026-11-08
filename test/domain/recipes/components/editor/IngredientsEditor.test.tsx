@@ -1045,7 +1045,7 @@ describe("Enter on the row's last field (M21.4)", () => {
   });
 });
 
-// --- A row that leaves a part leaves its step links (M28.3) -----------------
+// --- A deleted row leaves every step's links; a moved one keeps them (decisions.md row 228)
 
 /** The tart, with a step in Pastry linking both of its rows and a step in Filling linking its one. */
 function tartWithLinks(): RecipeDraft {
@@ -1060,7 +1060,7 @@ function tartWithLinks(): RecipeDraft {
 
 const stepLinksOf = (draft: RecipeDraft, pi: number) => draft.parts[pi]!.steps.map((step) => step.ingredientIds ?? []);
 
-describe("removeIngredient and moveIngredientTo clear the row's links (M28.3)", () => {
+describe("removeIngredient clears the row's links, and moveIngredientTo keeps them (decisions.md row 228)", () => {
   test("deleting a row removes it from every step of its part", () => {
     const draft = tartWithLinks();
     const [flour, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
@@ -1072,13 +1072,23 @@ describe("removeIngredient and moveIngredientTo clear the row's links (M28.3)", 
     expect(flour).not.toBe(butter);
   });
 
-  test("moving a row to another part removes it from the links of the part it left, and adds none in the part it joined", () => {
+  test("deleting a row another part's step links removes it there too", () => {
+    let draft = tartWithLinks();
+    const [flour, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
+    const lemon = draft.parts[1]!.ingredients[0]!.id!;
+    draft = linkIngredient(draft, 1, 0, flour!);
+    const next = removeIngredient(draft, 0, 0);
+    expect(stepLinksOf(next, 0)).toEqual([[butter]]);
+    expect(stepLinksOf(next, 1)).toEqual([[lemon]]);
+  });
+
+  test("moving a row to another part keeps every step's links to it", () => {
     const draft = tartWithLinks();
     const [flour, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
     const lemon = draft.parts[1]!.ingredients[0]!.id!;
     const next = moveIngredient(draft, 0, 0, 1);
     expect(next.parts[1]!.ingredients.map((row) => row.id)).toEqual([lemon, flour]);
-    expect(stepLinksOf(next, 0)).toEqual([[butter]]);
+    expect(stepLinksOf(next, 0)).toEqual([[flour, butter]]);
     expect(stepLinksOf(next, 1)).toEqual([[lemon]]);
   });
 
@@ -1087,7 +1097,7 @@ describe("removeIngredient and moveIngredientTo clear the row's links (M28.3)", 
     const [, butter] = draft.parts[0]!.ingredients.map((row) => row.id!);
     const next = moveIngredientTo(draft, 0, 1, 1, 0);
     expect(next.parts[1]!.ingredients[0]!.id).toBe(butter);
-    expect(stepLinksOf(next, 0)).toEqual([[draft.parts[0]!.ingredients[0]!.id]]);
+    expect(stepLinksOf(next, 0)).toEqual(stepLinksOf(draft, 0));
   });
 
   test("a row nothing links leaves the links alone", () => {

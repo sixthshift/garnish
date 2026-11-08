@@ -38,7 +38,7 @@ function Page({ linked = true }: { linked?: boolean }) {
   const body = (
     <>
       <PartIngredients part={part} recipeId="recipe" />
-      <PartSteps part={part} recipeId="recipe" />
+      <PartSteps part={part} recipeId="recipe" ingredients={part.ingredients} />
     </>
   );
   return linked ? <StepLinksProvider recipe={{ parts: [part] }}>{body}</StepLinksProvider> : body;
@@ -112,11 +112,16 @@ describe("lighting a step's ingredients and an ingredient's steps", () => {
   });
 });
 
-test("stepLinkMaps reads both ways within a part, and skips a link to another part's row", () => {
-  const other: Part = { ...part, id: "other", ingredients: [row("salt", "salt")], steps: [{ ...part.steps[0]!, id: "s9", ingredientIds: ["salt", "egg"] }] };
+test("stepLinkMaps reads both ways across parts (decisions.md row 228), and skips a link to a row the recipe lacks", () => {
+  const other: Part = {
+    ...part,
+    id: "other",
+    ingredients: [row("salt", "salt")],
+    steps: [{ ...part.steps[0]!, id: "s9", ingredientIds: ["salt", "egg", "gone"] }],
+  };
   const { stepsOf, ingredientsOf } = stepLinkMaps({ parts: [part, other] });
-  expect([...(stepsOf.get("egg") ?? [])]).toEqual(["s1", "s2"]);
+  expect([...(stepsOf.get("egg") ?? [])]).toEqual(["s1", "s2", "s9"]);
   expect([...(ingredientsOf.get("s2") ?? [])]).toEqual(["rice", "egg"]);
-  expect([...(ingredientsOf.get("s9") ?? [])]).toEqual(["salt"]);
+  expect([...(ingredientsOf.get("s9") ?? [])]).toEqual(["salt", "egg"]);
   expect(ingredientsOf.has("s3")).toBe(false);
 });

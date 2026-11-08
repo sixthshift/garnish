@@ -71,8 +71,8 @@ const stepFields = {
    */
   summary: text,
   /**
-   * The ingredients this step uses, in link order. Ids of
-   * rows in the step's own part; a link naming anything else is dropped on save.
+   * The ingredients this step uses, in link order. Ids of rows of any part of
+   * the recipe (decisions.md row 228); a link naming anything else is dropped on save.
    */
   ingredientIds: z.array(id).default([]),
   /**

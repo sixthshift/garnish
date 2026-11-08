@@ -183,7 +183,9 @@ export function RecipePage() {
     </>
   );
 
-  const steps = recipe.parts.map((part) => <PartSteps key={part.id} part={part} recipeId={recipe.id} />);
+  // Every row of the recipe: a step may link another part's (decisions.md row 228).
+  const rows = recipe.parts.flatMap((part) => part.ingredients);
+  const steps = recipe.parts.map((part) => <PartSteps key={part.id} part={part} recipeId={recipe.id} ingredients={rows} />);
 
   // Notes after the method: a cook opens the page for what to get out and
   // what to do, and "Make ahead" or "Why it works" is read once that is in

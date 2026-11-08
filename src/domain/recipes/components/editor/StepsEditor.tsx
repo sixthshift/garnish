@@ -160,7 +160,6 @@ export function StepsEditor({
                 si={si}
                 step={step}
                 reorder={reorder}
-                part={part}
                 path={path}
                 last={si === last}
                 error={errors[`${path}.${si}.text`]}

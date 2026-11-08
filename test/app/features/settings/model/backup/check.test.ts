@@ -99,10 +99,10 @@ describe("references", () => {
     expect(problemsOf(backup)).toEqual([expect.stringMatching(new RegExp(`^${where.replace(/[[\].]/g, "\\$&")}: .* is not in the backup$`))]);
   });
 
-  test("a step linking an ingredient of another part", () => {
+  test("a step linking an ingredient its recipe does not have", () => {
     const backup = sampleBackup();
     backup.recipes[0]!.parts[0]!.steps[0]!.ingredientIds = [missing];
-    expect(problemsOf(backup)).toEqual([`recipes[0].parts[0].steps[0].ingredientIds[0]: ingredient ${missing} is not in the step's part`]);
+    expect(problemsOf(backup)).toEqual([`recipes[0].parts[0].steps[0].ingredientIds[0]: ingredient ${missing} is not in the step's recipe`]);
   });
 
   test("null references are fine", () => {

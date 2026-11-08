@@ -44,7 +44,7 @@ export {
 export { nextServings, scaledForServings, scaleRecipe } from "./scale";
 export type { SortDir, SortKey } from "./sort";
 export { resolveSort, SORT_OPTIONS } from "./sort";
-export { ingredientsInStep, suggestLinks } from "./stepIngredients";
+export { type IngredientLike, ingredientsInStep, rowsElsewhere, suggestLinks } from "./stepIngredients";
 export type { SubRecipe } from "./subRecipe";
 export { subRecipeHint, subRecipeMap, subRecipeScale } from "./subRecipe";
 export { type RecipeSummary, recipeSummarySchema, type ShelfCounts } from "./summary";

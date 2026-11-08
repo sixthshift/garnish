@@ -149,8 +149,9 @@ export function referenceProblems(backup: Backup): string[] {
     recipe.tagIds.forEach((tagId, j) => {
       ref(tags, "tag", tagId, `recipes[${i}].tagIds[${j}]`);
     });
+    // A step may link a row of any of its recipe's parts (decisions.md row 228).
+    const own = new Set(recipe.parts.flatMap((part) => part.ingredients.map((row) => row.id)));
     recipe.parts.forEach((part, j) => {
-      const own = new Set(part.ingredients.map((row) => row.id));
       part.ingredients.forEach((row, k) => {
         const where = `recipes[${i}].parts[${j}].ingredients[${k}]`;
         ref(units, "unit", row.unitId, `${where}.unitId`);
@@ -160,7 +161,7 @@ export function referenceProblems(backup: Backup): string[] {
       part.steps.forEach((step, k) => {
         step.ingredientIds.forEach((ingredientId, m) => {
           if (!own.has(ingredientId))
-            problems.push(`recipes[${i}].parts[${j}].steps[${k}].ingredientIds[${m}]: ingredient ${ingredientId} is not in the step's part`);
+            problems.push(`recipes[${i}].parts[${j}].steps[${k}].ingredientIds[${m}]: ingredient ${ingredientId} is not in the step's recipe`);
         });
       });
     });

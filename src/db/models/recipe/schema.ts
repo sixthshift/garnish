@@ -202,12 +202,12 @@ export const step = sqliteTable(
 );
 
 /**
- * Step-to-ingredient links. Many to many within one part:
- * a step may link any ingredient of its own part, and an ingredient may be
- * linked from several of that part's steps. The pair is the primary key, so a
- * step links a row at most once; `position` is the order the document listed
- * the links in. "Same part" is enforced by `repo.ts` on write — a link across
- * parts is dropped — because no foreign key can state it.
+ * Step-to-ingredient links. Many to many within one recipe (decisions.md row
+ * 228): a step may link any ingredient of any of its recipe's parts, and an
+ * ingredient may be linked from several steps. The pair is the primary key, so
+ * a step links a row at most once; `position` is the order the document listed
+ * the links in. "Same recipe" is enforced by `repo.ts` on write — a link to
+ * another recipe's row is dropped — because no foreign key can state it.
  */
 export const stepIngredient = sqliteTable(
   "step_ingredient",

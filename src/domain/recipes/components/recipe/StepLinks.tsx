@@ -24,12 +24,12 @@ type StepLinksValue = {
 
 const StepLinksContext = createContext<StepLinksValue | null>(null);
 
-/** Both directions of the recipe's step-ingredient links, within each part, as a step may only link its own part's rows. Pure. */
+/** Both directions of the recipe's step-ingredient links; a step may link a row of any part (decisions.md row 228). Pure. */
 export function stepLinkMaps(recipe: Pick<Recipe, "parts">): Pick<StepLinksValue, "stepsOf" | "ingredientsOf"> {
   const stepsOf = new Map<string, Set<string>>();
   const ingredientsOf = new Map<string, Set<string>>();
+  const rows = new Set(recipe.parts.flatMap((part) => part.ingredients.map((ingredient) => ingredient.id)));
   for (const part of recipe.parts) {
-    const rows = new Set(part.ingredients.map((ingredient) => ingredient.id));
     for (const step of part.steps) {
       const linked = new Set(step.ingredientIds.filter((id) => rows.has(id)));
       if (linked.size === 0) continue;

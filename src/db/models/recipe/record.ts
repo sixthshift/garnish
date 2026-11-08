@@ -83,8 +83,8 @@ export function recipeRecord({ dz, foods, rowById, getById, references, slugFor,
    * quantities, alternatives and shopping history stay theirs.
    *
    * The links are made again: a step row is deleted, so its `step_ingredient`
-   * rows cascade away, and `suggestLinks` runs over each part's rows and its
-   * new steps — the same matcher the editor and the importer use, which is the
+   * rows cascade away, and `suggestLinks` runs over each part's new steps with
+   * the whole recipe's rows — the same matcher the editor and the importer use, which is the
    * best available answer for a sentence nobody has linked by hand. A step
    * photo belongs to the step row it was attached to, and a rewrite may merge
    * two steps or split one, so there is no honest way to carry a photo across:
@@ -135,23 +135,29 @@ export function recipeRecord({ dz, foods, rowById, getById, references, slugFor,
     for (const partId of free) tx.delete(part).where(eq(part.id, partId)).run(); // its steps cascade; its rows have all moved
 
     const rows = new Map(rowsInOrder().map((row) => [row.id, row]));
+    const laidOut = layout.map((entry) =>
+      entry.rows.map((rowId) => {
+        const foodId = rows.get(rowId)?.foodId ?? null;
+        return { id: rowId, food: foodId === null ? null : (foods.get(foodId) ?? null) };
+      })
+    );
     layout.forEach((entry, position) => {
       const partId = partIds[position]!;
       tx.delete(step).where(eq(step.partId, partId)).run(); // links cascade from the step
-      const ingredients = entry.rows.map((rowId) => {
-        const foodId = rows.get(rowId)?.foodId ?? null;
-        return { id: rowId, food: foodId === null ? null : (foods.get(foodId) ?? null) };
-      });
       // The linker reads the label and the supporting line with the text: a row
-      // named only in a step's label is still a row that step uses.
-      const linked = suggestLinks({
-        ingredients,
-        steps: entry.steps.map((s) => ({
-          id: crypto.randomUUID(),
-          text: [s.title, s.text, s.summary].filter((text) => text.trim() !== "").join(" "),
-          ingredientIds: [] as string[],
-        })),
-      });
+      // named only in a step's label is still a row that step uses. Its own
+      // part's rows first, then the rest of the recipe's (decisions.md row 228).
+      const linked = suggestLinks(
+        {
+          ingredients: laidOut[position]!,
+          steps: entry.steps.map((s) => ({
+            id: crypto.randomUUID(),
+            text: [s.title, s.text, s.summary].filter((text) => text.trim() !== "").join(" "),
+            ingredientIds: [] as string[],
+          })),
+        },
+        laidOut.flatMap((own, i) => (i === position ? [] : own))
+      );
       linked.forEach((s, stepPosition) => {
         const written = entry.steps[stepPosition]!;
         tx.insert(step)

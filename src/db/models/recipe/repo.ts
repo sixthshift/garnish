@@ -372,12 +372,14 @@ export function recipeRepository(db: Database) {
         .run();
     });
 
-    doc.parts.forEach((p, position) => {
+    // Every part and its ingredients first, then the steps: a step may link a
+    // row of any part (decisions.md row 228), so every row must exist before
+    // the first link. A line the document gave no id gets a fresh one, which
+    // nothing can name.
+    const linkable = new Set<string>();
+    const partIds = doc.parts.map((p, position) => {
       const partId = p.id ?? crypto.randomUUID();
       tx.insert(part).values({ id: partId, recipeId, position, name: p.name }).run();
-      // Ingredients first: their ids are what the part's steps may link to.
-      // A line the document gave no id gets a fresh one, which nothing can name.
-      const linkable = new Set<string>();
       p.ingredients.forEach((line, i) => {
         const ingredientId = line.id ?? crypto.randomUUID();
         linkable.add(ingredientId);
@@ -412,9 +414,13 @@ export function recipeRepository(db: Database) {
           }))
         );
       });
-      // Then the steps, then their links: a link is dropped, not raised, when it
-      // names an ingredient outside this part or names one twice. A saved recipe
-      // is never rejected over a stale link.
+      return partId;
+    });
+    // Then the steps and their links: a link is dropped, not raised, when it
+    // names an ingredient outside this recipe or names one twice. A saved
+    // recipe is never rejected over a stale link.
+    doc.parts.forEach((p, position) => {
+      const partId = partIds[position]!;
       p.steps.forEach((s, i) => {
         const stepId = s.id ?? crypto.randomUUID();
         tx.insert(step).values({ id: stepId, partId, position: i, title: s.title, text: s.text, summary: s.summary, image: s.image }).run();

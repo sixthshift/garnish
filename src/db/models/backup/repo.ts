@@ -366,6 +366,7 @@ export function backupRepository(db: Database) {
               .values({ ...note, recipeId: r.id, position })
               .run();
           });
+          // Every part's rows before any step: a step may link a row of another part (decisions.md row 228).
           r.parts.forEach((p, partPosition) => {
             tx.insert(part).values({ id: p.id, recipeId: r.id, position: partPosition, name: p.name }).run();
             p.ingredients.forEach(({ alternatives, ...i }, position) => {
@@ -374,6 +375,8 @@ export function backupRepository(db: Database) {
                 .run();
               insertAlternatives(tx, i.id, alternatives);
             });
+          });
+          r.parts.forEach((p) => {
             p.steps.forEach(({ ingredientIds, image, ...s }, position) => {
               tx.insert(step)
                 .values({ ...s, image: fileOf("step", image), partId: p.id, position })
