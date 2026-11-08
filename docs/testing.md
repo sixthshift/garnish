@@ -14,16 +14,16 @@ Three layers, and one rule for choosing between them: test at the lowest layer t
 
 Pure logic gets plain `test`/`expect`, no setup. Most of `test/domain/` and `test/lib/` is this.
 
-A repository is tested over its own handle, the factory it exports for exactly this (decisions.md row 88): an in-memory database, migrated, per test.
+A repository is tested over its own handle, the factory it exports for exactly this (decisions.md row 88): an in-memory database, migrated, per test (`migratedDb()`, `test/helpers/db.ts`).
 
 ```ts
 let repo: AisleRepository;
 beforeEach(() => {
-  const db = openDatabase(":memory:");
-  migrate(db);
-  repo = aisleRepository(db);
+  repo = aisleRepository(migratedDb());
 });
 ```
+
+A store over web storage (ticks, timers, preferences, the outbox, the editor's draft) takes `memoryStorage()` (`test/helpers/storage.ts`), whose `map` the test can look into.
 
 A component whose test only reads what it renders stays in the `node` project and renders with `renderToString`. No DOM is the point: a component that touches `window` while rendering fails here, as it would on the server.
 
@@ -38,7 +38,9 @@ useTempDataDir();                                   // a fresh migrated database
 const recipe = await callServerFn(createRecipe, draft);
 ```
 
-`useTempDataDir({ starterFoods: true })` gives the database a real first start makes, with its 750 foods; without it a test sees only what it creates. Both live in `test/helpers/server.ts`, which explains why `callServerFn` is needed (vitest has no server-function manifest).
+`useTempDataDir({ starterFoods: true })` gives the database a real first start makes, with its 750 foods; without it a test sees only what it creates, on a copy of a database migrated once per worker. Both live in `test/helpers/server.ts`, which explains why `callServerFn` is needed (vitest has no server-function manifest).
+
+**Server routes** are called through their handlers, `handlersOf(route).POST(...)` (`test/helpers/routes.tsx`), or the Request→Response handler in `src/server/api/` directly.
 
 **Pages** render through the real route tree with their loaders: `renderRoute(path)` from `test/helpers/routes.tsx`, or `testRouter(path)` to navigate before rendering. The loaders' server functions are made to run in-process with `runLocally`:
 
