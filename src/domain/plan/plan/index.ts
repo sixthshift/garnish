@@ -5,4 +5,4 @@ export { isoDate, MEALS, planDaySchema, planEntryInputSchema, planEntryPatchSche
 export { slotPool, suitsSlot } from "./slots";
 export type { VarietyRecipe } from "./variety";
 export { CUISINE_CAP, isVegetarian, MAX_VEGETARIAN_NIGHTS, swapVaried, varyNights, vegetarianNightIndexes } from "./variety";
-export { groupByDay, planWeekAdditions } from "./week";
+export { groupByDay, nightsPlanned, planWeekAdditions } from "./week";

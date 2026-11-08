@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
-import { listProgress, longestSinceMade, nightsPlanned, sinceMadeLabel } from "../../../../src/domain/home/home";
-import { type PlanDay, planEntrySchema } from "../../../../src/domain/plan/plan";
+import { listProgress, longestSinceMade, sinceMadeLabel } from "../../../../src/domain/home/home";
+import { nightsPlanned, type PlanDay, planEntrySchema } from "../../../../src/domain/plan/plan";
 import { noFacets, type RecipeSummary, type WeekPart } from "../../../../src/domain/recipes/recipe";
 import type { ShoppingItem } from "../../../../src/domain/shopping/shopping";
 

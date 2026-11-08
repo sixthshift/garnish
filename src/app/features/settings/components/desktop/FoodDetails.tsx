@@ -8,9 +8,9 @@ import { Select } from "@sixthshift/design-system/select";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { Link } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
-import { usingFood } from "../../../../../api/rpc/foods";
 import type { RecipeSummary } from "../../../../../domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, Unit } from "../../../../../domain/recipes/reference";
+import { useFoodUsage } from "../food/useFoodUsage";
 import { conversionsText, packsText, parseAliasList } from "./foodGrid";
 
 /** The Select's value for "no aisle": an option's value cannot be null. */
@@ -49,22 +49,10 @@ export type FoodDetailsProps = {
  */
 export function FoodDetails({ food, aisles, units, packs, recipes, usage, onPatch, onClose, onEdit, onMerge, onDelete }: FoodDetailsProps) {
   const [adding, setAdding] = useState<string | null>(null);
-  const [using, setUsing] = useState<RecipeSummary[] | null>(null);
-
-  // The recipes that use it, asked for when the pane opens on a food: the same
-  // query the delete confirm uses, so the pane and the warning agree.
-  useEffect(() => {
-    let live = true;
-    setUsing(null);
-    setAdding(null);
-    usingFood({ data: { id: food.id } }).then(
-      (list) => live && setUsing(list),
-      () => live && setUsing([])
-    );
-    return () => {
-      live = false;
-    };
-  }, [food.id]);
+  const using = useFoodUsage(food.id);
+  // A half-typed alias belongs to the food it was typed on.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the pane moves to another food.
+  useEffect(() => setAdding(null), [food.id]);
 
   const addAlias = (text: string) => {
     const next = parseAliasList([...food.aliases, text].join(","));

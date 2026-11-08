@@ -65,3 +65,8 @@ export function planWeekAdditions(days: readonly PlanDay[], recipesByEntry: Read
   }
   return additions;
 }
+
+/** How many of a week's days have something on them: "4 of 7 nights planned". Pure. */
+export function nightsPlanned(days: readonly PlanDay[]): number {
+  return days.filter((day) => day.entries.length > 0).length;
+}

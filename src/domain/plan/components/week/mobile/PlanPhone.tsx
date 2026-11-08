@@ -7,6 +7,7 @@ import { Page } from "../../../../../components/Page";
 import { prefersReducedMotion } from "../../../../../lib/layout";
 import { addDays, dayName, nextMonday, type PlanDay, todayIso, weekLabel } from "../../../plan";
 import { AddWeekToShoppingButton } from "../AddWeekToShoppingButton";
+import { PlanWeekButton } from "../PlanWeekButton";
 import type { PlanWeekViewProps } from "../PlanWeekView";
 import { useRecipeMinutes, useShelfRecipes } from "../shelf";
 import { WeekArrow } from "../WeekArrow";
@@ -138,14 +139,7 @@ export function PlanPhone({
       </ol>
 
       <div className="flex flex-wrap gap-2" data-testid="plan-week-actions">
-        {/* The week's empty nights, filled from the weeknight and weekend recipes (decisions.md rows 192, 219). Gone once the week is over. */}
-        {addDays(monday, 6) >= today && (
-          <Button asChild variant="outline" intent="neutral" size="sm">
-            <Link to="/plan/fill" search={{ week: monday }}>
-              Plan the week
-            </Link>
-          </Button>
-        )}
+        <PlanWeekButton monday={monday} today={today} />
         <AddWeekToShoppingButton monday={monday} />
       </div>
 

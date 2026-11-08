@@ -1,11 +1,5 @@
-import type { PlanDay } from "../../plan/plan";
 import { daysSinceMade, fitsWeek, type RecipeSummary, sinceMade } from "../../recipes/recipe";
 import type { ShoppingItem } from "../../shopping/shopping";
-
-/** How many of a week's seven days have something on them: "4 of 7 nights planned". */
-export function nightsPlanned(days: readonly PlanDay[]): number {
-  return days.filter((day) => day.entries.length > 0).length;
-}
 
 /** What the list holds and how much of it is ticked, for a progress ring. */
 export function listProgress(items: readonly ShoppingItem[]): { ticked: number; total: number } {

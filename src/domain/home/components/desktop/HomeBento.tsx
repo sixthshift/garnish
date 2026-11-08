@@ -1,8 +1,8 @@
 import { Heading } from "@sixthshift/design-system/heading";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Page } from "../../../../components/Page";
-import { isWeekend, nextMonday } from "../../../plan/plan";
-import { entryCount, type HomeData, longestSinceMade, nightsPlanned, todayTitle, tonightEntry, toTry } from "../../home";
+import { isWeekend, nextMonday, nightsPlanned } from "../../../plan/plan";
+import { entryCount, type HomeData, longestSinceMade, todayTitle, tonightEntry, toTry } from "../../home";
 import { HaventMadeTile, RecentlyAddedTile, ToTryTile } from "./RecipeTiles";
 import { ShoppingTile } from "./ShoppingTile";
 import { TonightTile } from "./TonightTile";

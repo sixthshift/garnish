@@ -1,11 +1,10 @@
-import { Button } from "@sixthshift/design-system/button";
 import { Caption } from "@sixthshift/design-system/caption";
 import { Heading } from "@sixthshift/design-system/heading";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
-import { Link } from "@tanstack/react-router";
 import { useId } from "react";
-import { addDays, type PlanDay, type PlanEntry, weekLabel, weekMonday } from "../../../plan";
+import { addDays, nightsPlanned, type PlanDay, type PlanEntry, weekLabel, weekMonday } from "../../../plan";
 import { AddWeekToShoppingButton } from "../AddWeekToShoppingButton";
+import { PlanWeekButton } from "../PlanWeekButton";
 import { BoardDay } from "./BoardDay";
 import type { BoardDayHandlers } from "./PlanBoard";
 
@@ -48,7 +47,7 @@ export function BoardWeek({
 } & BoardDayHandlers) {
   const id = useId();
   const title = boardWeekTitle(monday, today);
-  const planned = days.filter((day) => day.entries.length > 0).length;
+  const planned = nightsPlanned(days);
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3" data-testid="plan-board-week" data-monday={monday}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -68,14 +67,7 @@ export function BoardWeek({
           className="w-28 [--progress-bar-fill-bg:var(--fg-normal)] [--progress-bar-track-bg:var(--border-normal)]"
         />
         <div className="ml-auto flex flex-wrap gap-2">
-          {/* The week's empty nights, filled from the weeknight and weekend recipes (decisions.md rows 192, 219). Gone once the week is over. */}
-          {addDays(monday, 6) >= today && (
-            <Button asChild variant="outline" intent="neutral" size="sm">
-              <Link to="/plan/fill" search={{ week: monday }}>
-                Plan the week
-              </Link>
-            </Button>
-          )}
+          <PlanWeekButton monday={monday} today={today} />
           <AddWeekToShoppingButton monday={monday} label="Add to shopping" />
         </div>
       </div>

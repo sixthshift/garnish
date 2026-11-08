@@ -3,7 +3,7 @@ import { FavouriteButton } from "../../../../../components/ui/FavouriteButton";
 import { recipeImageUrl } from "../../../../../lib/images";
 import { formatDuration } from "../../../ingredient";
 import type { RecipeSummary } from "../../../recipe";
-import { ImagePlaceholder } from "../RecipeCard";
+import { CardImage } from "../RecipeCard";
 
 /** Cards whose photo is fetched at once: the first two rows fill a phone's first screen. */
 const PRIORITY_CARDS = 4;
@@ -38,17 +38,7 @@ function PhotoCard({ recipe, priority }: { recipe: RecipeSummary; priority: bool
         slug={recipe.slug}
         className="relative flex aspect-4/5 items-end overflow-hidden rounded-[1.125rem] bg-bg-subtle-pressed text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-brand"
       >
-        {src !== null ? (
-          <img
-            src={src}
-            alt=""
-            loading={priority ? "eager" : "lazy"}
-            fetchPriority={priority ? "high" : undefined}
-            className="absolute inset-0 size-full object-cover"
-          />
-        ) : (
-          <ImagePlaceholder className="absolute inset-0 bg-bg-subtle-pressed" />
-        )}
+        <CardImage src={src} priority={priority} className="absolute inset-0 size-full bg-bg-subtle-pressed" />
         {/* The fade the name is read over: clear at the top, dark at the foot. */}
         <span aria-hidden="true" className="absolute inset-0 bg-linear-to-b from-transparent from-45% to-black/80" />
         {/* The name first, so a screen reader hears the dish before its time. */}

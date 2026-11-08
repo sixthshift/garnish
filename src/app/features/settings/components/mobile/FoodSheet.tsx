@@ -6,11 +6,11 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { TagChip } from "@sixthshift/design-system/tag-chip";
 import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useState } from "react";
-import { usingFood } from "../../../../../api/rpc/foods";
+import { type ReactNode, useState } from "react";
 import type { RecipeSummary } from "../../../../../domain/recipes/recipe";
 import type { Aisle, FoodRow } from "../../../../../domain/recipes/reference";
 import { recipeImageUrl } from "../../../../../lib/images";
+import { useFoodUsage } from "../food/useFoodUsage";
 
 /** What a tap in the sheet saves at once. */
 export type FoodSheetPatch = Partial<Pick<FoodRow, "aliases" | "aisleId">>;
@@ -44,20 +44,7 @@ export function withAlias(aliases: readonly string[], name: string): string[] {
  */
 export function FoodSheet({ food, aisles, usage, onPatch, onClose, onEditAll, onMerge, onDelete }: FoodSheetProps) {
   const [adding, setAdding] = useState<string | null>(null);
-  const [using, setUsing] = useState<RecipeSummary[] | null>(null);
-
-  // The same query the delete confirm asks, so the sheet and the warning agree.
-  useEffect(() => {
-    let live = true;
-    setUsing(null);
-    usingFood({ data: { id: food.id } }).then(
-      (list) => live && setUsing(list),
-      () => live && setUsing([])
-    );
-    return () => {
-      live = false;
-    };
-  }, [food.id]);
+  const using = useFoodUsage(food.id);
 
   const addAlias = (name: string) => {
     const next = withAlias(food.aliases, name);

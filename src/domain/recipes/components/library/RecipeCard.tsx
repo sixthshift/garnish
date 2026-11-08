@@ -56,8 +56,8 @@ export function ImagePlaceholder({ className }: { className: string }) {
   );
 }
 
-/** The recipe's image, or the placeholder, sized by `className` for the card's mode. */
-function CardImage({ src, priority, className }: { src: string | null; priority: boolean; className: string }) {
+/** The recipe's image, or the placeholder, sized by `className`: the grid's cards, the phone's photo grid and the desktop's wall. The first screenful loads eagerly (`priority`). */
+export function CardImage({ src, priority, className }: { src: string | null; priority: boolean; className: string }) {
   if (!src) return <ImagePlaceholder className={className} />;
   return <img src={src} alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : undefined} className={`${className} object-cover`} />;
 }

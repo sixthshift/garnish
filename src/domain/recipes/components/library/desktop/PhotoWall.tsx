@@ -4,7 +4,7 @@ import { FavouriteButton } from "../../../../../components/ui/FavouriteButton";
 import { recipeImageUrl } from "../../../../../lib/images";
 import { formatDuration } from "../../../ingredient";
 import type { RecipeSummary } from "../../../recipe";
-import { capTags, ImagePlaceholder } from "../RecipeCard";
+import { CardImage, capTags } from "../RecipeCard";
 
 /**
  * The shapes a wall's photos are cut to, so the columns stagger like a pinned
@@ -65,17 +65,7 @@ function WallCard({ recipe, selected, priority }: { recipe: RecipeSummary; selec
           )}
           style={{ aspectRatio: wallShape(recipe.id) }}
         >
-          {src !== null ? (
-            <img
-              src={src}
-              alt=""
-              loading={priority ? "eager" : "lazy"}
-              fetchPriority={priority ? "high" : undefined}
-              className="absolute inset-0 size-full object-cover"
-            />
-          ) : (
-            <ImagePlaceholder className="absolute inset-0 bg-bg-subtle-pressed" />
-          )}
+          <CardImage src={src} priority={priority} className="absolute inset-0 size-full bg-bg-subtle-pressed" />
           {time !== "" && (
             <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur-sm tabular-nums">
               {time}
