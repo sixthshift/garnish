@@ -5,6 +5,6 @@ export type { ShoppingAddition, ShoppingListMerge, ShoppingMergePlan } from "./m
 export { mergeIntoList } from "./merge";
 export type { PackSize } from "./packs";
 export { packsFor, packsLabel, packsRepeatNeed, sizesByFood } from "./packs";
-export type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemInput, ShoppingItemPatch, ShoppingItemSourceInput } from "./schema";
-export { shoppingItemInputSchema, shoppingItemPatchSchema, shoppingItemSchema, shoppingItemSourceInputSchema } from "./schema";
+export type { ParsedShoppingItemInput, ShoppingItem, ShoppingItemInput, ShoppingItemSourceInput } from "./schema";
+export { shoppingItemInputSchema, shoppingItemSchema, shoppingItemSourceInputSchema } from "./schema";
 export { recipeAdditions } from "./subRecipe";

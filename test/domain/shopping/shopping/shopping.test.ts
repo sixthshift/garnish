@@ -21,13 +21,7 @@ import {
   UNASSIGNED_GROUP,
 } from "../../../../src/domain/shopping/shopping/groups";
 import { mergeIntoList, type ShoppingAddition, type ShoppingAdditionSource } from "../../../../src/domain/shopping/shopping/merge";
-import {
-  type ShoppingItem,
-  shoppingItemInputSchema,
-  shoppingItemPatchSchema,
-  shoppingItemSchema,
-  shoppingItemSourceSchema,
-} from "../../../../src/domain/shopping/shopping/schema";
+import { type ShoppingItem, shoppingItemInputSchema, shoppingItemSchema, shoppingItemSourceSchema } from "../../../../src/domain/shopping/shopping/schema";
 import { amountToBuy, recipeAdditions, subRecipeAdditions } from "../../../../src/domain/shopping/shopping/subRecipe";
 
 const id = "11111111-1111-4111-8111-111111111111";
@@ -100,13 +94,6 @@ test("a stored line needs its position, id and timestamps", () => {
   expect(shoppingItemSchema.safeParse({ id, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(false);
   expect(shoppingItemSchema.safeParse({ id, position: -1, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(false);
   expect(shoppingItemSchema.safeParse({ position: 0, text: "Milk", createdAt: stamp, updatedAt: stamp }).success).toBe(false);
-});
-
-test("an empty patch is valid and names nothing", () => {
-  expect(shoppingItemPatchSchema.parse({})).toEqual({});
-  expect(shoppingItemPatchSchema.parse({ ticked: true })).toEqual({ ticked: true });
-  expect(shoppingItemPatchSchema.parse({ foodId: null })).toEqual({ foodId: null });
-  expect(shoppingItemPatchSchema.safeParse({ ticked: "yes" }).success).toBe(false);
 });
 
 // --- mergeIntoList -----------------------------------------------------------

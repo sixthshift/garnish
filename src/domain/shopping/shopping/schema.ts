@@ -70,15 +70,6 @@ export const shoppingItemInputSchema = z
     message: "a line needs a food or some text",
   });
 
-/** A patch over an existing line. Absent fields are left alone. */
-export const shoppingItemPatchSchema = z.object({
-  quantity: z.number().nonnegative().nullable().optional(),
-  unitId: id.nullable().optional(),
-  foodId: id.nullable().optional(),
-  text: z.string().optional(),
-  ticked: z.boolean().optional(),
-});
-
 // --- Types ------------------------------------------------------------------
 
 export type ShoppingItemSource = z.infer<typeof shoppingItemSourceSchema>;
@@ -88,4 +79,3 @@ export type ShoppingItemSourceInput = z.infer<typeof shoppingItemSourceInputSche
 export type ShoppingItemInput = z.input<typeof shoppingItemInputSchema>;
 /** A parsed ShoppingItemInput: defaults applied, ready for the repository. */
 export type ParsedShoppingItemInput = z.infer<typeof shoppingItemInputSchema>;
-export type ShoppingItemPatch = z.infer<typeof shoppingItemPatchSchema>;
