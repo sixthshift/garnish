@@ -14,7 +14,7 @@ export function SortMenu({ sort, dir, onChange, open }: SortMenuProps) {
   const current = SORT_OPTIONS.find((option) => option.key === sort && option.dir === dir) ?? SORT_OPTIONS[0]!;
   const label = `Sort: ${current.label}`;
   return (
-    <Menu label={label} open={open}>
+    <Menu label={label} defaultOpen={open}>
       {SORT_OPTIONS.map((option) => {
         const active = option.key === sort && option.dir === dir;
         return (

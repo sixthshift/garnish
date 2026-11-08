@@ -68,7 +68,7 @@ export function RecipeFormToolbar({
       cancel={cancel}
       className={className}
       actions={
-        <Menu label="Editor actions" iconOnly open={jsonMenuOpen}>
+        <Menu label="Editor actions" iconOnly defaultOpen={jsonMenuOpen}>
           <Menu.Item data-testid="json-toggle" disabled={saving} onSelect={onToggleJson}>
             {jsonOpen ? "Back to form" : "Edit as JSON"}
           </Menu.Item>

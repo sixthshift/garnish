@@ -83,7 +83,7 @@ describe("RecipeActions render", () => {
 describe("the menu's items", () => {
   test('"Make this a food" sits with the other non-destructive items', () => {
     const html = renderToString(
-      <Menu label="Recipe actions" open>
+      <Menu label="Recipe actions" defaultOpen>
         <Menu.Item onSelect={() => {}}>Duplicate</Menu.Item>
         <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
       </Menu>
@@ -100,7 +100,7 @@ describe("the menu's items", () => {
 describe("Copy as Cooklang (M34.2)", () => {
   test('"Copy as Cooklang" sits with the other Copy items', () => {
     const html = renderToString(
-      <Menu label="Recipe actions" open>
+      <Menu label="Recipe actions" defaultOpen>
         <Menu.Item onSelect={() => {}}>Copy link</Menu.Item>
         <Menu.Item onSelect={() => {}}>Copy ingredients</Menu.Item>
         <Menu.Item onSelect={() => {}}>Copy as Cooklang</Menu.Item>
@@ -118,7 +118,7 @@ describe("Copy as Cooklang (M34.2)", () => {
 describe("Plan (M33.4)", () => {
   test('"Plan" sits with the other non-destructive items', () => {
     const html = renderToString(
-      <Menu label="Recipe actions" open>
+      <Menu label="Recipe actions" defaultOpen>
         <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
         <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
       </Menu>
@@ -136,7 +136,7 @@ describe("Plan (M33.4)", () => {
 describe("Restyle steps (M37.6)", () => {
   test('"Restyle steps" sits with the other non-destructive items', () => {
     const html = renderToString(
-      <Menu label="Recipe actions" open>
+      <Menu label="Recipe actions" defaultOpen>
         <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
         <Menu.Item onSelect={() => {}}>Restyle steps</Menu.Item>
       </Menu>

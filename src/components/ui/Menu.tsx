@@ -26,9 +26,7 @@ export type MenuProps = {
   iconOnly?: boolean;
   /** An unboxed trigger: no border or fill until hovered, 44px square on a touch screen. For a menu repeated down a list. */
   ghost?: boolean;
-  /** Controlled open state. Omit to let the menu keep its own. */
-  open?: boolean;
-  /** Initial open state for an uncontrolled menu. */
+  /** Open from the start: what a test that renders markup, with nothing to click, opens it with. */
   defaultOpen?: boolean;
   className?: string;
   children: ReactNode;
@@ -40,9 +38,8 @@ const GHOST_TRIGGER_CLASS =
 const TRIGGER_CLASS =
   "inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-normal bg-bg-normal px-3 py-1.5 text-sm font-medium text-fg-normal hover:bg-bg-normal-hovered";
 
-export function Menu({ label, iconOnly = false, ghost = false, open: openProp, defaultOpen = false, className, children }: MenuProps) {
-  const [uncontrolled, setUncontrolled] = useState(defaultOpen);
-  const open = openProp ?? uncontrolled;
+export function Menu({ label, iconOnly = false, ghost = false, defaultOpen = false, className, children }: MenuProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelId = useId();
@@ -50,10 +47,6 @@ export function Menu({ label, iconOnly = false, ghost = false, open: openProp, d
   // Opened from the keyboard, the menu takes focus to its first (or, by ArrowUp, last) item once the panel is in.
   const pendingFocus = useRef<"first" | "last" | null>(null);
   const [upward, setUpward] = useState(false);
-
-  const setOpen = (next: boolean) => {
-    if (openProp === undefined) setUncontrolled(next);
-  };
 
   // Before paint: hang the panel above the trigger when below it would run under the screen's foot
   // (the phone tab bar, or a stuck Save bar) and above has more room; then take keyboard focus in.

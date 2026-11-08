@@ -51,7 +51,7 @@ describe("Menu", () => {
 
   test("open, the panel carries the items as menuitems", () => {
     const html = renderToString(
-      <Menu label="Recipe actions" open>
+      <Menu label="Recipe actions" defaultOpen>
         {items}
       </Menu>
     );
@@ -79,7 +79,7 @@ describe("Menu", () => {
 
   test("a danger item is painted as destructive", () => {
     const html = renderToString(
-      <Menu label="Recipe actions" open>
+      <Menu label="Recipe actions" defaultOpen>
         {items}
       </Menu>
     );
@@ -89,7 +89,7 @@ describe("Menu", () => {
 
   test("asChild hands the item's role and class to the child element", () => {
     const html = renderToString(
-      <Menu label="Recipe actions" open>
+      <Menu label="Recipe actions" defaultOpen>
         <Menu.Item asChild>
           <a href="/recipes/lemon-tart/edit">Edit</a>
         </Menu.Item>
@@ -101,7 +101,7 @@ describe("Menu", () => {
 
   test("a disabled item renders disabled", () => {
     const html = renderToString(
-      <Menu label="Actions" open>
+      <Menu label="Actions" defaultOpen>
         <Menu.Item disabled onSelect={() => {}}>
           Duplicate
         </Menu.Item>
@@ -112,7 +112,7 @@ describe("Menu", () => {
 
   test("a checked item is a menuitemcheckbox carrying its state, with a tick only when on", () => {
     const html = renderToString(
-      <Menu label="Row actions" open>
+      <Menu label="Row actions" defaultOpen>
         <Menu.Item checked>Fixed</Menu.Item>
         <Menu.Item checked={false}>Text only</Menu.Item>
         <Menu.Separator className="max-md:hidden" />

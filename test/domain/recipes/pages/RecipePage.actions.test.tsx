@@ -76,7 +76,7 @@ test("the open menu lists Duplicate, Make this a food, the two copy items and Pr
   // built from the same item set `RecipeActions` renders now that Edit and
   // Cook have left it (M25.5).
   const html = renderToString(
-    <Menu label="Recipe actions" open>
+    <Menu label="Recipe actions" defaultOpen>
       <Menu.Item onSelect={() => {}}>Duplicate</Menu.Item>
       <Menu.Item onSelect={() => {}}>Make this a food</Menu.Item>
       <Menu.Item onSelect={() => {}}>Plan</Menu.Item>
