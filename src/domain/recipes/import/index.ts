@@ -1,4 +1,6 @@
 export type { ImportCheck } from "./check";
+// Posting a file to the server: one recipe file, or a whole library.
+export { checkImportLibrary, IMPORT_FIELD, importLibrary, type LibraryCheck, type LibraryReport, postImportFile } from "./client";
 export { ImportError } from "./errors";
 // The importer: build one with a page fetch and a model, hand it a source.
 export { Importer, type PageResponse, type Ports } from "./importer";

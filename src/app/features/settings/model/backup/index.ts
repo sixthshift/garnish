@@ -1,4 +1,5 @@
 export { checkBackup } from "./check";
+export { BACKUP_FIELD, BACKUP_URL, checkRestore, type RestoreCheck, type RestoreDone, RestoreRefused, restore } from "./client";
 export type { Backup, BackupCounts, BackupRecipe } from "./schema";
 export {
   BACKUP_FORMAT,

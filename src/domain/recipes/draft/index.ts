@@ -73,6 +73,7 @@ export {
   withStepReplaced,
   withSteps,
 } from "./steps";
+export { clearDraft, draftNoticeText, getDraft, putDraft } from "./stored";
 export { tagSuggestions, tickedTags } from "./tagSuggestions";
 export type { DraftIngredient, DraftNote, DraftPart, RecipeDraft } from "./types";
 export type { FieldErrors } from "./validate";

@@ -3,9 +3,8 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { Sheet } from "@sixthshift/design-system/sheet";
 import { useState } from "react";
-import type { RestoreCheck } from "../../../../lib/backup";
 import { formatDateStamp } from "../../../../lib/dates";
-import type { BackupCounts } from "../model/backup";
+import type { BackupCounts, RestoreCheck } from "../model/backup";
 
 const COUNTED: { key: keyof BackupCounts | "guides"; one: string; many: string }[] = [
   { key: "recipes", one: "recipe", many: "recipes" },

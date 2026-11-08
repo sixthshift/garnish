@@ -1,4 +1,4 @@
-import type { FileRecipe } from "../domain/recipes/import";
+import type { FileRecipe } from "./sources/fileRecipe";
 
 /** The multipart field the export travels in. The upload route reads the same name. */
 export const IMPORT_FIELD = "file";

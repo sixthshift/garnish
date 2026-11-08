@@ -3,8 +3,8 @@
 // the draft in state and calls these three functions, so a save clearing the
 // key is a `clearDraft` call and is asserted here.
 import { describe, expect, test } from "vitest";
-import { clearDraft, draftKey, draftNoticeText, formatSavedAt, getDraft, putDraft } from "../../src/lib/drafts";
-import type { RemovableStorage } from "../../src/lib/storage";
+import { clearDraft, draftKey, draftNoticeText, formatSavedAt, getDraft, putDraft } from "../../../../src/domain/recipes/draft/stored";
+import type { RemovableStorage } from "../../../../src/lib/storage";
 
 /** A plain in-memory Storage-like, for round-trip tests. */
 function memoryStorage(): RemovableStorage & { size: () => number; raw: (key: string) => string | null } {

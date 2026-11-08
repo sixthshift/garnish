@@ -1,4 +1,3 @@
-import { addDays } from "../domain/plan/plan";
 // Dates as the app shows and reads them.
 
 /**
@@ -18,11 +17,6 @@ export function isValidDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const at = new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(at.getTime()) && at.toISOString().slice(0, 10) === value;
-}
-
-/** The next seven days, today first. Pure over `today`. */
-export function nextSevenDays(today: string): string[] {
-  return Array.from({ length: 7 }, (_, i) => addDays(today, i));
 }
 
 /**

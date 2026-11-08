@@ -76,3 +76,8 @@ export function isToday(date: string, today: string = todayIso()): boolean {
 export function weekMonday(week: string | undefined, today: string = todayIso()): string {
   return mondayOf(week !== undefined && isoDate.safeParse(week).success ? week : today);
 }
+
+/** The next seven days, today first. Pure over `today`. */
+export function nextSevenDays(today: string): string[] {
+  return Array.from({ length: 7 }, (_, i) => addDays(today, i));
+}

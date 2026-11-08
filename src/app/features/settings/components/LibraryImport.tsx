@@ -3,8 +3,8 @@ import { Message } from "@sixthshift/design-system/message";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { Disclosure } from "../../../../components/ui/Disclosure";
+import { checkImportLibrary, importLibrary, type LibraryCheck, type LibraryReport } from "../../../../domain/recipes/import";
 import { messageFrom } from "../../../../lib/errors";
-import { checkImportLibrary, importLibrary, type LibraryCheck, type LibraryReport } from "../../../../lib/importFile";
 import { SettingRow, SettingsPanel } from "./SettingsPanel";
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

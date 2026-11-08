@@ -3,10 +3,9 @@ import { Popover } from "@sixthshift/design-system/popover";
 import { useState } from "react";
 import { addPlanEntry } from "../../../../api/rpc/plan";
 import { NumberStepper } from "../../../../components/ui/NumberStepper";
-import { nextSevenDays } from "../../../../lib/dates";
 import { useMutate } from "../../../../lib/mutate";
 import { toastError } from "../../../../lib/toast";
-import { dayLabel, type PlanEntryInput, todayIso } from "../../../plan/plan";
+import { dayLabel, nextSevenDays, type PlanEntryInput, todayIso } from "../../../plan/plan";
 import type { Recipe } from "../../recipe";
 
 export type PlanPopoverRecipe = Pick<Recipe, "id" | "name" | "recipeServings">;

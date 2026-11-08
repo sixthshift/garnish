@@ -1,4 +1,4 @@
-import type { BackupCounts } from "../app/features/settings/model/backup";
+import type { BackupCounts } from "./schema";
 
 /** The multipart field a backup travels in. The restore route reads the same name. */
 export const BACKUP_FIELD = "file";

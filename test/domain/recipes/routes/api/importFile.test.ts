@@ -5,8 +5,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 import type { FileRecipe, MealieRecipe } from "../../../../../src/domain/recipes/import";
+import { IMPORT_FIELD } from "../../../../../src/domain/recipes/import";
 import { importFileRoute as Route } from "../../../../../src/domain/recipes/routes/api/importFile";
-import { handleImportFile, IMPORT_FIELD } from "../../../../../src/server/api/importFile";
+import { handleImportFile } from "../../../../../src/server/api/importFile";
 import { makeZip, PNG_BYTES } from "../../../../helpers/zip";
 
 const FIXTURE = join(import.meta.dirname, "../../../../fixtures/mealie/lemon-tart.json");

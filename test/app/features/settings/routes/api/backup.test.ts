@@ -1,11 +1,11 @@
 // The backup routes (M40.3, M40.5) against a temp DATA_DIR: the download, the
 // check that writes nothing, a refused file, and a restore that replaces.
 import { expect, test } from "vitest";
+import type { RestoreCheck, RestoreDone } from "../../../../../../src/app/features/settings/model/backup";
 import { BACKUP_JSON } from "../../../../../../src/app/features/settings/model/backup";
 import { backupZipRoute, restoreRoute } from "../../../../../../src/app/features/settings/routes/api/backup";
 import backups from "../../../../../../src/db/models/backup/repo";
 import recipes from "../../../../../../src/db/models/recipe/repo";
-import type { RestoreCheck, RestoreDone } from "../../../../../../src/lib/backup";
 import { readZip, writeZip } from "../../../../../../src/lib/zip";
 import { handleBackupZip, handleRestore } from "../../../../../../src/server/api/backup";
 import { IDS, sampleBackup } from "../../../../../helpers/backup";

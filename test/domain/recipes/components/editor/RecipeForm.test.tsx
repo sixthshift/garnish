@@ -9,9 +9,8 @@ import { describe, expect, test, vi } from "vitest";
 import { createRecipe, getRecipe } from "../../../../../src/api/rpc/recipes";
 import { RecipeForm, type RecipeFormProps } from "../../../../../src/domain/recipes/components/editor/RecipeForm";
 import { parseAmount, parseMinutes, saveNotice } from "../../../../../src/domain/recipes/components/editor/recipeFormText";
-import { draftFromRecipe, emptyDraft, hasDetails, isDirty, tagsFromNames, validateDraft } from "../../../../../src/domain/recipes/draft";
+import { clearDraft, draftFromRecipe, emptyDraft, hasDetails, isDirty, putDraft, tagsFromNames, validateDraft } from "../../../../../src/domain/recipes/draft";
 import { noFacets, type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
-import { clearDraft, putDraft } from "../../../../../src/lib/drafts";
 import { renderRoute } from "../../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../../helpers/server";
 
@@ -357,7 +356,7 @@ describe("the head of the form", () => {
 });
 
 // M27.4: the draft that survives. The store itself is covered in
-// test/lib/drafts.test.ts; here the form is mounted over an in-memory storage
+// test/domain/recipes/draft/stored.test.ts; here the form is mounted over an in-memory storage
 // (the `storage` prop) to prove what it shows when it opens. Static render
 // only — there is no jsdom in this project's vitest config, so Resume and
 // Discard are asserted as the buttons the notice renders, and the clearing

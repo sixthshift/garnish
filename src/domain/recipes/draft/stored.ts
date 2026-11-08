@@ -1,6 +1,5 @@
-import { type ParsedRecipeInput, recipeInputSchema } from "../domain/recipes/recipe";
-
-import type { RemovableStorage } from "./storage";
+import type { RemovableStorage } from "../../../lib/storage";
+import { type ParsedRecipeInput, recipeInputSchema } from "../recipe";
 
 /** A draft as it comes back off the storage: the parsed document, when it was written, and whether an image had been picked. */
 export type StoredDraft = {

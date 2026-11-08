@@ -40,7 +40,7 @@ export type RecipeFormProps = {
   /** Override the detected online state (tests). Writes are refused offline; nothing is queued. */
   online?: boolean;
   /**
-   * Where the unsaved draft is kept (src/lib/drafts.ts). Defaults to
+   * Where the unsaved draft is kept (src/domain/recipes/draft/stored.ts). Defaults to
    * `localStorage`; tests pass an in-memory one.
    */
   storage?: RemovableStorage;

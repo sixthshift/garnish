@@ -2,10 +2,10 @@
 // came back from it as a data URL (M34.3). The fetch is injected, so neither
 // needs a server.
 import { expect, test } from "vitest";
-import type { MealieRecipe } from "../../src/domain/recipes/import";
-import { dataUrlFile } from "../../src/lib/images";
-import { IMPORT_FIELD, IMPORT_FILE_URL, postImportFile } from "../../src/lib/importFile";
-import { PNG_BYTES } from "../helpers/zip";
+import type { MealieRecipe } from "../../../../src/domain/recipes/import";
+import { IMPORT_FIELD, IMPORT_FILE_URL, postImportFile } from "../../../../src/domain/recipes/import/client";
+import { dataUrlFile } from "../../../../src/lib/images";
+import { PNG_BYTES } from "../../../helpers/zip";
 
 const file = (): File => new File(["{}"], "backup.zip", { type: "application/zip" });
 

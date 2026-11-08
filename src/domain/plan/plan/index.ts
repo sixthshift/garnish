@@ -1,4 +1,4 @@
-export { addDays, isWeekend, nextMonday, todayIso, weekDates, weekMonday } from "./dates";
+export { addDays, isWeekend, nextMonday, nextSevenDays, todayIso, weekDates, weekMonday } from "./dates";
 export { dayLabel, dayName, dayParts, entryLabel, mealLabel, rangeLabel, servingsLabel, weekLabel } from "./labels";
 export type { Meal, ParsedPlanEntryInput, PlanDay, PlanEntry, PlanEntryInput, PlanEntryPatch, PlanRecipe } from "./schema";
 export { isoDate, MEALS, planDaySchema, planEntryInputSchema, planEntryPatchSchema, planEntrySchema } from "./schema";

@@ -1,9 +1,7 @@
 import type { FileRecipe } from "../../domain/recipes/import";
-import { IMPORT_FIELD } from "../../lib/importFile";
+import { IMPORT_FIELD } from "../../domain/recipes/import";
 import { importer } from "../import/importer";
 import { checkLibrary, importLibrary } from "../import/library";
-
-export { IMPORT_FIELD } from "../../lib/importFile";
 
 /** Largest export accepted. A household's whole Mealie or Tandoor backup is far under this. */
 export const MAX_IMPORT_BYTES = 100 * 1024 * 1024;
