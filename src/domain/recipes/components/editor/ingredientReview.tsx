@@ -71,14 +71,13 @@ export type ParseAction = {
 };
 
 /**
- * The "Parse" action itself: a plain button in the phone sheet, or nothing
- * on the editor's one-line row (`"review"`), whose ⋯ menu holds the trigger —
- * either way it becomes the same review chips bulk add shows once pressed,
+ * The "Parse" action itself: a plain button, which becomes the same review
+ * chips bulk add shows once pressed,
  * with Cancel (nothing changes) and Apply (commits the decision) alongside.
  * No state of its own; `parse` carries it all, so this stays a plain function
  * like `IngredientFields` itself.
  */
-export function parseAction(parse: ParseAction, label: string, units: readonly Unit[], disabled: boolean | undefined, variant: "button" | "review"): ReactNode {
+export function parseAction(parse: ParseAction, label: string, units: readonly Unit[], disabled: boolean | undefined): ReactNode {
   const busy = parse.busy || disabled === true;
 
   if (parse.review !== null) {
@@ -108,8 +107,6 @@ export function parseAction(parse: ParseAction, label: string, units: readonly U
       </div>
     );
   }
-
-  if (variant === "review") return null;
 
   return (
     <Button type="button" variant="outline" intent="neutral" size="sm" aria-label={`${label} parse`} disabled={busy} onClick={parse.onStart}>

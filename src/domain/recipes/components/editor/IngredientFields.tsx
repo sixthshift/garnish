@@ -1,9 +1,8 @@
-import { Badge } from "@sixthshift/design-system/badge";
 import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Input } from "@sixthshift/design-system/input";
 import { Muted } from "@sixthshift/design-system/muted";
 import type { KeyboardEvent, ReactNode } from "react";
-import { type DraftIngredient, type FieldErrors, ingredientSummary } from "../../draft";
+import type { DraftIngredient, FieldErrors } from "../../draft";
 import type { FoodRow, Unit } from "../../reference";
 import { amountFields } from "./ingredientAmountFields";
 import { type ParseAction, parseAction } from "./ingredientReview";
@@ -13,29 +12,6 @@ export const FOOD_SEARCH_DEBOUNCE_MS = 200;
 
 /** What a row with nothing in it yet shows on its summary line. */
 export const EMPTY_INGREDIENT_SUMMARY = "New ingredient";
-
-/**
- * The editor's one-line row and its column header share these, so the list
- * reads as a table: amount narrow, unit 9.5rem (room for "tablespoon" beside the
- * search icon and the clear button), food and note sharing the rest 3:2.
- * From 36rem of the row's own width (`@container/fields`) the food holds about
- * fifteen letters on one line. Below it the row takes two lines read in tab
- * order — amount and unit over food and note, the food the wider of the two —
- * and the header is hidden.
- */
-export const INGREDIENT_COLUMNS =
-  "grid gap-2 grid-cols-[4.5rem_minmax(0,1fr)_minmax(0,1fr)] @min-[36rem]/fields:grid-cols-[4.5rem_9.5rem_minmax(0,3fr)_minmax(0,2fr)]";
-
-/** The unit and the food: two columns of the two-line row (the unit to the end of its line, the food from its start), one of the one-line row. */
-export const INGREDIENT_WIDE_CELL = "col-span-2 @min-[36rem]/fields:col-span-1";
-
-/** True when a row's imported line says something its fields do not, so the line is worth showing under it. */
-export function originalTextDiffers(ingredient: DraftIngredient): boolean {
-  // Letters and digits only, so "200g flour" is not shown again under "200 g flour".
-  const flat = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
-  const original = flat(ingredient.originalText ?? "");
-  return original !== "" && original !== flat(ingredientSummary(ingredient));
-}
 
 /**
  * The fields of one ingredient row. Rendered inline on a desktop and inside
@@ -65,13 +41,6 @@ export type IngredientFieldsProps = {
   /** Adds the read-only `originalText` line under the fields; the phone sheet sets it. */
   showOriginalText?: boolean;
   /**
-   * "stack" (default): the sheets' fields, a line each. "line": the editor's
-   * row on a desktop, amount, unit, food and note on one line in the
-   * `INGREDIENT_COLUMNS` grid, with a quiet line under it only for a Fixed
-   * row or an imported line that says more than the fields.
-   */
-  layout?: "stack" | "line";
-  /**
    * Enter on the row's last field: appends a row and focuses it from
    * the last row, moves to the next row from any earlier one. Absent where
    * there is no list to append to.
@@ -89,7 +58,7 @@ export type IngredientFieldsProps = {
 };
 
 export function IngredientFields(props: IngredientFieldsProps) {
-  const { ingredient, path, label, units, errors, disabled, textOnly, controls, showOriginalText, layout = "stack", parse, onEnter } = props;
+  const { ingredient, path, label, units, errors, disabled, textOnly, controls, showOriginalText, parse, onEnter } = props;
   // Enter in a single-line field submits the form by default; the list's own
   // meaning for it has to say so explicitly.
   const enterKey =
@@ -116,7 +85,7 @@ export function IngredientFields(props: IngredientFieldsProps) {
     <Input
       name={`${path}.note`}
       aria-label={`${label} note`}
-      placeholder={layout === "line" ? "Note" : "Note, e.g. sifted"}
+      placeholder="Note, e.g. sifted"
       autoComplete="off"
       className={className}
       value={ingredient.note ?? ""}
@@ -131,7 +100,6 @@ export function IngredientFields(props: IngredientFieldsProps) {
       aria-label={`${label} text`}
       placeholder="e.g. a pinch of salt"
       autoComplete="off"
-      className={layout === "line" ? "col-span-full" : undefined}
       value={ingredient.originalText ?? ""}
       disabled={disabled}
       onKeyDown={enterKey}
@@ -139,53 +107,12 @@ export function IngredientFields(props: IngredientFieldsProps) {
     />
   );
 
-  if (layout === "line") {
-    // A text-only row is one wide field, so its mode shows on the line itself;
-    // Fixed, rarer and invisible in the fields, gets a badge under it.
-    const fixed = !textOnly && ingredient.fixed === true;
-    const showOriginal = !textOnly && originalTextDiffers(ingredient);
-    return (
-      <div className="@container/fields flex flex-col gap-1">
-        <div className={INGREDIENT_COLUMNS}>
-          {textOnly ? (
-            textField
-          ) : (
-            <>
-              {amountFields(props, quantityError, "line")}
-              {noteField()}
-            </>
-          )}
-          {quantityError !== undefined && (
-            <p className="col-span-full text-sm text-fg-danger" role="alert">
-              {quantityError}
-            </p>
-          )}
-        </div>
-        {(fixed || showOriginal) && (
-          <div className="flex min-w-0 items-center gap-2 text-xs text-fg-subtle">
-            {fixed && (
-              <Badge variant="soft" intent="neutral" size="sm" className="shrink-0" data-fixed-badge="">
-                Fixed
-              </Badge>
-            )}
-            {showOriginal && (
-              <span className="truncate" title={originalText} data-original-text-below="">
-                {originalText}
-              </span>
-            )}
-          </div>
-        )}
-        {parse !== undefined && parseAction(parse, label, units, disabled, "review")}
-      </div>
-    );
-  }
-
   if (textOnly) {
     return (
       <div className="flex flex-col gap-2">
         {textField}
         {controls !== undefined && <div className="flex flex-wrap items-center gap-2">{controls}</div>}
-        {parse !== undefined && parseAction(parse, label, units, disabled, "button")}
+        {parse !== undefined && parseAction(parse, label, units, disabled)}
       </div>
     );
   }

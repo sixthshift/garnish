@@ -2,18 +2,16 @@ import { Input } from "@sixthshift/design-system/input";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { picker } from "../../../../lib/ui/picker";
 import { filterUnits, foodReference, parseQuantityRange, quantityText, unitReference } from "../../draft";
-import { INGREDIENT_WIDE_CELL, type IngredientFieldsProps } from "./IngredientFields";
+import type { IngredientFieldsProps } from "./IngredientFields";
 
 /**
  * The structured row's amount fields: quantity, unit and food, side by side.
- * Stacked (the sheets) they wrap on a line of their own; on the editor's one
- * line (`"line"`) they are bare cells of the row's grid, sized by its columns.
+ * They wrap on a line of their own.
  * A plain function of the row's props, like `parseAction`, so `IngredientFields`
  * stays a function a test can call directly and search.
  */
-export function amountFields(props: IngredientFieldsProps, quantityError: string | undefined, layout: "stack" | "line" = "stack") {
+export function amountFields(props: IngredientFieldsProps, quantityError: string | undefined) {
   const { ingredient, path, label, units, disabled, quantityDraft, unitText, foodText, foodRows } = props;
-  const line = layout === "line";
   const fields = (
     <>
       <Input
@@ -24,7 +22,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         inputMode="decimal"
         autoComplete="off"
         placeholder="Qty"
-        className={line ? undefined : "w-20"}
+        className="w-20"
         value={quantityDraft ?? quantityText(ingredient.quantity, ingredient.quantityMax)}
         disabled={disabled}
         onChange={(event) => {
@@ -38,7 +36,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         name={`${path}.unit`}
         aria-label={`${label} unit`}
         placeholder="Unit"
-        className={line ? INGREDIENT_WIDE_CELL : "w-28 grow"}
+        className="w-28 grow"
         value={unitText}
         disabled={disabled}
         onValueChange={props.onUnitText}
@@ -63,7 +61,7 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         name={`${path}.food`}
         aria-label={`${label} food`}
         placeholder="Food"
-        className={line ? INGREDIENT_WIDE_CELL : "min-w-40 grow-2"}
+        className="min-w-40 grow-2"
         value={foodText}
         disabled={disabled}
         onValueChange={props.onFoodText}
@@ -87,5 +85,5 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
       />
     </>
   );
-  return line ? fields : <div className="flex flex-wrap gap-2">{fields}</div>;
+  return <div className="flex flex-wrap gap-2">{fields}</div>;
 }
