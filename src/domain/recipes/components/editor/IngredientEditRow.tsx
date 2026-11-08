@@ -43,10 +43,11 @@ export function IngredientEditRow({ ingredient, pi, ii, units, parts, reorder, o
   const label = `Ingredient ${ii + 1}`;
   const check = useImportCheck();
   // Check's Pick opens the row it just filled, so the food can be changed at once.
-  const [sheetOpen, setSheetOpen] = useState(() => check !== null && ingredient.id !== undefined && check.picking === ingredient.id);
+  const picking = check !== null && ingredient.id !== undefined && check.picking === ingredient.id;
+  const [sheetOpen, setSheetOpen] = useState(picking);
   useEffect(() => {
-    if (check !== null && ingredient.id !== undefined && check.picking === ingredient.id) check.donePicking();
-  }, [check, ingredient.id]);
+    if (picking) check?.donePicking();
+  }, [check, picking]);
   // A phone's Check: the line's sheet beside its page, whose Edit the line opens this row's fields.
   const lines = useLineSource();
   useEffect(() => {

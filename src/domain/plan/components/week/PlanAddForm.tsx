@@ -74,19 +74,20 @@ export function PlanAddForm({
   onMealChange?: (meal: Meal | null) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<RecipeSummary[]>([]);
+  /** What the last search found; null when there is no search (an empty box, a failure). */
+  const [results, setResults] = useState<RecipeSummary[] | null>(null);
   /** The highlighted result, or -1 for none: Enter then adds the typed line. */
   const [selected, setSelected] = useState(-1);
   const [meal, setMealState] = useState<Meal | null>(null);
-  /** What the status line says once a search lands: how many recipes it found. */
-  const [status, setStatus] = useState("");
   const listId = useId();
   const requestId = useRef(0);
   const input = useRef<HTMLInputElement | null>(null);
   const line = query.trim();
   const day = dayName(date);
-  const shown = results.slice(0, limit);
-  const more = results.length - shown.length;
+  const shown = (results ?? []).slice(0, limit);
+  const more = (results ?? []).length - shown.length;
+  /** What the status line says once a search lands: how many recipes it found. */
+  const status = results === null ? "" : foundLine(results.length, limit);
 
   const setMeal = (next: Meal | null) => {
     setMealState(next);
@@ -96,10 +97,9 @@ export function PlanAddForm({
   const clear = () => {
     setQuery("");
     onQueryChange?.("");
-    setResults([]);
+    setResults(null);
     setSelected(-1);
     setMeal(null);
-    setStatus("");
   };
 
   // The box takes focus two frames after the sheet opens rather than through
@@ -119,8 +119,7 @@ export function PlanAddForm({
   useEffect(() => {
     const term = query.trim();
     if (searchRecipes === undefined || term === "") {
-      setResults([]);
-      setStatus("");
+      setResults(null);
       return;
     }
     const id = ++requestId.current;
@@ -129,13 +128,11 @@ export function PlanAddForm({
         .then((found) => {
           if (requestId.current !== id) return;
           setResults(found);
-          setStatus(foundLine(found.length, limit));
           setSelected((current) => (current < 0 ? -1 : clampSelection(current, Math.min(found.length, limit))));
         })
         .catch((error: unknown) => {
           if (requestId.current !== id) return;
-          setResults([]);
-          setStatus("");
+          setResults(null);
           toastError("Search failed", error);
         });
     }, PLAN_SEARCH_DEBOUNCE_MS);
