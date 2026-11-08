@@ -1,7 +1,5 @@
 import { Caption } from "@sixthshift/design-system/caption";
-import { Muted } from "@sixthshift/design-system/muted";
-import { Spinner } from "@sixthshift/design-system/spinner";
-import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
+import { Tabs } from "@sixthshift/design-system/tabs";
 import { useState } from "react";
 import { recipeImageUrl } from "../../../../../lib/images";
 import { formatDuration } from "../../../../recipes/ingredient";
@@ -9,7 +7,8 @@ import type { RecipeSummary } from "../../../../recipes/recipe";
 import { dayName, type Meal } from "../../../plan";
 import { PlanAddForm } from "../PlanAddForm";
 import type { PlanWeekViewProps } from "../PlanWeekView";
-import { emptyShelfLine, madeAgo, openingTab, SHELF_TABS, type ShelfTab, shelfTab } from "../shelf";
+import { madeAgo, openingTab, type ShelfTab } from "../shelf";
+import { shelfTabItems } from "../shelfTabItems";
 import type { BoardDrag } from "./PlanBoard";
 
 /** How many recipes the shelf's search draws: no keyboard over it, and the tabs below wait while it runs. */
@@ -65,27 +64,11 @@ export function PlanShelf({
     />
   );
 
-  const items: TabItem[] = SHELF_TABS.map(({ value, label }) => {
-    const shelf = recipes ? shelfTab(recipes, value) : [];
-    return {
-      value,
-      label,
-      content:
-        recipes === null ? (
-          <div className="flex justify-center py-6">
-            <Spinner aria-label="Loading recipes" />
-          </div>
-        ) : shelf.length === 0 ? (
-          <Muted as="p" className="py-4 text-sm">
-            {emptyShelfLine(value)}
-          </Muted>
-        ) : (
-          <ul className="flex flex-col gap-1" aria-label={`${label} recipes`}>
-            {shelf.map(card)}
-          </ul>
-        ),
-    };
-  });
+  const items = shelfTabItems(recipes, (shelf, label) => (
+    <ul className="flex flex-col gap-1" aria-label={`${label} recipes`}>
+      {shelf.map(card)}
+    </ul>
+  ));
 
   return (
     <section

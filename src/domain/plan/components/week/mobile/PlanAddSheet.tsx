@@ -1,9 +1,7 @@
 import { Button } from "@sixthshift/design-system/button";
 import { Caption } from "@sixthshift/design-system/caption";
 import { Modal, ModalBody, ModalHeader } from "@sixthshift/design-system/modal";
-import { Muted } from "@sixthshift/design-system/muted";
-import { Spinner } from "@sixthshift/design-system/spinner";
-import { type TabItem, Tabs } from "@sixthshift/design-system/tabs";
+import { Tabs } from "@sixthshift/design-system/tabs";
 import { cn } from "@sixthshift/design-system/utils";
 import { useState } from "react";
 import { recipeImageUrl } from "../../../../../lib/images";
@@ -11,7 +9,8 @@ import type { RecipeSummary } from "../../../../recipes/recipe";
 import { dayName, type Meal, type PlanEntry } from "../../../plan";
 import { PlanAddForm } from "../PlanAddForm";
 import type { PlanWeekViewProps } from "../PlanWeekView";
-import { emptyShelfLine, openingTab, SHELF_TABS, type ShelfTab, shelfTab } from "../shelf";
+import { openingTab, type ShelfTab } from "../shelf";
+import { shelfTabItems } from "../shelfTabItems";
 
 /**
  * A phone's "+ Add" opened (decisions.md row 208; a desktop's shelf sits
@@ -62,29 +61,13 @@ export function PlanAddSheet({
     onAddRecipe(date, recipe, withMeal);
   };
 
-  const items: TabItem[] = SHELF_TABS.map(({ value, label }) => {
-    const shelf = recipes ? shelfTab(recipes, value) : [];
-    return {
-      value,
-      label,
-      content:
-        recipes === null ? (
-          <div className="flex justify-center py-6">
-            <Spinner aria-label="Loading recipes" />
-          </div>
-        ) : shelf.length === 0 ? (
-          <Muted as="p" className="py-4 text-sm">
-            {emptyShelfLine(value)}
-          </Muted>
-        ) : (
-          <ul className="grid grid-cols-2 gap-3 pt-1 pb-2" aria-label={`${label} recipes`}>
-            {shelf.map((recipe) => (
-              <AddTile key={recipe.id} recipe={recipe} day={day} busy={busy} added={isAdded(recipe)} onAdd={() => add(recipe, meal)} />
-            ))}
-          </ul>
-        ),
-    };
-  });
+  const items = shelfTabItems(recipes, (shelf, label) => (
+    <ul className="grid grid-cols-2 gap-3 pt-1 pb-2" aria-label={`${label} recipes`}>
+      {shelf.map((recipe) => (
+        <AddTile key={recipe.id} recipe={recipe} day={day} busy={busy} added={isAdded(recipe)} onAdd={() => add(recipe, meal)} />
+      ))}
+    </ul>
+  ));
 
   return (
     // A fixed height on a phone rather than the content's, so the box sits
