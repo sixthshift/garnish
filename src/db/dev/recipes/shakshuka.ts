@@ -36,8 +36,8 @@ const input: DevRecipe["input"] = {
   performTime: 30,
   sourceUrl: null,
   favourite: false,
-  kind: "rotation",
   facets: {
+    week: ["weeknight"],
     course: ["main"],
     meal: ["breakfast", "lunch"],
     cuisine: ["middle-eastern", "north-african"],

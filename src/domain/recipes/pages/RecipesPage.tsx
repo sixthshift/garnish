@@ -25,9 +25,22 @@ export function RecipesPage() {
   const { recipes: found, tags, foods, shelves, facetCounts } = route.useLoaderData();
   const search = route.useSearch();
   const facets = facetsFromSearch(search);
-  const { q = "", tag, tags: tagsParam, match = "any", foods: foodsParam = [], favourite = false, shelf, sort: sortParam, dir: dirParam, panel } = search;
+  const {
+    q = "",
+    tag,
+    tags: tagsParam,
+    match = "any",
+    foods: foodsParam = [],
+    favourite = false,
+    shelf: shelfParam,
+    sort: sortParam,
+    dir: dirParam,
+    panel,
+  } = search;
   const navigate = route.useNavigate();
   const selected = selectedTags(tag, tagsParam);
+  // An old link's Rotation or Weekend has been sent on to the week facet before the page draws (recipesIndex's beforeLoad).
+  const shelf = shelfParam === "try" ? shelfParam : undefined;
   const filtered = Boolean(q || selected.length > 0 || foodsParam.length > 0 || favourite || shelf || facetFilterCount(facets) > 0);
   const desktop = useLayout() === "desktop";
   const { key: sort, dir } = resolveSort(sortParam, dirParam);

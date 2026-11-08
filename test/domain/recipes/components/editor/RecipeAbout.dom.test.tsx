@@ -32,28 +32,26 @@ function memory() {
   };
 }
 
-test("Rotation and the course set in the editor are saved with the recipe, and nothing is written before Save", async () => {
+test("the week and the course set in the editor are saved with the recipe, and nothing is written before Save", async () => {
   const user = userEvent.setup();
   await renderInRouter(<RecipeForm initial={{ ...emptyDraft(), name: "Larb" }} units={[]} tags={[]} storage={memory()} />);
   const about = within(screen.getByTestId("about-column"));
-  await user.click(about.getByRole("radio", { name: "Rotation" }));
   await user.click(about.getByRole("button", { name: "Add course, cuisine and more" }));
   const sheet = within(screen.getByTestId("facet-sheet"));
   await user.click(sheet.getByRole("button", { name: /^Main$/ }));
   await user.click(sheet.getByRole("button", { name: "Thai" }));
+  await user.click(sheet.getByRole("button", { name: "Weeknight" }));
   await user.click(screen.getByRole("button", { name: "Done" }));
   // The chips show in the editor, not as links that would leave it.
   const chips = within(about.getByTestId("facet-chips"));
   expect(chips.getByText("Thai")).toBeInTheDocument();
   expect(chips.queryByRole("link")).toBeNull();
-  expect(rpc.setKind).not.toHaveBeenCalled();
   expect(rpc.setFacets).not.toHaveBeenCalled();
 
   await user.click(screen.getByRole("button", { name: "Create recipe" }));
   await waitFor(() => expect(rpc.createRecipe).toHaveBeenCalledTimes(1));
   const saved = rpc.createRecipe.mock.calls[0]![0].data as RecipeInput;
-  expect(saved.kind).toBe("rotation");
-  expect(saved.facets).toEqual({ ...noFacets(), course: ["main"], cuisine: ["thai"] });
+  expect(saved.facets).toEqual({ ...noFacets(), course: ["main"], week: ["weeknight"], cuisine: ["thai"] });
 });
 
 test("the times are typed where the page's strip has them, the total worked out beside them", async () => {

@@ -29,7 +29,6 @@ const input: DevRecipe["input"] = {
   prepTime: 15,
   performTime: 240,
   favourite: false,
-  kind: null,
   facets: { course: ["stock"], diet: ["gluten-free", "dairy-free"], mainIngredient: ["chicken"], method: ["stovetop", "pressure-cooker"] },
   tags: [tag("Basics"), tag("Freezer")],
   notes: [

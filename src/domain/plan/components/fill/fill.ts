@@ -1,9 +1,9 @@
 import type { ProposedWeek } from "../../../../server/ai/planner";
-import type { RecipeSummary } from "../../../recipes/recipe";
+import { fitsWeek, type RecipeSummary } from "../../../recipes/recipe";
 import { addDays, type Meal, type PlanDay, slotPool, swapVaried, varyNights, weekDates } from "../../plan";
 
 // Filling a week: the weeknights from the recipes the household marked
-// Rotation, the ones not had for longest first, and the weekend chosen from
+// Weeknight (decisions.md row 219), the ones not had for longest first, and the weekend chosen from
 // those marked Weekend and the ones never made (decisions.md row 192). With a
 // model configured its proposal makes the first pass instead, and the same
 // choices follow (row 194). Every pool here is of dinners, so each is first
@@ -46,33 +46,33 @@ export function missedRecipes(days: readonly PlanDay[], recipes: ReadonlyMap<str
 }
 
 /**
- * The rotation in the order the planner offers it: never made first, then the
- * longest since made. Recipes in `exclude` (already planned, or eaten last
- * week) are left out.
+ * The weeknight recipes in the order the planner offers them: never made
+ * first, then the longest since made. Recipes in `exclude` (already planned,
+ * or eaten last week) are left out.
  */
-export function rotationPool(recipes: readonly RecipeSummary[], exclude: ReadonlySet<string>): RecipeSummary[] {
+export function weeknightPool(recipes: readonly RecipeSummary[], exclude: ReadonlySet<string>): RecipeSummary[] {
   return slotPool(recipes, "dinner")
-    .filter((recipe) => recipe.kind === "rotation" && !exclude.has(recipe.id))
+    .filter((recipe) => fitsWeek(recipe.facets, "weeknight") && !exclude.has(recipe.id))
     .sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? "") || a.name.localeCompare(b.name));
 }
 
 /**
- * What Swap draws from: the rotation, or every recipe not marked Weekend when
- * nothing is marked Rotation yet, in the same order and with the same
- * exclusions. A household that has not marked its regulars, or whose week the
- * planner chose, can still swap a night.
+ * What Swap draws from: the weeknight recipes, or every recipe not marked
+ * Weekend alone when nothing is marked Weeknight yet, in the same order and
+ * with the same exclusions. A household that has not marked its weeknights, or
+ * whose week the planner chose, can still swap a night.
  */
 export function swapPool(recipes: readonly RecipeSummary[], exclude: ReadonlySet<string>): RecipeSummary[] {
-  const rotation = rotationPool(recipes, exclude);
-  if (rotation.length > 0) return rotation;
+  const weeknights = weeknightPool(recipes, exclude);
+  if (weeknights.length > 0) return weeknights;
   return slotPool(recipes, "dinner")
-    .filter((recipe) => recipe.kind !== "weekend" && !exclude.has(recipe.id))
+    .filter((recipe) => !fitsWeek(recipe.facets, "weekend") && !exclude.has(recipe.id))
     .sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? "") || a.name.localeCompare(b.name));
 }
 
 /**
  * The weeknights' first offer: what did not happen last week first, then the
- * rotation in order, varied (decisions.md row 212): no main ingredient two
+ * weeknight recipes in order, varied (decisions.md row 212): no main ingredient two
  * nights running, no cuisine more than twice, and `vegetarianNights` of them
  * vegetarian, spread through the week. A night with nothing left to offer is
  * null, a night off.
@@ -100,13 +100,13 @@ export function swapNight(
 
 /**
  * What the weekend is chosen from: the recipes marked Weekend, the longest
- * since made first, then the ones never made that are not in the rotation,
+ * since made first, then the ones never made with no part of the week said,
  * newest first. `recipes` arrives newest first.
  */
 export function weekendShelf(all: readonly RecipeSummary[]): RecipeSummary[] {
   const recipes = slotPool(all, "dinner");
-  const weekend = recipes.filter((recipe) => recipe.kind === "weekend").sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? ""));
-  const toTry = recipes.filter((recipe) => recipe.lastMade === null && recipe.kind === null);
+  const weekend = recipes.filter((recipe) => fitsWeek(recipe.facets, "weekend")).sort((a, b) => (madeOn(a) ?? "").localeCompare(madeOn(b) ?? ""));
+  const toTry = recipes.filter((recipe) => recipe.lastMade === null && recipe.facets.week.length === 0);
   return [...weekend, ...toTry];
 }
 
@@ -142,7 +142,7 @@ export type FirstPass = { nights: (string | null)[]; weekend: (string | null)[];
  * The model's proposal as the session's starting choices: its dinners on the
  * open weeknights and weekend days, its other meals beside them, and its
  * reason for each. A weeknight it left empty, or filled with a recipe already
- * used, is filled from `fallback` (what did not happen, then the rotation), so
+ * used, is filled from `fallback` (what did not happen, then the weeknight recipes), so
  * a short answer still gives a whole week. Pure.
  */
 export function fromProposal(

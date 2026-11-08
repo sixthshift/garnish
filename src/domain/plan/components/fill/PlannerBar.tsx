@@ -11,7 +11,7 @@ export type PlannerStatus = { state: "off" } | { state: "asking" } | { state: "d
 /**
  * The model's part in the session, above the weeknights: what it is doing,
  * whether breakfast and lunch are planned too (remembered on the device), and
- * Ask again. A failure says so and leaves the rotation's week in its place.
+ * Ask again. A failure says so and leaves the weeknight recipes' week in its place.
  */
 export function PlannerBar({
   status,
@@ -32,7 +32,7 @@ export function PlannerBar({
         <p className="min-w-0 flex-1">
           {asking && "The planner is choosing from your guide…"}
           {status.state === "done" && "Chosen by the planner from your guide. Change anything below."}
-          {status.state === "failed" && "The planner couldn't answer, so these are from the rotation."}
+          {status.state === "failed" && "The planner couldn't answer, so these are from your weeknight recipes."}
         </p>
       </div>
       {status.state === "failed" && (

@@ -89,8 +89,8 @@ test("rulesFromText is one statement per line, blanks dropped", () => {
 });
 
 const library: LibraryRecipe[] = [
-  { id: "r1", name: "Beef ragu", tags: [], totalMinutes: 60, rating: 4, favourite: true, kind: null, facets: noFacets(), lastMade: null },
-  { id: "r2", name: "Laksa", tags: [], totalMinutes: 30, rating: null, favourite: false, kind: null, facets: noFacets(), lastMade: "2026-09-01" },
+  { id: "r1", name: "Beef ragu", tags: [], totalMinutes: 60, rating: 4, favourite: true, facets: noFacets(), lastMade: null },
+  { id: "r2", name: "Laksa", tags: [], totalMinutes: 30, rating: null, favourite: false, facets: noFacets(), lastMade: "2026-09-01" },
 ];
 
 describe("proposalRows and proposalTable", () => {

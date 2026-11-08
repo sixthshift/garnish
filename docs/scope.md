@@ -35,7 +35,7 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 
 - In-editor AI help: unit conversion, rewording, suggesting alternatives (stored as row 199's).
 - Recipe variants: a choice that changes the steps too (prawns 2 minutes, beef seared in batches), built on parts.
-- The planner's model choosing the options, with a reason, rather than the rotation.
+- The planner's model choosing the options, with a reason, rather than the weeknight recipes in order.
 - Choosing an alternative while cooking or shopping: a cook-mode change the finish card asks about (row 193), or a list line swapped for it.
 
 ## Open

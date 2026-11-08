@@ -20,11 +20,8 @@ test("the library: search at the foot, collections as chips, the order and a cou
   await expect(grid.getByRole("link")).toHaveCount(1);
   await expect(grid.getByRole("link", { name })).toBeVisible();
 
-  // Never made, so it is on To try; not on Rotation.
+  // Never made, so it is on To try.
   const collection = page.getByRole("radiogroup", { name: "Collection" });
-  await collection.getByRole("radio", { name: "Rotation" }).click();
-  await expect(page).toHaveURL(/shelf=rotation/);
-  await expect(grid).toHaveCount(0);
   await collection.getByRole("radio", { name: "To try" }).click();
   await expect(page).toHaveURL(/shelf=try/);
   await expect(grid.getByRole("link", { name })).toBeVisible();

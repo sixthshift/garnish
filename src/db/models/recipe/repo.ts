@@ -7,7 +7,6 @@ import {
   type ParsedRecipeInput,
   type Part,
   type Recipe,
-  type RecipeKind,
   type RecipeNote,
   type RecipeSummary,
   resolveSort,
@@ -53,8 +52,6 @@ export type RecipeFilter = {
   foods?: string[];
   /** Only favourited recipes when true; unset or false is unfiltered. */
   favourite?: boolean;
-  /** Only recipes of this kind; unset is unfiltered. */
-  kind?: RecipeKind;
   /** Facets asked for: any of the values within a layer, every layer given (decisions.md row 209). */
   facets?: Partial<Facets>;
   /** Only recipes never made (no last-made date) when true: the ones to try. */
@@ -326,7 +323,6 @@ export function recipeRepository(db: Database) {
       performTime: row.cookMinutes,
       sourceUrl: row.sourceUrl,
       favourite: row.favourite,
-      kind: row.kind,
       facets: selectFacets(dz, row.id),
       restyledAt: row.restyledAt,
       notes,
@@ -374,7 +370,6 @@ export function recipeRepository(db: Database) {
       cookMinutes: doc.performTime,
       sourceUrl: doc.sourceUrl,
       favourite: doc.favourite,
-      kind: doc.kind,
     };
   }
 
@@ -515,7 +510,6 @@ export function recipeRepository(db: Database) {
     }
 
     if (filter.favourite) clauses.push(eq(recipe.favourite, true));
-    if (filter.kind) clauses.push(eq(recipe.kind, filter.kind));
     if (filter.neverMade) clauses.push(isNull(recipe.lastMade));
     clauses.push(...facetClauses(dz, filter.facets));
 
@@ -602,20 +596,17 @@ export function recipeRepository(db: Database) {
 
     /**
      * How many recipes each of the library's shelves holds, over the whole
-     * collection: everything, the two kinds, and the never made (the "To try"
-     * shelf). One pass, for a desktop's filters column to show beside each.
+     * collection: everything and the never made (the "To try" shelf). One pass, for a desktop's filters column to show beside each.
      */
     shelfCounts(): ShelfCounts {
       const row = dz
         .select({
           all: sql<number>`count(*)`,
-          rotation: sql<number>`coalesce(sum(${recipe.kind} = 'rotation'), 0)`,
-          weekend: sql<number>`coalesce(sum(${recipe.kind} = 'weekend'), 0)`,
           try: sql<number>`coalesce(sum(${recipe.lastMade} is null), 0)`,
         })
         .from(recipe)
         .get();
-      return row ?? { all: 0, rotation: 0, weekend: 0, try: 0 };
+      return row ?? { all: 0, try: 0 };
     },
 
     /** How many recipes carry each facet value, over the whole collection, for the library's filters to show beside each. */

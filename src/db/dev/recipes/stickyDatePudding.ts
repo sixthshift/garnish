@@ -37,8 +37,8 @@ const input: DevRecipe["input"] = {
   performTime: 40,
   sourceUrl: "https://www.abc.net.au/everyday/example-recipe/12345678",
   favourite: false,
-  kind: "weekend",
   facets: {
+    week: ["weekend"],
     course: ["dessert"],
     meal: ["dinner"],
     cuisine: ["australian"],

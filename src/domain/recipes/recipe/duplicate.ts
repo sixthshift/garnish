@@ -24,7 +24,6 @@ export function duplicateInput(recipe: Recipe): RecipeInput {
     performTime: recipe.performTime,
     sourceUrl: recipe.sourceUrl,
     favourite: false,
-    kind: recipe.kind,
     facets: recipe.facets,
     tags: recipe.tags,
     notes: recipe.notes.map(({ title, text }) => ({ title, text })),

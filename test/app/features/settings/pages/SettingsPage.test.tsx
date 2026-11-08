@@ -41,7 +41,6 @@ function summary(id: string, name: string): RecipeSummary {
     totalTime: null,
     lastMade: null,
     favourite: false,
-    kind: null,
     facets: noFacets(),
     tags: [],
     ingredientPreview: [],

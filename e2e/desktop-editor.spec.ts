@@ -19,7 +19,9 @@ test("a recipe typed by hand is written in the page's three columns, and saves t
   await about.getByRole("spinbutton", { name: "Prep time (minutes)" }).fill("15");
   await about.getByRole("spinbutton", { name: "Cook time (minutes)" }).fill("30");
   await expect(about.getByTestId("times")).toContainText("Total 45 min");
-  await about.getByRole("radio", { name: "Weekend" }).click();
+  await about.getByRole("button", { name: "Add course, cuisine and more" }).click();
+  await page.getByTestId("facet-sheet").getByRole("button", { name: "Weekend" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
 
   await ingredients.getByRole("textbox", { name: "New ingredients" }).fill("200 g plain flour");
   await ingredients.getByRole("button", { name: "Add", exact: true }).click();
@@ -41,7 +43,7 @@ test("a recipe typed by hand is written in the page's three columns, and saves t
 
   await page.getByRole("button", { name: "Create recipe" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
-  await expect(page.getByRole("radio", { name: "Weekend" })).toBeChecked();
+  await expect(page.getByTestId("facet-chips").getByRole("link", { name: "Weekend" })).toBeVisible();
 });
 
 test("Check turns the method's column to the text it read, and an ingredient lights its line", async ({ page, open }) => {

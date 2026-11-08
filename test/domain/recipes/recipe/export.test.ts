@@ -22,7 +22,6 @@ const recipe: Recipe = {
   performTime: null,
   sourceUrl: null,
   favourite: false,
-  kind: null,
   facets: noFacets(),
   notes: [],
   tags: [],

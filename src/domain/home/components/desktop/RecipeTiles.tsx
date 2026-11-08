@@ -24,7 +24,7 @@ function MiniRecipe({ recipe, line }: { recipe: RecipeSummary; line?: string }) 
 }
 
 /**
- * The rotation's regulars gone longest without being cooked, and how long:
+ * The weeknight recipes gone longest without being cooked, and how long:
  * what to put back on the week. Nothing that qualifies, nothing drawn.
  */
 export function HaventMadeTile({ recipes, today }: { recipes: readonly RecipeSummary[]; today: string }) {

@@ -224,7 +224,7 @@ test("Preview in the save bar shows the recipe as it will be saved, and pressing
 test("the phone's editor is the phone page's shape: the details, then Ingredients and Method as two tabs", async () => {
   const user = userEvent.setup();
   await renderInRouter(<RecipeForm initial={typed()} units={[]} tags={[]} storage={memory()} existing={{ id: "r", slug: "fried-rice" }} />);
-  expect(screen.getByRole("radiogroup", { name: "How you cook it" })).toBeInTheDocument();
+  expect(screen.queryByRole("radiogroup", { name: "How you cook it" })).toBeNull();
   expect(screen.getByRole("button", { name: "Add course, cuisine and more" })).toBeInTheDocument();
   const tabs = screen.getByRole("tablist", { name: "Recipe" });
   expect(within(tabs).getByRole("tab", { name: /^Ingredients/ })).toHaveAttribute("aria-selected", "true");

@@ -15,7 +15,7 @@ import type { DiagnosticEvent } from "../../src/db/models/diagnostic/repo";
 import type { PlannerRule } from "../../src/domain/plan/planner";
 import type { FacetCount } from "../../src/domain/recipes/components/facets/facetSearch";
 import type { CookSession } from "../../src/domain/recipes/cooking";
-import { nextServings, type Recipe, type RecipeSummary, type ShelfCounts, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
+import { nextServings, noFacets, type Recipe, type RecipeSummary, type ShelfCounts, type SubRecipe, type TimelineEvent } from "../../src/domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, FoodSummary, Tag, TagUsage, Unit } from "../../src/domain/recipes/reference";
 import type { recipeEdit as EditRoute } from "../../src/domain/recipes/routes/edit";
 import type { recipeNew as NewRoute } from "../../src/domain/recipes/routes/new";
@@ -174,13 +174,24 @@ describe("/recipes (list)", () => {
     expect(html).not.toContain("Toast");
   });
 
-  test("the shelf search param narrows to a kind, or to the recipes never made", async () => {
-    const laksa = await callServerFn(createRecipe, { name: "Laksa", parts: [{ name: "" }], kind: "rotation", lastMade: "2026-09-01T08:00:00.000Z" });
-    await callServerFn(createRecipe, { name: "Lamb shoulder", parts: [{ name: "" }], kind: "weekend" });
-    expect(laksa.kind).toBe("rotation");
-    let html = await renderRoute("/recipes?shelf=rotation");
+  test("the week param narrows to the weeknight recipes, the shelf to the never made, and an old Rotation shelf goes on to the week (row 219)", async () => {
+    const laksa = await callServerFn(createRecipe, {
+      name: "Laksa",
+      parts: [{ name: "" }],
+      facets: { ...noFacets(), week: ["weeknight"] },
+      lastMade: "2026-09-01T08:00:00.000Z",
+    });
+    await callServerFn(createRecipe, { name: "Lamb shoulder", parts: [{ name: "" }], facets: { ...noFacets(), week: ["weekend"] } });
+    expect(laksa.facets.week).toEqual(["weeknight"]);
+    let html = await renderRoute(`/recipes?week=${encodeURIComponent(JSON.stringify(["weeknight"]))}`);
     expect(html).toContain('href="/recipes/laksa"');
     expect(html).not.toContain('href="/recipes/lamb-shoulder"');
+    // An old link to the Rotation shelf goes on to the week facet.
+    const old = testRouter("/recipes?shelf=rotation");
+    await old.load();
+    const result = old._serverResult;
+    expect(result?.type).toBe("redirect");
+    if (result?.type === "redirect") expect(result.redirect.headers.get("Location")).toBe(`/recipes?week=${encodeURIComponent(JSON.stringify(["weeknight"]))}`);
     html = await renderRoute("/recipes?shelf=try");
     expect(html).toContain('href="/recipes/lamb-shoulder"');
     expect(html).not.toContain('href="/recipes/laksa"');
@@ -851,9 +862,10 @@ describe("loader data types match the domain schemas", () => {
       match?: "any" | "all" | undefined;
       foods?: string[] | undefined;
       favourite?: boolean | undefined;
-      shelf?: "rotation" | "weekend" | "try" | undefined;
+      shelf?: "try" | "rotation" | "weekend" | undefined;
       course?: string[] | undefined;
       meal?: string[] | undefined;
+      week?: string[] | undefined;
       cuisine?: string[] | undefined;
       diet?: string[] | undefined;
       mainIngredient?: string[] | undefined;

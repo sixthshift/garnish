@@ -24,7 +24,6 @@ const summary = (slug: string, name: string, totalTime: number | null, favourite
   totalTime,
   lastMade: null,
   favourite,
-  kind: null,
   facets: noFacets(),
   tags: [],
   ingredientPreview: [],
@@ -94,8 +93,8 @@ describe("the collections", () => {
     await renderInRouter(<PhoneLibrary {...p} />);
     const chips = screen.getByRole("radiogroup", { name: "Collection" });
     expect(within(chips).getByRole("radio", { name: "Everything" })).toBeChecked();
-    await user.click(within(chips).getByRole("radio", { name: "Weekend" }));
-    expect(p.onShelfChange).toHaveBeenCalledWith("weekend");
+    await user.click(within(chips).getByRole("radio", { name: "To try" }));
+    expect(p.onShelfChange).toHaveBeenCalledWith("try");
     await user.click(screen.getByRole("button", { name: "Favourites" }));
     expect(p.filters.onFavouriteChange).toHaveBeenCalledWith(true);
   });

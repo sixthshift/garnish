@@ -137,7 +137,7 @@ export function PlanPhone({
       </ol>
 
       <div className="flex flex-wrap gap-2" data-testid="plan-week-actions">
-        {/* The week's empty nights, filled from the rotation and the weekend recipes (decisions.md row 192). Gone once the week is over. */}
+        {/* The week's empty nights, filled from the weeknight and weekend recipes (decisions.md rows 192, 219). Gone once the week is over. */}
         {addDays(monday, 6) >= today && (
           <Button asChild variant="outline" intent="neutral" size="sm">
             <Link to="/plan/fill" search={{ week: monday }}>

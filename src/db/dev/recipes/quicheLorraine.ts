@@ -31,8 +31,8 @@ const input: DevRecipe["input"] = {
   performTime: 65,
   sourceUrl: "https://www.sbs.com.au/food/recipe/example-recipe",
   favourite: false,
-  kind: "weekend",
   facets: {
+    week: ["weekend"],
     course: ["main"],
     meal: ["lunch"],
     cuisine: ["french"],

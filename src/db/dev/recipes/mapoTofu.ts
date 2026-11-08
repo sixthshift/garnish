@@ -42,7 +42,6 @@ const input: DevRecipe["input"] = {
   performTime: 20,
   sourceUrl: "https://www.abc.net.au/everyday/example-recipe/12345678",
   favourite: false,
-  kind: null,
   facets: {
     course: ["main"],
     meal: ["dinner"],

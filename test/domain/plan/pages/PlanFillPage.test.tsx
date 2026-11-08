@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { addPlanEntry } from "../../../../src/api/rpc/plan";
 import { createRecipe } from "../../../../src/api/rpc/recipes";
+import { noFacets } from "../../../../src/domain/recipes/recipe";
 import { renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 
@@ -23,28 +24,38 @@ describe("/plan/fill", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  test("next week's weeknights are offered from the rotation, longest since made first, with why", async () => {
-    await callServerFn(createRecipe, { name: "Laksa", parts: [{ name: "" }], kind: "rotation", lastMade: "2026-09-15T08:00:00.000Z" });
-    await callServerFn(createRecipe, { name: "Dal", parts: [{ name: "" }], kind: "rotation", lastMade: "2026-08-01T08:00:00.000Z" });
-    await callServerFn(createRecipe, { name: "Lamb shoulder", parts: [{ name: "" }], kind: "weekend" });
+  test("next week's weeknights are offered from the weeknight recipes, longest since made first, with why", async () => {
+    await callServerFn(createRecipe, {
+      name: "Laksa",
+      parts: [{ name: "" }],
+      facets: { ...noFacets(), week: ["weeknight"] },
+      lastMade: "2026-09-15T08:00:00.000Z",
+    });
+    await callServerFn(createRecipe, {
+      name: "Dal",
+      parts: [{ name: "" }],
+      facets: { ...noFacets(), week: ["weeknight"] },
+      lastMade: "2026-08-01T08:00:00.000Z",
+    });
+    await callServerFn(createRecipe, { name: "Lamb shoulder", parts: [{ name: "" }], facets: { ...noFacets(), week: ["weekend"] } });
     const html = await renderRoute("/plan/fill");
     expect(html).toContain(">Plan the week</h1>");
     expect(html).toContain("21 – 27 Sep 2026");
     expect(html).toContain('aria-label="Planning steps"');
-    expect(html).toContain("From your rotation, the ones you haven&#x27;t had for longest first.");
+    expect(html).toContain("From your weeknight recipes, the ones you haven&#x27;t had for longest first.");
     expect(html.indexOf("Dal")).toBeLessThan(html.indexOf("Laksa"));
     expect(html).toContain("Last made 7 weeks ago");
-    // Two rotation recipes for five weeknights: the rest start as nights off.
+    // Two weeknight recipes for five weeknights: the rest start as nights off.
     expect(html.match(/>Night off</g)?.length).toBeGreaterThanOrEqual(3);
     // The weekend recipe is the next step's, not a weeknight's.
     expect(html).not.toContain("Lamb shoulder");
   });
 
-  test("a day that already holds something is left out, and an empty rotation says how to start one", async () => {
+  test("a day that already holds something is left out, and no weeknight recipes says how to start", async () => {
     await callServerFn(addPlanEntry, { date: NEXT_MONDAY, text: "Leftovers" });
     const html = await renderRoute(`/plan/fill?week=${NEXT_MONDAY}`);
     expect(html).not.toContain('aria-label="Swap Mon"');
     expect(html).toContain('aria-label="Swap Tue"');
-    expect(html).toContain("No recipes are marked Rotation yet, so Swap offers any recipe.");
+    expect(html).toContain("No recipes are marked Weeknight yet, so Swap offers any recipe.");
   });
 });

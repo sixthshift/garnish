@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { tagSchema } from "../reference";
 import { facetsSchema } from "./facets";
-import { recipeKindSchema } from "./recipe";
 
 /**
  * The answer to "which recipes": what a list entry needs and nothing else. A
@@ -19,7 +18,6 @@ export const recipeSummarySchema = z.object({
   totalTime: z.number().int().nonnegative().nullable(),
   lastMade: z.iso.datetime().nullable(),
   favourite: z.boolean(),
-  kind: recipeKindSchema.nullable(),
   /** What it is, layer by layer (row 209). */
   facets: facetsSchema,
   tags: z.array(tagSchema),
@@ -30,4 +28,4 @@ export const recipeSummarySchema = z.object({
 export type RecipeSummary = z.infer<typeof recipeSummarySchema>;
 
 /** How many recipes each shelf of the library holds, over the whole collection: `all` every recipe, `try` the never made. */
-export type ShelfCounts = { all: number; rotation: number; weekend: number; try: number };
+export type ShelfCounts = { all: number; try: number };

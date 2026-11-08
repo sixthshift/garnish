@@ -12,7 +12,6 @@ import type { FieldErrors, RecipeDraft } from "../../draft";
 import { formatDuration, totalMinutes } from "../../ingredient";
 import type { Tag, Unit } from "../../reference";
 import { FacetField } from "../facets/FacetDetails";
-import { KindChoice } from "../KindToggle";
 import { NotesEditor } from "./NotesEditor";
 import { feedback, parseAmount, parseMinutes } from "./recipeFormText";
 import { TagField } from "./TagField";
@@ -210,13 +209,10 @@ export function YieldFields({ draft, errors, saving, units, onPatch }: RecipeAbo
   );
 }
 
-/** Rotation or Weekend, and what the recipe is, layer by layer: kept in the draft, written with Save. */
+/** What the recipe is, layer by layer: kept in the draft, written with Save. */
 export function NatureFields({ draft, saving, onPatch }: RecipeAboutProps) {
   return (
-    <>
-      <KindChoice kind={draft.kind} disabled={saving} onChange={(kind) => onPatch({ kind })} />
-      <FacetField name={draft.name.trim() || "this recipe"} facets={draft.facets} linked={false} disabled={saving} onChange={(facets) => onPatch({ facets })} />
-    </>
+    <FacetField name={draft.name.trim() || "this recipe"} facets={draft.facets} linked={false} disabled={saving} onChange={(facets) => onPatch({ facets })} />
   );
 }
 

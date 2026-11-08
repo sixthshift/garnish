@@ -14,7 +14,7 @@ export function PlanNextWeekCard({ monday }: { monday: string }) {
         <h2 id="plan-now" className="font-display text-lg font-semibold">
           Next week isn't planned yet
         </h2>
-        <p className="text-sm opacity-85">Weeknights from the rotation, then something for the weekend.</p>
+        <p className="text-sm opacity-85">Weeknight recipes for the weeknights, then something for the weekend.</p>
       </div>
       <Link
         to="/plan/fill"

@@ -48,7 +48,6 @@ const shortbread: RecipeSummary = {
   totalTime: null,
   lastMade: null,
   favourite: false,
-  kind: null,
   facets: noFacets(),
   tags: [],
   ingredientPreview: [],

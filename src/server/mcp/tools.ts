@@ -9,7 +9,7 @@ import shopping from "../../db/models/shopping/repo";
 import tags from "../../db/models/tag/repo";
 import units from "../../db/models/unit/repo";
 import { isoDate, MEALS, planEntryInputSchema, weekMonday } from "../../domain/plan/plan";
-import { type RecipeSummary, recipeKindSchema, scaleRecipe } from "../../domain/recipes/recipe";
+import { type RecipeSummary, scaleRecipe } from "../../domain/recipes/recipe";
 import { mergeIntoList, recipeAdditions, shoppingItemInputSchema, shoppingItemLabel } from "../../domain/shopping/shopping";
 import { VERSION } from "../../lib/version";
 import { withRotatedChoices } from "../plan/choices";
@@ -37,7 +37,6 @@ const summary = (row: RecipeSummary) => ({
   totalMinutes: row.totalTime,
   rating: row.rating,
   favourite: row.favourite,
-  kind: row.kind,
   facets: row.facets,
   lastMade: row.lastMade,
 });
@@ -69,23 +68,22 @@ export function buildMcpServer(caller: Pick<Caller, "scopes">): McpServer {
       {
         title: "Search recipes",
         description:
-          "Find recipes by name, tag, favourite, kind or facet. Each facet filter (course, meal, cuisine, diet, mainIngredient, method, season) takes any of its values; filters given together must all hold, so course ['main'] with diet ['vegetarian'] is a vegetarian main. A recipe with nothing said on a layer is not found by that layer's filter. With nothing given, every recipe, newest first. Answers summaries; read one with get_recipe.",
+          "Find recipes by name, tag, favourite or facet. Each facet filter (course, meal, week, cuisine, diet, mainIngredient, method, season) takes any of its values; filters given together must all hold, so course ['main'] with diet ['vegetarian'] is a vegetarian main. A recipe with nothing said on a layer is not found by that layer's filter. With nothing given, every recipe, newest first. Answers summaries; read one with get_recipe.",
         inputSchema: {
           query: z.string().optional().describe("Part of the recipe's name"),
           tags: z.array(z.string()).optional().describe("Tag names; a recipe needs any of them"),
           favourite: z.boolean().optional().describe("Only favourites"),
-          kind: recipeKindSchema.optional().describe("Only the household's weeknight regulars ('rotation') or its weekend cooks ('weekend')"),
           ...facetFilters,
           sort: z.enum(["name", "updated", "lastMade", "rating", "created"]).optional(),
         },
         annotations: READ,
       },
-      async ({ query, tags: tagNames, favourite, kind, sort, ...facets }) => {
+      async ({ query, tags: tagNames, favourite, sort, ...facets }) => {
         const known = tags.list();
         const slugs = (tagNames ?? []).flatMap((name) => known.filter((tag) => tag.name.toLowerCase() === name.trim().toLowerCase()).map((tag) => tag.slug));
         if (tagNames && tagNames.length > 0 && slugs.length === 0)
           return ok({ recipes: [], note: "No tag has that name. list_tags gives the household's tags." });
-        const rows = recipes.query({ by: "filter", q: query, tags: slugs.length > 0 ? slugs : undefined, favourite, kind, facets, sort });
+        const rows = recipes.query({ by: "filter", q: query, tags: slugs.length > 0 ? slugs : undefined, favourite, facets, sort });
         return ok({ recipes: rows.map(summary) });
       }
     );

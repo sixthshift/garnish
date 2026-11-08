@@ -1,24 +1,31 @@
-// Planning a week at the weekend (decisions.md rows 191 and 192): recipes
-// marked Rotation and Weekend on their own pages, a week filled from them,
+// Planning a week at the weekend (decisions.md rows 192 and 219): recipes
+// marked Weeknight and Weekend on their own pages, a week filled from them,
 // and the result on the plan and the shopping list.
+import type { Page } from "@playwright/test";
 import { createRecipe, expect, test, unique } from "./fixtures";
+
+/** The week facet, set on the recipe page's facet sheet like any layer, and shown as its chip. */
+async function markWeek(page: Page, value: "Weeknight" | "Weekend") {
+  await page.getByRole("button", { name: "Add course, cuisine and more" }).click();
+  await page.getByTestId("facet-sheet").getByRole("button", { name: value }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(page.getByTestId("facet-chips").getByRole("link", { name: value })).toBeVisible();
+}
 
 // A Monday far enough ahead that no other spec has planned it.
 const WEEK = "2027-03-01";
 
-test("a week filled from the rotation and the weekend recipes lands on the plan and the list", async ({ page, open }) => {
+test("a week filled from the weeknight and weekend recipes lands on the plan and the list", async ({ page, open }) => {
   const regular = unique("Fill Laksa");
   const weekend = unique("Fill Lamb");
   await createRecipe(page, open, { name: regular, servings: 4, ingredients: ["400 ml coconut milk"], steps: ["Simmer."] });
-  await page.getByRole("radio", { name: "Rotation" }).click();
-  await expect(page.getByRole("radio", { name: "Rotation" })).toBeChecked();
+  await markWeek(page, "Weeknight");
   await createRecipe(page, open, { name: weekend, servings: 6, ingredients: ["2 kg lamb shoulder"], steps: ["Roast."] });
-  await page.getByRole("radio", { name: "Weekend" }).click();
-  await expect(page.getByRole("radio", { name: "Weekend" })).toBeChecked();
+  await markWeek(page, "Weekend");
 
   await open(`/plan/fill?week=${WEEK}`);
   await expect(page.getByRole("heading", { level: 1, name: "Plan the week" })).toBeVisible();
-  // The rotation's only recipe takes Monday; the rest of the week has nothing left to offer.
+  // The only weeknight recipe takes Monday; the rest of the week has nothing left to offer.
   await expect(page.getByText(regular)).toBeVisible();
   await expect(page.getByRole("button", { name: "Mon night off" })).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByRole("button", { name: "Tue night off" })).toHaveAttribute("aria-pressed", "true");

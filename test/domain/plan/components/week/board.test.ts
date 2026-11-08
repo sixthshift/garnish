@@ -5,7 +5,7 @@ import { boardWeekTitle } from "../../../../../src/domain/plan/components/week/d
 import { dropPosition } from "../../../../../src/domain/plan/components/week/desktop/PlanBoard";
 import { madeAgo, openingTab, shelfTab } from "../../../../../src/domain/plan/components/week/shelf";
 import { type PlanDay, planEntrySchema, rangeLabel } from "../../../../../src/domain/plan/plan";
-import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets, type RecipeSummary, type WeekPart } from "../../../../../src/domain/recipes/recipe";
 
 const entry = (n: number, date = "2026-09-14") =>
   planEntrySchema.parse({ id: `99999999-9999-4999-8999-${String(n).padStart(12, "0")}`, date, position: n, text: `e${n}` });
@@ -46,26 +46,27 @@ test("rangeLabel says two weeks the way weekLabel says one", () => {
 });
 
 describe("the shelf", () => {
-  const r = (name: string, kind: RecipeSummary["kind"], lastMade: string | null) => ({ name, kind, lastMade }) as RecipeSummary;
+  const r = (name: string, week: WeekPart | null, lastMade: string | null) =>
+    ({ name, facets: { ...noFacets(), week: week === null ? [] : [week] }, lastMade }) as RecipeSummary;
   const recipes = [
-    r("Tacos", "rotation", "2026-09-10T00:00:00.000Z"),
-    r("Dal", "rotation", "2026-08-01T00:00:00.000Z"),
+    r("Tacos", "weeknight", "2026-09-10T00:00:00.000Z"),
+    r("Dal", "weeknight", "2026-08-01T00:00:00.000Z"),
     r("Lamb", "weekend", null),
     r("Bread", null, null),
   ];
 
-  test("Rotation and Weekend are the marked kinds, longest since made first; To try is never made; All is by name", () => {
-    expect(shelfTab(recipes, "rotation").map((x) => x.name)).toEqual(["Dal", "Tacos"]);
+  test("Weeknight and Weekend are the week facet as marked, longest since made first; To try is never made; All is by name", () => {
+    expect(shelfTab(recipes, "weeknight").map((x) => x.name)).toEqual(["Dal", "Tacos"]);
     expect(shelfTab(recipes, "weekend").map((x) => x.name)).toEqual(["Lamb"]);
     expect(shelfTab(recipes, "try").map((x) => x.name)).toEqual(["Lamb", "Bread"]);
     expect(shelfTab(recipes, "all").map((x) => x.name)).toEqual(["Bread", "Dal", "Lamb", "Tacos"]);
   });
 
-  test("the shelf opens on the first tab with a recipe on it, Rotation while they load", () => {
-    expect(openingTab(recipes)).toBe("rotation");
-    expect(openingTab(recipes.filter((x) => x.kind !== "rotation"))).toBe("weekend");
+  test("the shelf opens on the first tab with a recipe on it, Weeknight while they load", () => {
+    expect(openingTab(recipes)).toBe("weeknight");
+    expect(openingTab(recipes.filter((x) => !x.facets.week.includes("weeknight")))).toBe("weekend");
     expect(openingTab([r("Bread", null, "2026-09-01T00:00:00.000Z")])).toBe("all");
-    expect(openingTab(null)).toBe("rotation");
+    expect(openingTab(null)).toBe("weeknight");
   });
 
   test("madeAgo says how long since, in the unit that reads easiest", () => {

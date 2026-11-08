@@ -247,7 +247,6 @@ describe("StepCard's quick-edit menu (M29.4)", () => {
     rating: null,
     lastMade: null,
     favourite: false,
-    kind: null,
     facets: noFacets(),
     recipeServings: 4,
     recipeYieldQuantity: 0,

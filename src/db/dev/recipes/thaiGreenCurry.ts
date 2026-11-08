@@ -42,8 +42,8 @@ const input: DevRecipe["input"] = {
   performTime: 25,
   sourceUrl: "https://www.recipetineats.com/example-recipe/",
   favourite: true,
-  kind: "rotation",
   facets: {
+    week: ["weeknight"],
     course: ["main"],
     meal: ["dinner"],
     cuisine: ["thai"],

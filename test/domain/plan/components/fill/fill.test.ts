@@ -7,11 +7,11 @@ import {
   openDays,
   reasonKey,
   reasonLabel,
-  rotationPool,
   sessionEntries,
   swapNight,
   swapPool,
   weekendShelf,
+  weeknightPool,
 } from "../../../../../src/domain/plan/components/fill/fill";
 import { type PlanDay, planEntrySchema } from "../../../../../src/domain/plan/plan";
 import type { Facets, RecipeSummary } from "../../../../../src/domain/recipes/recipe";
@@ -33,7 +33,6 @@ function recipe(name: string, over: Partial<RecipeSummary> = {}): RecipeSummary 
     totalTime: null,
     lastMade: null,
     favourite: false,
-    kind: null,
     facets: noFacets(),
     tags: [],
     ingredientPreview: [],
@@ -76,13 +75,13 @@ test("a recipe planned on a day gone by and not made since is missed; one made t
   expect(missedRecipes(days, map, "2026-09-10").map((r) => r.name)).toEqual(["Fried rice", "Dal"]);
 });
 
-test("the rotation pool is the rotation alone, never made first then the longest since made, less the excluded", () => {
-  const a = recipe("Laksa", { kind: "rotation", lastMade: "2026-09-01T00:00:00.000Z" });
-  const b = recipe("Dal", { kind: "rotation", lastMade: "2026-07-01T00:00:00.000Z" });
-  const c = recipe("Kofta", { kind: "rotation" });
-  const d = recipe("Lamb", { kind: "weekend" });
-  const e = recipe("Tacos", { kind: "rotation", lastMade: "2026-06-01T00:00:00.000Z" });
-  expect(rotationPool([a, b, c, d, e], new Set([e.id])).map((r) => r.name)).toEqual(["Kofta", "Dal", "Laksa"]);
+test("the weeknight pool is the weeknight recipes alone, never made first then the longest since made, less the excluded", () => {
+  const a = recipe("Laksa", { facets: { ...noFacets(), week: ["weeknight"] }, lastMade: "2026-09-01T00:00:00.000Z" });
+  const b = recipe("Dal", { facets: { ...noFacets(), week: ["weeknight"] }, lastMade: "2026-07-01T00:00:00.000Z" });
+  const c = recipe("Kofta", { facets: { ...noFacets(), week: ["weeknight"] } });
+  const d = recipe("Lamb", { facets: { ...noFacets(), week: ["weekend"] } });
+  const e = recipe("Tacos", { facets: { ...noFacets(), week: ["weeknight"] }, lastMade: "2026-06-01T00:00:00.000Z" });
+  expect(weeknightPool([a, b, c, d, e], new Set([e.id])).map((r) => r.name)).toEqual(["Kofta", "Dal", "Laksa"]);
 });
 
 test("the nights take what was missed first, then the pool, and run out into nights off", () => {
@@ -101,11 +100,11 @@ test("a swap takes the next recipe no other night holds, wrapping round, and sta
   expect(swapNight([recipe("Carried").id], 0, pool)).toEqual([ids[0]]);
 });
 
-test("the weekend shelf is the weekend recipes, longest since made first, then the never-made ones outside the rotation", () => {
-  const lamb = recipe("Lamb", { kind: "weekend", lastMade: "2026-09-01T00:00:00.000Z" });
-  const ragu = recipe("Ragù", { kind: "weekend", lastMade: "2026-05-01T00:00:00.000Z" });
+test("the weekend shelf is the weekend recipes, longest since made first, then the never-made ones with no week said", () => {
+  const lamb = recipe("Lamb", { facets: { ...noFacets(), week: ["weekend"] }, lastMade: "2026-09-01T00:00:00.000Z" });
+  const ragu = recipe("Ragù", { facets: { ...noFacets(), week: ["weekend"] }, lastMade: "2026-05-01T00:00:00.000Z" });
   const eggplant = recipe("Eggplant");
-  const dal = recipe("Dal", { kind: "rotation" });
+  const dal = recipe("Dal", { facets: { ...noFacets(), week: ["weeknight"] } });
   expect(weekendShelf([eggplant, lamb, dal, ragu]).map((r) => r.name)).toEqual(["Ragù", "Lamb", "Eggplant"]);
 });
 
@@ -164,10 +163,10 @@ test("the session writes its dinners in day order, then the other meals not skip
   ]);
 });
 
-test("Swap draws from the rotation, or from every recipe not marked Weekend while nothing is marked Rotation", () => {
+test("Swap draws from the weeknight recipes, or from every recipe not marked Weekend while nothing is marked Weeknight", () => {
   const soup = recipe("Soup");
-  const lamb = recipe("Lamb", { kind: "weekend" });
-  const dal = recipe("Dal", { kind: "rotation" });
+  const lamb = recipe("Lamb", { facets: { ...noFacets(), week: ["weekend"] } });
+  const dal = recipe("Dal", { facets: { ...noFacets(), week: ["weeknight"] } });
   expect(swapPool([soup, lamb, dal], new Set()).map((r) => r.name)).toEqual(["Dal"]);
   expect(swapPool([soup, lamb], new Set()).map((r) => r.name)).toEqual(["Soup"]);
   expect(swapPool([soup, lamb], new Set([soup.id]))).toEqual([]);
@@ -175,35 +174,43 @@ test("Swap draws from the rotation, or from every recipe not marked Weekend whil
 
 const course = (...values: Facets["course"]): Facets => ({ ...noFacets(), course: values });
 
-test("a sauce in the rotation is never planned for a dinner: not by the fill, not by Swap, not on the weekend shelf", () => {
-  const salsa = recipe("Salsa verde", { kind: "rotation", facets: course("sauce") });
-  const stock = recipe("Chicken stock", { kind: "weekend", facets: course("stock") });
-  const side = recipe("Greens", { kind: null, facets: course("side") });
-  const dal = recipe("Dal", { kind: "rotation", lastMade: "2026-08-01T00:00:00.000Z", facets: course("main") });
-  const laksa = recipe("Laksa", { kind: "rotation", lastMade: "2026-09-01T00:00:00.000Z", facets: course("soup") });
-  const lamb = recipe("Lamb", { kind: "weekend", facets: course("main") });
+test("a sauce marked Weeknight is never planned for a dinner: not by the fill, not by Swap, not on the weekend shelf", () => {
+  const salsa = recipe("Salsa verde", { facets: { ...course("sauce"), week: ["weeknight"] } });
+  const stock = recipe("Chicken stock", { facets: { ...course("stock"), week: ["weekend"] } });
+  const side = recipe("Greens", { facets: course("side") });
+  const dal = recipe("Dal", { lastMade: "2026-08-01T00:00:00.000Z", facets: { ...course("main"), week: ["weeknight"] } });
+  const laksa = recipe("Laksa", { lastMade: "2026-09-01T00:00:00.000Z", facets: { ...course("soup"), week: ["weeknight"] } });
+  const lamb = recipe("Lamb", { facets: { ...course("main"), week: ["weekend"] } });
   const all = [salsa, stock, side, dal, laksa, lamb];
 
-  const pool = rotationPool(all, new Set());
+  const pool = weeknightPool(all, new Set());
   expect(pool.map((r) => r.name)).toEqual(["Dal", "Laksa"]);
   expect(fillNights(5, [], pool)).toEqual([dal.id, laksa.id, null, null, null]);
   expect(swapNight([dal.id, laksa.id], 0, swapPool(all, new Set()))).toEqual([dal.id, laksa.id]);
   expect(weekendShelf(all).map((r) => r.name)).toEqual(["Lamb"]);
-  // With the rotation's mains excluded, Swap's fallback still leaves the sauce and the side out.
+  // With the weeknight mains excluded, Swap's fallback still leaves the sauce and the side out.
   expect(swapPool(all, new Set([dal.id, laksa.id])).map((r) => r.name)).toEqual([]);
 });
 
 test("a library with no course said plans exactly as it did before facets", () => {
   const recipes = [
-    recipe("Laksa", { kind: "rotation", lastMade: "2026-09-01T00:00:00.000Z" }),
-    recipe("Dal", { kind: "rotation", lastMade: "2026-07-01T00:00:00.000Z" }),
-    recipe("Kofta", { kind: "rotation" }),
-    recipe("Lamb", { kind: "weekend", lastMade: "2026-05-01T00:00:00.000Z" }),
+    recipe("Laksa", { facets: { ...noFacets(), week: ["weeknight"] }, lastMade: "2026-09-01T00:00:00.000Z" }),
+    recipe("Dal", { facets: { ...noFacets(), week: ["weeknight"] }, lastMade: "2026-07-01T00:00:00.000Z" }),
+    recipe("Kofta", { facets: { ...noFacets(), week: ["weeknight"] } }),
+    recipe("Lamb", { facets: { ...noFacets(), week: ["weekend"] }, lastMade: "2026-05-01T00:00:00.000Z" }),
     recipe("Eggplant"),
     recipe("Porridge", { facets: { ...noFacets(), meal: ["breakfast"] } }),
   ];
   const byMade = (a: RecipeSummary, b: RecipeSummary) => (a.lastMade ?? "").localeCompare(b.lastMade ?? "") || a.name.localeCompare(b.name);
-  expect(rotationPool(recipes, new Set())).toEqual(recipes.filter((r) => r.kind === "rotation").sort(byMade));
+  expect(weeknightPool(recipes, new Set())).toEqual(recipes.filter((r) => r.facets.week.includes("weeknight")).sort(byMade));
   expect(swapPool(recipes.slice(3), new Set()).map((r) => r.name)).toEqual(["Eggplant", "Porridge"]);
   expect(weekendShelf(recipes).map((r) => r.name)).toEqual(["Lamb", "Eggplant", "Porridge"]);
+});
+
+test("a recipe marked both Weeknight and Weekend is offered on both (row 219)", () => {
+  const both = recipe("Roast chicken", { facets: { ...noFacets(), week: ["weeknight", "weekend"] } });
+  const dal = recipe("Dal", { facets: { ...noFacets(), week: ["weeknight"] } });
+  const lamb = recipe("Lamb", { facets: { ...noFacets(), week: ["weekend"] } });
+  expect(weeknightPool([both, dal, lamb], new Set()).map((r) => r.name)).toEqual(["Dal", "Roast chicken"]);
+  expect(weekendShelf([both, dal, lamb]).map((r) => r.name)).toEqual(["Roast chicken", "Lamb"]);
 });

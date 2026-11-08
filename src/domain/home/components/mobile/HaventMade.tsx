@@ -7,7 +7,7 @@ import { Photo } from "../Photo";
 import { HomeSectionHead } from "./HomeSectionHead";
 
 /**
- * The rotation's regulars gone longest without being cooked (`longestSinceMade`),
+ * The weeknight recipes gone longest without being cooked (`longestSinceMade`),
  * each with how long ago: what to put back on the week. One card, a row a
  * recipe, each opening the recipe's page. Nothing that qualifies, nothing drawn.
  */

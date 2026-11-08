@@ -1,12 +1,13 @@
 import { expect, test } from "vitest";
 import { listProgress, longestSinceMade, nightsPlanned, sinceMadeLabel } from "../../../../src/domain/home/home";
 import { type PlanDay, planEntrySchema } from "../../../../src/domain/plan/plan";
-import type { RecipeSummary } from "../../../../src/domain/recipes/recipe";
+import { noFacets, type RecipeSummary, type WeekPart } from "../../../../src/domain/recipes/recipe";
 import type { ShoppingItem } from "../../../../src/domain/shopping/shopping";
 
 const TODAY = "2026-09-16";
 
-const recipe = (name: string, kind: RecipeSummary["kind"], lastMade: string | null) => ({ id: name, name, kind, lastMade }) as RecipeSummary;
+const recipe = (name: string, week: WeekPart | null, lastMade: string | null) =>
+  ({ id: name, name, facets: { ...noFacets(), week: week === null ? [] : [week] }, lastMade }) as RecipeSummary;
 const made = (date: string) => `${date}T00:00:00.000Z`;
 
 test("nightsPlanned counts the days with anything on them, not the entries", () => {
@@ -27,12 +28,12 @@ test("listProgress counts the ticked lines against the whole list", () => {
 
 test("longestSinceMade is the rotation only: never made first, then the oldest, leaving out the last fortnight", () => {
   const list = [
-    recipe("New regular", "rotation", null),
+    recipe("New regular", "weeknight", null),
     recipe("Weekend roast", "weekend", made("2025-01-01")),
     recipe("Unmarked", null, made("2025-01-01")),
-    recipe("Last month", "rotation", made("2026-08-16")),
-    recipe("Last week", "rotation", made("2026-09-09")),
-    recipe("Last year", "rotation", made("2025-09-01")),
+    recipe("Last month", "weeknight", made("2026-08-16")),
+    recipe("Last week", "weeknight", made("2026-09-09")),
+    recipe("Last year", "weeknight", made("2025-09-01")),
   ];
   expect(longestSinceMade(list, TODAY, 10).map((r) => r.name)).toEqual(["New regular", "Last year", "Last month"]);
   expect(longestSinceMade(list, TODAY, 2).map((r) => r.name)).toEqual(["New regular", "Last year"]);
@@ -40,8 +41,8 @@ test("longestSinceMade is the rotation only: never made first, then the oldest, 
 });
 
 test("a recipe made exactly a fortnight ago has been a while", () => {
-  expect(longestSinceMade([recipe("Two weeks", "rotation", made("2026-09-02"))], TODAY, 4)).toHaveLength(1);
-  expect(longestSinceMade([recipe("Thirteen days", "rotation", made("2026-09-03"))], TODAY, 4)).toHaveLength(0);
+  expect(longestSinceMade([recipe("Two weeks", "weeknight", made("2026-09-02"))], TODAY, 4)).toHaveLength(1);
+  expect(longestSinceMade([recipe("Thirteen days", "weeknight", made("2026-09-03"))], TODAY, 4)).toHaveLength(0);
 });
 
 test("sinceMadeLabel says how long in the largest unit that reads naturally, as the plan's shelf does", () => {

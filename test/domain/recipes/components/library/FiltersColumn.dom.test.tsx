@@ -32,7 +32,7 @@ function column(overrides: Partial<FiltersColumnProps> = {}) {
     onQueryChange: vi.fn(),
     onQuerySubmit: vi.fn(),
     shelf: undefined,
-    shelves: { all: 18, rotation: 5, weekend: 2, try: 6 },
+    shelves: { all: 18, try: 6 },
     onShelfChange: vi.fn(),
     sort: "created",
     dir: "desc",
@@ -52,10 +52,9 @@ test("the shelves show their counts, Everything pressed with none set, and a pre
   const user = userEvent.setup();
   const props = column();
   expect(shelves().getByRole("button", { name: "Everything 18" })).toHaveAttribute("aria-pressed", "true");
-  expect(shelves().getByRole("button", { name: "Rotation 5" })).toHaveAttribute("aria-pressed", "false");
-  expect(shelves().getByRole("button", { name: "To try 6" })).toBeInTheDocument();
-  await user.click(shelves().getByRole("button", { name: "Weekend 2" }));
-  expect(props.onShelfChange).toHaveBeenCalledWith("weekend");
+  expect(shelves().queryByRole("button", { name: /Rotation|Weekend/ })).toBeNull();
+  await user.click(shelves().getByRole("button", { name: "To try 6" }));
+  expect(props.onShelfChange).toHaveBeenCalledWith("try");
   await user.click(shelves().getByRole("button", { name: "Everything 18" }));
   expect(props.onShelfChange).toHaveBeenLastCalledWith(undefined);
 });
@@ -124,6 +123,20 @@ test("each layer some recipe has lists its values with their counts, and a layer
   expect(course.queryByRole("button", { name: /Side/ })).toBeNull();
   expect(screen.getByRole("region", { name: "Cuisine" })).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Diet" })).toBeNull();
+});
+
+test("Week is a layer like the others: Weeknight and Weekend with their counts (row 219)", async () => {
+  const user = userEvent.setup();
+  const props = column({
+    facetCounts: [
+      { layer: "week" as const, value: "weeknight", count: 5 },
+      { layer: "week" as const, value: "weekend", count: 2 },
+    ],
+  });
+  const week = within(screen.getByRole("region", { name: "Week" }));
+  expect(week.getByRole("button", { name: "Weekend 2" })).toBeInTheDocument();
+  await user.click(week.getByRole("button", { name: "Weeknight 5" }));
+  expect(props.onFacetsChange).toHaveBeenCalledWith({ ...noFacets(), week: ["weeknight"] });
 });
 
 test("pressing a value asks for it beside the layer's others, and pressing it again lets it go", async () => {

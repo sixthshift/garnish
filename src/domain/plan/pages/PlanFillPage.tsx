@@ -16,10 +16,10 @@ import {
   missedRecipes,
   type OtherMeal,
   openDays,
-  rotationPool,
   sessionEntries,
   swapPool,
   weekendShelf,
+  weeknightPool,
 } from "../components/fill/fill";
 import { OtherMeals } from "../components/fill/OtherMeals";
 import { PlannerBar, type PlannerStatus } from "../components/fill/PlannerBar";
@@ -51,7 +51,7 @@ const STEPS = [{ label: "Weeknights" }, { label: "Weekend" }, { label: "Ready" }
  * The first pass is the model's when one is configured: it reads the planner
  * guide, the library with each recipe's kind, and what was eaten lately, and
  * proposes every open dinner (and breakfast or lunch, when asked) with a
- * reason. Without one, or when it fails, the rotation fills the weeknights in
+ * reason. Without one, or when it fails, the weeknight recipes fill the weeknights in
  * its own order and the weekend waits to be chosen. Either way the same
  * screens follow: Swap, Night off, the weekend's choice.
  */
@@ -67,8 +67,8 @@ export function PlanFillPage() {
     () => new Set([...previousDays, ...days].flatMap((day) => day.entries.flatMap((entry) => (entry.recipe ? [entry.recipe.id] : [])))),
     [previousDays, days]
   );
-  // The first offer comes from the rotation alone; Swap falls back to every weeknight-able recipe when it is empty.
-  const pool = useMemo(() => rotationPool(recipes, planned), [recipes, planned]);
+  // The first offer comes from the weeknight recipes alone; Swap falls back to every weeknight-able recipe when it is empty.
+  const pool = useMemo(() => weeknightPool(recipes, planned), [recipes, planned]);
   const swaps = useMemo(() => swapPool(recipes, planned), [recipes, planned]);
   const shelf = useMemo(() => weekendShelf(recipes), [recipes]);
 
@@ -170,7 +170,7 @@ export function PlanFillPage() {
             onChange={(next) => {
               setVegetarianNights(next);
               writeVegetarianNights(browserStorage(), next);
-              // The planner is asked again with it; the rotation's week is filled again by it.
+              // The planner is asked again with it; the weeknights' own week is filled again by it.
               if (planner.state === "off" || planner.state === "failed") setNights(fillNights(open.weeknights.length, carried, pool, next));
               else void ask(otherMeals, next);
             }}
@@ -184,8 +184,8 @@ export function PlanFillPage() {
             carried={carried}
             today={today}
             reasons={reasons}
-            source={planner.state === "done" ? "planner" : "rotation"}
-            rotationEmpty={pool.length === 0}
+            source={planner.state === "done" ? "planner" : "weeknight"}
+            weeknightsEmpty={pool.length === 0}
             choosing={planner.state === "asking"}
             onChange={setNights}
           />

@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { PlanWeekView, type PlanWeekViewProps } from "../../../../../src/domain/plan/components/week/PlanWeekView";
 import { groupByDay, type PlanEntry, planEntrySchema } from "../../../../../src/domain/plan/plan";
-import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets, type RecipeSummary } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 
 const MONDAY = "2026-09-14";
@@ -15,10 +15,32 @@ const NEXT = "2026-09-21";
 const TODAY = "2026-09-16";
 
 const recipe = (over: Partial<RecipeSummary>): RecipeSummary =>
-  ({ image: null, totalTime: null, lastMade: null, kind: null, tags: [], ingredientPreview: [], favourite: false, rating: null, ...over }) as RecipeSummary;
+  ({
+    image: null,
+    totalTime: null,
+    lastMade: null,
+    tags: [],
+    ingredientPreview: [],
+    favourite: false,
+    rating: null,
+    facets: noFacets(),
+    ...over,
+  }) as RecipeSummary;
 const tart = recipe({ id: "11111111-1111-4111-8111-111111111111", slug: "lemon-tart", name: "Lemon tart" });
-const dal = recipe({ id: "22222222-2222-4222-8222-222222222222", slug: "dal", name: "Red lentil dal", kind: "rotation", lastMade: "2026-08-31T09:00:00.000Z" });
-const laksa = recipe({ id: "33333333-3333-4333-8333-333333333333", slug: "laksa", name: "Laksa", kind: "rotation", lastMade: "2026-07-31T09:00:00.000Z" });
+const dal = recipe({
+  id: "22222222-2222-4222-8222-222222222222",
+  slug: "dal",
+  name: "Red lentil dal",
+  facets: { ...noFacets(), week: ["weeknight"] },
+  lastMade: "2026-08-31T09:00:00.000Z",
+});
+const laksa = recipe({
+  id: "33333333-3333-4333-8333-333333333333",
+  slug: "laksa",
+  name: "Laksa",
+  facets: { ...noFacets(), week: ["weeknight"] },
+  lastMade: "2026-07-31T09:00:00.000Z",
+});
 
 const soup: PlanEntry = planEntrySchema.parse({
   id: "99999999-9999-4999-8999-000000000001",
@@ -134,8 +156,8 @@ test("the add sheet stays open across two adds, ticks what it added, and Done cl
   await user.click(add);
   const sheet = await screen.findByRole("dialog", { name: "Adding to Friday 18 September" });
 
-  // Rotation first, the longest since made first, as photo tiles.
-  const rotation = await within(sheet).findByRole("list", { name: "Rotation recipes" });
+  // Weeknight first, the longest since made first, as photo tiles.
+  const rotation = await within(sheet).findByRole("list", { name: "Weeknight recipes" });
   const tiles = within(rotation).getAllByRole("button");
   expect(tiles.map((tile) => tile.getAttribute("aria-label"))).toEqual(["Add Laksa to Friday 18 September", "Add Red lentil dal to Friday 18 September"]);
 
@@ -151,7 +173,7 @@ test("the add sheet stays open across two adds, ticks what it added, and Done cl
 
   // A note from the box, and the sheet is still open after it too.
   await user.type(within(sheet).getByRole("combobox", { name: "Search recipes, or type a note" }), "Out");
-  expect(within(sheet).queryByRole("list", { name: "Rotation recipes" })).toBeNull();
+  expect(within(sheet).queryByRole("list", { name: "Weeknight recipes" })).toBeNull();
   await user.click(within(sheet).getByRole("button", { name: "Add “Out” as a note" }));
   expect(onAddText).toHaveBeenCalledWith("2026-09-18", "Out", "dinner");
   expect(screen.getByRole("dialog")).toBeInTheDocument();

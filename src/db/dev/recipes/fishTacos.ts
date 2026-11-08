@@ -41,7 +41,6 @@ const input: DevRecipe["input"] = {
   performTime: 15,
   sourceUrl: "https://www.taste.com.au/recipes/example-recipe",
   favourite: false,
-  kind: null,
   facets: {
     course: ["main"],
     meal: ["dinner"],

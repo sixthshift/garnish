@@ -20,11 +20,10 @@ import {
   noFacets,
   type Recipe,
   type RecipeInput,
-  type RecipeKind,
   recipeInputSchema,
-  recipeKindSchema,
   SEASONS,
   suggestLinks,
+  WEEK_PARTS,
 } from "../../domain/recipes/recipe";
 import type { FoodRow, Tag, Unit } from "../../domain/recipes/reference";
 
@@ -73,6 +72,11 @@ export const facetLayerInputs = {
       "What it is in a meal: main, soup, salad, side, starter, dessert, baking, snack, drink, or a building block made to go into or onto another dish (sauce for sauces and dressings, condiment for chutneys and preserves, spice-mix for rubs and marinades, stock for stocks and bases, dough for doughs and pastry)"
     ),
   meal: z.array(z.enum(MEAL_TIMES)).describe("When in the day it suits"),
+  week: z
+    .array(z.enum(WEEK_PARTS))
+    .describe(
+      "Which part of the week the household cooks it in: weeknight for one that fits a weeknight's time, weekend for one worth a weekend's; it can be both. The household sets it"
+    ),
   cuisine: z.array(z.enum(CUISINES)).describe("Where it is from, broadly"),
   diet: z.array(z.enum(DIETS)).describe("Who can eat it, as written"),
   mainIngredient: z.array(z.enum(MAIN_INGREDIENTS)).describe("What is at its heart: the protein, or what a meatless dish is built on"),
@@ -96,9 +100,6 @@ export const recipeFieldsSchema = {
   sourceUrl: z.string().nullable().describe("Where the recipe came from"),
   tags: z.array(text.min(1)).describe("Tag names; existing tags are reused"),
   favourite: z.boolean(),
-  kind: recipeKindSchema
-    .nullable()
-    .describe("How the household cooks it: 'rotation' for a weeknight regular, 'weekend' for one worth a weekend's time, null when not said"),
   facets: facetsInputSchema.describe(
     "What the recipe is, layer by layer, each a list of fixed values. Only the layers you send change; send a layer as [] to clear it"
   ),
@@ -126,7 +127,6 @@ export type McpRecipe = {
   sourceUrl: string | null;
   tags: string[];
   favourite: boolean;
-  kind: RecipeKind | null;
   facets: Facets;
   rating: number | null;
   lastMade: string | null;
@@ -156,7 +156,6 @@ export function recipeForMcp(doc: Recipe): McpRecipe {
     sourceUrl: doc.sourceUrl,
     tags: doc.tags.map((tag) => tag.name),
     favourite: doc.favourite,
-    kind: doc.kind,
     facets: doc.facets,
     rating: doc.rating,
     lastMade: doc.lastMade,
@@ -286,7 +285,6 @@ export function documentFromMcp(
     performTime: input.cookMinutes !== undefined ? input.cookMinutes : (current?.performTime ?? null),
     sourceUrl: input.sourceUrl !== undefined ? input.sourceUrl : (current?.sourceUrl ?? null),
     favourite: pick("favourite", current?.favourite ?? false),
-    kind: input.kind !== undefined ? input.kind : (current?.kind ?? null),
     facets: facetsFrom(input.facets, current?.facets ?? noFacets()),
     tags: input.tags !== undefined ? tagsFromNames(input.tags, vocabulary.tags) : (current?.tags ?? []),
     notes: input.notes !== undefined ? input.notes.map((note) => ({ id: note.id, title: note.title, text: note.text })) : (current?.notes ?? []),

@@ -11,7 +11,6 @@ import { recipeImageUrl } from "../../../../lib/images";
 import { yieldLine } from "../../ingredient";
 import type { Recipe } from "../../recipe";
 import { FacetDetails } from "../facets/FacetDetails";
-import { KindToggle } from "../KindToggle";
 import { timeStats } from "../recipe/timeStats";
 import { RecipeFacts } from "./RecipeFacts";
 import { RecipeTabs } from "./RecipeTabs";
@@ -147,7 +146,6 @@ export function PhoneRecipe({ recipe, madeCount, onRate, actions, servings, ingr
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <KindToggle id={recipe.id} kind={recipe.kind} />
           {recipe.rating !== null || rateOpen ? (
             <Rating value={recipe.rating ?? 0} onChange={onRate} />
           ) : (

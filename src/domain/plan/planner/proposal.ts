@@ -29,8 +29,6 @@ export type LibraryRecipe = {
   totalMinutes: number | null;
   rating: number | null;
   favourite: boolean;
-  /** How the household cooks it, as it marked it: a weeknight regular, a weekend cook, or not said (decisions.md row 191). */
-  kind: "rotation" | "weekend" | null;
   /** What the household said it is, layer by layer (decisions.md row 209); an empty layer is not said. */
   facets: Facets;
   /** The last time it was planned or cooked, `YYYY-MM-DD`, or null for never. */
@@ -121,14 +119,15 @@ export type ProposalEntry = { date: string; meal: Meal; recipeId: string; reason
 export const FIXED_PLACE_LINE = "This household is in Australia: the southern hemisphere, so read the month below for the season.";
 
 /**
- * What a recipe's kind means, a fact of the library rather than a statement:
- * the household marked it, so it is not one to switch off (decisions.md row 194).
+ * What a recipe's week facet means, a fact of the library rather than a
+ * statement: the household marked it, so it is not one to switch off
+ * (decisions.md rows 194 and 219).
  */
-export const KIND_LINE =
-  "A recipe marked `rotation` is one of the household's weeknight regulars; one marked `weekend` is worth a weekend's time. Fill Monday to Friday dinners from the rotation and Saturday and Sunday dinners from the weekend recipes, unless a statement below asks otherwise. An unmarked recipe may go anywhere it suits.";
+export const WEEK_LINE =
+  "A recipe whose week is weeknight fits a weeknight's time; one whose week is weekend is worth a weekend's; a recipe can be both. Fill Monday to Friday dinners from the weeknight recipes and Saturday and Sunday dinners from the weekend recipes, unless a statement below asks otherwise. A recipe with no week given may go anywhere it suits.";
 
 /**
- * What a recipe's facets mean for a slot, a fact of the library as the kind
+ * What a recipe's facets mean for a slot, a fact of the library as the week
  * is (decisions.md row 209): the same rule the rules fill keeps (`suitsSlot`).
  */
 export const FACET_LINE =
@@ -136,7 +135,7 @@ export const FACET_LINE =
 
 /**
  * A varied week, from the facets (decisions.md row 212): the rules the
- * rotation's own fill keeps (`varyNights`), said to the model so its week
+ * weeknights' own fill keeps (`varyNights`), said to the model so its week
  * keeps them too, with the household's vegetarian nights when it asked for any.
  */
 export function varietyLine(vegetarianNights = 0): string {
@@ -151,6 +150,7 @@ export function varietyLine(vegetarianNights = 0): string {
 const LAYER_WORDS: { readonly [L in FacetLayer]: string } = {
   course: "course",
   meal: "meal",
+  week: "week",
   cuisine: "cuisine",
   diet: "diet",
   mainIngredient: "main ingredient",
@@ -180,13 +180,12 @@ export function libraryForPrompt(library: readonly LibraryRecipe[]): { recipes: 
   return { recipes: ranked.slice(0, MAX_LIBRARY_LINES), cut: true };
 }
 
-/** One recipe as the model reads it: `id | name | tags | 35 min | ★4 | fav | rotation | course: main; diet: vegetarian | last 2026-08-30`. Absent facts are left out rather than sent as null, except that a recipe never made says so. Pure. */
+/** One recipe as the model reads it: `id | name | tags | 35 min | ★4 | fav | course: main; week: weeknight; diet: vegetarian | last 2026-08-30`. Absent facts are left out rather than sent as null, except that a recipe never made says so. Pure. */
 export function libraryLine(recipe: LibraryRecipe): string {
   const fields = [recipe.id, recipe.name, recipe.tags.join(", ")];
   if (recipe.totalMinutes !== null) fields.push(`${recipe.totalMinutes} min`);
   if (recipe.rating !== null) fields.push(`★${recipe.rating}`);
   if (recipe.favourite) fields.push("fav");
-  if (recipe.kind !== null) fields.push(recipe.kind);
   const facets = facetsLine(recipe.facets);
   if (facets !== "") fields.push(facets);
   fields.push(recipe.lastMade === null ? "never made" : `last ${recipe.lastMade}`);
@@ -224,7 +223,7 @@ export function proposalPrompt(input: ProposalInput): string {
     "Propose meals for the week below, and answer with JSON matching the schema.",
     `Today is ${input.today}.`,
     FIXED_PLACE_LINE,
-    KIND_LINE,
+    WEEK_LINE,
     FACET_LINE,
     varietyLine(input.vegetarianNights),
     `The week begins Monday ${input.week.monday}. The days being planned are ${input.week.dates.join(", ")}.`,
@@ -243,7 +242,7 @@ export function proposalPrompt(input: ProposalInput): string {
   if (input.recent.length === 0) lines.push("(nothing recorded)");
   else for (const meal of input.recent) lines.push(`${meal.date}  ${meal.name}`);
 
-  lines.push("", "LIBRARY (id | name | tags | time | rating | fav | kind | facets | last made):");
+  lines.push("", "LIBRARY (id | name | tags | time | rating | fav | facets | last made):");
   if (cut) {
     lines.push(`(the library holds ${input.library.length} recipes and was cut to ${MAX_LIBRARY_LINES}: favourites and the highest rated first)`);
   }

@@ -32,14 +32,11 @@ export const recipe = sqliteTable(
     // 011_restyle.sql: when the steps were last rewritten in the house style,
     // NULL while they are still the author's words.
     restyledAt: text("restyled_at"),
-    // 027_recipe_kind.sql: rotation or weekend, NULL until the household says.
-    kind: text("kind", { enum: ["rotation", "weekend"] }),
   },
   (t) => [
     index("recipe_yield_unit_id").on(t.yieldUnitId),
     check("rating_range", sql`${t.rating} IS NULL OR (${t.rating} >= 0 AND ${t.rating} <= 5)`),
     check("favourite_flag", sql`${t.favourite} IN (0, 1)`),
-    check("kind_value", sql`${t.kind} IS NULL OR ${t.kind} IN ('rotation', 'weekend')`),
   ]
 );
 
@@ -234,9 +231,9 @@ export const recipeTag = sqliteTable(
 );
 
 /** The layers as the `recipe_facet.layer` column spells them; the document's `mainIngredient` is `main_ingredient`. */
-export const FACET_LAYER_COLUMN = ["course", "meal", "cuisine", "diet", "main_ingredient", "method", "season"] as const;
+export const FACET_LAYER_COLUMN = ["course", "meal", "week", "cuisine", "diet", "main_ingredient", "method", "season"] as const;
 
-/** 031_recipe_facet.sql: what a recipe is, one row a value (decisions.md row 209). */
+/** 031_recipe_facet.sql, widened by 035_week_facet.sql: what a recipe is, one row a value (decisions.md rows 209, 219). */
 export const recipeFacet = sqliteTable(
   "recipe_facet",
   {
@@ -249,6 +246,6 @@ export const recipeFacet = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.recipeId, t.layer, t.value] }),
     index("recipe_facet_layer_value").on(t.layer, t.value),
-    check("recipe_facet_layer", sql`${t.layer} IN ('course', 'meal', 'cuisine', 'diet', 'main_ingredient', 'method', 'season')`),
+    check("recipe_facet_layer", sql`${t.layer} IN ('course', 'meal', 'week', 'cuisine', 'diet', 'main_ingredient', 'method', 'season')`),
   ]
 );

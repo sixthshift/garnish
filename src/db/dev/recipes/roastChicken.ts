@@ -40,8 +40,8 @@ const input: DevRecipe["input"] = {
   performTime: 55,
   sourceUrl: "https://www.taste.com.au/recipes/example-recipe",
   favourite: true,
-  kind: "rotation",
   facets: {
+    week: ["weeknight"],
     course: ["main"],
     meal: ["dinner"],
     cuisine: ["australian"],

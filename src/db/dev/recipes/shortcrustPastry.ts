@@ -26,7 +26,6 @@ const input: DevRecipe["input"] = {
   performTime: 0,
   sourceUrl: null,
   favourite: false,
-  kind: null,
   facets: {
     course: ["dough"],
     cuisine: ["french"],

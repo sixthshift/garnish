@@ -41,6 +41,23 @@ test("it round-trips through JSON unchanged", () => {
   expect(result.ok && result.backup).toEqual(sampleBackup());
 });
 
+test("a backup made before row 219 restores each recipe's kind as its week, unless its facets already say one", () => {
+  const withKind = (kind: unknown, week?: string[]) => {
+    const backup = sampleBackup() as unknown as { recipes: Record<string, unknown>[] };
+    const recipe = backup.recipes[0]!;
+    const facets = recipe.facets as Record<string, unknown>;
+    backup.recipes[0] = { ...recipe, kind, facets: { ...facets, week: week ?? [] } };
+    const result = checkBackup(backup);
+    expect(result.ok).toBe(true);
+    return result.ok ? result.backup.recipes[0]! : null;
+  };
+  expect(withKind("rotation")?.facets.week).toEqual(["weeknight"]);
+  expect(withKind("weekend")?.facets.week).toEqual(["weekend"]);
+  expect(withKind(null)?.facets.week).toEqual([]);
+  expect(withKind("rotation", ["weekend"])?.facets.week).toEqual(["weekend"]);
+  expect(withKind("rotation")).not.toHaveProperty("kind");
+});
+
 describe("what is not a backup", () => {
   test("another file", () => {
     expect(problemsOf({ recipes: [] })).toEqual(["This is not a garnish backup"]);

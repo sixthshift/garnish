@@ -18,7 +18,7 @@ import { emptyShelfLine, openingTab, SHELF_TABS, type ShelfTab, shelfTab } from 
  * beside the board instead, row 207): a tall sheet titled with the day, the
  * add form (the meal chips, and the box that searches recipes or takes a
  * plain note), then the recipes as photos in two columns under the shelf's
- * four tabs, Rotation, Weekend, To try and All. A tap on a photo adds it and
+ * four tabs, Weeknight, Weekend, To try and All. A tap on a photo adds it and
  * ticks it where it sits. The sheet stays open for the next add, a recipe or
  * a note alike, and Done closes it: planning a day is often two or three
  * things at once. While a search is typed its results stand in for the tabs.

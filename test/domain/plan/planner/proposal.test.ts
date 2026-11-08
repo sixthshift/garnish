@@ -23,7 +23,7 @@ import {
 import { noFacets } from "../../../../src/domain/recipes/recipe";
 
 function recipe(id: string, name: string, over: Partial<LibraryRecipe> = {}): LibraryRecipe {
-  return { id, name, tags: [], totalMinutes: null, rating: null, favourite: false, kind: null, facets: noFacets(), lastMade: null, ...over };
+  return { id, name, tags: [], totalMinutes: null, rating: null, favourite: false, facets: noFacets(), lastMade: null, ...over };
 }
 
 const INPUT: ProposalInput = {
@@ -115,26 +115,28 @@ describe("the prompt", () => {
   test("the library line names the facts it has and only those", () => {
     expect(libraryLine(recipe("r3", "Toast", { totalMinutes: 5 }))).toBe("r3 | Toast |  | 5 min | never made");
     expect(libraryLine(recipe("r4", "Curry", { tags: ["thai"], rating: 3, lastMade: "2026-01-02" }))).toBe("r4 | Curry | thai | ★3 | last 2026-01-02");
-    expect(libraryLine(recipe("r5", "Dal", { kind: "rotation" }))).toBe("r5 | Dal |  | rotation | never made");
-    expect(libraryLine(recipe("r6", "Lamb", { kind: "weekend", favourite: true }))).toBe("r6 | Lamb |  | fav | weekend | never made");
+    expect(libraryLine(recipe("r5", "Dal", { facets: { ...noFacets(), week: ["weeknight"] } }))).toBe("r5 | Dal |  | week: weeknight | never made");
+    expect(libraryLine(recipe("r6", "Lamb", { facets: { ...noFacets(), week: ["weekend"] }, favourite: true }))).toBe(
+      "r6 | Lamb |  | fav | week: weekend | never made"
+    );
   });
 
   test("the library line carries the facets said, layer by layer, leaving the empty ones out", () => {
     const facets = { ...noFacets(), course: ["main" as const], cuisine: ["thai" as const, "vietnamese" as const], diet: ["vegetarian" as const] };
     expect(facetsLine(noFacets())).toBe("");
     expect(facetsLine({ ...noFacets(), mainIngredient: ["tofu"], season: ["winter"] })).toBe("main ingredient: tofu; season: winter");
-    expect(libraryLine(recipe("r7", "Pad see ew", { kind: "rotation", facets }))).toBe(
-      "r7 | Pad see ew |  | rotation | course: main; cuisine: thai, vietnamese; diet: vegetarian | never made"
+    expect(libraryLine(recipe("r7", "Pad see ew", { facets: { ...facets, week: ["weeknight"] } }))).toBe(
+      "r7 | Pad see ew |  | course: main; week: weeknight; cuisine: thai, vietnamese; diet: vegetarian | never made"
     );
     expect(libraryLine(recipe("r8", "Salsa verde", { facets: { ...noFacets(), course: ["sauce"] } }))).toBe("r8 | Salsa verde |  | course: sauce | never made");
   });
 
-  test("the prompt says what the facets mean for a slot, beside the kind", () => {
+  test("the prompt says what the facets mean for a slot, beside the week", () => {
     const prompt = proposalPrompt(INPUT);
     expect(prompt).toContain(FACET_LINE);
     expect(FACET_LINE).toMatch(/main, soup or salad/);
     expect(FACET_LINE).toMatch(/never planned on its own/);
-    expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | kind | facets | last made):");
+    expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | facets | last made):");
   });
 
   test("the JSON Schema names exactly the fields the zod schema does, and requires all of them", () => {
@@ -187,10 +189,10 @@ describe("parseProposalAnswer", () => {
   });
 });
 
-test("the prompt says what a recipe's kind means, and the library header names the column", () => {
+test("the prompt says what a recipe's week means (row 219), and the library header names the columns", () => {
   const prompt = proposalPrompt(INPUT);
-  expect(prompt).toContain("A recipe marked `rotation` is one of the household's weeknight regulars");
-  expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | kind | facets | last made):");
+  expect(prompt).toContain("A recipe whose week is weeknight fits a weeknight's time");
+  expect(prompt).toContain("LIBRARY (id | name | tags | time | rating | fav | facets | last made):");
 });
 
 describe("a varied week (decisions.md row 212)", () => {

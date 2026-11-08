@@ -1,5 +1,5 @@
 // Plan the week with a model (decisions.md row 194): the page asks the planner
-// as it opens, shows its picks and reasons where the rotation's would be, and
+// as it opens, shows its picks and reasons where the weeknight recipes' would be, and
 // writes what is accepted through applyPlanProposal. The server functions are
 // stand-ins, so the model's answer is fixed.
 
@@ -8,12 +8,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { noFacets, type RecipeSummary } from "../../../../src/domain/recipes/recipe";
+import { noFacets, type RecipeSummary, type WeekPart } from "../../../../src/domain/recipes/recipe";
 import { testRouter } from "../../../helpers/routes";
 
 const MONDAY = "2026-11-02";
 
-function summary(id: string, name: string, kind: RecipeSummary["kind"]): RecipeSummary {
+function summary(id: string, name: string, week: WeekPart | null): RecipeSummary {
   return {
     id,
     slug: name.toLowerCase(),
@@ -25,14 +25,13 @@ function summary(id: string, name: string, kind: RecipeSummary["kind"]): RecipeS
     totalTime: null,
     lastMade: null,
     favourite: false,
-    kind,
-    facets: noFacets(),
+    facets: { ...noFacets(), week: week === null ? [] : [week] },
     tags: [],
     ingredientPreview: [],
   };
 }
-const dal = summary("00000000-0000-4000-8000-000000000001", "Dal", "rotation");
-const kofta = summary("00000000-0000-4000-8000-000000000002", "Kofta", "rotation");
+const dal = summary("00000000-0000-4000-8000-000000000001", "Dal", "weeknight");
+const kofta = summary("00000000-0000-4000-8000-000000000002", "Kofta", "weeknight");
 const lamb = summary("00000000-0000-4000-8000-000000000003", "Lamb", "weekend");
 
 const fns = vi.hoisted(() => ({
@@ -106,7 +105,7 @@ test("the planner's picks and reasons fill the week, and Add writes them at the 
     },
   });
   expect(screen.getByText("not had since September")).toBeInTheDocument();
-  // Tuesday, which the planner left open, comes from the rotation.
+  // Tuesday, which the planner left open, comes from the weeknight recipes.
   expect(screen.getByText("Dal")).toBeInTheDocument();
 
   const user = userEvent.setup();
@@ -128,16 +127,16 @@ test("the planner's picks and reasons fill the week, and Add writes them at the 
   );
 });
 
-test("when the planner fails the rotation's week stands, with why", async () => {
+test("when the planner fails the weeknight recipes' week stands, with why", async () => {
   fns.proposePlanWeek.mockRejectedValue(new Error("No AI provider is set."));
   await open();
-  await screen.findByText("The planner couldn't answer, so these are from the rotation.");
+  await screen.findByText("The planner couldn't answer, so these are from your weeknight recipes.");
   expect(screen.getByText("No AI provider is set.")).toBeInTheDocument();
   expect(screen.getByText("Dal")).toBeInTheDocument();
   expect(screen.getByText("Kofta")).toBeInTheDocument();
 });
 
-test("while the planner chooses the days wait in place; with nothing marked Rotation its picks can still be swapped", async () => {
+test("while the planner chooses the days wait in place; with nothing marked Weeknight its picks can still be swapped", async () => {
   const plain = [summary("00000000-0000-4000-8000-000000000011", "Soup", null), summary("00000000-0000-4000-8000-000000000012", "Pie", null)];
   library.current = plain;
   let answer: (value: unknown) => void = () => {};
@@ -147,7 +146,7 @@ test("while the planner chooses the days wait in place; with nothing marked Rota
   expect(screen.getByRole("button", { name: "Swap Mon" })).toBeDisabled();
   answer({ entries: [entry("2026-11-02", plain[0]!, "a soup for Monday")], dropped: [], unfilled: [], taken: [] });
   await screen.findByText("a soup for Monday");
-  expect(screen.queryByText(/No recipes are marked Rotation yet/)).toBeNull();
+  expect(screen.queryByText(/No recipes are marked Weeknight yet/)).toBeNull();
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Swap Mon" }));
   expect(screen.getAllByText("Pie").length).toBeGreaterThan(0);

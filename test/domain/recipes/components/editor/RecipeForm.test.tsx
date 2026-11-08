@@ -53,7 +53,6 @@ const stored: Recipe = {
   rating: 4,
   lastMade: null,
   favourite: false,
-  kind: null,
   facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 1,
@@ -343,14 +342,14 @@ describe("detailsHint", () => {
 // autofocus is asserted as the attribute React serialises, not as
 // document.activeElement.
 // The order is the phone's recipe page (decisions.md row 211; a route renders as a phone here): the photo, the name, the
-// description, the times, the servings, then the kind and what it is.
+// description, the times, the servings, then what it is.
 describe("the head of the form", () => {
   const head = (html: string) =>
-    ['data-placeholder="image"', 'name="name"', 'name="description"', 'name="prepTime"', 'aria-label="Servings"', 'aria-label="How you cook it"'].map(
+    ['data-placeholder="image"', 'name="name"', 'name="description"', 'name="prepTime"', 'aria-label="Servings"', "Add course, cuisine and more"].map(
       (needle) => html.indexOf(needle)
     );
 
-  test("a new recipe: the photo, the name, the description, the times, the servings, the kind, and the name is autofocused", async () => {
+  test("a new recipe: the photo, the name, the description, the times, the servings, what it is, and the name is autofocused", async () => {
     const html = await renderRoute("/recipes/new?source=manual");
     const at = head(html);
     expect(at.every((index) => index >= 0)).toBe(true);

@@ -47,7 +47,7 @@ test("the editor is the recipe page's three columns: what it is, the ingredients
   expect(within(about).getByRole("textbox", { name: "Name" })).toHaveValue("Fried rice");
   expect(within(about).getByRole("spinbutton", { name: "Prep time (minutes)" })).toBeInTheDocument();
   // How it is cooked and what it is are edited where the page shows them, kept in the draft until Save.
-  expect(within(about).getByRole("radiogroup", { name: "How you cook it" })).toBeInTheDocument();
+  expect(within(about).queryByRole("radiogroup", { name: "How you cook it" })).toBeNull();
   expect(within(about).getByRole("button", { name: "Add course, cuisine and more" })).toBeInTheDocument();
   expect(within(column("Ingredients")).getByRole("button", { name: "Edit ingredient 1" })).toHaveTextContent("2 eggs");
   expect(within(column("Method")).getByRole("textbox", { name: "Step 1" })).toHaveValue("Fry the rice.");

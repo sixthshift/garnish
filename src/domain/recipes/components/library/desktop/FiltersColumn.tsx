@@ -82,7 +82,7 @@ export function FiltersColumn(props: FiltersColumnProps) {
   const { top, more } = tagShelves(allTags, tags, tagText);
   const hidden = allTags.length - top.length;
   const toggleTag = (tag: TagUsage) => (on: boolean) => onTagsChange(on ? [...tags, tag.slug] : tags.filter((slug) => slug !== tag.slug));
-  const counts: Record<string, number> = { all: props.shelves.all, rotation: props.shelves.rotation, weekend: props.shelves.weekend, try: props.shelves.try };
+  const counts: Record<string, number> = { all: props.shelves.all, try: props.shelves.try };
 
   return (
     <aside

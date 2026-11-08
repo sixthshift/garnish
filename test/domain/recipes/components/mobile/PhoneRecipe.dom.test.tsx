@@ -33,7 +33,6 @@ const recipe: Recipe = {
   performTime: 30,
   sourceUrl: null,
   favourite: false,
-  kind: null,
   facets: noFacets(),
   notes: [],
   tags: [{ id: crypto.randomUUID(), name: "Weeknight", slug: "weeknight" }],

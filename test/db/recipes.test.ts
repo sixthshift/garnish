@@ -370,7 +370,6 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     totalTime: 20,
     lastMade: "2026-09-01T08:00:00.000Z",
     favourite: false,
-    kind: null,
     facets: full.facets,
     tags: full.tags,
     ingredientPreview: ["200 g spaghetti", "salt, to taste", "50 g butter, cold"],
@@ -386,7 +385,6 @@ test("list returns summaries filtered by name substring and by tag slug", () => 
     totalTime: 2,
     lastMade: null,
     favourite: false,
-    kind: null,
     facets: noFacets(),
     tags: toast.tags,
     ingredientPreview: [],
@@ -598,45 +596,35 @@ test("favourite round-trips through create, update and the list summary", () => 
   expect(updated.favourite).toBe(false);
 });
 
-test("kind round-trips through create, update and the list summary, and defaults to not said", () => {
-  expect(repo.create(recipeInputSchema.parse(minimal("Plain"))).kind).toBeNull();
-  const created = repo.create(recipeInputSchema.parse(minimal("Toast", { kind: "rotation" })));
-  expect(created.kind).toBe("rotation");
-  expect(repo.query().find((r) => r.id === created.id)!.kind).toBe("rotation");
-  expect(repo.ref(created.id).replace(recipeInputSchema.parse(minimal("Toast", { kind: "weekend" })))!.kind).toBe("weekend");
+test("the week facet round-trips through create, update and the list summary, and defaults to not said (row 219)", () => {
+  expect(repo.create(recipeInputSchema.parse(minimal("Plain"))).facets.week).toEqual([]);
+  const created = repo.create(recipeInputSchema.parse(minimal("Toast", { facets: { ...noFacets(), week: ["weeknight"] } })));
+  expect(created.facets.week).toEqual(["weeknight"]);
+  expect(repo.query().find((r) => r.id === created.id)!.facets.week).toEqual(["weeknight"]);
+  const both = repo.ref(created.id).replace(recipeInputSchema.parse(minimal("Toast", { facets: { ...noFacets(), week: ["weekend", "weeknight"] } })))!;
+  expect(both.facets.week).toEqual(["weeknight", "weekend"]);
 });
 
-test("ref(id).kind sets the kind alone, clears it with null, and reports whether the id exists", () => {
-  const created = repo.create(recipeInputSchema.parse(minimal("Toast")));
-  expect(repo.ref(created.id).kind("weekend")).toBe(true);
-  const stored = repo.getById(created.id)!;
-  expect(stored.kind).toBe("weekend");
-  expect(stored.updatedAt).toBe(created.updatedAt);
-  expect(repo.ref(created.id).kind(null)).toBe(true);
-  expect(repo.getById(created.id)!.kind).toBeNull();
-  expect(repo.ref(ids.recipe).kind("rotation")).toBe(false);
-});
-
-test("list filters by kind and by never made", () => {
-  repo.create(recipeInputSchema.parse(minimal("Laksa", { kind: "rotation", lastMade: "2026-09-01T08:00:00.000Z" })));
-  repo.create(recipeInputSchema.parse(minimal("Lamb shoulder", { kind: "weekend", lastMade: "2026-08-01T08:00:00.000Z" })));
-  repo.create(recipeInputSchema.parse(minimal("Birria", { kind: "weekend" })));
+test("list filters by the week facet and by never made", () => {
+  repo.create(recipeInputSchema.parse(minimal("Laksa", { facets: { ...noFacets(), week: ["weeknight"] }, lastMade: "2026-09-01T08:00:00.000Z" })));
+  repo.create(recipeInputSchema.parse(minimal("Lamb shoulder", { facets: { ...noFacets(), week: ["weekend"] }, lastMade: "2026-08-01T08:00:00.000Z" })));
+  repo.create(recipeInputSchema.parse(minimal("Birria", { facets: { ...noFacets(), week: ["weekend"] } })));
   repo.create(recipeInputSchema.parse(minimal("Eggplant")));
   const slugs = (filter: object) =>
     repo
       .query({ by: "filter", ...filter })
       .map((r) => r.slug)
       .sort();
-  expect(slugs({ kind: "rotation" })).toEqual(["laksa"]);
-  expect(slugs({ kind: "weekend" })).toEqual(["birria", "lamb-shoulder"]);
+  expect(slugs({ facets: { ...noFacets(), week: ["weeknight"] } })).toEqual(["laksa"]);
+  expect(slugs({ facets: { ...noFacets(), week: ["weekend"] } })).toEqual(["birria", "lamb-shoulder"]);
   expect(slugs({ neverMade: true })).toEqual(["birria", "eggplant"]);
-  expect(slugs({ kind: "weekend", neverMade: true })).toEqual(["birria"]);
+  expect(slugs({ facets: { ...noFacets(), week: ["weekend"] }, neverMade: true })).toEqual(["birria"]);
   // A desktop's filters column counts each shelf over the whole library (M47.4).
-  expect(repo.shelfCounts()).toEqual({ all: 4, rotation: 1, weekend: 2, try: 2 });
+  expect(repo.shelfCounts()).toEqual({ all: 4, try: 2 });
 });
 
 test("shelfCounts is all zeros with no recipes", () => {
-  expect(repo.shelfCounts()).toEqual({ all: 0, rotation: 0, weekend: 0, try: 0 });
+  expect(repo.shelfCounts()).toEqual({ all: 0, try: 0 });
 });
 
 test("ref(id).rate writes the rating, clears it with null, and reports whether the id exists", () => {

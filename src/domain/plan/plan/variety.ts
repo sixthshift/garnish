@@ -54,7 +54,7 @@ function fitFor(recipe: VarietyRecipe, neighbours: readonly (VarietyRecipe | und
   return 3;
 }
 
-/** The first candidate of the best tier present, keeping the candidates' own order within it (the rotation's: longest since made first). */
+/** The first candidate of the best tier present, keeping the candidates' own order within it (the weeknights': longest since made first). */
 function best<T extends VarietyRecipe>(candidates: readonly T[], score: (recipe: T) => number): T | undefined {
   let chosen: T | undefined;
   let top = -1;
@@ -71,7 +71,7 @@ function best<T extends VarietyRecipe>(candidates: readonly T[], score: (recipe:
 
 /**
  * The weeknights' first offer, `count` nights from what did not happen last
- * week then the rotation, in that order of preference, varied by the rules
+ * week then the weeknight recipes, in that order of preference, varied by the rules
  * above. A night with nothing left is null, a night off. Pure.
  */
 export function varyNights<T extends VarietyRecipe>(count: number, candidates: readonly T[], vegetarianNights = 0): (string | null)[] {

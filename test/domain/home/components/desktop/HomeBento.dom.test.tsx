@@ -38,7 +38,6 @@ function summary(name: string, over: Partial<RecipeSummary> = {}): RecipeSummary
     totalTime: null,
     lastMade: null,
     favourite: false,
-    kind: null,
     facets: noFacets(),
     tags: [],
     ingredientPreview: [],
@@ -46,8 +45,8 @@ function summary(name: string, over: Partial<RecipeSummary> = {}): RecipeSummary
   };
 }
 
-const ragu = summary("Beef ragu", { totalTime: 230, kind: "rotation", lastMade: "2026-06-01T00:00:00.000Z" });
-const curry = summary("Chickpea curry", { kind: "rotation" });
+const ragu = summary("Beef ragu", { totalTime: 230, facets: { ...noFacets(), week: ["weeknight"] }, lastMade: "2026-06-01T00:00:00.000Z" });
+const curry = summary("Chickpea curry", { facets: { ...noFacets(), week: ["weeknight"] } });
 const tart = summary("Lemon tart");
 
 function entry(date: string, over: Record<string, unknown>) {

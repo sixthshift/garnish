@@ -91,10 +91,10 @@ export function sampleBackup(): Backup {
         image: `images/${IDS.recipe}.png`,
         rating: 4,
         favourite: true,
-        kind: "rotation",
         facets: {
           course: ["main"],
           meal: ["dinner"],
+          week: ["weeknight"],
           cuisine: ["italian"],
           diet: ["vegetarian"],
           mainIngredient: ["pasta"],

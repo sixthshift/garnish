@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import { PlanWeekView, type PlanWeekViewProps } from "../../../../../src/domain/plan/components/week/PlanWeekView";
 import { groupByDay, type PlanEntry, planEntrySchema } from "../../../../../src/domain/plan/plan";
-import type { RecipeSummary } from "../../../../../src/domain/recipes/recipe";
+import { noFacets, type RecipeSummary } from "../../../../../src/domain/recipes/recipe";
 import { renderInRouter } from "../../../../helpers/dom";
 import { atDesktop } from "../../../../helpers/layout";
 
@@ -15,13 +15,23 @@ atDesktop();
 const MONDAY = "2026-09-14";
 const NEXT = "2026-09-21";
 const recipe = (over: Partial<RecipeSummary>): RecipeSummary =>
-  ({ image: null, totalTime: null, lastMade: null, kind: null, tags: [], ingredientPreview: [], favourite: false, rating: null, ...over }) as RecipeSummary;
+  ({
+    image: null,
+    totalTime: null,
+    lastMade: null,
+    tags: [],
+    ingredientPreview: [],
+    favourite: false,
+    rating: null,
+    facets: noFacets(),
+    ...over,
+  }) as RecipeSummary;
 const tart = recipe({ id: "11111111-1111-4111-8111-111111111111", slug: "lemon-tart", name: "Lemon tart", totalTime: 100 });
 const dal = recipe({
   id: "22222222-2222-4222-8222-222222222222",
   slug: "dal",
   name: "Red lentil dal",
-  kind: "rotation",
+  facets: { ...noFacets(), week: ["weeknight"] },
   lastMade: "2026-08-31T09:00:00.000Z",
   totalTime: 40,
 });
@@ -29,7 +39,7 @@ const roast = recipe({
   id: "33333333-3333-4333-8333-333333333333",
   slug: "roast",
   name: "Slow roast lamb",
-  kind: "weekend",
+  facets: { ...noFacets(), week: ["weekend"] },
   lastMade: "2026-06-01T09:00:00.000Z",
 });
 
@@ -76,12 +86,12 @@ test("the board shows this week and the next, fourteen days, with how many night
   expect(within(week("Next week")).getByRole("button", { name: "Add to shopping" })).toBeInTheDocument();
 });
 
-test("the shelf adds to today to begin with, without taking focus, and lists the rotation", async () => {
+test("the shelf adds to today to begin with, without taking focus, and lists the weeknight recipes", async () => {
   await board();
   expect(screen.getByRole("heading", { name: "Adding to Wednesday 16 September" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Add to Wednesday 16 September" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("combobox", { name: "Search recipes, or type a note" })).not.toHaveFocus();
-  const rotation = await screen.findByRole("list", { name: "Rotation recipes" });
+  const rotation = await screen.findByRole("list", { name: "Weeknight recipes" });
   expect(
     within(rotation)
       .getAllByRole("button")
@@ -125,10 +135,10 @@ test("the search still adds a recipe or a plain note to the chosen day, and stan
   const box = screen.getByRole("combobox", { name: "Search recipes, or type a note" });
 
   await user.type(box, "lem");
-  expect(screen.queryByRole("tab", { name: "Rotation" })).toBeNull();
+  expect(screen.queryByRole("tab", { name: "Weeknight" })).toBeNull();
   await user.click(await screen.findByRole("option", { name: /Lemon tart/ }));
   expect(onAddRecipe).toHaveBeenCalledWith("2026-09-18", tart, null);
-  expect(await screen.findByRole("tab", { name: "Rotation" })).toBeInTheDocument();
+  expect(await screen.findByRole("tab", { name: "Weeknight" })).toBeInTheDocument();
 
   await user.type(box, "Out{Enter}");
   expect(onAddText).toHaveBeenCalledWith("2026-09-18", "Out", null);

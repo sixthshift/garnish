@@ -68,9 +68,11 @@ test("steps get links to the ingredients they mention", () => {
   expect(part.steps![1]!.ingredientIds).toEqual([]);
 });
 
-test("kind is read, set, cleared, and kept by an update that does not send it", () => {
-  const created = parseDocument(documentFromMcp(createRecipeSchema.parse({ name: "Laksa", kind: "rotation", parts: [{}] }), vocabulary, null).doc);
-  expect(created.kind).toBe("rotation");
+test("the week is read, set, and kept by an update that does not send it (row 219)", () => {
+  const created = parseDocument(
+    documentFromMcp(createRecipeSchema.parse({ name: "Laksa", facets: { week: ["weeknight"] }, parts: [{}] }), vocabulary, null).doc
+  );
+  expect(created.facets.week).toEqual(["weeknight"]);
   const stored = recipeSchema.parse({
     ...created,
     id: "00000000-0000-4000-8000-0000000000d2",
@@ -79,17 +81,20 @@ test("kind is read, set, cleared, and kept by an update that does not send it", 
     updatedAt: "2026-10-26T00:00:00.000Z",
     parts: created.parts.map((part) => ({ ...part, id: crypto.randomUUID() })),
   });
-  expect(recipeForMcp(stored).kind).toBe("rotation");
-  expect(documentFromMcp(updateRecipeSchema.parse({ name: "Chicken laksa" }), vocabulary, stored).doc.kind).toBe("rotation");
-  expect(documentFromMcp(updateRecipeSchema.parse({ kind: "weekend" }), vocabulary, stored).doc.kind).toBe("weekend");
-  expect(documentFromMcp(updateRecipeSchema.parse({ kind: null }), vocabulary, stored).doc.kind).toBeNull();
+  expect(recipeForMcp(stored).facets.week).toEqual(["weeknight"]);
+  expect(documentFromMcp(updateRecipeSchema.parse({ name: "Chicken laksa" }), vocabulary, stored).doc.facets?.week).toEqual(["weeknight"]);
+  expect(parseDocument(documentFromMcp(updateRecipeSchema.parse({ facets: { week: ["weekend", "weeknight"] } }), vocabulary, stored).doc).facets.week).toEqual([
+    "weeknight",
+    "weekend",
+  ]);
+  expect(documentFromMcp(updateRecipeSchema.parse({ facets: { week: [] } }), vocabulary, stored).doc.facets?.week).toEqual([]);
 });
 
 test("facets are read, set on a create, and merged by layer on an update: a layer sent replaces, [] clears, one left out stays", () => {
   const created = parseDocument(
     documentFromMcp(createRecipeSchema.parse({ name: "Salsa verde", facets: { course: ["sauce"], cuisine: ["italian"] }, parts: [{}] }), vocabulary, null).doc
   );
-  expect(created.facets).toEqual({ course: ["sauce"], meal: [], cuisine: ["italian"], diet: [], mainIngredient: [], method: [], season: [] });
+  expect(created.facets).toEqual({ course: ["sauce"], meal: [], week: [], cuisine: ["italian"], diet: [], mainIngredient: [], method: [], season: [] });
   const stored = recipeSchema.parse({
     ...created,
     id: "00000000-0000-4000-8000-0000000000d3",
@@ -104,6 +109,7 @@ test("facets are read, set on a create, and merged by layer on an update: a laye
   expect(parseDocument(changed).facets).toEqual({
     course: ["sauce"],
     meal: [],
+    week: [],
     cuisine: [],
     diet: ["vegetarian", "vegan"],
     mainIngredient: [],

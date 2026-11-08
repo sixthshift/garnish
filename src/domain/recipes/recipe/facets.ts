@@ -7,9 +7,9 @@ import { z } from "zod";
  * fixed list the app knows, not free text: the planner, the library's filters,
  * the import and the MCP connector all rely on a value meaning one thing.
  * Every layer holds a set (a salad is a main or a side; a dish can be Thai and
- * Vietnamese), empty until the household or an import says. How the household
- * cooks a recipe, rotation or weekend, is a layer too, but older and single,
- * and stays `kind` (row 191). Tags remain for whatever fits no layer.
+ * Vietnamese), empty until the household or an import says. Which part of the
+ * week a recipe fits, weeknight or weekend, is a layer like the rest (row 219,
+ * which folded row 191's `kind` in). Tags remain for whatever fits no layer.
  */
 
 /** What it is in a meal: a meal on its own, a part of one, or something made to go into or onto another. */
@@ -32,6 +32,14 @@ export const COURSES = [
 
 /** When in the day it suits. The same three a plan entry is labelled with (row 100). */
 export const MEAL_TIMES = ["breakfast", "lunch", "dinner"] as const;
+
+/**
+ * Which part of the week it fits: a weeknight, with a weeknight's time, or the
+ * weekend, with a weekend's. Only the household knows (row 191: a 40-minute
+ * roast can be a Sunday ritual), and it stays these two on purpose: holidays
+ * are the household's own, and a tag (row 219).
+ */
+export const WEEK_PARTS = ["weeknight", "weekend"] as const;
 
 /** Where it is from. Broad on purpose: a region where the household would not split it finer. */
 export const CUISINES = [
@@ -84,6 +92,7 @@ export const SEASONS = ["summer", "autumn", "winter", "spring"] as const;
 
 export const courseSchema = z.enum(COURSES);
 export const mealTimeSchema = z.enum(MEAL_TIMES);
+export const weekPartSchema = z.enum(WEEK_PARTS);
 export const cuisineSchema = z.enum(CUISINES);
 export const dietSchema = z.enum(DIETS);
 export const mainIngredientSchema = z.enum(MAIN_INGREDIENTS);
@@ -92,6 +101,7 @@ export const seasonSchema = z.enum(SEASONS);
 
 export type Course = z.infer<typeof courseSchema>;
 export type MealTime = z.infer<typeof mealTimeSchema>;
+export type WeekPart = z.infer<typeof weekPartSchema>;
 export type Cuisine = z.infer<typeof cuisineSchema>;
 export type Diet = z.infer<typeof dietSchema>;
 export type MainIngredient = z.infer<typeof mainIngredientSchema>;
@@ -110,6 +120,7 @@ function layerSet<const T extends readonly [string, ...string[]]>(values: T) {
 export const facetsSchema = z.object({
   course: layerSet(COURSES),
   meal: layerSet(MEAL_TIMES),
+  week: layerSet(WEEK_PARTS),
   cuisine: layerSet(CUISINES),
   diet: layerSet(DIETS),
   mainIngredient: layerSet(MAIN_INGREDIENTS),
@@ -121,12 +132,13 @@ export type Facets = z.infer<typeof facetsSchema>;
 export type FacetLayer = keyof Facets;
 
 /** The layers in the order a screen lists them. */
-export const FACET_LAYERS = ["course", "meal", "cuisine", "diet", "mainIngredient", "method", "season"] as const satisfies readonly FacetLayer[];
+export const FACET_LAYERS = ["course", "meal", "week", "cuisine", "diet", "mainIngredient", "method", "season"] as const satisfies readonly FacetLayer[];
 
 /** Each layer's values, by layer. */
 export const FACET_VALUES: { readonly [L in FacetLayer]: readonly Facets[L][number][] } = {
   course: COURSES,
   meal: MEAL_TIMES,
+  week: WEEK_PARTS,
   cuisine: CUISINES,
   diet: DIETS,
   mainIngredient: MAIN_INGREDIENTS,
@@ -136,12 +148,17 @@ export const FACET_VALUES: { readonly [L in FacetLayer]: readonly Facets[L][numb
 
 /** A recipe nothing has been said about yet. */
 export function noFacets(): Facets {
-  return { course: [], meal: [], cuisine: [], diet: [], mainIngredient: [], method: [], season: [] };
+  return { course: [], meal: [], week: [], cuisine: [], diet: [], mainIngredient: [], method: [], season: [] };
 }
 
 /** Whether nothing has been said on any layer. */
 export function facetsEmpty(facets: Facets): boolean {
   return FACET_LAYERS.every((layer) => facets[layer].length === 0);
+}
+
+/** Whether the household said a recipe fits this part of the week (row 219). A recipe can fit both, or neither. */
+export function fitsWeek(facets: Pick<Facets, "week">, part: WeekPart): boolean {
+  return facets.week.includes(part);
 }
 
 /** The courses that are a meal, or part of one, rather than something made to go into another dish. */
@@ -156,6 +173,7 @@ export function isBuildingBlock(facets: Pick<Facets, "course">): boolean {
 export const LAYER_NAMES: { readonly [L in FacetLayer]: string } = {
   course: "Course",
   meal: "Meal",
+  week: "Week",
   cuisine: "Cuisine",
   diet: "Diet",
   mainIngredient: "Main ingredient",
@@ -182,6 +200,7 @@ export const FACET_LABELS: { readonly [L in FacetLayer]: { readonly [V in Facets
     dough: "Dough or pastry",
   },
   meal: { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner" },
+  week: { weeknight: "Weeknight", weekend: "Weekend" },
   cuisine: {
     australian: "Australian",
     british: "British",

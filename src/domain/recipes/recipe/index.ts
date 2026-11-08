@@ -7,7 +7,7 @@ export { ingredientsText, recipeUrl } from "./copy";
 export { duplicateInput } from "./duplicate";
 export { durationsIn } from "./durations";
 export { exportedRecipe } from "./export";
-export type { Course, Cuisine, Diet, FacetLayer, Facets, MainIngredient, MealTime, Method, Season } from "./facets";
+export type { Course, Cuisine, Diet, FacetLayer, Facets, MainIngredient, MealTime, Method, Season, WeekPart } from "./facets";
 export {
   BUILDING_BLOCKS,
   COURSES,
@@ -19,6 +19,7 @@ export {
   facetLabel,
   facetsEmpty,
   facetsSchema,
+  fitsWeek,
   isBuildingBlock,
   LAYER_NAMES,
   MAIN_INGREDIENTS,
@@ -26,6 +27,7 @@ export {
   METHODS,
   noFacets,
   SEASONS,
+  WEEK_PARTS,
 } from "./facets";
 export type { TagMatch } from "./filters";
 export { selectedTags } from "./filters";
@@ -39,7 +41,6 @@ export type {
   Part,
   Recipe,
   RecipeInput,
-  RecipeKind,
   RecipeNote,
   Step,
   TimelineEvent,
@@ -48,9 +49,7 @@ export type {
 export {
   alternativeSchema,
   ingredientInputSchema,
-  RECIPE_KINDS,
   recipeInputSchema,
-  recipeKindSchema,
   recipeSchema,
   timelineEventInputSchema,
   timelineEventSchema,

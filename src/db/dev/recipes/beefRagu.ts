@@ -48,8 +48,8 @@ const input: DevRecipe["input"] = {
   performTime: 210,
   sourceUrl: "https://www.recipetineats.com/example-recipe/",
   favourite: true,
-  kind: "weekend",
   facets: {
+    week: ["weekend"],
     course: ["main"],
     meal: ["dinner"],
     cuisine: ["italian"],

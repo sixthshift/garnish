@@ -30,7 +30,6 @@ const tart: Recipe = {
   performTime: 40,
   sourceUrl: null,
   favourite: false,
-  kind: null,
   facets: noFacets(),
   notes: [],
   tags: [],

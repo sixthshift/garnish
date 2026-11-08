@@ -1,4 +1,4 @@
-import type { Facets, RecipeInput, RecipeKind } from "../recipe";
+import type { Facets, RecipeInput } from "../recipe";
 import type { Tag, Unit } from "../reference";
 
 export type PartInput = RecipeInput["parts"][number];
@@ -28,7 +28,6 @@ export type RecipeDraft = {
   performTime: number | null;
   sourceUrl: string | null;
   favourite: boolean;
-  kind: RecipeKind | null;
   /** What it is, layer by layer (row 209): carried through an edit, set on the recipe page. */
   facets: Facets;
   notes: DraftNote[];

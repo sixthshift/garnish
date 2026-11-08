@@ -52,9 +52,9 @@ test("varied the way a real library is", () => {
   const has = (predicate: (r: (typeof parsed)[number]) => boolean) => parsed.some(predicate);
   expect(new Set(docs.flatMap((d) => d.facets.cuisine)).size).toBeGreaterThanOrEqual(8);
   expect(new Set(docs.flatMap((d) => d.facets.course)).size).toBeGreaterThanOrEqual(6);
-  expect(docs.filter((d) => d.kind === "rotation").length).toBeGreaterThanOrEqual(8);
-  expect(docs.some((d) => d.kind === "weekend")).toBe(true);
-  expect(docs.some((d) => d.kind === null)).toBe(true);
+  expect(docs.filter((d) => d.facets.week.includes("weeknight")).length).toBeGreaterThanOrEqual(8);
+  expect(docs.some((d) => d.facets.week.includes("weekend"))).toBe(true);
+  expect(docs.some((d) => d.facets.week.length === 0)).toBe(true);
   expect(has((r) => r.dev.cooks.length === 0)).toBe(true); // never made
   expect(docs.some((d) => d.rating === null)).toBe(true);
   expect(DEV_LIBRARY.filter((r) => r.makesFood !== undefined).length).toBeGreaterThanOrEqual(2);

@@ -36,7 +36,6 @@ const base: Recipe = {
   rating: 4,
   lastMade: null,
   favourite: false,
-  kind: null,
   facets: noFacets(),
   recipeServings: 4,
   recipeYieldQuantity: 1,

@@ -1,4 +1,4 @@
-import { createRoute, lazyRouteComponent } from "@tanstack/react-router";
+import { createRoute, lazyRouteComponent, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { listFoodSummaries } from "../../../api/rpc/foods";
 import { listRecipes, recipeFacetCounts, recipeShelfCounts } from "../../../api/rpc/recipes";
@@ -16,12 +16,13 @@ export const RecipeListSearch = z.object({
   match: z.enum(["any", "all"]).optional(),
   foods: z.array(z.string()).optional(),
   favourite: z.boolean().optional(),
-  /** Which shelf: the weeknight regulars, the weekend cooks, or the ones never made. Unset is everything. */
-  shelf: z.enum(["rotation", "weekend", "try"]).optional(),
+  /** The ones never made, or unset for everything. `rotation` and `weekend` are an old link's, which `beforeLoad` sends on to the week facet (row 219). */
+  shelf: z.enum(["try", "rotation", "weekend"]).optional(),
   // What a recipe is, one param a layer (decisions.md row 209). Strings, not the lists' enums: a value
   // the lists dropped narrows by nothing rather than failing the page (facetsFromSearch).
   course: z.array(z.string()).optional(),
   meal: z.array(z.string()).optional(),
+  week: z.array(z.string()).optional(),
   cuisine: z.array(z.string()).optional(),
   diet: z.array(z.string()).optional(),
   mainIngredient: z.array(z.string()).optional(),
@@ -39,9 +40,13 @@ export const recipesIndex = createRoute({
   getParentRoute: () => recipes,
   path: "/",
   validateSearch: RecipeListSearch,
+  // The Rotation and Weekend shelves are the week facet since decisions.md row 219: an old link to one goes on to the same recipes.
+  beforeLoad: ({ search }) => {
+    if (search.shelf !== "rotation" && search.shelf !== "weekend") return;
+    throw redirect({ to: "/recipes", search: { ...search, shelf: undefined, week: [search.shelf === "rotation" ? "weeknight" : "weekend"] } });
+  },
   loaderDeps: ({ search: { q, tag, tags, match, foods, favourite, shelf, sort, dir, seed, ...layers } }) => ({
     q,
-    kind: shelf === "rotation" || shelf === "weekend" ? shelf : undefined,
     neverMade: shelf === "try" ? true : undefined,
     tag,
     tags,

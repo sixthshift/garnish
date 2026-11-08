@@ -9,9 +9,9 @@ import { dayParts } from "../../plan";
 import { nightReason, reasonKey, reasonLabel, swapNight } from "./fill";
 
 /**
- * The open weeknights, each with the recipe the rotation offers and why:
- * Swap for the next one, or Night off to leave the day empty. A night that
- * ran out of rotation starts as a night off.
+ * The open weeknights, each with the weeknight recipe offered and why: Swap
+ * for the next one, or Night off to leave the day empty. A night that ran out
+ * of weeknight recipes starts as a night off.
  */
 export function WeeknightsStep({
   dates,
@@ -21,8 +21,8 @@ export function WeeknightsStep({
   carried,
   today,
   reasons = {},
-  source = "rotation",
-  rotationEmpty = false,
+  source = "weeknight",
+  weeknightsEmpty = false,
   choosing = false,
   vegetarianNights = 0,
   onChange,
@@ -33,12 +33,12 @@ export function WeeknightsStep({
   pool: readonly RecipeSummary[];
   carried: readonly RecipeSummary[];
   today: string;
-  /** The planner's reason for a recipe on a date, when it chose it: shown instead of the rotation's. */
+  /** The planner's reason for a recipe on a date, when it chose it: shown instead of the weeknights' own. */
   reasons?: Readonly<Record<string, string>>;
-  /** Who made the first offer: the planner, or the rotation's own order. */
-  source?: "planner" | "rotation";
-  /** Nothing is marked Rotation, so the rotation offered nothing and Swap offers any recipe. */
-  rotationEmpty?: boolean;
+  /** Who made the first offer: the planner, or the weeknight recipes' own order. */
+  source?: "planner" | "weeknight";
+  /** Nothing is marked Weeknight, so nothing was offered and Swap offers any recipe. */
+  weeknightsEmpty?: boolean;
   /** The planner is still choosing: the days are drawn, waiting, with nothing to press. */
   choosing?: boolean;
   /** How many nights the household wants vegetarian: Swap keeps a vegetarian night vegetarian while the week needs it. */
@@ -69,13 +69,13 @@ export function WeeknightsStep({
           <Muted as="p">
             {source === "planner"
               ? "Swap any you don't fancy, or take a night off."
-              : "From your rotation, the ones you haven't had for longest first. Swap any you don't fancy."}
+              : "From your weeknight recipes, the ones you haven't had for longest first. Swap any you don't fancy."}
           </Muted>
         )}
       </div>
-      {!choosing && source === "rotation" && rotationEmpty && carried.length === 0 && (
+      {!choosing && source === "weeknight" && weeknightsEmpty && carried.length === 0 && (
         <p className="rounded-lg bg-bg-subtle-hovered p-3 text-sm">
-          No recipes are marked Rotation yet, so Swap offers any recipe. Mark your regulars on their pages, or{" "}
+          No recipes are marked Weeknight yet, so Swap offers any recipe. Mark them on their pages, or{" "}
           <Link to="/recipes" className="font-medium text-fg-brand underline underline-offset-2">
             find them in Recipes
           </Link>

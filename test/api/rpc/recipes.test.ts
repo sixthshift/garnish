@@ -12,7 +12,6 @@ import {
   recipeFacetCounts,
   setFacets,
   setFavourite,
-  setKind,
   setRating,
   subRecipesOf,
   updateRecipe,
@@ -196,17 +195,14 @@ test("setFavourite flips the flag and round-trips through listRecipes; an unknow
   expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
 });
 
-test("setKind sets and clears the kind, listRecipes filters by it; an unknown id maps to notFound", async () => {
+test("setFacets sets and clears the week, listRecipes filters by it (row 219)", async () => {
   const created = await callServerFn(createRecipe, doc());
-  await expect(callServerFn(setKind, { id: created.id, kind: "weekend" })).resolves.toEqual({ id: created.id, kind: "weekend" });
-  expect((await callServerFn(listRecipes, { kind: "weekend" })).map((r) => r.id)).toEqual([created.id]);
-  expect(await callServerFn(listRecipes, { kind: "rotation" })).toEqual([]);
-  await expect(callServerFn(setKind, { id: created.id, kind: null })).resolves.toEqual({ id: created.id, kind: null });
-  expect((await callServerFn(getRecipe, { slug: created.slug })).kind).toBeNull();
-  expect((await callServerFn(listRecipes, { neverMade: true })).map((r) => r.id)).toEqual([created.id]);
-
-  const data = await notFoundData(callServerFn(setKind, { id: ids.missing, kind: "rotation" }));
-  expect(data).toEqual({ entity: "recipe", id: ids.missing, message: `recipe ${ids.missing} not found` });
+  const weekend = { ...noFacets(), week: ["weekend" as const] };
+  await expect(callServerFn(setFacets, { id: created.id, facets: weekend })).resolves.toEqual({ id: created.id, facets: weekend });
+  expect((await callServerFn(listRecipes, { facets: { week: ["weekend"] } })).map((r) => r.id)).toEqual([created.id]);
+  expect(await callServerFn(listRecipes, { facets: { week: ["weeknight"] } })).toEqual([]);
+  await callServerFn(setFacets, { id: created.id, facets: noFacets() });
+  expect((await callServerFn(getRecipe, { slug: created.slug })).facets.week).toEqual([]);
 });
 
 test("setFacets replaces every layer, listRecipes filters by them; an unknown id maps to notFound", async () => {

@@ -1,40 +1,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { toastError } from "../../../../lib/toast";
-import { type RecipeSummary, sinceMade } from "../../../recipes/recipe";
+import { fitsWeek, type RecipeSummary, sinceMade } from "../../../recipes/recipe";
 
 /**
  * The recipes to add from, sorted into four tabs: what a desktop's shelf
  * beside the board and a phone's add sheet both browse (decisions.md rows 207
  * and 208). Outside `desktop/` and `mobile/` because both draw it.
  */
-export type ShelfTab = "rotation" | "weekend" | "try" | "all";
+export type ShelfTab = "weeknight" | "weekend" | "try" | "all";
 
 export const SHELF_TABS: ReadonlyArray<{ value: ShelfTab; label: string }> = [
-  { value: "rotation", label: "Rotation" },
+  { value: "weeknight", label: "Weeknight" },
   { value: "weekend", label: "Weekend" },
   { value: "try", label: "To try" },
   { value: "all", label: "All" },
 ];
 
 /**
- * The recipes on one of the shelf's tabs. Rotation and Weekend are the kinds
- * the household marked (decisions.md row 191), the longest since made first,
+ * The recipes on one of the shelf's tabs. Weeknight and Weekend are the week
+ * facet the household marked (decisions.md row 219), the longest since made first,
  * since that is the one a week wants next; To try is every recipe never
  * made; All is every recipe by name. Pure.
  */
 export function shelfTab(recipes: readonly RecipeSummary[], tab: ShelfTab): RecipeSummary[] {
   if (tab === "all") return [...recipes].sort((a, b) => a.name.localeCompare(b.name));
   if (tab === "try") return recipes.filter((recipe) => recipe.lastMade === null);
-  return recipes.filter((recipe) => recipe.kind === tab).sort((a, b) => (a.lastMade ?? "").localeCompare(b.lastMade ?? ""));
+  return recipes.filter((recipe) => fitsWeek(recipe.facets, tab)).sort((a, b) => (a.lastMade ?? "").localeCompare(b.lastMade ?? ""));
 }
 
 /**
  * The tab the shelf opens on: the first that has a recipe on it, so a
- * household that has marked nothing Rotation yet opens on recipes, not on an
- * empty shelf. Rotation while the recipes load. Pure.
+ * household that has marked nothing Weeknight yet opens on recipes, not on an
+ * empty shelf. Weeknight while the recipes load. Pure.
  */
 export function openingTab(recipes: readonly RecipeSummary[] | null | undefined): ShelfTab {
-  if (!recipes) return "rotation";
+  if (!recipes) return "weeknight";
   return SHELF_TABS.find(({ value }) => shelfTab(recipes, value).length > 0)?.value ?? "all";
 }
 
