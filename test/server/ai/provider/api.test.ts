@@ -5,7 +5,8 @@
 // is asked of the model is the import's and the restyle's business, tested
 // beside them.
 import { afterEach, describe, expect, test } from "vitest";
-import { AI_TIMEOUT_MS, AiError, type Fetcher, stripFence } from "../../../../src/server/ai/client";
+import { stripFence } from "../../../../src/lib/ai";
+import { AI_TIMEOUT_MS, AiError, type Fetcher } from "../../../../src/server/ai/client";
 import {
   apiProvider,
   apiSettings,

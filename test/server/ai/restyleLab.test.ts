@@ -1,8 +1,9 @@
 // The restyle lab's pure half: flags, the recipe rebuilt from the author's steps, and the report. The CLI itself is one wiring block and is not run here.
 import { describe, expect, test } from "vitest";
 import type { Recipe } from "../../../src/domain/recipes/recipe";
+import { failureLine, rulesFromText } from "../../../src/server/ai/lab";
 import type { RestyleResult } from "../../../src/server/ai/restyle";
-import { authorRecipe, failureLine, LAB_USAGE, onlyPart, parseLabFlags, reportLines, rulesFromText } from "../../../src/server/ai/restyleLab";
+import { authorRecipe, LAB_USAGE, onlyPart, parseLabFlags, reportLines } from "../../../src/server/ai/restyleLab";
 import { restyledPart } from "../../helpers/restyle";
 
 const step = (id: string, text: string) => ({ id, text, ingredientIds: [], image: null });

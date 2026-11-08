@@ -6,13 +6,11 @@ import { AiError } from "../../../src/server/ai/client";
 import {
   DAY_TOKENS,
   daysFlag,
-  failureLine,
   LAB_USAGE,
   parseLabFlags,
   proposalRows,
   proposalTable,
   reportLines,
-  rulesFromText,
   runLab,
   weekMondayFlag,
 } from "../../../src/server/ai/plannerLab";
@@ -84,10 +82,6 @@ describe("daysFlag", () => {
   });
 });
 
-test("rulesFromText is one statement per line, blanks dropped", () => {
-  expect(rulesFromText("One recipe a night.\n\n  Favour what is in season.  \n")).toEqual(["One recipe a night.", "Favour what is in season."]);
-});
-
 const library: LibraryRecipe[] = [
   { id: "r1", name: "Beef ragu", tags: [], totalMinutes: 60, rating: 4, favourite: true, facets: noFacets(), lastMade: null },
   { id: "r2", name: "Laksa", tags: [], totalMinutes: 30, rating: null, favourite: false, facets: noFacets(), lastMade: "2026-09-01" },
@@ -142,11 +136,6 @@ describe("reportLines", () => {
     expect(lines[3]).toBe("dropped 1, unfilled 1, 2.3s");
     expect(lines).toHaveLength(4);
   });
-});
-
-test("failureLine is one line with the model, the time and the message", () => {
-  expect(failureLine("lite", 60, new Error("The model took too long to answer."))).toBe("## lite  60.0s  FAILED: The model took too long to answer.");
-  expect(failureLine("lite", 0.5, "boom")).toBe("## lite  0.5s  FAILED: boom");
 });
 
 const input: ProposalInput = {

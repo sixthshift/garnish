@@ -152,4 +152,3 @@ export function requireModel(use: AiUse): string {
 }
 
 /** Re-exported for the restyle pass and the tests; the function itself is the domain's. */
-export { stripFence } from "../../lib/ai";

@@ -1,22 +1,18 @@
 // `bun run restyle <recipe>`: try the house style on one recipe, from the author's steps, on one or more models, and print the rewrite. Nothing is written.
 
-import { databasePath, openDatabase } from "../../db/connection/open";
 import { recipeRepository } from "../../db/models/recipe/repo";
 import { styleRuleRepository } from "../../db/models/style/repo";
 import type { Recipe } from "../../domain/recipes/recipe";
-import { ensureDataDir } from "../core/boot";
 import { modelFor } from "./client";
+import { eachModel, openLabDb, rulesFromText } from "./lab";
 import ai from "./provider";
 import { runRestyle } from "./restyle";
-import { authorRecipe, failureLine, onlyPart, parseLabFlags, reportLines, rulesFromText } from "./restyleLab";
+import { authorRecipe, LAB_USAGE, onlyPart, parseLabFlags, reportLines } from "./restyleLab";
 import { partsWithSteps, promptParts, restylePrompt } from "./restylePrompt";
 
 if (import.meta.main) {
   const flags = parseLabFlags(process.argv.slice(2), modelFor("restyle"));
-  const path = databasePath(ensureDataDir());
-  // Never create the database here: an empty one would answer "no such table". The app or `bun run seed` builds it.
-  if (!(await Bun.file(path).exists())) throw new Error(`No database at ${path}. Start the app or run \`bun run seed\` first.`);
-  const db = openDatabase(path);
+  const db = await openLabDb(LAB_USAGE);
   try {
     const recipes = recipeRepository(db);
     const byName = recipes.query({ by: "name", name: flags.recipe })[0];
@@ -35,15 +31,12 @@ if (import.meta.main) {
     console.log(`# ${found.name}  (${rules.length} statements, ${recipe.parts.length} parts, ${partsWithSteps(recipe.parts).length} with steps)`);
     if (flags.showPrompt) console.log("", restylePrompt({ rules, parts: promptParts(recipe.parts) }), "");
 
-    for (const model of flags.models) {
-      const started = performance.now();
-      try {
-        const result = await runRestyle(recipe, rules, { ai, model });
-        console.log(["", ...reportLines(model, (performance.now() - started) / 1000, recipe, result)].join("\n"));
-      } catch (error) {
-        console.log(["", failureLine(model, (performance.now() - started) / 1000, error)].join("\n"));
-      }
-    }
+    const lines = await eachModel(
+      flags.models,
+      (model) => runRestyle(recipe, rules, { ai, model }),
+      (model, seconds, result) => reportLines(model, seconds, recipe, result)
+    );
+    console.log(lines.join("\n"));
   } finally {
     db.close();
   }

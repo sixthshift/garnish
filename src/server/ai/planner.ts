@@ -5,10 +5,10 @@
 // household accepts a proposal before `applyPlanProposal` (src/api/rpc/planner.ts)
 // writes a single row.
 
-import plan from "../../db/models/plan/repo";
-import planner from "../../db/models/planner/repo";
-import recipes from "../../db/models/recipe/repo";
-import timeline from "../../db/models/timeline/repo";
+import plan, { type PlanRepository } from "../../db/models/plan/repo";
+import planner, { type PlannerRepository } from "../../db/models/planner/repo";
+import recipes, { type RecipeRepository } from "../../db/models/recipe/repo";
+import timeline, { type TimelineRepository } from "../../db/models/timeline/repo";
 import { addDays, entryLabel, type PlanDay, type PlanRecipe, todayIso } from "../../domain/plan/plan";
 import {
   checkProposal,
@@ -121,25 +121,39 @@ export function mergeRecent(planned: readonly RecentMeal[], cooked: readonly Rec
  * come from four `week` reads rather than a range query, because the week is
  * the plan's unit and four of them is the whole of "recently".
  */
-export function proposalInput({
-  monday,
-  dates,
-  meals,
-  vegetarianNights = 0,
-}: {
-  monday: string;
-  dates: string[];
-  meals: Meal[];
-  vegetarianNights?: number;
-}): ProposalInput {
-  const rules = enabledRules(planner.rules.list()).map((rule) => rule.text);
-  const library = recipes.query().map(libraryRecipe);
-  const slots = weekSlots(plan.week(monday), dates, meals);
+/** The repositories a proposal is gathered from: the app's by default, a CLI's own over its own handle. */
+type ProposalRepos = {
+  plan: Pick<PlanRepository, "week">;
+  planner: Pick<PlannerRepository, "rules">;
+  recipes: Pick<RecipeRepository, "query">;
+  timeline: Pick<TimelineRepository, "recent">;
+};
+
+export function proposalInput(
+  {
+    monday,
+    dates,
+    meals,
+    vegetarianNights = 0,
+    rules,
+  }: {
+    monday: string;
+    dates: string[];
+    meals: Meal[];
+    vegetarianNights?: number;
+    /** The statements to plan by; the guide's that are on unless given (the lab's `--rules`). */
+    rules?: string[];
+  },
+  repos: ProposalRepos = { plan, planner, recipes, timeline }
+): ProposalInput {
+  const statements = rules ?? enabledRules(repos.planner.rules.list()).map((rule) => rule.text);
+  const library = repos.recipes.query().map(libraryRecipe);
+  const slots = weekSlots(repos.plan.week(monday), dates, meals);
 
   const since = addDays(monday, -RECENT_DAYS);
   const planned: RecentMeal[] = [];
   for (let back = RECENT_DAYS; back > 0; back -= 7) {
-    for (const day of plan.week(addDays(monday, -back))) {
+    for (const day of repos.plan.week(addDays(monday, -back))) {
       for (const entry of day.entries) {
         if (entry.recipe !== null) planned.push({ date: day.date, name: entry.recipe.name });
       }
@@ -151,9 +165,9 @@ export function proposalInput({
     week: { monday, dates },
     meals,
     slots,
-    rules,
+    rules: statements,
     library,
-    recent: mergeRecent(planned, timeline.recent(since)),
+    recent: mergeRecent(planned, repos.timeline.recent(since)),
     vegetarianNights,
   };
 }

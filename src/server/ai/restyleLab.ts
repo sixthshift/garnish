@@ -79,14 +79,6 @@ export function onlyPart(recipe: Recipe, name: string | null): Recipe {
   return { ...recipe, parts };
 }
 
-/** The statements from a `--rules` file: one per line, blanks and `#` comments dropped. Pure. */
-export function rulesFromText(text: string): string[] {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "" && !line.startsWith("#"));
-}
-
 /** How a part is headed in the report. */
 function heading(name: string): string {
   return name.trim() === "" ? "(main body)" : name;
@@ -121,9 +113,4 @@ function labelled(step: { title: string; text: string; summary: string }): strin
   const label = step.title.trim() === "" ? "" : `${step.title.trim()} — `;
   const support = step.summary.trim() === "" ? "" : `  [${step.summary.trim()}]`;
   return `${label}${step.text}${support}`;
-}
-
-/** One model's failure as a line. Pure. */
-export function failureLine(model: string, seconds: number, error: unknown): string {
-  return `## ${model}  ${seconds.toFixed(1)}s  FAILED: ${error instanceof Error ? error.message : String(error)}`;
 }

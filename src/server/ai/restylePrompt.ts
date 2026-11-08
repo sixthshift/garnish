@@ -2,7 +2,8 @@ import { z } from "zod";
 import { formatIngredient } from "../../domain/recipes/ingredient";
 import type { ParsedRecipeInput } from "../../domain/recipes/recipe";
 import type { RestyledPart } from "../../domain/recipes/style";
-import { AiError, stripFence } from "./client";
+import { readJsonAnswer } from "../../lib/ai";
+import { AiError } from "./client";
 
 /**
  * The answer's shape as a JSON Schema for the request's `response_format`,
@@ -228,23 +229,9 @@ function promptStep(step: PromptPart["steps"][number]): string {
  * `AiError("malformed", …)` for anything that is not an answer. Pure.
  */
 export function parseRestyleAnswer(content: string): RestyledPart[] {
-  const raw = stripFence(content);
-  if (raw === "") throw new AiError("malformed", "The model answered with nothing.");
-
-  let answer: unknown;
-  try {
-    answer = JSON.parse(raw);
-  } catch {
-    throw new AiError("malformed", "The model answered in prose rather than the restyle format, so nothing was changed.");
-  }
-
-  const parsed = RestyleAnswerSchema.safeParse(answer);
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    const where = first && first.path.length > 0 ? ` (${first.path.join(".")}: ${first.message})` : "";
-    throw new AiError("malformed", `The model's answer was not in the expected shape${where}. Nothing was changed.`);
-  }
-  return parsed.data.parts;
+  const read = readJsonAnswer(content, RestyleAnswerSchema, "restyle format", "nothing was changed");
+  if (!read.ok) throw new AiError("malformed", read.message);
+  return read.value.parts;
 }
 
 /**

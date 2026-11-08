@@ -4,7 +4,7 @@
 // call, and no date computed here: the caller passes `today`.
 
 import { z } from "zod";
-import { stripFence } from "../../../lib/ai";
+import { readJsonAnswer } from "../../../lib/ai";
 import { FACET_LAYERS, type FacetLayer, type Facets } from "../../recipes/recipe";
 import type { Meal } from "./meals";
 
@@ -258,21 +258,7 @@ export function proposalPrompt(input: ProposalInput): string {
  * *line* is not malformed, it is `checkProposal`'s to drop. Pure.
  */
 export function parseProposalAnswer(content: string): ProposalAnswerEntry[] {
-  const raw = stripFence(content);
-  if (raw === "") throw new ProposalError("malformed", "The model answered with nothing.");
-
-  let answer: unknown;
-  try {
-    answer = JSON.parse(raw);
-  } catch {
-    throw new ProposalError("malformed", "The model answered in prose rather than the proposal format, so no week was proposed.");
-  }
-
-  const parsed = ProposalAnswerSchema.safeParse(answer);
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    const where = first && first.path.length > 0 ? ` (${first.path.join(".")}: ${first.message})` : "";
-    throw new ProposalError("malformed", `The model's answer was not in the expected shape${where}. No week was proposed.`);
-  }
-  return parsed.data.entries;
+  const read = readJsonAnswer(content, ProposalAnswerSchema, "proposal format", "no week was proposed");
+  if (!read.ok) throw new ProposalError("malformed", read.message);
+  return read.value.entries;
 }

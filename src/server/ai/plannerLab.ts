@@ -3,6 +3,7 @@
 import { addDays, dayLabel, weekDates, weekMonday } from "../../domain/plan/plan";
 import { type LibraryRecipe, MEALS, type Meal, type ProposalCheck, type ProposalInput } from "../../domain/plan/planner";
 import type { AiClient } from "./client";
+import { eachModel } from "./lab";
 import { runProposal } from "./planner";
 
 export type LabFlags = {
@@ -99,14 +100,6 @@ export function daysFlag(days: string[] | null, monday: string): string[] {
   return DAY_TOKENS.flatMap((token, index) => (chosen.has(token) ? [dates[index]!] : []));
 }
 
-/** The statements from a `--rules` file: one per line, blanks dropped. Pure. */
-export function rulesFromText(text: string): string[] {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "");
-}
-
 /** One row of the printed table. */
 export type ProposalRow = { date: string; meal: Meal; recipe: string; reason: string };
 
@@ -139,27 +132,16 @@ export function reportLines(model: string, seconds: number, check: ProposalCheck
   ];
 }
 
-/** One model's failure as a line. Pure. */
-export function failureLine(model: string, seconds: number, error: unknown): string {
-  return `## ${model}  ${seconds.toFixed(1)}s  FAILED: ${error instanceof Error ? error.message : String(error)}`;
-}
-
 /**
  * The lab itself: `input` asked of every model in turn, each timed, checked
  * and reported, or reported as a failure when the client throws. Nothing is
  * written; the client is the only IO, and it is always injected. Pure aside
  * from that.
  */
-export async function runLab(input: ProposalInput, models: readonly string[], ai: AiClient): Promise<string[]> {
-  const lines: string[] = [];
-  for (const model of models) {
-    const started = performance.now();
-    try {
-      const check = await runProposal(input, { ai, model });
-      lines.push("", ...reportLines(model, (performance.now() - started) / 1000, check, input.library));
-    } catch (error) {
-      lines.push("", failureLine(model, (performance.now() - started) / 1000, error));
-    }
-  }
-  return lines;
+export function runLab(input: ProposalInput, models: readonly string[], ai: AiClient): Promise<string[]> {
+  return eachModel(
+    models,
+    (model) => runProposal(input, { ai, model }),
+    (model, seconds, check) => reportLines(model, seconds, check, input.library)
+  );
 }

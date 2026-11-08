@@ -1,6 +1,6 @@
 // What the importer asks the model and how it reads the answer; the request itself is the injected `model` port.
 
-import { stripFence } from "../../../lib/ai";
+import { readJsonAnswer } from "../../../lib/ai";
 import { ImportError } from "./errors";
 import { MAX_PAGE_TEXT } from "./page/text";
 import { ingredientLines } from "./scraped/parts";
@@ -138,23 +138,9 @@ export function aiPrompt({ text, anchor = null }: { text: string; anchor?: Scrap
  * `ImportError` for anything that is not a recipe. Pure.
  */
 export function parseAiAnswer(content: string): ScrapedRecipe {
-  const raw = stripFence(content);
-  if (raw === "") throw new ImportError("malformed", "The model answered with nothing.");
-
-  let answer: unknown;
-  try {
-    answer = JSON.parse(raw);
-  } catch {
-    throw new ImportError("malformed", "The model answered in prose rather than the recipe format, so nothing was imported.");
-  }
-
-  const parsed = ScrapedRecipeSchema.safeParse(answer);
-  if (!parsed.success) {
-    const first = parsed.error.issues[0];
-    const where = first && first.path.length > 0 ? ` (${first.path.join(".")}: ${first.message})` : "";
-    throw new ImportError("malformed", `The model's answer was not in the expected shape${where}. Nothing was imported.`);
-  }
-  const recipe = normaliseScraped(parsed.data);
+  const read = readJsonAnswer(content, ScrapedRecipeSchema, "recipe format", "nothing was imported");
+  if (!read.ok) throw new ImportError("malformed", read.message);
+  const recipe = normaliseScraped(read.value);
   if (recipe.name === "" && ingredientLines(recipe).length === 0) {
     throw new ImportError("malformed", "The model found no recipe in that text.");
   }
