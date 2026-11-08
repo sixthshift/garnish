@@ -7,7 +7,7 @@
 // manifest, so `callServerFn` reads the stub's id (dev mode encodes the split
 // module path and export name), imports that module, and runs the export
 // inside a fake Start request context, the way the request handler does.
-import { mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runWithStartContext, type StartStorageContext } from "@tanstack/start-storage-context";
@@ -28,6 +28,28 @@ import { closeDb } from "../../src/server/core/db";
  * hundred inserts it never reads. Pass `starterFoods: true` for the database a
  * real first start makes.
  */
+let template: string | undefined;
+
+/**
+ * A migrated database with the starter batch recorded, made once per worker
+ * and copied for each test: migrating from scratch costs every test that
+ * touches a database far more than a file copy.
+ */
+function migratedTemplate(): string {
+  if (template === undefined) {
+    const folder = mkdtempSync(join(tmpdir(), "garnish-template-"));
+    process.once("exit", () => rmSync(folder, { recursive: true, force: true }));
+    const path = join(folder, "template.db");
+    const db = openDatabase(":memory:");
+    migrate(db);
+    seedBatchRepository(db).record(STARTER_BATCH);
+    db.prepare("VACUUM INTO ?").run(path);
+    db.close();
+    template = path;
+  }
+  return template;
+}
+
 export function useTempDataDir(options: { starterFoods?: boolean } = {}): { readonly dir: string } {
   let dir = "";
   let previous: string | undefined;
@@ -36,12 +58,7 @@ export function useTempDataDir(options: { starterFoods?: boolean } = {}): { read
     previous = process.env.DATA_DIR;
     dir = mkdtempSync(join(tmpdir(), "garnish-test-"));
     process.env.DATA_DIR = dir;
-    if (!options.starterFoods) {
-      const db = openDatabase(databasePath(dir));
-      migrate(db);
-      seedBatchRepository(db).record(STARTER_BATCH);
-      db.close();
-    }
+    if (!options.starterFoods) copyFileSync(migratedTemplate(), databasePath(dir));
   });
   afterEach(async () => {
     closeDb();
