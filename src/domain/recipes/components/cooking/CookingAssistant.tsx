@@ -5,6 +5,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { adjustCooking, unadjustCooking } from "../../../../api/rpc/cooking";
 import { askCooking } from "../../../../api/rpc/cookingAssistant";
+import { messageFrom } from "../../../../lib/errors";
 import { useMutate } from "../../../../lib/mutate";
 import { getTicks } from "../../../../lib/ticks";
 import { useTimers } from "../../../../lib/useTimers";
@@ -55,9 +56,10 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
   const mutate = useMutate();
   const { timers } = useTimers(recipeId);
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
+  // Busy exactly while a question is out: `ask` sets what was asked and clears it when the answer lands.
+  const busy = pending !== null;
   const log = useRef<HTMLDivElement>(null);
   const messages = session?.messages ?? [];
   const taken = new Set((session?.adjustments ?? []).map((adjustment) => adjustment.id));
@@ -72,7 +74,6 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
   const ask = async (question: string): Promise<CookSession | null> => {
     const words = question.trim();
     if (words === "" || session === null || busy) return null;
-    setBusy(true);
     setError(null);
     setPending(words);
     setText("");
@@ -95,11 +96,10 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
       );
     } catch (cause) {
       setText(words);
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(messageFrom(cause));
       return null;
     } finally {
       setPending(null);
-      setBusy(false);
     }
   };
 
@@ -127,21 +127,9 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
   };
   const voiceOn = voice.state !== "off";
 
-  const take = async (offer: Adjustment) => {
-    try {
-      await mutate(() => adjustCooking({ data: { recipeId, adjustment: offerInput(offer), offerId: offer.id } }));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  };
-
-  const putBack = async (offer: Adjustment) => {
-    try {
-      await mutate(() => unadjustCooking({ data: { recipeId, adjustmentId: offer.id } }));
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  };
+  const run = (write: () => Promise<unknown>) => mutate(write).catch((cause: unknown) => setError(messageFrom(cause)));
+  const take = (offer: Adjustment) => run(() => adjustCooking({ data: { recipeId, adjustment: offerInput(offer), offerId: offer.id } }));
+  const putBack = (offer: Adjustment) => run(() => unadjustCooking({ data: { recipeId, adjustmentId: offer.id } }));
 
   const submit = (event: FormEvent) => {
     event.preventDefault();

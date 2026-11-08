@@ -18,6 +18,7 @@ import { ImageUpload } from "../../../components/ui/ImageUpload";
 import { NumberStepper } from "../../../components/ui/NumberStepper";
 import { Rating } from "../../../components/ui/Rating";
 import { formatDateStamp, isValidDate } from "../../../lib/dates";
+import { messageFrom } from "../../../lib/errors";
 import { uploadTimelineImage } from "../../../lib/images";
 import { toastError } from "../../../lib/toast";
 import { todayIso } from "../../plan/plan";
@@ -49,12 +50,10 @@ export function ReviewPage() {
   const router = useRouter();
   const servingsAt = session?.servings ?? (recipe.recipeServings > 0 ? recipe.recipeServings : null);
 
-  const [decisions, setDecisions] = useState<Record<string, Decision>>(() => Object.fromEntries(taken.map((s) => [s.adjustment.id, s.decision])));
-  // Choices made before the suggestions arrived are kept; the rest start where the model says.
-  const [touched, setTouched] = useState<ReadonlySet<string>>(new Set());
+  // Only the choices the cook made: the rest read the suggestion's own, so a choice made before the model answers is kept and the others follow it.
+  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
 
   const sessionId = session?.id ?? null;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: asked once per session; `touched` is read as it stands when the answer lands.
   useEffect(() => {
     if (sessionId === null || !aiAvailable) return;
     let current = true;
@@ -63,16 +62,8 @@ export function ReviewPage() {
         if (!current) return;
         setSuggestions(result.suggestions);
         setReadProblem(result.problem);
-        setDecisions((was) => {
-          const next: Record<string, Decision> = {};
-          for (const suggestion of result.suggestions) {
-            const id = suggestion.adjustment.id;
-            next[id] = touched.has(id) && was[id] !== undefined ? was[id] : suggestion.decision;
-          }
-          return next;
-        });
       })
-      .catch((cause) => current && setReadProblem(cause instanceof Error ? cause.message : String(cause)))
+      .catch((cause) => current && setReadProblem(messageFrom(cause)))
       .finally(() => current && setReading(false));
     return () => {
       current = false;
@@ -192,7 +183,6 @@ export function ReviewPage() {
               view={view}
               decision={decisions[suggestion.adjustment.id] ?? suggestion.decision}
               onDecide={(decision) => {
-                setTouched((was) => new Set(was).add(suggestion.adjustment.id));
                 setDecisions((was) => ({ ...was, [suggestion.adjustment.id]: decision }));
               }}
             />

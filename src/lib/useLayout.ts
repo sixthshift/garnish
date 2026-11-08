@@ -1,12 +1,7 @@
 import { createContext, useContext, useSyncExternalStore } from "react";
-import { DESKTOP_MEDIA, type Layout, layoutNow } from "./layout";
+import { DESKTOP_MEDIA, followMedia, type Layout, layoutNow } from "./layout";
 
-function follow(onChange: () => void): () => void {
-  if (typeof window.matchMedia !== "function") return () => {};
-  const media = window.matchMedia(DESKTOP_MEDIA);
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
-}
+const follow = followMedia(DESKTOP_MEDIA);
 
 /**
  * A layout fixed for what is drawn inside it, whatever the screen: a test

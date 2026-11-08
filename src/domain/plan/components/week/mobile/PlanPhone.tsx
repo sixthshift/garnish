@@ -4,6 +4,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Page } from "../../../../../components/Page";
+import { prefersReducedMotion } from "../../../../../lib/layout";
 import { addDays, dayName, nextMonday, type PlanDay, todayIso, weekLabel } from "../../../plan";
 import { AddWeekToShoppingButton } from "../AddWeekToShoppingButton";
 import type { PlanWeekViewProps } from "../PlanWeekView";
@@ -14,7 +15,7 @@ import { PlanAddSheet } from "./PlanAddSheet";
 
 /** Smooth unless the reader asked for less motion. */
 function scrollBehaviour(): ScrollBehavior {
-  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  return prefersReducedMotion() ? "auto" : "smooth";
 }
 
 /** Bring a day's section up under the sticky header (its `scroll-margin-top` leaves the header's room). */

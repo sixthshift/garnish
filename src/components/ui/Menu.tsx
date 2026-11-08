@@ -26,15 +26,10 @@ export type MenuProps = {
   iconOnly?: boolean;
   /** An unboxed trigger: no border or fill until hovered, 44px square on a touch screen. For a menu repeated down a list. */
   ghost?: boolean;
-  /** What the trigger shows instead of `label`, which stays its accessible name (a shorter text on a phone). */
-  display?: ReactNode;
   /** Controlled open state. Omit to let the menu keep its own. */
   open?: boolean;
   /** Initial open state for an uncontrolled menu. */
   defaultOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  /** Which edge the panel hangs from. Default "end" (right-aligned). */
-  align?: "start" | "end";
   className?: string;
   children: ReactNode;
 };
@@ -45,18 +40,7 @@ const GHOST_TRIGGER_CLASS =
 const TRIGGER_CLASS =
   "inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-normal bg-bg-normal px-3 py-1.5 text-sm font-medium text-fg-normal hover:bg-bg-normal-hovered";
 
-export function Menu({
-  label,
-  iconOnly = false,
-  ghost = false,
-  display,
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  align = "end",
-  className,
-  children,
-}: MenuProps) {
+export function Menu({ label, iconOnly = false, ghost = false, open: openProp, defaultOpen = false, className, children }: MenuProps) {
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const open = openProp ?? uncontrolled;
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -69,7 +53,6 @@ export function Menu({
 
   const setOpen = (next: boolean) => {
     if (openProp === undefined) setUncontrolled(next);
-    onOpenChange?.(next);
   };
 
   // Before paint: hang the panel above the trigger when below it would run under the screen's foot
@@ -153,12 +136,12 @@ export function Menu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        aria-label={iconOnly || display !== undefined ? label : undefined}
+        aria-label={iconOnly ? label : undefined}
         className={ghost ? GHOST_TRIGGER_CLASS : cn(TRIGGER_CLASS, iconOnly && "px-2")}
         onClick={() => setOpen(!open)}
         onKeyDown={onTriggerKeyDown}
       >
-        {iconOnly ? <span aria-hidden="true">⋯</span> : (display ?? label)}
+        {iconOnly ? <span aria-hidden="true">⋯</span> : label}
       </button>
       {open && (
         <>
@@ -186,7 +169,7 @@ export function Menu({
             className={cn(
               "absolute z-popover flex min-w-48 flex-col rounded-lg border border-border-normal bg-bg-normal py-1 shadow-lg",
               upward ? "bottom-full mb-1" : "top-full mt-1",
-              align === "end" ? "right-0" : "left-0"
+              "right-0"
             )}
           >
             {/* Choosing an item hands focus back to the trigger, as Escape does. An item that opens a dialog

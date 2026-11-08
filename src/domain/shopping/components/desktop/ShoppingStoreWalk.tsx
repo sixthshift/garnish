@@ -8,6 +8,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Page } from "../../../../components/Page";
 import { recipeImageUrl } from "../../../../lib/images";
+import { followMedia, mediaMatches, prefersReducedMotion } from "../../../../lib/layout";
 import { pendingLabel } from "../../../../lib/outbox";
 import { dayParts } from "../../../plan/plan";
 import { groupByAisle, mealKeysOf, mealsOf, type ShoppingItem, type ShoppingListMeal, shoppingMeals, sizesByFood } from "../../shopping";
@@ -29,19 +30,8 @@ const WHOLE_AISLE = 8;
 /** How long a ticked line takes to slide out of its aisle before it is sent to the trolley. */
 const LEAVE_MS = 250;
 
-function follow(query: string) {
-  return (onChange: () => void) => {
-    if (typeof window.matchMedia !== "function") return () => {};
-    const media = window.matchMedia(query);
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  };
-}
-
-const followTrolley = follow(TROLLEY_COLUMN_MEDIA);
-const trolleyColumnNow = () => typeof window.matchMedia === "function" && window.matchMedia(TROLLEY_COLUMN_MEDIA).matches;
-
-const reducedMotion = () => typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const followTrolley = followMedia(TROLLEY_COLUMN_MEDIA);
+const trolleyColumnNow = () => mediaMatches(TROLLEY_COLUMN_MEDIA);
 
 /**
  * A desktop's shopping list as a walk round the shop (decisions.md row 207):
@@ -351,7 +341,7 @@ function useTrolleyMove(items: readonly ShoppingItem[], busy: boolean, onTick: (
   }, []);
 
   const tick = (id: string, ticked: boolean) => {
-    if (!ticked || reducedMotion()) {
+    if (!ticked || prefersReducedMotion()) {
       if (ticked) setArrived((current) => new Set(current).add(id));
       onTick(id, ticked);
       return;
