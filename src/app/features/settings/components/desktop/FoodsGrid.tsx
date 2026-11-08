@@ -8,10 +8,10 @@ import { SearchInput } from "@sixthshift/design-system/search-input";
 import { Select } from "@sixthshift/design-system/select";
 import { Toggle } from "@sixthshift/design-system/toggle";
 import { cn } from "@sixthshift/design-system/utils";
-import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { type KeyboardEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { updateFood } from "../../../../../api/rpc/foods";
 import { Menu } from "../../../../../components/ui/Menu";
+import { useWindowTableRows } from "../../../../../components/ui/useWindowTableRows";
 import type { RecipeSummary } from "../../../../../domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, Unit } from "../../../../../domain/recipes/reference";
 import { useMutate } from "../../../../../lib/mutate";
@@ -26,9 +26,6 @@ type FoodFieldPatch = Partial<Pick<FoodRow, "name" | "aliases" | "aisleId" | "sk
 
 /** How long a row's click waits to see whether it is the first of a double-click. */
 const DOUBLE_CLICK_MS = 250;
-
-/** A one-line row, before it is measured. */
-const ROW_ESTIMATE = 41;
 
 /** The cell being edited: which food, which field. */
 type Editing = { id: string; field: GridField } | null;
@@ -137,33 +134,20 @@ export function FoodsGrid({
     setRefocus(null);
   }, [refocus]);
 
-  // A virtual list over the page's own scroll, as the phone's table (decisions.md row 176): only the
-  // rows near the screen are drawn.
-  const body = useRef<HTMLTableSectionElement>(null);
-  const [scrollMargin, setScrollMargin] = useState(0);
-  useLayoutEffect(() => {
-    const measure = () => setScrollMargin((body.current?.getBoundingClientRect().top ?? 0) + window.scrollY);
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-  const virtualizer = useWindowVirtualizer({
-    count: visible.length,
-    estimateSize: () => ROW_ESTIMATE,
-    measureElement: (element) => element.getBoundingClientRect().height || ROW_ESTIMATE,
-    overscan: 10,
-    scrollMargin,
-    initialRect: { width: 0, height: 800 },
-    getItemKey: (index) => visibleKeys[index] ?? index,
-  });
-  const rowsDrawn = virtualizer.getVirtualItems();
+  // A virtual list over the page's own scroll, as every table's (decisions.md row 176).
   const columnCount = 9;
-  const spacer = (height: number, key: string) =>
-    height > 0 && (
-      <tr key={key} data-spacer>
-        <td colSpan={columnCount} className="p-0" style={{ height }} aria-hidden="true" />
-      </tr>
-    );
+  const {
+    body,
+    rows: rowsDrawn,
+    measureElement,
+    gapAbove,
+    gapEnd,
+    spacer,
+  } = useWindowTableRows({
+    count: visible.length,
+    keyAt: (index) => visibleKeys[index] ?? index,
+    columnCount,
+  });
 
   const header = (key: string, label: string, className?: string) => {
     const sorted = sort?.key === key ? sort.dir : null;
@@ -228,7 +212,6 @@ export function FoodsGrid({
             <tbody ref={body}>
               {rowsDrawn.flatMap((row, at) => {
                 const food = visible[row.index] as FoodRow;
-                const gapAbove = row.start - scrollMargin - (at === 0 ? 0 : (rowsDrawn[at - 1]?.end ?? 0) - scrollMargin);
                 const editingHere = editing?.id === food.id ? editing.field : null;
                 const cell = (field: GridField, display: ReactNode, text: string) => (
                   <GridCell
@@ -251,10 +234,10 @@ export function FoodsGrid({
                 const isOpen = food.id === openId;
                 const isSelected = selected.includes(food.id);
                 return [
-                  spacer(gapAbove, `gap-${food.id}`),
+                  spacer(gapAbove(at), `gap-${food.id}`),
                   <tr
                     key={food.id}
-                    ref={virtualizer.measureElement}
+                    ref={measureElement}
                     data-index={row.index}
                     data-row={food.id}
                     aria-rowindex={row.index + 2}
@@ -314,7 +297,7 @@ export function FoodsGrid({
                   </tr>,
                 ];
               })}
-              {spacer(virtualizer.getTotalSize() - ((rowsDrawn.at(-1)?.end ?? scrollMargin) - scrollMargin), "gap-end")}
+              {spacer(gapEnd, "gap-end")}
               {visible.length === 0 && (
                 <tr>
                   <td colSpan={columnCount} className="p-4">

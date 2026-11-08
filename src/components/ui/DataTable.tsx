@@ -4,8 +4,8 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { cn } from "@sixthshift/design-system/utils";
-import { defaultRangeExtractor, type Range, useWindowVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { defaultRangeExtractor, type Range } from "@tanstack/react-virtual";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import {
   cellText,
   type DataTableColumn,
@@ -20,6 +20,7 @@ import {
   toggleKey,
 } from "../../lib/ui/dataTable";
 import { Menu } from "./Menu";
+import { useWindowTableRows } from "./useWindowTableRows";
 
 export type DataTableProps<T> = {
   items: readonly T[];
@@ -58,15 +59,6 @@ export type DataTableProps<T> = {
 /** One entry in a row's ⋯ menu. */
 export type RowAction<T> = { label: string; onSelect: (item: T) => void; intent?: "neutral" | "danger" };
 
-/** A one-line row at browse density, before it is measured: `p-2` around a `text-sm` line and a checkbox, plus the border. */
-const ROW_ESTIMATE = 41;
-
-/** Rows drawn past each edge of the screen, so a quick scroll rarely shows a gap. */
-const OVERSCAN = 10;
-
-/** The screen assumed before there is a window to measure (a render in a test): about twenty rows. */
-const INITIAL_RECT = { width: 0, height: 800 };
-
 export function DataTable<T>({
   items,
   columns,
@@ -96,16 +88,6 @@ export function DataTable<T>({
   const hasActions = rowActions !== undefined && rowActions.length > 0;
   const columnCount = columns.length + (selectable ? 1 : 0) + (hasActions ? 1 : 0);
 
-  // A virtual list over the page's own scroll: only the rows near the screen are drawn, each measured
-  // as it lands (a wrapped name makes a taller row), with a spacer row standing in for the rest.
-  const body = useRef<HTMLTableSectionElement>(null);
-  const [scrollMargin, setScrollMargin] = useState(0);
-  useLayoutEffect(() => {
-    const measure = () => setScrollMargin((body.current?.getBoundingClientRect().top ?? 0) + window.scrollY);
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
   const pinnedIndex = pinned === null ? -1 : visibleKeys.indexOf(pinned);
   const rangeExtractor = useCallback(
     (range: Range) => {
@@ -114,25 +96,19 @@ export function DataTable<T>({
     },
     [pinnedIndex]
   );
-  const virtualizer = useWindowVirtualizer({
+  const {
+    body,
+    rows: rowsDrawn,
+    measureElement,
+    gapAbove,
+    gapEnd,
+    spacer,
+  } = useWindowTableRows({
     count: visible.length,
-    estimateSize: () => ROW_ESTIMATE,
-    // A drawn row is never 0px tall; one that measures so has no layout yet (a DOM without one, in a test), and
-    // counting it as 0 would slide the range past it.
-    measureElement: (element) => element.getBoundingClientRect().height || ROW_ESTIMATE,
-    overscan: OVERSCAN,
-    scrollMargin,
-    initialRect: INITIAL_RECT,
-    getItemKey: (index) => visibleKeys[index] ?? index,
+    keyAt: (index) => visibleKeys[index] ?? index,
+    columnCount,
     rangeExtractor,
   });
-  const rowsDrawn = virtualizer.getVirtualItems();
-  const spacer = (height: number, key: string) =>
-    height > 0 && (
-      <tr key={key} data-spacer>
-        <td colSpan={Math.max(columnCount, 1)} className="p-0" style={{ height }} aria-hidden="true" />
-      </tr>
-    );
 
   return (
     <div className={cn("flex flex-col gap-3", className)} data-table={itemName}>
@@ -215,13 +191,11 @@ export function DataTable<T>({
               const item = visible[row.index] as T;
               const key = keyOf(item);
               const rowName = cellText(columns[0]?.value(item) ?? key);
-              // The gap since the row before (or the table's top) is the rows not drawn there.
-              const gapAbove = row.start - scrollMargin - (at === 0 ? 0 : (rowsDrawn[at - 1]?.end ?? 0) - scrollMargin);
               return [
-                spacer(gapAbove, `gap-${key}`),
+                spacer(gapAbove(at), `gap-${key}`),
                 <tr
                   key={key}
-                  ref={virtualizer.measureElement}
+                  ref={measureElement}
                   data-index={row.index}
                   data-row={key}
                   aria-rowindex={row.index + 2}
@@ -271,7 +245,7 @@ export function DataTable<T>({
                 </tr>,
               ];
             })}
-            {spacer(virtualizer.getTotalSize() - ((rowsDrawn.at(-1)?.end ?? scrollMargin) - scrollMargin), "gap-end")}
+            {spacer(gapEnd, "gap-end")}
             {visible.length === 0 && (
               <tr>
                 <td colSpan={Math.max(columnCount, 1)} className="p-4">
