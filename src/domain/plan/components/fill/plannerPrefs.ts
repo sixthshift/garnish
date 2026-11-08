@@ -1,4 +1,4 @@
-import type { StorageLike } from "../../../../lib/storage";
+import { readItem, type StorageLike, writeItem } from "../../../../lib/storage";
 import { MAX_VEGETARIAN_NIGHTS, MEALS, type Meal } from "../../plan";
 
 // What Plan the week remembers on the device between runs: which meals beside
@@ -22,23 +22,18 @@ const isMeal = (value: unknown): value is Meal => typeof value === "string" && (
 
 /** The remembered meals besides dinner, in the order a day eats them. None when missing or malformed. */
 export function readOtherMeals(storage: StorageLike | undefined): Meal[] {
-  try {
-    const parsed: unknown = JSON.parse(storage?.getItem(PLANNER_MEALS_KEY) ?? "[]");
-    if (!Array.isArray(parsed)) return [];
-    const chosen = new Set(parsed.filter(isMeal));
-    return OTHER_MEALS.filter((meal) => chosen.has(meal));
-  } catch {
-    return [];
-  }
+  const chosen = new Set(storage ? readItem(storage, PLANNER_MEALS_KEY, [], Array.isArray).filter(isMeal) : []);
+  return OTHER_MEALS.filter((meal) => chosen.has(meal));
 }
 
 /** Remember the meals besides dinner. Stored with dinner, as the sheet stored them. A throwing storage just means it does not stick. */
 export function writeOtherMeals(storage: StorageLike | undefined, meals: readonly Meal[]): void {
-  try {
-    storage?.setItem(PLANNER_MEALS_KEY, JSON.stringify(MEALS.filter((meal) => meal === "dinner" || meals.includes(meal))));
-  } catch {
-    // ignored: see above
-  }
+  if (storage)
+    writeItem(
+      storage,
+      PLANNER_MEALS_KEY,
+      MEALS.filter((meal) => meal === "dinner" || meals.includes(meal))
+    );
 }
 
 /** Tick or untick one meal, answering in meal order. Pure. */
@@ -48,21 +43,13 @@ export function toggleMeal(meals: readonly Meal[], meal: Meal): Meal[] {
 
 /** The remembered head count: a positive number, or the default when missing or malformed. */
 export function readServings(storage: StorageLike | undefined): number {
-  try {
-    const parsed: unknown = JSON.parse(storage?.getItem(PLANNER_SERVINGS_KEY) ?? "null");
-    return typeof parsed === "number" && Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SERVINGS;
-  } catch {
-    return DEFAULT_SERVINGS;
-  }
+  const positive = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value > 0;
+  return storage ? readItem(storage, PLANNER_SERVINGS_KEY, DEFAULT_SERVINGS, positive) : DEFAULT_SERVINGS;
 }
 
 /** Remember the head count. A throwing storage just means it does not stick. */
 export function writeServings(storage: StorageLike | undefined, servings: number): void {
-  try {
-    storage?.setItem(PLANNER_SERVINGS_KEY, JSON.stringify(servings));
-  } catch {
-    // ignored: see above
-  }
+  if (storage) writeItem(storage, PLANNER_SERVINGS_KEY, servings);
 }
 
 /** Where "vegetarian nights" is remembered: how many of the week's dinners the household wants meatless (decisions.md row 212). */
@@ -70,19 +57,11 @@ export const PLANNER_VEGETARIAN_KEY = "garnish.planner.vegetarianNights";
 
 /** The remembered vegetarian nights, 0 to `MAX_VEGETARIAN_NIGHTS`; none when missing or malformed. */
 export function readVegetarianNights(storage: StorageLike | undefined): number {
-  try {
-    const parsed: unknown = JSON.parse(storage?.getItem(PLANNER_VEGETARIAN_KEY) ?? "0");
-    return typeof parsed === "number" && Number.isInteger(parsed) && parsed >= 0 ? Math.min(parsed, MAX_VEGETARIAN_NIGHTS) : 0;
-  } catch {
-    return 0;
-  }
+  const count = (value: unknown): value is number => typeof value === "number" && Number.isInteger(value) && value >= 0;
+  return Math.min(storage ? readItem(storage, PLANNER_VEGETARIAN_KEY, 0, count) : 0, MAX_VEGETARIAN_NIGHTS);
 }
 
 /** Remember the vegetarian nights. A throwing storage just means it does not stick. */
 export function writeVegetarianNights(storage: StorageLike | undefined, nights: number): void {
-  try {
-    storage?.setItem(PLANNER_VEGETARIAN_KEY, JSON.stringify(nights));
-  } catch {
-    // ignored: see above
-  }
+  if (storage) writeItem(storage, PLANNER_VEGETARIAN_KEY, nights);
 }
