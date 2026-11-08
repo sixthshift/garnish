@@ -103,6 +103,25 @@ export function useRecipeSource(props: RecipeSourceProps) {
   });
 
   /**
+   * One read at a time: busy while it runs, its failure shown. A newer read,
+   * or Back, bumps the token, and this one's result, error and busy are then
+   * no longer its to set; `current` says whether it still is.
+   */
+  const guarded = async (work: (current: () => boolean) => Promise<void>) => {
+    const token = ++readToken.current;
+    const current = () => token === readToken.current;
+    setBusy(true);
+    setError(null);
+    try {
+      await work(current);
+    } catch (cause) {
+      if (current()) setError(messageFrom(cause));
+    } finally {
+      if (current()) setBusy(false);
+    }
+  };
+
+  /**
    * A page read whole before Check opens: the rules' result and, with a model,
    * its sort into parts. Skip ends the wait on the rules' result; a sort that
    * fails or is rejected ends it there too, with the note.
@@ -110,12 +129,9 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const readPageAt = async (address: string, fetchPage: () => Promise<ImportedRecipe>) => {
     setUrl(address);
     urlRef.current = address;
-    const token = ++readToken.current;
-    setBusy(true);
-    setError(null);
-    try {
+    await guarded(async (current) => {
       const [fetched, foods] = await Promise.all([fetchPage(), fetchFoods()]);
-      if (token !== readToken.current) return;
+      if (!current()) return;
       const found = withPlacedSteps(fetched, foods);
       let shown = found;
       let note: string | null = null;
@@ -127,18 +143,14 @@ export function useRecipeSource(props: RecipeSourceProps) {
         const sorted = await Promise.race([sortedRead(found, reader), skipped]);
         skipSort.current = null;
         setSorting(false);
-        if (token !== readToken.current) return;
+        if (!current()) return;
         if (sorted !== null) {
           shown = sorted.imported;
           note = sorted.note;
         }
       }
       await toCheck(shown, foods, { by: "url", note });
-    } catch (cause) {
-      if (token === readToken.current) setError(messageFrom(cause));
-    } finally {
-      if (token === readToken.current) setBusy(false);
-    }
+    });
   };
 
   /** End a sort in flight: Check opens on the rules' reading. */
@@ -177,19 +189,12 @@ export function useRecipeSource(props: RecipeSourceProps) {
       });
       return;
     }
-    const token = ++readToken.current;
-    setBusy(true);
-    setError(null);
-    try {
+    await guarded(async (current) => {
       const [found, foods] = await Promise.all([loadText ? loadText(text) : importFromText({ data: { text, sourceUrl: pasteFrom ?? "" } }), fetchFoods()]);
-      if (token !== readToken.current) return;
+      if (!current()) return;
       // Prose pasted is itself what was read; a page's markup is shown as its readable text, as an address's is.
       await toCheck(found, foods, { by: "name", sourceText: looksLikeHtml(text.trim()) ? found.pageText : text.trim() });
-    } catch (cause) {
-      if (token === readToken.current) setError(messageFrom(cause));
-    } finally {
-      if (token === readToken.current) setBusy(false);
-    }
+    });
   };
 
   /** One recipe out of an upload, to Check as the export states it. */
@@ -200,21 +205,14 @@ export function useRecipeSource(props: RecipeSourceProps) {
 
   const readFile = async () => {
     if (file === null) return;
-    const token = ++readToken.current;
-    setBusy(true);
-    setError(null);
-    try {
+    await guarded(async (current) => {
       const [found, foods] = await Promise.all([(loadFile ?? postImportFile)(file), fetchFoods()]);
       if (found.length === 0) throw new Error("No recipe in that file");
       // A whole export is moving house, not adding a recipe (decisions.md row 201).
       if (found.length > 1) throw new Error(`That file holds ${found.length} recipes. Bring a whole export in from Settings › Backup.`);
-      if (token !== readToken.current) return;
+      if (!current()) return;
       await chooseUploaded(found[0]!, foods);
-    } catch (cause) {
-      if (token === readToken.current) setError(messageFrom(cause));
-    } finally {
-      if (token === readToken.current) setBusy(false);
-    }
+    });
   };
 
   /** Back from any source stage to the chooser. A read still running is let go: it must not open Check after Back. */

@@ -234,6 +234,7 @@ export function RecipePage() {
     </Message>
   );
 
+  const noteTitle = aiAvailable ? "Ask about this recipe" : "Note for the review";
   const notesPanel = <CookingNotes recipeId={stored.id} session={session} onNoted={() => setNoting(false)} />;
   // With a model, what is said while cooking goes to the assistant; without one, it is noted for the review.
   const servingsShown = recipe.recipeServings > 0 ? recipe.recipeServings : null;
@@ -241,139 +242,124 @@ export function RecipePage() {
     <CookingAssistant recipeId={stored.id} session={session} servings={servingsShown} nowStepId={nowStepId} compact={compact} />
   );
 
-  // Quick edit hangs off the stored document, not `recipe`: a row's
-  // sheet writes back what was stored, whatever scale the page is showing.
-  if (cooking) {
-    return (
-      <QuickEditProvider recipe={stored}>
-        <SubRecipesProvider subRecipes={subRecipes}>
-          <CookingProvider value={cookingValue}>
-            {desktop ? (
-              <>
-                <CookingHeader recipe={recipe} end={<FinishCooking slug={recipe.slug} />} />
-                <CookingSpread
-                  recipe={recipe}
-                  ingredients={ingredients}
-                  method={
-                    <>
-                      {stale}
-                      {steps}
-                      {notes}
-                    </>
-                  }
-                  side={
-                    aiAvailable ? (
-                      <>
-                        <div className="border-b border-border-subtle px-4 py-3">
-                          <SectionTitle as="h2">Ask about this recipe</SectionTitle>
-                        </div>
-                        {assistant(false)}
-                      </>
-                    ) : (
-                      <div className="flex flex-col gap-4 p-5">
-                        <SectionTitle as="h2">While you cook</SectionTitle>
-                        {notesPanel}
-                      </div>
-                    )
-                  }
-                />
-                <TimerStrip recipeId={recipe.id} fixed className="desktop:right-[max(20rem,26%)] desktop:left-auto desktop:w-[28rem]" />
-              </>
-            ) : (
-              <>
-                <PhoneCooking
-                  recipe={recipe}
-                  ingredients={ingredients}
-                  method={
-                    <>
-                      {stale}
-                      {steps}
-                    </>
-                  }
-                  after={notes}
-                  ask={<NoteButton label={aiAvailable ? "Ask" : "Note"} onOpen={() => setNoting(true)} />}
-                />
-                {/* Timers stand above Note and Finish. */}
-                <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(5.25rem+env(safe-area-inset-bottom))]" />
-                {aiAvailable ? (
-                  <Sheet open={noting} onOpenChange={setNoting} size="sm" closable aria-label="Ask about this recipe">
-                    <Sheet.Header>
-                      <h2 className="text-base font-medium">Ask about this recipe</h2>
-                    </Sheet.Header>
-                    {/* Half the screen, so the step being cooked stays in view above it. */}
-                    <div className="flex h-[55svh] min-h-0 flex-col">{assistant(true)}</div>
-                  </Sheet>
-                ) : (
-                  <Sheet open={noting} onOpenChange={setNoting} size="sm" closable aria-label="Note for the review">
-                    <Sheet.Header>
-                      <h2 className="text-base font-medium">Note for the review</h2>
-                    </Sheet.Header>
-                    <Sheet.Body>{notesPanel}</Sheet.Body>
-                  </Sheet>
-                )}
-              </>
-            )}
-          </CookingProvider>
-        </SubRecipesProvider>
-      </QuickEditProvider>
-    );
-  }
+  const cookingPage = desktop ? (
+    <>
+      <CookingHeader recipe={recipe} end={<FinishCooking slug={recipe.slug} />} />
+      <CookingSpread
+        recipe={recipe}
+        ingredients={ingredients}
+        method={
+          <>
+            {stale}
+            {steps}
+            {notes}
+          </>
+        }
+        side={
+          aiAvailable ? (
+            <>
+              <div className="border-b border-border-subtle px-4 py-3">
+                <SectionTitle as="h2">Ask about this recipe</SectionTitle>
+              </div>
+              {assistant(false)}
+            </>
+          ) : (
+            <div className="flex flex-col gap-4 p-5">
+              <SectionTitle as="h2">While you cook</SectionTitle>
+              {notesPanel}
+            </div>
+          )
+        }
+      />
+      <TimerStrip recipeId={recipe.id} fixed className="desktop:right-[max(20rem,26%)] desktop:left-auto desktop:w-[28rem]" />
+    </>
+  ) : (
+    <>
+      <PhoneCooking
+        recipe={recipe}
+        ingredients={ingredients}
+        method={
+          <>
+            {stale}
+            {steps}
+          </>
+        }
+        after={notes}
+        ask={<NoteButton label={aiAvailable ? "Ask" : "Note"} onOpen={() => setNoting(true)} />}
+      />
+      {/* Timers stand above Note and Finish. */}
+      <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(5.25rem+env(safe-area-inset-bottom))]" />
+      <Sheet open={noting} onOpenChange={setNoting} size="sm" closable aria-label={noteTitle}>
+        <Sheet.Header>
+          <h2 className="text-base font-medium">{noteTitle}</h2>
+        </Sheet.Header>
+        {aiAvailable ? (
+          // Half the screen, so the step being cooked stays in view above it.
+          <div className="flex h-[55svh] min-h-0 flex-col">{assistant(true)}</div>
+        ) : (
+          <Sheet.Body>{notesPanel}</Sheet.Body>
+        )}
+      </Sheet>
+    </>
+  );
+
+  const page = desktop ? (
+    <>
+      <RecipeSpread
+        recipe={recipe}
+        header={header}
+        ingredients={ingredients}
+        method={
+          <>
+            {steps}
+            {madeThis}
+          </>
+        }
+        notes={notes}
+        history={
+          <>
+            <TimelineList events={timeline} defaultOpen />
+            <RecipeMetaFooter recipe={recipe} />
+          </>
+        }
+      />
+      <TimerStrip recipeId={recipe.id} fixed />
+    </>
+  ) : (
+    <>
+      <PhoneRecipe
+        recipe={recipe}
+        madeCount={timeline.length}
+        onRate={(rating) => void rate(rating)}
+        actions={(className) => <RecipeActions recipe={recipe} aiAvailable={aiAvailable} className={className} />}
+        servings={requested}
+        ingredients={ingredients}
+        method={
+          <>
+            {steps}
+            {madeThis}
+          </>
+        }
+        after={
+          <>
+            {notes}
+            <TimelineList events={timeline} />
+            <RecipeMetaFooter recipe={recipe} />
+          </>
+        }
+        cookBar={<CookBar recipe={recipe} servings={requested} choices={choices} resume={resumable} />}
+      />
+      {/* Any timers started from a step, fixed above the Start cooking bar. */}
+      <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+4.75rem)]" />
+    </>
+  );
 
   // Quick edit hangs off the stored document, not `recipe`: a row's
   // sheet writes back what was stored, whatever scale the page is showing.
   return (
     <QuickEditProvider recipe={stored}>
       <SubRecipesProvider subRecipes={subRecipes}>
-        {desktop ? (
-          <>
-            <RecipeSpread
-              recipe={recipe}
-              header={header}
-              ingredients={ingredients}
-              method={
-                <>
-                  {steps}
-                  {madeThis}
-                </>
-              }
-              notes={notes}
-              history={
-                <>
-                  <TimelineList events={timeline} defaultOpen />
-                  <RecipeMetaFooter recipe={recipe} />
-                </>
-              }
-            />
-            <TimerStrip recipeId={recipe.id} fixed />
-          </>
-        ) : (
-          <>
-            <PhoneRecipe
-              recipe={recipe}
-              madeCount={timeline.length}
-              onRate={(rating) => void rate(rating)}
-              actions={(className) => <RecipeActions recipe={recipe} aiAvailable={aiAvailable} className={className} />}
-              servings={requested}
-              ingredients={ingredients}
-              method={
-                <>
-                  {steps}
-                  {madeThis}
-                </>
-              }
-              after={
-                <>
-                  {notes}
-                  <TimelineList events={timeline} />
-                  <RecipeMetaFooter recipe={recipe} />
-                </>
-              }
-              cookBar={<CookBar recipe={recipe} servings={requested} choices={choices} resume={resumable} />}
-            />
-            {/* Any timers started from a step, fixed above the Start cooking bar. */}
-            <TimerStrip recipeId={recipe.id} fixed className="bottom-[calc(var(--app-bar)+var(--app-bar-rise,0px)+4.75rem)]" />
-          </>
-        )}
+        <CookingProvider value={cookingValue}>{cooking ? cookingPage : page}</CookingProvider>
       </SubRecipesProvider>
     </QuickEditProvider>
   );
