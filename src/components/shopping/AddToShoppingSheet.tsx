@@ -5,7 +5,7 @@ export type AddToShoppingSheetProps = AddToShoppingSheetContentProps & { open: b
 
 /**
  * `Modal` rather than `Sheet`, as the filters and the plan's add sheet are
- * (decisions.md rows 44 and 45): below `sm` it rises from the bottom at its
+ * (decisions.md rows 45 and 159): below `sm` it rises from the bottom at its
  * content's height, so a handful of ingredients is a short sheet with Add
  * under them rather than a full screen with Add at its foot; a long list
  * stops at the Modal's own 95% and scrolls in the body. It names itself from

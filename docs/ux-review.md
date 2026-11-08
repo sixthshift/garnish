@@ -120,7 +120,7 @@ Each is small enough to settle in a line.
 
 ## 7. Cooking from the recipe page, with an assistant and a review
 
-Settled 2026-11-07: decisions.md rows 214 and 215, from `docs/mockups/cooking.html`. Cook mode is gone; the recipe page is cooked from, with an assistant beside it and a review at Finish. Open still: an "add an ingredient" adjustment, "fix this later" flags, and whether the MCP connector should see the session.
+Settled 2026-11-07: decisions.md rows 214 and 217, from `docs/mockups/cooking.html`. Cook mode is gone; the recipe page is cooked from, with an assistant beside it and a review at Finish. Open still: an "add an ingredient" adjustment, "fix this later" flags, and whether the MCP connector should see the session.
 
 ---
 

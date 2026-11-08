@@ -25,7 +25,7 @@ export class AiError extends Error {
 /** The same shape the URL import injects, so a test can drive the HTTP path with a fake `fetch`. */
 export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
 
-/** The four things the app asks a model for: the import, the restyle, the planner and the cooking assistant (row 215). Each may name its own model. */
+/** The four things the app asks a model for: the import, the restyle, the planner and the cooking assistant (row 217). Each may name its own model. */
 export type AiUse = "import" | "restyle" | "planner" | "cook";
 
 export const AI_USES = ["import", "restyle", "planner", "cook"] as const satisfies readonly AiUse[];

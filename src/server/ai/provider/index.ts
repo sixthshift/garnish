@@ -97,7 +97,7 @@ export function serverClient(): AiClient {
   };
 }
 
-// Each use's model is the one chosen in Settings › AI (decisions.md rows 215, 217).
+// Each use's model is the one chosen in Settings › AI (decisions.md row 217).
 readChosenModels((use) => aiSettings.model(use));
 
 export default withDiagnostics(serverClient());

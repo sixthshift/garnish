@@ -1,4 +1,4 @@
-// 035_week_facet.sql folds row 191's `kind` into the week facet (decisions.md
+// 035_week_facet.sql folds the old `kind` into the week facet (decisions.md
 // row 219): 'rotation' becomes 'weeknight', 'weekend' stays, the facets a
 // recipe already had are kept, and the column goes.
 import { readdirSync, readFileSync } from "node:fs";

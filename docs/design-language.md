@@ -88,6 +88,6 @@ Recorded so they are not silently "fixed":
 
 ## Related
 
-- [`decisions.md`](decisions.md) — rows 97, 98, 99, 137, 141, 180, 206
+- [`decisions.md`](decisions.md) — rows 97, 98, 137, 141, 180, 206 and 207
 - `design-system/docs/visual-hierarchy.md` — the surface system and the axes
 - `design-system/docs/density.md` — the three density modes

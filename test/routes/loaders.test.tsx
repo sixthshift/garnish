@@ -546,7 +546,7 @@ describe("/recipes/$slug/edit", () => {
     expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="6"/);
     // Rating and last made are set from the view page, not here (decisions row 51).
     expect(html).not.toContain('aria-label="Rated 4 out of 5"');
-    // A recipe with a yield opens it where the servings are (decisions rows 50, 211).
+    // A recipe with a yield opens it where the servings are (decisions row 211).
     expect(html).toMatch(/<details open=""[^>]*aria-label="Yield"/);
     expect(html).toMatch(/<input[^>]*name="recipeYieldQuantity"[^>]*value="1"/);
     expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">gram<\/span>/);
@@ -728,7 +728,7 @@ describe("/recipes/new", () => {
     expect(html).toMatch(/aria-label="Servings".*?<input[^>]*value="0"/);
     expect(html).not.toContain('aria-label="Rated 0 out of 5"'); // decisions row 51
     // A blank recipe makes nothing, so the yield opens folded — but its
-    // fields are still in the form (decisions rows 50, 211).
+    // fields are still in the form (decisions row 211).
     expect(html).toMatch(/<details data-disclosure[^>]*aria-label="Yield"/);
     expect(html).not.toContain('<details open=""');
     expect(html).toMatch(/aria-label="Yield unit"[^>]*><span class="truncate">No unit<\/span>/);

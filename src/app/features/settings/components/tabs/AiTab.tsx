@@ -44,7 +44,7 @@ export function modelOptions(row: StatusModel, offered: readonly OfferedModel[] 
 
 /**
  * One use's model, chosen here from the models the provider offers
- * (decisions.md rows 215, 217). The list comes from the connection check the
+ * (decisions.md row 217). The list comes from the connection check the
  * tab runs on opening — no tokens — so until it answers, or when it fails, the
  * dropdown shows the model selected and cannot be opened. A choice writes
  * straight through; Not selected clears it, and the feature says so when used.

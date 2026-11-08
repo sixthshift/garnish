@@ -67,8 +67,8 @@ export function startsOf(counts: readonly number[]): number[] {
 }
 
 /**
- * The Style space: the author's steps and the rewrite side by side, chosen
- * step by step. Shared by the import, where
+ * The Style space: each step shows the rewrite or the author's words, the
+ * other a press away under Show original, chosen step by step (row 203). Shared by the import, where
  * it comes before Save, and a saved recipe's Style page.
  */
 export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel, loadRules }: StyleSpaceProps) {

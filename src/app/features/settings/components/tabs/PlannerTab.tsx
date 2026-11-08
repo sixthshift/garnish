@@ -15,7 +15,7 @@ export type PlannerTabProps = {
  *
  * Which meals a week is planned for used to sit above it as three checkboxes;
  * it is a per-run choice on the proposal sheet now, beside the days
- * (decisions.md row 102). The date, the hemisphere and the week's open slots
+ * (decisions.md row 194). The date, the hemisphere and the week's open slots
  * are not statements either; they are fixed lines of the prompt.
  */
 export function PlannerTab({ rules }: PlannerTabProps) {

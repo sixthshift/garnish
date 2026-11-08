@@ -23,7 +23,7 @@ export type LabFlags = {
 
 export const LAB_USAGE = "Usage: bun run propose [--week <monday>] [--days mon,tue] [--meals breakfast,dinner] [--model <a,b>] [--rules <file>] [--prompt]";
 
-/** What `--meals` falls back to: dinner, the same default the proposal sheet starts from (decisions.md row 102). */
+/** What `--meals` falls back to: dinner, the same default the proposal sheet starts from (decisions.md row 194). */
 export const DEFAULT_LAB_MEALS: readonly Meal[] = ["dinner"];
 
 /** The seven day tokens `--days` reads, Monday first, in the order `weekDates` returns a week's dates. */

@@ -6,7 +6,7 @@ A personal recipe manager. Single household, runs on the LAN; the one public doo
 
 - [`docs/intent.md`](docs/intent.md) — why, and what it refuses to do
 - [`docs/architecture.md`](docs/architecture.md) — stack, data model, scaling, API, persistence rules
-- [`docs/decisions.md`](docs/decisions.md) — decision log; add a row to reverse one, don't edit
+- [`docs/decisions.md`](docs/decisions.md) — decision log; reverse one with a new row and remove the row it replaces
 - [`docs/scope.md`](docs/scope.md) — v1, later, open, never
 - [`docs/development.md`](docs/development.md) — running it: scripts, environment, the labs, releases
 - [`docs/plan.md`](docs/plan.md) — the loop protocol, the next tasks and the open questions; finished stages are in git history

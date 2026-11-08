@@ -27,7 +27,7 @@ Rules:
 
 - **Blocked?** Write the blocker under Blocked with the task id and what you tried. Move to the next task that does not depend on it. Never guess past a blocker on a decision; guess freely on implementation detail, and when unsure copy Mealie.
 - **Question for Jason?** Write it under Questions. Pick the Mealie answer and continue. Do not stop.
-- **Found a design gap?** Add a row to `decisions.md`. Do not edit existing rows. Note it in the Log.
+- **Found a design gap?** Add a row to `decisions.md`; if it replaces an earlier row, remove that one and repoint what cites it. Note it in the Log.
 - **Framework questions?** TanStack Start docs at https://tanstack.com/start/latest. Server functions (`src/api/rpc/`) for app calls; server routes only for `/api/*`, in a section's `routes/api/` or the app's `src/api/rest/`. SPA mode stays on.
 - **UI element needed?** Check the design system's exports first (`node_modules/@sixthshift/design-system/package.json`). Build locally only if absent, under `src/components/ui/`.
 - **Task too big for one iteration?** Split it in place into `Mx.y.a`, `Mx.y.b`. Do the first part.

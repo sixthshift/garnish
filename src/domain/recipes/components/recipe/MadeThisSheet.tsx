@@ -19,7 +19,7 @@ export type MadeThisSheetContentProps = {
   today?: string;
   /** The stepper's starting value — the page's current scale. */
   defaultServings?: number;
-  /** The comment's starting words: tonight's changes kept for this time only (decisions.md rows 193, 214). */
+  /** The comment's starting words: tonight's changes kept for this time only (decisions.md row 214). */
   defaultMessage?: string;
 };
 

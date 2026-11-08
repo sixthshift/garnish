@@ -7,7 +7,7 @@ import type { Meal } from "./schema";
 // nobody has said yet, so an unmarked library still plans; never from a sauce
 // or a stock on its own, nor from a side, a starter, a dessert, a drink, a
 // snack or baking. A breakfast or a lunch prefers a recipe said to suit it.
-// The weeknight and weekend rules (rows 191, 219) apply after this, to what is left.
+// The weeknight and weekend rules (row 219) apply after this, to what is left.
 
 /** The courses a dinner can be on its own. */
 export const DINNER_COURSES: readonly Course[] = ["main", "soup", "salad"];

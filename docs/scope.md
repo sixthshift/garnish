@@ -4,7 +4,7 @@
 
 - Recipe library: list, search by name and tag, view.
 - Recipe editor: parts, ingredients, steps, tags, servings, times, image.
-- Import from a URL: schema.org `ld+json` where the page has it, an OpenGraph stub where it does not, reviewed before it is saved. No per-site scrapers, no AI (decisions rows 57, 58).
+- Import from a URL: schema.org `ld+json` where the page has it, an OpenGraph stub where it does not, reviewed before it is saved. No per-site scrapers, no AI (decisions rows 58 and 120).
 - Scaling with fixed-quantity support.
 - Cooking from the recipe page: the page folded to one header line, Now on the step being cooked, an assistant, a review of tonight's changes, wake lock (decisions.md row 214).
 - PWA: installable, offline read of cached recipes.
@@ -27,8 +27,8 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 - Backup and restore (stage 15). The whole household as one zip, photos included, from Settings or `bun run backup`; a restore replaces everything after checking the whole file and keeping the database and photos as they were, from Settings behind a tick-to-confirm or `bun run restore`. Export is one recipe, as JSON or Cooklang (decisions row 131).
 - An MCP server. Any AI assistant that speaks MCP — Claude on the web, the phone or Claude Code, ChatGPT, or another — reads and changes recipes, the shopping list and the meal plan through an MCP server, let in once with a pairing code from Settings › MCP and disconnected from Settings › MCP; the one door that faces the internet (decisions row 181).
 - Timer alerts. A device switched on in Settings › Alerts is woken by a push when a timer ends, screen off or app closed; iPhone from the home screen, Android installed or in Chrome (decisions row 111).
-- Four modes, not four drawers. Home is the day as it stands: tonight with Start cooking, the week, what is left to buy, next week, and the recipes never made (decisions row 190); the recipe grid moved to Recipes. Weeknight and Weekend are the Week facet, set like the other layers (row 219). Plan the week fills the open nights, the planner's first pass when a model is selected and the Weeknight recipes otherwise, then the weekend, then the list (rows 192, 194). Cooking happens on the recipe page, which takes changed amounts and steps as you go and asks at Finish which are kept in the recipe (rows 193, 214).
-- Alternatives. A line can say what else it can be made with: beef strips or 400 g prawns for the stir-fry's chicken, 1 cup milk and 1 tbsp lemon juice per cup of buttermilk. Each shows under the line at its amount. The ones ticked "The plan picks it" are what the plan rotates through: each new entry takes the one least used before, Choose… on the entry changes it, and the recipe page, cook mode and the shopping list follow the choice (decisions rows 196, 198, 199).
+- Four modes, not four drawers. Home is the day as it stands: tonight with Start cooking, the week, what is left to buy, next week, and the recipes never made (decisions row 190); the recipe grid moved to Recipes. Weeknight and Weekend are the Week facet, set like the other layers (row 219). Plan the week fills the open nights, the planner's first pass when a model is selected and the Weeknight recipes otherwise, then the weekend, then the list (rows 192, 194). Cooking happens on the recipe page, which takes changed amounts and steps as you go and asks at Finish which are kept in the recipe (row 214).
+- Alternatives. A line can say what else it can be made with: beef strips or 400 g prawns for the stir-fry's chicken, 1 cup milk and 1 tbsp lemon juice per cup of buttermilk. Each shows under the line at its amount. The ones ticked "The plan picks it" are what the plan rotates through: each new entry takes the one least used before, Choose… on the entry changes it, and the recipe page, cook mode and the shopping list follow the choice (decisions rows 198 and 199).
 - A browser for the pages a fetch cannot get. When a site blocks a plain download or draws its recipe with JavaScript, the import opens the page in a headless Chromium carried in the image and reads that, then goes on to the same review (decisions.md row 202). taste.com.au, delicious.com.au and Smitten Kitchen wall that off too, so paste and the Save to Garnish bookmark stay as the ways round.
 
 ## Later, in rough order
@@ -36,7 +36,7 @@ Stages 7 to 15, in the order they were built. The argument for each is in [decis
 - In-editor AI help: unit conversion, rewording, suggesting alternatives (stored as row 199's).
 - Recipe variants: a choice that changes the steps too (prawns 2 minutes, beef seared in batches), built on parts.
 - The planner's model choosing the options, with a reason, rather than the weeknight recipes in order.
-- Choosing an alternative while cooking or shopping: a change the review at Finish asks about (rows 193, 214), or a list line swapped for it.
+- Choosing an alternative while cooking or shopping: a change the review at Finish asks about (row 214), or a list line swapped for it.
 
 ## Open
 

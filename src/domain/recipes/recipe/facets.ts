@@ -9,7 +9,7 @@ import { z } from "zod";
  * Every layer holds a set (a salad is a main or a side; a dish can be Thai and
  * Vietnamese), empty until the household or an import says. Which part of the
  * week a recipe fits, weeknight or weekend, is a layer like the rest (row 219,
- * which folded row 191's `kind` in). Tags remain for whatever fits no layer.
+ * which folded the old `kind` in). Tags remain for whatever fits no layer.
  */
 
 /** What it is in a meal: a meal on its own, a part of one, or something made to go into or onto another. */
@@ -35,7 +35,7 @@ export const MEAL_TIMES = ["breakfast", "lunch", "dinner"] as const;
 
 /**
  * Which part of the week it fits: a weeknight, with a weeknight's time, or the
- * weekend, with a weekend's. Only the household knows (row 191: a 40-minute
+ * weekend, with a weekend's. Only the household knows (row 219: a 40-minute
  * roast can be a Sunday ritual), and it stays these two on purpose: holidays
  * are the household's own, and a tag (row 219).
  */

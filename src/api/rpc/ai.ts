@@ -31,7 +31,7 @@ export const testAiConnection = createServerFn({ method: "POST" })
 export const ChooseAiModelInput = z.object({ use: z.enum(AI_USES), model: z.string().trim().max(200).nullable() });
 
 /**
- * Choose the model a use asks, from Settings › AI (decisions.md rows 215,
+ * Choose the model a use asks, from Settings › AI (decisions.md row 217,
  * 217), the one place a model is set. Null, or an empty name, is Not
  * selected: the use has no model until one is chosen. Returns the status as
  * it now stands, so the tab shows the model now asked.

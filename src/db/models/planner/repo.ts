@@ -24,7 +24,7 @@ const order = [asc(plannerRule.position), asc(plannerRule.createdAt)];
  * The planner guide: the statements read out to the model that proposes a
  * week. Which meals a week is planned for used to live here too; it is a
  * per-run choice on the proposal sheet now, remembered on the device rather
- * than in the database (decisions.md row 102).
+ * than in the database (decisions.md row 194).
  */
 export function plannerRepository(db: Database) {
   const dz = orm(db);

@@ -115,7 +115,7 @@ export function mergeRecent(planned: readonly RecentMeal[], cooked: readonly Rec
 
 /**
  * Everything a proposal is built from: the days and the meals the run was
- * asked for (both chosen on the sheet, decisions.md row 102), and off the
+ * asked for (both chosen on the sheet, decisions.md row 194), and off the
  * database the library, the week's open and taken slots, what was eaten in the four weeks before this
  * one, the statements that are on, and today from the clock. The four weeks
  * come from four `week` reads rather than a range query, because the week is

@@ -109,11 +109,9 @@ function WholePart(props: {
 }
 
 /**
- * One part of the recipe in the Style space: its ingredients, the author's
- * steps and the rewrite, side by side, so the two are read together rather
- * than flipped between. From lg the ingredients are the first of three
- * columns; on a desktop they sit above the two step columns; on a phone each step
- * shows the author's words and then the rewrite.
+ * One part of the recipe in the Style space: its ingredients beside its
+ * steps on a desktop and above them on a phone, each step showing the version
+ * taken and the other a press away (row 203).
  */
 export function StylePart(props: StylePartProps) {
   const { p, original, firstStep, firstRewriteStep, answer, choices, assembled, running, failed, editing } = props;

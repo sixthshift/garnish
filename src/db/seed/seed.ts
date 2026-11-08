@@ -43,7 +43,7 @@ export type SeedResult = {
  *
  * The planner has nothing else to seed: which meals a week is planned for is a
  * per-run choice on the proposal sheet, remembered on the device rather than
- * in the database (decisions.md row 102).
+ * in the database (decisions.md row 194).
  */
 export function seed(db: Database): SeedResult {
   const unitRepo = unitRepository(db);

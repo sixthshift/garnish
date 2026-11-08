@@ -3,7 +3,7 @@ import { MAX_VEGETARIAN_NIGHTS, MEALS, type Meal } from "../../plan";
 
 // What Plan the week remembers on the device between runs: which meals beside
 // dinner the planner fills, and how many are eating. The keys are the ones the
-// Propose sheet used (decisions.md row 102), so a household's choices carry
+// Propose sheet used (decisions.md row 194), so a household's choices carry
 // over to the screen that replaced it (row 194).
 
 /** Where the meal choice is remembered. */
