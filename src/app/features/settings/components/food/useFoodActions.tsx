@@ -7,7 +7,7 @@ import type { RecipeSummary } from "../../../../../domain/recipes/recipe";
 import type { Aisle, FoodPack, FoodRow, Unit } from "../../../../../domain/recipes/reference";
 import { useMutate } from "../../../../../lib/mutate";
 import { toastError } from "../../../../../lib/toast";
-import { FoodMergeDialog } from "../FoodMergeDialog";
+import { MergeDialog } from "../MergeDialog";
 import { dedupeSummaries, foodsLabel } from "../settingsLabels";
 import { FoodEditSheet, type FoodPatch } from "./FoodEditSheet";
 import { saveFood } from "./saveFood";
@@ -123,7 +123,8 @@ export function useFoodActions({ foods, packs = [], aisles, units, recipes, onDe
         />
       )}
       {merging && (
-        <FoodMergeDialog
+        <MergeDialog
+          noun="food"
           source={merging}
           targets={foods.filter((food) => food.id !== merging.id)}
           busy={busy}

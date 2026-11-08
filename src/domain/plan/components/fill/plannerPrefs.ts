@@ -1,4 +1,4 @@
-import type { StorageLike } from "../../../../lib/useLocalStorage";
+import type { StorageLike } from "../../../../lib/storage";
 import { MAX_VEGETARIAN_NIGHTS, MEALS, type Meal } from "../../plan";
 
 // What Plan the week remembers on the device between runs: which meals beside

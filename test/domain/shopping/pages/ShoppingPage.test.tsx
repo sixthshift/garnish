@@ -14,7 +14,8 @@ import { addShoppingItems, listShoppingItems } from "../../../../src/api/rpc/sho
 import { ShoppingListView } from "../../../../src/domain/shopping/components/ShoppingListView";
 import { sendOutboxEntry } from "../../../../src/domain/shopping/components/shoppingListActions";
 import { type ShoppingItem, shoppingItemSchema } from "../../../../src/domain/shopping/shopping";
-import { applyOutbox, createOutbox, readOutbox, type StorageLike } from "../../../../src/lib/outbox";
+import { applyOutbox, createOutbox, readOutbox } from "../../../../src/lib/outbox";
+import type { RemovableStorage } from "../../../../src/lib/storage";
 import { elementHtml, renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";
 
@@ -268,7 +269,7 @@ describe("/shopping", () => {
 // queue applied. These drive the same two functions the route component does.
 
 describe("an offline tick", () => {
-  function memoryStorage(): StorageLike & { map: Map<string, string> } {
+  function memoryStorage(): RemovableStorage & { map: Map<string, string> } {
     const map = new Map<string, string>();
     return { map, getItem: (k) => map.get(k) ?? null, setItem: (k, v) => void map.set(k, v), removeItem: (k) => void map.delete(k) };
   }

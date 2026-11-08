@@ -4,7 +4,8 @@
 // server or another device.
 
 import { DESKTOP_MEDIA } from "./layout";
-import { readItem, type StorageLike, useLocalStorage, writeItem } from "./useLocalStorage";
+import { readItem, type StorageLike, writeItem } from "./storage";
+import { useLocalStorage } from "./useLocalStorage";
 
 export type ViewMode = "grid" | "list";
 export type IngredientMode = "structured" | "summary";

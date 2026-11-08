@@ -6,7 +6,8 @@ import { afterEach, describe, expect, test } from "vitest";
 import { SubRecipesProvider } from "../../../../../src/components/recipe/SubRecipes";
 import { IngredientRow } from "../../../../../src/domain/recipes/components/recipe/IngredientRow";
 import type { Ingredient, SubRecipe } from "../../../../../src/domain/recipes/recipe";
-import { type StorageLike, setIngredientTicked } from "../../../../../src/lib/ticks";
+import type { StorageLike } from "../../../../../src/lib/storage";
+import { setIngredientTicked } from "../../../../../src/lib/ticks";
 
 const gram = {
   id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",

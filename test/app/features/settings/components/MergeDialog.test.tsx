@@ -1,8 +1,8 @@
-// The Foods tab's merge confirm: which foods can be a target, and the dialog
-// content FoodMergeDialogContent renders.
+// The merge confirm settings' Foods, Tags and Units share: which rows can be a
+// target, and the dialog content MergeDialogContent renders.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { FoodMergeDialogContent } from "../../../../../src/app/features/settings/components/FoodMergeDialog";
+import { MergeDialogContent } from "../../../../../src/app/features/settings/components/MergeDialog";
 import type { Food } from "../../../../../src/db/models/food/repo";
 import { mergeTargets } from "../../../../../src/lib/lists";
 
@@ -28,9 +28,9 @@ describe("mergeTargets", () => {
   });
 });
 
-describe("FoodMergeDialogContent render", () => {
+describe("MergeDialogContent render", () => {
   test("asks which food survives and lists the other foods as targets", () => {
-    const html = renderToString(<FoodMergeDialogContent source={unsalted} targets={[butter, salt]} onCancel={() => {}} onConfirm={() => {}} />);
+    const html = renderToString(<MergeDialogContent noun="food" source={unsalted} targets={[butter, salt]} onCancel={() => {}} onConfirm={() => {}} />);
     expect(html).toContain("Merge Unsalted butter?");
     expect(html).toContain("Unsalted butter will be deleted");
     expect(html).toContain(">Merge<");
@@ -38,14 +38,23 @@ describe("FoodMergeDialogContent render", () => {
   });
 
   test("no other food to merge into says so instead of offering a picker", () => {
-    const html = renderToString(<FoodMergeDialogContent source={butter} targets={[]} onCancel={() => {}} onConfirm={() => {}} />);
+    const html = renderToString(<MergeDialogContent noun="food" source={butter} targets={[]} onCancel={() => {}} onConfirm={() => {}} />);
     expect(html).toContain("There is no other food to merge into.");
+    expect(html).toContain("Every ingredient using it will point at the food you pick below instead.");
     expect(html.match(/<button[^>]*disabled/g)?.length).toBeGreaterThanOrEqual(1);
   });
 
   test("busy disables the buttons and reads Merging…", () => {
-    const html = renderToString(<FoodMergeDialogContent source={unsalted} targets={[butter]} busy onCancel={() => {}} onConfirm={() => {}} />);
+    const html = renderToString(<MergeDialogContent noun="food" source={unsalted} targets={[butter]} busy onCancel={() => {}} onConfirm={() => {}} />);
     expect(html).toContain("Merging…");
     expect(html.match(/<button[^>]*disabled/g)?.length).toBeGreaterThanOrEqual(2);
   });
+});
+
+test("each kind says what happens to what pointed at it", () => {
+  const tag = renderToString(<MergeDialogContent noun="tag" source={butter} targets={[]} onCancel={() => {}} onConfirm={() => {}} />);
+  expect(tag).toContain("Every recipe carrying it will carry the tag you pick below instead.");
+  expect(tag).toContain("There is no other tag to merge into.");
+  const unit = renderToString(<MergeDialogContent noun="unit" source={butter} targets={[]} onCancel={() => {}} onConfirm={() => {}} />);
+  expect(unit).toContain("Every ingredient and recipe yield using it will point at the unit you pick below instead.");
 });

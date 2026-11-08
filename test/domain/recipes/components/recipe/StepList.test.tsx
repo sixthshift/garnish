@@ -7,7 +7,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { StepList } from "../../../../../src/domain/recipes/components/recipe/StepList";
 import type { Ingredient, Step } from "../../../../../src/domain/recipes/recipe";
 import type { Food } from "../../../../../src/domain/recipes/reference";
-import type { StorageLike } from "../../../../../src/lib/ticks";
+import type { StorageLike } from "../../../../../src/lib/storage";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const STEP_ID = "33333333-3333-4333-8333-333333333333";

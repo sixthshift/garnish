@@ -3,10 +3,11 @@
 // the draft in state and calls these three functions, so a save clearing the
 // key is a `clearDraft` call and is asserted here.
 import { describe, expect, test } from "vitest";
-import { clearDraft, draftKey, draftNoticeText, formatSavedAt, getDraft, putDraft, type StorageLike } from "../../src/lib/drafts";
+import { clearDraft, draftKey, draftNoticeText, formatSavedAt, getDraft, putDraft } from "../../src/lib/drafts";
+import type { RemovableStorage } from "../../src/lib/storage";
 
 /** A plain in-memory Storage-like, for round-trip tests. */
-function memoryStorage(): StorageLike & { size: () => number; raw: (key: string) => string | null } {
+function memoryStorage(): RemovableStorage & { size: () => number; raw: (key: string) => string | null } {
   const map = new Map<string, string>();
   return {
     getItem: (key) => map.get(key) ?? null,
@@ -18,7 +19,7 @@ function memoryStorage(): StorageLike & { size: () => number; raw: (key: string)
 }
 
 /** A storage whose every method throws, for the "storage is unavailable" cases. */
-function throwingStorage(): StorageLike {
+function throwingStorage(): RemovableStorage {
   return {
     getItem: () => {
       throw new DOMException("blocked", "SecurityError");

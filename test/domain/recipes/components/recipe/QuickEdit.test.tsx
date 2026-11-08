@@ -12,7 +12,8 @@ import { type DraftIngredient, withIngredientReplaced, withStepReplaced } from "
 import type { Ingredient, Recipe } from "../../../../../src/domain/recipes/recipe";
 import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Unit } from "../../../../../src/domain/recipes/reference";
-import { getTicks, type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
+import type { StorageLike } from "../../../../../src/lib/storage";
+import { getTicks, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
 
 // `updateRecipe` is the only server call a save makes; the test keeps what it
 // was sent so it can be compared with the stored document.

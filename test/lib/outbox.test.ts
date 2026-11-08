@@ -16,9 +16,9 @@ import {
   parseOutbox,
   pendingLabel,
   readOutbox,
-  type StorageLike,
   writeOutbox,
 } from "../../src/lib/outbox";
+import type { RemovableStorage } from "../../src/lib/storage";
 
 const at = "2026-09-13T00:00:00.000Z";
 let n = 0;
@@ -36,7 +36,7 @@ function line(id: string, ticked: boolean, position: number): ShoppingItem {
 }
 
 /** A `localStorage` stand-in; `fail` makes every access throw, as a full or locked-down one does. */
-function memoryStorage(fail = false): StorageLike & { map: Map<string, string> } {
+function memoryStorage(fail = false): RemovableStorage & { map: Map<string, string> } {
   const map = new Map<string, string>();
   const boom = () => {
     if (fail) throw new Error("storage is unavailable");

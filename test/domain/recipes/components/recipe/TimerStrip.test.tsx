@@ -7,7 +7,8 @@
 import { toastStore } from "@sixthshift/design-system/overlay";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { type StorageLike, startTimer, type Timer, timerDisplay } from "../../../../../src/lib/timers";
+import type { StorageLike } from "../../../../../src/lib/storage";
+import { startTimer, type Timer, timerDisplay } from "../../../../../src/lib/timers";
 import { type RunningTimer, tickTimersNow } from "../../../../../src/lib/useTimers";
 
 /** Drop every toast at once: the store's own `clear` only begins their exit. */

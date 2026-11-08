@@ -2,6 +2,7 @@
 
 import type { ShoppingItem } from "../domain/shopping/shopping";
 import { randomUuid } from "./id";
+import type { RemovableStorage } from "./storage";
 
 /** What a queued write does to one line. A `remove` supersedes anything queued before it; an `add` is a line the server has not seen. */
 export type OutboxKind = "tick" | "untick" | "remove" | "add";
@@ -24,13 +25,6 @@ export type OutboxEntry = (OutboxBase & { kind: "tick" | "untick" | "remove" }) 
 
 /** The key the queue lives under. One list, so one key. */
 export const OUTBOX_KEY = "garnish.outbox.shopping";
-
-/** The slice of `Storage` the controller uses. */
-export type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-  removeItem: (key: string) => void;
-};
 
 // --- The pure core -----------------------------------------------------------
 
@@ -172,7 +166,7 @@ export function pendingLabel(count: number): string {
 // --- The stored queue --------------------------------------------------------
 
 /** The queue as stored, or empty when unset, malformed, or the storage throws. */
-export function readOutbox(storage: StorageLike): OutboxEntry[] {
+export function readOutbox(storage: RemovableStorage): OutboxEntry[] {
   try {
     const raw = storage.getItem(OUTBOX_KEY);
     if (raw == null) return [];
@@ -183,7 +177,7 @@ export function readOutbox(storage: StorageLike): OutboxEntry[] {
 }
 
 /** Write `queue`, removing the key when it is empty. A throwing storage just means the queue does not survive a reload. */
-export function writeOutbox(storage: StorageLike, queue: readonly OutboxEntry[]): void {
+export function writeOutbox(storage: RemovableStorage, queue: readonly OutboxEntry[]): void {
   try {
     if (queue.length === 0) storage.removeItem(OUTBOX_KEY);
     else storage.setItem(OUTBOX_KEY, JSON.stringify(queue));
@@ -211,7 +205,11 @@ export type Outbox = {
  * server, a locked-down browser): the ticks still apply to the rendered list
  * for this page's life, they just do not survive a reload.
  */
-export function createOutbox(storage: StorageLike | undefined, newId: () => string = randomUuid, now: () => string = () => new Date().toISOString()): Outbox {
+export function createOutbox(
+  storage: RemovableStorage | undefined,
+  newId: () => string = randomUuid,
+  now: () => string = () => new Date().toISOString()
+): Outbox {
   let memory: OutboxEntry[] = storage ? readOutbox(storage) : [];
   const save = (queue: OutboxEntry[]): OutboxEntry[] => {
     memory = queue;

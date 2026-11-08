@@ -2,26 +2,12 @@ import { toast } from "@sixthshift/design-system/overlay";
 import { useCallback, useEffect, useState } from "react";
 import { clearTimerAlarm, setTimerAlarm } from "../api/rpc/push";
 import { currentEndpoint } from "./push";
-import {
-  dismissTimer,
-  getTimers,
-  pauseTimer,
-  resumeTimer,
-  type StorageLike,
-  startTimer,
-  subscribeTimers,
-  type Timer,
-  type TimerInput,
-  tickTimers,
-  timerDisplay,
-} from "./timers";
+import { type StorageLike, browserStorage as storageOf } from "./storage";
+import { dismissTimer, getTimers, pauseTimer, resumeTimer, startTimer, subscribeTimers, type Timer, type TimerInput, tickTimers, timerDisplay } from "./timers";
 
 const EMPTY: Timer[] = [];
 
-/** `window.sessionStorage`, or undefined on the server and where it is unavailable. */
-function browserStorage(): StorageLike | undefined {
-  return typeof window === "undefined" ? undefined : window.sessionStorage;
-}
+const browserStorage = () => storageOf("session");
 
 /** The timers in the browser's own storage. Empty on the server. */
 export function timersSnapshot(recipeId: string): Timer[] {

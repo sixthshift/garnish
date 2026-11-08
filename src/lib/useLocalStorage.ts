@@ -5,44 +5,9 @@
 // usehooks-ts shape, with a set in place of a custom event.
 
 import { useCallback, useEffect, useState } from "react";
+import { browserStorage, readItem, signal, writeItem } from "./storage";
 
-/** The slice of `Storage` the reads and writes use. */
-export type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-};
-
-/** `window.localStorage`, or undefined on the server and where it is unavailable. */
-export function browserStorage(): StorageLike | undefined {
-  return typeof window === "undefined" ? undefined : window.localStorage;
-}
-
-/**
- * `key`'s value in `storage`, JSON-decoded, or `fallback` whenever it is
- * missing, malformed, holds something `isValid` rejects, or the storage
- * throws (disabled, or a security error in a locked-down frame). Pure.
- */
-export function readItem<T>(storage: StorageLike, key: string, fallback: T, isValid: (value: unknown) => value is T): T {
-  try {
-    const raw = storage.getItem(key);
-    if (raw == null) return fallback;
-    const parsed: unknown = JSON.parse(raw);
-    return isValid(parsed) ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-/** JSON-encode and write `value` under `key`. A throwing storage (full, disabled) just means the value does not stick. */
-export function writeItem<T>(storage: StorageLike, key: string, value: T): void {
-  try {
-    storage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignored: see above
-  }
-}
-
-const listeners = new Set<() => void>();
+const changed = signal();
 
 /**
  * A `[value, setValue]` pair over one localStorage key. Every reader of the
@@ -59,11 +24,11 @@ export function useLocalStorage<T>(key: string, fallback: T, isValid: (value: un
 
   useEffect(() => {
     const refresh = () => setValue(read());
-    listeners.add(refresh);
+    const unsubscribe = changed.subscribe(refresh);
     // Any key: a re-read of an unchanged one costs nothing, and it keeps the set one set.
     window.addEventListener("storage", refresh);
     return () => {
-      listeners.delete(refresh);
+      unsubscribe();
       window.removeEventListener("storage", refresh);
     };
   }, [read]);
@@ -74,7 +39,7 @@ export function useLocalStorage<T>(key: string, fallback: T, isValid: (value: un
       if (storage) writeItem(storage, key, next);
       // Own state first, so a write with no storage still shows on the control that made it.
       setValue(next);
-      for (const listener of [...listeners]) listener();
+      changed.notify();
     },
     [key]
   );

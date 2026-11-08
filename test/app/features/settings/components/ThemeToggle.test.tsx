@@ -4,7 +4,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { ThemeToggle, themeOptions } from "../../../../../src/app/features/settings/components/ThemeToggle";
 import { prefs, readPref, writePref } from "../../../../../src/lib/prefs";
-import type { StorageLike } from "../../../../../src/lib/useLocalStorage";
+import type { StorageLike } from "../../../../../src/lib/storage";
 
 describe("the theme guard the toggle uses (prefs.theme.isValid)", () => {
   test.each([

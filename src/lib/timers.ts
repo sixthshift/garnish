@@ -1,10 +1,5 @@
 import { formatRemaining } from "./dates";
-
-/** The slice of `Storage` the controller uses. */
-export type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-};
+import { type StorageLike, signal, writeItem } from "./storage";
 
 export type Timer = {
   /**
@@ -68,24 +63,15 @@ export function getTimers(storage: StorageLike, recipeId: string): Timer[] {
  * cook footer and the same strip on the view page all read one store, so a
  * write from any of them has to reach the rest.
  */
-const listeners = new Set<() => void>();
+const changed = signal();
 
 /** Listen for any timer write. Returns the unsubscribe. */
-export function subscribeTimers(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
+export const subscribeTimers = changed.subscribe;
 
 /** Write `timers` for `recipeId`. A throwing storage just means timers do not survive a reload. */
 function putTimers(storage: StorageLike, recipeId: string, timers: Timer[]): Timer[] {
-  try {
-    storage.setItem(storageKey(recipeId), JSON.stringify(timers));
-  } catch {
-    // ignored: see above
-  }
-  for (const listener of [...listeners]) listener();
+  writeItem(storage, storageKey(recipeId), timers);
+  changed.notify();
   return timers;
 }
 

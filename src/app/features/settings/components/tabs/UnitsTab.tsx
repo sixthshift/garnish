@@ -8,9 +8,9 @@ import type { Unit } from "../../../../../domain/recipes/reference";
 import { useMutate } from "../../../../../lib/mutate";
 import { toastError } from "../../../../../lib/toast";
 import type { DataTableColumn } from "../../../../../lib/ui/dataTable";
+import { MergeDialog } from "../MergeDialog";
 import { dedupeSummaries, unitsLabel } from "../settingsLabels";
 import { UnitEditSheet, type UnitPatch } from "../UnitEditSheet";
-import { UnitMergeDialog } from "../UnitMergeDialog";
 
 export function UnitsTab({ units }: { units: readonly Unit[] }) {
   const mutate = useMutate();
@@ -95,7 +95,8 @@ export function UnitsTab({ units }: { units: readonly Unit[] }) {
         />
       )}
       {merging && (
-        <UnitMergeDialog
+        <MergeDialog
+          noun="unit"
           source={merging}
           targets={units.filter((unit) => unit.id !== merging.id)}
           busy={busy}

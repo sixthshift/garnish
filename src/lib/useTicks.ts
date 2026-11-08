@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { anyTicked, clearTicks, isIngredientTicked, isStepTicked, type StorageLike, subscribeTicks, toggleIngredientTicked, toggleStepTicked } from "./ticks";
+import { type StorageLike, browserStorage as storageOf } from "./storage";
+import { anyTicked, clearTicks, isIngredientTicked, isStepTicked, subscribeTicks, toggleIngredientTicked, toggleStepTicked } from "./ticks";
 
-/** `window.sessionStorage`, or undefined on the server and where it is unavailable. */
-function browserStorage(): StorageLike | undefined {
-  return typeof window === "undefined" ? undefined : window.sessionStorage;
-}
+const browserStorage = () => storageOf("session");
 
 /** Clear all ticks for `recipeId` in the browser's own storage, notifying every reader. No-op on the server. */
 export function clearTicksNow(recipeId: string): void {

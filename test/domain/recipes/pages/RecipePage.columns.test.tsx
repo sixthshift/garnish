@@ -7,7 +7,8 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createRecipe } from "../../../../src/api/rpc/recipes";
 import { createTimelineEvent } from "../../../../src/api/rpc/timeline";
-import { getTicks, type StorageLike, setIngredientTicked } from "../../../../src/lib/ticks";
+import type { StorageLike } from "../../../../src/lib/storage";
+import { getTicks, setIngredientTicked } from "../../../../src/lib/ticks";
 import { clearTicksNow } from "../../../../src/lib/useTicks";
 import { elementHtml, renderRoute } from "../../../helpers/routes";
 import { callServerFn, useTempDataDir } from "../../../helpers/server";

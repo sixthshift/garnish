@@ -1,8 +1,4 @@
-/** The slice of `Storage` the controller uses. */
-export type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-};
+import { readItem, type StorageLike, signal, writeItem } from "./storage";
 
 /** Which ingredient and step ids (recipe-scoped, see src/domain/recipes/recipe/recipe.ts) are ticked for one recipe. */
 export type TicksState = { ingredients: string[]; steps: string[] };
@@ -25,14 +21,7 @@ function isTicksState(value: unknown): value is TicksState {
 
 /** The ticked ingredient and step ids for `recipeId`. Empty when unset, malformed, or the storage throws. */
 export function getTicks(storage: StorageLike, recipeId: string): TicksState {
-  try {
-    const raw = storage.getItem(storageKey(recipeId));
-    if (raw == null) return EMPTY;
-    const parsed: unknown = JSON.parse(raw);
-    return isTicksState(parsed) ? parsed : EMPTY;
-  } catch {
-    return EMPTY;
-  }
+  return readItem(storage, storageKey(recipeId), EMPTY, isTicksState);
 }
 
 /**
@@ -42,24 +31,15 @@ export function getTicks(storage: StorageLike, recipeId: string): TicksState {
  * hooks below re-read through `useSyncExternalStore`. Module-level rather than
  * a context because ticks are one process-wide store, not a tree's state.
  */
-const listeners = new Set<() => void>();
+const changed = signal();
 
 /** Listen for any tick write. Returns the unsubscribe. */
-export function subscribeTicks(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
+export const subscribeTicks = changed.subscribe;
 
 /** Write `state` for `recipeId`. A throwing storage (full, disabled) just means ticks do not persist this session. */
 function putTicks(storage: StorageLike, recipeId: string, state: TicksState): void {
-  try {
-    storage.setItem(storageKey(recipeId), JSON.stringify(state));
-  } catch {
-    // ignored: see above
-  }
-  for (const listener of [...listeners]) listener();
+  writeItem(storage, storageKey(recipeId), state);
+  changed.notify();
 }
 
 /** `list` with `id` present or absent according to `done`, de-duplicated. Pure. */

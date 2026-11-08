@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createOutbox, type OutboxEntry, type OutboxKind, type StorageLike } from "./outbox";
-
-/** `window.localStorage`, or undefined on the server and where it is unavailable. */
-export function browserStorage(): StorageLike | undefined {
-  return typeof window === "undefined" ? undefined : window.localStorage;
-}
+import { createOutbox, type OutboxEntry, type OutboxKind } from "./outbox";
+import { browserStorage, type RemovableStorage } from "./storage";
 
 // --- The hook ----------------------------------------------------------------
 
@@ -28,7 +24,7 @@ export type UseOutboxOptions = {
   /** Called after a flush that sent at least one entry, so the page can re-read the list. */
   onFlushed?: () => void;
   /** Injected in tests; defaults to `window.localStorage`. */
-  storage?: StorageLike;
+  storage?: RemovableStorage;
 };
 
 /**

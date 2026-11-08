@@ -8,8 +8,8 @@ import { addPlanWeekToShopping } from "../../../api/rpc/plan";
 import { applyPlanProposal, proposePlanWeek } from "../../../api/rpc/planner";
 import { Page, PageHeader } from "../../../components/Page";
 import { addedMessage } from "../../../lib/shopping";
+import { browserStorage } from "../../../lib/storage";
 import { toastError } from "../../../lib/toast";
-import { browserStorage } from "../../../lib/useLocalStorage";
 import {
   fillNights,
   fromProposal,

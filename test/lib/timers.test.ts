@@ -4,6 +4,7 @@
 // tested with plain numbers and no fake clock.
 import { describe, expect, test } from "vitest";
 import { formatRemaining } from "../../src/lib/dates";
+import type { StorageLike } from "../../src/lib/storage";
 import {
   chipTimerId,
   clearTimers,
@@ -13,7 +14,6 @@ import {
   pauseTimer,
   remainingSeconds,
   resumeTimer,
-  type StorageLike,
   startTimer,
   subscribeTimers,
   type Timer,

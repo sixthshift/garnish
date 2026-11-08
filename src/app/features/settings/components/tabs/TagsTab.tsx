@@ -14,8 +14,8 @@ import { toastError } from "../../../../../lib/toast";
 import type { DataTableColumn } from "../../../../../lib/ui/dataTable";
 import type { SavedValues } from "../../../../../lib/ui/editSheet";
 import { NAME_FIELDS } from "../columns";
+import { MergeDialog } from "../MergeDialog";
 import { dedupeSummaries } from "../settingsLabels";
-import { TagMergeDialog } from "../TagMergeDialog";
 
 /**
  * Settings › Library › Tags (decisions.md row 174): the reference table the
@@ -130,7 +130,8 @@ export function TagsTab({ tags }: { tags: readonly TagUsage[] }) {
         />
       )}
       {merging && (
-        <TagMergeDialog
+        <MergeDialog
+          noun="tag"
           source={merging}
           targets={tags.filter((tag) => tag.id !== merging.id)}
           busy={busy}

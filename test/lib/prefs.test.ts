@@ -3,7 +3,7 @@
 // are pressed in test/routes/library/components/ViewModeToggle.dom.test.tsx.
 import { afterEach, describe, expect, test } from "vitest";
 import { defaultViewMode, prefs, readPref, VIEW_MODE_GRID_QUERY, writePref } from "../../src/lib/prefs";
-import type { StorageLike } from "../../src/lib/useLocalStorage";
+import type { StorageLike } from "../../src/lib/storage";
 
 /** A plain in-memory Storage-like, for round-trip tests. */
 function memoryStorage(): StorageLike & { size: () => number } {

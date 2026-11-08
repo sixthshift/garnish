@@ -3,13 +3,13 @@
 // prefs.ts) and are not exercised here; the controller carries all the
 // behaviour.
 import { describe, expect, test } from "vitest";
+import type { StorageLike } from "../../src/lib/storage";
 import {
   anyTicked,
   clearTicks,
   getTicks,
   isIngredientTicked,
   isStepTicked,
-  type StorageLike,
   setIngredientTicked,
   setStepTicked,
   subscribeTicks,

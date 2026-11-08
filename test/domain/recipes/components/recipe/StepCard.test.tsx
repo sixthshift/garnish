@@ -11,7 +11,8 @@ import { linkedIngredients, StepCard, stepDurations } from "../../../../../src/d
 import type { Ingredient, Recipe, Step } from "../../../../../src/domain/recipes/recipe";
 import { noFacets } from "../../../../../src/domain/recipes/recipe";
 import type { Food } from "../../../../../src/domain/recipes/reference";
-import { type StorageLike, setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
+import type { StorageLike } from "../../../../../src/lib/storage";
+import { setIngredientTicked, setStepTicked } from "../../../../../src/lib/ticks";
 
 const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const STEP_ID = "33333333-3333-4333-8333-333333333333";

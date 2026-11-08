@@ -4,7 +4,7 @@ import { Toggle } from "@sixthshift/design-system/toggle";
 import { type ReactNode, useState } from "react";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
 import { SaveBar } from "../../../../components/ui/SaveBar";
-import type { StorageLike } from "../../../../lib/drafts";
+import type { RemovableStorage } from "../../../../lib/storage";
 import { useLayout } from "../../../../lib/useLayout";
 import type { PendingLines, RecipeDraft } from "../../draft";
 import type { Tag, Unit } from "../../reference";
@@ -43,7 +43,7 @@ export type RecipeFormProps = {
    * Where the unsaved draft is kept (src/lib/drafts.ts). Defaults to
    * `localStorage`; tests pass an in-memory one.
    */
-  storage?: StorageLike;
+  storage?: RemovableStorage;
   /**
    * An image an import found, as a remote URL. Shown straight away and
    * fetched once through `fetchImage`, so it joins the same upload path a

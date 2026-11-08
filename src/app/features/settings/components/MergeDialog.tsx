@@ -2,20 +2,30 @@ import { Modal } from "@sixthshift/design-system/modal";
 import { Select } from "@sixthshift/design-system/select";
 import { useState } from "react";
 import { ConfirmDialogContent } from "../../../../components/ui/ConfirmDialog";
-import type { Food } from "../../../../db/models/food/repo";
 
-export type FoodMergeDialogProps = {
-  /** The food being merged away. */
-  source: Food;
-  /** Foods it can be merged into; the source itself should not be among them. */
-  targets: readonly Food[];
+/** What happens to the things that pointed at the row being merged away. */
+const CONSEQUENCE = {
+  food: "Every ingredient using it will point at the food you pick below instead.",
+  tag: "Every recipe carrying it will carry the tag you pick below instead.",
+  unit: "Every ingredient and recipe yield using it will point at the unit you pick below instead.",
+} as const;
+
+type Named = { id: string; name: string };
+
+export type MergeDialogProps = {
+  /** What is being merged: a food, a tag or a unit. */
+  noun: keyof typeof CONSEQUENCE;
+  /** The row being merged away. */
+  source: Named;
+  /** Rows it can be merged into; the source itself should not be among them. */
+  targets: readonly Named[];
   busy?: boolean;
   onCancel: () => void;
   /** Called with the chosen target's id. */
   onConfirm: (targetId: string) => void;
 };
 
-export function FoodMergeDialogContent({ source, targets, busy = false, onCancel, onConfirm }: FoodMergeDialogProps) {
+export function MergeDialogContent({ noun, source, targets, busy = false, onCancel, onConfirm }: MergeDialogProps) {
   const [targetId, setTargetId] = useState(targets[0]?.id ?? "");
   const canMerge = targetId !== "" && !busy && targets.length > 0;
 
@@ -29,27 +39,27 @@ export function FoodMergeDialogContent({ source, targets, busy = false, onCancel
       onConfirm={() => canMerge && onConfirm(targetId)}
     >
       <div className="flex flex-col gap-3">
-        <p>{`${source.name} will be deleted. Every ingredient using it will point at the food you pick below instead.`}</p>
+        <p>{`${source.name} will be deleted. ${CONSEQUENCE[noun]}`}</p>
         {targets.length > 0 ? (
           <Select
             aria-label="Merge into"
-            options={targets.map((food) => ({ value: food.id, label: food.name }))}
+            options={targets.map((row) => ({ value: row.id, label: row.name }))}
             value={targetId}
             disabled={busy}
             onValueChange={setTargetId}
           />
         ) : (
-          <p>There is no other food to merge into.</p>
+          <p>{`There is no other ${noun} to merge into.`}</p>
         )}
       </div>
     </ConfirmDialogContent>
   );
 }
 
-export function FoodMergeDialog(props: FoodMergeDialogProps) {
+export function MergeDialog(props: MergeDialogProps) {
   return (
     <Modal size="sm" aria-label={`Merge ${props.source.name}`} dismissable={props.busy !== true} onOpenChange={(open) => !open && props.onCancel()}>
-      <FoodMergeDialogContent {...props} />
+      <MergeDialogContent {...props} />
     </Modal>
   );
 }

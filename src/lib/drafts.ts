@@ -1,11 +1,6 @@
 import { type ParsedRecipeInput, recipeInputSchema } from "../domain/recipes/recipe";
 
-/** The slice of `Storage` the controller uses. */
-export type StorageLike = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-  removeItem: (key: string) => void;
-};
+import type { RemovableStorage } from "./storage";
 
 /** A draft as it comes back off the storage: the parsed document, when it was written, and whether an image had been picked. */
 export type StoredDraft = {
@@ -23,7 +18,7 @@ export function draftKey(recipeId?: string | null): string {
  * The draft stored for `recipeId`, or null when there is none, the storage
  * throws, the value is not JSON, or the document no longer parses.
  */
-export function getDraft(storage: StorageLike, recipeId?: string | null): StoredDraft | null {
+export function getDraft(storage: RemovableStorage, recipeId?: string | null): StoredDraft | null {
   let parsed: unknown;
   try {
     const raw = storage.getItem(draftKey(recipeId));
@@ -48,7 +43,7 @@ export function getDraft(storage: StorageLike, recipeId?: string | null): Stored
  * disabled, private mode) just means the draft does not survive.
  */
 export function putDraft(
-  storage: StorageLike,
+  storage: RemovableStorage,
   recipeId: string | null | undefined,
   draft: unknown,
   hadImage: boolean,
@@ -62,7 +57,7 @@ export function putDraft(
 }
 
 /** Forget the stored draft for `recipeId`. Called on a save and on a confirmed discard. */
-export function clearDraft(storage: StorageLike, recipeId?: string | null): void {
+export function clearDraft(storage: RemovableStorage, recipeId?: string | null): void {
   try {
     storage.removeItem(draftKey(recipeId));
   } catch {
@@ -82,9 +77,4 @@ export function draftNoticeText(stored: { savedAt: string; hadImage: boolean }):
   const when = formatSavedAt(stored.savedAt);
   const line = when === "" ? "You have unsaved changes." : `You have unsaved changes from ${when}.`;
   return stored.hadImage ? `${line} The picture you chose was not kept; pick it again.` : line;
-}
-
-/** `window.localStorage`, or undefined on the server and where it is unavailable. */
-export function browserStorage(): StorageLike | undefined {
-  return typeof window === "undefined" ? undefined : window.localStorage;
 }
