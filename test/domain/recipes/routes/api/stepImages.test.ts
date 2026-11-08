@@ -9,10 +9,9 @@ import { expect, test } from "vitest";
 import { recipeRepository } from "../../../../../src/db/models/recipe/repo";
 import { type Recipe, recipeInputSchema } from "../../../../../src/domain/recipes/recipe";
 import { getStepImageRoute as GetRoute, uploadStepImageRoute as PostRoute } from "../../../../../src/domain/recipes/routes/api/stepImages";
-import { handleGetImage } from "../../../../../src/server/api/images";
-import { handleGetStepImage, handleUploadStepImage, stepImagesDir } from "../../../../../src/server/api/stepImages";
-import { handleGetTimelineImage } from "../../../../../src/server/api/timelineImages";
+import { handleGetImage, handleUploadStepImage } from "../../../../../src/server/api/images";
 import { getDb } from "../../../../../src/server/core/db";
+import { imageDir } from "../../../../../src/server/core/images";
 import { useTempDataDir } from "../../../../helpers/server";
 
 const tmp = useTempDataDir();
@@ -42,8 +41,8 @@ function upload(recipe: Recipe | string, stepId: string, body: BodyInit | null, 
 
 const bytesOf = async (res: Response) => new Uint8Array(await res.arrayBuffer());
 
-test("stepImagesDir sits under the data directory's images folder", () => {
-  expect(stepImagesDir("/data")).toBe(join("/data", "images", "steps"));
+test("a step's image folder sits under the data directory's images folder", () => {
+  expect(imageDir("step", "/data")).toBe(join("/data", "images", "steps"));
 });
 
 test("upload then GET returns the same bytes, and the step points at the file", async () => {
@@ -53,7 +52,7 @@ test("upload then GET returns the same bytes, and the step points at the file", 
   expect(posted.status).toBe(200);
   expect(await posted.json()).toEqual({ image: `${stepId}.png` });
 
-  const got = await handleGetStepImage(`${stepId}.png`);
+  const got = await handleGetImage("step", `${stepId}.png`);
   expect(got.status).toBe(200);
   expect(got.headers.get("content-type")).toBe("image/png");
   expect(await bytesOf(got)).toEqual(png);
@@ -82,7 +81,7 @@ test("uploading a different format replaces the file and the stored name", async
   expect(await replaced.json()).toEqual({ image: `${stepId}.jpg` });
 
   expect(readdirSync(join(tmp.dir, "images", "steps"))).toEqual([`${stepId}.jpg`]);
-  expect((await handleGetStepImage(`${stepId}.png`)).status).toBe(404);
+  expect((await handleGetImage("step", `${stepId}.png`)).status).toBe(404);
   expect(recipeRepository(getDb()).getById(recipe.id)?.parts[0]!.steps[0]!.image).toBe(`${stepId}.jpg`);
 });
 
@@ -95,8 +94,8 @@ test("a step photo is not served as a recipe image or a timeline photo", async (
   const recipe = await createRecipe();
   const stepId = stepIdOf(recipe);
   await upload(recipe, stepId, png);
-  expect((await handleGetImage(`${stepId}.png`)).status).toBe(404);
-  expect((await handleGetTimelineImage(`${stepId}.png`)).status).toBe(404);
+  expect((await handleGetImage("recipe", `${stepId}.png`)).status).toBe(404);
+  expect((await handleGetImage("timeline", `${stepId}.png`)).status).toBe(404);
 });
 
 test("a step that was never saved, or is another recipe's, is 404 and nothing is written", async () => {
@@ -134,12 +133,12 @@ test.each([
 test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
   "GET rejects a name that is not <uuid>.<ext>: %j",
   async (file) => {
-    expect((await handleGetStepImage(file)).status).toBe(400);
+    expect((await handleGetImage("step", file)).status).toBe(400);
   }
 );
 
 test("GET of a well-formed but absent photo is 404", async () => {
-  expect((await handleGetStepImage(`${missing}.png`)).status).toBe(404);
+  expect((await handleGetImage("step", `${missing}.png`)).status).toBe(404);
 });
 
 test("routes wire POST and GET to the handlers with their path params", async () => {

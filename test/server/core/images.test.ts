@@ -3,7 +3,8 @@ import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { imageContentType, imageFileName, imagesDir, sniffImage, storeImage } from "../../../src/server/api/images";
+import { imageContentType, imageFileName, sniffImage } from "../../../src/lib/imageFile";
+import { imageDir, storeImage } from "../../../src/server/core/images";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const ascii = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0));
@@ -43,11 +44,11 @@ test.each([
   expect(imageContentType(file)).toBe(expected);
 });
 
-test("imageFileName and imagesDir", () => {
+test("imageFileName and imageDir", () => {
   expect(imageFileName(id, "webp")).toBe(`${id}.webp`);
-  expect(imagesDir("/srv/garnish")).toBe("/srv/garnish/images");
+  expect(imageDir("recipe", "/srv/garnish")).toBe("/srv/garnish/images");
   process.env.DATA_DIR = "/srv/other";
-  expect(imagesDir()).toBe("/srv/other/images");
+  expect(imageDir("recipe")).toBe("/srv/other/images");
   delete process.env.DATA_DIR;
 });
 
@@ -59,23 +60,23 @@ afterEach(() => rmSync(join(dir, ".."), { recursive: true, force: true }));
 
 test("storeImage creates the directory, writes the bytes and removes the recipe's old file", async () => {
   expect(existsSync(dir)).toBe(false);
-  const first = await storeImage(id, "png", png, dir);
+  const first = await storeImage(dir, id, "png", png);
   expect(first).toBe(`${id}.png`);
   expect(new Uint8Array(await Bun.file(join(dir, first)).arrayBuffer())).toEqual(png);
 
   const other = "22222222-2222-4222-8222-222222222222";
-  await storeImage(other, "png", png, dir);
+  await storeImage(dir, other, "png", png);
 
-  const second = await storeImage(id, "jpg", jpg, dir);
+  const second = await storeImage(dir, id, "jpg", jpg);
   expect(second).toBe(`${id}.jpg`);
   expect(readdirSync(dir).sort()).toEqual([`${id}.jpg`, `${other}.png`]);
   expect(new Uint8Array(await Bun.file(join(dir, second)).arrayBuffer())).toEqual(jpg);
 });
 
 test("storeImage with the same extension overwrites in place", async () => {
-  await storeImage(id, "png", png, dir);
+  await storeImage(dir, id, "png", png);
   const bigger = Uint8Array.from([...png, 9, 9, 9]);
-  await storeImage(id, "png", bigger, dir);
+  await storeImage(dir, id, "png", bigger);
   expect(readdirSync(dir)).toEqual([`${id}.png`]);
   expect(new Uint8Array(await Bun.file(join(dir, `${id}.png`)).arrayBuffer())).toEqual(bigger);
 });

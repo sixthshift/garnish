@@ -3,21 +3,15 @@
 // restore away in Settings › Backup.
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { backupsDir } from "../../db/backup/snapshot";
+import { backupFileName } from "../../app/features/settings/model/backup";
 import backups from "../../db/models/backup/repo";
 import { takeBackup } from "../backup/take";
-import { dataDir } from "../core/boot";
+import { backupsDir, dataDir } from "../core/boot";
 
 /** A burst of deletes is covered by the first one's backup: one per this long. */
 export const SAFETY_BACKUP_EVERY_MS = 10 * 60 * 1000;
 
 let lastTaken = 0;
-
-/** `garnish-before-mcp-YYYYMMDD-HHmmss.zip` in UTC. Pure. */
-export function safetyBackupName(now: Date): string {
-  const iso = now.toISOString();
-  return `garnish-before-mcp-${iso.slice(0, 10).replaceAll("-", "")}-${iso.slice(11, 19).replaceAll(":", "")}.zip`;
-}
 
 /**
  * Take a backup before a destructive call, unless one was taken in the last
@@ -30,7 +24,7 @@ export async function backupBeforeDelete(now: Date = new Date()): Promise<string
   const taken = await takeBackup(backups, root, now);
   const dir = backupsDir(root);
   mkdirSync(dir, { recursive: true });
-  const name = safetyBackupName(now);
+  const name = backupFileName(now, "before-mcp");
   await Bun.write(join(dir, name), taken.bytes);
   lastTaken = now.getTime();
   return name;

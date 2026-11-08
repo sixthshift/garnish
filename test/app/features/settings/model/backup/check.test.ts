@@ -166,4 +166,6 @@ test("image paths", () => {
 
 test("backupFileName is the UTC moment", () => {
   expect(backupFileName(new Date("2026-10-07T09:15:03Z"))).toBe("garnish-backup-20261007-091503.zip");
+  expect(backupFileName(new Date("0999-01-02T00:00:00Z"), "pre-restore", "db")).toBe("garnish-pre-restore-09990102-000000.db");
+  expect(backupFileName(new Date("2026-12-31T23:59:59.678Z"), "before-mcp")).toBe("garnish-before-mcp-20261231-235959.zip");
 });

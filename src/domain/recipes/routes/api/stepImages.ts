@@ -1,6 +1,6 @@
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "../../../../routes/root";
-import { handleGetStepImage, handleUploadStepImage } from "../../../../server/api/stepImages";
+import { handleGetImage, handleUploadStepImage } from "../../../../server/api/images";
 
 /** GET /api/images/steps/:file — serves a stored step photo. */
 export const getStepImageRoute = createRoute({
@@ -8,7 +8,7 @@ export const getStepImageRoute = createRoute({
   path: "/api/images/steps/$file",
   server: {
     handlers: {
-      GET: ({ request, params }) => handleGetStepImage(params.file, request),
+      GET: ({ request, params }) => handleGetImage("step", params.file, request),
     },
   },
 });

@@ -9,9 +9,9 @@ import { recipeRepository } from "../../../../../src/db/models/recipe/repo";
 import { timelineRepository } from "../../../../../src/db/models/timeline/repo";
 import { recipeInputSchema, type TimelineEvent } from "../../../../../src/domain/recipes/recipe";
 import { getTimelineImageRoute as GetRoute, uploadTimelineImageRoute as PostRoute } from "../../../../../src/domain/recipes/routes/api/timelineImages";
-import { handleGetImage } from "../../../../../src/server/api/images";
-import { handleGetTimelineImage, handleUploadTimelineImage, timelineImagesDir } from "../../../../../src/server/api/timelineImages";
+import { handleGetImage, handleUploadTimelineImage } from "../../../../../src/server/api/images";
 import { getDb } from "../../../../../src/server/core/db";
+import { imageDir } from "../../../../../src/server/core/images";
 import { useTempDataDir } from "../../../../helpers/server";
 
 const tmp = useTempDataDir();
@@ -38,8 +38,8 @@ function upload(id: string, body: BodyInit | null, field = "image", type = "imag
 
 const bytesOf = async (res: Response) => new Uint8Array(await res.arrayBuffer());
 
-test("timelineImagesDir sits under the data directory's images folder", () => {
-  expect(timelineImagesDir("/data")).toBe(join("/data", "images", "timeline"));
+test("a timeline image folder sits under the data directory's images folder", () => {
+  expect(imageDir("timeline", "/data")).toBe(join("/data", "images", "timeline"));
 });
 
 test("upload then GET returns the same bytes, and the event points at the file", async () => {
@@ -48,7 +48,7 @@ test("upload then GET returns the same bytes, and the event points at the file",
   expect(posted.status).toBe(200);
   expect(await posted.json()).toEqual({ image: `${event.id}.png` });
 
-  const got = await handleGetTimelineImage(`${event.id}.png`);
+  const got = await handleGetImage("timeline", `${event.id}.png`);
   expect(got.status).toBe(200);
   expect(got.headers.get("content-type")).toBe("image/png");
   expect(await bytesOf(got)).toEqual(png);
@@ -64,7 +64,7 @@ test("uploading a different format replaces the file and the stored name", async
   expect(await replaced.json()).toEqual({ image: `${event.id}.jpg` });
 
   expect(readdirSync(join(tmp.dir, "images", "timeline"))).toEqual([`${event.id}.jpg`]);
-  expect((await handleGetTimelineImage(`${event.id}.png`)).status).toBe(404);
+  expect((await handleGetImage("timeline", `${event.id}.png`)).status).toBe(404);
   expect(timelineRepository(getDb()).get(event.id)?.image).toBe(`${event.id}.jpg`);
 });
 
@@ -76,7 +76,7 @@ test("the format comes from the bytes, not the declared type or file name", asyn
 test("a timeline photo is not served as a recipe image", async () => {
   const event = await createEvent();
   await upload(event.id, png);
-  expect((await handleGetImage(`${event.id}.png`)).status).toBe(404);
+  expect((await handleGetImage("recipe", `${event.id}.png`)).status).toBe(404);
 });
 
 test("unknown event is 404 and nothing is written", async () => {
@@ -109,12 +109,12 @@ test.each([
 test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
   "GET rejects a name that is not <uuid>.<ext>: %j",
   async (file) => {
-    expect((await handleGetTimelineImage(file)).status).toBe(400);
+    expect((await handleGetImage("timeline", file)).status).toBe(400);
   }
 );
 
 test("GET of a well-formed but absent photo is 404", async () => {
-  expect((await handleGetTimelineImage(`${missing}.png`)).status).toBe(404);
+  expect((await handleGetImage("timeline", `${missing}.png`)).status).toBe(404);
 });
 
 test("routes wire POST and GET to the handlers with their path params", async () => {

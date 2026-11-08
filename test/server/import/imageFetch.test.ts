@@ -1,7 +1,7 @@
 // Fetching a recipe image from a pasted URL: the pure helpers, the fetch
 // against a local fixture server, and the server function itself (M13.5).
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { MAX_IMAGE_BYTES } from "../../../src/server/api/images";
+import { MAX_IMAGE_BYTES } from "../../../src/lib/imageFile";
 import { fetchedImageName, fetchImage, fetchImageBytes, parseImageUrl, toBase64 } from "../../../src/server/import/imageFetch";
 import { callServerFn } from "../../helpers/server";
 

@@ -338,9 +338,13 @@ export function countsOf(backup: Backup): BackupCounts {
 
 const pad = (n: number, width = 2) => String(n).padStart(width, "0");
 
-/** `garnish-backup-YYYYMMDD-HHmmss.zip`, UTC: digits and dashes only, safe on every filesystem. Pure. */
-export function backupFileName(now: Date): string {
+/**
+ * `garnish-<kind>-YYYYMMDD-HHmmss.<ext>`, UTC: digits and dashes only, safe on
+ * every filesystem. The household's own backups are `backup`, the net under an
+ * MCP delete `before-mcp`, the database a restore replaced `pre-restore` (.db). Pure.
+ */
+export function backupFileName(now: Date, kind: "backup" | "before-mcp" | "pre-restore" = "backup", ext: "zip" | "db" = "zip"): string {
   const day = `${pad(now.getUTCFullYear(), 4)}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}`;
   const time = `${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}`;
-  return `garnish-backup-${day}-${time}.zip`;
+  return `garnish-${kind}-${day}-${time}.${ext}`;
 }

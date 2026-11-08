@@ -3,10 +3,13 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, expect, test } from "vitest";
-import { BACKUPS_SUBDIR, backupsDir, snapshot, snapshotFileName } from "../../../src/db/backup/snapshot";
-import { openDatabase } from "../../../src/db/connection/open";
-import { migrate } from "../../../src/db/migrations/migrate";
-import { unitRepository } from "../../../src/db/models/unit/repo";
+import { openDatabase } from "../../src/db/connection/open";
+import { migrate } from "../../src/db/migrations/migrate";
+import { backupRepository } from "../../src/db/models/backup/repo";
+import { unitRepository } from "../../src/db/models/unit/repo";
+import { backupsDir } from "../../src/server/core/boot";
+
+const snapshot = (db: Database, dir: string, now?: Date) => backupRepository(db).snapshot(dir, now);
 
 const scratch: string[] = [];
 afterEach(() => {
@@ -35,15 +38,7 @@ const unitNames = (db: Database) =>
     .all()
     .map((r) => r.name);
 
-test("snapshotFileName is garnish-pre-restore-YYYYMMDD-HHmmss.db in UTC", () => {
-  expect(snapshotFileName(new Date("2026-09-10T03:04:05.678Z"))).toBe("garnish-pre-restore-20260910-030405.db");
-  expect(snapshotFileName(new Date("2026-12-31T23:59:59Z"))).toBe("garnish-pre-restore-20261231-235959.db");
-  expect(snapshotFileName(new Date("0999-01-02T00:00:00Z"))).toBe("garnish-pre-restore-09990102-000000.db");
-  expect(snapshotFileName()).toMatch(/^garnish-pre-restore-\d{8}-\d{6}\.db$/);
-});
-
 test("backupsDir sits inside the data dir", () => {
-  expect(backupsDir("/srv/garnish")).toBe(join("/srv/garnish", BACKUPS_SUBDIR));
   expect(backupsDir("/srv/garnish")).toBe("/srv/garnish/backups");
 });
 

@@ -1,45 +1,17 @@
-import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
+import type { ImageKind } from "../../app/features/settings/model/backup";
 import recipes from "../../db/models/recipe/repo";
-import { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
-import { dataDir } from "../core/boot";
+import timeline from "../../db/models/timeline/repo";
+import { IMAGE_FIELD, type ImageExtension, imageContentType, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
+import { imageDir, storeImage } from "../core/images";
 
-export { IMAGE_FIELD, type ImageExtension, imageContentType, imageFileName, MAX_IMAGE_BYTES, sniffImage } from "../../lib/imageFile";
-
-const RECIPE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** `<root>/images`; root defaults to the resolved DATA_DIR. */
-export function imagesDir(root: string = dataDir()): string {
-  return join(root, "images");
-}
-
-/**
- * Write `bytes` as the recipe's image and delete any earlier file for that
- * recipe with a different extension. Returns the new file name.
- */
-export async function storeImage(recipeId: string, ext: ImageExtension, bytes: Uint8Array, dir: string = imagesDir()): Promise<string> {
-  mkdirSync(dir, { recursive: true });
-  const name = imageFileName(recipeId, ext);
-  await Bun.write(join(dir, name), bytes);
-  for (const existing of readdirSync(dir)) {
-    if (existing !== name && existing.toLowerCase().startsWith(`${recipeId.toLowerCase()}.`)) unlinkSync(join(dir, existing));
-  }
-  return name;
-}
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const badRequest = (error: string): Response => Response.json({ error }, { status: 400 });
 const notFound = (error: string): Response => Response.json({ error }, { status: 404 });
 
-/**
- * POST /api/recipes/:id/image — multipart body with the file in the `image`
- * field. Stores it, points `recipe.image` at the file and answers
- * `{ image: "<id>.<ext>" }`, Mealie's shape. 404 for an unknown recipe, 400
- * for a missing, oversized or non-image file.
- */
-export async function handleUploadImage(request: Request, recipeId: string): Promise<Response> {
-  if (!RECIPE_ID.test(recipeId)) return notFound(`recipe ${recipeId} not found`);
-  if (!recipes.getById(recipeId)) return notFound(`recipe ${recipeId} not found`);
-
+/** The image in a multipart body's `image` field, or the 400 saying why there is none. */
+async function readImageUpload(request: Request): Promise<{ bytes: Uint8Array; ext: ImageExtension } | Response> {
   let form: FormData;
   try {
     form = await request.formData();
@@ -50,35 +22,74 @@ export async function handleUploadImage(request: Request, recipeId: string): Pro
   if (!(file instanceof Blob)) return badRequest(`missing file field "${IMAGE_FIELD}"`);
   if (file.size === 0) return badRequest("empty file");
   if (file.size > MAX_IMAGE_BYTES) return badRequest(`file larger than ${MAX_IMAGE_BYTES} bytes`);
-
   const bytes = new Uint8Array(await file.arrayBuffer());
   const ext = sniffImage(bytes);
-  if (!ext) return badRequest("not a png, jpeg, webp or gif image");
+  return ext ? { bytes, ext } : badRequest("not a png, jpeg, webp or gif image");
+}
 
-  const image = await storeImage(recipeId.toLowerCase(), ext, bytes);
-  if (!recipes.ref(recipeId).setImage(image)) return notFound(`recipe ${recipeId} not found`);
-  return Response.json({ image });
+type Owner = {
+  /** What a 404 names: "recipe <id>". */
+  what: string;
+  /** Whether the owner exists, checked before the body is read. */
+  exists: () => boolean;
+  /** Point the owner at the stored file; false when it has gone meanwhile. */
+  setImage: (file: string) => boolean;
+};
+
+/**
+ * One upload: store the file as `id`'s `kind` image, point its owner at it and
+ * answer `{ image: "<id>.<ext>" }`, Mealie's shape. 404 for an unknown owner,
+ * 400 for a missing, oversized or non-image file.
+ */
+async function upload(request: Request, kind: ImageKind, id: string, owner: Owner): Promise<Response> {
+  if (!UUID.test(id) || !owner.exists()) return notFound(`${owner.what} not found`);
+  const file = await readImageUpload(request);
+  if (file instanceof Response) return file;
+  const image = await storeImage(imageDir(kind), id.toLowerCase(), file.ext, file.bytes);
+  return owner.setImage(image) ? Response.json({ image }) : notFound(`${owner.what} not found`);
+}
+
+/** POST /api/recipes/:id/image — the recipe's photo. */
+export function handleUploadImage(request: Request, recipeId: string): Promise<Response> {
+  return upload(request, "recipe", recipeId, {
+    what: `recipe ${recipeId}`,
+    exists: () => Boolean(recipes.getById(recipeId)),
+    setImage: (image) => recipes.ref(recipeId).setImage(image),
+  });
+}
+
+/** POST /api/recipes/:id/steps/:stepId/image — a step's photo; 404 for a step never saved or not this recipe's. */
+export function handleUploadStepImage(request: Request, recipeId: string, stepId: string): Promise<Response> {
+  return upload(request, "step", stepId, {
+    what: `step ${stepId}`,
+    exists: () => UUID.test(recipeId) && recipes.ref(recipeId).hasStep(stepId),
+    setImage: (image) => recipes.ref(recipeId).setStepImage(stepId, image),
+  });
+}
+
+/** POST /api/timeline/:id/image — a cook-log entry's photo. */
+export function handleUploadTimelineImage(request: Request, eventId: string): Promise<Response> {
+  return upload(request, "timeline", eventId, {
+    what: `timeline event ${eventId}`,
+    exists: () => Boolean(timeline.get(eventId)),
+    setImage: (image) => timeline.setImage(eventId, image),
+  });
 }
 
 /**
- * `file` in `dir` with its content type, for the three image GET routes. 400
- * when the name is not one this server writes (so `..` and separators never
- * reach the filesystem), 404 when the file is absent. A replaced image keeps
- * its URL, so the browser revalidates every time; the ETag (size and
- * modified time) lets an unchanged image answer 304 with no body.
+ * GET /api/images/[steps/|timeline/]:file — a stored `kind` image. 400 when
+ * the name is not one this server writes (so `..` and separators never reach
+ * the filesystem), 404 when the file is absent. A replaced image keeps its
+ * URL, so the browser revalidates every time; the ETag (size and modified
+ * time) lets an unchanged image answer 304 with no body.
  */
-export async function serveImage(dir: string, file: string, request?: Request): Promise<Response> {
+export async function handleGetImage(kind: ImageKind, file: string, request?: Request): Promise<Response> {
   const contentType = imageContentType(file);
   if (!contentType) return badRequest("invalid image name");
-  const blob = Bun.file(join(dir, file));
+  const blob = Bun.file(join(imageDir(kind), file));
   if (!(await blob.exists())) return notFound(`image ${file} not found`);
   const etag = `W/"${blob.size.toString(36)}-${Math.trunc(blob.lastModified).toString(36)}"`;
   const headers = { etag, "cache-control": "private, max-age=0, must-revalidate" };
   if (request?.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers });
   return new Response(blob, { headers: { ...headers, "content-type": contentType, "content-length": String(blob.size) } });
-}
-
-/** GET /api/images/:file — a stored recipe image (`serveImage`). */
-export function handleGetImage(file: string, request?: Request): Promise<Response> {
-  return serveImage(imagesDir(), file, request);
 }

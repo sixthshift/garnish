@@ -39,7 +39,7 @@ test("upload then GET returns the same bytes with the image content type", async
   expect(posted.status).toBe(200);
   expect(await posted.json()).toEqual({ image: `${id}.png` });
 
-  const got = await handleGetImage(`${id}.png`);
+  const got = await handleGetImage("recipe", `${id}.png`);
   expect(got.status).toBe(200);
   expect(got.headers.get("content-type")).toBe("image/png");
   expect(got.headers.get("content-length")).toBe(String(png.length));
@@ -53,7 +53,7 @@ test("an unchanged image answers its ETag with a bodiless 304, and a replaced on
   const id = await createRecipe();
   await upload(id, png);
   const get = (etag?: string) =>
-    handleGetImage(`${id}.png`, new Request(`http://localhost/api/images/${id}.png`, { headers: etag ? { "if-none-match": etag } : {} }));
+    handleGetImage("recipe", `${id}.png`, new Request(`http://localhost/api/images/${id}.png`, { headers: etag ? { "if-none-match": etag } : {} }));
 
   const first = await get();
   const etag = first.headers.get("etag");
@@ -79,8 +79,8 @@ test("uploading a different format replaces the file and updates recipe.image", 
   expect(await replaced.json()).toEqual({ image: `${id}.jpg` });
 
   expect(readdirSync(join(tmp.dir, "images"))).toEqual([`${id}.jpg`]);
-  expect((await handleGetImage(`${id}.png`)).status).toBe(404);
-  const got = await handleGetImage(`${id}.jpg`);
+  expect((await handleGetImage("recipe", `${id}.png`)).status).toBe(404);
+  const got = await handleGetImage("recipe", `${id}.jpg`);
   expect(got.headers.get("content-type")).toBe("image/jpeg");
   expect(await bytesOf(got)).toEqual(jpg);
   expect(recipeRepository(getDb()).getById(id)?.image).toBe(`${id}.jpg`);
@@ -135,13 +135,13 @@ test.each([
 test.each(["../garnish.db", "..", "images/x.png", "x/y.png", "garnish.db", `${missing}.svg`, ""])(
   "GET rejects a name that is not <uuid>.<ext>: %j",
   async (file) => {
-    const res = await handleGetImage(file);
+    const res = await handleGetImage("recipe", file);
     expect(res.status).toBe(400);
   }
 );
 
 test("GET of a well-formed but absent image is 404", async () => {
-  expect((await handleGetImage(`${missing}.png`)).status).toBe(404);
+  expect((await handleGetImage("recipe", `${missing}.png`)).status).toBe(404);
 });
 
 test("routes wire POST and GET to the handlers with their path params", async () => {

@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { addDays, planEntryInputSchema, todayIso } from "../../domain/plan/plan";
 import { recipeInputSchema } from "../../domain/recipes/recipe";
 import { type ImageExtension, imageFileName } from "../../lib/imageFile";
-import { dataDir } from "../../server/core/boot";
+import { imageDir } from "../../server/core/images";
 import { orm } from "../connection/client";
 import { foodRepository } from "../models/food/repo";
 import { planRepository } from "../models/plan/repo";
@@ -15,16 +15,6 @@ import { recipe } from "../models/recipe/schema";
 import { timelineRepository } from "../models/timeline/repo";
 import type { DevRecipe } from "./build";
 import { DEV_LIBRARY, DEV_PLAN, type DevPlanEntry } from "./library";
-
-/**
- * `<DATA_DIR>/images`, the same directory the upload route writes to. Computed
- * here rather than imported from src/server/api/images.ts: that module reaches the
- * database through `getDb`, which is Vite-only (`import.meta.glob`), and this
- * runs as a plain `bun` script.
- */
-export function devImagesDir(root: string = dataDir()): string {
-  return join(root, "images");
-}
 
 export type ApplyResult = {
   /** How many recipes were created. */
@@ -93,7 +83,7 @@ function withStepImages(item: DevRecipe, dir: string): { input: DevRecipe["input
  * planned for tonight.
  */
 export async function applyDevData(db: Database, options: ApplyOptions = {}): Promise<ApplyResult> {
-  const { library = DEV_LIBRARY, plan = DEV_PLAN, dir = devImagesDir(), today = todayIso() } = options;
+  const { library = DEV_LIBRARY, plan = DEV_PLAN, dir = imageDir("recipe"), today = todayIso() } = options;
   const repo = recipeRepository(db);
   const events = timelineRepository(db);
   const foods = foodRepository(db);

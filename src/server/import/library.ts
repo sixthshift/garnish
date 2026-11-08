@@ -11,7 +11,7 @@ import { pendingCreations, rowCommit } from "../../domain/recipes/ingredient";
 import type { FoodRow, Unit } from "../../domain/recipes/reference";
 import { sniffImage } from "../../lib/imageFile";
 import { dataUrlFile } from "../../lib/images";
-import { storeImage } from "../api/images";
+import { imageDir, storeImage } from "../core/images";
 
 /** A recipe the import wrote, or the one already here that it left alone. */
 export type LibraryRecipe = { name: string; slug: string };
@@ -77,7 +77,7 @@ async function keepImage(recipeId: string, image: string | null): Promise<void> 
     const bytes = new Uint8Array(await dataUrlFile(image).arrayBuffer());
     const ext = sniffImage(bytes);
     if (ext === null) return;
-    recipes.ref(recipeId).setImage(await storeImage(recipeId, ext, bytes));
+    recipes.ref(recipeId).setImage(await storeImage(imageDir("recipe"), recipeId, ext, bytes));
   } catch {
     // The recipe stands without it.
   }

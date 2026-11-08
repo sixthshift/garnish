@@ -1,11 +1,12 @@
 import type { Database } from "bun:sqlite";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { asc, count, eq, isNotNull, max } from "drizzle-orm";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { Backup, BackupCounts, BackupRecipe } from "../../../app/features/settings/model/backup";
-import { imageFileOf, imagePath } from "../../../app/features/settings/model/backup";
+import { backupFileName, imageFileOf, imagePath } from "../../../app/features/settings/model/backup";
 import { lazy } from "../../../lib/lazy";
 import { getDb } from "../../../server/core/db";
-import { snapshot } from "../../backup/snapshot";
 import { orm } from "../../connection/client";
 import { aiSetting } from "../ai/schema";
 import { aisle } from "../aisle/schema";
@@ -273,9 +274,18 @@ export function backupRepository(db: Database) {
       };
     },
 
-    /** A `VACUUM INTO` copy of the whole database in `dir`, before a restore replaces it. Returns its path. */
+    /**
+     * The database as it stood before a restore replaced it (decisions.md row
+     * 131): a safety net to put back by hand, not a backup the household
+     * chooses. A `VACUUM INTO` copy in `dir` (created if missing), consistent
+     * even in WAL mode with other connections open; returns its path. Throws
+     * when the file exists, which is what two snapshots within a second do.
+     */
     snapshot(dir: string, now: Date = new Date()): string {
-      return snapshot(db, dir, now);
+      mkdirSync(dir, { recursive: true });
+      const path = join(dir, backupFileName(now, "pre-restore", "db"));
+      db.prepare("VACUUM INTO ?").run(path);
+      return path;
     },
 
     /** How many of each thing the database holds now: the "before" of the restore sheet. */

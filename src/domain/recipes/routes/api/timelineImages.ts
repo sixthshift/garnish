@@ -1,6 +1,6 @@
 import { createRoute } from "@tanstack/react-router";
 import { Route as rootRoute } from "../../../../routes/root";
-import { handleGetTimelineImage, handleUploadTimelineImage } from "../../../../server/api/timelineImages";
+import { handleGetImage, handleUploadTimelineImage } from "../../../../server/api/images";
 
 /** GET /api/images/timeline/:file — serves a stored timeline photo. */
 export const getTimelineImageRoute = createRoute({
@@ -8,7 +8,7 @@ export const getTimelineImageRoute = createRoute({
   path: "/api/images/timeline/$file",
   server: {
     handlers: {
-      GET: ({ request, params }) => handleGetTimelineImage(params.file, request),
+      GET: ({ request, params }) => handleGetImage("timeline", params.file, request),
     },
   },
 });
