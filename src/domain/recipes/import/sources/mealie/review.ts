@@ -17,6 +17,8 @@ export function reviewRowFromMealie<U extends UnitCandidate, F extends FoodCandi
     key,
     originalText: row.originalText,
     quantity: row.quantity,
+    // Mealie has no range: its rows are one amount.
+    quantityMax: null,
     fixed: false,
     note: row.note,
     unitText: unit === null ? row.unit : "",

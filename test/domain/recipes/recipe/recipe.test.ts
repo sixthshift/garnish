@@ -87,6 +87,7 @@ const fullRead: Recipe = {
         {
           id: ids.ing1,
           quantity: 50,
+          quantityMax: null,
           unit: gram,
           food: {
             id: ids.butter,
@@ -106,6 +107,7 @@ const fullRead: Recipe = {
         {
           id: ids.ing2,
           quantity: null,
+          quantityMax: null,
           unit: null,
           food: { id: ids.salt, name: "salt", pluralName: null, aliases: ["sea salt"], aisle: null, recipeId: null, skipShopping: true, conversions: [] },
           note: "to taste",
@@ -123,6 +125,7 @@ const fullRead: Recipe = {
         {
           id: ids.ing3,
           quantity: 200,
+          quantityMax: null,
           unit: gram,
           food: { id: ids.spaghetti, name: "spaghetti", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] },
           note: "",

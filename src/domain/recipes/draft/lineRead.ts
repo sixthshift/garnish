@@ -3,7 +3,7 @@
 // A line typed into the box is read by the same parser bulk add reviews it
 // with; a row already in the draft is read from its fields.
 
-import { formatQuantity, formatUnit, inflectIngredient, parseIngredient } from "../ingredient";
+import { formatAmount, formatRange, inflectIngredient, parseIngredient } from "../ingredient";
 import type { FoodRow, Unit } from "../reference";
 import { displayIngredient } from "./ingredients";
 import type { IngredientReview } from "./review";
@@ -41,6 +41,7 @@ export function lineRead(line: string, vocabulary: { units: readonly Unit[]; foo
   return parsedRead({
     originalText: parsed.originalText,
     quantity: parsed.quantity,
+    quantityMax: parsed.quantityMax,
     fixed: parsed.fixed,
     note: parsed.note,
     unit: parsed.unit,
@@ -58,6 +59,7 @@ export function reviewRead(row: IngredientReview): LineRead {
   return parsedRead({
     originalText: row.originalText,
     quantity: row.quantity,
+    quantityMax: row.quantityMax,
     fixed: row.fixed,
     note: row.note,
     unit: row.unit.kind === "existing" ? row.unit.row : null,
@@ -70,6 +72,7 @@ export function reviewRead(row: IngredientReview): LineRead {
 type Parsed = {
   originalText: string;
   quantity: number | null;
+  quantityMax: number | null;
   fixed: boolean;
   note: string;
   unit: Unit | null;
@@ -81,10 +84,13 @@ type Parsed = {
 function parsedRead(parsed: Parsed): LineRead {
   const food = parsed.food?.name ?? parsed.foodText.trim();
   if (food === "") return { kind: "text", text: parsed.originalText };
-  const unit = parsed.unit !== null ? formatUnit(parsed.quantity, parsed.unit) : parsed.unitText.trim();
+  const amount =
+    parsed.unit !== null
+      ? formatAmount(parsed.quantity, parsed.unit, parsed.quantityMax)
+      : [formatRange(parsed.quantity, parsed.quantityMax), parsed.unitText.trim()].filter((part) => part !== "").join(" ");
   return {
     kind: "read",
-    amount: [formatQuantity(parsed.quantity, parsed.unit), unit].filter((part) => part !== "").join(" "),
+    amount,
     food,
     note: parsed.note,
     fixed: parsed.fixed,

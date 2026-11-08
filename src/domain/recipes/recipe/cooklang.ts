@@ -51,9 +51,14 @@ function cooklangUnit(unit: Unit | null): string {
   return unit.name;
 }
 
-/** The `{...}` an ingredient contributes: quantity, `%unit`, `=` prefix when fixed. "" when there is nothing to say. */
-function amountBody(ingredient: Pick<Ingredient, "quantity" | "unit" | "fixed">): string {
-  const quantity = cooklangQuantity(ingredient.quantity);
+/**
+ * The `{...}` an ingredient contributes: quantity, `%unit`, `=` prefix when fixed. "" when there is nothing to say.
+ * A range is written `{5-6%tbsp}`, as cooklang-rs's range extension reads it (decisions.md row 220).
+ */
+function amountBody(ingredient: Pick<Ingredient, "quantity" | "quantityMax" | "unit" | "fixed">): string {
+  const low = cooklangQuantity(ingredient.quantity);
+  const high = low === "" ? "" : cooklangQuantity(ingredient.quantityMax);
+  const quantity = high === "" || high === low ? low : `${low}-${high}`;
   const unit = cooklangUnit(ingredient.unit);
   if (quantity === "" && unit === "") return "";
   const prefix = ingredient.fixed ? "=" : "";

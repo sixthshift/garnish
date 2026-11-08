@@ -4,8 +4,8 @@ import type { Ingredient, Recipe } from "./recipe";
 /** What the parent needs about a child recipe: enough to link to it and to scale it. */
 export type SubRecipe = Pick<Recipe, "id" | "slug" | "name" | "recipeServings" | "recipeYieldQuantity" | "yieldUnit">;
 
-/** The ingredient fields the scale reads: its amount and the food that names the child. */
-export type SubRecipeIngredient = Pick<Ingredient, "quantity" | "unit" | "food">;
+/** The ingredient fields the scale reads: its amount (a range's upper bound when it has one) and the food that names the child. */
+export type SubRecipeIngredient = Pick<Ingredient, "quantity" | "unit" | "food"> & { quantityMax?: number | null };
 
 /**
  * `quantity` of `unit` of `food`, expressed in `yieldUnit`, or null when the
@@ -25,10 +25,12 @@ function amountInYieldUnit(quantity: number, unit: Unit | null, food: Food | nul
  * The servings of `child` that yield this ingredient's amount, or null when
  * nothing relates them: no amount on the row, no yield or no servings on the
  * child, or no conversion between the row's unit and the child's yield unit.
- * Pure.
+ * A range ("1–2 cups stock") makes enough for its upper bound, as the
+ * shopping list buys it (decisions.md row 220). Pure.
  */
 export function subRecipeScale(ingredient: SubRecipeIngredient, child: SubRecipe): number | null {
-  const { quantity, unit, food } = ingredient;
+  const { unit, food } = ingredient;
+  const quantity = ingredient.quantity === null ? null : (ingredient.quantityMax ?? ingredient.quantity);
   if (quantity === null || !Number.isFinite(quantity) || quantity <= 0) return null;
   if (!(child.recipeServings > 0) || !(child.recipeYieldQuantity > 0)) return null;
 

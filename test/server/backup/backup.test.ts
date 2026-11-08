@@ -143,6 +143,27 @@ describe("the round trip", () => {
     expect(b.db.query("SELECT use FROM ai_setting").all()).toEqual([]);
   });
 
+  test("an amount's range travels with it, and a backup from before ranges restores every row as one amount (row 220)", async () => {
+    const images = [`images/${IDS.recipe}.png`, `images/steps/${IDS.step}.png`, `images/timeline/${IDS.event}.png`];
+    const zipOf = (json: unknown) =>
+      writeZip([{ name: BACKUP_JSON, bytes: new TextEncoder().encode(JSON.stringify(json)) }, ...images.map((name) => ({ name, bytes: PNG_BYTES }))]);
+    const storedMax = (db: Database) => db.query("SELECT quantity, quantity_max AS quantityMax FROM ingredient WHERE id = ?").get(IDS.ingredient);
+
+    const ranged = sampleBackup();
+    ranged.recipes[0]!.parts[0]!.ingredients[0]!.quantityMax = 250;
+    const a = dataDir();
+    expect((await restoreBackup(backupRepository(a.db), a.dir, await zipOf(ranged), LATER)).ok).toBe(true);
+    expect(storedMax(a.db)).toEqual({ quantity: 200, quantityMax: 250 });
+    const again = await unpack((await takeBackup(backupRepository(a.db), a.dir, LATER)).bytes);
+    expect(again.json.recipes[0]!.parts[0]!.ingredients[0]!.quantityMax).toBe(250);
+
+    const older = sampleBackup() as unknown as { recipes: { parts: { ingredients: Record<string, unknown>[] }[] }[] };
+    delete older.recipes[0]!.parts[0]!.ingredients[0]!.quantityMax;
+    const b = dataDir();
+    expect((await restoreBackup(backupRepository(b.db), b.dir, await zipOf(older), LATER)).ok).toBe(true);
+    expect(storedMax(b.db)).toEqual({ quantity: 200, quantityMax: null });
+  });
+
   test("a household made through the repositories comes back as it was, lastMade included", async () => {
     const a = dataDir();
     const sample = seedSample(a.db).recipes;
@@ -198,6 +219,14 @@ describe("what is refused, leaving everything as it was", () => {
     backup.recipes[0]!.parts[0]!.ingredients[0]!.foodId = "99999999-0000-4000-8000-000000000000";
     expect(await refused(await zipOf(backup, allImages))).toEqual([
       "recipes[0].parts[0].ingredients[0].foodId: food 99999999-0000-4000-8000-000000000000 is not in the backup",
+    ]);
+  });
+
+  test("a range whose upper amount is not above its lower one", async () => {
+    const backup = sampleBackup();
+    backup.recipes[0]!.parts[0]!.ingredients[0]!.quantityMax = 150;
+    expect(await refused(await zipOf(backup, allImages))).toEqual([
+      "recipes[0].parts[0].ingredients[0].quantityMax: a range's upper amount is above its lower one",
     ]);
   });
 

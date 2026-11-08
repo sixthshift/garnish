@@ -89,4 +89,4 @@ export { tagSuggestions, tickedTags } from "./tagSuggestions";
 export type { DraftIngredient, DraftNote, DraftPart, RecipeDraft } from "./types";
 export type { FieldErrors } from "./validate";
 export { validateDraft } from "./validate";
-export { filterUnits, foodReference, matchUnit, parseQuantity, quantityText, tagsFromNames, unitReference } from "./vocabulary";
+export { filterUnits, foodReference, matchUnit, parseQuantity, parseQuantityRange, quantityText, tagsFromNames, unitReference } from "./vocabulary";

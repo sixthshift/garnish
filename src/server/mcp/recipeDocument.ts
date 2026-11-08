@@ -230,6 +230,7 @@ export function documentFromMcp(
     const base = {
       id,
       quantity: parsed.quantity,
+      quantityMax: parsed.quantityMax,
       unit: parsed.unit,
       // A word read as a unit the household lacks ("large", "packet") stays on the line (decisions.md row 221).
       note: parsed.unit === null ? keptWord(parsed.unitText, parsed.note) : parsed.note,
@@ -243,7 +244,7 @@ export function documentFromMcp(
     const words = name.split(/\s+/).filter(Boolean).length;
     if (words === 0 || words > MAX_NEW_FOOD_WORDS) {
       report.textOnly.push(line);
-      return { ...base, quantity: null, unit: null, note: "", food: null };
+      return { ...base, quantity: null, quantityMax: null, unit: null, note: "", food: null };
     }
     const key = name.toLowerCase();
     let food = made.get(key);

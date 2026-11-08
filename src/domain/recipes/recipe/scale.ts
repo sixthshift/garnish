@@ -52,7 +52,9 @@ function scaleIngredient(ingredient: Ingredient, factor: number): Ingredient {
       : { ...alt, items: alt.items.map((item) => (item.quantity === null ? item : { ...item, quantity: item.quantity * factor })) }
   );
   if (ingredient.quantity === null) return { ...ingredient, alternatives };
-  return { ...ingredient, quantity: ingredient.quantity * factor, alternatives };
+  // A range scales at both ends (decisions.md row 220).
+  const quantityMax = ingredient.quantityMax === null ? null : ingredient.quantityMax * factor;
+  return { ...ingredient, quantity: ingredient.quantity * factor, quantityMax, alternatives };
 }
 
 /**

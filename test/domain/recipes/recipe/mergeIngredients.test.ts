@@ -63,6 +63,7 @@ function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {
   return {
     id: `ingredient-${nextId}`,
     quantity: null,
+    quantityMax: null,
     unit: null,
     food: null,
     note: "",
@@ -87,6 +88,22 @@ describe("mergeIngredients", () => {
 
     expect(merged).toHaveLength(1);
     expect(merged[0]).toMatchObject({ quantity: 250, unit: gram, food: flour, id: flourA.id });
+  });
+
+  test("a range sums at both ends, a single amount counting as its own upper bound (decisions.md row 220)", () => {
+    const merged = mergeIngredients({
+      parts: [
+        component([ingredient({ quantity: 100, quantityMax: 150, unit: gram, food: flour })]),
+        component([ingredient({ quantity: 50, unit: gram, food: flour })]),
+      ],
+    });
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toMatchObject({ quantity: 150, quantityMax: 200 });
+
+    const plain = mergeIngredients({
+      parts: [component([ingredient({ quantity: 1, unit: cup, food: flour }), ingredient({ quantity: 2, unit: cup, food: flour })])],
+    });
+    expect(plain[0]).toMatchObject({ quantity: 3, quantityMax: null });
   });
 
   test("different unit keeps lines separate even for the same food", () => {

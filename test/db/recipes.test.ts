@@ -444,6 +444,22 @@ test("a summary's ingredientPreview is the first six lines, part order then row 
   expect(summary.ingredientPreview).toEqual(["1 g food 1", "2 g food 2", "3 g food 3", "4 g food 4", "5 g food 5", "6 g food 6"]);
 });
 
+test("an amount's range round-trips through create and the summary; the table refuses one that does not rise (decisions.md row 220)", () => {
+  const doc: RecipeInput = {
+    name: "Chicken",
+    parts: [{ name: "", ingredients: [{ quantity: 600, quantityMax: 750, unit: gram, food: { id: crypto.randomUUID(), name: "chicken thigh" } }], steps: [] }],
+  };
+  const created = repo.create(recipeInputSchema.parse(doc));
+  expect(created.parts[0]!.ingredients[0]).toMatchObject({ quantity: 600, quantityMax: 750 });
+  expect(repo.get(created.slug)!.parts[0]!.ingredients[0]!.quantityMax).toBe(750);
+  expect(repo.query().find((r) => r.id === created.id)!.ingredientPreview).toEqual(["600–750 g chicken thigh"]);
+
+  const id = created.parts[0]!.ingredients[0]!.id;
+  expect(() => db.run("UPDATE ingredient SET quantity_max = 500 WHERE id = ?", [id])).toThrow(/CHECK/);
+  expect(() => db.run("UPDATE ingredient SET quantity = NULL WHERE id = ?", [id])).toThrow(/CHECK/);
+  expect(recipeInputSchema.safeParse({ ...doc, parts: [{ ...doc.parts[0]!, ingredients: [{ quantity: 6, quantityMax: 5 }] }] }).success).toBe(false);
+});
+
 test("list filters by tags[] with any (default) and all match", () => {
   repo.create(recipeInputSchema.parse(fullDoc)); // tags: Pasta, Weeknight
   repo.create(recipeInputSchema.parse(minimal("Cheese Toast", { tags: [weeknight] })));

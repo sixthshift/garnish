@@ -14,6 +14,7 @@ import type { Ingredient, Part } from "../../../../../src/domain/recipes/recipe"
 const row = (id: string, name: string): Ingredient => ({
   id,
   quantity: 1,
+  quantityMax: null,
   unit: null,
   food: { id: `food-${id}`, name, pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] },
   note: "",

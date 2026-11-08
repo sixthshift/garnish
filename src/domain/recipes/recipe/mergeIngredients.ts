@@ -11,7 +11,8 @@ function mergeKey(ingredient: Ingredient): string {
 
 /**
  * One flat ingredient list for the whole recipe: every part's ingredients, in
- * order, merged by food and unit with quantities summed.
+ * order, merged by food and unit with quantities summed. A range sums at
+ * both ends, a single amount counting as its own upper bound: 1–2 and 1 is 2–3.
  * `fixed` and null-quantity lines never merge, even with a matching food and
  * unit, and appear once per occurrence. Pure; the input is not mutated.
  */
@@ -36,7 +37,11 @@ export function mergeIngredients(recipe: { parts: ReadonlyArray<Pick<Part, "ingr
         continue;
       }
 
-      existing.quantity = (existing.quantity ?? 0) + quantity;
+      const before = existing.quantity ?? 0;
+      if (existing.quantityMax !== null || ingredient.quantityMax !== null) {
+        existing.quantityMax = (existing.quantityMax ?? before) + (ingredient.quantityMax ?? quantity);
+      }
+      existing.quantity = before + quantity;
       if (existing.note.trim() !== note.trim()) existing.note = "";
     }
   }

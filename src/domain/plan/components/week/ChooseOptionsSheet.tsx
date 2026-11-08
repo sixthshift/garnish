@@ -76,6 +76,8 @@ export function ChooseOptionsSheet({ entry, open, onOpenChange }: { entry: PlanE
                     value: option.food.id,
                     label: formatIngredient({
                       quantity: option.quantity ?? row.quantity,
+                      // The line's own food, or an option at the line's amount, keeps its range.
+                      quantityMax: option.quantity === null || option.food.id === row.food!.id ? row.quantityMax : null,
                       unit: option.quantity === null ? row.unit : option.unit,
                       food: option.food,
                       note: "",

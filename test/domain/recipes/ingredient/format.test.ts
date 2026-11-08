@@ -4,6 +4,7 @@ import {
   formatAmount,
   formatDuration,
   formatQuantity,
+  formatRange,
   formatUnit,
   formatYield,
   totalMinutes,
@@ -247,5 +248,25 @@ describe("yieldLine", () => {
     [0, null, "", "Makes", ""],
   ])("%s %o %s -> %s %s", (quantity, u, text, label, value) => {
     expect(yieldLine(quantity, u, text)).toEqual({ label, value });
+  });
+});
+
+describe("formatRange", () => {
+  test.each([
+    [5, 6, tbsp, "5–6"],
+    [1.5, 2, cup, "1½–2"],
+    [0.5, 1, cup, "½–1"],
+    [600, 750, gram, "600–750"],
+    [2, null, cup, "2"],
+    [2, 1, cup, "2"],
+    [null, 2, cup, ""],
+  ] as const)("%s to %s", (quantity, quantityMax, u, text) => {
+    expect(formatRange(quantity, quantityMax, u)).toBe(text);
+  });
+
+  test("formatAmount takes the range, its unit agreeing with the upper bound", () => {
+    expect(formatAmount(0.5, cup, 1)).toBe("½–1 cup");
+    expect(formatAmount(1, cup, 2)).toBe("1–2 cups");
+    expect(formatAmount(5, tbsp, 6)).toBe("5–6 tbsp");
   });
 });

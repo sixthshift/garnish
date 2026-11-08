@@ -108,12 +108,15 @@ export const ingredient = sqliteTable(
     originalText: text("original_text").notNull().default(""),
     /** Has an amount, does not scale. Cooklang's `=`. */
     fixed: integer("fixed", { mode: "boolean" }).notNull().default(false),
+    /** The upper bound of a range, "5–6 tbsp" (decisions.md row 220). NULL: no range. Above `quantity`. */
+    quantityMax: real("quantity_max"),
   },
   (t) => [
     unique().on(t.partId, t.position),
     index("ingredient_unit_id").on(t.unitId),
     index("ingredient_food_id").on(t.foodId),
     check("fixed_flag", sql`${t.fixed} IN (0, 1)`),
+    check("quantity_range", sql`${t.quantityMax} IS NULL OR (${t.quantity} IS NOT NULL AND ${t.quantityMax} > ${t.quantity})`),
   ]
 );
 

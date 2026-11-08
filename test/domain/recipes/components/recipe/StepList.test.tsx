@@ -29,6 +29,7 @@ const food = (name: string, pluralName: string | null = null): Food => ({
 const ingredient = (quantity: number | null, f: Food): Ingredient => ({
   id: uuid(),
   quantity,
+  quantityMax: null,
   unit: null,
   food: f,
   note: "",

@@ -145,3 +145,33 @@ describe("scaledForServings", () => {
     expect(same).toEqual(doc);
   });
 });
+
+describe("a range scales at both ends (decisions.md row 220)", () => {
+  const ranged = () =>
+    fixture({
+      parts: [
+        {
+          id: ids.sauce,
+          name: "",
+          ingredients: [
+            { id: ids.butter, quantity: 5, quantityMax: 6, unit: null, food: null, note: "", originalText: "", fixed: false, alternatives: [] },
+            { id: ids.bayLeaf, quantity: 1, quantityMax: 2, unit: null, food: null, note: "", originalText: "", fixed: true, alternatives: [] },
+          ],
+          steps: [],
+        },
+      ] as Recipe["parts"],
+    });
+
+  test("doubling the servings doubles both bounds; a fixed range stays", () => {
+    const rows = scaleRecipe(ranged(), 8).parts[0]!.ingredients;
+    expect(rows.map((row) => [row.quantity, row.quantityMax])).toEqual([
+      [10, 12],
+      [1, 2],
+    ]);
+  });
+
+  test("halving halves both", () => {
+    const rows = scaleRecipe(ranged(), 2).parts[0]!.ingredients;
+    expect([rows[0]!.quantity, rows[0]!.quantityMax]).toEqual([2.5, 3]);
+  });
+});

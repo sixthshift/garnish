@@ -118,6 +118,7 @@ export function sampleBackup(): Backup {
               {
                 id: IDS.ingredient,
                 quantity: 200,
+                quantityMax: null,
                 unitId: IDS.gram,
                 foodId: IDS.butter,
                 note: "melted",

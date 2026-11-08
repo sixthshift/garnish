@@ -1,7 +1,16 @@
 // The shopping list document: defaults, the one rule a line must satisfy, and
 // the patch's "absent means leave alone".
 import { describe, expect, test } from "vitest";
-import { type Ingredient, mergeIngredients, type Recipe, recipeSchema, type SubRecipe, scaleRecipe } from "../../../../src/domain/recipes/recipe";
+import {
+  type Ingredient,
+  mergeIngredients,
+  type Recipe,
+  recipeSchema,
+  type SubRecipe,
+  scaleRecipe,
+  subRecipeScale,
+} from "../../../../src/domain/recipes/recipe";
+import { ingredientAddition } from "../../../../src/domain/shopping/shopping/additions";
 import {
   groupByAisle,
   mealKeysOf,
@@ -19,7 +28,7 @@ import {
   shoppingItemSchema,
   shoppingItemSourceSchema,
 } from "../../../../src/domain/shopping/shopping/schema";
-import { subRecipeAdditions } from "../../../../src/domain/shopping/shopping/subRecipe";
+import { amountToBuy, recipeAdditions, subRecipeAdditions } from "../../../../src/domain/shopping/shopping/subRecipe";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const stamp = "2026-09-13T00:00:00.000Z";
@@ -410,6 +419,7 @@ function pastryRow(overrides: Partial<Ingredient> = {}): Ingredient {
   return {
     id: "ing-pastry",
     quantity: 250,
+    quantityMax: null,
     unit: gram,
     food: pastry,
     note: "",
@@ -464,6 +474,13 @@ describe("subRecipeAdditions", () => {
     const additions = subRecipeAdditions(pastryRow({ quantity: null }), sweetPastry, childDoc(2), parentSource);
 
     expect(additions).toEqual([{ quantity: null, unit: gram, food: pastry, originalText: expect.any(String), fixed: false, source: parentSource }]);
+  });
+
+  test("a ranged row makes enough of the child for its upper bound (decisions.md row 220)", () => {
+    // 250–500 g of pastry: the whole 500 g yield, all 4 servings.
+    expect(subRecipeScale(pastryRow({ quantityMax: 500 }), sweetPastry)).toBe(4);
+    const additions = subRecipeAdditions(pastryRow({ quantityMax: 500 }), sweetPastry, null, parentSource);
+    expect(additions[0]!.quantity).toBe(500);
   });
 
   test("a child not fetched yet also falls back to the food line, not an empty result", () => {
@@ -645,5 +662,34 @@ describe("shoppingItemLabel", () => {
   test("no quantity drops the amount, and a free-text line is its own text", () => {
     expect(shoppingItemLabel(existingItem({ quantity: null, unit: gram, food: flour }))).toBe("flour");
     expect(shoppingItemLabel(existingItem({ text: "  Batteries  " }))).toBe("Batteries");
+  });
+});
+
+describe("a range on the list (decisions.md row 220)", () => {
+  test("buys the upper bound, so the household does not run short", () => {
+    expect(amountToBuy({ quantity: 1, quantityMax: 2 })).toBe(2);
+    expect(amountToBuy({ quantity: 1, quantityMax: null })).toBe(1);
+    expect(amountToBuy({ quantity: null, quantityMax: null })).toBeNull();
+    expect(ingredientAddition(pastryRow({ quantity: 600, quantityMax: 750 }), parentSource).quantity).toBe(750);
+  });
+
+  test("a whole recipe's ranged rows reach the list at their upper bound, scaled", () => {
+    const tart = recipeSchema.parse({
+      id: "c0000000-0000-4000-8000-000000000000",
+      slug: "limes",
+      name: "Limes",
+      recipeServings: 2,
+      parts: [
+        {
+          id: "d0000000-0000-4000-8000-000000000000",
+          name: "",
+          ingredients: [{ id: "e0000000-0000-4000-8000-000000000000", quantity: 1, quantityMax: 2, food: pastry }],
+        },
+      ],
+      createdAt: "2026-11-08T00:00:00.000Z",
+      updatedAt: "2026-11-08T00:00:00.000Z",
+    });
+    const additions = recipeAdditions(scaleRecipe(tart, 4), () => parentSource);
+    expect(additions.map((addition) => addition.quantity)).toEqual([4]);
   });
 });

@@ -34,6 +34,7 @@ const tart: Recipe = {
         {
           id: id(),
           quantity: 200,
+          quantityMax: null,
           unit: null,
           food: null,
           note: "sifted",

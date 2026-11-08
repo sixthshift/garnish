@@ -1,7 +1,7 @@
 import { Input } from "@sixthshift/design-system/input";
 import { SearchInput } from "@sixthshift/design-system/search-input";
 import { picker } from "../../../../lib/ui/picker";
-import { filterUnits, foodReference, parseQuantity, quantityText, unitReference } from "../../draft";
+import { filterUnits, foodReference, parseQuantityRange, quantityText, unitReference } from "../../draft";
 import { INGREDIENT_WIDE_CELL, type IngredientFieldsProps } from "./IngredientFields";
 
 /**
@@ -25,11 +25,12 @@ export function amountFields(props: IngredientFieldsProps, quantityError: string
         autoComplete="off"
         placeholder="Qty"
         className={line ? undefined : "w-20"}
-        value={quantityDraft ?? quantityText(ingredient.quantity)}
+        value={quantityDraft ?? quantityText(ingredient.quantity, ingredient.quantityMax)}
         disabled={disabled}
         onChange={(event) => {
           props.onQuantityText(event.target.value);
-          props.onPatch({ quantity: parseQuantity(event.target.value) });
+          // "5–6" is a range: both bounds at once (decisions.md row 220).
+          props.onPatch(parseQuantityRange(event.target.value));
         }}
         onBlur={() => props.onQuantityText(null)}
       />

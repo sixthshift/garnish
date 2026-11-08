@@ -147,6 +147,28 @@ test("facets are read, set on a create, and merged by layer on an update: a laye
   expect(() => updateRecipeSchema.parse({ facets: { course: ["chutney"] } })).toThrow();
 });
 
+test("a range in a line is kept, and reads back as the same line (decisions.md row 220)", () => {
+  const created = parseDocument(
+    documentFromMcp(
+      createRecipeSchema.parse({ name: "Onions", parts: [{ ingredients: ["5–6 tbsp spring onions, sliced", "1-2 spring onions"] }] }),
+      vocabulary,
+      null
+    ).doc
+  );
+  const [ranged, counted] = created.parts[0]!.ingredients;
+  expect(ranged).toMatchObject({ quantity: 5, quantityMax: 6, unit: { id: TBSP.id }, food: { id: ONION.id }, note: "sliced" });
+  expect(counted).toMatchObject({ quantity: 1, quantityMax: 2, unit: null });
+  const stored = recipeSchema.parse({
+    ...created,
+    id: "00000000-0000-4000-8000-0000000000d2",
+    slug: "onions",
+    createdAt: "2026-11-08T00:00:00.000Z",
+    updatedAt: "2026-11-08T00:00:00.000Z",
+    parts: created.parts.map((part) => ({ ...part, id: crypto.randomUUID() })),
+  });
+  expect(recipeForMcp(stored).parts[0]!.ingredients.map((row) => row.text)).toEqual(["5–6 tbsp spring onions, sliced", "1–2 spring onions"]);
+});
+
 test("an update keeps what it does not send, and keeps unchanged rows whole", () => {
   const created = parseDocument(
     documentFromMcp(

@@ -48,6 +48,8 @@ export function chooseOption(row: Ingredient, foodId: string): Ingredient {
     ...row,
     food: made.food,
     quantity: made.quantity,
+    // An option at the line's own amount keeps its range; one with its own amount has none.
+    quantityMax: made.quantity === row.quantity && made.unit === row.unit ? row.quantityMax : null,
     unit: made.unit,
     originalText: "",
     alternatives: [own, ...row.alternatives.filter((alt) => alt !== chosen)],

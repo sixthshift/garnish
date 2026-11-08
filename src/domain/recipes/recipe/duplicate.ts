@@ -29,8 +29,9 @@ export function duplicateInput(recipe: Recipe): RecipeInput {
     notes: recipe.notes.map(({ title, text }) => ({ title, text })),
     parts: recipe.parts.map((part) => ({
       name: part.name,
-      ingredients: part.ingredients.map(({ quantity, unit, food, note, originalText, fixed, alternatives }) => ({
+      ingredients: part.ingredients.map(({ quantity, quantityMax, unit, food, note, originalText, fixed, alternatives }) => ({
         quantity,
+        quantityMax,
         unit,
         food,
         note,

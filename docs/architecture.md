@@ -135,7 +135,7 @@ recipe_note   id, recipe_id, position, title, text
 timeline_event id, recipe_id, occurred_on, message, image, created_at
 part          id, recipe_id, position, name
 ingredient    id, part_id, position, quantity?, unit_id?, food_id?,
-              note, original_text, fixed
+              note, original_text, fixed, quantity_max?
 step          id, part_id, position, text, image?
 step_ingredient step_id, ingredient_id, position
 food          id, name, plural_name, aliases, aisle_id?, recipe_id?, skip_shopping
@@ -169,7 +169,7 @@ The document the API reads and writes (`src/domain/recipes/recipe/recipe.ts`) mi
 - Each part owns its ingredients and its steps. Same food in two parts is two rows.
 - Steps link ingredients, many to many, **within one part** (decisions.md row 64). Ownership is the tree; a link is only "this step uses that row". A step may link any ingredient of its own part, and an ingredient may be linked from several of that part's steps. A link across parts is dropped on save rather than failing it — the row belongs in this part, or in the recipe's body. A link carries the whole row: splitting one amount across steps is two rows, not two links.
 - The unnamed part (`name = ''`) is the recipe's main body, printed without a heading — so a recipe with one named sub-preparation does not have to invent a heading like "To assemble" for the rest of its method.
-- `quantity` null means "no amount" (salt to taste). `fixed` true means "has an amount, does not scale" (one egg wash). Cooklang's `=`.
+- `quantity` null means "no amount" (salt to taste). `fixed` true means "has an amount, does not scale" (one egg wash). Cooklang's `=`. `quantityMax` is a range's upper bound, "5–6 tbsp", above `quantity`; null is one amount. It scales with `quantity`, and the shopping list and a sub-recipe's servings take it, so nothing runs short (decisions.md row 220).
 - `food_id` and `unit_id` are nullable. A line that is only text still saves. `original_text` is always kept.
 - Servings and yield: `servings` and `yield_quantity` are numbers and scale; `yield_text` is display. Mealie's three fields. `yield_unit_id` lets a parent later ask for "150 ml of this".
 - Sub-recipes attach to the **food**, not the ingredient row: `food.recipe_id`. An ingredient line reads "150 g hollandaise" and does not care whether hollandaise has a recipe. Tandoor's shape. A parent scales through it (decisions.md row 70): `subRecipeScale` in `src/domain/recipes/recipe/subRecipe.ts` expresses the row's amount in the child's `yield_unit` — the same unit, or through the food's conversions — and reads off `(amount / yield_quantity) * servings`, null whenever nothing relates the two. That derived figure is the link's hint on the recipe page, cook mode's "Open <child> at N servings", and the servings the shopping sheet fetches the child at. Since the page scales its document before rendering, the parent's own scale flows through. One level only: expanding a child does not expand the child's own sub-recipes, and nothing guards a cycle because nothing recurses. A parent follows its child's yield live, nothing pinned; both stay as they are (decisions.md row 130).

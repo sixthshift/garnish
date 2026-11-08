@@ -46,7 +46,7 @@ export function placeholders(
 
 /** A line committed as its raw text, whatever the parse made of it. Pure. */
 function asText(row: IngredientReview): RowCommit<Unit, FoodRow> {
-  return { textOnly: true, originalText: row.originalText, quantity: null, fixed: false, note: "", unit: null, food: null };
+  return { textOnly: true, originalText: row.originalText, quantity: null, quantityMax: null, fixed: false, note: "", unit: null, food: null };
 }
 
 export type ImportDraftOptions = {

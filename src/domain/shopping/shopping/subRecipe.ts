@@ -2,6 +2,14 @@ import { formatIngredient } from "../../recipes/ingredient";
 import { type Ingredient, type Recipe, type SubRecipe, subRecipeScale } from "../../recipes/recipe";
 import type { ShoppingAddition, ShoppingAdditionSource } from "./merge";
 
+/**
+ * How much of a line to buy: a range's upper bound, so the household does not
+ * run short ("1–2 limes" buys 2; decisions.md row 220), else its amount. Pure.
+ */
+export function amountToBuy(ingredient: Pick<Ingredient, "quantity" | "quantityMax">): number | null {
+  return ingredient.quantity === null ? null : (ingredient.quantityMax ?? ingredient.quantity);
+}
+
 /** The line's own text: the original wording, or the formatted line when there is none. Pure. */
 function displayText(ingredient: Ingredient): string {
   return ingredient.originalText.trim() || formatIngredient(ingredient).trim();
@@ -24,7 +32,7 @@ export function recipeAdditions(recipe: Recipe, sourceForPart: (partName: string
       const originalText = displayText(ingredient);
       if (ingredient.food === null && originalText === "") continue;
       additions.push({
-        quantity: ingredient.quantity,
+        quantity: amountToBuy(ingredient),
         unit: ingredient.unit,
         food: ingredient.food,
         originalText,
@@ -63,7 +71,7 @@ export function subRecipeAdditions(
   if (servings === null || childRecipe === null) {
     return [
       {
-        quantity: ingredient.quantity,
+        quantity: amountToBuy(ingredient),
         unit: ingredient.unit,
         food: ingredient.food,
         originalText: displayText(ingredient),

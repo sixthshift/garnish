@@ -1,10 +1,10 @@
-import type { IngredientReview } from "../../draft";
+import { type IngredientReview, quantityText } from "../../draft";
 import type { Choice } from "../../ingredient";
 
-/** The amount a row shows as a chip: "" for no amount, a leading `=` for a fixed one. Pure. */
+/** The amount a row shows as a chip: "" for no amount, a leading `=` for a fixed one, "5–6" for a range. Pure. */
 export function amountChip(row: IngredientReview): string {
   if (row.quantity === null) return "";
-  return `${row.fixed ? "=" : ""}${row.quantity}`;
+  return `${row.fixed ? "=" : ""}${quantityText(row.quantity, row.quantityMax)}`;
 }
 
 /** A chip's text: the chosen row's name, the name a create would use, or the fallback for a declined slot. Pure. */

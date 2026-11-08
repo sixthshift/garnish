@@ -18,6 +18,7 @@ function ingredient(f: Food | null, originalText = ""): Ingredient {
   return {
     id: uuid(),
     quantity: null,
+    quantityMax: null,
     unit: null,
     food: f,
     note: "",

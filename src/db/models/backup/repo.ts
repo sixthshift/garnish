@@ -93,6 +93,7 @@ export function backupRepository(db: Database) {
         ingredients: (ingredients.get(p.id) ?? []).map((i) => ({
           id: i.id,
           quantity: i.quantity,
+          quantityMax: i.quantityMax,
           unitId: i.unitId,
           foodId: i.foodId,
           note: i.note,

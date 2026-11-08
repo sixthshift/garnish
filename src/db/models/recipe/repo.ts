@@ -219,6 +219,7 @@ export function recipeRepository(db: Database) {
         id: ingredient.id,
         partId: ingredient.partId,
         quantity: ingredient.quantity,
+        quantityMax: ingredient.quantityMax,
         unitId: ingredient.unitId,
         foodId: ingredient.foodId,
         note: ingredient.note,
@@ -244,6 +245,7 @@ export function recipeRepository(db: Database) {
       list.push({
         id: i.id,
         quantity: i.quantity,
+        quantityMax: i.quantityMax,
         unit: readUnit(i.unitId, unitCache),
         food: readFood(i.foodId, foodCache),
         note: i.note,
@@ -423,6 +425,7 @@ export function recipeRepository(db: Database) {
             partId,
             position: i,
             quantity: line.quantity,
+            quantityMax: line.quantityMax,
             unitId: resolveUnit(line.unit),
             foodId: resolveFood(line.food),
             note: line.note,

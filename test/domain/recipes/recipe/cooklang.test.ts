@@ -39,6 +39,7 @@ function ingredient(id: string, over: Partial<Ingredient> = {}): Ingredient {
   return {
     id,
     quantity: null,
+    quantityMax: null,
     unit: null,
     food: null,
     note: "",
@@ -72,6 +73,12 @@ describe("cooklangStepText", () => {
     const bayLeaf = ingredient("i1", { quantity: 1, fixed: true, food: food("bay leaf") });
     const text = cooklangStepText({ text: "Add the bay leaf.", ingredientIds: ["i1"] }, new Map([["i1", bayLeaf]]));
     expect(text).toBe("Add the @bay leaf{=1}.");
+  });
+
+  test("a range is written low-high, as cooklang-rs reads one (decisions.md row 220)", () => {
+    const oil = ingredient("i1", { quantity: 5, quantityMax: 6, unit: unit("tablespoon", { abbreviation: "tbsp", useAbbreviation: true }), food: food("oil") });
+    const text = cooklangStepText({ text: "Heat the oil.", ingredientIds: ["i1"] }, new Map([["i1", oil]]));
+    expect(text).toBe("Heat the @oil{5-6%tbsp}.");
   });
 
   test("a linked ingredient not named in the text is appended, not dropped", () => {

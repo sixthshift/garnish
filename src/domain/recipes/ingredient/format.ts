@@ -9,6 +9,8 @@ export type DisplayFood = Pick<Food, "name" | "pluralName">;
 /** The ingredient fields display needs. A full `Ingredient` satisfies it. */
 export type DisplayIngredient = {
   quantity: number | null;
+  /** The upper bound of a range, "5–6 tbsp" (decisions.md row 220). Missing or null: one amount. */
+  quantityMax?: number | null;
   unit: DisplayUnit | null;
   food: DisplayFood | null;
   note: string;
@@ -43,6 +45,23 @@ export function formatQuantity(quantity: number | null, unit: DisplayUnit | null
   return unit?.fraction ? formatFraction(quantity) : formatDecimal(quantity);
 }
 
+/**
+ * Number text for an amount that may be a range: "5–6", "1½–2", or
+ * `formatQuantity`'s text when there is no range, or when the two bounds
+ * read the same once rounded. An en dash between the bounds.
+ */
+export function formatRange(quantity: number | null, quantityMax: number | null | undefined, unit: DisplayUnit | null = null): string {
+  const low = formatQuantity(quantity, unit);
+  if (low === "" || quantityMax === null || quantityMax === undefined || quantity === null || !(quantityMax > quantity)) return low;
+  const high = formatQuantity(quantityMax, unit);
+  return high === "" || high === low ? low : `${low}–${high}`;
+}
+
+/** The number that decides a word's plural: a range's upper bound ("1–2 limes"), else the quantity. */
+function countOf(quantity: number | null, quantityMax: number | null | undefined): number | null {
+  return quantity !== null && quantityMax !== null && quantityMax !== undefined && quantityMax > quantity ? quantityMax : quantity;
+}
+
 /** Unit label for an amount: abbreviation, plural or name per the unit's flags. Empty for no unit. */
 export function formatUnit(quantity: number | null, unit: DisplayUnit | null): string {
   if (unit === null) return "";
@@ -52,9 +71,9 @@ export function formatUnit(quantity: number | null, unit: DisplayUnit | null): s
   return unit.name;
 }
 
-/** "1½ cups", "250 g", "cups", "3". Quantity and unit joined by a space; empty when both are empty. */
-export function formatAmount(quantity: number | null, unit: DisplayUnit | null): string {
-  return [formatQuantity(quantity, unit), formatUnit(quantity, unit)].filter((part) => part !== "").join(" ");
+/** "1½ cups", "250 g", "5–6 tbsp", "cups", "3". Quantity (or range) and unit joined by a space; empty when both are empty. */
+export function formatAmount(quantity: number | null, unit: DisplayUnit | null, quantityMax: number | null = null): string {
+  return [formatRange(quantity, quantityMax, unit), formatUnit(countOf(quantity, quantityMax), unit)].filter((part) => part !== "").join(" ");
 }
 
 /**
@@ -68,19 +87,21 @@ export type IngredientTokens = { raw: false; quantity: string; unit: string; foo
  * An ingredient as display tokens, with the food agreeing in number with what
  * measures it: "1 lemon", "2 lemons", "1 cup blueberries", "2 slices lemon".
  * `formatIngredient` is these tokens joined; a consumer that styles the pieces
- * apart takes them from here. Builds from a row, not from a line: parsing is
+ * apart takes them from here. A range reads "5–6 tbsp", "1–2 limes": its upper
+ * bound decides the plural. Builds from a row, not from a line: parsing is
  * `parseIngredient`. Pure.
  */
 export function inflectIngredient(ingredient: DisplayIngredient): IngredientTokens {
-  const { quantity, unit, food, note, originalText } = ingredient;
+  const { quantity, quantityMax, unit, food, note, originalText } = ingredient;
   if (food === null && originalText.trim() !== "") return { raw: true, text: originalText.trim() };
 
   const hasQuantity = quantity !== null && quantity !== 0;
+  const count = countOf(quantity, quantityMax);
   return {
     raw: false,
-    quantity: formatQuantity(quantity, unit),
-    unit: hasQuantity ? formatUnit(quantity, unit) : "",
-    food: formatFood(quantity, hasQuantity ? unit : null, food),
+    quantity: formatRange(quantity, quantityMax, unit),
+    unit: hasQuantity ? formatUnit(count, unit) : "",
+    food: formatFood(count, hasQuantity ? unit : null, food),
     note: note.trim(),
   };
 }

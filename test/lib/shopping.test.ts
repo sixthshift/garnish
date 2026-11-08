@@ -34,6 +34,7 @@ const part = (name: string, ingredients: Part["ingredients"]): Part => ({ id: `p
 const FLOUR = {
   id: "ing-flour",
   quantity: 200,
+  quantityMax: null,
   unit: gram,
   food: food("flour"),
   note: "",
@@ -44,6 +45,7 @@ const FLOUR = {
 const LEMON = {
   id: "ing-lemon",
   quantity: 2,
+  quantityMax: null,
   unit: null,
   food: food("lemon"),
   note: "",

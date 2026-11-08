@@ -71,12 +71,14 @@ function namedUnit(name: string, id: string): Unit {
 
 /** One ingredient as tonight has it. A left-out line is unchanged: the mark says so. */
 export function adjustedIngredient(ingredient: Ingredient, adjustment: Adjustment): Ingredient {
-  if (adjustment.kind === "amount") return { ...ingredient, quantity: adjustment.quantity };
+  // A new amount is one amount: the range it replaces goes (decisions.md row 220).
+  if (adjustment.kind === "amount") return { ...ingredient, quantity: adjustment.quantity, quantityMax: null };
   if (adjustment.kind !== "swap") return ingredient;
   return {
     ...ingredient,
     food: namedFood(adjustment.food, ingredient.food, adjustment.id),
     quantity: adjustment.quantity ?? ingredient.quantity,
+    quantityMax: adjustment.quantity === null ? ingredient.quantityMax : null,
     unit: adjustment.unit === null ? ingredient.unit : adjustment.unit === "" ? null : namedUnit(adjustment.unit, adjustment.id),
     // The note described the old food ("diced (Note 2)" may still hold, a brand will not); kept, as the cook can read past it.
   };

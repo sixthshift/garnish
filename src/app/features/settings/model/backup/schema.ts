@@ -120,17 +120,24 @@ export const backupFoodSchema = z.object({
 
 // --- Recipes ----------------------------------------------------------------
 
-export const backupIngredientSchema = z.object({
-  id,
-  quantity,
-  unitId: id.nullable().default(null),
-  foodId: id.nullable().default(null),
-  note: text,
-  originalText: text,
-  fixed: z.boolean().default(false),
-  // Absent from a backup made before alternatives existed.
-  alternatives: z.array(backupAlternativeSchema).default([]),
-});
+export const backupIngredientSchema = z
+  .object({
+    id,
+    quantity,
+    // A range's upper bound (decisions.md row 220). Absent from a backup made before ranges existed.
+    quantityMax: z.number().positive().nullable().default(null),
+    unitId: id.nullable().default(null),
+    foodId: id.nullable().default(null),
+    note: text,
+    originalText: text,
+    fixed: z.boolean().default(false),
+    // Absent from a backup made before alternatives existed.
+    alternatives: z.array(backupAlternativeSchema).default([]),
+  })
+  .refine((row) => row.quantityMax === null || (row.quantity !== null && row.quantityMax > row.quantity), {
+    message: "a range's upper amount is above its lower one",
+    path: ["quantityMax"],
+  });
 
 export const backupStepSchema = z.object({
   id,

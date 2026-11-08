@@ -13,6 +13,8 @@ export type Vocabulary<U extends UnitCandidate, F extends FoodCandidate> = {
 /** What one ingredient line parses to. `unit`/`food` are null when the vocabulary has no match. */
 export type ParsedIngredient<U extends UnitCandidate, F extends FoodCandidate> = {
   quantity: number | null;
+  /** The upper bound of a range, "5–6 tbsp"; null when the amount is one number. */
+  quantityMax: number | null;
   fixed: boolean;
   unit: U | null;
   unitText: string;
@@ -23,13 +25,13 @@ export type ParsedIngredient<U extends UnitCandidate, F extends FoodCandidate> =
 };
 
 /**
- * One ingredient line: `{ quantity, fixed, unit, unitText, food, foodText, note, originalText }`.
+ * One ingredient line: `{ quantity, quantityMax, fixed, unit, unitText, food, foodText, note, originalText }`.
  * Pure and non-destructive — a slot that cannot be resolved reports its text
  * and leaves the decision to the caller.
  */
 export function parseIngredient<U extends UnitCandidate, F extends FoodCandidate>(line: string, vocabulary: Vocabulary<U, F>): ParsedIngredient<U, F> {
   const originalText = line.trim();
-  const { quantity, fixed, rest } = parseQuantity(originalText);
+  const { quantity, quantityMax, fixed, rest } = parseQuantity(originalText);
 
   const head = rest.trim();
   const matched = parseUnit(head, vocabulary.units);
@@ -38,6 +40,7 @@ export function parseIngredient<U extends UnitCandidate, F extends FoodCandidate
   const takesUnit = matched.unit !== null && (quantity !== null || matched.rest.trim() !== "");
 
   let amount = quantity;
+  let amountMax = quantityMax;
   let unit = takesUnit ? matched.unit : null;
   let unitText = takesUnit ? consumed(head, matched.rest) : "";
   // "2 cloves of garlic": the "of" joins the unit to the food and is neither.
@@ -56,6 +59,7 @@ export function parseIngredient<U extends UnitCandidate, F extends FoodCandidate
           .trim()
       : "";
     amount = alternative.quantity;
+    amountMax = alternative.quantityMax;
     unit = alternative.unit;
     unitText = alternative.unitText;
   }
@@ -81,7 +85,7 @@ export function parseIngredient<U extends UnitCandidate, F extends FoodCandidate
   }
 
   const note = [twin, parsed.note].filter((part) => part !== "").join(", ");
-  return { quantity: amount, fixed, unit, unitText, food, foodText, note, originalText };
+  return { quantity: amount, quantityMax: amountMax, fixed, unit, unitText, food, foodText, note, originalText };
 }
 
 /** The seeded imperial units, by name: beside a metric twin, the twin is the amount (benchmark rule "Two amounts"). */
@@ -95,16 +99,16 @@ const IMPERIAL: ReadonlySet<string> = new Set(["ounce", "pound", "fluid ounce", 
 function alternativeAmount<U extends UnitCandidate>(
   text: string,
   units: readonly U[]
-): { quantity: number; unit: U; unitText: string; text: string; rest: string } | null {
+): { quantity: number; quantityMax: number | null; unit: U; unitText: string; text: string; rest: string } | null {
   const slash = /^\s*\/\s*/.exec(text);
   if (slash === null) return null;
   const after = text.slice(slash[0].length);
-  const { quantity, rest } = parseQuantity(after);
+  const { quantity, quantityMax, rest } = parseQuantity(after);
   if (quantity === null) return null;
   const matched = parseUnit(rest.trim(), units);
   if (matched.unit === null || matched.rest.trim() === "") return null;
   const taken = after.slice(0, after.length - matched.rest.length).trim();
-  return { quantity, unit: matched.unit, unitText: consumed(rest.trim(), matched.rest), text: taken, rest: matched.rest };
+  return { quantity, quantityMax, unit: matched.unit, unitText: consumed(rest.trim(), matched.rest), text: taken, rest: matched.rest };
 }
 
 /** The text of `head` that a matcher consumed, given the `rest` it left behind. */

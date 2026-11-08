@@ -31,6 +31,7 @@ import {
   newIngredient,
   parsedRowPatch,
   parseQuantity,
+  parseQuantityRange,
   parseRowFor,
   quantityText,
   type RecipeDraft,
@@ -123,6 +124,37 @@ describe("parseQuantity", () => {
     expect(parseQuantity(text)).toBe(expected);
   });
 
+  test.each([
+    ["5–6", { quantity: 5, quantityMax: 6 }],
+    ["5-6", { quantity: 5, quantityMax: 6 }],
+    ["5 - 6", { quantity: 5, quantityMax: 6 }],
+    ["1½ to 2", { quantity: 1.5, quantityMax: 2 }],
+    ["1/2-1", { quantity: 0.5, quantityMax: 1 }],
+    ["6–5", { quantity: 6, quantityMax: 5 }],
+    ["5", { quantity: 5, quantityMax: null }],
+    ["-1", { quantity: -1, quantityMax: null }],
+    ["5-", { quantity: null, quantityMax: null }],
+    ["5-x", { quantity: null, quantityMax: null }],
+    ["", { quantity: null, quantityMax: null }],
+  ])("parseQuantityRange(%j) (decisions.md row 220)", (text, expected) => {
+    expect(parseQuantityRange(text)).toEqual(expected);
+  });
+
+  test("quantityText shows a range with an en dash", () => {
+    expect(quantityText(5, 6)).toBe("5–6");
+    expect(quantityText(5, null)).toBe("5");
+    expect(parseQuantityRange(quantityText(1.5, 2))).toEqual({ quantity: 1.5, quantityMax: 2 });
+  });
+
+  test("a range the wrong way round is refused on save, on the quantity field", () => {
+    const draft = emptyDraft();
+    draft.name = "Limes";
+    draft.parts[0]!.ingredients = [{ ...newIngredient(), quantity: 6, quantityMax: 5, originalText: "limes" }];
+    const result = validateDraft(draft);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors["parts.0.ingredients.0.quantity"]).toBe("The second amount must be more than the first");
+  });
+
   test("quantityText is the inverse for committed values", () => {
     expect(quantityText(null)).toBe("");
     expect(quantityText(undefined)).toBe("");
@@ -147,7 +179,7 @@ describe("newIngredient, isTextOnly, textOnlyPatch", () => {
   });
 
   test("the mode patches clear what the other mode owns", () => {
-    expect(textOnlyPatch(true)).toEqual({ quantity: null, unit: null, food: null, fixed: false });
+    expect(textOnlyPatch(true)).toEqual({ quantity: null, quantityMax: null, unit: null, food: null, fixed: false });
     expect(textOnlyPatch(false)).toEqual({ originalText: "" });
   });
 });
@@ -871,7 +903,7 @@ describe("parsedRowPatch", () => {
   test("a matched row patches quantity, unit, food and note; originalText is never in it", () => {
     const row = reviewOf("200 g flour, sifted");
     const patch = parsedRowPatch(row, new Map(), new Map());
-    expect(patch).toEqual({ quantity: 200, fixed: false, note: "sifted", unit: gram, food: foodReference(flourRow) });
+    expect(patch).toEqual({ quantity: 200, quantityMax: null, fixed: false, note: "sifted", unit: gram, food: foodReference(flourRow) });
     expect(patch).not.toHaveProperty("originalText");
   });
 

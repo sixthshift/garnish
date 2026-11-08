@@ -43,6 +43,7 @@ const stored: Recipe = {
         {
           id: "44444444-4444-4444-8444-444444444444",
           quantity: 200,
+          quantityMax: null,
           unit: gram,
           food: null,
           note: "flour",

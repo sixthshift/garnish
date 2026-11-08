@@ -60,7 +60,8 @@ const where = (partName: string) => (partName.trim() === "" ? "" : ` · ${partNa
 export function viewSuggestion(recipe: Recipe, adjustment: Adjustment, servings: number | null): SuggestionView | null {
   const scale = (ingredient: Ingredient) => {
     if (servings === null || !(recipe.recipeServings > 0) || ingredient.fixed || ingredient.quantity === null) return ingredient;
-    return { ...ingredient, quantity: (ingredient.quantity * servings) / recipe.recipeServings };
+    const factor = servings / recipe.recipeServings;
+    return { ...ingredient, quantity: ingredient.quantity * factor, quantityMax: ingredient.quantityMax === null ? null : ingredient.quantityMax * factor };
   };
   if ("ingredientId" in adjustment) {
     const found = findIngredient(recipe, adjustment.ingredientId);
@@ -103,7 +104,7 @@ export function keptRecipe(recipe: Recipe, kept: readonly Pick<Suggestion, "adju
     let next = row;
     for (const { adjustment, decision } of chosen) {
       if (!("ingredientId" in adjustment) || adjustment.ingredientId !== row.id) continue;
-      if (adjustment.kind === "amount") next = { ...next, quantity: adjustment.quantity };
+      if (adjustment.kind === "amount") next = { ...next, quantity: adjustment.quantity, quantityMax: null };
       if (adjustment.kind !== "swap") continue;
       const food = resolve.food(adjustment.food);
       const unit = adjustment.unit === null ? next.unit : adjustment.unit === "" ? null : resolve.unit(adjustment.unit);
@@ -117,7 +118,8 @@ export function keptRecipe(recipe: Recipe, kept: readonly Pick<Suggestion, "adju
           ],
         };
       } else {
-        next = { ...next, food, quantity: adjustment.quantity ?? next.quantity, unit, note: [lostUnit, next.note].filter(Boolean).join(" ") };
+        const quantityMax = adjustment.quantity === null ? next.quantityMax : null;
+        next = { ...next, food, quantity: adjustment.quantity ?? next.quantity, quantityMax, unit, note: [lostUnit, next.note].filter(Boolean).join(" ") };
       }
     }
     return next;

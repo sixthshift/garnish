@@ -162,6 +162,7 @@ describe("the prompt", () => {
           {
             id: "i1",
             quantity: 125,
+            quantityMax: null,
             unit: null,
             food: { ...food(ids.butter, "butter"), conversions: [] },
             note: "",
@@ -172,6 +173,7 @@ describe("the prompt", () => {
           {
             id: "i2",
             quantity: null,
+            quantityMax: null,
             unit: null,
             food: null,
             note: "",

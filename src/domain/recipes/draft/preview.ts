@@ -14,6 +14,7 @@ function rowOf(row: DraftIngredient, id: string): Ingredient {
   return {
     id,
     quantity: row.quantity ?? null,
+    quantityMax: row.quantityMax ?? null,
     unit: (row.unit ?? null) as Ingredient["unit"],
     food: (row.food ?? null) as Ingredient["food"],
     note: row.note ?? "",

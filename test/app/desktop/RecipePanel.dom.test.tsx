@@ -13,7 +13,7 @@ import { noFacets } from "../../../src/domain/recipes/recipe";
 import { atDesktop } from "../../helpers/layout";
 
 const flourFood = { id: "food-flour", name: "flour", pluralName: null, aliases: [], aisle: null, recipeId: null, skipShopping: false, conversions: [] };
-const flour = { id: "ing-flour", quantity: 200, unit: null, food: flourFood, note: "", originalText: "", fixed: false, alternatives: [] };
+const flour = { id: "ing-flour", quantity: 200, quantityMax: null, unit: null, food: flourFood, note: "", originalText: "", fixed: false, alternatives: [] };
 const tart: Recipe = {
   id: "recipe-tart",
   slug: "lemon-tart",

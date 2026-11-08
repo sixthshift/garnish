@@ -7,7 +7,7 @@ import type { DraftIngredient, RecipeDraft } from "./types";
 
 /** A blank structured row with a fresh id, so it has a stable key before it is saved. */
 export function newIngredient(): DraftIngredient {
-  return { id: randomUuid(), quantity: null, unit: null, food: null, note: "", originalText: "", fixed: false };
+  return { id: randomUuid(), quantity: null, quantityMax: null, unit: null, food: null, note: "", originalText: "", fixed: false };
 }
 
 /** A row is text only when it has no food and some original text. Pure. */
@@ -98,7 +98,7 @@ export function moveIngredient(draft: RecipeDraft, fromPi: number, ii: number, t
 
 /** The row patch that switches modes: to text only clears amount and food; back to structured clears the raw line. Pure. */
 export function textOnlyPatch(textOnly: boolean): Partial<DraftIngredient> {
-  return textOnly ? { quantity: null, unit: null, food: null, fixed: false } : { originalText: "" };
+  return textOnly ? { quantity: null, quantityMax: null, unit: null, food: null, fixed: false } : { originalText: "" };
 }
 
 /** The summary line a phone row shows: the formatted ingredient, or the raw line for a text-only row. Blank for an empty row. Pure. */
@@ -112,6 +112,7 @@ export function displayIngredient(ingredient: DraftIngredient): Parameters<typeo
   const food = ingredient.food ?? null;
   return {
     quantity: ingredient.quantity ?? null,
+    quantityMax: ingredient.quantityMax ?? null,
     unit:
       unit === null
         ? null

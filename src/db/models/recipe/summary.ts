@@ -52,6 +52,7 @@ function selectIngredientPreview(dz: Db, recipeId: string): string[] {
   return dz
     .select({
       quantity: ingredient.quantity,
+      quantityMax: ingredient.quantityMax,
       note: ingredient.note,
       originalText: ingredient.originalText,
       unitName: unit.name,
@@ -74,6 +75,7 @@ function selectIngredientPreview(dz: Db, recipeId: string): string[] {
     .map((row) =>
       formatIngredient({
         quantity: row.quantity,
+        quantityMax: row.quantityMax,
         unit:
           row.unitName === null
             ? null

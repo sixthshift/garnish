@@ -31,6 +31,7 @@ function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {
   return {
     id: crypto.randomUUID(),
     quantity: null,
+    quantityMax: null,
     unit: null,
     food: null,
     note: "",

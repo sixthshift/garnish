@@ -42,6 +42,8 @@ export const alternativeSchema = z
 
 const ingredientFields = {
   quantity: z.number().nonnegative().nullable().default(null), // null: no amount ("salt to taste")
+  /** The upper bound of a range, "5–6 tbsp", above `quantity`; null is no range (decisions.md row 220). */
+  quantityMax: z.number().positive().nullable().default(null),
   unit: unitSchema.nullable().default(null),
   food: foodSchema.nullable().default(null),
   note: text,
@@ -86,7 +88,13 @@ const noteFields = {
   text,
 };
 
-export const ingredientSchema = z.object({ id, ...ingredientFields });
+/** A range has a lower bound, and the upper is above it: "5–6", never "6–5" or "–6". */
+const isRange = (row: { quantity: number | null; quantityMax: number | null }) =>
+  row.quantityMax === null || (row.quantity !== null && row.quantityMax > row.quantity);
+// On `quantity`, the field the editor types a range into ("5–6").
+const rangeMessage = { message: "The second amount must be more than the first", path: ["quantity"] };
+
+export const ingredientSchema = z.object({ id, ...ingredientFields }).refine(isRange, rangeMessage);
 export const stepSchema = z.object({ id, ...stepFields });
 export const recipeNoteSchema = z.object({ id, ...noteFields });
 
@@ -165,7 +173,7 @@ export const timelineEventInputSchema = z.object({
 
 const optionalId = { id: id.optional() };
 
-export const ingredientInputSchema = z.object({ ...optionalId, ...ingredientFields });
+export const ingredientInputSchema = z.object({ ...optionalId, ...ingredientFields }).refine(isRange, rangeMessage);
 export const stepInputSchema = z.object({ ...optionalId, ...stepFields });
 export const recipeNoteInputSchema = z.object({ ...optionalId, ...noteFields });
 

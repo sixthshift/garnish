@@ -38,6 +38,7 @@ function ingredient(overrides: Partial<Ingredient> = {}): Ingredient {
   return {
     id: `ing-${n}`,
     quantity: null,
+    quantityMax: null,
     unit: null,
     food: null,
     note: "",

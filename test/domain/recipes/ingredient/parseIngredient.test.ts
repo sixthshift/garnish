@@ -45,6 +45,7 @@ describe("parseIngredient", () => {
     test("2 cups plain flour, sifted", () => {
       expect(parse("2 cups plain flour, sifted")).toEqual({
         quantity: 2,
+        quantityMax: null,
         fixed: false,
         unit: CUP,
         unitText: "cups",
@@ -58,6 +59,7 @@ describe("parseIngredient", () => {
     test("=1 tsp salt", () => {
       expect(parse("=1 tsp salt")).toEqual({
         quantity: 1,
+        quantityMax: null,
         fixed: true,
         unit: TEASPOON,
         unitText: "tsp",
@@ -71,6 +73,7 @@ describe("parseIngredient", () => {
     test("salt, to taste", () => {
       expect(parse("salt, to taste")).toEqual({
         quantity: null,
+        quantityMax: null,
         fixed: false,
         unit: null,
         unitText: "",
@@ -84,6 +87,7 @@ describe("parseIngredient", () => {
     test("½ bunch coriander, chopped", () => {
       expect(parse("½ bunch coriander, chopped")).toEqual({
         quantity: 0.5,
+        quantityMax: null,
         fixed: false,
         unit: BUNCH,
         unitText: "bunch",
@@ -332,5 +336,31 @@ describe("round trip over the seed corpus", () => {
     expect(parsed.unit).toBe(TABLESPOON);
     expect(parsed.food).toBe(FLOUR);
     expect(parsed.foodText).toBe("");
+  });
+});
+
+describe("parseIngredient ranges (decisions.md row 220)", () => {
+  test.each([
+    ["5–6 tbsp plain flour", 5, 6, TABLESPOON, FLOUR],
+    ["1-2 bananas", 1, 2, null, BANANA],
+    ["600 to 750 g chicken breast", 600, 750, GRAM, CHICKEN_BREAST],
+    ["1½–2 cups plain flour", 1.5, 2, CUP, FLOUR],
+    ["1/2-1 tsp salt", 0.5, 1, TEASPOON, SALT],
+  ])("%s keeps both bounds", (line, quantity, quantityMax, unit, food) => {
+    expect(parse(line)).toMatchObject({ quantity, quantityMax, unit, food });
+  });
+
+  test("one amount has no upper bound", () => {
+    expect(parse("2 cups plain flour").quantityMax).toBeNull();
+  });
+
+  test("a range round-trips through the formatter", () => {
+    const parsed = parse("5–6 tbsp plain flour");
+    const row: DisplayIngredient = {
+      ...parsed,
+      unit: { name: "tablespoon", pluralName: "tablespoons", abbreviation: "tbsp", useAbbreviation: true, fraction: true, portion: false },
+      food: { name: "plain flour", pluralName: null },
+    };
+    expect(formatIngredient(row)).toBe("5–6 tbsp plain flour");
   });
 });

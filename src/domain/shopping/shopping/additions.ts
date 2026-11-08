@@ -1,7 +1,7 @@
 import { formatIngredient } from "../../recipes/ingredient";
 import type { Ingredient, Recipe, SubRecipe } from "../../recipes/recipe";
 import type { ShoppingAddition, ShoppingAdditionSource } from "./merge";
-import { subRecipeAdditions } from "./subRecipe";
+import { amountToBuy, subRecipeAdditions } from "./subRecipe";
 
 /** One part's buyable ingredients, in page order. `name` is '' for the unnamed part. */
 export type ShoppingGroup = { id: string; name: string; ingredients: Ingredient[] };
@@ -30,7 +30,7 @@ export function shoppingGroups(recipe: Pick<Recipe, "parts">): ShoppingGroup[] {
 /** One ingredient as an addition, unexpanded: its own amount, stamped with `source`. Pure. */
 export function ingredientAddition(ingredient: Ingredient, source: ShoppingAdditionSource): ShoppingAddition {
   return {
-    quantity: ingredient.quantity,
+    quantity: amountToBuy(ingredient),
     unit: ingredient.unit,
     food: ingredient.food,
     originalText: ingredientText(ingredient),

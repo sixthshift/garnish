@@ -27,7 +27,15 @@ export function reviewedIngredient(
   const base = { ...newIngredient(), originalText: commit.originalText };
   const food = resolveFood(commit.food, createdFoods);
   if (commit.textOnly || food === null) return base;
-  return { ...base, quantity: commit.quantity, fixed: commit.fixed, note: commit.note, unit: resolveUnit(commit.unit, createdUnits), food };
+  return {
+    ...base,
+    quantity: commit.quantity,
+    quantityMax: commit.quantityMax,
+    fixed: commit.fixed,
+    note: commit.note,
+    unit: resolveUnit(commit.unit, createdUnits),
+    food,
+  };
 }
 
 export function resolveFood(ref: CommitRef<FoodRow>, created: ReadonlyMap<string, FoodRow>): Food | null {
@@ -70,7 +78,14 @@ export function parsedRowPatch(
   const commit = rowCommit(row);
   const food = resolveFood(commit.food, createdFoods);
   if (commit.textOnly || food === null) return null;
-  return { quantity: commit.quantity, fixed: commit.fixed, note: commit.note, unit: resolveUnit(commit.unit, createdUnits), food };
+  return {
+    quantity: commit.quantity,
+    quantityMax: commit.quantityMax,
+    fixed: commit.fixed,
+    note: commit.note,
+    unit: resolveUnit(commit.unit, createdUnits),
+    food,
+  };
 }
 
 /**

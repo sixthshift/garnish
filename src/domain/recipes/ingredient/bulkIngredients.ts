@@ -17,6 +17,8 @@ export type ReviewRow<U, F> = {
   key: string;
   originalText: string;
   quantity: number | null;
+  /** The upper bound of a range, "5–6 tbsp"; null when the amount is one number. */
+  quantityMax: number | null;
   fixed: boolean;
   note: string;
   unitText: string;
@@ -33,6 +35,7 @@ export type RowCommit<U, F> = {
   textOnly: boolean;
   originalText: string;
   quantity: number | null;
+  quantityMax: number | null;
   fixed: boolean;
   note: string;
   unit: CommitRef<U>;
@@ -48,6 +51,7 @@ export function reviewRow<U extends UnitCandidate, F extends FoodCandidate>(pars
     key,
     originalText: parsed.originalText,
     quantity: parsed.quantity,
+    quantityMax: parsed.quantityMax,
     fixed: parsed.fixed,
     note: parsed.note,
     // Only a proposal is worth showing: a matched slot has nothing to create.
@@ -95,13 +99,14 @@ function commitRef<T>(choice: Choice<T>): CommitRef<T> {
 export function rowCommit<U, F>(row: ReviewRow<U, F>): RowCommit<U, F> {
   const food = commitRef(row.food);
   if (food === null) {
-    return { textOnly: true, originalText: row.originalText, quantity: null, fixed: false, note: "", unit: null, food: null };
+    return { textOnly: true, originalText: row.originalText, quantity: null, quantityMax: null, fixed: false, note: "", unit: null, food: null };
   }
   const unit = commitRef(row.unit);
   return {
     textOnly: false,
     originalText: row.originalText,
     quantity: row.quantity,
+    quantityMax: row.quantityMax,
     fixed: row.fixed,
     // A word read as a unit the library lacks ("large", "packet") stays on the line when no unit is made of it (decisions.md row 221).
     note: unit === null ? keptWord(row.unitText, row.note) : row.note,

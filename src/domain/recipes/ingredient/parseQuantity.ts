@@ -1,6 +1,10 @@
-/** What a line's leading amount parses to. `rest` is the line with that amount removed. */
+/**
+ * What a line's leading amount parses to. `rest` is the line with that amount removed.
+ * A range, "5–6", is `quantity` 5 and `quantityMax` 6; `quantityMax` is null otherwise.
+ */
 export type ParsedQuantity = {
   quantity: number | null;
+  quantityMax: number | null;
   fixed: boolean;
   rest: string;
 };
@@ -31,8 +35,11 @@ const GLYPH_VALUES: ReadonlyMap<string, number> = new Map([
 const RANGE = /^\s*(?:-|–|—|to\b)\s*/i;
 
 /**
- * The leading amount of an ingredient line: `{ quantity, fixed, rest }`.
- * No leading amount leaves `quantity` null, `fixed` false and `rest` unchanged.
+ * The leading amount of an ingredient line: `{ quantity, quantityMax, fixed, rest }`.
+ * A range ("5-6", "5 – 6", "5 to 6", "1½–2", "1/2-1") keeps both bounds
+ * (decisions.md row 220); one whose upper bound is not above its lower ("6-5",
+ * "2-2") keeps the first and drops the second, as before ranges were kept.
+ * No leading amount leaves `quantity` and `quantityMax` null, `fixed` false and `rest` unchanged.
  */
 export function parseQuantity(text: string): ParsedQuantity {
   const trimmed = text.trim();
@@ -41,18 +48,21 @@ export function parseQuantity(text: string): ParsedQuantity {
   const body = fixed ? trimmed.slice(1).trimStart() : trimmed;
 
   const amount = readAmount(body);
-  if (amount === null) return { quantity: null, fixed: false, rest: text };
+  if (amount === null) return { quantity: null, quantityMax: null, fixed: false, rest: text };
 
   let rest = body.slice(amount.length);
+  let quantityMax: number | null = null;
 
-  // A range keeps its low value; the upper bound is read only to drop it.
   const separator = RANGE.exec(rest);
   if (separator !== null) {
     const upper = readAmount(rest.slice(separator[0].length));
-    if (upper !== null) rest = rest.slice(separator[0].length + upper.length);
+    if (upper !== null) {
+      rest = rest.slice(separator[0].length + upper.length);
+      if (upper.value > amount.value) quantityMax = upper.value;
+    }
   }
 
-  return { quantity: amount.value, fixed, rest: rest.trim() };
+  return { quantity: amount.value, quantityMax, fixed, rest: rest.trim() };
 }
 
 /** One amount at the front of `text`, with how many characters it spans. Null when there is none. */

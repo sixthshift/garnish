@@ -63,6 +63,7 @@ const gram: Unit = {
 const ingredient = (id: string, food: typeof flour, quantity: number): Ingredient => ({
   id,
   quantity,
+  quantityMax: null,
   unit: gram,
   food,
   note: "",

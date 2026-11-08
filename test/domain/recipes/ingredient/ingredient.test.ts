@@ -210,3 +210,33 @@ describe("formatIngredient", () => {
     expect(ing).toEqual(before);
   });
 });
+
+describe("a range (decisions.md row 220)", () => {
+  const tbsp = unit({ name: "tablespoon", pluralName: "tablespoons", abbreviation: "tbsp", useAbbreviation: true });
+  test.each([
+    [{ quantity: 5, quantityMax: 6, unit: tbsp, food: flour }, "5–6 tbsp flour"],
+    [{ quantity: 600, quantityMax: 750, unit: gram, food: flour }, "600–750 g flour"],
+    [{ quantity: 1.5, quantityMax: 2, unit: cup, food: flour }, "1½–2 cups flour"],
+    [{ quantity: 0.5, quantityMax: 1, unit: cup, food: blueberry }, "½–1 cup blueberries"],
+    [{ quantity: 1, quantityMax: 2, unit: clove, food: garlic }, "1–2 cloves garlic"],
+    [{ quantity: 0.5, quantityMax: 1, unit: null, food: lemon }, "0.5–1 lemon"],
+    [{ quantity: 1, quantityMax: 2, unit: null, food: lemon, note: "juiced" }, "1–2 lemons, juiced"],
+  ])("%j reads %s", (row, line) => {
+    expect(formatIngredient(ingredient(row))).toBe(line);
+  });
+
+  test("the upper bound decides the plural: one to two limes are limes, a cup or two is cups", () => {
+    expect(inflectIngredient(ingredient({ quantity: 1, quantityMax: 2, unit: null, food: lemon }))).toMatchObject({ quantity: "1–2", food: "lemons" });
+    expect(inflectIngredient(ingredient({ quantity: 1, quantityMax: 2, unit: cup, food: flour }))).toMatchObject({ quantity: "1–2", unit: "cups" });
+  });
+
+  test("no range, or one that does not rise, reads as one amount", () => {
+    expect(formatIngredient(ingredient({ quantity: 2, quantityMax: null, unit: null, food: lemon }))).toBe("2 lemons");
+    expect(formatIngredient(ingredient({ quantity: 2, quantityMax: 2, unit: null, food: lemon }))).toBe("2 lemons");
+    expect(formatIngredient(ingredient({ quantity: 2, unit: null, food: lemon }))).toBe("2 lemons");
+  });
+
+  test("bounds that round to the same text read as one", () => {
+    expect(formatIngredient(ingredient({ quantity: 2, quantityMax: 2.001, unit: gram, food: flour }))).toBe("2 g flour");
+  });
+});

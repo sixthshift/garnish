@@ -56,9 +56,29 @@ export function parseQuantity(text: string): number | null {
   return sign * Number(s);
 }
 
-/** The text a quantity shows when not being edited: "" for null, else the plain number. Pure. */
-export function quantityText(quantity: number | null | undefined): string {
-  return quantity === null || quantity === undefined ? "" : String(quantity);
+/** Between a range's two amounts in a quantity field: "5-6", "5 – 6", "5 to 6". Not a leading "-", which is a sign. */
+const RANGE_FIELD = /^(.+?)\s*(?:-|–|—|\bto\b)\s*(.+)$/i;
+
+/**
+ * A quantity field's text as an amount that may be a range (decisions.md row
+ * 220): "5–6", "5-6", "1½ to 2" give both bounds, anything else is
+ * `parseQuantity`'s with no upper bound. Bounds the wrong way round ("6–5")
+ * are kept as typed, so the save's validation can say so. A half that does not
+ * read leaves no amount, as a field that does not read does. Pure.
+ */
+export function parseQuantityRange(text: string): { quantity: number | null; quantityMax: number | null } {
+  const range = RANGE_FIELD.exec(text.trim());
+  if (range === null) return { quantity: parseQuantity(text), quantityMax: null };
+  const quantity = parseQuantity(range[1]!);
+  const quantityMax = parseQuantity(range[2]!);
+  if (quantity === null || quantityMax === null) return { quantity: null, quantityMax: null };
+  return { quantity, quantityMax };
+}
+
+/** The text a quantity shows when not being edited: "" for null, else the plain number, or "5–6" for a range. Pure. */
+export function quantityText(quantity: number | null | undefined, quantityMax: number | null | undefined = null): string {
+  if (quantity === null || quantity === undefined) return "";
+  return quantityMax === null || quantityMax === undefined ? String(quantity) : `${quantity}–${quantityMax}`;
 }
 
 /**

@@ -36,6 +36,7 @@ const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 const ingredient = (overrides: Partial<Ingredient> = {}): Ingredient => ({
   id: "22222222-2222-4222-8222-222222222222",
   quantity: 250,
+  quantityMax: null,
   unit: gram,
   food: flour,
   note: "",
