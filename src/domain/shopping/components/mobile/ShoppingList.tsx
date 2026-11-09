@@ -4,6 +4,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { ProgressBar } from "@sixthshift/design-system/progress-bar";
 import { useState } from "react";
 import { Page } from "../../../../components/Page";
+import { ShoppingEmpty } from "../../../../components/shopping/ShoppingEmpty";
 import { pendingLabel } from "../../../../lib/outbox";
 import { groupByAisle, mealKeysOf, mealsOf, shoppingMeals, sizesByFood } from "../../shopping";
 import { AddItemForm } from "../AddItemForm";
@@ -75,10 +76,7 @@ export function ShoppingList({
       <AddItemForm onAdd={onAdd} busy={busy} />
 
       {items.length === 0 ? (
-        <div className="flex flex-col gap-1 py-8 text-center" data-testid="shopping-empty">
-          <p className="font-medium">Nothing on the list.</p>
-          <Muted as="p">Type a line above, or add a recipe's ingredients from its page.</Muted>
-        </div>
+        <ShoppingEmpty primary />
       ) : (
         <>
           {meals.length > 0 && <MealChips meals={meals} left={unticked} chosen={meal?.key ?? null} onChoose={setChosen} />}

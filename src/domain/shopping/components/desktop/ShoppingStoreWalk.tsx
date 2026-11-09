@@ -7,6 +7,7 @@ import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { cn } from "@sixthshift/design-system/utils";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Page } from "../../../../components/Page";
+import { ShoppingEmpty } from "../../../../components/shopping/ShoppingEmpty";
 import { recipeImageUrl } from "../../../../lib/images";
 import { followMedia, mediaMatches, prefersReducedMotion } from "../../../../lib/layout";
 import { pendingLabel } from "../../../../lib/outbox";
@@ -157,10 +158,7 @@ export function ShoppingStoreWalk({
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col gap-1 py-8 text-center" data-testid="shopping-empty">
-          <p className="font-medium">Nothing on the list.</p>
-          <Muted as="p">Type a line above, or add a recipe's ingredients from its page.</Muted>
-        </div>
+        <ShoppingEmpty primary />
       ) : (
         <div
           className={cn(

@@ -5,6 +5,7 @@ import { cn } from "@sixthshift/design-system/utils";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { tickShoppingItem } from "../../../../api/rpc/shopping";
+import { ShoppingEmpty } from "../../../../components/shopping/ShoppingEmpty";
 import { groupByAisle, type ShoppingItem, shoppingItemLabel } from "../../../shopping/shopping";
 import { listProgress } from "../../home";
 import { ProgressRing } from "../ProgressRing";
@@ -31,6 +32,15 @@ export function ShoppingTile({ items }: { items: readonly ShoppingItem[] | null 
       <Tile id="to-buy" title="Shopping" className="row-span-4">
         <Muted as="p">The list couldn't be read just now.</Muted>
         <OpenTheList />
+      </Tile>
+    );
+  }
+
+  // Nothing on it: the list's own empty state, with this week's plan a press away.
+  if (items.length === 0) {
+    return (
+      <Tile id="to-buy" title="Shopping" className="row-span-4">
+        <ShoppingEmpty compact className="my-auto" />
       </Tile>
     );
   }
