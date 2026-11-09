@@ -173,7 +173,7 @@ export function RecipeForm({
       {above !== undefined && <div className="px-6 pt-4">{above}</div>}
       {toolbar}
       {jsonView ? (
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">{jsonView}</div>
+        <div className="relative min-h-0 flex-1 overflow-y-auto p-6">{jsonView}</div>
       ) : (
         <EditorColumns
           draft={draft}

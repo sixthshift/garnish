@@ -24,8 +24,12 @@ function rowOf(target: EventTarget | null): string | null {
   return target.closest<HTMLElement>("[data-row-id]")?.dataset.rowId ?? null;
 }
 
-/** A column a screen tall that scrolls on its own, as the recipe page's do. */
-const COLUMN = "min-h-0 overflow-y-auto";
+/**
+ * A column a screen tall that scrolls on its own, as the recipe page's do. Relative, so an absolutely placed
+ * descendant (an `sr-only` label) is placed and clipped inside it rather than against the page, which it would
+ * stretch past the screen.
+ */
+const COLUMN = "relative min-h-0 overflow-y-auto";
 
 /**
  * The editor on a desktop, in the recipe page's own three columns (decisions.md

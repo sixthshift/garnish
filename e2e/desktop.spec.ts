@@ -97,3 +97,18 @@ test("cooking, the spread is a screen tall and no taller: a step's hidden label 
   await expect(page.getByTestId("cooking-spread")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(900);
 });
+
+test("the editor's columns are a screen tall and no taller: a facet's hidden label stays in its own column", async ({ page, open }) => {
+  // The editor's own-scroll columns, as the recipe and cooking spreads', leaked
+  // an absolutely placed `sr-only` label (a facet chip's layer name) and
+  // stretched the page past the screen. A short window puts the facets below it.
+  await open("/recipes/new?source=manual");
+  const about = page.getByTestId("about-column");
+  await about.getByRole("textbox", { name: "Name" }).fill(unique("Tall editor"));
+  await about.getByRole("button", { name: "Add course, cuisine and more" }).click();
+  await page.getByTestId("facet-sheet").getByRole("button", { name: "Weekend" }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+  await expect(about.getByTestId("facet-chips")).toBeAttached();
+  await page.setViewportSize({ width: 1440, height: 400 });
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(400);
+});
