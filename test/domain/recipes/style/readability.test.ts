@@ -1,6 +1,14 @@
 // What reads wrong in a rewrite though nothing was lost, each from the Chicken & Soft Tofu Casserole's first rewrite.
 import { describe, expect, test } from "vitest";
-import { idleSteps, imperialMeasures, noteFragments, otherKitchenWords, readingIssues, repeatedRuns } from "../../../../src/domain/recipes/style/readability";
+import {
+  idleSteps,
+  imperialMeasures,
+  noteFragments,
+  otherKitchenWords,
+  readingIssues,
+  repeatedRuns,
+  sortingHeadings,
+} from "../../../../src/domain/recipes/style/readability";
 import type { OriginalPart, RestyledPart } from "../../../../src/domain/recipes/style/restyleCheck";
 import { restyledStep } from "../../../helpers/restyle";
 
@@ -64,6 +72,9 @@ test("a step that only sets something aside is a step with nothing to do, unless
 test("an ingredient's short note pasted in after its food reads as a fragment", () => {
   const parts = rewrite([restyledStep("Soak the dried shiitake mushrooms in the water, hot.")]);
   expect(noteFragments(original, parts)).toEqual(["water, hot"]);
+  expect(noteFragments(original, rewrite([restyledStep("Soak them in the water, hot, for at least 2 hours.")], ["", "hot, to soak the mushrooms"]))).toEqual([
+    "water, hot",
+  ]);
   expect(noteFragments(original, rewrite([restyledStep("Soak the dried shiitake mushrooms in the hot water.")]))).toEqual([]);
 });
 
@@ -102,4 +113,16 @@ test("every issue is worded for the household, and a clean rewrite has none", ()
     restyledStep("Cut the tofu into 19 mm cubes and lay them on a large plate."),
   ]);
   expect(readingIssues(original, clean)).toEqual([]);
+});
+
+test("a part named for how the list was sorted, not for what it makes", () => {
+  const parts: RestyledPart[] = ["For the chicken and marinade", "For the rest of the dish", "Choose one", "Sauce", "", "To serve", "Fortune cookies"].map(
+    (name) => ({
+      name,
+      rows: [],
+      notes: [],
+      steps: [],
+    })
+  );
+  expect(sortingHeadings(parts)).toEqual(["For the chicken and marinade", "For the rest of the dish", "Choose one"]);
 });

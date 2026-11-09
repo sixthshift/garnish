@@ -6,7 +6,7 @@ import type { OriginalPart, RestyledPart } from "./restyleCheck";
 
 /** One thing that reads wrong in a rewrite, and the words it is about. */
 export type ReadingIssue = {
-  kind: "repeated" | "idle" | "fragment" | "imperial" | "word";
+  kind: "repeated" | "idle" | "fragment" | "imperial" | "word" | "heading";
   /** The rewrite's own words the issue is about, as they read there. */
   item: string;
   /** What to tell the household, one sentence. */
@@ -80,7 +80,8 @@ export function idleSteps(restyled: readonly RestyledPart[]): string[] {
 /**
  * An ingredient's note pasted into a sentence after its food, "the water,
  * hot": the note's words belong on the list, and in a step they read as a
- * fragment. Only a short note, and only right after the food's own name.
+ * fragment. Only a short first phrase of the note, and only right after the
+ * food's own name.
  * Pure.
  */
 export function noteFragments(original: readonly OriginalPart[], restyled: readonly RestyledPart[]): string[] {
@@ -90,7 +91,8 @@ export function noteFragments(original: readonly OriginalPart[], restyled: reado
   for (const part of restyled) {
     part.rows.forEach((row, i) => {
       const food = rows[row]?.food;
-      const note = (part.notes[i] ?? "").trim().replace(/[.,;]+$/, "");
+      // The note's first phrase: "hot, to soak the mushrooms" is pasted in as "the water, hot" just the same.
+      const note = (part.notes[i] ?? "").split(/[,;(]/)[0]!.trim().replace(/[.]+$/, "");
       if (!food || note === "" || note.split(/\s+/).length > 3) return;
       for (const name of [food.name, food.pluralName ?? ""].filter((n) => n.trim() !== "")) {
         const pattern = new RegExp(`\\b${escapeRegExp(name.trim())},\\s+${escapeRegExp(note)}\\b`, "i");
@@ -144,6 +146,17 @@ export function otherKitchenWords(restyled: readonly RestyledPart[]): { word: st
 }
 
 /**
+ * A part named for how the list was sorted rather than for what it makes —
+ * "For the rest of the dish", "For the chicken and marinade", "Choose one",
+ * "Extras" — which the house style lays out by what is made instead. Pure.
+ */
+const SORTING_HEADING = /^(?:for\b|(?:the )?rest of\b|choose\b|extras?\b|optional\b|other ingredients\b|everything else\b)/i;
+
+export function sortingHeadings(restyled: readonly RestyledPart[]): string[] {
+  return restyled.map((part) => part.name.trim()).filter((name) => SORTING_HEADING.test(name));
+}
+
+/**
  * Everything that reads wrong in a rewrite, each worded for the household.
  * The check over what the rewrite kept is `checkRestyle`; this is the one
  * over how it reads. Pure.
@@ -158,6 +171,11 @@ export function readingIssues(original: readonly OriginalPart[], restyled: reado
       message: `“${item}” reads as a list note pasted into a sentence.`,
     })),
     ...imperialMeasures(restyled).map((item) => ({ kind: "imperial" as const, item, message: `“${item}” is still imperial.` })),
+    ...sortingHeadings(restyled).map((item) => ({
+      kind: "heading" as const,
+      item,
+      message: `“${item}” only sorts the list: its lines belong in the parts that use them.`,
+    })),
     ...otherKitchenWords(restyled).map(({ word, ours }) => ({ kind: "word" as const, item: word, message: `“${word}” is not the household's word: ${ours}.` })),
   ];
 }

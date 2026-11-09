@@ -296,6 +296,8 @@ export function revisionProblems(check: RestyleCheck, original: readonly Origina
     fragment: "Write it as a sentence; the note belongs on the ingredient's line.",
     imperial: "",
     word: "Use the household's word.",
+    heading:
+      "Lay the recipe out by what is made, as the house style says: a part for each thing made on its own and joined in later (a marinade, a sauce), named with a short noun, the rest in the unnamed main part, and each part's lines in the order its steps use them.",
   };
   return [
     ...check.missingFacts.map(lostFact),
