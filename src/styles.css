@@ -140,11 +140,111 @@
   animation: garnish-sweep 1.2s ease-in-out infinite;
 }
 
+/* SimmerPot: an import's wait (src/domain/recipes/components/new). Steam
+   rises and thins, bubbles swell and break, the sprig bobs and the flames
+   flicker, each on its own beat. `data-boil="hard"` is the model's sort, the
+   long wait: the same motions, quicker. */
+@keyframes simmer-rise {
+  0% {
+    transform: translateY(8px) scaleX(0.9);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: translateY(-14px) scaleX(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes simmer-bubble {
+  0%,
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  65% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes simmer-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(5deg);
+  }
+}
+
+@keyframes simmer-flicker {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.7);
+  }
+}
+
+.simmer-pot {
+  --simmer: 1;
+}
+
+.simmer-pot[data-boil="hard"] {
+  --simmer: 0.5;
+}
+
+.simmer-steam {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: simmer-rise calc(2.8s * var(--simmer)) ease-out calc(var(--wisp) * 0.9s * var(--simmer)) infinite both;
+}
+
+.simmer-bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: simmer-bubble calc(2s * var(--simmer)) ease-in-out calc(var(--bubble) * 0.6s * var(--simmer)) infinite both;
+}
+
+.simmer-sprig {
+  transform-box: fill-box;
+  transform-origin: 20% 100%;
+  animation: simmer-bob calc(2.6s * var(--simmer)) ease-in-out infinite;
+}
+
+.simmer-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: simmer-flicker calc(0.9s * var(--simmer)) ease-in-out calc(var(--flame) * 0.25s) infinite;
+}
+
+/* A step of the wait's list as it lands, and what the read has found so far. */
+.simmer-in {
+  animation: garnish-appear 300ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .logo-animated,
   .sprig-stem,
-  .sprig-leaf {
+  .sprig-leaf,
+  .simmer-bubble,
+  .simmer-sprig,
+  .simmer-flame,
+  .simmer-in {
     animation: none;
+  }
+
+  .simmer-steam {
+    animation: none;
+    opacity: 0.5;
   }
 
   .nav-progress-bar {

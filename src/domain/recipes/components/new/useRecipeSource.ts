@@ -14,6 +14,33 @@ import type { RecipeSourceProps } from "./RecipeSource";
 import { checkFromRead, reviewOfUpload } from "./reviewFlows";
 import { useSentPage } from "./useSentPage";
 
+/** What the reader waits on: a page got and read, the model's sort into parts, the ingredients matched to the household's foods. */
+export type ImportPhase = "get" | "sort" | "match";
+
+/** What a read has found so far, shown while the rest of it runs. */
+export type ImportPreview = { name: string; image: string | null; host: string | null; ingredients: number; steps: number };
+
+/** A read in flight: what it was made from, where it has got to, what it has found, and when it began. */
+export type ImportProgress = { from: "page" | "text" | "file"; phase: ImportPhase; found: ImportPreview | null; startedAt: number };
+
+/** The name, picture, site and counts of a read, for the wait. Pure. */
+export function previewOf(found: ImportedRecipe): ImportPreview {
+  let host: string | null = null;
+  try {
+    host = found.url === "" ? null : new URL(found.url).hostname.replace(/^www\./, "");
+  } catch {
+    host = null;
+  }
+  const parts = found.recipe.parts;
+  return {
+    name: found.recipe.name,
+    image: found.recipe.image,
+    host,
+    ingredients: parts.reduce((total, part) => total + part.ingredients.length, 0),
+    steps: parts.reduce((total, part) => total + part.steps.length, 0),
+  };
+}
+
 /** What one read hands to Check beside the recipe itself. */
 type ReadExtras = {
   rows?: IngredientReview[];
@@ -43,6 +70,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
   // Which read is current: a read that is left (Back, a new address) must not land later.
   const readToken = useRef(0);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ImportProgress | null>(null);
 
   // Read at call time rather than closed over: an address typed on the chooser
   // is read in the same press that sets it, before a render has caught up.
@@ -107,11 +135,12 @@ export function useRecipeSource(props: RecipeSourceProps) {
    * or Back, bumps the token, and this one's result, error and busy are then
    * no longer its to set; `current` says whether it still is.
    */
-  const guarded = async (work: (current: () => boolean) => Promise<void>) => {
+  const guarded = async (from: ImportProgress["from"], work: (current: () => boolean) => Promise<void>) => {
     const token = ++readToken.current;
     const current = () => token === readToken.current;
     setBusy(true);
     setError(null);
+    setProgress({ from, phase: "get", found: null, startedAt: Date.now() });
     try {
       await work(current);
     } catch (cause) {
@@ -129,13 +158,14 @@ export function useRecipeSource(props: RecipeSourceProps) {
   const readPageAt = async (address: string, fetchPage: () => Promise<ImportedRecipe>) => {
     setUrl(address);
     urlRef.current = address;
-    await guarded(async (current) => {
+    await guarded("page", async (current) => {
       const [fetched, foods] = await Promise.all([fetchPage(), fetchFoods()]);
       if (!current()) return;
       const found = withPlacedSteps(fetched, foods);
       let shown = found;
       let note: string | null = null;
       if (shouldReadWithModel(found, aiAvailable)) {
+        setProgress((now) => now && { ...now, phase: "sort", found: previewOf(found) });
         setSorting(true);
         const skipped = new Promise<null>((resolve) => {
           skipSort.current = () => resolve(null);
@@ -149,6 +179,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
           note = sorted.note;
         }
       }
+      setProgress((now) => now && { ...now, phase: "match", found: previewOf(shown) });
       await toCheck(shown, foods, { by: "url", note });
     });
   };
@@ -189,9 +220,10 @@ export function useRecipeSource(props: RecipeSourceProps) {
       });
       return;
     }
-    await guarded(async (current) => {
+    await guarded("text", async (current) => {
       const [found, foods] = await Promise.all([loadText ? loadText(text) : importFromText({ data: { text, sourceUrl: pasteFrom ?? "" } }), fetchFoods()]);
       if (!current()) return;
+      setProgress((now) => now && { ...now, phase: "match", found: previewOf(found) });
       // Prose pasted is itself what was read; a page's markup is shown as its readable text, as an address's is.
       await toCheck(found, foods, { by: "name", sourceText: looksLikeHtml(text.trim()) ? found.pageText : text.trim() });
     });
@@ -205,12 +237,13 @@ export function useRecipeSource(props: RecipeSourceProps) {
 
   const readFile = async () => {
     if (file === null) return;
-    await guarded(async (current) => {
+    await guarded("file", async (current) => {
       const [found, foods] = await Promise.all([(loadFile ?? postImportFile)(file), fetchFoods()]);
       if (found.length === 0) throw new Error("No recipe in that file");
       // A whole export is moving house, not adding a recipe (decisions.md row 201).
       if (found.length > 1) throw new Error(`That file holds ${found.length} recipes. Bring a whole export in from Settings › Backup.`);
       if (!current()) return;
+      setProgress((now) => now && { ...now, phase: "match" });
       await chooseUploaded(found[0]!, foods);
     });
   };
@@ -251,6 +284,7 @@ export function useRecipeSource(props: RecipeSourceProps) {
     sentStatus,
     busy,
     error,
+    progress,
     sorting,
     skip,
     setUrl,

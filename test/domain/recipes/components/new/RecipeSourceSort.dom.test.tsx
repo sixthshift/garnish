@@ -77,7 +77,8 @@ test("Check is not opened until the sort lands, and then on the sorted recipe", 
   await renderInRouter(<RecipeSource {...props(model.loadText, onDraft)} />);
 
   await waitFor(() => expect(model.loadText).toHaveBeenCalledTimes(1));
-  expect(screen.getByText("Reading the recipe…")).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Sorting it into parts…");
+  expect(screen.getByTestId("import-found")).toHaveTextContent("2 ingredients · 2 steps");
   expect(screen.getByRole("button", { name: "Skip sorting into parts" })).toBeInTheDocument();
   expect(onDraft).not.toHaveBeenCalled();
 

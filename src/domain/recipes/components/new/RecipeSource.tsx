@@ -4,11 +4,13 @@ import { DISCARD_PASTE, useImportGuard } from "../editor/DiscardImport";
 import { BrowserSource } from "./BrowserSource";
 import type { SentPage } from "./bookmarklet";
 import { FileSource } from "./FileSource";
+import { ImportWait } from "./ImportWait";
 import type { ModelReader, SourceKind } from "./importSummary";
 import { PageSource } from "./PageSource";
 import { PasteSource } from "./PasteSource";
 import type { ImportedCheck } from "./reviewFlows";
 import { SourceChooser } from "./SourceChooser";
+import { StageBack } from "./SourceStage";
 import { UrlSource } from "./UrlSource";
 import { useRecipeSource } from "./useRecipeSource";
 
@@ -68,6 +70,16 @@ export function RecipeSource(props: RecipeSourceProps) {
   );
 
   function stage() {
+    // While a read runs its form steps aside for the wait. Back stays live: it lets the read go (`leaveSource`).
+    if (busy && state.progress !== null && source !== null) {
+      return (
+        <div className="flex flex-col gap-3">
+          <StageBack onBack={state.leaveSource} />
+          <ImportWait progress={state.progress} aiAvailable={aiAvailable} onSkip={state.sorting ? state.skip : undefined} />
+        </div>
+      );
+    }
+
     if (source === null) {
       return (
         <SourceChooser
