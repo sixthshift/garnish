@@ -25,7 +25,7 @@ Decision 97. Before it the page and every card were the same tone, so nothing li
 ## 2. A card contains data or is a target — never decoration
 
 - **Data container:** the ingredient list, the reference table, the plan's week (one card, its seven days rows inside it; decision 141).
-- **Target:** the four `/recipes/new` options, which take `cardVariants({ interactive: true })` and are the one thing on that page you are meant to press.
+- **Target:** the three other ways in on `/recipes/new`, tiles across a desktop and rows on a phone, which take `cardVariants({ interactive: true })`; the web address above them is a card holding a form, not a target.
 - **Not a card:** a sequence of rows inside a container; a control; a form field; an empty state.
 
 A step is the deliberate exception — one card each, so the step being cooked can be marked as one (decision 66, surface refined by 97; row 214).

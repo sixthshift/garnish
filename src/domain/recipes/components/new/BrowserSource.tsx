@@ -4,6 +4,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { useEffect, useRef, useState } from "react";
 import { bookmarklet } from "./bookmarklet";
+import { StageBack } from "./SourceStage";
 
 export type BrowserSourceProps = { onBack: () => void };
 
@@ -36,44 +37,42 @@ export function BrowserSource({ onBack }: BrowserSourceProps) {
   }, []);
 
   return (
-    <Card size="lg" className="flex flex-col gap-4" data-source-stage="browser">
-      <h2 className="text-lg font-medium">Save from your browser</h2>
-      <ol className="flex list-decimal flex-col gap-3 pl-5">
-        <li>
-          <span>Drag this to your bookmarks bar:</span>
-          <div className="mt-2">
-            <Button asChild variant="outline" intent="brand">
-              <a ref={link} href="#bookmark" data-testid="bookmarklet">
-                {/* The text becomes the bookmark's name when dragged, and a bookmarklet can have no icon of its own, so the sprig stands in for one. */}
-                <span aria-hidden="true">🌿</span> Save to Garnish
-              </a>
-            </Button>
-          </div>
-          {pressed && (
-            <Muted as="p" className="mt-2 text-sm">
-              Drag it rather than pressing it here. It works on the recipe's page, not on Garnish's.
-            </Muted>
-          )}
-        </li>
-        <li>On a recipe page, press it. Garnish opens in a new tab with the recipe, to review before anything is saved.</li>
-      </ol>
-      <Muted as="p" className="text-sm">
-        It is for sites that block the import: your browser has already got past them, so it sends the page as you see it. Allow pop-ups for the site if your
-        browser asks. With no bookmarks bar, make a bookmark of any page, edit it, and paste this as its address:
-      </Muted>
-      <Textarea
-        readOnly
-        rows={3}
-        aria-label="The bookmark's code"
-        className="font-mono text-xs"
-        value={code}
-        onFocus={(event) => event.currentTarget.select()}
-      />
-      <div>
-        <Button type="button" variant="ghost" intent="neutral" onClick={onBack}>
-          Back
-        </Button>
-      </div>
-    </Card>
+    <div className="flex flex-col gap-3" data-source-stage="browser">
+      <StageBack onBack={onBack} />
+      <Card size="lg" className="flex flex-col gap-4 mobile:p-4">
+        <h2 className="text-lg font-medium">Save from your browser</h2>
+        <ol className="flex list-decimal flex-col gap-3 pl-5">
+          <li>
+            <span>Drag this to your bookmarks bar:</span>
+            <div className="mt-2">
+              <Button asChild variant="outline" intent="brand">
+                <a ref={link} href="#bookmark" data-testid="bookmarklet">
+                  {/* The text becomes the bookmark's name when dragged, and a bookmarklet can have no icon of its own, so the sprig stands in for one. */}
+                  <span aria-hidden="true">🌿</span> Save to Garnish
+                </a>
+              </Button>
+            </div>
+            {pressed && (
+              <Muted as="p" className="mt-2 text-sm">
+                Drag it rather than pressing it here. It works on the recipe's page, not on Garnish's.
+              </Muted>
+            )}
+          </li>
+          <li>On a recipe page, press it. Garnish opens in a new tab with the recipe, to review before anything is saved.</li>
+        </ol>
+        <Muted as="p" className="text-sm">
+          It is for sites that block the import: your browser has already got past them, so it sends the page as you see it. Allow pop-ups for the site if your
+          browser asks. With no bookmarks bar, make a bookmark of any page, edit it, and paste this as its address:
+        </Muted>
+        <Textarea
+          readOnly
+          rows={3}
+          aria-label="The bookmark's code"
+          className="font-mono text-xs"
+          value={code}
+          onFocus={(event) => event.currentTarget.select()}
+        />
+      </Card>
+    </div>
   );
 }

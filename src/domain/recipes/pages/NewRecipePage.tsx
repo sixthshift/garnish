@@ -54,8 +54,7 @@ export function NewRecipePage() {
   if (imported !== null && aiAvailable && imported.stage === "style") {
     return (
       <Page>
-        <PageHeader title={imported.draft.name.trim() || "New recipe"} />
-        <ImportSteps current="Style" model />
+        <PageHeader title={imported.draft.name.trim() || "New recipe"} actions={<ImportSteps current="Style" model compact />} />
         <ImportStyle
           draft={imported.draft}
           imageUrl={imported.check.imageUrl}
@@ -128,9 +127,10 @@ export function NewRecipePage() {
     );
   }
 
+  // One centred column, the step line beside the title: the chooser and each source's form at the same width.
   return (
-    <Page>
-      <PageHeader title="New recipe" />
+    <Page width="focus">
+      <PageHeader title="New recipe" actions={<ImportSteps current="Source" model={aiAvailable} compact />} />
       <RecipeSource
         units={units}
         tags={tags}

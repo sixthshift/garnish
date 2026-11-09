@@ -4,7 +4,6 @@ import { DISCARD_PASTE, useImportGuard } from "../editor/DiscardImport";
 import { BrowserSource } from "./BrowserSource";
 import type { SentPage } from "./bookmarklet";
 import { FileSource } from "./FileSource";
-import { ImportSteps } from "./ImportSteps";
 import type { ModelReader, SourceKind } from "./importSummary";
 import { PageSource } from "./PageSource";
 import { PasteSource } from "./PasteSource";
@@ -61,12 +60,11 @@ export function RecipeSource(props: RecipeSourceProps) {
   const guard = useImportGuard(source === "paste" && text.trim() !== "", DISCARD_PASTE);
 
   return (
-    <div className="flex flex-col gap-6">
-      <ImportSteps current="Source" model={aiAvailable} />
-      {/* The chooser lays itself out across the page; a source's one form keeps to a reading width. */}
-      {source === null ? stage() : <div className="w-full max-w-3xl">{stage()}</div>}
+    <>
+      {/* The chooser and each source's form share the page's one column, so choosing a source does not move the page. */}
+      {stage()}
       {guard.dialog}
-    </div>
+    </>
   );
 
   function stage() {

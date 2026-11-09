@@ -24,10 +24,24 @@ export type SourceStageProps = {
   children: ReactNode;
 };
 
+/** Back to the chooser, above a source's card: the way out sits where a phone's thumb and a reader's eye start, and the card ends on its one action. */
+export function StageBack({ onBack, disabled }: { onBack: () => void; disabled?: boolean }) {
+  return (
+    <div>
+      <Button type="button" variant="ghost" intent="neutral" size="sm" className="-ml-2" disabled={disabled} onClick={onBack}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <path d="M15 6l-6 6 6 6" />
+        </svg>
+        Back
+      </Button>
+    </div>
+  );
+}
+
 /**
- * One source's stage: a card holding its title, its one input and what to know
- * about it, any error, then Back and the stage's one action. The three sources
- * share it so they read as one flow rather than three bare forms.
+ * One source's stage: Back above a card holding its title, its one input and
+ * what to know about it, any error, then the stage's one action. The sources
+ * share it so they read as one flow rather than bare forms.
  */
 export function SourceStage({
   stage,
@@ -49,8 +63,9 @@ export function SourceStage({
     if (canSubmit && !busy) onSubmit();
   };
   return (
-    <form data-source-stage={stage} onSubmit={submit}>
-      <Card size="lg" className="flex flex-col gap-4">
+    <form data-source-stage={stage} onSubmit={submit} className="flex flex-col gap-3">
+      <StageBack onBack={onBack} disabled={busy} />
+      <Card size="lg" className="flex flex-col gap-4 mobile:p-4">
         <h2 className="text-lg font-medium">{title}</h2>
         {children}
         {error != null && (
@@ -65,20 +80,15 @@ export function SourceStage({
             )}
           </Message>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button type="button" variant="ghost" intent="neutral" disabled={busy} onClick={onBack}>
-            Back
-          </Button>
-          <span className="flex flex-wrap items-center gap-2">
-            {onSkip !== undefined && (
-              <Button type="button" variant="ghost" intent="neutral" onClick={onSkip}>
-                Skip sorting into parts
-              </Button>
-            )}
-            <Button type="submit" variant="solid" intent="brand" disabled={busy || !canSubmit}>
-              {busy ? busyAction : action}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {onSkip !== undefined && (
+            <Button type="button" variant="ghost" intent="neutral" onClick={onSkip}>
+              Skip sorting into parts
             </Button>
-          </span>
+          )}
+          <Button type="submit" variant="solid" intent="brand" disabled={busy || !canSubmit}>
+            {busy ? busyAction : action}
+          </Button>
         </div>
       </Card>
     </form>

@@ -63,12 +63,29 @@ function otherWays(aiAvailable: boolean): { kind: SourceKind; title: string; blu
   ];
 }
 
+const chevron = (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    aria-hidden="true"
+    className="shrink-0"
+  >
+    <path d="M9 6l6 6-6 6" />
+  </svg>
+);
+
 /**
- * The first stage. A web page is how most recipes arrive, so its address
- * field is the page itself and reads at once; the other ways in sit below it
- * as rows. Paste is always offered: a page's HTML is read without a model.
- * The Save to Garnish bookmark is part of the web page's card, not a row: it
- * is another way to get the same page, not another source.
+ * The first stage, one column. A web page is how most recipes arrive, so its
+ * address field comes first and reads at once; the other ways in sit below it,
+ * three tiles across a desktop and a row each on a phone. Paste is always
+ * offered: a page's HTML is read without a model. The Save to Garnish bookmark
+ * is part of the web page's card, not a tile: it is another way to get the
+ * same page, not another source.
  */
 export function SourceChooser({ onChoose, onReadUrl, disabled, aiAvailable = false }: SourceChooserProps) {
   const [url, setUrl] = useState("");
@@ -80,12 +97,18 @@ export function SourceChooser({ onChoose, onReadUrl, disabled, aiAvailable = fal
   };
 
   return (
-    <div className="grid gap-6 desktop:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] desktop:items-start" data-source-stage="choose">
-      <Card size="lg">
-        <form className="flex flex-col gap-3" onSubmit={submit} data-source="url">
-          <label htmlFor="source-url" className="font-medium">
-            Import from a web page
-          </label>
+    <div className="flex flex-col gap-8 mobile:gap-6" data-source-stage="choose">
+      {/* A phone takes the medium card's padding, so every way in fits above the tab bar. */}
+      <Card size="lg" className="mobile:p-4">
+        <form className="flex flex-col gap-4 mobile:gap-3" onSubmit={submit} data-source="url">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="source-url" className="text-lg font-medium">
+              Import from a web page
+            </label>
+            <Muted as="p" className="text-sm">
+              The recipe is read off the page and shown to you before anything is saved. On a phone, share the page to Garnish instead.
+            </Muted>
+          </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               id="source-url"
@@ -103,32 +126,32 @@ export function SourceChooser({ onChoose, onReadUrl, disabled, aiAvailable = fal
               Import
             </Button>
           </div>
-          <Muted as="p" className="text-sm">
-            The recipe is read off the page and shown to you before anything is saved. On a phone, share the page to Garnish instead.
-          </Muted>
           {/* Not another way in: the same web page, its markup sent by the reader's browser instead of fetched here (decisions.md row 200). */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border-normal pt-3">
-            <Muted as="span" className="text-sm">
-              Site blocks the import?
-            </Muted>
-            <Button type="button" variant="outline" intent="neutral" size="sm" disabled={disabled} data-source="browser" onClick={() => onChoose("browser")}>
+          <div className="flex flex-wrap items-center gap-x-1 text-sm">
+            <Muted as="span">Site blocks the import?</Muted>
+            <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={disabled} data-source="browser" onClick={() => onChoose("browser")}>
               <span aria-hidden="true">🌿</span> Send it from your browser
+              {chevron}
             </Button>
           </div>
         </form>
       </Card>
 
-      <section className="flex flex-col gap-2" aria-label="Other ways in">
+      <section className="flex flex-col gap-3" aria-label="Other ways in">
         <SectionTitle as="h2">Other ways in</SectionTitle>
-        <ul className="flex flex-col gap-2">
+        <ul className="grid gap-3 desktop:grid-cols-3">
           {otherWays(aiAvailable).map((option) => (
             <li key={option.kind}>
               <button
                 type="button"
                 disabled={disabled}
                 data-source={option.kind}
-                // `cardVariants` with `interactive`: each row is something you press (design-language rule 2).
-                className={cn(cardVariants({ size: "sm", interactive: true }), "flex w-full items-center gap-3 text-left disabled:opacity-50")}
+                // `cardVariants` with `interactive`: each tile is something you press (design-language rule 2).
+                className={cn(
+                  cardVariants({ size: "sm", interactive: true }),
+                  "flex h-full w-full items-center gap-3 text-left disabled:opacity-50",
+                  "desktop:flex-col desktop:items-start desktop:gap-2 desktop:p-4"
+                )}
                 onClick={() => onChoose(option.kind)}
               >
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-bg-subtle text-fg-subtle">{option.icon}</span>
@@ -138,19 +161,7 @@ export function SourceChooser({ onChoose, onReadUrl, disabled, aiAvailable = fal
                     {option.blurb}
                   </Muted>
                 </span>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                  className="shrink-0 text-fg-subtle"
-                >
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
+                <span className="text-fg-subtle desktop:hidden">{chevron}</span>
               </button>
             </li>
           ))}
