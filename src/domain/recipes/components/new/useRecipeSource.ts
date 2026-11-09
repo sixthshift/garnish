@@ -17,13 +17,22 @@ import { useSentPage } from "./useSentPage";
 /** What the reader waits on: a page got and read, the model's sort into parts, the ingredients matched to the household's foods. */
 export type ImportPhase = "get" | "sort" | "match";
 
-/** What a read has found so far, shown while the rest of it runs. */
-export type ImportPreview = { name: string; image: string | null; host: string | null; ingredients: number; steps: number };
+/** What a read has found so far, shown while the rest of it runs: the recipe card fills in from its lines. */
+export type ImportPreview = {
+  name: string;
+  image: string | null;
+  host: string | null;
+  ingredients: number;
+  steps: number;
+  /** Every part's ingredient lines and steps, in order, as the page wrote them. */
+  ingredientLines: string[];
+  stepLines: string[];
+};
 
 /** A read in flight: what it was made from, where it has got to, what it has found, and when it began. */
 export type ImportProgress = { from: "page" | "text" | "file"; phase: ImportPhase; found: ImportPreview | null; startedAt: number };
 
-/** The name, picture, site and counts of a read, for the wait. Pure. */
+/** The name, picture, site, counts and lines of a read, for the wait. Pure. */
 export function previewOf(found: ImportedRecipe): ImportPreview {
   let host: string | null = null;
   try {
@@ -38,6 +47,8 @@ export function previewOf(found: ImportedRecipe): ImportPreview {
     host,
     ingredients: parts.reduce((total, part) => total + part.ingredients.length, 0),
     steps: parts.reduce((total, part) => total + part.steps.length, 0),
+    ingredientLines: parts.flatMap((part) => part.ingredients),
+    stepLines: parts.flatMap((part) => part.steps),
   };
 }
 

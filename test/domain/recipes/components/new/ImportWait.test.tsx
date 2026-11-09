@@ -32,6 +32,8 @@ describe("previewOf", () => {
       host: "recipetineats.com",
       ingredients: 3,
       steps: 3,
+      ingredientLines: ["1 cup oats", "125 g butter", "1 cup icing sugar"],
+      stepLines: ["Mix.", "Bake.", "Ice."],
     });
   });
 
@@ -52,7 +54,24 @@ describe("ImportWait", () => {
   });
 
   test("while the model sorts, the steps before it are done, the pot boils, and what was found shows with Skip", () => {
-    const found = { name: "Anzac biscuits", image: null, host: "recipetineats.com", ingredients: 8, steps: 1 };
+    const found = {
+      name: "Anzac biscuits",
+      image: null,
+      host: "recipetineats.com",
+      ingredients: 8,
+      steps: 1,
+      ingredientLines: [
+        "1 cup plain flour",
+        "1 cup rolled oats",
+        "1 cup coconut",
+        "3/4 cup brown sugar",
+        "125 g butter",
+        "2 tbsp golden syrup",
+        "1/2 tsp bicarb",
+        "2 tbsp water",
+      ],
+      stepLines: ["Mix and bake."],
+    };
     const html = renderToString(<ImportWait progress={progress({ phase: "sort", found })} aiAvailable onSkip={() => {}} />);
     expect(html).toContain("Sorting it into parts…");
     expect(html).toMatch(/data-state="done"[^>]*>.*Getting the page/);
@@ -61,10 +80,34 @@ describe("ImportWait", () => {
     expect(html).toContain("Skip sorting into parts");
   });
 
-  test("getting the page simmers, with nothing found and no Skip yet", () => {
+  test("getting the page simmers over a card of shimmering bars, with nothing found and no Skip yet", () => {
     const html = renderToString(<ImportWait progress={progress({})} aiAvailable />);
     expect(html).toContain('data-boil="low"');
+    expect(html).toContain('data-testid="import-sketch"');
+    expect(html).toContain("sketch-bar");
     expect(html).not.toContain('data-testid="import-found"');
     expect(html).not.toContain("Skip sorting into parts");
+  });
+
+  test("the found card lands its first six ingredients in turn, says how many more, and glints only while the model sorts", () => {
+    const found = {
+      name: "Anzac biscuits",
+      image: "https://example.com/a.jpg",
+      host: null,
+      ingredients: 8,
+      steps: 1,
+      ingredientLines: ["a", "b", "c", "d", "e", "f", "g", "h"].map((x) => `line ${x}`),
+      stepLines: ["Mix and bake."],
+    };
+    const sorting = renderToString(<ImportWait progress={progress({ phase: "sort", found })} aiAvailable />);
+    expect(sorting).toContain("line f");
+    expect(sorting).not.toContain("line g");
+    expect(text(sorting)).toContain("and 2 more");
+    expect(sorting).toContain("Mix and bake.");
+    expect(sorting).toContain("sketch-photo");
+    expect(sorting).toMatch(/--i:\s*7/);
+    expect(sorting).toContain("sketch-glint");
+    const matching = renderToString(<ImportWait progress={progress({ phase: "match", found })} aiAvailable />);
+    expect(matching).not.toContain("sketch-glint");
   });
 });

@@ -141,19 +141,23 @@
 }
 
 /* SimmerPot: an import's wait (src/domain/recipes/components/new). Steam
-   rises and thins, bubbles swell and break, the sprig bobs and the flames
-   flicker, each on its own beat. `data-boil="hard"` is the model's sort, the
-   long wait: the same motions, quicker. */
+   swirls up and thins, bubbles swell and break, the sprig bobs, ingredients
+   are tossed out and fall back in, sparkles twinkle, the flames flicker over
+   a breathing glow, each on its own beat (`--i`). `data-boil="hard"` is the
+   model's sort, the long wait: every motion quicker, and the pot jiggles. */
 @keyframes simmer-rise {
   0% {
-    transform: translateY(8px) scaleX(0.9);
+    transform: translate(0, 10px) scaleX(0.8);
     opacity: 0;
   }
   30% {
-    opacity: 0.75;
+    opacity: 0.8;
+  }
+  60% {
+    transform: translate(calc(var(--sway) * 3px), -6px) scaleX(1.1);
   }
   100% {
-    transform: translateY(-14px) scaleX(1.2);
+    transform: translate(calc(var(--sway) * -2px), -22px) scaleX(1.35);
     opacity: 0;
   }
 }
@@ -169,7 +173,7 @@
     opacity: 1;
   }
   65% {
-    transform: scale(1.35);
+    transform: scale(1.4);
     opacity: 0;
   }
 }
@@ -177,20 +181,83 @@
 @keyframes simmer-bob {
   0%,
   100% {
-    transform: translateY(0) rotate(-5deg);
+    transform: translateY(0) rotate(-6deg);
   }
   50% {
-    transform: translateY(-2px) rotate(5deg);
+    transform: translateY(-3px) rotate(6deg);
+  }
+}
+
+@keyframes simmer-toss {
+  0% {
+    transform: translate(0, 10px) rotate(0deg) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate(calc(var(--dx) * 0.5px), -40px) rotate(calc(var(--spin) * 200deg)) scale(1);
+  }
+  80% {
+    transform: translate(calc(var(--dx) * 1px), 2px) rotate(calc(var(--spin) * 360deg)) scale(0.9);
+    opacity: 1;
+  }
+  90%,
+  100% {
+    transform: translate(calc(var(--dx) * 1px), 12px) rotate(calc(var(--spin) * 380deg)) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes simmer-twinkle {
+  0%,
+  70%,
+  100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1) rotate(45deg);
+    opacity: 1;
   }
 }
 
 @keyframes simmer-flicker {
   0%,
   100% {
-    transform: scaleY(1);
+    transform: scaleY(1) skewX(0deg);
+  }
+  33% {
+    transform: scaleY(0.75) skewX(6deg);
+  }
+  66% {
+    transform: scaleY(1.1) skewX(-5deg);
+  }
+}
+
+@keyframes simmer-breathe {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.6;
   }
   50% {
-    transform: scaleY(0.7);
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes simmer-jiggle {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-0.6px, -0.8px) rotate(-0.6deg);
+  }
+  75% {
+    transform: translate(0.6px, -0.4px) rotate(0.6deg);
   }
 }
 
@@ -205,13 +272,13 @@
 .simmer-steam {
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: simmer-rise calc(2.8s * var(--simmer)) ease-out calc(var(--wisp) * 0.9s * var(--simmer)) infinite both;
+  animation: simmer-rise calc(3s * var(--simmer)) ease-out calc(var(--i) * 0.75s * var(--simmer)) infinite both;
 }
 
 .simmer-bubble {
   transform-box: fill-box;
   transform-origin: center;
-  animation: simmer-bubble calc(2s * var(--simmer)) ease-in-out calc(var(--bubble) * 0.6s * var(--simmer)) infinite both;
+  animation: simmer-bubble calc(2s * var(--simmer)) ease-in-out calc(var(--i) * 0.45s * var(--simmer)) infinite both;
 }
 
 .simmer-sprig {
@@ -220,13 +287,110 @@
   animation: simmer-bob calc(2.6s * var(--simmer)) ease-in-out infinite;
 }
 
+.simmer-toss {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: simmer-toss calc(2.6s * var(--simmer)) cubic-bezier(0.3, 0.6, 0.4, 1) calc(var(--i) * 0.85s * var(--simmer)) infinite both;
+}
+
+.simmer-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: simmer-twinkle calc(3s * var(--simmer)) ease-in-out calc(var(--i) * 0.55s) infinite both;
+}
+
 .simmer-flame {
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: simmer-flicker calc(0.9s * var(--simmer)) ease-in-out calc(var(--flame) * 0.25s) infinite;
+  animation: simmer-flicker calc(0.8s * var(--simmer)) ease-in-out calc(var(--i) * 0.17s) infinite;
 }
 
-/* A step of the wait's list as it lands, and what the read has found so far. */
+.simmer-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: simmer-breathe calc(2.4s * var(--simmer)) ease-in-out infinite;
+}
+
+.simmer-pot[data-boil="hard"] .simmer-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: simmer-jiggle 0.22s linear infinite;
+}
+
+/* The recipe card beside the pot (ImportWait): grey bars shimmering until
+   the page is read, then its photo and lines landing one after another
+   (`--i`), and while the model sorts, a glint passing down the lines. */
+@keyframes sketch-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes sketch-land {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes sketch-photo {
+  from {
+    transform: scale(1.08);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes sketch-glint {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10%,
+  85% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(520%);
+    opacity: 0;
+  }
+}
+
+.sketch-bar {
+  background: linear-gradient(90deg, var(--color-bg-subtle) 0%, var(--color-bg-subtle-pressed) 50%, var(--color-bg-subtle) 100%);
+  background-size: 200% 100%;
+  animation: sketch-shimmer 1.4s linear infinite;
+}
+
+.sketch-land {
+  animation: sketch-land 380ms cubic-bezier(0.2, 0.8, 0.3, 1) calc(var(--i, 0) * 110ms) both;
+}
+
+.sketch-photo {
+  animation: sketch-photo 600ms ease-out both;
+}
+
+/* A reading line: a thin bright edge in the brand's teal with a soft wash behind it. */
+.sketch-glint {
+  background:
+    linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--color-fg-brand) 9%, transparent) 70%, transparent 71%),
+    linear-gradient(180deg, transparent calc(70% - 1px), color-mix(in oklab, var(--color-fg-brand) 55%, transparent) 70%, transparent calc(70% + 1px));
+  animation: sketch-glint 2.2s ease-in-out infinite;
+}
+
+/* A step of the wait's list as it lands. */
 .simmer-in {
   animation: garnish-appear 300ms ease-out both;
 }
@@ -238,13 +402,26 @@
   .simmer-bubble,
   .simmer-sprig,
   .simmer-flame,
-  .simmer-in {
-    animation: none;
+  .simmer-glow,
+  .simmer-body,
+  .simmer-in,
+  .sketch-bar,
+  .sketch-land,
+  .sketch-photo {
+    animation: none !important;
   }
 
   .simmer-steam {
     animation: none;
     opacity: 0.5;
+  }
+
+  /* Tossed ingredients, sparkles and the glint are motion and nothing else: without it they are not drawn. */
+  .simmer-toss,
+  .simmer-sparkle,
+  .sketch-glint {
+    animation: none;
+    display: none;
   }
 
   .nav-progress-bar {
