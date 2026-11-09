@@ -41,8 +41,25 @@ function checkedParts(parts: readonly StylablePart[]): OriginalPart[] {
 /** How many times a rewrite the checks still find something in is sent back. */
 export const MAX_REVISIONS = 3;
 
-/** One time the rewrite was sent back: what it was asked to fix, and whether the revision was better and taken. */
-export type RestyleRevision = { problems: string[]; taken: boolean };
+/**
+ * How long one revision may take. Longer than the first call's minute: a
+ * revision reads the original, the house style, the rewrite and the list, and
+ * answers the whole rewrite again, and a minute cut the casserole's off.
+ */
+export const REVISE_TIMEOUT_MS = 90_000;
+
+/** How long a restyle may run in all, first call and revisions: no revision starts that could not finish inside it. */
+export const RESTYLE_BUDGET_MS = 180_000;
+
+/** The least time worth starting a revision with. */
+const LEAST_REVISION_MS = 30_000;
+
+/**
+ * One time the rewrite was sent back: what it was asked to fix, whether the
+ * revision was better and taken, and, when there was no revision to weigh,
+ * why — it failed, timed out, or there was no time left to ask.
+ */
+export type RestyleRevision = { problems: string[]; taken: boolean; failed?: string };
 
 /**
  * What `runRestyle` hands back: the rewritten parts and the check over them.
@@ -76,9 +93,10 @@ export function checkWeight(check: RestyleCheck): number {
 export async function runRestyle(
   recipe: { parts: readonly StylablePart[] },
   rules: readonly string[],
-  options: { ai: AiClient; model?: string }
+  options: { ai: AiClient; model?: string; now?: () => number }
 ): Promise<RestyleResult> {
-  const { ai, model = ai.model("restyle") } = options;
+  const { ai, model = ai.model("restyle"), now = Date.now } = options;
+  const started = now();
   if (partsWithSteps(recipe.parts).length === 0) {
     // A recipe with no steps at all has nothing to rewrite: the answer is the recipe, and the model is not called.
     const inPlace = rowsInPlace(recipe.parts);
@@ -86,9 +104,9 @@ export async function runRestyle(
     return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
   }
   const shown = promptParts(recipe.parts);
-  const ask = async (prompt: string, schemaName: string) => {
+  const ask = async (prompt: string, schemaName: string, timeoutMs = AI_TIMEOUT_MS) => {
     try {
-      return await ai.ask({ prompt, schema: RESTYLE_JSON_SCHEMA, schemaName, model, timeoutMs: AI_TIMEOUT_MS });
+      return await ai.ask({ prompt, schema: RESTYLE_JSON_SCHEMA, schemaName, model, timeoutMs });
     } catch (cause) {
       if (cause instanceof AiError) throw cause;
       throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
@@ -106,16 +124,24 @@ export async function runRestyle(
   if (problems.length === 0) return best;
 
   // The checks found something: the rewrite goes back with the list, again while each revision is better and something
-  // is still found, up to MAX_REVISIONS times. A revision that fails, or is no better, ends it with the best so far.
+  // is still found, up to MAX_REVISIONS times and inside RESTYLE_BUDGET_MS. A revision that fails, or is no better,
+  // ends it with the best so far.
   const revisions: RestyleRevision[] = [];
   while (problems.length > 0 && revisions.length < MAX_REVISIONS) {
+    const left = RESTYLE_BUDGET_MS - (now() - started);
+    if (left < LEAST_REVISION_MS) {
+      revisions.push({ problems, taken: false, failed: "No time left to send it back again." });
+      break;
+    }
     let next: AnsweredPart[];
     let revised: { parts: RestyledPart[]; check: RestyleCheck };
     try {
-      next = parseRestyleAnswer(await ask(revisePrompt({ rules, parts: shown, rewrite: answered, problems }), "restyle-revise"));
+      next = parseRestyleAnswer(
+        await ask(revisePrompt({ rules, parts: shown, rewrite: answered, problems }), "restyle-revise", Math.min(REVISE_TIMEOUT_MS, left))
+      );
       revised = read(next);
-    } catch {
-      revisions.push({ problems, taken: false });
+    } catch (cause) {
+      revisions.push({ problems, taken: false, failed: cause instanceof Error ? cause.message : String(cause) });
       break;
     }
     const better = checkWeight(revised.check) < checkWeight(best.check);

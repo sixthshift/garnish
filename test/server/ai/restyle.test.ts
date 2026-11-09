@@ -10,9 +10,19 @@ import { listStyleRules } from "../../../src/api/rpc/style";
 import recipes from "../../../src/db/models/recipe/repo";
 import type { Recipe, RecipeInput } from "../../../src/domain/recipes/recipe";
 import type { RestyledPart } from "../../../src/domain/recipes/style";
-import { AiError } from "../../../src/server/ai/client";
+import { AI_TIMEOUT_MS, AiError } from "../../../src/server/ai/client";
 import { apiProvider } from "../../../src/server/ai/provider/api";
-import { applyRestyle, createRestyledRecipe, MAX_REVISIONS, restoreSteps, restyleDraft, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
+import {
+  applyRestyle,
+  createRestyledRecipe,
+  MAX_REVISIONS,
+  RESTYLE_BUDGET_MS,
+  REVISE_TIMEOUT_MS,
+  restoreSteps,
+  restyleDraft,
+  restyleSteps,
+  runRestyle,
+} from "../../../src/server/ai/restyle";
 import {
   AnsweredLineSchema,
   AnsweredPartSchema,
@@ -513,6 +523,7 @@ describe("runRestyle", () => {
       const failed = await runRestyle(recipe, [], { ai: failing });
       expect(failed.parts[0]!.steps.map((step) => step.text)).toEqual(["Heat the oven and melt the butter.", "Bake until golden."]);
       expect(failed.revisions?.map((revision) => revision.taken)).toEqual([false]);
+      expect(failed.revisions?.[0]?.failed).toContain("took too long");
     });
 
     test("a better revision that still has something is sent back again, with what is left", async () => {
@@ -531,6 +542,24 @@ describe("runRestyle", () => {
       expect(ai.calls[2]!.prompt).toContain("Heat the oven to 180°C and melt the butter.");
       expect(result.check.ok).toBe(true);
       expect(result.revisions?.map((revision) => revision.taken)).toEqual([true, true]);
+    });
+
+    test("does not start a revision that the time left could not hold, and says so", async () => {
+      const recipe = await saved();
+      const ai = fakeAi(JSON.stringify(dropped()));
+      // The first call took almost all of the three minutes.
+      const clock = [0, RESTYLE_BUDGET_MS - 10_000];
+      const result = await runRestyle(recipe, [], { ai, now: () => clock.shift() ?? RESTYLE_BUDGET_MS });
+      expect(ai.calls).toHaveLength(1);
+      expect(result.revisions).toEqual([{ problems: expect.any(Array), taken: false, failed: "No time left to send it back again." }]);
+    });
+
+    test("gives a revision longer than the first call, but never past the time left", async () => {
+      const recipe = await saved();
+      const ai = fakeAi(async (request) => (request.schemaName === "restyle" ? JSON.stringify(dropped()) : GOOD_JSON));
+      await runRestyle(recipe, [], { ai, now: () => 0 });
+      expect(ai.calls.map((call) => call.timeoutMs)).toEqual([AI_TIMEOUT_MS, REVISE_TIMEOUT_MS]);
+      expect(REVISE_TIMEOUT_MS).toBeGreaterThan(AI_TIMEOUT_MS);
     });
 
     test("stops after three revisions, keeping the best, even while each is better", async () => {

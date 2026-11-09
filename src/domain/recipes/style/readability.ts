@@ -6,7 +6,7 @@ import type { OriginalPart, RestyledPart } from "./restyleCheck";
 
 /** One thing that reads wrong in a rewrite, and the words it is about. */
 export type ReadingIssue = {
-  kind: "repeated" | "idle" | "fragment" | "imperial" | "word" | "heading";
+  kind: "repeated" | "idle" | "fragment" | "imperial" | "word" | "heading" | "prep";
   /** The rewrite's own words the issue is about, as they read there. */
   item: string;
   /** What to tell the household, one sentence. */
@@ -108,9 +108,9 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** An imperial measure in a step or a note: inches, quarts, ounces, pounds, pints, gallons, °F. Cups and spoons are the household's own. */
+/** An imperial measure in a step or a note: inches, quarts, ounces, pounds, pints, gallons, °F, a fraction glyph's included ("¼-inch"). Cups and spoons are the household's own. */
 const IMPERIAL =
-  /\b\d[\d./½¼¾⅓⅔]*(?:\s*(?:to|-|–)\s*\d[\d./½¼¾⅓⅔]*)?[\s-]*(?:inch(?:es)?|in\.|"|qt\.?|quarts?|oz\.?|ounces?|lbs?\.?|pounds?|pints?|gallons?|fl\.?\s?oz)(?=\W|$)|\b\d+\s*°\s*F\b/gi;
+  /(?<![\w½¼¾⅓⅔.])[\d½¼¾⅓⅔][\d./½¼¾⅓⅔]*(?:\s*(?:to|-|–)\s*[\d½¼¾⅓⅔][\d./½¼¾⅓⅔]*)?[\s-]*(?:inch(?:es)?|in\.|"|qt\.?|quarts?|oz\.?|ounces?|lbs?\.?|pounds?|pints?|gallons?|fl\.?\s?oz)(?=\W|$)|\b\d+\s*°\s*F\b/gi;
 
 /** The imperial measures the rewrite's steps and notes still carry. Pure. */
 export function imperialMeasures(restyled: readonly RestyledPart[]): string[] {
@@ -156,6 +156,20 @@ export function sortingHeadings(restyled: readonly RestyledPart[]): string[] {
   return restyled.map((part) => part.name.trim()).filter((name) => SORTING_HEADING.test(name));
 }
 
+/** A step that prepares everything: what the house style's "Prepare the ingredients" is labelled. */
+const PREP_STEP = /^prepare\b/i;
+
+/**
+ * The prep step when it is not the recipe's first step — after a marinade's
+ * own step, say — with where it is: cutting comes before anything is cooked
+ * or marinated. Null when there is no prep step or it is first. Pure.
+ */
+export function latePrepStep(restyled: readonly RestyledPart[]): { title: string; n: number } | null {
+  const steps = restyled.flatMap((part) => part.steps);
+  const at = steps.findIndex((step) => PREP_STEP.test(step.title.trim()));
+  return at > 0 ? { title: steps[at]!.title.trim(), n: at + 1 } : null;
+}
+
 /**
  * Everything that reads wrong in a rewrite, each worded for the household.
  * The check over what the rewrite kept is `checkRestyle`; this is the one
@@ -171,6 +185,11 @@ export function readingIssues(original: readonly OriginalPart[], restyled: reado
       message: `“${item}” reads as a list note pasted into a sentence.`,
     })),
     ...imperialMeasures(restyled).map((item) => ({ kind: "imperial" as const, item, message: `“${item}” is still imperial.` })),
+    ...[latePrepStep(restyled)].flatMap((late) =>
+      late === null
+        ? []
+        : [{ kind: "prep" as const, item: late.title, message: `“${late.title}” is step ${late.n}: it belongs first, before anything is cooked or marinated.` }]
+    ),
     ...sortingHeadings(restyled).map((item) => ({
       kind: "heading" as const,
       item,

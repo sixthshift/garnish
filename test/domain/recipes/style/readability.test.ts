@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   idleSteps,
   imperialMeasures,
+  latePrepStep,
   noteFragments,
   otherKitchenWords,
   readingIssues,
@@ -88,6 +89,7 @@ test("an imperial measure left in a step or a note, but not a cup or a spoon", (
     ["sliced into 2-inch lengths", "hot"]
   );
   expect(imperialMeasures(parts)).toEqual(["2-qt.", "350°F", "2-inch"]);
+  expect(imperialMeasures(rewrite([], ["cut into ¼-inch thick slices", "1½ inches long"]))).toEqual(["¼-inch", "1½ inches"]);
 });
 
 test("a word from another kitchen, with the household's word for it", () => {
@@ -125,4 +127,23 @@ test("a part named for how the list was sorted, not for what it makes", () => {
     })
   );
   expect(sortingHeadings(parts)).toEqual(["For the chicken and marinade", "For the rest of the dish", "Choose one"]);
+});
+
+test("a prep step that is not the recipe's first step, wherever its part is", () => {
+  const prep = restyledStep("- Dice the chicken.", { title: "Prepare the ingredients" });
+  const marinade: RestyledPart = {
+    name: "Marinade",
+    rows: [],
+    notes: [],
+    steps: [restyledStep("Toss the chicken with the soy sauce.", { title: "Marinate the chicken" })],
+  };
+  const main: RestyledPart = { name: "", rows: [], notes: [], steps: [prep, restyledStep("Stir-fry the chicken.")] };
+  expect(latePrepStep([marinade, main])).toEqual({ title: "Prepare the ingredients", n: 2 });
+  expect(
+    latePrepStep([
+      { ...marinade, steps: [prep, ...marinade.steps] },
+      { ...main, steps: main.steps.slice(1) },
+    ])
+  ).toBeNull();
+  expect(latePrepStep([{ ...main, steps: main.steps.slice(1) }])).toBeNull();
 });

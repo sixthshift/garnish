@@ -241,7 +241,7 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     "",
     "Rules for the answer:",
     "- Answer with the recipe's parts as the house style lays them out. Where no statement asks for a different layout, answer with the same parts, in the same order, with their names copied exactly as given below.",
-    '- Where a statement lays the recipe out by what is made, decide the parts before writing any step, and do not keep the author\'s headings out of habit: a heading that only sorts the list ("For the rest of the dish", "For the marinade") becomes the thing it makes ("Marinade") or joins the main part. Each part holds the lines and the steps that make its thing. Parts come in the order the cook makes them: a part whose result a later step uses (a marinade, a sauce mixed ahead) comes before that step\'s part, and "To serve" comes last.',
+    '- Where a statement lays the recipe out by what is made, decide the parts before writing any step, and do not keep the author\'s headings out of habit: a heading that only sorts the list ("For the rest of the dish", "For the marinade") becomes the thing it makes ("Marinade") or joins the main part. Each part holds the lines and the steps that make its thing. Parts come in the order the cook makes them: a part whose result a later step uses (a marinade, a sauce mixed ahead) comes before that step\'s part, and "To serve" comes last. A step that prepares the ingredients stays the recipe\'s first step, in whichever part comes first.',
     "- Each ingredient line has a number (#1, #2, …) through the whole recipe. Put every line in exactly one part, by its number, in the order that part lists them. A part may hold lines and no steps, or steps and no lines.",
     '- Each step is three fields. `text` is the instruction. `title` is a short label, or "" for no label. `summary` is what the step says that is not an instruction on the main path — why a time is a range, what to expect, what to do if it goes wrong — in as many sentences as it takes, or "" for none.',
     '- Each entry of a part\'s `ingredients` is `line`, the line\'s number, and `note`, saying how that ingredient is prepared ("finely diced", "at room temperature") or "" for nothing. Never change a quantity, a unit or a food: you are not given them to rewrite, only the note.',
@@ -297,6 +297,7 @@ export function revisionProblems(check: RestyleCheck, original: readonly Origina
     fragment: "Write it as a sentence; the note belongs on the ingredient's line.",
     imperial: "",
     word: "Use the household's word.",
+    prep: "Make it the recipe's first step, in whichever part comes first.",
     heading:
       "Lay the recipe out by what is made, as the house style says: a part for each thing made on its own and joined in later (a marinade, a sauce), named with a short noun, the rest in the unnamed main part, and each part's lines in the order its steps use them.",
   };
