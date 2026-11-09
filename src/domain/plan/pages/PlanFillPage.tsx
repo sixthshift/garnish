@@ -155,7 +155,7 @@ export function PlanFillPage() {
       {/* The week, and beside it where the session is: the step line kept to its labels' width, as New recipe's is. */}
       <div className="-mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <Muted as="p">{weekLabel(monday)}</Muted>
-        <div className="w-64 max-w-full">
+        <div className="w-[min(16rem,calc(100vw-2rem))]">
           <Steps steps={STEPS} current={step} onStepClick={setStep} aria-label="Planning steps" />
         </div>
       </div>

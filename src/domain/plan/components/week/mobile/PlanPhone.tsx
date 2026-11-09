@@ -86,11 +86,12 @@ export function PlanPhone({
         data-testid="plan-head"
       >
         <div className="flex items-center gap-1" data-page-header="">
-          <Heading as="h1" className="min-w-0 flex-1">
+          {/* The title keeps its width; on a narrow phone the week's span gives way, wrapping, rather than the arrows sliding over the title. */}
+          <Heading as="h1" className="shrink-0 grow">
             Plan
           </Heading>
           <WeekArrow monday={addDays(monday, -7)} label="Previous week" glyph="‹" />
-          <p className="px-1 text-center font-medium text-sm" data-testid="plan-week-label">
+          <p className="min-w-0 shrink px-1 text-center font-medium text-sm" data-testid="plan-week-label">
             {weekLabel(monday)}
           </p>
           <WeekArrow monday={addDays(monday, 7)} label="Next week" glyph="›" />

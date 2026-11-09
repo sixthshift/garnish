@@ -13,5 +13,6 @@ export type ImportStep = (typeof WITH_MODEL)[number];
 export function ImportSteps({ current, model, compact = false }: { current: ImportStep; model: boolean; compact?: boolean }) {
   const steps: readonly ImportStep[] = model ? WITH_MODEL : WITHOUT_MODEL;
   const line = <Steps steps={steps.map((label) => ({ label }))} current={steps.indexOf(current)} aria-label="Import steps" data-testid="import-steps" />;
-  return compact ? <div className={model ? "w-80 max-w-full" : "w-60 max-w-full"}>{line}</div> : line;
+  // Capped at the screen's own width less the page's gutters: in the header's actions, a percentage has nothing to be a percentage of.
+  return compact ? <div className={model ? "w-[min(20rem,calc(100vw-2rem))]" : "w-[min(15rem,calc(100vw-2rem))]"}>{line}</div> : line;
 }

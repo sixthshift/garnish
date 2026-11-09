@@ -46,7 +46,8 @@ export function ImportWait({ progress, aiAvailable, onSkip }: ImportWaitProps) {
   const boil = progress.phase === "sort" || (progress.from === "text" && progress.phase === "get" && aiAvailable);
 
   return (
-    <div className="grid gap-6 desktop:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] desktop:items-center" data-testid="import-wait">
+    // One column held to the page's width on a phone (`minmax(0,1fr)`): a grid's track otherwise grows to its longest unbreakable line.
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 desktop:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] desktop:items-center" data-testid="import-wait">
       <div className="flex flex-col items-center gap-4 text-center">
         <SimmerPot boil={boil} className="w-36 desktop:w-52" />
         <div className="flex flex-col items-center gap-1">
@@ -126,7 +127,7 @@ function RecipeSketch({ found }: { found: ImportPreview | null }) {
         <div className="sketch-land flex min-w-0 flex-col" style={turn(0)}>
           <span className="font-display text-xl leading-tight">{found.name || "Untitled recipe"}</span>
           {facts.length > 0 && (
-            <Muted as="span" className="truncate text-sm">
+            <Muted as="span" className="block truncate text-sm">
               {facts.join(" · ")}
             </Muted>
           )}
