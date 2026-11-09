@@ -317,9 +317,152 @@
   animation: simmer-jiggle 0.22s linear infinite;
 }
 
+/* PenCard: a restyle's wait (src/domain/recipes/components/wait). A cycle
+   of five slots, one a line: in its slot (`--i`) a line is rubbed out, then
+   written again left to right while the pen glides along it, and a sparkle
+   pops at its end. pen-travel, the pen's path, is written from PenCard's
+   LINES; change one and the other must follow. */
+@keyframes pen-line {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  3% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  4% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  18%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes pen-done {
+  0%,
+  17%,
+  30%,
+  100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  21% {
+    transform: scale(1.2) rotate(45deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pen-scribble {
+  0%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-5deg) translateY(-1px);
+  }
+}
+
+@keyframes pen-travel {
+  0% {
+    transform: translate(35px, 55px) rotate(-8deg);
+  }
+  3% {
+    transform: translate(35px, 55px) rotate(-8deg);
+  }
+  4% {
+    transform: translate(38px, 62px) rotate(0deg);
+  }
+  18% {
+    transform: translate(162px, 62px) rotate(0deg);
+  }
+  19% {
+    transform: translate(165px, 55px) rotate(-8deg);
+  }
+  23% {
+    transform: translate(35px, 73px) rotate(-8deg);
+  }
+  24% {
+    transform: translate(38px, 80px) rotate(0deg);
+  }
+  38% {
+    transform: translate(136px, 80px) rotate(0deg);
+  }
+  39% {
+    transform: translate(139px, 73px) rotate(-8deg);
+  }
+  43% {
+    transform: translate(35px, 91px) rotate(-8deg);
+  }
+  44% {
+    transform: translate(38px, 98px) rotate(0deg);
+  }
+  58% {
+    transform: translate(168px, 98px) rotate(0deg);
+  }
+  59% {
+    transform: translate(171px, 91px) rotate(-8deg);
+  }
+  63% {
+    transform: translate(35px, 109px) rotate(-8deg);
+  }
+  64% {
+    transform: translate(38px, 116px) rotate(0deg);
+  }
+  78% {
+    transform: translate(150px, 116px) rotate(0deg);
+  }
+  79% {
+    transform: translate(153px, 109px) rotate(-8deg);
+  }
+  83% {
+    transform: translate(35px, 127px) rotate(-8deg);
+  }
+  84% {
+    transform: translate(38px, 134px) rotate(0deg);
+  }
+  98% {
+    transform: translate(114px, 134px) rotate(0deg);
+  }
+  99% {
+    transform: translate(117px, 127px) rotate(-8deg);
+  }
+  100% {
+    transform: translate(35px, 55px) rotate(-8deg);
+  }
+}
+
+.pen-line {
+  stroke-dasharray: 1;
+  animation: pen-line 5s linear calc(var(--i) * 1s) infinite both;
+}
+
+.pen-done {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pen-done 5s ease-out calc(var(--i) * 1s) infinite both;
+}
+
+.pen-travel {
+  animation: pen-travel 5s linear infinite;
+}
+
+.pen-scribble {
+  animation: pen-scribble 0.18s ease-in-out infinite;
+}
+
+.pen-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: simmer-twinkle 3.2s ease-in-out calc(var(--i) * 0.7s) infinite both;
+}
+
 /* The recipe card beside the pot (ImportWait): grey bars shimmering until
    the page is read, then its photo and lines landing one after another
-   (`--i`), and while the model sorts, a glint passing down the lines. */
+   (`--i`). */
 @keyframes sketch-shimmer {
   from {
     background-position: 100% 0;
@@ -353,15 +496,6 @@
   }
 }
 
-@keyframes sketch-glint {
-  from {
-    background-position: 0 -40%;
-  }
-  to {
-    background-position: 0 140%;
-  }
-}
-
 .sketch-bar {
   background: linear-gradient(90deg, var(--color-bg-subtle) 0%, var(--color-bg-subtle-pressed) 50%, var(--color-bg-subtle) 100%);
   background-size: 200% 100%;
@@ -374,18 +508,6 @@
 
 .sketch-photo {
   animation: sketch-photo 600ms ease-out both;
-}
-
-/* A reading line: a thin bright edge in the brand's teal with a soft wash
-   above it, laid over the whole of what is being read (`absolute inset-0`)
-   and swept from its top to its foot whatever its height. */
-.sketch-glint {
-  background-image:
-    linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--color-fg-brand) 9%, transparent) 96%, transparent 96.5%),
-    linear-gradient(180deg, transparent calc(96% - 1px), color-mix(in oklab, var(--color-fg-brand) 55%, transparent) 96.5%, transparent calc(97% + 1px));
-  background-repeat: no-repeat;
-  background-size: 100% 6rem;
-  animation: sketch-glint 2.4s ease-in-out infinite;
 }
 
 /* The restyle's answer landing: each step in turn (`--i`), once the run is
@@ -412,7 +534,9 @@
   .sketch-bar,
   .sketch-land,
   .sketch-photo,
-  .style-landed .style-step-land {
+  .style-landed .style-step-land,
+  .pen-line,
+  .pen-scribble {
     animation: none !important;
   }
 
@@ -421,10 +545,17 @@
     opacity: 0.5;
   }
 
-  /* Tossed ingredients, sparkles and the glint are motion and nothing else: without it they are not drawn. */
+  /* The card stands written, the pen resting where the last line ends. */
+  .pen-travel {
+    animation: none;
+    transform: translate(114px, 134px);
+  }
+
+  /* Tossed ingredients and sparkles are motion and nothing else: without it they are not drawn. */
   .simmer-toss,
   .simmer-sparkle,
-  .sketch-glint {
+  .pen-done,
+  .pen-sparkle {
     animation: none;
     display: none;
   }

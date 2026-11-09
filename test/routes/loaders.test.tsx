@@ -502,14 +502,16 @@ describe("/recipes/$slug/style", () => {
     expect(html).not.toContain('data-testid="style-space"');
   });
 
-  test("with a model it opens the Style space on the recipe's own steps, and Restore only once restyled", async () => {
+  test("with a model it opens the Style space on its loading screen over the recipe's steps, and Restore only once restyled", async () => {
     process.env.AI_PROVIDER = "api";
     process.env.AI_API_KEY = "secret";
     try {
       await callServerFn(createRecipe, tart);
       const html = await renderRoute("/recipes/lemon-tart/style");
       expect(html).toContain('data-testid="style-space"');
-      expect(html).toContain("Blind bake the case until golden.");
+      // The run starts on arrival: the loading screen counts the recipe's steps, which come back with the answer.
+      expect(html).toContain('data-testid="style-wait"');
+      expect(html).toContain("Rewriting 1 step");
       expect(html).not.toContain('data-testid="style-restore"');
     } finally {
       delete process.env.AI_PROVIDER;

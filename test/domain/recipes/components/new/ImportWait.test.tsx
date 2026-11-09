@@ -89,7 +89,7 @@ describe("ImportWait", () => {
     expect(html).not.toContain("Skip sorting into parts");
   });
 
-  test("the found card lands its first six ingredients in turn, says how many more, and glints only while the model sorts", () => {
+  test("the found card lands its first six ingredients in turn and says how many more", () => {
     const found = {
       name: "Anzac biscuits",
       image: "https://example.com/a.jpg",
@@ -106,8 +106,5 @@ describe("ImportWait", () => {
     expect(sorting).toContain("Mix and bake.");
     expect(sorting).toContain("sketch-photo");
     expect(sorting).toMatch(/--i:\s*7/);
-    expect(sorting).toContain("sketch-glint");
-    const matching = renderToString(<ImportWait progress={progress({ phase: "match", found })} aiAvailable />);
-    expect(matching).not.toContain("sketch-glint");
   });
 });

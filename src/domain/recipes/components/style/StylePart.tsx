@@ -166,9 +166,7 @@ export function StylePart(props: StylePartProps) {
           or put back whole.
         </Muted>
       )}
-      <Card size="sm" className="relative grid overflow-hidden p-0 desktop:grid-cols-[15rem_minmax(0,1fr)]">
-        {/* While the model rewrites, a reading line passes down the part (styles.css). */}
-        {running && <div className="sketch-glint pointer-events-none absolute inset-0" aria-hidden="true" data-testid="style-reading" />}
+      <Card size="sm" className="grid overflow-hidden p-0 desktop:grid-cols-[15rem_minmax(0,1fr)]">
         <ul className="flex flex-col gap-2.5 border-b border-border-subtle px-4 py-4 desktop:border-r desktop:border-b-0" aria-label={`${heading} ingredients`}>
           {part.ingredients.length === 0 && <li className="text-sm text-fg-subtle">No ingredients</li>}
           {part.ingredients.map((row, i) => {

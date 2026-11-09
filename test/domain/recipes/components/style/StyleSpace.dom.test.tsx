@@ -238,20 +238,20 @@ test("putting a laid-out rewrite back saves nothing", async () => {
   await waitFor(() => expect(onSave).toHaveBeenCalledWith(null));
 });
 
-test("while the run is out the pot waits over a reading line, and the answer lands step by step", async () => {
+test("while the run is out the space is a loading screen, and the recipe comes back with the answer, landing step by step", async () => {
   let answer: (value: Awaited<ReturnType<Parameters<typeof StyleSpace>[0]["run"]>>) => void = () => {};
   const run = vi.fn((_ruleIds: string[]) => new Promise<Awaited<ReturnType<Parameters<typeof StyleSpace>[0]["run"]>>>((resolve) => (answer = resolve)));
   render(<StyleSpace parts={parts} run={run} onSave={async () => {}} saveLabel="Save recipe" loadRules={async () => rules} />);
 
   await waitFor(() => expect(screen.getByTestId("style-status")).toHaveTextContent("Rewriting in your house style…"));
   expect(screen.getByTestId("style-wait")).toBeInTheDocument();
-  expect(screen.getByTestId("style-reading")).toBeInTheDocument();
+  expect(screen.queryByTestId("style-part")).not.toBeInTheDocument();
   expect(screen.getByTestId("style-space")).not.toHaveClass("style-landed");
 
   answer({ parts: rewrite, check: checkRestyle(styleOriginal(parts), rewrite) });
   await waitFor(() => expect(screen.getByTestId("style-space")).toHaveClass("style-landed"));
   expect(screen.queryByTestId("style-wait")).not.toBeInTheDocument();
-  expect(screen.queryByTestId("style-reading")).not.toBeInTheDocument();
+  expect(screen.getByTestId("style-part")).toBeInTheDocument();
   const [first, second] = screen.getAllByTestId("style-step");
   expect(first).toHaveClass("style-step-land");
   expect(first!.style.getPropertyValue("--i")).toBe("1");

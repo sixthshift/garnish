@@ -50,11 +50,10 @@ describe("ImportStyle", () => {
     );
     const html = await renderWithRouter(() => <ImportStyle draft={draft} imageUrl={null} file={null} onBack={() => {}} onCancel={() => {}} />);
     expect(html).toContain('data-testid="style-space"');
-    expect(html).toContain("Toast the peanuts.");
     expect(html).toContain("Save recipe");
     expect(html).toContain(">Back<");
     expect(html).not.toContain("Edit details");
-    // The wait opens on the house style being read, the rewrite next in its list.
+    // The wait opens on the house style being read, the rewrite of the draft's one step next in its list.
     expect(html).toContain('data-testid="style-wait"');
     expect(html).toContain("Reading your house style…");
     expect(html).toContain("Rewriting 1 step");

@@ -30,8 +30,7 @@ function stepsFor(from: ImportProgress["from"], aiAvailable: boolean): { phase: 
  * What an import shows while it runs, in place of its source's form: the pot
  * simmering over where the read has got to, and beside it the recipe card
  * filling in. Until the page is read the card is grey bars shimmering; then its
- * photo, name and lines land one after another, and while the model sorts them
- * a glint passes down the card. The pot and the steps are the page's own
+ * photo, name and lines land one after another. The pot and the steps are the page's own
  * chrome, the recipe the one card (design-language.md, rule 1). The steps are
  * the ones the browser sees land; the server's fetch and read are one, and too
  * quick to tell apart.
@@ -70,7 +69,7 @@ export function ImportWait({ progress, aiAvailable, onSkip }: ImportWaitProps) {
         )}
       </div>
 
-      <RecipeSketch found={progress.found} sorting={progress.phase === "sort"} />
+      <RecipeSketch found={progress.found} />
     </div>
   );
 }
@@ -86,7 +85,7 @@ const turn = (i: number) => ({ "--i": i }) as CSSProperties;
  * The recipe as the read has it, filling in: grey bars shimmering until there
  * is something to show, then the photo, the name and the lines in order.
  */
-function RecipeSketch({ found, sorting }: { found: ImportPreview | null; sorting: boolean }) {
+function RecipeSketch({ found }: { found: ImportPreview | null }) {
   if (found === null) {
     return (
       <Card size="lg" className="flex flex-col gap-5 mobile:p-4" aria-hidden="true" data-testid="import-sketch">
@@ -121,8 +120,7 @@ function RecipeSketch({ found, sorting }: { found: ImportPreview | null; sorting
   const moreIngredients = found.ingredientLines.length - ingredients.length;
 
   return (
-    <Card size="lg" className="relative flex flex-col gap-5 overflow-hidden text-left mobile:p-4" data-testid="import-found">
-      {sorting && <div className="sketch-glint pointer-events-none absolute inset-0" aria-hidden="true" />}
+    <Card size="lg" className="flex flex-col gap-5 text-left mobile:p-4" data-testid="import-found">
       <div className="flex items-center gap-3">
         {found.image !== null && <img src={found.image} alt="" className="sketch-photo size-16 shrink-0 rounded-lg object-cover" />}
         <div className="sketch-land flex min-w-0 flex-col" style={turn(0)}>

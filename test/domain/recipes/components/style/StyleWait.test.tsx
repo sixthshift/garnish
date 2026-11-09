@@ -1,4 +1,4 @@
-// The Style space's wait: the pot at a boil over where the run has got to.
+// The Style space's wait: a card being rewritten, over where the run has got to.
 import { renderToString } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { StyleWait } from "../../../../../src/domain/recipes/components/style/StyleWait";
@@ -11,12 +11,13 @@ describe("StyleWait", () => {
     expect(html).toMatch(/data-state="next"[^>]*>.*Rewriting 4 steps/);
   });
 
-  test("then rewriting, the guide ticked, the pot at a boil throughout, and the space's actions beside it", () => {
+  test("then rewriting, the guide ticked, a card being rewritten, and the space's skip below", () => {
     const html = renderToString(<StyleWait stage="rewrite" startedAt={Date.now()} steps={1} actions={<button type="button">Save as written</button>} />);
     expect(html).toContain("Rewriting in your house style…");
     expect(html).toMatch(/data-state="done"[^>]*>.*Reading your house style/);
     expect(html).toContain("Rewriting 1 step");
-    expect(html).toContain('data-boil="hard"');
+    expect(html).toContain("pen-card");
+    expect(html.match(/class="pen-line"/g)).toHaveLength(5);
     expect(html).toContain("Save as written");
   });
 });

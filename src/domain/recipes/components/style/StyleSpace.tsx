@@ -112,7 +112,8 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
   const firstRewriteSteps = startsOf(original.map((part, p) => answer?.parts[p]?.steps.length ?? part.steps.length));
 
   return (
-    // `style-landed` once a run is in: the rewritten steps land in turn (styles.css).
+    // While a run is out the space is its loading screen, the recipe coming back with the answer;
+    // `style-landed` then, so the rewritten steps land in turn (styles.css).
     <div className={cn("flex flex-col gap-6", !running && answer !== null && "style-landed")} data-testid="style-space">
       {running ? (
         <StyleWait
@@ -120,102 +121,106 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
           startedAt={style.startedAt}
           steps={original.reduce((total, part) => total + part.steps.length, 0)}
           actions={
-            <>
-              {skipLabel !== undefined && (
-                <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={() => void save(true)}>
-                  {skipLabel}
-                </Button>
-              )}
-              {houseStyle}
-            </>
+            skipLabel !== undefined && (
+              <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={() => void save(true)}>
+                {skipLabel}
+              </Button>
+            )
           }
         />
       ) : (
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex min-w-0 grow items-center gap-2 text-sm" aria-live="polite">
-            <span data-testid="style-status">{counts ? statusLine(counts) : ""}</span>
+        <>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex min-w-0 grow items-center gap-2 text-sm" aria-live="polite">
+              <span data-testid="style-status">{counts ? statusLine(counts) : ""}</span>
+            </div>
+            {houseStyle}
           </div>
-          {houseStyle}
-        </div>
-      )}
 
-      {style.error !== null && (
-        <Message intent="warning" title="Couldn't rewrite this in your house style" data-testid="style-error">
-          {style.error} The steps are shown as written{answer ? "" : ", and Save keeps them that way"}.
-          <div className="mt-2">
-            <Button type="button" size="sm" variant="outline" intent="neutral" onClick={style.runAgain}>
-              Try again
-            </Button>
-          </div>
-        </Message>
-      )}
-
-      {style.panelOpen && (
-        <Card size="sm" className="flex flex-col gap-3" aria-label="House style for this run">
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <SectionTitle as="h2">House style</SectionTitle>
-            <Muted as="span" className="text-sm">
-              For this run only. The defaults are under Settings, Style.
-            </Muted>
-          </div>
-          {style.rules.length === 0 ? (
-            <Muted as="p" className="text-sm">
-              No statements yet. Add some under Settings, Style.
-            </Muted>
-          ) : (
-            <ul className="grid gap-2 desktop:grid-cols-2">
-              {style.rules.map((rule) => (
-                <li key={rule.id} className="flex items-start gap-2.5">
-                  <Checkbox checked={style.selected.has(rule.id)} className="mt-0.5" aria-label={rule.text} onCheckedChange={() => style.toggleRule(rule.id)} />
-                  <button type="button" className="line-clamp-2 flex-1 text-left text-sm" onClick={() => style.toggleRule(rule.id)}>
-                    {rule.text}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {style.error !== null && (
+            <Message intent="warning" title="Couldn't rewrite this in your house style" data-testid="style-error">
+              {style.error} The steps are shown as written{answer ? "" : ", and Save keeps them that way"}.
+              <div className="mt-2">
+                <Button type="button" size="sm" variant="outline" intent="neutral" onClick={style.runAgain}>
+                  Try again
+                </Button>
+              </div>
+            </Message>
           )}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" intent="neutral" onClick={() => style.setPanelOpen(false)}>
-              Close
-            </Button>
-            <Button type="button" variant="solid" intent="brand" onClick={style.runAgain}>
-              Run again
-            </Button>
-          </div>
-        </Card>
-      )}
 
-      {style.rebuilt && answer && choices ? (
-        <StyleRebuilt
-          original={original}
-          answer={answer}
-          choices={choices}
-          editing={style.editing}
-          onChoose={style.setRecipe}
-          onEdit={style.setEditing}
-          onDraft={style.editStep}
-        />
-      ) : (
-        original.map((_, p) => (
-          <StylePart
-            // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional: the restyle pairs them by index and never reorders them.
-            key={p}
-            p={p}
-            original={original}
-            firstStep={firstSteps[p]!}
-            firstRewriteStep={firstRewriteSteps[p]!}
-            answer={answer}
-            choices={choices}
-            assembled={assembled?.[p] ?? null}
-            running={running}
-            failed={style.error !== null}
-            editing={style.editing}
-            onStep={(s, choice) => style.setStep(p, s, choice)}
-            onPart={(choice) => style.setPart(p, choice)}
-            onEdit={style.setEditing}
-            onDraft={style.editStep}
-          />
-        ))
+          {style.panelOpen && (
+            <Card size="sm" className="flex flex-col gap-3" aria-label="House style for this run">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <SectionTitle as="h2">House style</SectionTitle>
+                <Muted as="span" className="text-sm">
+                  For this run only. The defaults are under Settings, Style.
+                </Muted>
+              </div>
+              {style.rules.length === 0 ? (
+                <Muted as="p" className="text-sm">
+                  No statements yet. Add some under Settings, Style.
+                </Muted>
+              ) : (
+                <ul className="grid gap-2 desktop:grid-cols-2">
+                  {style.rules.map((rule) => (
+                    <li key={rule.id} className="flex items-start gap-2.5">
+                      <Checkbox
+                        checked={style.selected.has(rule.id)}
+                        className="mt-0.5"
+                        aria-label={rule.text}
+                        onCheckedChange={() => style.toggleRule(rule.id)}
+                      />
+                      <button type="button" className="line-clamp-2 flex-1 text-left text-sm" onClick={() => style.toggleRule(rule.id)}>
+                        {rule.text}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="ghost" intent="neutral" onClick={() => style.setPanelOpen(false)}>
+                  Close
+                </Button>
+                <Button type="button" variant="solid" intent="brand" onClick={style.runAgain}>
+                  Run again
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {style.rebuilt && answer && choices ? (
+            <StyleRebuilt
+              original={original}
+              answer={answer}
+              choices={choices}
+              editing={style.editing}
+              onChoose={style.setRecipe}
+              onEdit={style.setEditing}
+              onDraft={style.editStep}
+            />
+          ) : (
+            original.map((_, p) => (
+              <StylePart
+                // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional: the restyle pairs them by index and never reorders them.
+                key={p}
+                p={p}
+                original={original}
+                firstStep={firstSteps[p]!}
+                firstRewriteStep={firstRewriteSteps[p]!}
+                answer={answer}
+                choices={choices}
+                assembled={assembled?.[p] ?? null}
+                running={running}
+                failed={style.error !== null}
+                editing={style.editing}
+                onStep={(s, choice) => style.setStep(p, s, choice)}
+                onPart={(choice) => style.setPart(p, choice)}
+                onEdit={style.setEditing}
+                onDraft={style.editStep}
+              />
+            ))
+          )}
+        </>
       )}
 
       <div
