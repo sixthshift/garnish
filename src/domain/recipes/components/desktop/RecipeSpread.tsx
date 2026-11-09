@@ -18,8 +18,12 @@ export type RecipeSpreadProps = {
   history: ReactNode;
 };
 
-/** A column that scrolls on its own once the spread is a screen tall; under that the page scrolls them together. */
-const OWN_SCROLL = "desktop:@min-[1250px]/spread:min-h-0 desktop:@min-[1250px]/spread:overflow-y-auto";
+/**
+ * A column that scrolls on its own once the spread is a screen tall; under that the page scrolls them together.
+ * Relative, so the column is what an absolutely placed descendant (a step's `sr-only` label) is placed against
+ * and clipped by; static, it would be placed against the page and stretch the document past the screen.
+ */
+const OWN_SCROLL = "relative desktop:@min-[1250px]/spread:min-h-0 desktop:@min-[1250px]/spread:overflow-y-auto";
 
 /**
  * A desktop's recipe page as a cookbook spread (decisions.md row 207): the
@@ -90,7 +94,7 @@ export function RecipeSpread({ recipe, header, ingredients, method, notes, histo
             <div
               className={cn(
                 "flex flex-col gap-6 p-6 desktop:@min-[1250px]/spread:px-8",
-                "desktop:@min-[1800px]/spread:min-h-0 desktop:@min-[1800px]/spread:overflow-y-auto"
+                "relative desktop:@min-[1800px]/spread:min-h-0 desktop:@min-[1800px]/spread:overflow-y-auto"
               )}
               data-testid="method-column"
             >
@@ -101,7 +105,7 @@ export function RecipeSpread({ recipe, header, ingredients, method, notes, histo
               className={cn(
                 "flex flex-col gap-6 p-6",
                 "desktop:@min-[1250px]/spread:px-8",
-                "desktop:@min-[1800px]/spread:min-h-0 desktop:@min-[1800px]/spread:overflow-y-auto desktop:@min-[1800px]/spread:border-l desktop:@min-[1800px]/spread:border-border-subtle desktop:@min-[1800px]/spread:bg-bg-normal desktop:@min-[1800px]/spread:px-6"
+                "relative desktop:@min-[1800px]/spread:min-h-0 desktop:@min-[1800px]/spread:overflow-y-auto desktop:@min-[1800px]/spread:border-l desktop:@min-[1800px]/spread:border-border-subtle desktop:@min-[1800px]/spread:bg-bg-normal desktop:@min-[1800px]/spread:px-6"
               )}
               data-testid="notes-column"
             >

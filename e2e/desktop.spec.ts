@@ -62,3 +62,21 @@ test("a recipe opens beside the library in the side panel; Back closes it, and O
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   await expect(panel).toHaveCount(0);
 });
+
+test("a recipe's spread is a screen tall and no taller: a step's hidden label stays in its own column", async ({ page, open }) => {
+  // Enough steps that the method column overflows and scrolls on its own. A
+  // step's `sr-only` label is absolutely placed; with a static column it was
+  // placed against the page instead and stretched it past the screen.
+  const name = unique("Tall spread");
+  await createRecipe(page, open, {
+    name,
+    servings: 2,
+    ingredients: ["200 g plain flour"],
+    steps: Array.from(
+      { length: 12 },
+      (_, i) => `Step ${i + 1}: stir the plain flour for a good long while, then stir it again until it is ready for the next step.`
+    ),
+  });
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(900);
+});
