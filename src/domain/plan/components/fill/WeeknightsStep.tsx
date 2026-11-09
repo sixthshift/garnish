@@ -23,7 +23,6 @@ export function WeeknightsStep({
   reasons = {},
   source = "weeknight",
   weeknightsEmpty = false,
-  choosing = false,
   vegetarianNights = 0,
   onChange,
 }: {
@@ -39,8 +38,6 @@ export function WeeknightsStep({
   source?: "planner" | "weeknight";
   /** Nothing is marked Weeknight, so nothing was offered and Swap offers any recipe. */
   weeknightsEmpty?: boolean;
-  /** The planner is still choosing: the days are drawn, waiting, with nothing to press. */
-  choosing?: boolean;
   /** How many nights the household wants vegetarian: Swap keeps a vegetarian night vegetarian while the week needs it. */
   vegetarianNights?: number;
   onChange: (nights: (string | null)[]) => void;
@@ -65,15 +62,13 @@ export function WeeknightsStep({
         <h2 id="weeknights" className="text-lg font-semibold">
           Weeknights
         </h2>
-        {!choosing && (
-          <Muted as="p">
-            {source === "planner"
-              ? "Swap any you don't fancy, or take a night off."
-              : "From your weeknight recipes, the ones you haven't had for longest first. Swap any you don't fancy."}
-          </Muted>
-        )}
+        <Muted as="p">
+          {source === "planner"
+            ? "Swap any you don't fancy, or take a night off."
+            : "From your weeknight recipes, the ones you haven't had for longest first. Swap any you don't fancy."}
+        </Muted>
       </div>
-      {!choosing && source === "weeknight" && weeknightsEmpty && carried.length === 0 && (
+      {source === "weeknight" && weeknightsEmpty && carried.length === 0 && (
         <p className="rounded-lg bg-bg-subtle-hovered p-3 text-sm">
           No recipes are marked Weeknight yet, so Swap offers any recipe. Mark them on their pages, or{" "}
           <Link to="/recipes" className="font-medium text-fg-brand underline underline-offset-2">
@@ -96,8 +91,8 @@ export function WeeknightsStep({
                   <span className="block text-xs text-fg-subtle">{day}</span>
                 </span>
                 <span className="flex min-w-0 flex-[1_1_10rem] flex-col">
-                  <span className={cn("font-medium", (off || choosing) && "text-fg-subtle")}>{choosing ? "Choosing…" : (recipe?.name ?? "Night off")}</span>
-                  {recipe && !choosing && (
+                  <span className={cn("font-medium", off && "text-fg-subtle")}>{recipe?.name ?? "Night off"}</span>
+                  {recipe && (
                     <span className="text-sm text-fg-subtle">{reasons[reasonKey(date, recipe.id)] ?? reasonLabel(nightReason(recipe, carriedIds, today))}</span>
                   )}
                 </span>
@@ -108,7 +103,7 @@ export function WeeknightsStep({
                     intent="neutral"
                     size="sm"
                     aria-label={`Swap ${weekday}`}
-                    disabled={choosing || pool.length === 0}
+                    disabled={pool.length === 0}
                     onClick={() => onChange(swapNight(nights, index, pool, byId, vegetarianNights))}
                   >
                     Swap
@@ -117,8 +112,7 @@ export function WeeknightsStep({
                     variant="outline"
                     size="sm"
                     aria-label={`${weekday} night off`}
-                    pressed={off && !choosing}
-                    disabled={choosing}
+                    pressed={off}
                     onPressedChange={(pressed) => onChange(nights.map((night, i) => (i === index ? (pressed ? null : offerFor(index)) : night)))}
                   >
                     Night off

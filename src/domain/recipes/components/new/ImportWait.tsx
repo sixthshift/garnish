@@ -4,8 +4,8 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { cn } from "@sixthshift/design-system/utils";
 import type { CSSProperties } from "react";
+import { useSeconds, WaitSteps } from "../../../../components/wait/WaitSteps";
 import { SimmerPot } from "../wait/SimmerPot";
-import { useSeconds, WaitSteps } from "../wait/WaitSteps";
 import type { ImportPhase, ImportPreview, ImportProgress } from "./useRecipeSource";
 
 export type ImportWaitProps = {

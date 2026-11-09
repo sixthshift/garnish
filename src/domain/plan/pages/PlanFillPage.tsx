@@ -23,6 +23,7 @@ import {
 } from "../components/fill/fill";
 import { OtherMeals } from "../components/fill/OtherMeals";
 import { PlannerBar, type PlannerStatus } from "../components/fill/PlannerBar";
+import { PlannerWait } from "../components/fill/PlannerWait";
 import {
   readOtherMeals,
   readServings,
@@ -83,13 +84,13 @@ export function PlanFillPage() {
   const [addToList, setAddToList] = useState(true);
   const [busy, setBusy] = useState(false);
   const openDates = [...open.weeknights, ...open.weekend];
-  const [planner, setPlanner] = useState<PlannerStatus>(plannerAvailable && openDates.length > 0 ? { state: "asking" } : { state: "off" });
+  const [planner, setPlanner] = useState<PlannerStatus>(plannerAvailable && openDates.length > 0 ? { state: "asking", since: Date.now() } : { state: "off" });
 
   // The latest ask wins: an answer that arrives after a newer ask is dropped.
   const asked = useRef(0);
   const ask = async (meals: readonly Meal[], vegetarian = vegetarianNights) => {
     const run = ++asked.current;
-    setPlanner({ state: "asking" });
+    setPlanner({ state: "asking", since: Date.now() });
     try {
       const week = await proposePlanWeek({ data: { monday, dates: openDates, meals: ["dinner", ...meals], vegetarianNights: vegetarian } });
       if (run !== asked.current) return;
@@ -114,6 +115,12 @@ export function PlanFillPage() {
     started.current = true;
     void ask(otherMeals);
   }, []);
+
+  // Done waiting: the week stays as the weeknight recipes filled it, and an answer still out is dropped.
+  const skipPlanner = () => {
+    asked.current += 1;
+    setPlanner({ state: "skipped" });
+  };
 
   const entries = sessionEntries(open, nights, weekend, others);
 
@@ -145,12 +152,18 @@ export function PlanFillPage() {
           </Button>
         }
       />
-      <Muted as="p" className="-mt-4">
-        {weekLabel(monday)}
-      </Muted>
-      <Steps steps={STEPS} current={step} onStepClick={setStep} aria-label="Planning steps" />
+      {/* The week, and beside it where the session is: the step line kept to its labels' width, as New recipe's is. */}
+      <div className="-mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <Muted as="p">{weekLabel(monday)}</Muted>
+        <div className="w-64 max-w-full">
+          <Steps steps={STEPS} current={step} onStepClick={setStep} aria-label="Planning steps" />
+        </div>
+      </div>
 
-      {step === 0 && (
+      {/* While the planner chooses, the step is its loading screen; the week it chose comes after. */}
+      {step === 0 && planner.state === "asking" && <PlannerWait startedAt={planner.since} days={openDates.length} others={otherMeals} onSkip={skipPlanner} />}
+
+      {step === 0 && planner.state !== "asking" && (
         <>
           {planner.state !== "off" && (
             <PlannerBar
@@ -166,12 +179,11 @@ export function PlanFillPage() {
           )}
           <VarietyBar
             vegetarianNights={vegetarianNights}
-            disabled={planner.state === "asking"}
             onChange={(next) => {
               setVegetarianNights(next);
               writeVegetarianNights(browserStorage(), next);
               // The planner is asked again with it; the weeknights' own week is filled again by it.
-              if (planner.state === "off" || planner.state === "failed") setNights(fillNights(open.weeknights.length, carried, pool, next));
+              if (planner.state !== "done") setNights(fillNights(open.weeknights.length, carried, pool, next));
               else void ask(otherMeals, next);
             }}
           />
@@ -186,10 +198,9 @@ export function PlanFillPage() {
             reasons={reasons}
             source={planner.state === "done" ? "planner" : "weeknight"}
             weeknightsEmpty={pool.length === 0}
-            choosing={planner.state === "asking"}
             onChange={setNights}
           />
-          {planner.state !== "asking" && <OtherMeals others={others} byId={byId} reasons={reasons} onChange={setOthers} />}
+          <OtherMeals others={others} byId={byId} reasons={reasons} onChange={setOthers} />
         </>
       )}
       {step === 1 && <WeekendStep dates={open.weekend} chosen={weekend} shelf={shelf} byId={byId} reasons={reasons} onChange={setWeekend} />}
@@ -209,24 +220,27 @@ export function PlanFillPage() {
         />
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        {step > 0 ? (
-          <Button type="button" variant="outline" intent="neutral" onClick={() => setStep(step - 1)} disabled={busy}>
-            Back
-          </Button>
-        ) : (
-          <span />
-        )}
-        {step < 2 ? (
-          <Button type="button" intent="brand" onClick={() => setStep(step + 1)} disabled={planner.state === "asking"}>
-            Next
-          </Button>
-        ) : (
-          <Button type="button" intent="brand" onClick={() => void save()} disabled={busy || (entries.length === 0 && !addToList)}>
-            {entries.length === 0 ? "Done" : `Add ${entries.length} to the plan`}
-          </Button>
-        )}
-      </div>
+      {/* Back and Next wait with the planner: there is nothing to move on to until it answers or is skipped. */}
+      {!(step === 0 && planner.state === "asking") && (
+        <div className="flex items-center justify-between gap-2">
+          {step > 0 ? (
+            <Button type="button" variant="outline" intent="neutral" onClick={() => setStep(step - 1)} disabled={busy}>
+              Back
+            </Button>
+          ) : (
+            <span />
+          )}
+          {step < 2 ? (
+            <Button type="button" intent="brand" onClick={() => setStep(step + 1)} disabled={planner.state === "asking"}>
+              Next
+            </Button>
+          ) : (
+            <Button type="button" intent="brand" onClick={() => void save()} disabled={busy || (entries.length === 0 && !addToList)}>
+              {entries.length === 0 ? "Done" : `Add ${entries.length} to the plan`}
+            </Button>
+          )}
+        </div>
+      )}
     </Page>
   );
 }

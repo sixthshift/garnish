@@ -1,7 +1,7 @@
 import { Muted } from "@sixthshift/design-system/muted";
 import type { ReactNode } from "react";
+import { useSeconds, WaitSteps } from "../../../../components/wait/WaitSteps";
 import { PenCard } from "../wait/PenCard";
-import { useSeconds, WaitSteps } from "../wait/WaitSteps";
 
 export type StyleWaitProps = {
   /** The guide being read, or the model rewriting. */

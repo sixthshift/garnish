@@ -460,6 +460,65 @@
   animation: simmer-twinkle 3.2s ease-in-out calc(var(--i) * 0.7s) infinite both;
 }
 
+/* WeekFill: the planner's wait (src/domain/plan/components/fill). A cycle
+   of seven slots, one a day: in its slot (`--i`) a day's plate lifts away,
+   and a fresh one drops in, squashes as it lands, and a sparkle pops. */
+@keyframes week-plate {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  2% {
+    transform: translateY(-8px) scale(1);
+    opacity: 0;
+  }
+  3% {
+    transform: translateY(-36px) scale(1);
+    opacity: 0;
+  }
+  4% {
+    transform: translateY(-36px) scale(1);
+    opacity: 1;
+  }
+  9% {
+    transform: translateY(0) scale(1);
+  }
+  10.5% {
+    transform: translateY(0) scale(1.14, 0.84);
+  }
+  12.5%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes week-done {
+  0%,
+  8%,
+  20%,
+  100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1.2) rotate(45deg);
+    opacity: 1;
+  }
+}
+
+.week-plate {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: week-plate 4.9s cubic-bezier(0.3, 0.7, 0.4, 1) calc(var(--i) * 0.7s) infinite both;
+}
+
+.week-done {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: week-done 4.9s ease-out calc(var(--i) * 0.7s) infinite both;
+}
+
 /* The recipe card beside the pot (ImportWait): grey bars shimmering until
    the page is read, then its photo and lines landing one after another
    (`--i`). */
@@ -536,7 +595,8 @@
   .sketch-photo,
   .style-landed .style-step-land,
   .pen-line,
-  .pen-scribble {
+  .pen-scribble,
+  .week-plate {
     animation: none !important;
   }
 
@@ -555,7 +615,8 @@
   .simmer-toss,
   .simmer-sparkle,
   .pen-done,
-  .pen-sparkle {
+  .pen-sparkle,
+  .week-done {
     animation: none;
     display: none;
   }

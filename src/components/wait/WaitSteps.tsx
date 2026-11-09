@@ -1,7 +1,7 @@
 import { cn } from "@sixthshift/design-system/utils";
 import { useEffect, useState } from "react";
 
-// What every wait on a model shares (the import's and the restyle's): the
+// What every wait on a model shares (the import's, the restyle's, the planner's): the
 // seconds it has taken, and the steps it goes through, ticked as they land.
 
 /** Seconds since `startedAt`, once a second. */

@@ -5,8 +5,17 @@ import { Spinner } from "@sixthshift/design-system/spinner";
 import { type Meal, mealLabel } from "../../plan";
 import { OTHER_MEALS } from "./plannerPrefs";
 
-/** Where the model's first pass is: not configured, asking, answered, or failed with why. */
-export type PlannerStatus = { state: "off" } | { state: "asking" } | { state: "done" } | { state: "failed"; message: string };
+/**
+ * Where the model's first pass is: not configured, asking (since when, for the
+ * wait's seconds), answered, failed with why, or skipped for the weeknight
+ * recipes while it was asking.
+ */
+export type PlannerStatus =
+  | { state: "off" }
+  | { state: "asking"; since: number }
+  | { state: "done" }
+  | { state: "failed"; message: string }
+  | { state: "skipped" };
 
 /**
  * The model's part in the session, above the weeknights: what it is doing,
@@ -33,6 +42,7 @@ export function PlannerBar({
           {asking && "The planner is choosing from your guide…"}
           {status.state === "done" && "Chosen by the planner from your guide. Change anything below."}
           {status.state === "failed" && "The planner couldn't answer, so these are from your weeknight recipes."}
+          {status.state === "skipped" && "From your weeknight recipes. Ask the planner again whenever you like."}
         </p>
       </div>
       {status.state === "failed" && (

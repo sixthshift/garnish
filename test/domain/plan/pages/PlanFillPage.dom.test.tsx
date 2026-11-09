@@ -136,20 +136,37 @@ test("when the planner fails the weeknight recipes' week stands, with why", asyn
   expect(screen.getByText("Kofta")).toBeInTheDocument();
 });
 
-test("while the planner chooses the days wait in place; with nothing marked Weeknight its picks can still be swapped", async () => {
+test("while the planner chooses the step is its loading screen; with nothing marked Weeknight its picks can still be swapped", async () => {
   const plain = [summary("00000000-0000-4000-8000-000000000011", "Soup", null), summary("00000000-0000-4000-8000-000000000012", "Pie", null)];
   library.current = plain;
   let answer: (value: unknown) => void = () => {};
   fns.proposePlanWeek.mockReturnValue(new Promise((resolve) => (answer = resolve)));
   await open();
-  expect(await screen.findAllByText("Choosing…")).toHaveLength(5);
-  expect(screen.getByRole("button", { name: "Swap Mon" })).toBeDisabled();
+  expect(await screen.findByTestId("planner-wait")).toHaveTextContent("Planning your week…");
+  expect(screen.getByText(/^Choosing \d+ dinners from your guide\.$/)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Swap Mon" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
   answer({ entries: [entry("2026-11-02", plain[0]!, "a soup for Monday")], dropped: [], unfilled: [], taken: [] });
   await screen.findByText("a soup for Monday");
   expect(screen.queryByText(/No recipes are marked Weeknight yet/)).toBeNull();
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Swap Mon" }));
   expect(screen.getAllByText("Pie").length).toBeGreaterThan(0);
+});
+
+test("Use my weeknight recipes instead stops waiting on the weeknight recipes' week, and a late answer changes nothing", async () => {
+  let answer: (value: unknown) => void = () => {};
+  fns.proposePlanWeek.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+  await open();
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Use my weeknight recipes instead" }));
+  expect(screen.queryByTestId("planner-wait")).toBeNull();
+  expect(screen.getByText("From your weeknight recipes. Ask the planner again whenever you like.")).toBeInTheDocument();
+  expect(screen.getByText("Dal")).toBeInTheDocument();
+  answer({ entries: [entry("2026-11-02", kofta, "the planner's late pick")], dropped: [], unfilled: [], taken: [] });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(screen.queryByText("the planner's late pick")).toBeNull();
+  expect(screen.getByRole("button", { name: "Ask again" })).toBeEnabled();
 });
 
 test("Vegetarian nights is remembered and asks the planner again with it (decisions.md row 212)", async () => {
