@@ -2,7 +2,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { cn } from "@sixthshift/design-system/utils";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type FormEvent, useEffect, useRef, useState } from "react";
 import { adjustCooking, unadjustCooking } from "../../../../api/rpc/cooking";
 import { askCooking } from "../../../../api/rpc/cookingAssistant";
 import { messageFrom } from "../../../../lib/errors";
@@ -184,9 +184,13 @@ export function CookingAssistant({ recipeId, session, servings, nowStepId, compa
         {pending !== null && (
           <>
             <p className="max-w-[88%] self-end rounded-2xl rounded-br-sm bg-bg-brand px-3 py-2 text-sm text-fg-on-brand opacity-70">{pending}</p>
-            <Muted as="p" className="self-start text-sm" data-testid="assistant-thinking">
-              Thinking…
-            </Muted>
+            {/* The reply on its way, in the bubble it will arrive in: three dots taking turns (styles.css); the word for a screen reader. */}
+            <p className="flex items-center gap-1 self-start rounded-2xl rounded-bl-sm bg-bg-subtle px-3.5 py-3" data-testid="assistant-thinking">
+              <span className="sr-only">Thinking…</span>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="typing-dot size-1.5 rounded-full bg-fg-subtle" style={{ "--i": i } as CSSProperties} aria-hidden="true" />
+              ))}
+            </p>
           </>
         )}
       </div>

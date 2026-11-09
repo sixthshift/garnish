@@ -124,3 +124,17 @@ test("a browser that cannot listen shows no Voice", async () => {
   await renderInRouter(<CookingAssistant recipeId={RECIPE} session={session} servings={null} nowStepId={null} />);
   expect(screen.queryByRole("button", { name: /Start voice/ })).toBeNull();
 });
+
+test("while a question is out the reply waits as three dots in the assistant's bubble, Thinking… for a screen reader", async () => {
+  let reply: (value: CookSession) => void = () => {};
+  askCooking.mockReturnValue(new Promise<CookSession>((resolve) => (reply = resolve)));
+  await renderInRouter(<CookingAssistant recipeId={RECIPE} session={session} servings={null} nowStepId={null} />);
+  const user = userEvent.setup();
+  await user.type(screen.getByRole("textbox", { name: "Ask, or say what happened" }), "what's next");
+  await user.click(screen.getByRole("button", { name: "Send" }));
+  const thinking = await screen.findByTestId("assistant-thinking");
+  expect(thinking).toHaveTextContent("Thinking…");
+  expect(thinking.querySelectorAll(".typing-dot")).toHaveLength(3);
+  await act(async () => reply(answered));
+  await waitFor(() => expect(screen.queryByTestId("assistant-thinking")).toBeNull());
+});

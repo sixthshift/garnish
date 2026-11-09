@@ -519,6 +519,24 @@
   animation: week-done 4.9s ease-out calc(var(--i) * 0.7s) infinite both;
 }
 
+/* The cooking assistant's reply on its way: three dots rising in turn. */
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: typing-dot 1.1s ease-in-out calc(var(--i) * 0.15s) infinite;
+}
+
 /* The recipe card beside the pot (ImportWait): grey bars shimmering until
    the page is read, then its photo and lines landing one after another
    (`--i`). */
@@ -596,7 +614,8 @@
   .style-landed .style-step-land,
   .pen-line,
   .pen-scribble,
-  .week-plate {
+  .week-plate,
+  .typing-dot {
     animation: none !important;
   }
 
