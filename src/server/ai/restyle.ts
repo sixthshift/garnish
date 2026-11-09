@@ -13,7 +13,18 @@ import { AI_TIMEOUT_MS, type AiClient, AiError } from "./client";
 // so Start drops both from the client build: the provider brings Node-only SDKs (claude-agent-sdk) that throw in a
 // browser, and diagnostics brings bun:sqlite.
 import serverAi from "./provider";
-import { parseRestyleAnswer, partsWithSteps, placeLines, promptParts, RESTYLE_JSON_SCHEMA, restylePrompt, type StylablePart } from "./restylePrompt";
+import {
+  type AnsweredPart,
+  parseRestyleAnswer,
+  partsWithSteps,
+  placeLines,
+  promptParts,
+  RESTYLE_JSON_SCHEMA,
+  restylePrompt,
+  revisePrompt,
+  revisionProblems,
+  type StylablePart,
+} from "./restylePrompt";
 
 /**
  * The recipe's parts as the check reads them: each ingredient row carrying the
@@ -27,12 +38,29 @@ function checkedParts(parts: readonly StylablePart[]): OriginalPart[] {
   }));
 }
 
-/** What `runRestyle` hands back: the rewritten parts and the facts check over them. Nothing is written. */
-export type RestyleResult = { parts: RestyledPart[]; check: RestyleCheck };
+/**
+ * What `runRestyle` hands back: the rewritten parts and the check over them.
+ * `revision` is there when the checks found something in the first rewrite
+ * and it was sent back: what it was asked to fix, and whether the revised
+ * rewrite was better and taken. Nothing is written.
+ */
+export type RestyleResult = { parts: RestyledPart[]; check: RestyleCheck; revision?: { problems: string[]; taken: boolean } };
 
 /**
- * One restyle: one prompt, one answer, the pairing verified, the facts check
- * over it. The rules arrive as their texts rather than as ids so this stays
+ * How bad a check is, for choosing between a rewrite and its revision: each
+ * thing lost or invented outweighs everything that only reads wrong, since
+ * those change what the cook does. Pure.
+ */
+export function checkWeight(check: RestyleCheck): number {
+  const changed =
+    check.missingFacts.length + check.missingFoods.length + check.missingConditions.length + check.addedConditions.length + (check.rowMismatch ? 1 : 0);
+  return changed * 100 + check.issues.filter((issue) => issue.kind !== "imperial").length;
+}
+
+/**
+ * One restyle: one prompt, one answer, the pairing verified, the facts and
+ * reading checks over it; and when the checks found something, the rewrite
+ * sent back once with the list, the revision kept only if it is better. The rules arrive as their texts rather than as ids so this stays
  * free of the database — `restyleSteps` below does the lookups — and the
  * result is returned whether or not the check passed, because a failed check
  * is something the household is shown, not an error. Every part is sent, so
@@ -51,18 +79,34 @@ export async function runRestyle(
     const parts = recipe.parts.map((part, p) => ({ name: part.name, rows: inPlace[p]!, notes: part.ingredients.map((row) => row.note), steps: [] }));
     return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
   }
-  const prompt = restylePrompt({ rules, parts: promptParts(recipe.parts) });
+  const shown = promptParts(recipe.parts);
+  const ask = async (prompt: string, schemaName: string) => {
+    try {
+      return await ai.ask({ prompt, schema: RESTYLE_JSON_SCHEMA, schemaName, model, timeoutMs: AI_TIMEOUT_MS });
+    } catch (cause) {
+      if (cause instanceof AiError) throw cause;
+      throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
+    }
+  };
+  const original = checkedParts(recipe.parts);
+  const read = (answered: AnsweredPart[]) => {
+    const parts = placeLines(recipe.parts, answered);
+    return { parts, check: checkRestyle(original, parts) };
+  };
 
-  let content: string;
+  const answered = parseRestyleAnswer(await ask(restylePrompt({ rules, parts: shown }), "restyle"));
+  const first = read(answered);
+  const problems = revisionProblems(first.check, original);
+  if (problems.length === 0) return first;
+
+  // The checks found something: one more look, with the list. A revision that fails, or is no better, leaves the first rewrite standing.
   try {
-    content = await ai.ask({ prompt, schema: RESTYLE_JSON_SCHEMA, schemaName: "restyle", model, timeoutMs: AI_TIMEOUT_MS });
-  } catch (cause) {
-    if (cause instanceof AiError) throw cause;
-    throw new AiError("failed", `The model could not be reached: ${cause instanceof Error ? cause.message : String(cause)}`);
+    const revised = read(parseRestyleAnswer(await ask(revisePrompt({ rules, parts: shown, rewrite: answered, problems }), "restyle-revise")));
+    if (checkWeight(revised.check) < checkWeight(first.check)) return { ...revised, revision: { problems, taken: true } };
+  } catch {
+    // The first rewrite is still an answer: the household sees it with what the checks found.
   }
-
-  const parts = placeLines(recipe.parts, parseRestyleAnswer(content));
-  return { parts, check: checkRestyle(checkedParts(recipe.parts), parts) };
+  return { ...first, revision: { problems, taken: false } };
 }
 
 /**

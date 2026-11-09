@@ -1,7 +1,15 @@
 import { z } from "zod";
 import { formatIngredient } from "../../domain/recipes/ingredient";
 import type { ParsedRecipeInput } from "../../domain/recipes/recipe";
-import { type RestyledPart, rowsInPlace } from "../../domain/recipes/style";
+import {
+  type OriginalPart,
+  proseOfOriginal,
+  type ReadingIssue,
+  type RestyleCheck,
+  type RestyledPart,
+  rowsInPlace,
+  sentenceWithFact,
+} from "../../domain/recipes/style";
 import { readJsonAnswer } from "../../lib/ai";
 import { AiError } from "./client";
 
@@ -218,7 +226,7 @@ function partHeading(name: string): string {
  */
 export function restylePrompt({ rules, parts }: { rules: readonly string[]; parts: readonly PromptPart[] }): string {
   const lines: string[] = [
-    "Rewrite this recipe's method in the house style below, and answer with JSON matching the schema.",
+    "Rewrite this recipe's method in the house style below, and answer with JSON matching the schema. The rewrite must do exactly what the author's method does, in the household's voice: the same dish, the same stages in the same order, the same cues, waits and warnings, so that a cook following it gets the author's result.",
     FIXED_RESTYLE_LINE,
     "",
     "HOUSE STYLE:",
@@ -227,6 +235,9 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
   else for (const [index, rule] of rules.entries()) lines.push(`${index + 1}. ${rule}`);
 
   lines.push(
+    "",
+    "Before you write, read the original as a cook would: what the dish is, what each of the author's steps is for, every wait and when it has to start, and everything easy to lose (asides in brackets, alternatives, warnings, tips, serving notes). That is the intent the rewrite has to keep.",
+    "Before you answer, read your rewrite back against the original and against each house style statement, as an editor who did not write it, and fix what you find: a step that no longer does what the author's did, or does something the author never asked; anything from the original that is missing; an instruction said twice (in two steps, or in a step and its own supporting line), though the prep step may repeat what an ingredient's note says; a step with nothing to do in it; words that do not read as a sentence, such as an ingredient note pasted in after a food (\"the water, hot\"); a statement not applied everywhere it applies, such as an imperial measure left beside its metric one, a word from another kitchen, or a step without a label.",
     "",
     "Rules for the answer:",
     "- Answer with the recipe's parts as the house style lays them out. Where no statement asks for a different layout, answer with the same parts, in the same order, with their names copied exactly as given below.",
@@ -243,6 +254,13 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     "RECIPE:"
   );
 
+  lines.push(...recipeLines(parts));
+  return lines.join("\n");
+}
+
+/** The recipe as the prompts show it: part by part, its ingredient lines numbered through the recipe, its steps numbered within the part. Pure. */
+function recipeLines(parts: readonly PromptPart[]): string[] {
+  const lines: string[] = [];
   let line = 0;
   for (const part of parts) {
     lines.push("", partHeading(part.name), "INGREDIENTS:");
@@ -252,8 +270,82 @@ export function restylePrompt({ rules, parts }: { rules: readonly string[]; part
     if (part.steps.length === 0) lines.push("(none)");
     else for (const [index, step] of part.steps.entries()) lines.push(`${index + 1}. ${promptStep(step)}`);
   }
+  return lines;
+}
 
-  return lines.join("\n");
+/**
+ * What the checks found in a rewrite, said as what to do about it: the list
+ * the revision is asked to work through. What the rewrite lost or invented —
+ * a lost number quoted in the author's sentence, since "0.5tsp" alone was put
+ * back as "salt, ½ teaspoon" — then what reads wrong. An imperial measure is left out: the fixed line
+ * forbids converting one, so it is the import's to convert, not the
+ * revision's, and asking would only pull the two rules against each other.
+ * Pure.
+ */
+export function revisionProblems(check: RestyleCheck, original: readonly OriginalPart[]): string[] {
+  const prose = original.flatMap(proseOfOriginal);
+  const lostFact = (fact: string) => {
+    const sentence = sentenceWithFact(prose, fact);
+    return sentence === null
+      ? `The original's “${fact}” is not in the rewrite. Put it back where the author had it.`
+      : `A number from the original's “${sentence}” is not in the rewrite. Put it back, as the author wrote it, where it belongs.`;
+  };
+  const reading: Record<ReadingIssue["kind"], string> = {
+    repeated: "Say it once, where it belongs.",
+    idle: "Fold it into the step it belongs to.",
+    fragment: "Write it as a sentence; the note belongs on the ingredient's line.",
+    imperial: "",
+    word: "Use the household's word.",
+  };
+  return [
+    ...check.missingFacts.map(lostFact),
+    ...check.missingFoods.map((food) => `The rewrite no longer names ${food} in the method. Name it where the author did.`),
+    ...check.missingConditions.map((phrase) => `“${phrase}” is in the original but not in the rewrite. Put it back.`),
+    ...check.addedConditions.map((phrase) => `The rewrite adds “${phrase}”, which the original never says. Take it out.`),
+    ...(check.rowMismatch ? ["The rewrite does not place every ingredient line exactly once. Place each line once."] : []),
+    ...check.issues.filter((issue) => issue.kind !== "imperial").map((issue) => `${issue.message} ${reading[issue.kind]}`),
+  ];
+}
+
+/**
+ * The second look, asked only when the checks found something in the first
+ * rewrite: the original, the house style, the rewrite as the model answered
+ * it, and the problems, with the instruction to fix those and leave the rest
+ * alone. A fresh call reads the rewrite as something written, which the first
+ * call, writing front to back, never does; and the list is what the checks
+ * found rather than what the model thinks of its own work, which on the lab's
+ * recipes was praise. Pure.
+ */
+export function revisePrompt({
+  rules,
+  parts,
+  rewrite,
+  problems,
+}: {
+  rules: readonly string[];
+  parts: readonly PromptPart[];
+  rewrite: readonly AnsweredPart[];
+  problems: readonly string[];
+}): string {
+  return [
+    "Below are a recipe, a household's house style, and a rewrite of the recipe's method in that style. An editor has checked the rewrite against the original and found the problems listed. Answer with the corrected rewrite as JSON matching the schema, in the same shape as the rewrite below.",
+    "Fix every problem on the list. Change nothing else: keep the rewrite's parts, labels and wording wherever no problem touches them. The fix must keep the author's intent — the same stages, cues, waits and warnings — and the house style.",
+    FIXED_RESTYLE_LINE,
+    "",
+    "PROBLEMS:",
+    ...problems.map((problem) => `- ${problem}`),
+    "",
+    "HOUSE STYLE:",
+    ...(rules.length === 0 ? ["(no statements are ticked)"] : rules.map((rule, index) => `${index + 1}. ${rule}`)),
+    "",
+    "THE ORIGINAL RECIPE:",
+    ...recipeLines(parts),
+    "",
+    "THE REWRITE (ingredient lines by their number above):",
+    JSON.stringify({ parts: rewrite }),
+    "",
+    "Answer with the JSON only.",
+  ].join("\n");
 }
 
 /**

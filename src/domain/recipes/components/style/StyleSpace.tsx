@@ -178,6 +178,7 @@ export function StyleSpace({ parts, run, onSave, saveLabels, secondary, skipLabe
               choice={choices.recipe}
               findings={style.findings}
               rebuilt={style.rebuilt}
+              revised={style.revised}
               editing={style.editing}
               onChoose={style.setRecipe}
               onEdit={style.setEditing}

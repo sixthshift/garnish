@@ -131,6 +131,15 @@ describe("the prompt", () => {
     expect(prompt.indexOf(FIXED_RESTYLE_LINE)).toBeLessThan(prompt.indexOf("Imperative voice."));
   });
 
+  test("asks for the original read for its intent before writing, and the rewrite read back against it and the house style before answering", () => {
+    const prompt = restylePrompt({ rules: ["Imperative voice."], parts });
+    expect(prompt).toMatch(/exactly what the author's method does/);
+    expect(prompt).toMatch(/read the original as a cook would/);
+    expect(prompt).toMatch(/read your rewrite back against the original and against each house style statement, as an editor who did not write it/);
+    expect(prompt).toContain("the water, hot");
+    expect(prompt.indexOf("as an editor")).toBeLessThan(prompt.indexOf("RECIPE:"));
+  });
+
   test("lists the ticked statements numbered, in the order given", () => {
     const prompt = restylePrompt({ rules: ["One action per step.", "Imperative voice.", "No chatter."], parts });
     expect(prompt).toContain("1. One action per step.");
@@ -450,9 +459,52 @@ describe("runRestyle", () => {
     // The rules and the recipe both reached the prompt.
     expect(ai.calls[0]!.prompt).toContain("1. One action per step.");
     expect(ai.calls[0]!.prompt).toContain("Heat the oven to 180°C.");
+    // A rewrite the checks find nothing in is not sent back.
+    expect(ai.calls).toHaveLength(1);
     // Nothing written: the recipe still has the steps it was saved with.
     const again = await saved();
     expect(again.parts[0]!.steps.map((step) => step.text)).toEqual(doc().parts[0]!.steps!.map((step) => step.text));
+  });
+
+  describe("a rewrite the checks find something in is sent back once", () => {
+    const dropped = () =>
+      answer([
+        restyledPart("", ["Heat the oven and melt the butter.", "Bake until golden."], [0, 1]),
+        restyledPart("Golden syrup mixture", ["Warm the golden syrup for 2 minutes."], [2]),
+      ]);
+
+    test("with what it lost, the original, the house style and the rewrite; a better revision is taken", async () => {
+      const recipe = await saved();
+      const ai = fakeAi(async (request) => (request.schemaName === "restyle" ? JSON.stringify(dropped()) : GOOD_JSON));
+      const result = await runRestyle(recipe, ["One action per step."], { ai });
+      expect(ai.calls.map((call) => call.schemaName)).toEqual(["restyle", "restyle-revise"]);
+      const revise = ai.calls[1]!.prompt;
+      expect(revise).toContain(
+        "- A number from the original's “Heat the oven to 180°C.” is not in the rewrite. Put it back, as the author wrote it, where it belongs."
+      );
+      expect(revise).toContain("1. One action per step.");
+      expect(revise).toContain("Heat the oven to 180°C.");
+      expect(revise).toContain("Bake until golden.");
+      expect(revise).toMatch(/Change nothing else/);
+      expect(result.check.ok).toBe(true);
+      expect(result.parts[0]!.steps).toEqual(GOOD.parts[0]!.steps);
+      expect(result.revision).toEqual({ problems: expect.arrayContaining([expect.stringContaining("Bake for 15 minutes until golden.")]), taken: true });
+    });
+
+    test("a revision that is no better, or that fails, leaves the first rewrite standing", async () => {
+      const recipe = await saved();
+      const same = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(dropped())) });
+      expect(same.check.missingFacts).toEqual(["180c", "15min"]);
+      expect(same.revision?.taken).toBe(false);
+
+      const failing = fakeAi(async (request) => {
+        if (request.schemaName === "restyle") return JSON.stringify(dropped());
+        throw new Error("The model took too long to answer.");
+      });
+      const failed = await runRestyle(recipe, [], { ai: failing });
+      expect(failed.parts[0]!.steps.map((step) => step.text)).toEqual(["Heat the oven and melt the butter.", "Bake until golden."]);
+      expect(failed.revision?.taken).toBe(false);
+    });
   });
 
   test("a dropped number is reported rather than thrown", async () => {

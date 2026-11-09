@@ -18,6 +18,7 @@ const passing: RestyleCheck = {
   addedNumbers: [],
   droppedWords: [],
   rowMismatch: false,
+  issues: [],
   parts: [],
 };
 const okPart = { ...passing, name: "", ok: true };

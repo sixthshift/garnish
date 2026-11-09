@@ -2,6 +2,7 @@
 
 import { addedConditions, conditionsOf, contentWordsOf, droppedWords, missingConditions } from "./conservation";
 import { factsOf, foodsMentioned, pairedImperial } from "./facts";
+import { type ReadingIssue, readingIssues } from "./readability";
 
 /** A part as this check reads it: enough of the saved `Part` and the editor's `DraftPart` to serve both. */
 export type OriginalPart = {
@@ -167,6 +168,8 @@ export type RestyleCheck = {
   addedNumbers: string[];
   droppedWords: string[];
   rowMismatch: boolean;
+  /** What reads wrong though nothing was lost (`readingIssues`). Reported, never failed. */
+  issues: ReadingIssue[];
   parts: PartRestyleCheck[];
 };
 
@@ -268,6 +271,7 @@ export function checkRestyle(original: readonly OriginalPart[], restyled: readon
     addedNumbers: parts.flatMap((part) => part.addedNumbers),
     droppedWords: parts.flatMap((part) => part.droppedWords),
     rowMismatch: parts.some((part) => part.rowMismatch),
+    issues: readingIssues(original, restyled),
     parts,
   };
 }

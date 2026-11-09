@@ -257,3 +257,41 @@ test("while the run is out the space is a loading screen, and the recipe comes b
   expect(first!.style.getPropertyValue("--i")).toBe("1");
   expect(second!.style.getPropertyValue("--i")).toBe("2");
 });
+
+test("a revised rewrite says so, and what reads wrong clears once the step is retyped", async () => {
+  const idle: RestyledPart[] = [
+    {
+      ...rewrite[0]!,
+      steps: [
+        rewrite[0]!.steps[0]!,
+        restyledStep("Add the garlic and cook for a minute or two until fragrant."),
+        restyledStep("Set the wok aside while preparing the sauce."),
+      ],
+    },
+  ];
+  const withThird = [{ ...parts[0]!, steps: [...parts[0]!.steps, { title: "", text: "Set the wok aside while preparing the sauce.", summary: "" }] }];
+  const user = userEvent.setup();
+  render(
+    <StyleSpace
+      parts={withThird}
+      run={async () => ({
+        parts: idle,
+        check: checkRestyle(styleOriginal(withThird), idle),
+        revision: { problems: ["One", "Two"], taken: true },
+      })}
+      onSave={async () => {}}
+      saveLabels={LABELS}
+      loadRules={async () => rules}
+    />
+  );
+  const house = await screen.findByTestId("style-rewrite");
+  expect(within(house).getByTestId("style-rewrite-notes")).toHaveTextContent("Checked, and rewritten again to fix 2 problems.");
+  expect(within(house).getByTestId("style-finding")).toHaveTextContent("“Set the wok aside while preparing the sauce.” is a step with nothing to do.");
+
+  await user.click(within(house).getByRole("button", { name: "Edit step 3" }));
+  const field = screen.getByLabelText("Step 3 text");
+  await user.clear(field);
+  await user.type(field, "Set the wok aside to cool, 5 minutes.");
+  await user.click(screen.getByRole("button", { name: "Done" }));
+  expect(within(house).queryByTestId("style-finding")).not.toBeInTheDocument();
+});

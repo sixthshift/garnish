@@ -12,8 +12,12 @@ import {
   rowsInPlace,
 } from "../../style";
 
-/** What the restyle answers: the rewritten parts and the check over them, as `restyleSteps` and `restyleDraft` return it. */
-export type StyleAnswer = { parts: RestyledPart[]; check: RestyleCheck };
+/**
+ * What the restyle answers: the rewritten parts and the check over them, as
+ * `restyleSteps` and `restyleDraft` return it, and whether the first rewrite
+ * was sent back with what the checks found and the revision taken.
+ */
+export type StyleAnswer = { parts: RestyledPart[]; check: RestyleCheck; revision?: { problems: readonly string[]; taken: boolean } };
 
 /** Which version of the recipe the household is saving. */
 export type Choice = "rewrite" | "original";
@@ -55,7 +59,7 @@ export function asWritten(original: readonly OriginalPart[]): RestyledPart[] {
 }
 
 /** One thing the check found, worded for the step or part it is shown on. */
-export type Finding = { kind: "condition" | "added" | "fact" | "food" | "rows"; item: string; message: string };
+export type Finding = { kind: "condition" | "added" | "fact" | "food" | "rows" | "reading"; item: string; message: string };
 
 /** The key of step `step` of part `part` in `StyleChoices`. */
 export function stepKey(part: number, step: number): string {
@@ -100,17 +104,22 @@ export function findingMessage(kind: Finding["kind"], item: string): string {
       return `The rewrite no longer names ${item}.`;
     case "rows":
       return "The rewrite’s notes do not line up with this part’s ingredients.";
+    case "reading":
+      return item;
   }
 }
 
 /**
- * What the check found in the rewrite, worded for the house style's column:
- * over the whole recipe when the rewrite laid it out afresh, part by part
- * when it kept the layout. Pure.
+ * What the checks found in the rewrite, worded for the house style's column:
+ * what it lost or invented, over the whole recipe when the rewrite laid it
+ * out afresh and part by part when it kept the layout; then what reads wrong
+ * in it, from `current` — the check over the rewrite as it now stands, a
+ * retyped step included, so fixing one clears it — or the answer's own. Pure.
  */
-export function answerFindings(original: readonly OriginalPart[], answer: StyleAnswer): Finding[] {
-  if (isRebuilt(original, answer)) return checkFindings(answer.check.parts[0]);
-  return original.flatMap((_, p) => checkFindings(answer.check.parts[p]));
+export function answerFindings(original: readonly OriginalPart[], answer: StyleAnswer, current: RestyleCheck = answer.check): Finding[] {
+  const kept = isRebuilt(original, answer) ? checkFindings(answer.check.parts[0]) : original.flatMap((_, p) => checkFindings(answer.check.parts[p]));
+  const reading = (current.issues ?? []).map((issue) => ({ kind: "reading" as const, item: issue.message, message: issue.message }));
+  return [...kept, ...reading];
 }
 
 function checkFindings(check: PartRestyleCheck | undefined): Finding[] {

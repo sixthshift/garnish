@@ -114,8 +114,10 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     rebuilt: answer !== null && isRebuilt(original, answer),
     author,
     rewrite,
-    /** What the check found in the rewrite. */
-    findings: answer ? answerFindings(original, answer) : [],
+    /** How many problems the checks found in the first rewrite that a revision was taken to fix; 0 when none was. */
+    revised: answer?.revision?.taken ? answer.revision.problems.length : 0,
+    /** What the checks found in the rewrite as it now stands. */
+    findings: answer ? answerFindings(original, answer, rewrite ? checkChoices(original, rewrite) : answer.check) : [],
     /** Whether the rewrite says anything the author's recipe does not. */
     changed: rewrite !== null && changesAnything(original, rewrite),
     rules,

@@ -137,6 +137,11 @@ export function versionLine(steps: number, findings: number): string {
   return findings === 0 ? counted : `${counted} · ${findings} to check`;
 }
 
+/** "Checked, and rewritten again to fix 3 problems." Pure. */
+export function revisedLine(problems: number): string {
+  return `Checked, and rewritten again to fix ${problems} ${problems === 1 ? "problem" : "problems"}.`;
+}
+
 export type StyleCompareProps = {
   author: readonly RestyledPart[];
   rewrite: readonly RestyledPart[];
@@ -145,6 +150,8 @@ export type StyleCompareProps = {
   findings: readonly Finding[];
   /** Whether the rewrite laid the recipe out in new parts. */
   rebuilt: boolean;
+  /** How many problems the checks found in the first rewrite that a revision was taken to fix. */
+  revised?: number;
   editing: string | null;
   onChoose: (choice: Choice) => void;
   onEdit: (key: string | null) => void;
@@ -159,7 +166,7 @@ export type StyleCompareProps = {
  * house style's version; it never chooses for the household.
  */
 export function StyleCompare(props: StyleCompareProps) {
-  const { author, rewrite, rows, choice, findings, rebuilt, editing, onChoose, onEdit, onDraft } = props;
+  const { author, rewrite, rows, choice, findings, rebuilt, revised = 0, editing, onChoose, onEdit, onDraft } = props;
   const layout = useLayout();
   const name = useId();
   const sides: Choice[] = layout === "desktop" ? ["original", "rewrite"] : ["rewrite", "original"];
@@ -204,7 +211,11 @@ export function StyleCompare(props: StyleCompareProps) {
               </span>
             </label>
             <div className={cn("flex flex-col gap-4 px-4 pt-4 pb-2", !chosen && "text-fg-subtle")}>
-              {isRewrite && rebuilt && <p className="text-sm text-fg-subtle">Laid out in new parts.</p>}
+              {isRewrite && (rebuilt || revised > 0) && (
+                <p className="text-sm text-fg-subtle" data-testid="style-rewrite-notes">
+                  {[rebuilt ? "Laid out in new parts." : "", revised > 0 ? revisedLine(revised) : ""].filter(Boolean).join(" ")}
+                </p>
+              )}
               {isRewrite &&
                 findings.map((finding) => (
                   <Message key={`${finding.kind}:${finding.item}`} intent="warning" size="sm" data-testid="style-finding">

@@ -191,6 +191,18 @@ export function factsOf(steps: readonly string[]): string[] {
 }
 
 /**
+ * The author's sentence a fact was read from — the first sentence of `prose`
+ * whose facts include it — so a lost "0.5tsp" can be shown as the words it
+ * was in. Null when none has it. Pure.
+ */
+export function sentenceWithFact(prose: readonly string[], fact: string): string | null {
+  for (const text of prose) {
+    for (const sentence of text.split(/(?<=[.!?])\s+/)) if (factsOf([sentence]).includes(fact)) return sentence.trim();
+  }
+  return null;
+}
+
+/**
  * The imperial facts that are one half of a conversion pair: an imperial figure
  * written in the same step as a metric one it could be, as "800g / 28oz" and
  * "Heat the oven to 350°F (180°C)" both are. The metric statement drops these on

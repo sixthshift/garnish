@@ -97,6 +97,13 @@ export function reportLines(model: string, seconds: number, before: Recipe, resu
   if (check.rowMismatch) lines.push("   the answer does not place every ingredient line exactly once");
   if (check.addedNumbers.length > 0) lines.push(`   added numbers: ${check.addedNumbers.join(", ")}`);
   if (check.droppedWords.length > 0) lines.push(`   dropped words: ${check.droppedWords.join(" ")}`);
+  for (const issue of check.issues) lines.push(`   reads wrong: ${issue.message}`);
+  if (result.revision) {
+    lines.push(
+      `   sent back with ${result.revision.problems.length} to fix; the revision was ${result.revision.taken ? "better, and taken" : "no better, and dropped"}:`
+    );
+    for (const problem of result.revision.problems) lines.push(`     - ${problem}`);
+  }
   const stepsBefore = before.parts.reduce((sum, part) => sum + part.steps.length, 0);
   const stepsAfter = parts.reduce((sum, part) => sum + part.steps.length, 0);
   lines.push(`   ${before.parts.length} -> ${parts.length} parts, ${stepsBefore} -> ${stepsAfter} steps${check.rebuilt ? ", laid out afresh" : ""}`);

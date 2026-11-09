@@ -83,8 +83,10 @@ describe("the report", () => {
       addedNumbers: ["1tbsp"],
       droppedWords: ["pooled", "juices"],
       rowMismatch: false,
+      issues: [{ kind: "imperial", item: "2 inch", message: "“2 inch” is still imperial." }],
       parts: [],
     },
+    revision: { problems: ["“skillet” is not the household's word: frying pan. Use the household's word."], taken: false },
   };
 
   test("heads with the model, the time and the verdict, names what changed and the counts, then each non-empty part", () => {
@@ -94,6 +96,9 @@ describe("the report", () => {
       '   lost conditions: "if it looks dry"',
       "   added numbers: 1tbsp",
       "   dropped words: pooled juices",
+      "   reads wrong: “2 inch” is still imperial.",
+      "   sent back with 1 to fix; the revision was no better, and dropped:",
+      "     - “skillet” is not the household's word: frying pan. Use the household's word.",
       "   3 -> 3 parts, 3 -> 2 steps",
       "",
       "--- Full recipe  1 line, 1 step",
@@ -107,7 +112,8 @@ describe("the report", () => {
   test("a passing check is one line before the counts", () => {
     const ok = {
       ...result,
-      check: { ...result.check, ok: true, missingFacts: [], missingConditions: [], addedNumbers: [], droppedWords: [], rowMismatch: false },
+      check: { ...result.check, ok: true, missingFacts: [], missingConditions: [], addedNumbers: [], droppedWords: [], rowMismatch: false, issues: [] },
+      revision: undefined,
     };
     expect(reportLines("lite", 1, recipe, ok)[0]).toBe("## lite  1.0s  check ok");
     expect(reportLines("lite", 1, recipe, ok)[1]).toBe("   3 -> 3 parts, 3 -> 2 steps");
