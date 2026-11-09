@@ -80,3 +80,20 @@ test("a recipe's spread is a screen tall and no taller: a step's hidden label st
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(900);
 });
+
+test("cooking, the spread is a screen tall and no taller: a step's hidden label stays in its own column", async ({ page, open }) => {
+  // The cooking spread's columns scroll on their own as the recipe's do, and
+  // leaked a step's absolutely placed `sr-only` label the same way.
+  await createRecipe(page, open, {
+    name: unique("Tall cook"),
+    servings: 2,
+    ingredients: ["200 g plain flour"],
+    steps: Array.from(
+      { length: 12 },
+      (_, i) => `Step ${i + 1}: stir the plain flour for a good long while, then stir it again until it is ready for the next step.`
+    ),
+  });
+  await page.getByRole("link", { name: "Start cooking" }).click();
+  await expect(page.getByTestId("cooking-spread")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(900);
+});
