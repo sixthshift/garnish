@@ -1,6 +1,7 @@
 import { ToggleGroup } from "@sixthshift/design-system/toggle-group";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { indexSource, linkSource, type RecipeDraft } from "../../../draft";
+import { SCROLL_COLUMN } from "../../desktop/scrollColumn";
 import { SourceView } from "./SourceView";
 
 export type EditorColumnsProps = {
@@ -23,13 +24,6 @@ function rowOf(target: EventTarget | null): string | null {
   if (!(target instanceof Element)) return null;
   return target.closest<HTMLElement>("[data-row-id]")?.dataset.rowId ?? null;
 }
-
-/**
- * A column a screen tall that scrolls on its own, as the recipe page's do. Relative, so an absolutely placed
- * descendant (an `sr-only` label) is placed and clipped inside it rather than against the page, which it would
- * stretch past the screen.
- */
-const COLUMN = "relative min-h-0 overflow-y-auto";
 
 /**
  * The editor on a desktop, in the recipe page's own three columns (decisions.md
@@ -75,9 +69,9 @@ export function EditorColumns({ about, ingredients, method, draft, initial, sour
 
   return (
     <div ref={columns} className="grid min-h-0 flex-1 grid-cols-[minmax(17rem,0.95fr)_minmax(16rem,0.8fr)_minmax(22rem,1.3fr)]" data-testid="editor-columns">
-      <div className={`${COLUMN} border-r border-border-subtle bg-bg-normal`}>{about}</div>
-      <div className={`${COLUMN} border-r border-border-subtle px-6 pt-6 pb-16`}>{ingredients}</div>
-      <div className={`${COLUMN} flex flex-col gap-4 px-8 pt-6 pb-16`}>
+      <div className={`${SCROLL_COLUMN} border-r border-border-subtle bg-bg-normal`}>{about}</div>
+      <div className={`${SCROLL_COLUMN} border-r border-border-subtle px-6 pt-6 pb-16`}>{ingredients}</div>
+      <div className={`${SCROLL_COLUMN} flex flex-col gap-4 px-8 pt-6 pb-16`}>
         {lines !== null && (
           <ToggleGroup
             type="single"

@@ -8,6 +8,7 @@ import type { RemovableStorage } from "../../../../lib/storage";
 import { useLayout } from "../../../../lib/useLayout";
 import type { PendingLines, RecipeDraft } from "../../draft";
 import type { Tag, Unit } from "../../reference";
+import { SCROLL_COLUMN } from "../desktop/scrollColumn";
 import { DiscardImportDialog } from "./DiscardImport";
 import { DraftNotice } from "./DraftNotice";
 import { EditorColumns } from "./desktop/EditorColumns";
@@ -173,7 +174,7 @@ export function RecipeForm({
       {above !== undefined && <div className="px-6 pt-4">{above}</div>}
       {toolbar}
       {jsonView ? (
-        <div className="relative min-h-0 flex-1 overflow-y-auto p-6">{jsonView}</div>
+        <div className={`${SCROLL_COLUMN} flex-1 p-6`}>{jsonView}</div>
       ) : (
         <EditorColumns
           draft={draft}

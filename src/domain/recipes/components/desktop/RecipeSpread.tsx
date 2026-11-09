@@ -18,11 +18,7 @@ export type RecipeSpreadProps = {
   history: ReactNode;
 };
 
-/**
- * A column that scrolls on its own once the spread is a screen tall; under that the page scrolls them together.
- * Relative, so the column is what an absolutely placed descendant (a step's `sr-only` label) is placed against
- * and clipped by; static, it would be placed against the page and stretch the document past the screen.
- */
+/** A column that scrolls on its own once the spread is a screen tall; under that the page scrolls them together. Relative, as SCROLL_COLUMN. */
 const OWN_SCROLL = "relative desktop:@min-[1250px]/spread:min-h-0 desktop:@min-[1250px]/spread:overflow-y-auto";
 
 /**
