@@ -59,18 +59,21 @@ export function PlanPhone({
   const following = nextMonday(monday);
   const emptyNights = nextDays.filter((day) => day.entries.length === 0).length;
   const thisWeek = days.some((day) => day.date === today);
+  const firstDay = days[0]?.date;
   const addingDay = allDays.find((day) => day.date === adding);
 
   // Open at today. Only from the top of the page: a page the router has
   // scrolled back to where it was left (Back from a recipe) stays there. A
   // frame late, so the router's own scroll for a new address has happened.
+  // Today the week's first day is the top itself: scrolled to, it would stop
+  // just short of it, with the swipe hint half under the sticky days.
   useEffect(() => {
-    if (!thisWeek) return;
+    if (!thisWeek || firstDay === today) return;
     const frame = requestAnimationFrame(() => {
       if (window.scrollY === 0) scrollToDay(today, "auto");
     });
     return () => cancelAnimationFrame(frame);
-  }, [thisWeek, today]);
+  }, [thisWeek, today, firstDay]);
 
   const day = (one: PlanDay) => (
     <PhoneDay key={one.date} day={one} allDays={allDays} today={today} busy={busy} minutes={minutes} onAdd={setAdding} onMove={onMove} onRemove={onRemove} />

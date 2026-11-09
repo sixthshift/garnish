@@ -68,7 +68,8 @@ export function FacetField({
   const empty = facetsEmpty(facets);
   return (
     <div className="flex flex-wrap items-center gap-1.5" data-testid="facet-details">
-      <FacetChips facets={facets} linked={linked} />
+      {/* The chips flow in this row (`contents`), so the pencil follows the last of them rather than wrapping to a line of its own. */}
+      <FacetChips facets={facets} linked={linked} className="contents" />
       <Button
         type="button"
         variant="ghost"

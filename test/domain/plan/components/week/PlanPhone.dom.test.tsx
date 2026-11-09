@@ -83,6 +83,13 @@ test("the page opens at today, under the header", async () => {
   await waitFor(() => expect(scrolled.map((el) => el.id)).toEqual([`plan-day-${TODAY}`]));
 });
 
+test("a week whose first day is today opens at its top, the swipe hint in view rather than half under the header", async () => {
+  await plan({ today: MONDAY });
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  expect(scrolled).toEqual([]);
+});
+
 test("a week without today in it opens at its top", async () => {
   await plan({ monday: NEXT, days: groupByDay(NEXT, []), nextDays: groupByDay("2026-09-28", []) });
   await new Promise((resolve) => requestAnimationFrame(resolve));
