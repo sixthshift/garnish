@@ -103,7 +103,7 @@ export function ImportStyle({ draft, imageUrl, file, onBack, onCancel }: ImportS
         parts={doc.parts}
         run={(ruleIds) => restyleDraft({ data: { doc, ruleIds } })}
         onSave={save}
-        saveLabel="Save recipe"
+        saveLabels={{ rewrite: "Save in house style", original: "Save as written" }}
         skipLabel="Skip, save as written"
         secondary={
           <>

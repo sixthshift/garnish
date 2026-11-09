@@ -9,10 +9,9 @@ import { type ReactNode, useState } from "react";
 import { messageFrom } from "../../../../lib/errors";
 import { scrollClearance } from "../../../../lib/ui/scrollClearance";
 import type { RestyledPart, StyleRule } from "../../style";
-import { StylePart } from "./StylePart";
-import { StyleRebuilt } from "./StyleRebuilt";
+import { RecipeVersion, StyleCompare } from "./StyleCompare";
 import { StyleWait } from "./StyleWait";
-import type { StyleAnswer } from "./styleSession";
+import { allRows, type Choice, type StyleAnswer } from "./styleSession";
 import { type StyleSourcePart, useStyleSpace } from "./useStyleSpace";
 
 export type StyleSpaceProps = {
@@ -26,8 +25,8 @@ export type StyleSpaceProps = {
    * buttons and the space stays as it was.
    */
   onSave: (parts: RestyledPart[] | null) => Promise<void>;
-  /** The primary button, e.g. "Save recipe". */
-  saveLabel: string;
+  /** The primary button for each version, so it says which one Save keeps: "Save in house style", "Save as written". */
+  saveLabels: Record<Choice, string>;
   /** The buttons before Save: Back, Cancel. */
   secondary?: ReactNode;
   /** While the rewrite runs, a way past it: an import's "Skip, save as written" (decisions.md row 203). */
@@ -36,14 +35,7 @@ export type StyleSpaceProps = {
   loadRules?: () => Promise<StyleRule[]>;
 };
 
-/** "3 of 7 rewrites kept · 1 needs a look". Pure. */
-export function statusLine(counts: { total: number; kept: number; flagged: number }): string {
-  if (counts.total === 0) return "The rewrite changed nothing.";
-  const kept = `${counts.kept} of ${counts.total} ${counts.total === 1 ? "rewrite" : "rewrites"} kept`;
-  return counts.flagged === 0 ? kept : `${kept} · ${counts.flagged} ${counts.flagged === 1 ? "needs" : "need"} a look`;
-}
-
-/** "Saving this mix drops “if the sauce is sour” and adds “until fragrant”." — what the check over the choices found, as one sentence. Pure. */
+/** "Saving this drops “if the sauce is sour” and adds “until fragrant”." — what the check over what is saved found, as one sentence. Pure. */
 export function saveWarning(check: {
   missingConditions: readonly string[];
   missingFacts: readonly string[];
@@ -55,31 +47,23 @@ export function saveWarning(check: {
   const added = check.addedConditions ?? [];
   const clauses = [lost.length > 0 ? `drops ${quote(lost)}` : "", added.length > 0 ? `adds ${quote(added)}` : ""].filter((clause) => clause !== "");
   if (clauses.length === 0) return null;
-  return `Saving this mix ${clauses.join(" and ")}.`;
-}
-
-/** Where each part's steps start, numbered through the recipe: 1, then 1 plus the first part's count, and so on. Pure. */
-export function startsOf(counts: readonly number[]): number[] {
-  let next = 1;
-  return counts.map((count) => {
-    const first = next;
-    next += count;
-    return first;
-  });
+  return `Saving this ${clauses.join(" and ")}.`;
 }
 
 /**
- * The Style space: each step shows the rewrite or the author's words, the
- * other a press away under Show original, chosen step by step (row 203), or,
- * when the rewrite laid the recipe out in new parts, the whole recipe chosen
- * at once (row 226). Shared by the import, where it comes before Save, and a
- * saved recipe's Style page.
+ * The Style space: the author's recipe and the house style's side by side,
+ * one of them chosen whole to save, starting on the house style, with Save
+ * naming the one it keeps (decisions.md row 229). Shared by the import, where
+ * it comes before Save, and a saved recipe's Style page.
  */
-export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel, loadRules }: StyleSpaceProps) {
+export function StyleSpace({ parts, run, onSave, saveLabels, secondary, skipLabel, loadRules }: StyleSpaceProps) {
   const style = useStyleSpace({ parts, run, loadRules });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const { original, answer, choices, assembled, counts, saveCheck, running } = style;
+  const { original, answer, choices, saveCheck, running } = style;
+  // Save keeps the house style only when there is one that says something new and it is the one chosen.
+  const comparing = answer !== null && choices !== null && style.rewrite !== null && style.changed;
+  const choice: Choice = running ? "rewrite" : comparing ? choices.recipe : "original";
   const warning = saveCheck && !saveCheck.ok ? saveWarning(saveCheck) : null;
 
   const save = async (asWritten = false) => {
@@ -107,10 +91,6 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
     </Button>
   );
 
-  // Steps are numbered through the recipe on each side, and a part whose rewrite merged or split steps counts differently on the rewrite's.
-  const firstSteps = startsOf(original.map((part) => part.steps.length));
-  const firstRewriteSteps = startsOf(original.map((part, p) => answer?.parts[p]?.steps.length ?? part.steps.length));
-
   return (
     // While a run is out the space is its loading screen, the recipe coming back with the answer;
     // `style-landed` then, so the rewritten steps land in turn (styles.css).
@@ -132,7 +112,9 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
         <>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex min-w-0 grow items-center gap-2 text-sm" aria-live="polite">
-              <span data-testid="style-status">{counts ? statusLine(counts) : ""}</span>
+              <span data-testid="style-status">
+                {comparing ? "Choose the version to save." : answer !== null && !style.changed ? "The house style changes nothing here." : ""}
+              </span>
             </div>
             {houseStyle}
           </div>
@@ -188,37 +170,23 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
             </Card>
           )}
 
-          {style.rebuilt && answer && choices ? (
-            <StyleRebuilt
-              original={original}
-              answer={answer}
-              choices={choices}
+          {comparing ? (
+            <StyleCompare
+              author={style.author}
+              rewrite={style.rewrite!}
+              rows={allRows(original)}
+              choice={choices.recipe}
+              findings={style.findings}
+              rebuilt={style.rebuilt}
               editing={style.editing}
               onChoose={style.setRecipe}
               onEdit={style.setEditing}
               onDraft={style.editStep}
             />
           ) : (
-            original.map((_, p) => (
-              <StylePart
-                // biome-ignore lint/suspicious/noArrayIndexKey: parts are positional: the restyle pairs them by index and never reorders them.
-                key={p}
-                p={p}
-                original={original}
-                firstStep={firstSteps[p]!}
-                firstRewriteStep={firstRewriteSteps[p]!}
-                answer={answer}
-                choices={choices}
-                assembled={assembled?.[p] ?? null}
-                running={running}
-                failed={style.error !== null}
-                editing={style.editing}
-                onStep={(s, choice) => style.setStep(p, s, choice)}
-                onPart={(choice) => style.setPart(p, choice)}
-                onEdit={style.setEditing}
-                onDraft={style.editStep}
-              />
-            ))
+            <Card size="sm" className="mx-auto w-full max-w-2xl" data-testid="style-original">
+              <RecipeVersion parts={style.author} rows={allRows(original)} />
+            </Card>
           )}
         </>
       )}
@@ -244,7 +212,7 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
           </Muted>
           {secondary}
           <Button type="button" variant="solid" intent="brand" disabled={running || saving} onClick={() => void save()} data-testid="style-save">
-            {saving ? "Saving…" : saveLabel}
+            {saving ? "Saving…" : saveLabels[choice]}
           </Button>
         </div>
       </div>

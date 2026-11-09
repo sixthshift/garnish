@@ -93,7 +93,7 @@ export function StyleRecipePage() {
             parts={recipe.parts}
             run={(ruleIds) => restyleSteps({ data: { id: recipe.id, ruleIds } })}
             onSave={save}
-            saveLabel="Save"
+            saveLabels={{ rewrite: "Save in house style", original: "Keep as written" }}
             secondary={
               <Button type="button" variant="ghost" intent="neutral" onClick={() => void back()}>
                 Cancel

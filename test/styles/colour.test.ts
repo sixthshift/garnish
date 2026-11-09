@@ -70,11 +70,11 @@ test("the selected Tab takes the neutral selected fill, in the theme", () => {
   expect(theme).toMatch(/\.tabs-trigger\[data-selected="true"\] \{\s*--tabs-trigger-bg: var\(--bg-subtle-pressed\);\s*--tabs-trigger-fg: var\(--fg-normal\);/);
 });
 
-test("a style step's Keep and Original are outline neutral toggles, never brand", () => {
-  const step = src("domain/recipes/components/style/StyleStep.tsx");
-  expect(step).not.toContain('"brand"');
-  expect(step).not.toContain('"solid"');
-  expect(step.match(/className=\{cn\(choice === "(rewrite|original)" && CHOSEN\)\}/g)).toHaveLength(2);
+test("the Style space's chosen version takes the neutral selected fill on its heading, and brand only on its checked radio", () => {
+  const compare = src("domain/recipes/components/style/StyleCompare.tsx");
+  expect(compare).toContain('chosen ? "bg-bg-subtle-pressed"');
+  expect(compare).toContain('chosen ? "border-border-brand bg-bg-brand"');
+  expect(compare).not.toContain('"solid"');
 });
 
 test("every segmented toggle is outline, so selected reads one way", () => {

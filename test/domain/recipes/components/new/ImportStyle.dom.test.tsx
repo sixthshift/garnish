@@ -81,6 +81,6 @@ test("a rewrite that fails says so once, and Save keeps the steps as written", a
   await renderStage(valid, () => {});
   expect(await screen.findByTestId("style-error")).toHaveTextContent("Couldn't rewrite this in your house style");
   expect(screen.getByText("Toast the peanuts.")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Save recipe" }));
+  await user.click(screen.getByRole("button", { name: "Save as written" }));
   await waitFor(() => expect(rpc.createRecipe).toHaveBeenCalledOnce());
 });

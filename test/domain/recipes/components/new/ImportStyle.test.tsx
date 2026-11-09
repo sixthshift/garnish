@@ -44,13 +44,13 @@ describe("ImportStyle", () => {
     expect(html).not.toContain('data-testid="style-space"');
   });
 
-  test("a valid draft opens the Style space on its steps, with Save recipe, Back and Cancel, and says it is rewriting", async () => {
+  test("a valid draft opens the Style space on its steps, with Save in house style, Back and Cancel, and says it is rewriting", async () => {
     const draft = draftFromInput(
       recipeInputSchema.parse({ name: "Kung pao chicken", parts: [{ name: "", ingredients: [], steps: [{ text: "Toast the peanuts." }] }] })
     );
     const html = await renderWithRouter(() => <ImportStyle draft={draft} imageUrl={null} file={null} onBack={() => {}} onCancel={() => {}} />);
     expect(html).toContain('data-testid="style-space"');
-    expect(html).toContain("Save recipe");
+    expect(html).toContain("Save in house style");
     expect(html).toContain(">Back<");
     expect(html).not.toContain("Edit details");
     // The wait opens on the house style being read, the rewrite of the draft's one step next in its list.

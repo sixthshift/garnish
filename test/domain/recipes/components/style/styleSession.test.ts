@@ -1,23 +1,19 @@
-// The Style space's model: where a step starts, where a finding is shown, and what is saved from a mix of rewritten and original steps.
+// The Style space's model: what the check found, where the choice starts, and what is saved of the version chosen.
 import { describe, expect, test } from "vitest";
 import {
+  answerFindings,
   assemble,
   changesAnything,
   checkChoices,
-  choiceCounts,
-  choosePart,
   initialChoices,
-  isAligned,
   isRebuilt,
-  partFindings,
   type StyleAnswer,
   type StyleChoices,
   stepKey,
   styleOriginal,
-  takesRewrite,
 } from "../../../../../src/domain/recipes/components/style/styleSession";
 import { checkRestyle, type OriginalPart, type RestyledPart } from "../../../../../src/domain/recipes/style";
-import { restyledPart, restyledStep } from "../../../../helpers/restyle";
+import { restyledStep } from "../../../../helpers/restyle";
 
 const garlic = {
   quantity: 3,
@@ -63,24 +59,13 @@ function answerFor(parts: RestyledPart[], from = original()): StyleAnswer {
   return { parts, check: checkRestyle(from, parts) };
 }
 
-describe("where a finding is shown", () => {
-  test("a lost condition sits on the author's step that said it", () => {
-    const answer = answerFor(droppingCondition());
-    const findings = partFindings(original()[0]!, answer.check.parts[0]!, true);
-    expect(findings.part).toEqual([]);
-    expect(findings.steps.map((list) => list.map((finding) => finding.item))).toEqual([[], ["until fragrant"], []]);
-    expect(findings.steps[1]![0]!.message).toBe("“until fragrant” is in the original but not in the rewrite.");
-  });
-
-  test("in a part chosen whole there is no step to put it on, so the part holds it", () => {
-    const answer = answerFor(droppingCondition());
-    const findings = partFindings(original()[0]!, answer.check.parts[0]!, false);
-    expect(findings.part.map((finding) => finding.item)).toEqual(["until fragrant"]);
-  });
-
-  test("an invented condition sits on the step whose rewrite says it", () => {
+describe("what the check found", () => {
+  test("a lost phrase and an invented one, each worded for the house style's version", () => {
+    expect(answerFindings(original(), answerFor(droppingCondition())).map((finding) => finding.message)).toEqual([
+      "“until fragrant” is in the original but not in the rewrite.",
+    ]);
     const [first] = droppingCondition();
-    const parts = [
+    const inventing = [
       {
         ...first!,
         steps: [
@@ -90,88 +75,59 @@ describe("where a finding is shown", () => {
         ],
       },
     ];
-    const answer = answerFor(parts);
-    const findings = partFindings(original()[0]!, answer.check.parts[0]!, true, parts[0]);
-    expect(findings.steps.map((list) => list.map((finding) => finding.kind))).toEqual([[], [], ["added"]]);
-    expect(findings.steps[2]![0]!.message).toBe("The rewrite adds “until glossy, then serve”, which the recipe never says.");
+    expect(answerFindings(original(), answerFor(inventing)).map((finding) => finding.message)).toEqual([
+      "The rewrite adds “until glossy, then serve”, which the recipe never says.",
+    ]);
+  });
+
+  test("nothing when the check passed", () => {
+    const [first] = droppingCondition();
+    const parts = [{ ...first!, steps: [first!.steps[0]!, restyledStep("Add the garlic and cook for a minute or two until fragrant."), first!.steps[2]!] }];
+    expect(answerFindings(original(), answerFor(parts))).toEqual([]);
   });
 });
 
-describe("where each step starts", () => {
-  test("on the rewrite, except a step with a finding, which starts on the author's words", () => {
-    const choices = initialChoices(original(), answerFor(droppingCondition()));
-    expect([0, 1, 2].map((s) => choices.steps[stepKey(0, s)])).toEqual(["rewrite", "original", "rewrite"]);
-  });
-
-  test("a rewrite that merged steps is chosen whole, and a whole-part finding starts it on the original", () => {
-    const merged: RestyledPart[] = [
-      { name: "", rows: [0], notes: ["smashed and sliced"], steps: [restyledStep("Heat 2 tbsp oil over high heat, add the garlic and peanuts, and serve.")] },
-    ];
-    const answer = answerFor(merged);
-    expect(isAligned(original()[0]!, merged[0]!)).toBe(false);
-    expect(initialChoices(original(), answer).parts[0]).toBe("original");
+describe("where the choice starts", () => {
+  test("on the house style, even when the check found something: a finding is shown, never chosen for the household", () => {
+    expect(initialChoices()).toEqual({ recipe: "rewrite", edits: {} });
   });
 });
 
 describe("what is saved", () => {
-  test("each step the side chosen for it, with a retyped rewrite in place of the model's", () => {
-    const answer = answerFor(droppingCondition());
-    const choices: StyleChoices = { ...initialChoices(original(), answer), edits: { [stepKey(0, 0)]: "Heat 2 tbsp of the oil in the wok until smoking." } };
-    const [part] = assemble(original(), answer, choices);
-    expect(part!.steps.map((step) => step.text)).toEqual([
-      "Heat 2 tbsp of the oil in the wok until smoking.",
-      "Add the garlic and cook for a minute or two until fragrant.",
-      "Add the peanuts and serve.",
-    ]);
-    expect(part!.steps[0]!.title).toBe("Sear");
-  });
-
-  test("a part's notes are the rewrite's while any of its rewrite is taken, and the author's once none is", () => {
+  test("the rewrite, with a retyped step in place of the model's, and its notes", () => {
     const rewrite = droppingCondition();
     rewrite[0]!.notes = ["smashed, then sliced"];
     const answer = answerFor(rewrite);
-    const some = initialChoices(original(), answer);
-    expect(assemble(original(), answer, some)[0]!.notes).toEqual(["smashed, then sliced"]);
-    const none = choosePart(some, original(), answer, 0, "original");
-    expect(assemble(original(), answer, none)[0]!.notes).toEqual(["smashed and sliced"]);
-    expect(changesAnything(original(), assemble(original(), answer, none))).toBe(false);
+    const choices: StyleChoices = { ...initialChoices(), edits: { [stepKey(0, 0)]: "Heat 2 tbsp of the oil in the wok until smoking." } };
+    const [part] = assemble(original(), answer, choices);
+    expect(part!.steps.map((step) => step.text)).toEqual([
+      "Heat 2 tbsp of the oil in the wok until smoking.",
+      "Add the garlic and cook for 1 or 2 minutes.",
+      "Add the peanuts and serve.",
+    ]);
+    expect(part!.steps[0]!.title).toBe("Sear");
+    expect(part!.notes).toEqual(["smashed, then sliced"]);
   });
 
-  test("keeping the flagged rewrite anyway is caught again by the check over what is saved", () => {
+  test("the author's recipe as written, which changes nothing", () => {
     const answer = answerFor(droppingCondition());
-    const all = choosePart(initialChoices(original(), answer), original(), answer, 0, "rewrite");
-    expect(takesRewrite(all, original(), answer, 0, 1)).toBe(true);
-    expect(checkChoices(original(), assemble(original(), answer, all)).missingConditions).toEqual(["until fragrant"]);
-    // The starting choices keep the author's step, so nothing is lost.
-    expect(checkChoices(original(), assemble(original(), answer, initialChoices(original(), answer))).ok).toBe(true);
+    const back = assemble(original(), answer, { ...initialChoices(), recipe: "original" });
+    expect(back[0]!.notes).toEqual(["smashed and sliced"]);
+    expect(changesAnything(original(), back)).toBe(false);
   });
 
-  test("a mix can lose a sentence the rewrite moved between steps, which neither step's own finding shows", () => {
-    const from = styleOriginal([{ name: "", ingredients: [], steps: [{ text: "Stir the sauce until thick." }, { text: "Serve." }] }]);
-    // The rewrite moves the condition from step one into step two's supporting line: the whole part keeps it.
-    const moved: RestyledPart[] = [
-      { name: "", rows: [], notes: [], steps: [restyledStep("Stir the sauce."), restyledStep("Serve.", { summary: "Stir until thick first." })] },
-    ];
-    const answer = answerFor(moved, from);
-    expect(answer.check.ok).toBe(true);
-    // Taking the first rewrite but the second original loses it.
-    const mixed: StyleChoices = { recipe: "rewrite", steps: { [stepKey(0, 0)]: "rewrite", [stepKey(0, 1)]: "original" }, parts: { 0: "rewrite" }, edits: {} };
-    expect(checkChoices(from, assemble(from, answer, mixed)).missingConditions).toEqual(["until thick"]);
-  });
-});
-
-describe("the counts", () => {
-  test("choices, rewrites kept and findings, leaving out a step the rewrite did not change", () => {
+  test("a part the rewrite gave no steps keeps the author's", () => {
     const rewrite = droppingCondition();
-    rewrite[0] = { ...rewrite[0]!, steps: [...rewrite[0]!.steps.slice(0, 2), restyledStep("Finally, add the peanuts and serve.")] };
-    const answer = answerFor(rewrite);
-    expect(choiceCounts(original(), answer, initialChoices(original(), answer))).toEqual({ total: 2, kept: 1, flagged: 1 });
+    rewrite[0]!.steps = [];
+    const [part] = assemble(original(), answerFor(rewrite), initialChoices());
+    expect(part!.steps.map((step) => step.text)).toEqual(original()[0]!.steps.map((step) => step.text));
   });
 
-  test("a part with no steps is not a choice", () => {
-    const from = styleOriginal([{ name: "To serve", ingredients: [], steps: [] }]);
-    const answer = answerFor([restyledPart("To serve", [])], from);
-    expect(choiceCounts(from, answer, initialChoices(from, answer))).toEqual({ total: 0, kept: 0, flagged: 0 });
+  test("the check over what is saved catches a flagged rewrite, and a retyped step that puts the phrase back clears it", () => {
+    const answer = answerFor(droppingCondition());
+    expect(checkChoices(original(), assemble(original(), answer, initialChoices())).missingConditions).toEqual(["until fragrant"]);
+    const fixed: StyleChoices = { ...initialChoices(), edits: { [stepKey(0, 1)]: "Add the garlic and cook for 1 or 2 minutes, until fragrant." } };
+    expect(checkChoices(original(), assemble(original(), answer, fixed)).ok).toBe(true);
   });
 });
 
@@ -185,22 +141,19 @@ describe("a rewrite that lays the recipe out afresh", () => {
     ];
   }
 
-  test("is chosen whole: one choice, on the rewrite when the check passed, and on the original when it did not", () => {
+  test("has its findings over the whole recipe", () => {
     const answer = answerFor(rebuilt());
     expect(isRebuilt(original(), answer)).toBe(true);
-    expect(initialChoices(original(), answer).recipe).toBe("rewrite");
-    expect(choiceCounts(original(), answer, initialChoices(original(), answer))).toEqual({ total: 1, kept: 1, flagged: 0 });
+    expect(answerFindings(original(), answer)).toEqual([]);
 
     const losing = rebuilt();
     losing[0]!.steps = [losing[0]!.steps[0]!, restyledStep("Add the garlic and cook for 1 or 2 minutes.")];
-    const flagged = answerFor(losing);
-    expect(initialChoices(original(), flagged).recipe).toBe("original");
-    expect(choiceCounts(original(), flagged, initialChoices(original(), flagged))).toEqual({ total: 1, kept: 0, flagged: 1 });
+    expect(answerFindings(original(), answerFor(losing)).map((finding) => finding.item)).toEqual(["until fragrant"]);
   });
 
   test("saves the rewrite's layout with any retyped step, or the author's recipe as written", () => {
     const answer = answerFor(rebuilt());
-    const choices: StyleChoices = { ...initialChoices(original(), answer), edits: { [stepKey(1, 0)]: "Toss in the peanuts and serve." } };
+    const choices: StyleChoices = { ...initialChoices(), edits: { [stepKey(1, 0)]: "Toss in the peanuts and serve." } };
     const saved = assemble(original(), answer, choices);
     expect(saved.map((part) => [part.name, part.rows, part.notes])).toEqual([
       ["", [], []],

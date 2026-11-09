@@ -1,4 +1,4 @@
-// The Style space's model: the author's parts, the restyle's answer, and the household's choices between them, step by step. Pure.
+// The Style space's model: the author's parts, the restyle's answer, and which of the two the household saves. Pure.
 
 import { formatIngredient } from "../../ingredient";
 import {
@@ -15,26 +15,20 @@ import {
 /** What the restyle answers: the rewritten parts and the check over them, as `restyleSteps` and `restyleDraft` return it. */
 export type StyleAnswer = { parts: RestyledPart[]; check: RestyleCheck };
 
-/** Which side of a step, or of a whole part, the household is taking. */
+/** Which version of the recipe the household is saving. */
 export type Choice = "rewrite" | "original";
 
 /**
- * The household's choices. A rewrite that laid the recipe out afresh — new
- * parts, or rows moved between them — has no part to pair with another, so it
- * is chosen whole (`recipe`, decisions.md row 226). Otherwise a part whose
- * rewrite kept the author's step count is chosen step by step (`steps`, keyed
- * by `stepKey`), and a part whose rewrite merged or split steps is chosen
- * whole (`parts`). `edits` are rewritten step texts retyped in place, keyed by
- * the rewrite's own part and step.
+ * The household's choice: the rewrite or the author's recipe, the whole of
+ * it (decisions.md row 229), and the rewritten step texts retyped in place,
+ * keyed by the rewrite's own part and step.
  */
 export type StyleChoices = {
   recipe: Choice;
-  steps: Readonly<Record<string, Choice>>;
-  parts: Readonly<Record<number, Choice>>;
   edits: Readonly<Record<string, string>>;
 };
 
-/** Whether the rewrite laid the recipe out afresh, and so is chosen whole. Pure. */
+/** Whether the rewrite laid the recipe out afresh: new parts, or rows moved between them. Pure. */
 export function isRebuilt(original: readonly OriginalPart[], answer: StyleAnswer): boolean {
   return !keepsLayout(original, answer.parts);
 }
@@ -87,11 +81,6 @@ export function styleOriginal(
   }));
 }
 
-/** Whether a part can be chosen step by step: the rewrite kept the author's steps one for one. */
-export function isAligned(original: OriginalPart, rewrite: RestyledPart): boolean {
-  return original.steps.length > 0 && original.steps.length === rewrite.steps.length;
-}
-
 /** Whether a rewritten step says exactly what the author's did, so there is nothing to choose between. */
 export function sameStep(original: OriginalPart["steps"][number], rewrite: RestyledStep): boolean {
   const fold = (value: string | undefined) => (value ?? "").trim();
@@ -114,89 +103,35 @@ export function findingMessage(kind: Finding["kind"], item: string): string {
   }
 }
 
-/** Everything one of the author's steps says, folded for a search. */
-function stepProse(step: OriginalPart["steps"][number]): string {
-  return [step.title ?? "", step.text, step.summary ?? ""].join(" ").toLowerCase();
+/**
+ * What the check found in the rewrite, worded for the house style's column:
+ * over the whole recipe when the rewrite laid it out afresh, part by part
+ * when it kept the layout. Pure.
+ */
+export function answerFindings(original: readonly OriginalPart[], answer: StyleAnswer): Finding[] {
+  if (isRebuilt(original, answer)) return checkFindings(answer.check.parts[0]);
+  return original.flatMap((_, p) => checkFindings(answer.check.parts[p]));
 }
 
-/**
- * The part's findings placed on the step each came from, so the warning sits
- * beside the words it is about: a lost one on the author's step that said it,
- * an invented one on the step whose rewrite says it. The check is over the
- * whole part — content may move between steps and into notes — so a finding
- * no step contains, one in a part chosen whole, and a row mismatch stay on the
- * part.
- */
-export function partFindings(
-  original: OriginalPart,
-  check: PartRestyleCheck,
-  aligned: boolean,
-  rewrite?: RestyledPart
-): { steps: Finding[][]; part: Finding[] } {
-  const steps: Finding[][] = original.steps.map(() => []);
-  const part: Finding[] = [];
-  const items: [Finding["kind"], string][] = [
-    ...check.missingConditions.map((item) => ["condition", item] as [Finding["kind"], string]),
-    ...check.missingFacts.map((item) => ["fact", item] as [Finding["kind"], string]),
-    ...check.missingFoods.map((item) => ["food", item] as [Finding["kind"], string]),
+function checkFindings(check: PartRestyleCheck | undefined): Finding[] {
+  if (check === undefined) return [];
+  const found = (kind: Finding["kind"], items: readonly string[]) => items.map((item) => ({ kind, item, message: findingMessage(kind, item) }));
+  return [
+    ...found("condition", check.missingConditions),
+    ...found("fact", check.missingFacts),
+    ...found("food", check.missingFoods),
+    ...found("added", check.addedConditions),
+    ...(check.rowMismatch ? found("rows", [""]) : []),
   ];
-  for (const [kind, item] of items) {
-    const finding = { kind, item, message: findingMessage(kind, item) };
-    const at = aligned ? original.steps.findIndex((step) => stepProse(step).includes(item.toLowerCase())) : -1;
-    if (at === -1) part.push(finding);
-    else steps[at]!.push(finding);
-  }
-  for (const item of check.addedConditions) {
-    const finding = { kind: "added" as const, item, message: findingMessage("added", item) };
-    const at = aligned && rewrite ? rewrite.steps.findIndex((step) => stepProse(step).includes(item.toLowerCase())) : -1;
-    if (at === -1) part.push(finding);
-    else steps[at]!.push(finding);
-  }
-  if (check.rowMismatch) part.push({ kind: "rows", item: "", message: findingMessage("rows", "") });
-  return { steps, part };
 }
 
 /**
- * Where each step starts: on the rewrite, unless the check found something in
- * it, which starts it on the author's words until someone chooses otherwise.
- * A finding the part holds as a whole starts the whole part on the original.
+ * Where the choice starts: on the rewrite, always. What the check found is
+ * shown with it, for the household to weigh; it never quietly puts the
+ * author's recipe in the rewrite's place (decisions.md row 229).
  */
-export function initialChoices(original: readonly OriginalPart[], answer: StyleAnswer): StyleChoices {
-  const steps: Record<string, Choice> = {};
-  const parts: Record<number, Choice> = {};
-  if (isRebuilt(original, answer)) {
-    const findings = partFindings(wholeRecipe(original), answer.check.parts[0]!, false);
-    return { recipe: findings.part.length > 0 ? "original" : "rewrite", steps, parts, edits: {} };
-  }
-  original.forEach((part, p) => {
-    const rewrite = answer.parts[p]!;
-    const aligned = isAligned(part, rewrite);
-    const findings = partFindings(part, answer.check.parts[p]!, aligned, rewrite);
-    const whole: Choice = findings.part.length > 0 ? "original" : "rewrite";
-    parts[p] = whole;
-    if (aligned) {
-      part.steps.forEach((_, s) => {
-        steps[stepKey(p, s)] = whole === "original" || findings.steps[s]!.length > 0 ? "original" : "rewrite";
-      });
-    }
-  });
-  return { recipe: "rewrite", steps, parts, edits: {} };
-}
-
-/** Every step of part `p` on one side: "Keep all" and "Use all original". */
-export function choosePart(choices: StyleChoices, original: readonly OriginalPart[], answer: StyleAnswer, p: number, choice: Choice): StyleChoices {
-  const steps = { ...choices.steps };
-  if (isAligned(original[p]!, answer.parts[p]!)) {
-    original[p]!.steps.forEach((_, s) => {
-      steps[stepKey(p, s)] = choice;
-    });
-  }
-  return { ...choices, steps, parts: { ...choices.parts, [p]: choice } };
-}
-
-/** Whether the household is taking the rewrite of step `s` of part `p` (of the rewrite's own step, for a part chosen whole). */
-export function takesRewrite(choices: StyleChoices, original: readonly OriginalPart[], answer: StyleAnswer, p: number, s: number): boolean {
-  return isAligned(original[p]!, answer.parts[p]!) ? choices.steps[stepKey(p, s)] === "rewrite" : choices.parts[p] === "rewrite";
+export function initialChoices(): StyleChoices {
+  return { recipe: "rewrite", edits: {} };
 }
 
 /** The author's step in the answer's shape. */
@@ -211,35 +146,20 @@ function edited(step: RestyledStep, choices: StyleChoices, key: string): Restyle
 }
 
 /**
- * The parts to save, in the answer's shape. A rebuilt rewrite is the answer's
- * parts, retyped steps and all, or the author's recipe as written. Otherwise
- * each part is in the recipe's order with its own rows, each step the side
- * chosen for it, and a part's notes the rewrite's whenever any of its rewrite
- * is taken, since preparation the rewrite moved out of a step lives in those
- * notes. What `applyRestyle` and `createRestyledRecipe` take.
+ * The parts to save, in the answer's shape: the author's recipe as written,
+ * or the rewrite with any retyped step. A rewrite that kept the layout keeps
+ * each part's own name and rows, and a part the rewrite gave no steps keeps
+ * the author's. What `applyRestyle` and `createRestyledRecipe` take.
  */
 export function assemble(original: readonly OriginalPart[], answer: StyleAnswer, choices: StyleChoices): RestyledPart[] {
-  if (isRebuilt(original, answer)) {
-    if (choices.recipe === "original") return asWritten(original);
-    return answer.parts.map((part, p) => ({ ...part, steps: part.steps.map((step, s) => edited(step, choices, stepKey(p, s))) }));
-  }
+  if (choices.recipe === "original") return asWritten(original);
+  const steps = (part: RestyledPart, p: number) => part.steps.map((step, s) => edited(step, choices, stepKey(p, s)));
+  if (isRebuilt(original, answer)) return answer.parts.map((part, p) => ({ ...part, steps: steps(part, p) }));
   const inPlace = rowsInPlace(original);
   return original.map((part, p) => {
     const rewrite = answer.parts[p]!;
-    const rows = inPlace[p]!;
-    const notes = part.ingredients.map((row) => row.note ?? "");
-    if (part.steps.length === 0 && rewrite.steps.length === 0) return { name: part.name, rows, notes: [...rewrite.notes], steps: [] };
-    if (isAligned(part, rewrite)) {
-      const steps = part.steps.map((step, s) =>
-        takesRewrite(choices, original, answer, p, s) ? edited(rewrite.steps[s]!, choices, stepKey(p, s)) : asRestyled(step)
-      );
-      const anyRewrite = part.steps.some((_, s) => takesRewrite(choices, original, answer, p, s));
-      return { name: part.name, rows, notes: anyRewrite ? [...rewrite.notes] : notes, steps };
-    }
-    if (choices.parts[p] === "rewrite") {
-      return { name: part.name, rows, notes: [...rewrite.notes], steps: rewrite.steps.map((step, s) => edited(step, choices, stepKey(p, s))) };
-    }
-    return { name: part.name, rows, notes, steps: part.steps.map(asRestyled) };
+    const kept = rewrite.steps.length === 0 && part.steps.length > 0;
+    return { name: part.name, rows: inPlace[p]!, notes: [...rewrite.notes], steps: kept ? part.steps.map(asRestyled) : steps(rewrite, p) };
   });
 }
 
@@ -255,39 +175,11 @@ export function changesAnything(original: readonly OriginalPart[], assembled: re
 }
 
 /**
- * The same check the restyle ran, over what will actually be saved. A mix of
- * rewritten and original steps can lose a sentence the rewrite moved from one
- * step to another, which neither step's own finding shows; this does.
+ * The same check the restyle ran, over what will actually be saved, so a
+ * step retyped here is checked too.
  */
 export function checkChoices(original: readonly OriginalPart[], assembled: readonly RestyledPart[]): RestyleCheck {
   return checkRestyle(original, assembled);
-}
-
-/** The status line's numbers: how many choices there are, how many take the rewrite, and how many carry a finding. */
-export function choiceCounts(original: readonly OriginalPart[], answer: StyleAnswer, choices: StyleChoices): { total: number; kept: number; flagged: number } {
-  if (isRebuilt(original, answer)) return { total: 1, kept: choices.recipe === "rewrite" ? 1 : 0, flagged: answer.check.ok ? 0 : 1 };
-  let total = 0;
-  let kept = 0;
-  let flagged = 0;
-  original.forEach((part, p) => {
-    const rewrite = answer.parts[p]!;
-    if (rewrite.steps.length === 0) return;
-    const aligned = isAligned(part, rewrite);
-    const findings = partFindings(part, answer.check.parts[p]!, aligned, rewrite);
-    if (aligned) {
-      part.steps.forEach((step, s) => {
-        if (sameStep(step, rewrite.steps[s]!)) return;
-        total += 1;
-        if (takesRewrite(choices, original, answer, p, s)) kept += 1;
-        if (findings.steps[s]!.length > 0 || findings.part.length > 0) flagged += 1;
-      });
-    } else {
-      total += 1;
-      if (choices.parts[p] === "rewrite") kept += 1;
-      if (findings.part.length > 0) flagged += 1;
-    }
-  });
-  return { total, kept, flagged };
 }
 
 /** A part's heading: its name, or "Method" for the unnamed main body. */

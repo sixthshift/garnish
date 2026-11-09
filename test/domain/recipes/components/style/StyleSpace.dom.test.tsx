@@ -1,4 +1,4 @@
-// The Style space pressed: it runs on arrival, the author's words and the rewrite are on screen together, a flagged step starts on the author's words, the per-step choices change what Save writes, and a retyped step is saved as typed.
+// The Style space pressed: it runs on arrival, the author's recipe and the house style's are side by side, the house style is chosen even when the check flags it, Save names the version it keeps, and a retyped step is saved as typed.
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
@@ -37,73 +37,66 @@ const rules: StyleRule[] = [
   { id: "r2", position: 1, text: "Prefer metric.", enabled: false, createdAt: "2026-09-29T00:00:00.000Z", updatedAt: "2026-09-29T00:00:00.000Z" },
 ];
 
+const LABELS = { rewrite: "Save in house style", original: "Save as written" };
+
 function setup() {
   const run = vi.fn(async (_ruleIds: string[]) => ({ parts: rewrite, check: checkRestyle(styleOriginal(parts), rewrite) }));
   const onSave = vi.fn(async (_parts: RestyledPart[] | null) => {});
-  render(<StyleSpace parts={parts} run={run} onSave={onSave} saveLabel="Save recipe" loadRules={async () => rules} />);
+  render(<StyleSpace parts={parts} run={run} onSave={onSave} saveLabels={LABELS} loadRules={async () => rules} />);
   return { run, onSave, user: userEvent.setup() };
 }
 
-test("runs on arrival with the statements that are on, and starts the flagged step on the original", async () => {
+test("runs on arrival with the statements that are on, and starts on the house style even with a finding, which it shows", async () => {
   const { run } = setup();
-  await waitFor(() => expect(screen.getByTestId("style-status")).toHaveTextContent("1 of 2 rewrites kept · 1 needs a look"));
+  const compare = await screen.findByTestId("style-compare");
   expect(run).toHaveBeenCalledWith(["r1"]);
-  const [first, second] = screen.getAllByTestId("style-step");
-  expect(first).toHaveAttribute("data-choice", "rewrite");
-  expect(within(first!).getByText("Heat the wok")).toBeInTheDocument();
-  expect(second).toHaveAttribute("data-choice", "original");
-  expect(within(second!).getByTestId("style-step-finding")).toHaveTextContent("“until fragrant” is in the original but not in the rewrite.");
+  expect(compare).toHaveAttribute("data-choice", "rewrite");
+  expect(screen.getByTestId("style-status")).toHaveTextContent("Choose the version to save.");
+  expect(screen.getByRole("radio", { name: /In your house style/ })).toBeChecked();
+  expect(screen.getByRole("radio", { name: /As written/ })).not.toBeChecked();
+  const house = screen.getByTestId("style-rewrite");
+  expect(within(house).getByText("Heat the wok")).toBeInTheDocument();
+  expect(within(house).getByTestId("style-finding")).toHaveTextContent("“until fragrant” is in the original but not in the rewrite.");
+  expect(within(house).getByText("2 steps · 1 to check")).toBeInTheDocument();
+  expect(within(screen.getByTestId("style-original")).getByText("Add the garlic and cook for a minute or two until fragrant.")).toBeInTheDocument();
+  expect(screen.getByTestId("style-save")).toHaveTextContent("Save in house style");
+  expect(screen.getByTestId("style-save-warning")).toHaveTextContent("Saving this drops “until fragrant”.");
 });
 
-test("Save writes each step's chosen side, a retyped rewrite as typed, and the rewritten notes", async () => {
+test("Save writes the house style, a retyped step as typed, and the rewritten notes", async () => {
   const { onSave, user } = setup();
-  await waitFor(() => expect(screen.getAllByTestId("style-step")[0]).toHaveAttribute("data-choice", "rewrite"));
+  const house = await screen.findByTestId("style-rewrite");
 
-  await user.click(screen.getByRole("button", { name: "Edit" }));
+  await user.click(within(house).getByRole("button", { name: "Edit step 1" }));
   const field = screen.getByLabelText("Step 1 text");
   await user.clear(field);
   await user.type(field, "Heat the wok until smoking.");
   await user.click(screen.getByRole("button", { name: "Done" }));
-  expect(screen.getAllByTestId("style-step-status")[0]).toHaveTextContent("Edited");
 
   await user.click(screen.getByTestId("style-save"));
   await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
   const saved = onSave.mock.calls[0]![0]!;
-  expect(saved[0]!.steps.map((step) => step.text)).toEqual(["Heat the wok until smoking.", "Add the garlic and cook for a minute or two until fragrant."]);
+  expect(saved[0]!.steps.map((step) => step.text)).toEqual(["Heat the wok until smoking.", "Add the garlic and cook for 1 or 2 minutes."]);
   expect(saved[0]!.notes).toEqual(["smashed and sliced"]);
 });
 
-test("keeping the flagged rewrite anyway warns before Save, and putting every step back saves nothing", async () => {
+test("choosing As written says so on Save, only the house style can be retyped, and Save then writes nothing", async () => {
   const { onSave, user } = setup();
-  await waitFor(() => expect(screen.getAllByTestId("style-step")[1]).toHaveAttribute("data-choice", "original"));
+  await screen.findByTestId("style-compare");
+  expect(within(screen.getByTestId("style-original")).queryByRole("button", { name: /Edit step/ })).not.toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "Keep the rewrite of step 2" }));
-  expect(screen.getByTestId("style-save-warning")).toHaveTextContent("Saving this mix drops “until fragrant”.");
-
-  await user.click(screen.getByRole("button", { name: "Use all original" }));
+  await user.click(screen.getByRole("radio", { name: /As written/ }));
+  expect(screen.getByTestId("style-compare")).toHaveAttribute("data-choice", "original");
+  expect(screen.getByTestId("style-original")).toHaveAttribute("data-chosen", "true");
+  expect(screen.getByTestId("style-save")).toHaveTextContent("Save as written");
   expect(screen.queryByTestId("style-save-warning")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Edit step/ })).not.toBeInTheDocument();
+
   await user.click(screen.getByTestId("style-save"));
   await waitFor(() => expect(onSave).toHaveBeenCalledWith(null));
 });
 
-test("each step reads as the recipe will: the rewrite, the original one press away, and either side can be taken", async () => {
-  const { user } = setup();
-  await waitFor(() => expect(screen.getAllByTestId("style-step")[0]).toHaveAttribute("data-choice", "rewrite"));
-  expect(screen.queryByRole("radio")).not.toBeInTheDocument();
-  const first = screen.getAllByTestId("style-step")[0]!;
-  expect(within(first).getByTestId("style-step-rewrite")).toHaveTextContent("Heat 2 tbsp of the oil in the wok over high heat.");
-  expect(within(first).queryByText("Heat 2 tablespoons oil in a wok over high heat.")).not.toBeInTheDocument();
-
-  await user.click(within(first).getByRole("button", { name: "Show the original of step 1" }));
-  expect(within(first).getByTestId("style-step-other")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
-
-  await user.click(within(first).getByRole("button", { name: "Use the original of step 1" }));
-  expect(first).toHaveAttribute("data-choice", "original");
-  expect(within(first).getByTestId("style-step-original")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
-  expect(within(first).getByRole("button", { name: "Keep the rewrite of step 1" })).toHaveAttribute("aria-pressed", "false");
-});
-
-test("a part whose rewrite merged its steps is taken whole, with the other side one press away", async () => {
+test("a rewrite that merged steps is shown and saved whole", async () => {
   const merged: RestyledPart[] = [
     {
       name: "",
@@ -119,32 +112,45 @@ test("a part whose rewrite merged its steps is taken whole, with the other side 
       parts={parts}
       run={async () => ({ parts: merged, check: checkRestyle(styleOriginal(parts), merged) })}
       onSave={onSave}
-      saveLabel="Save recipe"
+      saveLabels={LABELS}
       loadRules={async () => rules}
     />
   );
-  await user.click(await screen.findByRole("button", { name: "Keep all" }));
-  expect(screen.getByTestId("style-rewrite-column")).toHaveTextContent("then add the garlic");
-  expect(screen.getAllByTestId("style-plain-step")).toHaveLength(1);
-
-  await user.click(screen.getByRole("button", { name: "Show original" }));
-  expect(screen.getAllByTestId("style-plain-step")).toHaveLength(3);
-  expect(screen.getByText("Add the garlic and cook for a minute or two until fragrant.")).toBeInTheDocument();
+  const house = await screen.findByTestId("style-rewrite");
+  expect(within(house).getAllByTestId("style-step")).toHaveLength(1);
+  expect(within(screen.getByTestId("style-original")).getAllByTestId("style-step")).toHaveLength(2);
 
   await user.click(screen.getByTestId("style-save"));
   await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
   expect(onSave.mock.calls[0]![0]![0]!.steps).toHaveLength(1);
 });
 
-test("a run that fails shows why, keeps the author's steps on screen, and can be tried again", async () => {
+test("a run that fails shows why, keeps the author's steps on screen with Save as written, and can be tried again", async () => {
   const run = vi.fn().mockRejectedValueOnce(new Error("The model provider is overloaded right now."));
   run.mockResolvedValueOnce({ parts: rewrite, check: checkRestyle(styleOriginal(parts), rewrite) });
   const user = userEvent.setup();
-  render(<StyleSpace parts={parts} run={run} onSave={async () => {}} saveLabel="Save recipe" loadRules={async () => rules} />);
+  render(<StyleSpace parts={parts} run={run} onSave={async () => {}} saveLabels={LABELS} loadRules={async () => rules} />);
   await waitFor(() => expect(screen.getByTestId("style-error")).toHaveTextContent("overloaded"));
   expect(screen.getByText("Add the garlic and cook for a minute or two until fragrant.")).toBeInTheDocument();
+  expect(screen.getByTestId("style-save")).toHaveTextContent("Save as written");
   await user.click(screen.getByRole("button", { name: "Try again" }));
-  await waitFor(() => expect(screen.getByTestId("style-status")).toHaveTextContent("1 of 2 rewrites kept"));
+  await waitFor(() => expect(screen.getByTestId("style-compare")).toBeInTheDocument());
+});
+
+test("a rewrite that changes nothing shows the recipe once, with Save as written", async () => {
+  const same: RestyledPart[] = [{ name: "", rows: [0], notes: ["(smashed and sliced)"], steps: parts[0]!.steps.map((step) => restyledStep(step.text)) }];
+  render(
+    <StyleSpace
+      parts={parts}
+      run={async () => ({ parts: same, check: checkRestyle(styleOriginal(parts), same) })}
+      onSave={async () => {}}
+      saveLabels={LABELS}
+      loadRules={async () => rules}
+    />
+  );
+  await waitFor(() => expect(screen.getByTestId("style-status")).toHaveTextContent("The house style changes nothing here."));
+  expect(screen.queryByTestId("style-compare")).not.toBeInTheDocument();
+  expect(screen.getByTestId("style-save")).toHaveTextContent("Save as written");
 });
 
 test("a part with nothing in it, the main body once every line sat under a heading, is not shown", async () => {
@@ -161,15 +167,16 @@ test("a part with nothing in it, the main body once every line sat under a headi
       parts={withEmpty}
       run={async () => ({ parts: answer, check: checkRestyle(styleOriginal(withEmpty), answer) })}
       onSave={async () => {}}
-      saveLabel="Save recipe"
+      saveLabels={LABELS}
       loadRules={async () => rules}
     />
   );
-  await waitFor(() => expect(screen.getAllByTestId("style-part")).toHaveLength(1));
-  expect(screen.queryByText("No steps")).not.toBeInTheDocument();
+  const house = await screen.findByTestId("style-rewrite");
+  expect(within(house).getAllByRole("heading")).toHaveLength(1);
+  expect(within(house).queryByRole("heading", { name: "Method" })).not.toBeInTheDocument();
 });
 
-test("a rewrite laid out in new parts is shown whole as the recipe will read, kept or put back at once, and saved with its layout", async () => {
+test("a rewrite laid out in new parts is shown as the recipe will read, says so, and is saved with its layout", async () => {
   const laidOut: RestyledPart[] = [
     {
       name: "Stir-fry",
@@ -188,20 +195,17 @@ test("a rewrite laid out in new parts is shown whole as the recipe will read, ke
       parts={parts}
       run={async () => ({ parts: laidOut, check: checkRestyle(styleOriginal(parts), laidOut) })}
       onSave={onSave}
-      saveLabel="Save recipe"
+      saveLabels={LABELS}
       loadRules={async () => rules}
     />
   );
-  const space = await screen.findByTestId("style-rebuilt");
-  expect(space).toHaveAttribute("data-choice", "rewrite");
-  expect(screen.getByTestId("style-status")).toHaveTextContent("1 of 1 rewrite kept");
-  expect(screen.queryAllByTestId("style-part")).toHaveLength(0);
-  expect(within(space).getByRole("heading", { name: "Stir-fry" })).toBeInTheDocument();
+  const house = await screen.findByTestId("style-rewrite");
+  expect(screen.getByTestId("style-compare")).toHaveAttribute("data-choice", "rewrite");
+  expect(within(house).getByText("Laid out in new parts.")).toBeInTheDocument();
+  expect(within(house).getByRole("heading", { name: "Stir-fry" })).toBeInTheDocument();
+  expect(within(screen.getByTestId("style-original")).getByRole("heading", { name: "Method" })).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "Show original" }));
-  expect(screen.getByTestId("style-rebuilt-other")).toHaveTextContent("Heat 2 tablespoons oil in a wok over high heat.");
-
-  await user.click(screen.getByRole("button", { name: "Edit step 1" }));
+  await user.click(within(house).getByRole("button", { name: "Edit step 1" }));
   const field = screen.getByLabelText("Step 1 text");
   await user.clear(field);
   await user.type(field, "Heat the wok until smoking.");
@@ -214,7 +218,7 @@ test("a rewrite laid out in new parts is shown whole as the recipe will read, ke
   expect(saved[0]!.steps[0]!.text).toBe("Heat the wok until smoking.");
 });
 
-test("putting a laid-out rewrite back saves nothing", async () => {
+test("a flagged laid-out rewrite still starts on the house style, and choosing As written saves nothing", async () => {
   const laidOut: RestyledPart[] = [{ ...rewrite[0]!, name: "Stir-fry" }];
   const onSave = vi.fn(async (_parts: RestyledPart[] | null) => {});
   const user = userEvent.setup();
@@ -223,17 +227,14 @@ test("putting a laid-out rewrite back saves nothing", async () => {
       parts={parts}
       run={async () => ({ parts: laidOut, check: checkRestyle(styleOriginal(parts), laidOut) })}
       onSave={onSave}
-      saveLabel="Save recipe"
+      saveLabels={LABELS}
       loadRules={async () => rules}
     />
   );
-  // The rewrite loses "until fragrant", so it starts on the original, with the finding said once above it.
-  const space = await screen.findByTestId("style-rebuilt");
-  expect(space).toHaveAttribute("data-choice", "original");
-  expect(screen.getByTestId("style-part-finding")).toHaveTextContent("“until fragrant” is in the original but not in the rewrite.");
-  await user.click(screen.getByRole("button", { name: "Keep the rewrite" }));
-  expect(space).toHaveAttribute("data-choice", "rewrite");
-  await user.click(screen.getByRole("button", { name: "Use the original" }));
+  const compare = await screen.findByTestId("style-compare");
+  expect(compare).toHaveAttribute("data-choice", "rewrite");
+  expect(screen.getByTestId("style-finding")).toHaveTextContent("“until fragrant” is in the original but not in the rewrite.");
+  await user.click(screen.getByRole("radio", { name: /As written/ }));
   await user.click(screen.getByTestId("style-save"));
   await waitFor(() => expect(onSave).toHaveBeenCalledWith(null));
 });
@@ -241,18 +242,17 @@ test("putting a laid-out rewrite back saves nothing", async () => {
 test("while the run is out the space is a loading screen, and the recipe comes back with the answer, landing step by step", async () => {
   let answer: (value: Awaited<ReturnType<Parameters<typeof StyleSpace>[0]["run"]>>) => void = () => {};
   const run = vi.fn((_ruleIds: string[]) => new Promise<Awaited<ReturnType<Parameters<typeof StyleSpace>[0]["run"]>>>((resolve) => (answer = resolve)));
-  render(<StyleSpace parts={parts} run={run} onSave={async () => {}} saveLabel="Save recipe" loadRules={async () => rules} />);
+  render(<StyleSpace parts={parts} run={run} onSave={async () => {}} saveLabels={LABELS} loadRules={async () => rules} />);
 
   await waitFor(() => expect(screen.getByTestId("style-status")).toHaveTextContent("Rewriting in your house style…"));
   expect(screen.getByTestId("style-wait")).toBeInTheDocument();
-  expect(screen.queryByTestId("style-part")).not.toBeInTheDocument();
+  expect(screen.queryByTestId("style-compare")).not.toBeInTheDocument();
   expect(screen.getByTestId("style-space")).not.toHaveClass("style-landed");
 
   answer({ parts: rewrite, check: checkRestyle(styleOriginal(parts), rewrite) });
   await waitFor(() => expect(screen.getByTestId("style-space")).toHaveClass("style-landed"));
   expect(screen.queryByTestId("style-wait")).not.toBeInTheDocument();
-  expect(screen.getByTestId("style-part")).toBeInTheDocument();
-  const [first, second] = screen.getAllByTestId("style-step");
+  const [first, second] = within(screen.getByTestId("style-rewrite")).getAllByTestId("style-step");
   expect(first).toHaveClass("style-step-land");
   expect(first!.style.getPropertyValue("--i")).toBe("1");
   expect(second!.style.getPropertyValue("--i")).toBe("2");

@@ -5,17 +5,16 @@ import { listStyleRules } from "../../../../api/rpc/style";
 import { messageFrom } from "../../../../lib/errors";
 import type { StyleRule } from "../../style";
 import {
+  answerFindings,
   assemble,
+  asWritten,
   type Choice,
   changesAnything,
   checkChoices,
-  choiceCounts,
-  choosePart,
   initialChoices,
   isRebuilt,
   type StyleAnswer,
   type StyleChoices,
-  stepKey,
   styleOriginal,
 } from "./styleSession";
 
@@ -55,7 +54,7 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
       const next = await run(ruleIds);
       if (!live.current) return;
       setAnswer(next);
-      setChoices(initialChoices(original, next));
+      setChoices(initialChoices());
     } catch (cause) {
       if (live.current) setError(messageFrom(cause));
     } finally {
@@ -87,8 +86,10 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
   }, []);
 
   const assembled = answer && choices ? assemble(original, answer, choices) : null;
-  const counts = answer && choices ? choiceCounts(original, answer, choices) : null;
-  const saveCheck = assembled ? checkChoices(original, assembled) : null;
+  // The two versions side by side: the author's, and the rewrite as it would be saved, retyped steps and all.
+  const author = useMemo(() => asWritten(original), [original]);
+  const rewrite = answer && choices ? assemble(original, answer, { ...choices, recipe: "rewrite" }) : null;
+  const saveCheck = assembled && choices?.recipe === "rewrite" ? checkChoices(original, assembled) : null;
 
   /** Run again from the top: the wait counts from now. */
   const again = () => {
@@ -103,19 +104,20 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
       return next;
     });
 
-  const setStep = (p: number, s: number, choice: Choice) =>
-    setChoices((current) => (current ? { ...current, steps: { ...current.steps, [stepKey(p, s)]: choice } } : current));
-
-  const setPart = (p: number, choice: Choice) => setChoices((current) => (current && answer ? choosePart(current, original, answer, p, choice) : current));
-
   const setRecipe = (choice: Choice) => setChoices((current) => (current ? { ...current, recipe: choice } : current));
 
   const editStep = (key: string, text: string) => setChoices((current) => (current ? { ...current, edits: { ...current.edits, [key]: text } } : current));
 
   return {
     original,
-    /** Whether the rewrite laid the recipe out afresh, so it is chosen whole. */
+    /** Whether the rewrite laid the recipe out afresh, in new parts. */
     rebuilt: answer !== null && isRebuilt(original, answer),
+    author,
+    rewrite,
+    /** What the check found in the rewrite. */
+    findings: answer ? answerFindings(original, answer) : [],
+    /** Whether the rewrite says anything the author's recipe does not. */
+    changed: rewrite !== null && changesAnything(original, rewrite),
     rules,
     selected,
     answer,
@@ -127,15 +129,12 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     editing,
     panelOpen,
     assembled,
-    counts,
     saveCheck,
     /** What Save writes: the assembled parts, or null when nothing differs from the author's. */
     toSave: assembled && changesAnything(original, assembled) ? assembled : null,
     setEditing,
     setPanelOpen,
     toggleRule,
-    setStep,
-    setPart,
     setRecipe,
     editStep,
     runAgain: again,
