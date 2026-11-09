@@ -140,6 +140,15 @@ describe("the prompt", () => {
     expect(prompt.indexOf("as an editor")).toBeLessThan(prompt.indexOf("RECIPE:"));
   });
 
+  test("where the house style lays the recipe out by what is made, asks for the parts decided first, sorting headings turned into what they make, and parts in the order they are made", () => {
+    const prompt = restylePrompt({ rules: [], parts });
+    expect(prompt).toMatch(/decide the parts before writing any step, and do not keep the author's headings out of habit/);
+    expect(prompt).toContain('"For the rest of the dish"');
+    expect(prompt).toMatch(
+      /a part whose result a later step uses \(a marinade, a sauce mixed ahead\) comes before that step's part, and "To serve" comes last/
+    );
+  });
+
   test("lists the ticked statements numbered, in the order given", () => {
     const prompt = restylePrompt({ rules: ["One action per step.", "Imperative voice.", "No chatter."], parts });
     expect(prompt).toContain("1. One action per step.");
