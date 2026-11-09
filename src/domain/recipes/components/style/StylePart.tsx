@@ -4,7 +4,7 @@ import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { cn } from "@sixthshift/design-system/utils";
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 import type { OriginalPart, RestyledPart, RestyledStep } from "../../style";
 import { StepWords, StyleStep } from "./StyleStep";
 import { type Choice, isAligned, partFindings, partHeading, type StyleAnswer, type StyleChoices, sameStep, stepKey, takesRewrite } from "./styleSession";
@@ -46,7 +46,11 @@ function ColumnHead({ label, taken }: { label: string; taken: boolean }) {
 /** A step in a part chosen whole: numbered words, nothing to press. */
 function PlainStep({ n, step, quiet }: { n: number; step: RestyledStep; quiet: boolean }) {
   return (
-    <li className="grid grid-cols-[2.75rem_minmax(0,1fr)] border-b border-border-subtle py-3 last:border-b-0 desktop:py-4" data-testid="style-plain-step">
+    <li
+      className="style-step-land grid grid-cols-[2.75rem_minmax(0,1fr)] border-b border-border-subtle py-3 last:border-b-0 desktop:py-4"
+      style={{ "--i": n } as CSSProperties}
+      data-testid="style-plain-step"
+    >
       <span className="pl-4 font-display text-lg font-semibold text-fg-subtle" aria-hidden="true">
         {n}
       </span>
@@ -162,7 +166,9 @@ export function StylePart(props: StylePartProps) {
           or put back whole.
         </Muted>
       )}
-      <Card size="sm" className="grid overflow-hidden p-0 desktop:grid-cols-[15rem_minmax(0,1fr)]">
+      <Card size="sm" className="relative grid overflow-hidden p-0 desktop:grid-cols-[15rem_minmax(0,1fr)]">
+        {/* While the model rewrites, a reading line passes down the part (styles.css). */}
+        {running && <div className="sketch-glint pointer-events-none absolute inset-0" aria-hidden="true" data-testid="style-reading" />}
         <ul className="flex flex-col gap-2.5 border-b border-border-subtle px-4 py-4 desktop:border-r desktop:border-b-0" aria-label={`${heading} ingredients`}>
           {part.ingredients.length === 0 && <li className="text-sm text-fg-subtle">No ingredients</li>}
           {part.ingredients.map((row, i) => {

@@ -5,7 +5,7 @@ import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { cn } from "@sixthshift/design-system/utils";
-import { useId, useState } from "react";
+import { type CSSProperties, useId, useState } from "react";
 import type { OriginalPart, RestyledPart, RestyledStep } from "../../style";
 import { StepWords } from "./StyleStep";
 import { allRows, asWritten, type Choice, partFindings, partHeading, type StyleAnswer, type StyleChoices, stepKey, wholeRecipe } from "./styleSession";
@@ -41,7 +41,11 @@ function WholeStep(props: {
   const { n, step, quiet, editable, editing } = props;
   const fieldId = useId();
   return (
-    <li className="grid grid-cols-[2.75rem_minmax(0,1fr)] border-b border-border-subtle py-3 last:border-b-0 desktop:py-4" data-testid="style-whole-step">
+    <li
+      className="style-step-land grid grid-cols-[2.75rem_minmax(0,1fr)] border-b border-border-subtle py-3 last:border-b-0 desktop:py-4"
+      style={{ "--i": n } as CSSProperties}
+      data-testid="style-whole-step"
+    >
       <span className="pl-4 font-display text-lg font-semibold text-fg-subtle" aria-hidden="true">
         {n}
       </span>

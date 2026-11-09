@@ -2,7 +2,7 @@ import { Button } from "@sixthshift/design-system/button";
 import { Message } from "@sixthshift/design-system/message";
 import { Textarea } from "@sixthshift/design-system/textarea";
 import { cn } from "@sixthshift/design-system/utils";
-import { useId, useState } from "react";
+import { type CSSProperties, useId, useState } from "react";
 import type { RestyledStep } from "../../style";
 import type { Choice, Finding } from "./styleSession";
 
@@ -66,7 +66,12 @@ export function StyleStep(props: StyleStepProps) {
   const other = !choosable ? null : takingRewrite ? original : rewrite;
   const status = !choosable ? "Unchanged" : takingRewrite ? (edited ? "Edited" : "Rewritten") : "As written";
   return (
-    <li className={cn(STEP_COLUMNS, "border-b border-border-subtle last:border-b-0")} data-testid="style-step" data-choice={choosable ? choice : "none"}>
+    <li
+      className={cn(STEP_COLUMNS, "style-step-land border-b border-border-subtle last:border-b-0")}
+      style={{ "--i": n } as CSSProperties}
+      data-testid="style-step"
+      data-choice={choosable ? choice : "none"}
+    >
       <span className="pt-3 pl-4 font-display text-lg font-semibold text-fg-subtle desktop:pt-4" aria-hidden="true">
         {n}
       </span>

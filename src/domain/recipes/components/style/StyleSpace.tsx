@@ -4,13 +4,14 @@ import { Checkbox } from "@sixthshift/design-system/checkbox";
 import { Message } from "@sixthshift/design-system/message";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
-import { Spinner } from "@sixthshift/design-system/spinner";
+import { cn } from "@sixthshift/design-system/utils";
 import { type ReactNode, useState } from "react";
 import { messageFrom } from "../../../../lib/errors";
 import { scrollClearance } from "../../../../lib/ui/scrollClearance";
 import type { RestyledPart, StyleRule } from "../../style";
 import { StylePart } from "./StylePart";
 import { StyleRebuilt } from "./StyleRebuilt";
+import { StyleWait } from "./StyleWait";
 import type { StyleAnswer } from "./styleSession";
 import { type StyleSourcePart, useStyleSpace } from "./useStyleSpace";
 
@@ -92,34 +93,51 @@ export function StyleSpace({ parts, run, onSave, saveLabel, secondary, skipLabel
     }
   };
 
+  const houseStyle = (
+    <Button
+      type="button"
+      variant="outline"
+      intent="neutral"
+      size="sm"
+      aria-expanded={style.panelOpen}
+      disabled={running}
+      onClick={() => style.setPanelOpen(!style.panelOpen)}
+    >
+      House style · {style.selected.size} of {style.rules.length} on
+    </Button>
+  );
+
   // Steps are numbered through the recipe on each side, and a part whose rewrite merged or split steps counts differently on the rewrite's.
   const firstSteps = startsOf(original.map((part) => part.steps.length));
   const firstRewriteSteps = startsOf(original.map((part, p) => answer?.parts[p]?.steps.length ?? part.steps.length));
 
   return (
-    <div className="flex flex-col gap-6" data-testid="style-space">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex min-w-0 grow items-center gap-2 text-sm" aria-live="polite">
-          {running && <Spinner size="sm" />}
-          <span data-testid="style-status">{running ? "Rewriting in your house style…" : counts ? statusLine(counts) : ""}</span>
+    // `style-landed` once a run is in: the rewritten steps land in turn (styles.css).
+    <div className={cn("flex flex-col gap-6", !running && answer !== null && "style-landed")} data-testid="style-space">
+      {running ? (
+        <StyleWait
+          stage={style.stage}
+          startedAt={style.startedAt}
+          steps={original.reduce((total, part) => total + part.steps.length, 0)}
+          actions={
+            <>
+              {skipLabel !== undefined && (
+                <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={() => void save(true)}>
+                  {skipLabel}
+                </Button>
+              )}
+              {houseStyle}
+            </>
+          }
+        />
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex min-w-0 grow items-center gap-2 text-sm" aria-live="polite">
+            <span data-testid="style-status">{counts ? statusLine(counts) : ""}</span>
+          </div>
+          {houseStyle}
         </div>
-        {running && skipLabel !== undefined && (
-          <Button type="button" variant="ghost" intent="neutral" size="sm" disabled={saving} onClick={() => void save(true)}>
-            {skipLabel}
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          intent="neutral"
-          size="sm"
-          aria-expanded={style.panelOpen}
-          disabled={running}
-          onClick={() => style.setPanelOpen(!style.panelOpen)}
-        >
-          House style · {style.selected.size} of {style.rules.length} on
-        </Button>
-      </div>
+      )}
 
       {style.error !== null && (
         <Message intent="warning" title="Couldn't rewrite this in your house style" data-testid="style-error">

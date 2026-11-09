@@ -3,8 +3,9 @@ import { Card } from "@sixthshift/design-system/card";
 import { Muted } from "@sixthshift/design-system/muted";
 import { SectionTitle } from "@sixthshift/design-system/section-title";
 import { cn } from "@sixthshift/design-system/utils";
-import { type CSSProperties, useEffect, useState } from "react";
-import { SimmerPot } from "./SimmerPot";
+import type { CSSProperties } from "react";
+import { SimmerPot } from "../wait/SimmerPot";
+import { useSeconds, WaitSteps } from "../wait/WaitSteps";
 import type { ImportPhase, ImportPreview, ImportProgress } from "./useRecipeSource";
 
 export type ImportWaitProps = {
@@ -23,16 +24,6 @@ function stepsFor(from: ImportProgress["from"], aiAvailable: boolean): { phase: 
     ...(from === "page" && aiAvailable ? [{ phase: "sort" as const, label: "Sorting it into parts" }] : []),
     { phase: "match", label: "Matching your foods" },
   ];
-}
-
-/** Seconds since `startedAt`, once a second. */
-function useSeconds(startedAt: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-  return Math.max(0, Math.floor((now - startedAt) / 1000));
 }
 
 /**
@@ -70,18 +61,7 @@ export function ImportWait({ progress, aiAvailable, onSkip }: ImportWaitProps) {
         </div>
 
         {/* A phone keeps to the headline, which names the step running, so the recipe filling in is in view. */}
-        <ol className="flex flex-col gap-2 text-left text-sm mobile:hidden" aria-label="Import progress">
-          {steps.map((step, index) => {
-            const state = index < at ? "done" : index === at ? "now" : "next";
-            return (
-              <li key={step.phase} className="flex items-center gap-3" data-state={state}>
-                <StepMark state={state} />
-                <span className={cn(state === "next" ? "text-fg-subtle" : "text-fg-normal", state === "now" && "font-medium")}>{step.label}</span>
-                {state === "done" && <span className="sr-only">(done)</span>}
-              </li>
-            );
-          })}
-        </ol>
+        <WaitSteps labels={steps.map((step) => step.label)} at={at} label="Import progress" className="mobile:hidden" />
 
         {onSkip !== undefined && (
           <Button type="button" variant="ghost" intent="neutral" size="sm" onClick={onSkip}>
@@ -142,7 +122,7 @@ function RecipeSketch({ found, sorting }: { found: ImportPreview | null; sorting
 
   return (
     <Card size="lg" className="relative flex flex-col gap-5 overflow-hidden text-left mobile:p-4" data-testid="import-found">
-      {sorting && <div className="sketch-glint pointer-events-none absolute inset-x-0 top-0 h-24" aria-hidden="true" />}
+      {sorting && <div className="sketch-glint pointer-events-none absolute inset-0" aria-hidden="true" />}
       <div className="flex items-center gap-3">
         {found.image !== null && <img src={found.image} alt="" className="sketch-photo size-16 shrink-0 rounded-lg object-cover" />}
         <div className="sketch-land flex min-w-0 flex-col" style={turn(0)}>
@@ -195,35 +175,4 @@ function RecipeSketch({ found, sorting }: { found: ImportPreview | null; sorting
       )}
     </Card>
   );
-}
-
-/** A step's mark: ticked once done, a pulsing dot while it runs, an empty ring before. */
-function StepMark({ state }: { state: "done" | "now" | "next" }) {
-  if (state === "done") {
-    return (
-      <span className="simmer-in flex size-5 shrink-0 items-center justify-center rounded-full bg-bg-subtle-pressed text-fg-normal">
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M5 12l5 5 9-10" />
-        </svg>
-      </span>
-    );
-  }
-  if (state === "now") {
-    return (
-      <span className="flex size-5 shrink-0 items-center justify-center">
-        <span className="size-2.5 animate-pulse rounded-full bg-fg-brand motion-reduce:animate-none" />
-      </span>
-    );
-  }
-  return <span className="size-5 shrink-0 rounded-full border-2 border-border-normal" />;
 }

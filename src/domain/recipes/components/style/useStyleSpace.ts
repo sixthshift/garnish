@@ -37,6 +37,9 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
   const [answer, setAnswer] = useState<StyleAnswer | null>(null);
   const [choices, setChoices] = useState<StyleChoices | null>(null);
   const [running, setRunning] = useState(true);
+  // Where a run has got to, for the wait: the guide being read, then the model rewriting; and when it began.
+  const [stage, setStage] = useState<"rules" | "rewrite">("rules");
+  const [startedAt, setStartedAt] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -44,6 +47,7 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
 
   const start = async (ruleIds: string[]) => {
     setRunning(true);
+    setStage("rewrite");
     setError(null);
     setPanelOpen(false);
     setEditing(null);
@@ -86,6 +90,12 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
   const counts = answer && choices ? choiceCounts(original, answer, choices) : null;
   const saveCheck = assembled ? checkChoices(original, assembled) : null;
 
+  /** Run again from the top: the wait counts from now. */
+  const again = () => {
+    setStartedAt(Date.now());
+    void start([...selected]);
+  };
+
   const toggleRule = (id: string) =>
     setSelected((previous) => {
       const next = new Set(previous);
@@ -111,6 +121,8 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     answer,
     choices,
     running,
+    stage,
+    startedAt,
     error,
     editing,
     panelOpen,
@@ -126,6 +138,6 @@ export function useStyleSpace({ parts, run, loadRules }: UseStyleSpaceOptions) {
     setPart,
     setRecipe,
     editStep,
-    runAgain: () => void start([...selected]),
+    runAgain: again,
   };
 }

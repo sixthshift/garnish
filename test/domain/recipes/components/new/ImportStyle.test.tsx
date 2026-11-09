@@ -54,7 +54,10 @@ describe("ImportStyle", () => {
     expect(html).toContain("Save recipe");
     expect(html).toContain(">Back<");
     expect(html).not.toContain("Edit details");
-    expect(html).toContain("Rewriting in your house style…");
+    // The wait opens on the house style being read, the rewrite next in its list.
+    expect(html).toContain('data-testid="style-wait"');
+    expect(html).toContain("Reading your house style…");
+    expect(html).toContain("Rewriting 1 step");
     expect(html).toContain("Skip, save as written");
     expect(html).toContain(">Cancel<");
   });

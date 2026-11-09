@@ -355,16 +355,10 @@
 
 @keyframes sketch-glint {
   from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  10%,
-  85% {
-    opacity: 1;
+    background-position: 0 -40%;
   }
   to {
-    transform: translateY(520%);
-    opacity: 0;
+    background-position: 0 140%;
   }
 }
 
@@ -382,12 +376,22 @@
   animation: sketch-photo 600ms ease-out both;
 }
 
-/* A reading line: a thin bright edge in the brand's teal with a soft wash behind it. */
+/* A reading line: a thin bright edge in the brand's teal with a soft wash
+   above it, laid over the whole of what is being read (`absolute inset-0`)
+   and swept from its top to its foot whatever its height. */
 .sketch-glint {
-  background:
-    linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--color-fg-brand) 9%, transparent) 70%, transparent 71%),
-    linear-gradient(180deg, transparent calc(70% - 1px), color-mix(in oklab, var(--color-fg-brand) 55%, transparent) 70%, transparent calc(70% + 1px));
-  animation: sketch-glint 2.2s ease-in-out infinite;
+  background-image:
+    linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--color-fg-brand) 9%, transparent) 96%, transparent 96.5%),
+    linear-gradient(180deg, transparent calc(96% - 1px), color-mix(in oklab, var(--color-fg-brand) 55%, transparent) 96.5%, transparent calc(97% + 1px));
+  background-repeat: no-repeat;
+  background-size: 100% 6rem;
+  animation: sketch-glint 2.4s ease-in-out infinite;
+}
+
+/* The restyle's answer landing: each step in turn (`--i`), once the run is
+   in (StyleSpace's `style-landed`), and again after a Run again. */
+.style-landed .style-step-land {
+  animation: sketch-land 420ms cubic-bezier(0.2, 0.8, 0.3, 1) calc(var(--i, 0) * 120ms) both;
 }
 
 /* A step of the wait's list as it lands. */
@@ -407,7 +411,8 @@
   .simmer-in,
   .sketch-bar,
   .sketch-land,
-  .sketch-photo {
+  .sketch-photo,
+  .style-landed .style-step-land {
     animation: none !important;
   }
 
