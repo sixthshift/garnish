@@ -54,11 +54,10 @@ test("the list groups the places, each with its tile and count, and opens one at
   expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeTruthy();
   expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual(["Library", "Cooking", "Data", "App"]);
   const library = screen.getByRole("region", { name: "Library" });
-  expect(
-    within(library)
-      .getAllByRole("link")
-      .map((link) => link.textContent)
-  ).toEqual(["❦Foods3", "⚖Units0", "▤Aisles1", "#Tags0"]);
+  const links = within(library).getAllByRole("link");
+  expect(links.map((link) => link.textContent)).toEqual(["Foods3", "Units0", "Aisles1", "Tags0"]);
+  // Each tile is a line icon, hidden from a screen reader as decoration.
+  for (const link of links) expect(link.querySelector('[aria-hidden="true"] > svg')).not.toBeNull();
 
   await user.click(screen.getByRole("link", { name: /Units/ }));
   await waitFor(() => expect(router.state.location.search).toEqual({ section: "units" }));

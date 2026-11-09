@@ -106,6 +106,7 @@ export function SettingsList({ groups, footer }: { groups: SettingsListGroup[]; 
                         strokeWidth="1.8"
                         strokeLinecap="round"
                         strokeLinejoin="round"
+                        aria-hidden="true"
                       >
                         {TILE[row.value]}
                       </svg>
