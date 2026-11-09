@@ -98,11 +98,11 @@ export function reportLines(model: string, seconds: number, before: Recipe, resu
   if (check.addedNumbers.length > 0) lines.push(`   added numbers: ${check.addedNumbers.join(", ")}`);
   if (check.droppedWords.length > 0) lines.push(`   dropped words: ${check.droppedWords.join(" ")}`);
   for (const issue of check.issues) lines.push(`   reads wrong: ${issue.message}`);
-  if (result.revision) {
+  for (const [n, revision] of (result.revisions ?? []).entries()) {
     lines.push(
-      `   sent back with ${result.revision.problems.length} to fix; the revision was ${result.revision.taken ? "better, and taken" : "no better, and dropped"}:`
+      `   sent back (${n + 1}) with ${revision.problems.length} to fix; the revision was ${revision.taken ? "better, and taken" : "no better, and dropped"}:`
     );
-    for (const problem of result.revision.problems) lines.push(`     - ${problem}`);
+    for (const problem of revision.problems) lines.push(`     - ${problem}`);
   }
   const stepsBefore = before.parts.reduce((sum, part) => sum + part.steps.length, 0);
   const stepsAfter = parts.reduce((sum, part) => sum + part.steps.length, 0);

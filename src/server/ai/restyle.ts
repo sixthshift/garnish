@@ -38,13 +38,18 @@ function checkedParts(parts: readonly StylablePart[]): OriginalPart[] {
   }));
 }
 
+/** How many times a rewrite the checks still find something in is sent back. */
+export const MAX_REVISIONS = 3;
+
+/** One time the rewrite was sent back: what it was asked to fix, and whether the revision was better and taken. */
+export type RestyleRevision = { problems: string[]; taken: boolean };
+
 /**
  * What `runRestyle` hands back: the rewritten parts and the check over them.
- * `revision` is there when the checks found something in the first rewrite
- * and it was sent back: what it was asked to fix, and whether the revised
- * rewrite was better and taken. Nothing is written.
+ * `revisions` is each time the rewrite was sent back, in order; absent when
+ * the first rewrite was clean. Nothing is written.
  */
-export type RestyleResult = { parts: RestyledPart[]; check: RestyleCheck; revision?: { problems: string[]; taken: boolean } };
+export type RestyleResult = { parts: RestyledPart[]; check: RestyleCheck; revisions?: RestyleRevision[] };
 
 /**
  * How bad a check is, for choosing between a rewrite and its revision: each
@@ -59,8 +64,9 @@ export function checkWeight(check: RestyleCheck): number {
 
 /**
  * One restyle: one prompt, one answer, the pairing verified, the facts and
- * reading checks over it; and when the checks found something, the rewrite
- * sent back once with the list, the revision kept only if it is better. The rules arrive as their texts rather than as ids so this stays
+ * reading checks over it; and while the checks find something, the rewrite
+ * sent back with the list, each revision kept only if it is better, up to
+ * `MAX_REVISIONS` times. The rules arrive as their texts rather than as ids so this stays
  * free of the database — `restyleSteps` below does the lookups — and the
  * result is returned whether or not the check passed, because a failed check
  * is something the household is shown, not an error. Every part is sent, so
@@ -94,19 +100,32 @@ export async function runRestyle(
     return { parts, check: checkRestyle(original, parts) };
   };
 
-  const answered = parseRestyleAnswer(await ask(restylePrompt({ rules, parts: shown }), "restyle"));
-  const first = read(answered);
-  const problems = revisionProblems(first.check, original);
-  if (problems.length === 0) return first;
+  let answered = parseRestyleAnswer(await ask(restylePrompt({ rules, parts: shown }), "restyle"));
+  let best = read(answered);
+  let problems = revisionProblems(best.check, original);
+  if (problems.length === 0) return best;
 
-  // The checks found something: one more look, with the list. A revision that fails, or is no better, leaves the first rewrite standing.
-  try {
-    const revised = read(parseRestyleAnswer(await ask(revisePrompt({ rules, parts: shown, rewrite: answered, problems }), "restyle-revise")));
-    if (checkWeight(revised.check) < checkWeight(first.check)) return { ...revised, revision: { problems, taken: true } };
-  } catch {
-    // The first rewrite is still an answer: the household sees it with what the checks found.
+  // The checks found something: the rewrite goes back with the list, again while each revision is better and something
+  // is still found, up to MAX_REVISIONS times. A revision that fails, or is no better, ends it with the best so far.
+  const revisions: RestyleRevision[] = [];
+  while (problems.length > 0 && revisions.length < MAX_REVISIONS) {
+    let next: AnsweredPart[];
+    let revised: { parts: RestyledPart[]; check: RestyleCheck };
+    try {
+      next = parseRestyleAnswer(await ask(revisePrompt({ rules, parts: shown, rewrite: answered, problems }), "restyle-revise"));
+      revised = read(next);
+    } catch {
+      revisions.push({ problems, taken: false });
+      break;
+    }
+    const better = checkWeight(revised.check) < checkWeight(best.check);
+    revisions.push({ problems, taken: better });
+    if (!better) break;
+    answered = next;
+    best = revised;
+    problems = revisionProblems(best.check, original);
   }
-  return { ...first, revision: { problems, taken: false } };
+  return { ...best, revisions };
 }
 
 /**

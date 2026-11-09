@@ -137,9 +137,10 @@ export function versionLine(steps: number, findings: number): string {
   return findings === 0 ? counted : `${counted} · ${findings} to check`;
 }
 
-/** "Checked, and rewritten again to fix 3 problems." Pure. */
-export function revisedLine(problems: number): string {
-  return `Checked, and rewritten again to fix ${problems} ${problems === 1 ? "problem" : "problems"}.`;
+/** "Checked, and rewritten twice more to fix what the checks found." Pure. */
+export function revisedLine(times: number): string {
+  const count = times === 1 ? "again" : times === 2 ? "twice more" : `${times} more times`;
+  return `Checked, and rewritten ${count} to fix what the checks found.`;
 }
 
 export type StyleCompareProps = {
@@ -150,7 +151,7 @@ export type StyleCompareProps = {
   findings: readonly Finding[];
   /** Whether the rewrite laid the recipe out in new parts. */
   rebuilt: boolean;
-  /** How many problems the checks found in the first rewrite that a revision was taken to fix. */
+  /** How many times the rewrite was sent back with what the checks found and the revision taken. */
   revised?: number;
   editing: string | null;
   onChoose: (choice: Choice) => void;

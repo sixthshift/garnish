@@ -12,7 +12,7 @@ import type { Recipe, RecipeInput } from "../../../src/domain/recipes/recipe";
 import type { RestyledPart } from "../../../src/domain/recipes/style";
 import { AiError } from "../../../src/server/ai/client";
 import { apiProvider } from "../../../src/server/ai/provider/api";
-import { applyRestyle, createRestyledRecipe, restoreSteps, restyleDraft, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
+import { applyRestyle, createRestyledRecipe, MAX_REVISIONS, restoreSteps, restyleDraft, restyleSteps, runRestyle } from "../../../src/server/ai/restyle";
 import {
   AnsweredLineSchema,
   AnsweredPartSchema,
@@ -26,7 +26,7 @@ import {
   restylePrompt,
 } from "../../../src/server/ai/restylePrompt";
 import { fakeAi, useChosenModels } from "../../helpers/ai";
-import { restyledPart } from "../../helpers/restyle";
+import { restyledPart, restyledStep } from "../../helpers/restyle";
 import { callServerFn, useTempDataDir } from "../../helpers/server";
 
 const chosen = useChosenModels({ restyle: "test-model" });
@@ -475,7 +475,7 @@ describe("runRestyle", () => {
     expect(again.parts[0]!.steps.map((step) => step.text)).toEqual(doc().parts[0]!.steps!.map((step) => step.text));
   });
 
-  describe("a rewrite the checks find something in is sent back once", () => {
+  describe("a rewrite the checks find something in is sent back, while each revision is better, up to three times", () => {
     const dropped = () =>
       answer([
         restyledPart("", ["Heat the oven and melt the butter.", "Bake until golden."], [0, 1]),
@@ -497,14 +497,14 @@ describe("runRestyle", () => {
       expect(revise).toMatch(/Change nothing else/);
       expect(result.check.ok).toBe(true);
       expect(result.parts[0]!.steps).toEqual(GOOD.parts[0]!.steps);
-      expect(result.revision).toEqual({ problems: expect.arrayContaining([expect.stringContaining("Bake for 15 minutes until golden.")]), taken: true });
+      expect(result.revisions).toEqual([{ problems: expect.arrayContaining([expect.stringContaining("Bake for 15 minutes until golden.")]), taken: true }]);
     });
 
     test("a revision that is no better, or that fails, leaves the first rewrite standing", async () => {
       const recipe = await saved();
       const same = await runRestyle(recipe, [], { ai: fakeAi(JSON.stringify(dropped())) });
       expect(same.check.missingFacts).toEqual(["180c", "15min"]);
-      expect(same.revision?.taken).toBe(false);
+      expect(same.revisions).toEqual([{ problems: expect.any(Array), taken: false }]);
 
       const failing = fakeAi(async (request) => {
         if (request.schemaName === "restyle") return JSON.stringify(dropped());
@@ -512,7 +512,44 @@ describe("runRestyle", () => {
       });
       const failed = await runRestyle(recipe, [], { ai: failing });
       expect(failed.parts[0]!.steps.map((step) => step.text)).toEqual(["Heat the oven and melt the butter.", "Bake until golden."]);
-      expect(failed.revision?.taken).toBe(false);
+      expect(failed.revisions?.map((revision) => revision.taken)).toEqual([false]);
+    });
+
+    test("a better revision that still has something is sent back again, with what is left", async () => {
+      const recipe = await saved();
+      const half = answer([
+        restyledPart("", ["Heat the oven to 180°C and melt the butter.", "Bake until golden."], [0, 1]),
+        restyledPart("Golden syrup mixture", ["Warm the golden syrup for 2 minutes."], [2]),
+      ]);
+      const replies = [dropped(), half, GOOD];
+      const ai = fakeAi(async () => JSON.stringify(replies.shift()));
+      const result = await runRestyle(recipe, [], { ai });
+      expect(ai.calls.map((call) => call.schemaName)).toEqual(["restyle", "restyle-revise", "restyle-revise"]);
+      // The second time round, only what the first revision left: the bake time, not the oven.
+      expect(ai.calls[2]!.prompt).toContain("Bake for 15 minutes until golden.");
+      expect(ai.calls[2]!.prompt).not.toContain("A number from the original's “Heat the oven to 180°C.”");
+      expect(ai.calls[2]!.prompt).toContain("Heat the oven to 180°C and melt the butter.");
+      expect(result.check.ok).toBe(true);
+      expect(result.revisions?.map((revision) => revision.taken)).toEqual([true, true]);
+    });
+
+    test("stops after three revisions, keeping the best, even while each is better", async () => {
+      const recipe = await saved();
+      const idle = (n: number) =>
+        answer([
+          {
+            ...GOOD.parts[0]!,
+            steps: [...GOOD.parts[0]!.steps, ...["tray", "bowl", "pan", "spoon"].slice(0, n).map((thing) => restyledStep(`Set the ${thing} aside.`))],
+          },
+          GOOD.parts[1]!,
+        ]);
+      const replies = [idle(4), idle(3), idle(2), idle(1), GOOD];
+      const ai = fakeAi(async () => JSON.stringify(replies.shift()));
+      const result = await runRestyle(recipe, [], { ai });
+      expect(ai.calls).toHaveLength(1 + MAX_REVISIONS);
+      expect(MAX_REVISIONS).toBe(3);
+      expect(result.revisions?.map((revision) => revision.taken)).toEqual([true, true, true]);
+      expect(result.check.issues.map((issue) => issue.item)).toEqual(["Set the tray aside."]);
     });
   });
 

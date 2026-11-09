@@ -277,7 +277,10 @@ test("a revised rewrite says so, and what reads wrong clears once the step is re
       run={async () => ({
         parts: idle,
         check: checkRestyle(styleOriginal(withThird), idle),
-        revision: { problems: ["One", "Two"], taken: true },
+        revisions: [
+          { problems: ["One", "Two"], taken: true },
+          { problems: ["Three"], taken: true },
+        ],
       })}
       onSave={async () => {}}
       saveLabels={LABELS}
@@ -285,7 +288,7 @@ test("a revised rewrite says so, and what reads wrong clears once the step is re
     />
   );
   const house = await screen.findByTestId("style-rewrite");
-  expect(within(house).getByTestId("style-rewrite-notes")).toHaveTextContent("Checked, and rewritten again to fix 2 problems.");
+  expect(within(house).getByTestId("style-rewrite-notes")).toHaveTextContent("Checked, and rewritten twice more to fix what the checks found.");
   expect(within(house).getByTestId("style-finding")).toHaveTextContent("“Set the wok aside while preparing the sauce.” is a step with nothing to do.");
 
   await user.click(within(house).getByRole("button", { name: "Edit step 3" }));

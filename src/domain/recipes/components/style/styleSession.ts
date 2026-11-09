@@ -14,10 +14,10 @@ import {
 
 /**
  * What the restyle answers: the rewritten parts and the check over them, as
- * `restyleSteps` and `restyleDraft` return it, and whether the first rewrite
- * was sent back with what the checks found and the revision taken.
+ * `restyleSteps` and `restyleDraft` return it, and each time the rewrite was
+ * sent back with what the checks found and whether that revision was taken.
  */
-export type StyleAnswer = { parts: RestyledPart[]; check: RestyleCheck; revision?: { problems: readonly string[]; taken: boolean } };
+export type StyleAnswer = { parts: RestyledPart[]; check: RestyleCheck; revisions?: readonly { problems: readonly string[]; taken: boolean }[] };
 
 /** Which version of the recipe the household is saving. */
 export type Choice = "rewrite" | "original";

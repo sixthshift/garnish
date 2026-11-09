@@ -31,7 +31,7 @@ export function StyleWait({ stage, startedAt, steps, actions }: StyleWaitProps) 
           {stage === "rules" ? "Reading your house style…" : "Rewriting in your house style…"}
         </p>
         <Muted as="p" className="text-sm tabular-nums">
-          This can take up to a minute.
+          This can take a minute or two.
           {seconds >= 3 && <span> {seconds} s</span>}
         </Muted>
       </div>
