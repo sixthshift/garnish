@@ -80,3 +80,25 @@ test("the recipe page: two tabs held at the top, and Start cooking, the list and
   await bar.getByRole("link", { name: "Start cooking" }).click();
   await expect(page).toHaveURL(/cooking=true/);
 });
+
+test("the ⋯ menu over the photo opens above the page, so Delete can be pressed", async ({ page, open }) => {
+  const name = unique("Phone Photo Soup");
+  await createRecipe(page, open, { name, servings: 2, ingredients: ["1 leek"], steps: ["Sweat the leek."] });
+
+  // A photo, so the page draws its sticky photo with the menu on it.
+  await open(`${new URL(page.url()).pathname}/edit`);
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Choose image" }).click();
+  // A 1×1 PNG.
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  await (await chooser).setFiles({ name: "soup.png", mimeType: "image/png", buffer: png });
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await expect(page.getByTestId("recipe-photo")).toBeVisible();
+
+  // Playwright presses only what is on top at the point it clicks: a menu under the page's body fails here.
+  await page.getByRole("button", { name: "Recipe actions" }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("dialog", { name: "Delete recipe" }).getByRole("button", { name: "Delete" }).click();
+  await expect(page).toHaveURL(/\/recipes$/);
+});

@@ -80,10 +80,12 @@ describe("the photo and its buttons", () => {
     await renderInRouter(page());
     const photo = screen.getByTestId("recipe-photo");
     expect(photo).toHaveClass("sticky", "top-0");
-    expect(within(photo).getByRole("link", { name: "Back to recipes" })).toHaveAttribute("href", "/recipes");
-    expect(within(photo).getByRole("button", { name: "Add to favourites" })).toBeInTheDocument();
-    expect(within(photo).getByRole("link", { name: "Edit" })).toHaveAttribute("href", "/recipes/laksa/edit");
-    expect(within(photo).getByRole("button", { name: "Recipe actions" })).toBeInTheDocument();
+    // Beside the photo rather than in it, so the menu opens above the body (the photo is a stacking layer beneath it).
+    const buttons = screen.getByTestId("recipe-photo-buttons");
+    expect(within(buttons).getByRole("link", { name: "Back to recipes" })).toHaveAttribute("href", "/recipes");
+    expect(within(buttons).getByRole("button", { name: "Add to favourites" })).toBeInTheDocument();
+    expect(within(buttons).getByRole("link", { name: "Edit" })).toHaveAttribute("href", "/recipes/laksa/edit");
+    expect(within(buttons).getByRole("button", { name: "Recipe actions" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Laksa" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Weeknight" })).toHaveAttribute("href", "/recipes?tag=weeknight");
     const facts = screen.getByTestId("recipe-facts");

@@ -83,10 +83,16 @@ export function PhoneRecipe({ recipe, madeCount, onRate, actions, servings, ingr
       {src !== null ? (
         // Sticky, so it holds its place while the page below slides up over it; 360px, but no more than 38% of a
         // short screen, so the Ingredients and Method tabs show above Start cooking.
-        <div className="sticky top-0 h-[min(22.5rem,38svh)] print:static print:h-48" data-testid="recipe-photo">
-          <img src={src} alt="" className="absolute inset-0 size-full object-cover print:rounded-xl" />
-          <div className="absolute inset-x-3.5 top-2 z-10">{buttons}</div>
-        </div>
+        <>
+          <div className="sticky top-0 h-[min(22.5rem,38svh)] print:static print:h-48" data-testid="recipe-photo">
+            <img src={src} alt="" className="absolute inset-0 size-full object-cover print:rounded-xl" />
+          </div>
+          {/* Over the photo but not in it: the sticky photo is a stacking layer beneath the body, and the ⋯ menu
+              inside it would open under the body. Here, above the body, it scrolls away with the page. */}
+          <div className="absolute inset-x-3.5 top-2 z-20" data-testid="recipe-photo-buttons">
+            {buttons}
+          </div>
+        </>
       ) : (
         <div className="px-3.5 pt-2">{buttons}</div>
       )}
